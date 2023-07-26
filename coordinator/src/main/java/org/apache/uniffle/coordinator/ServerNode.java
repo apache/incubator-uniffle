@@ -51,8 +51,17 @@ public class ServerNode implements Comparable<ServerNode> {
       long availableMemory,
       int eventNumInFlush,
       Set<String> tags) {
-    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags,
-        ServerStatus.ACTIVE, Maps.newHashMap());
+    this(
+        id,
+        ip,
+        port,
+        usedMemory,
+        preAllocatedMemory,
+        availableMemory,
+        eventNumInFlush,
+        tags,
+        ServerStatus.ACTIVE,
+        Maps.newHashMap());
   }
 
   public ServerNode(
@@ -65,8 +74,17 @@ public class ServerNode implements Comparable<ServerNode> {
       int eventNumInFlush,
       Set<String> tags,
       ServerStatus status) {
-    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags,
-        status, Maps.newHashMap());
+    this(
+        id,
+        ip,
+        port,
+        usedMemory,
+        preAllocatedMemory,
+        availableMemory,
+        eventNumInFlush,
+        tags,
+        status,
+        Maps.newHashMap());
   }
 
   public ServerNode(
@@ -80,8 +98,18 @@ public class ServerNode implements Comparable<ServerNode> {
       Set<String> tags,
       ServerStatus status,
       Map<String, StorageInfo> storageInfoMap) {
-    this(id, ip, port, usedMemory, preAllocatedMemory, availableMemory, eventNumInFlush, tags,
-        status, storageInfoMap, -1);
+    this(
+        id,
+        ip,
+        port,
+        usedMemory,
+        preAllocatedMemory,
+        availableMemory,
+        eventNumInFlush,
+        tags,
+        status,
+        storageInfoMap,
+        -1);
   }
 
   public ServerNode(
@@ -113,8 +141,12 @@ public class ServerNode implements Comparable<ServerNode> {
   }
 
   public ShuffleServerId convertToGrpcProto() {
-    return ShuffleServerId.newBuilder().setId(id).setIp(ip).setPort(grpcPort)
-      .setNettyPort(nettyPort).build();
+    return ShuffleServerId.newBuilder()
+        .setId(id)
+        .setIp(ip)
+        .setPort(grpcPort)
+        .setNettyPort(nettyPort)
+        .build();
   }
 
   public String getId() {
@@ -152,15 +184,14 @@ public class ServerNode implements Comparable<ServerNode> {
   public Set<String> getTags() {
     return tags;
   }
-  
+
   public ServerStatus getStatus() {
     return status;
   }
-  
+
   public void setStatus(ServerStatus serverStatus) {
     this.status = serverStatus;
   }
-  
 
   public Map<String, StorageInfo> getStorageInfo() {
     return storageInfo;
@@ -168,24 +199,35 @@ public class ServerNode implements Comparable<ServerNode> {
 
   @Override
   public String toString() {
-    return "ServerNode with id[" + id
-        + "], ip[" + ip
-        + "], grpc port[" + grpcPort
-        + "], netty port[" + nettyPort
-        + "], usedMemory[" + usedMemory
-        + "], preAllocatedMemory[" + preAllocatedMemory
-        + "], availableMemory[" + availableMemory
-        + "], eventNumInFlush[" + eventNumInFlush
-        + "], timestamp[" + timestamp
-        + "], tags" + tags.toString() + ""
-        + ", status[" + status
-        + "], storages[num=" + storageInfo.size() + "]";
-
+    return "ServerNode with id["
+        + id
+        + "], ip["
+        + ip
+        + "], grpc port["
+        + grpcPort
+        + "], netty port["
+        + nettyPort
+        + "], usedMemory["
+        + usedMemory
+        + "], preAllocatedMemory["
+        + preAllocatedMemory
+        + "], availableMemory["
+        + availableMemory
+        + "], eventNumInFlush["
+        + eventNumInFlush
+        + "], timestamp["
+        + timestamp
+        + "], tags"
+        + tags.toString()
+        + ""
+        + ", status["
+        + status
+        + "], storages[num="
+        + storageInfo.size()
+        + "]";
   }
 
-  /**
-   * Only for test case
-   */
+  /** Only for test case */
   public void setTimestamp(long timestamp) {
     this.timestamp = timestamp;
   }

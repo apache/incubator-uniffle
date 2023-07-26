@@ -34,7 +34,9 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 
 public interface ShuffleWriteClient {
 
-  SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList,
+  SendShuffleDataResult sendShuffleData(
+      String appId,
+      List<ShuffleBlockInfo> shuffleBlockInfoList,
       Supplier<Boolean> needCancelRequest);
 
   void sendAppHeartbeat(String appId, long timeoutMs);
@@ -50,7 +52,8 @@ public interface ShuffleWriteClient {
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite);
 
-  boolean sendCommit(Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);
+  boolean sendCommit(
+      Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);
 
   void registerCoordinators(String coordinators);
 
@@ -66,15 +69,28 @@ public interface ShuffleWriteClient {
       Map<Integer, List<Long>> partitionToBlockIds,
       int bitmapNum);
 
-  ShuffleAssignmentsInfo getShuffleAssignments(String appId, int shuffleId, int partitionNum,
-      int partitionNumPerRange, Set<String> requiredTags, int assignmentShuffleServerNumber,
+  ShuffleAssignmentsInfo getShuffleAssignments(
+      String appId,
+      int shuffleId,
+      int partitionNum,
+      int partitionNumPerRange,
+      Set<String> requiredTags,
+      int assignmentShuffleServerNumber,
       int estimateTaskConcurrency);
 
-  Roaring64NavigableMap getShuffleResult(String clientType, Set<ShuffleServerInfo> shuffleServerInfoSet,
-      String appId, int shuffleId, int partitionId);
+  Roaring64NavigableMap getShuffleResult(
+      String clientType,
+      Set<ShuffleServerInfo> shuffleServerInfoSet,
+      String appId,
+      int shuffleId,
+      int partitionId);
 
-  Roaring64NavigableMap getShuffleResultForMultiPart(String clientType,
-      Map<ShuffleServerInfo, Set<Integer>> serverToPartitions, String appId, int shuffleId);
+  Roaring64NavigableMap getShuffleResultForMultiPart(
+      String clientType,
+      Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
+      String appId,
+      int shuffleId,
+      Set<Integer> failedPartitions);
 
   void close();
 

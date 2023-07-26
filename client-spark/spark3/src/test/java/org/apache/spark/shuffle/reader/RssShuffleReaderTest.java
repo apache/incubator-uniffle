@@ -65,8 +65,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     Map<String, String> expectedData = Maps.newHashMap();
     final Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();
-    writeTestData(writeHandler, 2, 5, expectedData,
-        blockIdBitmap, "key", KRYO_SERIALIZER, 0);
+    writeTestData(writeHandler, 2, 5, expectedData, blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
     RssShuffleHandle<String, String, String> handleMock = mock(RssShuffleHandle.class);
     ShuffleDependency<String, String, String> dependencyMock = mock(ShuffleDependency.class);
@@ -94,62 +93,64 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     rssConf.set(RssClientConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, 1000);
     rssConf.set(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, "1000");
-    RssShuffleReader<String, String> rssShuffleReaderSpy = spy(new RssShuffleReader<>(
-        0,
-        1,
-        0,
-        Integer.MAX_VALUE,
-        contextMock,
-        handleMock,
-        basePath,
-        conf,
-        1,
-        partitionToExpectBlocks,
-        taskIdBitmap,
-        new ShuffleReadMetrics(),
-        rssConf,
-        ShuffleDataDistributionType.NORMAL
-    ));
+    RssShuffleReader<String, String> rssShuffleReaderSpy =
+        spy(
+            new RssShuffleReader<>(
+                0,
+                1,
+                0,
+                Integer.MAX_VALUE,
+                contextMock,
+                handleMock,
+                basePath,
+                conf,
+                1,
+                partitionToExpectBlocks,
+                taskIdBitmap,
+                new ShuffleReadMetrics(),
+                rssConf,
+                ShuffleDataDistributionType.NORMAL));
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
 
-    writeTestData(writeHandler1, 2, 4, expectedData,
-        blockIdBitmap1, "another_key", KRYO_SERIALIZER, 1);
+    writeTestData(
+        writeHandler1, 2, 4, expectedData, blockIdBitmap1, "another_key", KRYO_SERIALIZER, 1);
     partitionToExpectBlocks.put(1, blockIdBitmap1);
-    RssShuffleReader<String, String> rssShuffleReaderSpy1 = spy(new RssShuffleReader<>(
-        0,
-        2,
-        0,
-        Integer.MAX_VALUE,
-        contextMock,
-        handleMock,
-        basePath,
-        conf,
-        2,
-        partitionToExpectBlocks,
-        taskIdBitmap,
-        new ShuffleReadMetrics(),
-        rssConf,
-        ShuffleDataDistributionType.NORMAL
-    ));
+    RssShuffleReader<String, String> rssShuffleReaderSpy1 =
+        spy(
+            new RssShuffleReader<>(
+                0,
+                2,
+                0,
+                Integer.MAX_VALUE,
+                contextMock,
+                handleMock,
+                basePath,
+                conf,
+                2,
+                partitionToExpectBlocks,
+                taskIdBitmap,
+                new ShuffleReadMetrics(),
+                rssConf,
+                ShuffleDataDistributionType.NORMAL));
     validateResult(rssShuffleReaderSpy1.read(), expectedData, 18);
 
-    RssShuffleReader<String, String> rssShuffleReaderSpy2 = spy(new RssShuffleReader<>(
-        0,
-        2,
-        0,
-        Integer.MAX_VALUE,
-        contextMock,
-        handleMock,
-        basePath,
-        conf,
-        2,
-        partitionToExpectBlocks,
-        Roaring64NavigableMap.bitmapOf(),
-        new ShuffleReadMetrics(),
-        rssConf,
-        ShuffleDataDistributionType.NORMAL
-    ));
+    RssShuffleReader<String, String> rssShuffleReaderSpy2 =
+        spy(
+            new RssShuffleReader<>(
+                0,
+                2,
+                0,
+                Integer.MAX_VALUE,
+                contextMock,
+                handleMock,
+                basePath,
+                conf,
+                2,
+                partitionToExpectBlocks,
+                Roaring64NavigableMap.bitmapOf(),
+                new ShuffleReadMetrics(),
+                rssConf,
+                ShuffleDataDistributionType.NORMAL));
     validateResult(rssShuffleReaderSpy2.read(), Maps.newHashMap(), 0);
   }
-
 }

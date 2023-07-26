@@ -17,6 +17,7 @@
 
 package org.apache.tez.runtime.library.common.sort.buffer;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,16 +29,29 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.RawComparator;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.tez.common.RssTezUtils;
+import org.apache.tez.common.TezRuntimeFrameworkConfigs;
+import org.apache.tez.common.counters.TaskCounter;
+import org.apache.tez.common.counters.TezCounter;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.dag.records.TezVertexID;
+import org.apache.tez.runtime.api.OutputContext;
+import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
+import org.apache.tez.runtime.library.output.OutputTestHelpers;
+import org.apache.tez.runtime.library.output.RssOrderedPartitionedKVOutputTest;
+import org.apache.tez.runtime.library.partitioner.HashPartitioner;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
@@ -52,26 +66,27 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.storage.util.StorageType;
 
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WriteBufferManagerTest {
   @Test
-  public void testWriteException() throws IOException, InterruptedException {
-    TezTaskAttemptID tezTaskAttemptID = TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
-    long maxMemSize = 10240;
-    String appId = "application_1681717153064_3770270";
-    long taskAttemptId = 0;
-    Set<Long> successBlockIds = Sets.newConcurrentHashSet();
-    Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
+  public void testWriteException(@TempDir File tmpDir) throws IOException, InterruptedException {
+    TezTaskAttemptID tezTaskAttemptID =
+        TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
+    final long maxMemSize = 10240;
+    final String appId = "application_1681717153064_3770270";
+    final long taskAttemptId = 0;
+    final Set<Long> successBlockIds = Sets.newConcurrentHashSet();
+    final Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
     MockShuffleWriteClient writeClient = new MockShuffleWriteClient();
     RawComparator comparator = WritableComparator.get(BytesWritable.class);
     long maxSegmentSize = 3 * 1024;
     SerializationFactory serializationFactory = new SerializationFactory(new JobConf());
-    Serializer<BytesWritable> keySerializer =  serializationFactory.getSerializer(BytesWritable.class);
-    Serializer<BytesWritable> valSerializer = serializationFactory.getSerializer(BytesWritable.class);
+    Serializer<BytesWritable> keySerializer =
+        serializationFactory.getSerializer(BytesWritable.class);
+    Serializer<BytesWritable> valSerializer =
+        serializationFactory.getSerializer(BytesWritable.class);
     long maxBufferSize = 14 * 1024 * 1024;
     double memoryThreshold = 0.8f;
     double sendThreshold = 0.2f;
@@ -85,14 +100,50 @@ public class WriteBufferManagerTest {
     int bitmapSplitNum = 1;
     int shuffleId = getShuffleId(tezTaskAttemptID, 1, 2);
 
+    Configuration conf = new Configuration();
+    FileSystem localFs = FileSystem.getLocal(conf);
+    Path workingDir =
+        new Path(
+                System.getProperty(
+                    "test.build.data", System.getProperty("java.io.tmpdir", tmpDir.toString())),
+                RssOrderedPartitionedKVOutputTest.class.getName())
+            .makeQualified(localFs.getUri(), localFs.getWorkingDirectory());
+    conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS, Text.class.getName());
+    conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_VALUE_CLASS, Text.class.getName());
+    conf.set(
+        TezRuntimeConfiguration.TEZ_RUNTIME_PARTITIONER_CLASS, HashPartitioner.class.getName());
+    conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, workingDir.toString());
+    OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
+    TezCounter mapOutputByteCounter =
+        outputContext.getCounters().findCounter(TaskCounter.OUTPUT_BYTES);
+
     WriteBufferManager<BytesWritable, BytesWritable> bufferManager =
-        new WriteBufferManager(tezTaskAttemptID, maxMemSize, appId,
-        taskAttemptId, successBlockIds, failedBlockIds, writeClient,
-        comparator, maxSegmentSize, keySerializer,
-        valSerializer, maxBufferSize, memoryThreshold,
-        sendThreshold, batch, rssConf, partitionToServers,
-        numMaps, isMemoryShuffleEnabled(storageType),
-        sendCheckInterval, sendCheckTimeout, bitmapSplitNum, shuffleId, true);
+        new WriteBufferManager(
+            tezTaskAttemptID,
+            maxMemSize,
+            appId,
+            taskAttemptId,
+            successBlockIds,
+            failedBlockIds,
+            writeClient,
+            comparator,
+            maxSegmentSize,
+            keySerializer,
+            valSerializer,
+            maxBufferSize,
+            memoryThreshold,
+            sendThreshold,
+            batch,
+            rssConf,
+            partitionToServers,
+            numMaps,
+            isMemoryShuffleEnabled(storageType),
+            sendCheckInterval,
+            sendCheckTimeout,
+            bitmapSplitNum,
+            shuffleId,
+            true,
+            mapOutputByteCounter);
 
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
@@ -102,6 +153,8 @@ public class WriteBufferManagerTest {
       random.nextBytes(value);
       bufferManager.addRecord(1, new BytesWritable(key), new BytesWritable(value));
     }
+
+    assertEquals(1052000, mapOutputByteCounter.getValue());
 
     boolean isException = false;
     try {
@@ -113,20 +166,23 @@ public class WriteBufferManagerTest {
   }
 
   @Test
-  public void testWriteNormal() throws IOException, InterruptedException {
-    TezTaskAttemptID tezTaskAttemptID = TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
-    long maxMemSize = 10240;
-    String appId = "appattempt_1681717153064_3770270_000001";
-    long taskAttemptId = 0;
-    Set<Long> successBlockIds = Sets.newConcurrentHashSet();
-    Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
+  public void testWriteNormal(@TempDir File tmpDir) throws IOException, InterruptedException {
+    TezTaskAttemptID tezTaskAttemptID =
+        TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
+    final long maxMemSize = 10240;
+    final String appId = "appattempt_1681717153064_3770270_000001";
+    final long taskAttemptId = 0;
+    final Set<Long> successBlockIds = Sets.newConcurrentHashSet();
+    final Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
     MockShuffleWriteClient writeClient = new MockShuffleWriteClient();
     writeClient.setMode(2);
     RawComparator comparator = WritableComparator.get(BytesWritable.class);
     long maxSegmentSize = 3 * 1024;
     SerializationFactory serializationFactory = new SerializationFactory(new JobConf());
-    Serializer<BytesWritable> keySerializer =  serializationFactory.getSerializer(BytesWritable.class);
-    Serializer<BytesWritable> valSerializer = serializationFactory.getSerializer(BytesWritable.class);
+    Serializer<BytesWritable> keySerializer =
+        serializationFactory.getSerializer(BytesWritable.class);
+    Serializer<BytesWritable> valSerializer =
+        serializationFactory.getSerializer(BytesWritable.class);
     long maxBufferSize = 14 * 1024 * 1024;
     double memoryThreshold = 0.8f;
     double sendThreshold = 0.2f;
@@ -140,14 +196,50 @@ public class WriteBufferManagerTest {
     int bitmapSplitNum = 1;
     int shuffleId = getShuffleId(tezTaskAttemptID, 1, 2);
 
+    Configuration conf = new Configuration();
+    FileSystem localFs = FileSystem.getLocal(conf);
+    Path workingDir =
+        new Path(
+                System.getProperty(
+                    "test.build.data", System.getProperty("java.io.tmpdir", tmpDir.toString())),
+                RssOrderedPartitionedKVOutputTest.class.getName())
+            .makeQualified(localFs.getUri(), localFs.getWorkingDirectory());
+    conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS, Text.class.getName());
+    conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_VALUE_CLASS, Text.class.getName());
+    conf.set(
+        TezRuntimeConfiguration.TEZ_RUNTIME_PARTITIONER_CLASS, HashPartitioner.class.getName());
+    conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, workingDir.toString());
+    OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
+    TezCounter mapOutputByteCounter =
+        outputContext.getCounters().findCounter(TaskCounter.OUTPUT_BYTES);
+
     WriteBufferManager<BytesWritable, BytesWritable> bufferManager =
-        new WriteBufferManager(tezTaskAttemptID, maxMemSize, appId,
-        taskAttemptId, successBlockIds, failedBlockIds, writeClient,
-        comparator, maxSegmentSize, keySerializer,
-        valSerializer, maxBufferSize, memoryThreshold,
-        sendThreshold, batch, rssConf, partitionToServers,
-        numMaps, isMemoryShuffleEnabled(storageType),
-        sendCheckInterval, sendCheckTimeout, bitmapSplitNum, shuffleId, true);
+        new WriteBufferManager(
+            tezTaskAttemptID,
+            maxMemSize,
+            appId,
+            taskAttemptId,
+            successBlockIds,
+            failedBlockIds,
+            writeClient,
+            comparator,
+            maxSegmentSize,
+            keySerializer,
+            valSerializer,
+            maxBufferSize,
+            memoryThreshold,
+            sendThreshold,
+            batch,
+            rssConf,
+            partitionToServers,
+            numMaps,
+            isMemoryShuffleEnabled(storageType),
+            sendCheckInterval,
+            sendCheckTimeout,
+            bitmapSplitNum,
+            shuffleId,
+            true,
+            mapOutputByteCounter);
 
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
@@ -158,6 +250,8 @@ public class WriteBufferManagerTest {
       int partitionId = random.nextInt(50);
       bufferManager.addRecord(partitionId, new BytesWritable(key), new BytesWritable(value));
     }
+
+    assertEquals(1052000, mapOutputByteCounter.getValue());
     bufferManager.waitSendFinished();
     assertTrue(bufferManager.getWaitSendBuffers().isEmpty());
 
@@ -168,6 +262,8 @@ public class WriteBufferManagerTest {
       random.nextBytes(value);
       bufferManager.addRecord(i, new BytesWritable(key), new BytesWritable(value));
     }
+
+    assertEquals(1175900, mapOutputByteCounter.getValue());
     assert (1 == bufferManager.getWaitSendBuffers().size());
     assert (4928 == bufferManager.getWaitSendBuffers().get(0).getDataLength());
 
@@ -176,20 +272,24 @@ public class WriteBufferManagerTest {
   }
 
   @Test
-  public void testCommitBlocksWhenMemoryShuffleDisabled() throws IOException, InterruptedException {
-    TezTaskAttemptID tezTaskAttemptID = TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
-    long maxMemSize = 10240;
-    String appId = "application_1681717153064_3770270";
-    long taskAttemptId = 0;
-    Set<Long> successBlockIds = Sets.newConcurrentHashSet();
-    Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
+  public void testCommitBlocksWhenMemoryShuffleDisabled(@TempDir File tmpDir)
+      throws IOException, InterruptedException {
+    TezTaskAttemptID tezTaskAttemptID =
+        TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
+    final long maxMemSize = 10240;
+    final String appId = "application_1681717153064_3770270";
+    final long taskAttemptId = 0;
+    final Set<Long> successBlockIds = Sets.newConcurrentHashSet();
+    final Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
     MockShuffleWriteClient writeClient = new MockShuffleWriteClient();
     writeClient.setMode(3);
     RawComparator comparator = WritableComparator.get(BytesWritable.class);
     long maxSegmentSize = 3 * 1024;
     SerializationFactory serializationFactory = new SerializationFactory(new JobConf());
-    Serializer<BytesWritable> keySerializer =  serializationFactory.getSerializer(BytesWritable.class);
-    Serializer<BytesWritable> valSerializer = serializationFactory.getSerializer(BytesWritable.class);
+    Serializer<BytesWritable> keySerializer =
+        serializationFactory.getSerializer(BytesWritable.class);
+    Serializer<BytesWritable> valSerializer =
+        serializationFactory.getSerializer(BytesWritable.class);
     long maxBufferSize = 14 * 1024 * 1024;
     double memoryThreshold = 0.8f;
     double sendThreshold = 0.2f;
@@ -202,14 +302,50 @@ public class WriteBufferManagerTest {
     int bitmapSplitNum = 1;
     int shuffleId = getShuffleId(tezTaskAttemptID, 1, 2);
 
+    Configuration conf = new Configuration();
+    FileSystem localFs = FileSystem.getLocal(conf);
+    Path workingDir =
+        new Path(
+                System.getProperty(
+                    "test.build.data", System.getProperty("java.io.tmpdir", tmpDir.toString())),
+                RssOrderedPartitionedKVOutputTest.class.getName())
+            .makeQualified(localFs.getUri(), localFs.getWorkingDirectory());
+    conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS, Text.class.getName());
+    conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_VALUE_CLASS, Text.class.getName());
+    conf.set(
+        TezRuntimeConfiguration.TEZ_RUNTIME_PARTITIONER_CLASS, HashPartitioner.class.getName());
+    conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, workingDir.toString());
+    OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
+    TezCounter mapOutputByteCounter =
+        outputContext.getCounters().findCounter(TaskCounter.OUTPUT_BYTES);
+
     WriteBufferManager<BytesWritable, BytesWritable> bufferManager =
-        new WriteBufferManager(tezTaskAttemptID, maxMemSize, appId,
-        taskAttemptId, successBlockIds, failedBlockIds, writeClient,
-        comparator, maxSegmentSize, keySerializer,
-        valSerializer, maxBufferSize, memoryThreshold,
-        sendThreshold, batch, rssConf, partitionToServers,
-        numMaps, false,
-        sendCheckInterval, sendCheckTimeout, bitmapSplitNum, shuffleId, true);
+        new WriteBufferManager(
+            tezTaskAttemptID,
+            maxMemSize,
+            appId,
+            taskAttemptId,
+            successBlockIds,
+            failedBlockIds,
+            writeClient,
+            comparator,
+            maxSegmentSize,
+            keySerializer,
+            valSerializer,
+            maxBufferSize,
+            memoryThreshold,
+            sendThreshold,
+            batch,
+            rssConf,
+            partitionToServers,
+            numMaps,
+            false,
+            sendCheckInterval,
+            sendCheckTimeout,
+            bitmapSplitNum,
+            shuffleId,
+            true,
+            mapOutputByteCounter);
 
     Random random = new Random();
     for (int i = 0; i < 10000; i++) {
@@ -222,14 +358,17 @@ public class WriteBufferManagerTest {
     }
     bufferManager.waitSendFinished();
 
+    assertEquals(10520000, mapOutputByteCounter.getValue());
     assertTrue(bufferManager.getWaitSendBuffers().isEmpty());
-    assertEquals(writeClient.mockedShuffleServer.getFinishBlockSize(),
+    assertEquals(
+        writeClient.mockedShuffleServer.getFinishBlockSize(),
         writeClient.mockedShuffleServer.getFlushBlockSize());
   }
 
   private int getShuffleId(TezTaskAttemptID tezTaskAttemptID, int upVertexId, int downVertexId) {
     TezVertexID tezVertexID = tezTaskAttemptID.getTaskID().getVertexID();
-    int shuffleId = RssTezUtils.computeShuffleId(tezVertexID.getDAGId().getId(), upVertexId, downVertexId);
+    int shuffleId =
+        RssTezUtils.computeShuffleId(tezVertexID.getDAGId().getId(), upVertexId, downVertexId);
     return shuffleId;
   }
 
@@ -274,8 +413,10 @@ public class WriteBufferManagerTest {
     }
 
     @Override
-    public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList,
-                                                 Supplier<Boolean> needCancelRequest) {
+    public SendShuffleDataResult sendShuffleData(
+        String appId,
+        List<ShuffleBlockInfo> shuffleBlockInfoList,
+        Supplier<Boolean> needCancelRequest) {
       if (mode == 0) {
         throw new RssException("send data failed.");
       } else if (mode == 1) {
@@ -299,26 +440,24 @@ public class WriteBufferManagerTest {
     }
 
     @Override
-    public void sendAppHeartbeat(String appId, long timeoutMs) {
-
-    }
+    public void sendAppHeartbeat(String appId, long timeoutMs) {}
 
     @Override
-    public void registerApplicationInfo(String appId, long timeoutMs, String user) {
-
-    }
+    public void registerApplicationInfo(String appId, long timeoutMs, String user) {}
 
     @Override
-    public void registerShuffle(ShuffleServerInfo shuffleServerInfo, String appId, int shuffleId,
-                                List<PartitionRange> partitionRanges, RemoteStorageInfo remoteStorage,
-                                ShuffleDataDistributionType dataDistributionType,
-                                int maxConcurrencyPerPartitionToWrite) {
-
-    }
-
+    public void registerShuffle(
+        ShuffleServerInfo shuffleServerInfo,
+        String appId,
+        int shuffleId,
+        List<PartitionRange> partitionRanges,
+        RemoteStorageInfo remoteStorage,
+        ShuffleDataDistributionType dataDistributionType,
+        int maxConcurrencyPerPartitionToWrite) {}
 
     @Override
-    public boolean sendCommit(Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps) {
+    public boolean sendCommit(
+        Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps) {
       if (mode == 3) {
         committedMaps++;
         if (committedMaps >= numMaps) {
@@ -330,9 +469,7 @@ public class WriteBufferManagerTest {
     }
 
     @Override
-    public void registerCoordinators(String coordinators) {
-
-    }
+    public void registerCoordinators(String coordinators) {}
 
     @Override
     public Map<String, String> fetchClientConf(int timeoutMs) {
@@ -345,44 +482,57 @@ public class WriteBufferManagerTest {
     }
 
     @Override
-    public void reportShuffleResult(Map<Integer, List<ShuffleServerInfo>> partitionToServers,
-                                    String appId, int shuffleId, long taskAttemptId,
-                                    Map<Integer, List<Long>> partitionToBlockIds, int bitmapNum) {
+    public void reportShuffleResult(
+        Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+        String appId,
+        int shuffleId,
+        long taskAttemptId,
+        Map<Integer, List<Long>> partitionToBlockIds,
+        int bitmapNum) {
       if (mode == 3) {
         mockedShuffleServer.addFinishedBlockInfos(
-            partitionToBlockIds.values().stream().flatMap(it -> it.stream()).collect(Collectors.toList())
-        );
+            partitionToBlockIds.values().stream()
+                .flatMap(it -> it.stream())
+                .collect(Collectors.toList()));
       }
     }
 
     @Override
-    public ShuffleAssignmentsInfo getShuffleAssignments(String appId, int shuffleId,
-        int partitionNum, int partitionNumPerRange,
-        Set<String> requiredTags, int assignmentShuffleServerNumber, int estimateTaskConcurrency) {
+    public ShuffleAssignmentsInfo getShuffleAssignments(
+        String appId,
+        int shuffleId,
+        int partitionNum,
+        int partitionNumPerRange,
+        Set<String> requiredTags,
+        int assignmentShuffleServerNumber,
+        int estimateTaskConcurrency) {
       return null;
     }
 
     @Override
-    public Roaring64NavigableMap getShuffleResult(String clientType, Set<ShuffleServerInfo> shuffleServerInfoSet,
-        String appId, int shuffleId, int partitionId) {
+    public Roaring64NavigableMap getShuffleResult(
+        String clientType,
+        Set<ShuffleServerInfo> shuffleServerInfoSet,
+        String appId,
+        int shuffleId,
+        int partitionId) {
       return null;
     }
 
     @Override
-    public Roaring64NavigableMap getShuffleResultForMultiPart(String clientType, Map<ShuffleServerInfo,
-        Set<Integer>> serverToPartitions, String appId, int shuffleId) {
+    public Roaring64NavigableMap getShuffleResultForMultiPart(
+        String clientType,
+        Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
+        String appId,
+        int shuffleId,
+        Set<Integer> failedPartitions) {
       return null;
     }
 
     @Override
-    public void close() {
-
-    }
+    public void close() {}
 
     @Override
-    public void unregisterShuffle(String appId, int shuffleId) {
-
-    }
+    public void unregisterShuffle(String appId, int shuffleId) {}
   }
-
 }

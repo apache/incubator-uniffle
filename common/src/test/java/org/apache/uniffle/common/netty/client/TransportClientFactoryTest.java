@@ -47,13 +47,17 @@ public class TransportClientFactoryTest extends TransportClientTestBase {
     rssBaseConf.setInteger("rss.client.netty.client.connections.per.peer", 1);
     TransportConf transportConf = new TransportConf(rssBaseConf);
     TransportContext transportContext = new TransportContext(transportConf);
-    TransportClient transportClient1 = transportContext.createClientFactory()
-        .createClient("localhost", SERVER_PORT_RANGE_START, 1);
+    TransportClient transportClient1 =
+        transportContext
+            .createClientFactory()
+            .createClient("localhost", SERVER_PORT_RANGE_START, 1);
     assertTrue(transportClient1.isActive());
     transportClient1.close();
 
-    TransportClient transportClient2 = transportContext.createClientFactory()
-        .createClient("localhost", SERVER_PORT_RANGE_START, 1);
+    TransportClient transportClient2 =
+        transportContext
+            .createClientFactory()
+            .createClient("localhost", SERVER_PORT_RANGE_START, 1);
     assertNotEquals(transportClient1, transportClient2);
     assertTrue(transportClient2.isActive());
   }
@@ -64,8 +68,10 @@ public class TransportClientFactoryTest extends TransportClientTestBase {
     TransportConf transportConf = new TransportConf(rssBaseConf);
     TransportContext transportContext = new TransportContext(transportConf);
     TransportClientFactory transportClientFactory = transportContext.createClientFactory();
-    TransportClient client1 = transportClientFactory.createClient("localhost", SERVER_PORT_RANGE_START, 1);
-    TransportClient client2 = transportClientFactory.createClient("localhost", SERVER_PORT_RANGE_START, 1);
+    TransportClient client1 =
+        transportClientFactory.createClient("localhost", SERVER_PORT_RANGE_START, 1);
+    TransportClient client2 =
+        transportClientFactory.createClient("localhost", SERVER_PORT_RANGE_START, 1);
     assertEquals(client1, client2);
   }
 
@@ -76,8 +82,10 @@ public class TransportClientFactoryTest extends TransportClientTestBase {
     TransportConf transportConf = new TransportConf(rssBaseConf);
     TransportContext transportContext = new TransportContext(transportConf);
     TransportClientFactory transportClientFactory = transportContext.createClientFactory();
-    TransportClient client1 = transportClientFactory.createClient("localhost", SERVER_PORT_RANGE_START, 1);
-    TransportClient client2 = transportClientFactory.createClient("localhost", SERVER_PORT_RANGE_START, 2);
+    TransportClient client1 =
+        transportClientFactory.createClient("localhost", SERVER_PORT_RANGE_START, 1);
+    TransportClient client2 =
+        transportClientFactory.createClient("localhost", SERVER_PORT_RANGE_START, 2);
     assertEquals(client1, client2);
     transportClientFactory.close();
 
@@ -98,10 +106,11 @@ public class TransportClientFactoryTest extends TransportClientTestBase {
     TransportConf transportConf = new TransportConf(rssBaseConf);
     TransportContext transportContext = new TransportContext(transportConf);
     TransportClientFactory transportClientFactory = transportContext.createClientFactory();
-    TransportClient client1 = transportClientFactory.createClient("localhost", SERVER_PORT_RANGE_START, 1);
-    TransportClient client2 = transportClientFactory.createClient("localhost", SERVER_PORT_RANGE_START + 1, 1);
+    TransportClient client1 =
+        transportClientFactory.createClient("localhost", SERVER_PORT_RANGE_START, 1);
+    TransportClient client2 =
+        transportClientFactory.createClient("localhost", SERVER_PORT_RANGE_START + 1, 1);
     assertNotEquals(client1, client2);
     transportClientFactory.close();
   }
-
 }

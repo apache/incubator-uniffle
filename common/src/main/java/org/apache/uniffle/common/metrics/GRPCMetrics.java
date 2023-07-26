@@ -30,10 +30,14 @@ import org.apache.uniffle.common.util.JavaUtils;
 
 public abstract class GRPCMetrics {
   // Grpc server internal executor metrics
-  public static final String GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY = "grpcServerExecutorActiveThreads";
-  private static final String GRPC_SERVER_EXECUTOR_ACTIVE_THREADS = "grpc_server_executor_active_threads";
-  public static final String GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY = "grpcServerExecutorBlockingQueueSize";
-  private static final String GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE = "grpc_server_executor_blocking_queue_size";
+  public static final String GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY =
+      "grpcServerExecutorActiveThreads";
+  private static final String GRPC_SERVER_EXECUTOR_ACTIVE_THREADS =
+      "grpc_server_executor_active_threads";
+  public static final String GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY =
+      "grpcServerExecutorBlockingQueueSize";
+  private static final String GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE =
+      "grpc_server_executor_blocking_queue_size";
   public static final String GRPC_SERVER_CONNECTION_NUMBER_KEY = "grpcServerConnectionNumber";
   private static final String GRPC_SERVER_CONNECTION_NUMBER = "grpc_server_connection_number";
   private static final String GRPC_OPEN = "grpc_open";
@@ -69,15 +73,15 @@ public abstract class GRPCMetrics {
   private void registerGeneralMetrics() {
     gaugeGrpcOpen = metricsManager.addLabeledGauge(GRPC_OPEN);
     counterGrpcTotal = metricsManager.addLabeledCounter(GRPC_TOTAL);
-    gaugeMap.putIfAbsent(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY,
-        metricsManager.addLabeledGauge(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS)
-    );
-    gaugeMap.putIfAbsent(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY,
-        metricsManager.addLabeledGauge(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE)
-    );
-    gaugeMap.putIfAbsent(GRPC_SERVER_CONNECTION_NUMBER_KEY,
-        metricsManager.addLabeledGauge(GRPC_SERVER_CONNECTION_NUMBER)
-    );
+    gaugeMap.putIfAbsent(
+        GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY,
+        metricsManager.addLabeledGauge(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS));
+    gaugeMap.putIfAbsent(
+        GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY,
+        metricsManager.addLabeledGauge(GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE));
+    gaugeMap.putIfAbsent(
+        GRPC_SERVER_CONNECTION_NUMBER_KEY,
+        metricsManager.addLabeledGauge(GRPC_SERVER_CONNECTION_NUMBER));
   }
 
   public void setGauge(String tag, double value) {

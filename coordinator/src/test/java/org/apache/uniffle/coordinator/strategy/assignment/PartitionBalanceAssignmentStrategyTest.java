@@ -86,51 +86,70 @@ public class PartitionBalanceAssignmentStrategyTest {
     }
     assertTrue(isThrown);
     strategy.assign(100, 1, 1, tags, -1, -1);
-    List<Long> expect = Lists.newArrayList(20L, 20L, 20L, 20L, 20L, 0L, 0L, 0L, 0L,
-        0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
+    List<Long> expect =
+        Lists.newArrayList(
+            20L, 20L, 20L, 20L, 20L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
     valid(expect);
     strategy.assign(75, 1, 1, tags, -1, -1);
-    expect = Lists.newArrayList(20L, 20L, 20L, 20L, 20L, 15L, 15L, 15L, 15L,
-        15L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
+    expect =
+        Lists.newArrayList(
+            20L, 20L, 20L, 20L, 20L, 15L, 15L, 15L, 15L, 15L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L,
+            0L);
     valid(expect);
     strategy.assign(100, 1, 1, tags, -1, -1);
-    expect = Lists.newArrayList(20L, 20L, 20L, 20L, 20L, 15L, 15L, 15L, 15L,
-        15L, 20L, 20L, 20L, 20L, 20L, 0L, 0L, 0L, 0L, 0L);
+    expect =
+        Lists.newArrayList(
+            20L, 20L, 20L, 20L, 20L, 15L, 15L, 15L, 15L, 15L, 20L, 20L, 20L, 20L, 20L, 0L, 0L, 0L,
+            0L, 0L);
     valid(expect);
 
     Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
-    list = Lists.newArrayList(7L, 18L, 7L, 3L, 19L, 15L, 11L, 10L, 16L, 11L,
-        14L, 17L, 15L, 17L, 8L, 1L, 3L, 3L, 6L, 12L);
+    list =
+        Lists.newArrayList(
+            7L, 18L, 7L, 3L, 19L, 15L, 11L, 10L, 16L, 11L, 14L, 17L, 15L, 17L, 8L, 1L, 3L, 3L, 6L,
+            12L);
     updateServerResource(list);
     strategy.assign(100, 1, 1, tags, -1, -1);
-    expect = Lists.newArrayList(0L, 20L, 0L, 0L, 20L, 0L, 0L, 0L, 20L, 0L,
-        0L, 20L, 0L, 20L, 0L, 0L, 0L, 0L, 0L, 0L);
+    expect =
+        Lists.newArrayList(
+            0L, 20L, 0L, 0L, 20L, 0L, 0L, 0L, 20L, 0L, 0L, 20L, 0L, 20L, 0L, 0L, 0L, 0L, 0L, 0L);
     valid(expect);
     strategy.assign(50, 1, 1, tags, -1, -1);
-    expect = Lists.newArrayList(0L, 20L, 0L, 0L, 20L, 10L, 10L, 0L, 20L, 0L,
-        10L, 20L, 10L, 20L, 0L, 0L, 0L, 0L, 0L, 10L);
+    expect =
+        Lists.newArrayList(
+            0L, 20L, 0L, 0L, 20L, 10L, 10L, 0L, 20L, 0L, 10L, 20L, 10L, 20L, 0L, 0L, 0L, 0L, 0L,
+            10L);
     valid(expect);
 
     strategy.assign(75, 1, 1, tags, -1, -1);
-    expect = Lists.newArrayList(0L, 20L, 0L, 0L, 20L, 25L, 10L, 15L, 20L, 15L,
-        25L, 20L, 25L, 20L, 0L, 0L, 0L, 0L, 0L, 10L);
+    expect =
+        Lists.newArrayList(
+            0L, 20L, 0L, 0L, 20L, 25L, 10L, 15L, 20L, 15L, 25L, 20L, 25L, 20L, 0L, 0L, 0L, 0L, 0L,
+            10L);
     valid(expect);
 
     Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
-    list = Lists.newArrayList(7L, 18L, 7L, 3L, 19L, 15L, 11L, 10L, 16L, 11L,
-        14L, 17L, 15L, 17L, 8L, 1L, 3L, 3L, 6L, 12L);
+    list =
+        Lists.newArrayList(
+            7L, 18L, 7L, 3L, 19L, 15L, 11L, 10L, 16L, 11L, 14L, 17L, 15L, 17L, 8L, 1L, 3L, 3L, 6L,
+            12L);
     updateServerResource(list);
     strategy.assign(50, 1, 2, tags, -1, -1);
-    expect = Lists.newArrayList(0L, 20L, 0L, 0L, 20L, 0L, 0L, 0L, 20L, 0L,
-        0L, 20L, 0L, 20L, 0L, 0L, 0L, 0L, 0L, 0L);
+    expect =
+        Lists.newArrayList(
+            0L, 20L, 0L, 0L, 20L, 0L, 0L, 0L, 20L, 0L, 0L, 20L, 0L, 20L, 0L, 0L, 0L, 0L, 0L, 0L);
     valid(expect);
     strategy.assign(75, 1, 2, tags, -1, -1);
-    expect = Lists.newArrayList(0L, 20L, 0L, 0L, 50L, 30L, 0L, 0L, 20L, 0L,
-        30L, 20L, 30L, 20L, 0L, 0L, 0L, 0L, 0L, 30L);
+    expect =
+        Lists.newArrayList(
+            0L, 20L, 0L, 0L, 50L, 30L, 0L, 0L, 20L, 0L, 30L, 20L, 30L, 20L, 0L, 0L, 0L, 0L, 0L,
+            30L);
     valid(expect);
     strategy.assign(33, 1, 2, tags, -1, -1);
-    expect = Lists.newArrayList(0L, 33L, 0L, 0L, 50L, 30L, 14L, 13L, 20L, 13L,
-        30L, 20L, 30L, 20L, 13L, 0L, 0L, 0L, 0L, 30L);
+    expect =
+        Lists.newArrayList(
+            0L, 33L, 0L, 0L, 50L, 30L, 14L, 13L, 20L, 13L, 30L, 20L, 30L, 20L, 13L, 0L, 0L, 0L, 0L,
+            30L);
     valid(expect);
 
     list = Lists.newArrayList();
@@ -145,20 +164,24 @@ public class PartitionBalanceAssignmentStrategyTest {
     Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
     updateServerResource(list);
     strategy.assign(33, 1, 1, tags, -1, -1);
-    expect = Lists.newArrayList(0L, 7L, 0L, 7L, 0L, 7L, 0L, 6L, 0L, 6L, 0L, 0L,
-        0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
+    expect =
+        Lists.newArrayList(
+            0L, 7L, 0L, 7L, 0L, 7L, 0L, 6L, 0L, 6L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
     valid(expect);
     strategy.assign(41, 1, 2, tags, -1, -1);
-    expect = Lists.newArrayList(0L, 7L, 0L, 7L, 0L, 7L, 0L, 6L, 0L, 6L, 0L, 17L,
-        0L, 17L, 0L, 16L, 0L, 16L, 0L, 16L);
+    expect =
+        Lists.newArrayList(
+            0L, 7L, 0L, 7L, 0L, 7L, 0L, 6L, 0L, 6L, 0L, 17L, 0L, 17L, 0L, 16L, 0L, 16L, 0L, 16L);
     valid(expect);
     strategy.assign(23, 1, 1, tags, -1, -1);
-    expect = Lists.newArrayList(5L, 7L, 5L, 7L, 5L, 7L, 4L, 6L, 4L, 6L, 0L, 17L,
-        0L, 17L, 0L, 16L, 0L, 16L, 0L, 16L);
+    expect =
+        Lists.newArrayList(
+            5L, 7L, 5L, 7L, 5L, 7L, 4L, 6L, 4L, 6L, 0L, 17L, 0L, 17L, 0L, 16L, 0L, 16L, 0L, 16L);
     valid(expect);
     strategy.assign(11, 1, 3, tags, -1, -1);
-    expect = Lists.newArrayList(5L, 7L, 5L, 7L, 5L, 7L, 4L, 13L, 4L, 13L, 7L, 17L,
-        6L, 17L, 6L, 16L, 0L, 16L, 0L, 16L);
+    expect =
+        Lists.newArrayList(
+            5L, 7L, 5L, 7L, 5L, 7L, 4L, 13L, 4L, 13L, 7L, 17L, 6L, 17L, 6L, 16L, 0L, 16L, 0L, 16L);
     valid(expect);
   }
 
@@ -166,14 +189,16 @@ public class PartitionBalanceAssignmentStrategyTest {
     assertEquals(20, expect.size());
     int i = 0;
     List<ServerNode> list = clusterManager.getServerList(tags);
-    list.sort(new Comparator<ServerNode>() {
-      @Override
-      public int compare(ServerNode o1, ServerNode o2) {
-        return o1.getId().compareTo(o2.getId());
-      }
-    });
+    list.sort(
+        new Comparator<ServerNode>() {
+          @Override
+          public int compare(ServerNode o1, ServerNode o2) {
+            return o1.getId().compareTo(o2.getId());
+          }
+        });
     for (ServerNode node : list) {
-      assertEquals(expect.get(i).intValue(), strategy.getServerToPartitions().get(node).getPartitionNum());
+      assertEquals(
+          expect.get(i).intValue(), strategy.getServerToPartitions().get(node).getPartitionNum());
       i++;
     }
   }
@@ -186,15 +211,16 @@ public class PartitionBalanceAssignmentStrategyTest {
 
   void updateServerResource(List<Long> resources) {
     for (int i = 0; i < 20; i++) {
-      ServerNode node = new ServerNode(
-          String.valueOf((char)('a' + i)),
-          "127.0.0." + i,
-          0,
-          10L,
-          5L,
-          resources.get(i),
-          5,
-          tags);
+      ServerNode node =
+          new ServerNode(
+              String.valueOf((char) ('a' + i)),
+              "127.0.0." + i,
+              0,
+              10L,
+              5L,
+              resources.get(i),
+              5,
+              tags);
       clusterManager.add(node);
     }
   }
@@ -204,97 +230,80 @@ public class PartitionBalanceAssignmentStrategyTest {
     Set<String> serverTags = Sets.newHashSet("tag-1");
 
     for (int i = 0; i < 20; ++i) {
-      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags));
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0, 20 - i, 0, serverTags));
     }
 
     /**
-     * case1: user specify the illegal shuffle node num(<0)
-     * it will use the default shuffle nodes num when having enough servers.
+     * case1: user specify the illegal shuffle node num(<0) it will use the default shuffle nodes
+     * num when having enough servers.
      */
     PartitionRangeAssignment pra = strategy.assign(100, 1, 1, serverTags, -1, -1);
     assertEquals(
         shuffleNodesMax,
-        pra.getAssignments()
-            .values()
-            .stream()
+        pra.getAssignments().values().stream()
             .flatMap(Collection::stream)
             .collect(Collectors.toSet())
-            .size()
-    );
+            .size());
 
     /**
-     * case2: user specify the illegal shuffle node num(==0)
-     * it will use the default shuffle nodes num when having enough servers.
+     * case2: user specify the illegal shuffle node num(==0) it will use the default shuffle nodes
+     * num when having enough servers.
      */
     pra = strategy.assign(100, 1, 1, serverTags, 0, -1);
     assertEquals(
         shuffleNodesMax,
-        pra.getAssignments()
-            .values()
-            .stream()
+        pra.getAssignments().values().stream()
             .flatMap(Collection::stream)
             .collect(Collectors.toSet())
-            .size()
-    );
+            .size());
 
     /**
-     * case3: user specify the illegal shuffle node num(>default max limitation)
-     * it will use the default shuffle nodes num when having enough servers
+     * case3: user specify the illegal shuffle node num(>default max limitation) it will use the
+     * default shuffle nodes num when having enough servers
      */
     pra = strategy.assign(100, 1, 1, serverTags, shuffleNodesMax + 10, -1);
     assertEquals(
         shuffleNodesMax,
-        pra.getAssignments()
-            .values()
-            .stream()
+        pra.getAssignments().values().stream()
             .flatMap(Collection::stream)
             .collect(Collectors.toSet())
-            .size()
-    );
+            .size());
 
     /**
-     * case4: user specify the legal shuffle node num,
-     * it will use the customized shuffle nodes num when having enough servers
+     * case4: user specify the legal shuffle node num, it will use the customized shuffle nodes num
+     * when having enough servers
      */
     pra = strategy.assign(100, 1, 1, serverTags, shuffleNodesMax - 1, -1);
     assertEquals(
         shuffleNodesMax - 1,
-        pra.getAssignments()
-            .values()
-            .stream()
+        pra.getAssignments().values().stream()
             .flatMap(Collection::stream)
             .collect(Collectors.toSet())
-            .size()
-    );
+            .size());
 
     /**
-     * case5: user specify the legal shuffle node num, but cluster don't have enough servers,
-     * it will return the remaining servers.
+     * case5: user specify the legal shuffle node num, but cluster don't have enough servers, it
+     * will return the remaining servers.
      */
     serverTags = Sets.newHashSet("tag-2");
     for (int i = 0; i < shuffleNodesMax - 1; ++i) {
-      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags));
+      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 0, 0, 0, 20 - i, 0, serverTags));
     }
     pra = strategy.assign(100, 1, 1, serverTags, shuffleNodesMax, -1);
     assertEquals(
         shuffleNodesMax - 1,
-        pra.getAssignments()
-            .values()
-            .stream()
+        pra.getAssignments().values().stream()
             .flatMap(Collection::stream)
             .collect(Collectors.toSet())
-            .size()
-    );
+            .size());
   }
-
 
   @Test
   public void testAssignmentWithMustDiff() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
-    ssc.set(CoordinatorConf.COORDINATOR_ASSIGNMENT_HOST_STRATEGY,
+    ssc.set(
+        CoordinatorConf.COORDINATOR_ASSIGNMENT_HOST_STRATEGY,
         AbstractAssignmentStrategy.HostAssignmentStrategyName.MUST_DIFF);
     SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
     AssignmentStrategy strategy = new PartitionBalanceAssignmentStrategy(clusterManager, ssc);
@@ -302,134 +311,152 @@ public class PartitionBalanceAssignmentStrategyTest {
     Set<String> serverTags = Sets.newHashSet("tag-1");
 
     for (int i = 0; i < 5; ++i) {
-      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags));
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0, 20 - i, 0, serverTags));
     }
     for (int i = 0; i < 5; ++i) {
-      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0,
-          20 - i, 0, serverTags));
+      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0, 20 - i, 0, serverTags));
     }
     PartitionRangeAssignment pra = strategy.assign(100, 1, 5, serverTags, -1, -1);
-    pra.getAssignments().values().forEach((nodeList) -> {
-      Map<String, ServerNode> nodeMap = new HashMap<>();
-      nodeList.forEach((node) -> {
-        ServerNode serverNode = nodeMap.get(node.getIp());
-        assertNull(serverNode);
-        nodeMap.put(node.getIp(), node);
-      });
-    });
+    pra.getAssignments()
+        .values()
+        .forEach(
+            (nodeList) -> {
+              Map<String, ServerNode> nodeMap = new HashMap<>();
+              nodeList.forEach(
+                  (node) -> {
+                    ServerNode serverNode = nodeMap.get(node.getIp());
+                    assertNull(serverNode);
+                    nodeMap.put(node.getIp(), node);
+                  });
+            });
 
     pra = strategy.assign(100, 1, 6, serverTags, -1, -1);
-    pra.getAssignments().values().forEach((nodeList) -> {
-      Map<String, ServerNode> nodeMap = new HashMap<>();
-      boolean hasSameHost = false;
-      for (ServerNode node : nodeList) {
-        ServerNode serverNode = nodeMap.get(node.getIp());
-        if (serverNode != null) {
-          hasSameHost = true;
-          break;
-        }
-        assertNull(serverNode);
-        nodeMap.put(node.getIp(), node);
-      }
-      assertTrue(hasSameHost);
-    });
+    pra.getAssignments()
+        .values()
+        .forEach(
+            (nodeList) -> {
+              Map<String, ServerNode> nodeMap = new HashMap<>();
+              boolean hasSameHost = false;
+              for (ServerNode node : nodeList) {
+                ServerNode serverNode = nodeMap.get(node.getIp());
+                if (serverNode != null) {
+                  hasSameHost = true;
+                  break;
+                }
+                assertNull(serverNode);
+                nodeMap.put(node.getIp(), node);
+              }
+              assertTrue(hasSameHost);
+            });
   }
 
   @Test
   public void testAssignmentWithPreferDiff() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
-    ssc.set(CoordinatorConf.COORDINATOR_ASSIGNMENT_HOST_STRATEGY,
+    ssc.set(
+        CoordinatorConf.COORDINATOR_ASSIGNMENT_HOST_STRATEGY,
         AbstractAssignmentStrategy.HostAssignmentStrategyName.PREFER_DIFF);
     SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
     AssignmentStrategy strategy = new PartitionBalanceAssignmentStrategy(clusterManager, ssc);
     Set<String> serverTags = Sets.newHashSet("tag-1");
 
     for (int i = 0; i < 3; ++i) {
-      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags));
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0, 20 - i, 0, serverTags));
     }
     for (int i = 0; i < 2; ++i) {
-      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0,
-          20 - i, 0, serverTags));
+      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0, 20 - i, 0, serverTags));
     }
     PartitionRangeAssignment pra = strategy.assign(100, 1, 5, serverTags, -1, -1);
-    pra.getAssignments().values().forEach((nodeList) -> {
-      assertEquals(5, nodeList.size());
-    });
+    pra.getAssignments()
+        .values()
+        .forEach(
+            (nodeList) -> {
+              assertEquals(5, nodeList.size());
+            });
 
     ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, 3);
     clusterManager = new SimpleClusterManager(ssc, new Configuration());
     for (int i = 0; i < 3; ++i) {
-      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags));
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0, 20 - i, 0, serverTags));
     }
     for (int i = 0; i < 2; ++i) {
-      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0,
-          20 - i, 0, serverTags));
+      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0, 20 - i, 0, serverTags));
     }
     strategy = new PartitionBalanceAssignmentStrategy(clusterManager, ssc);
     pra = strategy.assign(100, 1, 3, serverTags, -1, -1);
-    pra.getAssignments().values().forEach((nodeList) -> {
-      Map<String, ServerNode> nodeMap = new HashMap<>();
-      nodeList.forEach((node) -> {
-        ServerNode serverNode = nodeMap.get(node.getIp());
-        assertNull(serverNode);
-        nodeMap.put(node.getIp(), node);
-      });
-    });
+    pra.getAssignments()
+        .values()
+        .forEach(
+            (nodeList) -> {
+              Map<String, ServerNode> nodeMap = new HashMap<>();
+              nodeList.forEach(
+                  (node) -> {
+                    ServerNode serverNode = nodeMap.get(node.getIp());
+                    assertNull(serverNode);
+                    nodeMap.put(node.getIp(), node);
+                  });
+            });
   }
 
   @Test
   public void testAssignmentWithNone() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
-    ssc.set(CoordinatorConf.COORDINATOR_ASSIGNMENT_HOST_STRATEGY,
+    ssc.set(
+        CoordinatorConf.COORDINATOR_ASSIGNMENT_HOST_STRATEGY,
         AbstractAssignmentStrategy.HostAssignmentStrategyName.NONE);
     SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration());
     AssignmentStrategy strategy = new PartitionBalanceAssignmentStrategy(clusterManager, ssc);
     Set<String> serverTags = Sets.newHashSet("tag-1");
 
     for (int i = 0; i < 3; ++i) {
-      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0,
-          20 - i, 0, serverTags));
+      clusterManager.add(new ServerNode("t1-" + i, "127.0.0." + i, 0, 0, 0, 20 - i, 0, serverTags));
     }
     for (int i = 0; i < 2; ++i) {
-      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0,
-          20 - i, 0, serverTags));
+      clusterManager.add(new ServerNode("t2-" + i, "127.0.0." + i, 1, 0, 0, 20 - i, 0, serverTags));
     }
     PartitionRangeAssignment pra = strategy.assign(100, 1, 5, serverTags, -1, -1);
-    pra.getAssignments().values().forEach((nodeList) -> {
-      assertEquals(5, nodeList.size());
-    });
+    pra.getAssignments()
+        .values()
+        .forEach(
+            (nodeList) -> {
+              assertEquals(5, nodeList.size());
+            });
   }
 
   @Test
   public void testWithContinuousSelectPartitionStrategy() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
-    ssc.set(CoordinatorConf.COORDINATOR_SELECT_PARTITION_STRATEGY,
+    ssc.set(
+        CoordinatorConf.COORDINATOR_SELECT_PARTITION_STRATEGY,
         AbstractAssignmentStrategy.SelectPartitionStrategyName.CONTINUOUS);
     ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
     clusterManager = new SimpleClusterManager(ssc, new Configuration());
     strategy = new PartitionBalanceAssignmentStrategy(clusterManager, ssc);
-    List<Long> list = Lists.newArrayList(20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L,
-        20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L);
+    List<Long> list =
+        Lists.newArrayList(
+            20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L, 20L,
+            20L, 20L, 20L);
     updateServerResource(list);
     strategy.assign(100, 1, 2, tags, 5, 20);
-    List<Long> expect = Lists.newArrayList(40L, 40L, 40L, 40L, 40L, 0L, 0L, 0L, 0L, 0L,
-        0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
+    List<Long> expect =
+        Lists.newArrayList(
+            40L, 40L, 40L, 40L, 40L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
     valid(expect);
 
     strategy.assign(28, 1, 2, tags, 5, 20);
-    expect = Lists.newArrayList(40L, 40L, 40L, 40L, 40L, 11L, 12L, 12L, 11L, 10L,
-        0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
+    expect =
+        Lists.newArrayList(
+            40L, 40L, 40L, 40L, 40L, 11L, 12L, 12L, 11L, 10L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L,
+            0L);
     valid(expect);
 
     strategy.assign(29, 1, 2, tags, 5, 4);
-    expect = Lists.newArrayList(40L, 40L, 40L, 40L, 40L, 11L, 12L, 12L, 11L, 10L,
-        11L, 12L, 12L, 12L, 11L, 0L, 0L, 0L, 0L, 0L);
+    expect =
+        Lists.newArrayList(
+            40L, 40L, 40L, 40L, 40L, 11L, 12L, 12L, 11L, 10L, 11L, 12L, 12L, 12L, 11L, 0L, 0L, 0L,
+            0L, 0L);
     valid(expect);
   }
-
 }

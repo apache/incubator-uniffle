@@ -54,7 +54,7 @@ public class TezCartesianProductTest extends TezIntegrationTestBase {
     outputStream2.close();
     outputStream3.close();
   }
-  
+
   @Override
   public Tool getTestTool() {
     return new CartesianProduct();
@@ -62,7 +62,9 @@ public class TezCartesianProductTest extends TezIntegrationTestBase {
 
   @Override
   public String[] getTestArgs(String uniqueOutputName) {
-    return new String[] {"-partitioned", inputPath1, inputPath2, inputPath3, outputPath + "/" + uniqueOutputName};
+    return new String[] {
+      "-partitioned", inputPath1, inputPath2, inputPath3, outputPath + "/" + uniqueOutputName
+    };
   }
 
   @Override

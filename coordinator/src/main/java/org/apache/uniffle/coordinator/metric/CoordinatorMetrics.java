@@ -90,9 +90,9 @@ public class CoordinatorMetrics {
   public static void addDynamicGaugeForRemoteStorage(String storageHost) {
     if (!StringUtils.isEmpty(storageHost)) {
       if (!GAUGE_USED_REMOTE_STORAGE.containsKey(storageHost)) {
-        String metricName = REMOTE_STORAGE_IN_USED_PREFIX + RssUtils.getMetricNameForHostName(storageHost);
-        GAUGE_USED_REMOTE_STORAGE.putIfAbsent(storageHost,
-            metricsManager.addGauge(metricName));
+        String metricName =
+            REMOTE_STORAGE_IN_USED_PREFIX + RssUtils.getMetricNameForHostName(storageHost);
+        GAUGE_USED_REMOTE_STORAGE.putIfAbsent(storageHost, metricsManager.addGauge(metricName));
       }
     }
   }
@@ -111,7 +111,8 @@ public class CoordinatorMetrics {
     gaugeRunningAppNumToUser = metricsManager.addGauge(APP_NUM_TO_USER, USER_LABEL);
     counterTotalAppNum = metricsManager.addCounter(TOTAL_APP_NUM);
     counterTotalAccessRequest = metricsManager.addCounter(TOTAL_ACCESS_REQUEST);
-    counterTotalCandidatesDeniedRequest = metricsManager.addCounter(TOTAL_CANDIDATES_DENIED_REQUEST);
+    counterTotalCandidatesDeniedRequest =
+        metricsManager.addCounter(TOTAL_CANDIDATES_DENIED_REQUEST);
     counterTotalQuotaDeniedRequest = metricsManager.addCounter(TOTAL_QUOTA_DENIED_REQUEST);
     counterTotalLoadDeniedRequest = metricsManager.addCounter(TOTAL_LOAD_DENIED_REQUEST);
   }

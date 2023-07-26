@@ -22,6 +22,8 @@ import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+import org.apache.uniffle.common.util.ByteBufUtils;
+
 public class ShuffleBlockInfo {
 
   private int partitionId;
@@ -35,16 +37,41 @@ public class ShuffleBlockInfo {
   private int uncompressLength;
   private long freeMemory;
 
-  public ShuffleBlockInfo(int shuffleId, int partitionId, long blockId, int length, long crc,
-      byte[] data, List<ShuffleServerInfo> shuffleServerInfos,
-      int uncompressLength, long freeMemory, long taskAttemptId) {
-    this(shuffleId, partitionId, blockId, length, crc, Unpooled.wrappedBuffer(data),
-        shuffleServerInfos, uncompressLength, freeMemory, taskAttemptId);
+  public ShuffleBlockInfo(
+      int shuffleId,
+      int partitionId,
+      long blockId,
+      int length,
+      long crc,
+      byte[] data,
+      List<ShuffleServerInfo> shuffleServerInfos,
+      int uncompressLength,
+      long freeMemory,
+      long taskAttemptId) {
+    this(
+        shuffleId,
+        partitionId,
+        blockId,
+        length,
+        crc,
+        Unpooled.wrappedBuffer(data),
+        shuffleServerInfos,
+        uncompressLength,
+        freeMemory,
+        taskAttemptId);
   }
 
-  public ShuffleBlockInfo(int shuffleId, int partitionId, long blockId, int length, long crc,
-      ByteBuf data, List<ShuffleServerInfo> shuffleServerInfos,
-      int uncompressLength, long freeMemory, long taskAttemptId) {
+  public ShuffleBlockInfo(
+      int shuffleId,
+      int partitionId,
+      long blockId,
+      int length,
+      long crc,
+      ByteBuf data,
+      List<ShuffleServerInfo> shuffleServerInfos,
+      int uncompressLength,
+      long freeMemory,
+      long taskAttemptId) {
     this.partitionId = partitionId;
     this.blockId = blockId;
     this.length = length;
@@ -124,5 +151,9 @@ public class ShuffleBlockInfo {
     }
 
     return sb.toString();
+  }
+
+  public synchronized void copyDataTo(ByteBuf to) {
+    ByteBufUtils.copyByteBuf(data, to);
   }
 }

@@ -56,6 +56,8 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 
+import static org.apache.uniffle.common.util.Constants.DRIVER_HOST;
+
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleReader.class);
   private final Map<Integer, List<ShuffleServerInfo>> partitionToShuffleServers;
@@ -127,10 +129,17 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
     if (shuffleDependency.aggregator().isDefined()) {
       if (shuffleDependency.mapSideCombine()) {
-        aggrIter = shuffleDependency.aggregator().get().combineCombinersByKey(
-            rssShuffleDataIterator, context);
+        aggrIter =
+            shuffleDependency
+                .aggregator()
+                .get()
+                .combineCombinersByKey(rssShuffleDataIterator, context);
       } else {
-        aggrIter = shuffleDependency.aggregator().get().combineValuesByKey(rssShuffleDataIterator, context);
+        aggrIter =
+            shuffleDependency
+                .aggregator()
+                .get()
+                .combineValuesByKey(rssShuffleDataIterator, context);
       }
     } else {
       aggrIter = rssShuffleDataIterator;
@@ -138,28 +147,33 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
     if (shuffleDependency.keyOrdering().isDefined()) {
       // Create an ExternalSorter to sort the data
-      ExternalSorter<K, C, C> sorter = new ExternalSorter<>(context, Option.empty(), Option.empty(),
-          shuffleDependency.keyOrdering(), serializer);
+      ExternalSorter<K, C, C> sorter =
+          new ExternalSorter<>(
+              context, Option.empty(), Option.empty(), shuffleDependency.keyOrdering(), serializer);
       LOG.info("Inserting aggregated records to sorter");
       long startTime = System.currentTimeMillis();
       sorter.insertAll(aggrIter);
-      LOG.info("Inserted aggregated records to sorter: millis:" + (System.currentTimeMillis() - startTime));
+      LOG.info(
+          "Inserted aggregated records to sorter: millis:"
+              + (System.currentTimeMillis() - startTime));
       context.taskMetrics().incMemoryBytesSpilled(sorter.memoryBytesSpilled());
       context.taskMetrics().incPeakExecutionMemory(sorter.peakMemoryUsedBytes());
       context.taskMetrics().incDiskBytesSpilled(sorter.diskBytesSpilled());
-      Function0<BoxedUnit> fn0 = new AbstractFunction0<BoxedUnit>() {
-        @Override
-        public BoxedUnit apply() {
-          sorter.stop();
-          return BoxedUnit.UNIT;
-        }
-      };
-      Function1<TaskContext, Void> fn1 = new AbstractFunction1<TaskContext, Void>() {
-        public Void apply(TaskContext context) {
-          sorter.stop();
-          return null;
-        }
-      };
+      Function0<BoxedUnit> fn0 =
+          new AbstractFunction0<BoxedUnit>() {
+            @Override
+            public BoxedUnit apply() {
+              sorter.stop();
+              return BoxedUnit.UNIT;
+            }
+          };
+      Function1<TaskContext, Void> fn1 =
+          new AbstractFunction1<TaskContext, Void>() {
+            public Void apply(TaskContext context) {
+              sorter.stop();
+              return null;
+            }
+          };
       context.addTaskCompletionListener(fn1);
       resultIter = CompletionIterator$.MODULE$.apply(sorter.iterator(), fn0);
     } else {
@@ -172,28 +186,38 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     // resubmit stage and shuffle manager server port are both set
     if (rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
         && rssConf.getInteger(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT, 0) > 0) {
-      String driver = rssConf.getString("driver.host", "");
+      String driver = rssConf.getString(DRIVER_HOST, "");
       int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
-      resultIter = RssFetchFailedIterator.newBuilder()
-          .appId(appId)
-          .shuffleId(shuffleId)
-          .partitionId(startPartition)
-          .stageAttemptId(context.stageAttemptNumber())
-          .reportServerHost(driver)
-          .port(port)
-          .build(resultIter);
+      resultIter =
+          RssFetchFailedIterator.newBuilder()
+              .appId(appId)
+              .shuffleId(shuffleId)
+              .partitionId(startPartition)
+              .stageAttemptId(context.stageAttemptNumber())
+              .reportServerHost(driver)
+              .port(port)
+              .build(resultIter);
     }
     return resultIter;
   }
 
   private String getReadInfo() {
-    return "appId=" + appId
-        + ", shuffleId=" + shuffleId
-        + ",taskId=" + taskId
-        + ", partitions: [" + startPartition
-        + ", " + endPartition + ")"
-        + ", maps: [" + mapStartIndex
-        + ", " + mapEndIndex + ")";
+    return "appId="
+        + appId
+        + ", shuffleId="
+        + shuffleId
+        + ",taskId="
+        + taskId
+        + ", partitions: ["
+        + startPartition
+        + ", "
+        + endPartition
+        + ")"
+        + ", maps: ["
+        + mapStartIndex
+        + ", "
+        + mapEndIndex
+        + ")";
   }
 
   @VisibleForTesting
@@ -203,10 +227,11 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
   class MultiPartitionIterator<K, C> extends AbstractIterator<Product2<K, C>> {
     java.util.Iterator<CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>>> iterator;
-    CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>>  dataIterator;
+    CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>> dataIterator;
 
     MultiPartitionIterator() {
-      List<CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>>> iterators = Lists.newArrayList();
+      List<CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>>> iterators =
+          Lists.newArrayList();
       if (numMaps <= 0) {
         return;
       }
@@ -218,21 +243,36 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         List<ShuffleServerInfo> shuffleServerInfoList = partitionToShuffleServers.get(partition);
         // This mechanism of expectedTaskIdsBitmap filter is to filter out the most of data.
         // especially for AQE skew optimization
-        boolean expectedTaskIdsBitmapFilterEnable = !(mapStartIndex == 0 && mapEndIndex == Integer.MAX_VALUE)
-            || shuffleServerInfoList.size() > 1;
-        CreateShuffleReadClientRequest request = new CreateShuffleReadClientRequest(
-            appId, shuffleId, partition, basePath, 1, partitionNum,
-            partitionToExpectBlocks.get(partition), taskIdBitmap, shuffleServerInfoList, hadoopConf,
-            dataDistributionType, expectedTaskIdsBitmapFilterEnable, rssConf);
-        ShuffleReadClient shuffleReadClient = ShuffleClientFactory.getInstance().createShuffleReadClient(request);
-        RssShuffleDataIterator<K, C> iterator = new RssShuffleDataIterator<>(
-            shuffleDependency.serializer(), shuffleReadClient,
-            readMetrics, rssConf);
+        boolean expectedTaskIdsBitmapFilterEnable =
+            !(mapStartIndex == 0 && mapEndIndex == Integer.MAX_VALUE)
+                || shuffleServerInfoList.size() > 1;
+        CreateShuffleReadClientRequest request =
+            new CreateShuffleReadClientRequest(
+                appId,
+                shuffleId,
+                partition,
+                basePath,
+                1,
+                partitionNum,
+                partitionToExpectBlocks.get(partition),
+                taskIdBitmap,
+                shuffleServerInfoList,
+                hadoopConf,
+                dataDistributionType,
+                expectedTaskIdsBitmapFilterEnable,
+                rssConf);
+        ShuffleReadClient shuffleReadClient =
+            ShuffleClientFactory.getInstance().createShuffleReadClient(request);
+        RssShuffleDataIterator<K, C> iterator =
+            new RssShuffleDataIterator<>(
+                shuffleDependency.serializer(), shuffleReadClient, readMetrics, rssConf);
         CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>> completionIterator =
-            CompletionIterator$.MODULE$.apply(iterator, () -> {
-              context.taskMetrics().mergeShuffleReadMetrics();
-              return iterator.cleanup();
-            });
+            CompletionIterator$.MODULE$.apply(
+                iterator,
+                () -> {
+                  context.taskMetrics().mergeShuffleReadMetrics();
+                  return iterator.cleanup();
+                });
         iterators.add(completionIterator);
       }
       iterator = iterators.iterator();
@@ -240,12 +280,13 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         dataIterator = iterator.next();
         iterator.remove();
       }
-      context.addTaskCompletionListener((taskContext) -> {
-        if (dataIterator != null) {
-          dataIterator.completion();
-        }
-        iterator.forEachRemaining(CompletionIterator::completion);
-      });
+      context.addTaskCompletionListener(
+          (taskContext) -> {
+            if (dataIterator != null) {
+              dataIterator.completion();
+            }
+            iterator.forEachRemaining(CompletionIterator::completion);
+          });
     }
 
     @Override
@@ -269,5 +310,4 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       return result;
     }
   }
-
 }

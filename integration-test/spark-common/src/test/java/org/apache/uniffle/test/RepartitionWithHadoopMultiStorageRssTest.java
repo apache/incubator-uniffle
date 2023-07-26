@@ -36,7 +36,8 @@ import org.apache.uniffle.storage.util.StorageType;
 
 public class RepartitionWithHadoopMultiStorageRssTest extends RepartitionTest {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RepartitionWithHadoopMultiStorageRssTest.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(RepartitionWithHadoopMultiStorageRssTest.class);
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
@@ -48,7 +49,8 @@ public class RepartitionWithHadoopMultiStorageRssTest extends RepartitionTest {
     //  the test case use too long time.
     boolean useOffHeap = random.nextInt() % 2 == 0;
     LOG.info("use off heap: " + useOffHeap);
-    dynamicConf.put(RssSparkConfig.RSS_CLIENT_OFF_HEAP_MEMORY_ENABLE.key(), String.valueOf(useOffHeap));
+    dynamicConf.put(
+        RssSparkConfig.RSS_CLIENT_OFF_HEAP_MEMORY_ENABLE.key(), String.valueOf(useOffHeap));
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
@@ -67,6 +69,5 @@ public class RepartitionWithHadoopMultiStorageRssTest extends RepartitionTest {
   }
 
   @Override
-  public void updateRssStorage(SparkConf sparkConf) {
-  }
+  public void updateRssStorage(SparkConf sparkConf) {}
 }

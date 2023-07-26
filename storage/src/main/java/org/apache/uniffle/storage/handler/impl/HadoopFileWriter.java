@@ -44,7 +44,8 @@ public class HadoopFileWriter implements FileWriter, Closeable {
   private FSDataOutputStream fsDataOutputStream;
   private long nextOffset;
 
-  public HadoopFileWriter(FileSystem fileSystem, Path path, Configuration hadoopConf) throws IOException {
+  public HadoopFileWriter(FileSystem fileSystem, Path path, Configuration hadoopConf)
+      throws IOException {
     this.path = path;
     this.hadoopConf = hadoopConf;
     this.fileSystem = fileSystem;
@@ -82,7 +83,9 @@ public class HadoopFileWriter implements FileWriter, Closeable {
   public void writeData(ByteBuffer byteBuffer) throws IOException {
     if (byteBuffer.hasArray()) {
       fsDataOutputStream.write(
-          byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(), byteBuffer.remaining());
+          byteBuffer.array(),
+          byteBuffer.arrayOffset() + byteBuffer.position(),
+          byteBuffer.remaining());
     } else {
       byte[] byteArray = new byte[byteBuffer.remaining()];
       byteBuffer.get(byteArray);

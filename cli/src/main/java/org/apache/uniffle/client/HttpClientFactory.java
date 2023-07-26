@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.exception.UniffleRestException;
 
-
 public class HttpClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(HttpClientFactory.class);
 

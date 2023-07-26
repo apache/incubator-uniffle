@@ -19,9 +19,7 @@ package org.apache.uniffle.common;
 
 import org.apache.commons.lang3.StringUtils;
 
-/**
- * This class is to wrap multi elements to be as union key.
- */
+/** This class is to wrap multi elements to be as union key. */
 public class UnionKey {
   private static final String SPLIT_KEY = "_";
 

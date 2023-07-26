@@ -36,7 +36,8 @@ public class TezOrderedWordCountTest extends TezIntegrationTestBase {
   private String inputPath = "ordered_word_count_input";
   private String outputPath = "ordered_word_count_output";
   private List<String> wordTable =
-      Lists.newArrayList("apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
+      Lists.newArrayList(
+          "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
 
   @Test
   public void orderedWordCountTest() throws Exception {
@@ -45,8 +46,8 @@ public class TezOrderedWordCountTest extends TezIntegrationTestBase {
   }
 
   private void generateInputFile() throws Exception {
-    // For ordered word count, the key of last ordered sorter is the summation of word, the value is 
-    // the word. So it means this key may not be unique. Because Sorter can only make sure key is 
+    // For ordered word count, the key of last ordered sorter is the summation of word, the value is
+    // the word. So it means this key may not be unique. Because Sorter can only make sure key is
     // sorted, so the second column (word column) may be not sorted.
     // To keep pace with verifyResults, here make sure summation of word is unique number.
     FSDataOutputStream outputStream = fs.create(new Path(inputPath));

@@ -33,6 +33,7 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceAudience.Public;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.RawComparator;
+import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.TezUtils;
@@ -65,17 +66,16 @@ import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_
 import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 
 /**
- * {@link RssOrderedGroupedKVInput} in a {@link AbstractLogicalInput} which shuffles
- * intermediate sorted data, merges them and provides key/<values> to the
- * consumer. This is typically used to bring one partition of a set of partitioned
- * distributed data to one consumer. The shuffle operation brings all partitions
- * to one place. These partitions are assumed to be sorted and are merged sorted to
- * merge them into a single input view.
+ * {@link RssOrderedGroupedKVInput} in a {@link AbstractLogicalInput} which shuffles intermediate
+ * sorted data, merges them and provides key/<values> to the consumer. This is typically used to
+ * bring one partition of a set of partitioned distributed data to one consumer. The shuffle
+ * operation brings all partitions to one place. These partitions are assumed to be sorted and are
+ * merged sorted to merge them into a single input view.
  *
- * The Copy and Merge will be triggered by the initialization - which is handled
- * by the Tez framework. Input is not consumable until the Copy and Merge are
- * complete. Methods are provided to check for this, as well as to wait for
- * completion. Attempting to get a reader on a non-complete input will block.
+ * <p>The Copy and Merge will be triggered by the initialization - which is handled by the Tez
+ * framework. Input is not consumable until the Copy and Merge are complete. Methods are provided to
+ * check for this, as well as to wait for completion. Attempting to get a reader on a non-complete
+ * input will block.
  */
 @Public
 public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
@@ -87,8 +87,10 @@ public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
   protected RssShuffle shuffle;
   protected MemoryUpdateCallbackHandler memoryUpdateCallbackHandler;
   private int shuffleId;
+  private ApplicationAttemptId applicationAttemptId;
   private final BlockingQueue<Event> pendingEvents = new LinkedBlockingQueue<>();
   private long firstEventReceivedTime = -1;
+
   @SuppressWarnings("rawtypes")
   protected ValuesIterator vIter;
 
@@ -110,30 +112,37 @@ public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
       getContext().requestInitialMemory(0L, null);
       isStarted.set(true);
       getContext().inputIsReady();
-      LOG.info("input fetch not required since there are 0 physical inputs for input vertex: "
+      LOG.info(
+          "input fetch not required since there are 0 physical inputs for input vertex: "
               + getContext().getSourceVertexName());
       return Collections.emptyList();
     }
 
-    long initialMemoryRequest = RssShuffle.getInitialMemoryRequirement(conf,
-            getContext().getTotalMemoryAvailableToTask());
+    long initialMemoryRequest =
+        RssShuffle.getInitialMemoryRequirement(conf, getContext().getTotalMemoryAvailableToTask());
     this.memoryUpdateCallbackHandler = new MemoryUpdateCallbackHandler();
     getContext().requestInitialMemory(initialMemoryRequest, memoryUpdateCallbackHandler);
 
     this.inputKeyCounter = getContext().getCounters().findCounter(TaskCounter.REDUCE_INPUT_GROUPS);
-    this.inputValueCounter = getContext().getCounters().findCounter(TaskCounter.REDUCE_INPUT_RECORDS);
+    this.inputValueCounter =
+        getContext().getCounters().findCounter(TaskCounter.REDUCE_INPUT_RECORDS);
     this.shuffledInputs = getContext().getCounters().findCounter(TaskCounter.NUM_SHUFFLED_INPUTS);
     this.conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, getContext().getWorkDirs());
 
-    TezTaskAttemptID taskAttemptId = TezTaskAttemptID.fromString(
-        RssTezUtils.uniqueIdentifierToAttemptId(getContext().getUniqueIdentifier()));
+    TezTaskAttemptID taskAttemptId =
+        TezTaskAttemptID.fromString(
+            RssTezUtils.uniqueIdentifierToAttemptId(getContext().getUniqueIdentifier()));
     TezVertexID tezVertexID = taskAttemptId.getTaskID().getVertexID();
     TezDAGID tezDAGID = tezVertexID.getDAGId();
     int sourceVertexId = this.conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1);
     int destinationVertexId = this.conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1);
     assert sourceVertexId != -1;
     assert destinationVertexId != -1;
-    this.shuffleId = RssTezUtils.computeShuffleId(tezDAGID.getId(), sourceVertexId, destinationVertexId);
+    this.shuffleId =
+        RssTezUtils.computeShuffleId(tezDAGID.getId(), sourceVertexId, destinationVertexId);
+    this.applicationAttemptId =
+        ApplicationAttemptId.newInstance(
+            getContext().getApplicationId(), getContext().getDAGAttemptNumber());
     return Collections.emptyList();
   }
 
@@ -148,7 +157,8 @@ public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
       pendingEvents.drainTo(pending);
       if (pending.size() > 0) {
         if (LOG.isDebugEnabled()) {
-          LOG.debug("NoAutoStart delay in processing first event: "
+          LOG.debug(
+              "NoAutoStart delay in processing first event: "
                   + (System.currentTimeMillis() - firstEventReceivedTime));
         }
         shuffle.handleEvents(pending);
@@ -159,20 +169,25 @@ public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
 
   @VisibleForTesting
   RssShuffle createRssShuffle() throws IOException {
-    return new RssShuffle(getContext(), conf, getNumPhysicalInputs(), memoryUpdateCallbackHandler.getMemoryAssigned(),
-        shuffleId);
+    return new RssShuffle(
+        getContext(),
+        conf,
+        getNumPhysicalInputs(),
+        memoryUpdateCallbackHandler.getMemoryAssigned(),
+        shuffleId,
+        applicationAttemptId);
   }
 
   /**
    * Check if the input is ready for consumption
    *
-   * @return true if the input is ready for consumption, or if an error occurred
-   *         processing fetching the input. false if the shuffle and merge are
-   *         still in progress
+   * @return true if the input is ready for consumption, or if an error occurred processing fetching
+   *     the input. false if the shuffle and merge are still in progress
    * @throws InterruptedException
    * @throws IOException
    */
-  public synchronized boolean isInputReady() throws IOException, InterruptedException, TezException {
+  public synchronized boolean isInputReady()
+      throws IOException, InterruptedException, TezException {
     Preconditions.checkState(isStarted.get(), "Must start input before invoking this method");
     if (getNumPhysicalInputs() == 0) {
       return true;
@@ -182,6 +197,7 @@ public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
 
   /**
    * Waits for the input to become ready for consumption
+   *
    * @throws IOException
    * @throws InterruptedException
    */
@@ -212,28 +228,27 @@ public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
       shuffle.shutdown();
     }
 
-    long dataSize = getContext().getCounters()
-            .findCounter(TaskCounter.SHUFFLE_BYTES_DECOMPRESSED).getValue();
+    long dataSize =
+        getContext().getCounters().findCounter(TaskCounter.SHUFFLE_BYTES_DECOMPRESSED).getValue();
     getContext().getStatisticsReporter().reportDataSize(dataSize);
-    long inputRecords = getContext().getCounters()
-            .findCounter(TaskCounter.REDUCE_INPUT_RECORDS).getValue();
+    long inputRecords =
+        getContext().getCounters().findCounter(TaskCounter.REDUCE_INPUT_RECORDS).getValue();
     getContext().getStatisticsReporter().reportItemsProcessed(inputRecords);
 
     return Collections.emptyList();
   }
 
   /**
-   * Get a KVReader for the Input.</p> This method will block until the input is
-   * ready - i.e. the copy and merge stages are complete. Users can use the
-   * isInputReady method to check if the input is ready, which gives an
-   * indication of whether this method will block or not.
+   * Get a KVReader for the Input. This method will block until the input is ready - i.e. the copy
+   * and merge stages are complete. Users can use the isInputReady method to check if the input is
+   * ready, which gives an indication of whether this method will block or not.
    *
-   * NOTE: All values for the current K-V pair must be read prior to invoking
-   * moveToNext. Once moveToNext() is called, the valueIterator from the
-   * previous K-V pair will throw an Exception
+   * <p>NOTE: All values for the current K-V pair must be read prior to invoking moveToNext. Once
+   * moveToNext() is called, the valueIterator from the previous K-V pair will throw an Exception
    *
    * @return a KVReader over the sorted input.
-   * @throws {@link IOInterruptedException} if IO was performing a blocking operation and was interrupted
+   * @throws {@link IOInterruptedException} if IO was performing a blocking operation and was
+   *     interrupted
    */
   @Override
   public KeyValuesReader getReader() throws IOException, TezException {
@@ -286,7 +301,7 @@ public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
     if (totalInputs != 0) {
       synchronized (this) {
         return ((0.5f) * this.shuffledInputs.getValue() / totalInputs)
-                + ((rawIter != null) ? ((0.5f) * rawIter.getProgress().getProgress()) : 0.0f);
+            + ((rawIter != null) ? ((0.5f) * rawIter.getProgress().getProgress()) : 0.0f);
       }
     } else {
       return 0.0f;
@@ -312,19 +327,25 @@ public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
     shuffleLocalRef.handleEvents(inputEvents);
   }
 
-  @SuppressWarnings({ "rawtypes", "unchecked" })
-  protected synchronized void createValuesIterator()
-          throws IOException {
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  protected synchronized void createValuesIterator() throws IOException {
     // Not used by ReduceProcessor
     RawComparator rawComparator = ConfigUtils.getIntermediateInputKeyComparator(conf);
     Class<?> keyClass = ConfigUtils.getIntermediateInputKeyClass(conf);
     Class<?> valClass = ConfigUtils.getIntermediateInputValueClass(conf);
-    LOG.info(getContext().getSourceVertexName() + ": " + "creating ValuesIterator with "
-            + "comparator=" + rawComparator.getClass().getName()
-            + ", keyClass=" + keyClass.getName()
-            + ", valClass=" + valClass.getName());
-    vIter = new ValuesIterator(rawIter, rawComparator, keyClass, valClass,
-            conf, inputKeyCounter, inputValueCounter);
+    LOG.info(
+        getContext().getSourceVertexName()
+            + ": "
+            + "creating ValuesIterator with "
+            + "comparator="
+            + rawComparator.getClass().getName()
+            + ", keyClass="
+            + keyClass.getName()
+            + ", valClass="
+            + valClass.getName());
+    vIter =
+        new ValuesIterator(
+            rawIter, rawComparator, keyClass, valClass, conf, inputKeyCounter, inputValueCounter);
   }
 
   @SuppressWarnings("rawtypes")
@@ -351,7 +372,7 @@ public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
 
     @Override
     public Object getCurrentKey() throws IOException {
-      Object key =  valuesIter.getKey();
+      Object key = valuesIter.getKey();
       return key;
     }
 
@@ -361,7 +382,6 @@ public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
       return valuesIter.getValues();
     }
   }
-
 
   private static final Set<String> CONF_KEYS = new HashSet<String>();
 
@@ -389,20 +409,15 @@ public class RssOrderedGroupedKVInput extends AbstractLogicalInput {
     CONF_KEYS.add(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MERGE_PERCENT);
     CONF_KEYS.add(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MEMTOMEM_SEGMENTS);
     CONF_KEYS.add(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_ENABLE_MEMTOMEM);
-    CONF_KEYS.add(TezRuntimeConfiguration
-            .TEZ_RUNTIME_SHUFFLE_SOURCE_ATTEMPT_ABORT_LIMIT);
-    CONF_KEYS.add(TezRuntimeConfiguration
-            .TEZ_RUNTIME_SHUFFLE_ACCEPTABLE_HOST_FETCH_FAILURE_FRACTION);
-    CONF_KEYS.add(TezRuntimeConfiguration
-            .TEZ_RUNTIME_SHUFFLE_MIN_FAILURES_PER_HOST);
-    CONF_KEYS.add(TezRuntimeConfiguration
-            .TEZ_RUNTIME_SHUFFLE_MAX_STALL_TIME_FRACTION);
-    CONF_KEYS.add(TezRuntimeConfiguration
-            .TEZ_RUNTIME_SHUFFLE_MAX_ALLOWED_FAILED_FETCH_ATTEMPT_FRACTION);
-    CONF_KEYS.add(TezRuntimeConfiguration
-            .TEZ_RUNTIME_SHUFFLE_MIN_REQUIRED_PROGRESS_FRACTION);
-    CONF_KEYS.add(TezRuntimeConfiguration
-            .TEZ_RUNTIME_SHUFFLE_FAILED_CHECK_SINCE_LAST_COMPLETION);
+    CONF_KEYS.add(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_SOURCE_ATTEMPT_ABORT_LIMIT);
+    CONF_KEYS.add(
+        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_ACCEPTABLE_HOST_FETCH_FAILURE_FRACTION);
+    CONF_KEYS.add(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MIN_FAILURES_PER_HOST);
+    CONF_KEYS.add(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MAX_STALL_TIME_FRACTION);
+    CONF_KEYS.add(
+        TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MAX_ALLOWED_FAILED_FETCH_ATTEMPT_FRACTION);
+    CONF_KEYS.add(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MIN_REQUIRED_PROGRESS_FRACTION);
+    CONF_KEYS.add(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FAILED_CHECK_SINCE_LAST_COMPLETION);
     CONF_KEYS.add(TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_FETCHER_USE_SHARED_POOL);
     CONF_KEYS.add(TezRuntimeConfiguration.TEZ_RUNTIME_INPUT_POST_MERGE_BUFFER_PERCENT);
     CONF_KEYS.add(TezRuntimeConfiguration.TEZ_RUNTIME_GROUP_COMPARATOR_CLASS);

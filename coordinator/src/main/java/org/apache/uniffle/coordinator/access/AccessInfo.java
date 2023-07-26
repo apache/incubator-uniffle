@@ -30,7 +30,8 @@ public class AccessInfo {
   private final Map<String, String> extraProperties;
   private final String user;
 
-  public AccessInfo(String accessId, Set<String> tags, Map<String, String> extraProperties, String user) {
+  public AccessInfo(
+      String accessId, Set<String> tags, Map<String, String> extraProperties, String user) {
     this.accessId = accessId;
     this.tags = tags;
     this.extraProperties = extraProperties == null ? Collections.emptyMap() : extraProperties;
@@ -61,10 +62,15 @@ public class AccessInfo {
   @Override
   public String toString() {
     return "AccessInfo{"
-            + "accessId='" + accessId + '\''
-            + ", user= " + user
-            + ", tags=" + tags
-            + ", extraProperties=" + extraProperties
-            + '}';
+        + "accessId='"
+        + accessId
+        + '\''
+        + ", user= "
+        + user
+        + ", tags="
+        + tags
+        + ", extraProperties="
+        + extraProperties
+        + '}';
   }
 }

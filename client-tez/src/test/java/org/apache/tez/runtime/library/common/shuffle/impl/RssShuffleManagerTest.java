@@ -1,13 +1,12 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,6 +33,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.security.token.Token;
+import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tez.common.TezExecutors;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.TezSharedExecutor;
@@ -82,6 +83,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class RssShuffleManagerTest {
+  public static final ApplicationId APP_ID = ApplicationId.newInstance(9999, 72);
+  public static final ApplicationAttemptId APPATTEMPT_ID =
+      ApplicationAttemptId.newInstance(APP_ID, 1);
   private static final String FETCHER_HOST = "localhost";
   private static final int PORT = 8080;
   private static final String PATH_COMPONENT = "attempttmp";
@@ -109,13 +113,19 @@ public class RssShuffleManagerTest {
 
     InputContext inputContext = mock(InputContext.class);
     doReturn(new TezCounters()).when(inputContext).getCounters();
-    doReturn(shuffleMetaData).when(inputContext)
-        .getServiceProviderMetaData(conf.get(TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
-            TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT));
+    doReturn(shuffleMetaData)
+        .when(inputContext)
+        .getServiceProviderMetaData(
+            conf.get(
+                TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
+                TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT));
     doReturn(executionContext).when(inputContext).getExecutionContext();
     doReturn("Map 1").when(inputContext).getSourceVertexName();
     doReturn("Reducer 1").when(inputContext).getTaskVertexName();
-    when(inputContext.getUniqueIdentifier()).thenReturn("attempt_1685094627632_0157_1_01_000000_0_10006");
+    when(inputContext.getUniqueIdentifier())
+        .thenReturn("attempt_1685094627632_0157_1_01_000000_0_10006");
+    doReturn(APP_ID).when(inputContext).getApplicationId();
+    doReturn(APPATTEMPT_ID.getAttemptId()).when(inputContext).getDAGAttemptNumber();
     return inputContext;
   }
 
@@ -124,13 +134,15 @@ public class RssShuffleManagerTest {
   public void testUseSharedExecutor() throws Exception {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
       shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
-      shuffleUtils.when(() -> ShuffleUtils.getHttpConnectionParams(any())).thenReturn(
-          new HttpConnectionParams(false, 1000, 5000, 1000, 104857600, false, null));
+      shuffleUtils
+          .when(() -> ShuffleUtils.getHttpConnectionParams(any()))
+          .thenReturn(new HttpConnectionParams(false, 1000, 5000, 1000, 104857600, false, null));
 
       try (MockedStatic<UmbilicalUtils> umbilicalUtils = Mockito.mockStatic(UmbilicalUtils.class)) {
         Map<Integer, List<ShuffleServerInfo>> workers = new HashMap<>();
         workers.put(1, ImmutableList.of(new ShuffleServerInfo("127.0.0.1", 2181)));
-        umbilicalUtils.when(() -> UmbilicalUtils.requestShuffleServer(any(), any(), any(), anyInt()))
+        umbilicalUtils
+            .when(() -> UmbilicalUtils.requestShuffleServer(any(), any(), any(), anyInt()))
             .thenReturn(workers);
 
         InputContext inputContext = createInputContext();
@@ -145,27 +157,33 @@ public class RssShuffleManagerTest {
   public void testProgressWithEmptyPendingHosts() throws Exception {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
       shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
-      HttpConnectionParams params = new HttpConnectionParams(false, 1000, 5000,
-          1000, 1024 * 1024 * 100, false, null);
+      HttpConnectionParams params =
+          new HttpConnectionParams(false, 1000, 5000, 1000, 1024 * 1024 * 100, false, null);
       shuffleUtils.when(() -> ShuffleUtils.getHttpConnectionParams(any())).thenReturn(params);
       InputContext inputContext = createInputContext();
       final ShuffleManager shuffleManager = spy(createShuffleManager(inputContext, 1));
-      Thread schedulerGetHostThread = new Thread(new Runnable() {
-        @Override
-        public void run() {
-          try (MockedStatic<UmbilicalUtils> umbilicalUtils = Mockito.mockStatic(UmbilicalUtils.class)) {
-            Map<Integer, List<ShuffleServerInfo>> workers = new HashMap<>();
-            workers.put(1, ImmutableList.of(new ShuffleServerInfo("127.0.0.1", 2181)));
-            umbilicalUtils.when(() -> UmbilicalUtils.requestShuffleServer(any(), any(), any(), anyInt()))
-                .thenReturn(workers);
-            try {
-              shuffleManager.run();
-            } catch (Exception e) {
-              e.printStackTrace();
-            }
-          }
-        }
-      });
+      Thread schedulerGetHostThread =
+          new Thread(
+              new Runnable() {
+                @Override
+                public void run() {
+                  try (MockedStatic<UmbilicalUtils> umbilicalUtils =
+                      Mockito.mockStatic(UmbilicalUtils.class)) {
+                    Map<Integer, List<ShuffleServerInfo>> workers = new HashMap<>();
+                    workers.put(1, ImmutableList.of(new ShuffleServerInfo("127.0.0.1", 2181)));
+                    umbilicalUtils
+                        .when(
+                            () ->
+                                UmbilicalUtils.requestShuffleServer(any(), any(), any(), anyInt()))
+                        .thenReturn(workers);
+                    try {
+                      shuffleManager.run();
+                    } catch (Exception e) {
+                      e.printStackTrace();
+                    }
+                  }
+                }
+              });
       schedulerGetHostThread.start();
       Thread.currentThread().sleep(1000 * 3 + 1000);
       schedulerGetHostThread.interrupt();
@@ -178,28 +196,36 @@ public class RssShuffleManagerTest {
   public void testFetchFailed() throws Exception {
     try (MockedStatic<ShuffleUtils> shuffleUtils = Mockito.mockStatic(ShuffleUtils.class)) {
       shuffleUtils.when(() -> ShuffleUtils.deserializeShuffleProviderMetaData(any())).thenReturn(4);
-      shuffleUtils.when(() -> ShuffleUtils.getHttpConnectionParams(any())).thenReturn(
-          new HttpConnectionParams(false, 1000, 5000, 1000, 1024 * 1024 * 100, false, null));
+      shuffleUtils
+          .when(() -> ShuffleUtils.getHttpConnectionParams(any()))
+          .thenReturn(
+              new HttpConnectionParams(false, 1000, 5000, 1000, 1024 * 1024 * 100, false, null));
 
       InputContext inputContext = createInputContext();
       final ShuffleManager shuffleManager = spy(createShuffleManager(inputContext, 1));
-      Thread schedulerGetHostThread = new Thread(new Runnable() {
-        @Override
-        public void run() {
-          try (MockedStatic<UmbilicalUtils> umbilicalUtils = Mockito.mockStatic(UmbilicalUtils.class)) {
-            Map<Integer, List<ShuffleServerInfo>> workers = new HashMap<>();
-            workers.put(1, ImmutableList.of(new ShuffleServerInfo("127.0.0.1", 2181)));
-            umbilicalUtils.when(() -> UmbilicalUtils.requestShuffleServer(any(), any(), any(), anyInt()))
-                .thenReturn(workers);
-            try {
-              shuffleManager.run();
-            } catch (Exception e) {
-              e.printStackTrace();
-            }
-          }
-        }
-      });
-      InputAttemptIdentifier inputAttemptIdentifier  = new InputAttemptIdentifier(1, 1);
+      Thread schedulerGetHostThread =
+          new Thread(
+              new Runnable() {
+                @Override
+                public void run() {
+                  try (MockedStatic<UmbilicalUtils> umbilicalUtils =
+                      Mockito.mockStatic(UmbilicalUtils.class)) {
+                    Map<Integer, List<ShuffleServerInfo>> workers = new HashMap<>();
+                    workers.put(1, ImmutableList.of(new ShuffleServerInfo("127.0.0.1", 2181)));
+                    umbilicalUtils
+                        .when(
+                            () ->
+                                UmbilicalUtils.requestShuffleServer(any(), any(), any(), anyInt()))
+                        .thenReturn(workers);
+                    try {
+                      shuffleManager.run();
+                    } catch (Exception e) {
+                      e.printStackTrace();
+                    }
+                  }
+                }
+              });
+      InputAttemptIdentifier inputAttemptIdentifier = new InputAttemptIdentifier(1, 1);
 
       schedulerGetHostThread.start();
       Thread.sleep(1000);
@@ -207,8 +233,7 @@ public class RssShuffleManagerTest {
       Thread.sleep(1000);
 
       ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
-      verify(inputContext, times(1))
-          .sendEvents(captor.capture());
+      verify(inputContext, times(1)).sendEvents(captor.capture());
       assertEquals(captor.getAllValues().size(), 1);
       List<Event> capturedList = captor.getAllValues().get(0);
       assertEquals(capturedList.size(), 1);
@@ -225,25 +250,26 @@ public class RssShuffleManagerTest {
   }
 
   private ShuffleManagerForTest createShuffleManager(
-      InputContext inputContext, int expectedNumOfPhysicalInputs)
-      throws IOException {
+      InputContext inputContext, int expectedNumOfPhysicalInputs) throws IOException {
     Path outDirBase = new Path(".", "outDir");
-    String[] outDirs = new String[] { outDirBase.toString() };
+    String[] outDirs = new String[] {outDirBase.toString()};
     doReturn(outDirs).when(inputContext).getWorkDirs();
     conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, inputContext.getWorkDirs());
 
     DataOutputBuffer out = new DataOutputBuffer();
-    Token<JobTokenIdentifier> token = new Token<JobTokenIdentifier>(new JobTokenIdentifier(),
-        new JobTokenSecretManager(null));
+    Token<JobTokenIdentifier> token =
+        new Token<JobTokenIdentifier>(new JobTokenIdentifier(), new JobTokenSecretManager(null));
     token.write(out);
-    doReturn(ByteBuffer.wrap(out.getData())).when(inputContext)
+    doReturn(ByteBuffer.wrap(out.getData()))
+        .when(inputContext)
         .getServiceConsumerMetaData(
-            conf.get(TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
+            conf.get(
+                TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID,
                 TezConfiguration.TEZ_AM_SHUFFLE_AUXILIARY_SERVICE_ID_DEFAULT));
 
     FetchedInputAllocator inputAllocator = mock(FetchedInputAllocator.class);
-    return new ShuffleManagerForTest(inputContext, conf,
-        expectedNumOfPhysicalInputs, 1024, false, -1, null, inputAllocator);
+    return new ShuffleManagerForTest(
+        inputContext, conf, expectedNumOfPhysicalInputs, 1024, false, -1, null, inputAllocator);
   }
 
   private Event createDataMovementEvent(String host, int srcIndex, int targetIndex) {
@@ -251,17 +277,34 @@ public class RssShuffleManagerTest {
     builder.setHost(host);
     builder.setPort(PORT);
     builder.setPathComponent(PATH_COMPONENT);
-    Event dme = DataMovementEvent.create(srcIndex, targetIndex, 0,
-        builder.build().toByteString().asReadOnlyByteBuffer());
+    Event dme =
+        DataMovementEvent.create(
+            srcIndex, targetIndex, 0, builder.build().toByteString().asReadOnlyByteBuffer());
     return dme;
   }
 
   private static class ShuffleManagerForTest extends RssShuffleManager {
-    ShuffleManagerForTest(InputContext inputContext, Configuration conf, int numInputs, int bufferSize,
-          boolean ifileReadAheadEnabled, int ifileReadAheadLength, CompressionCodec codec,
-          FetchedInputAllocator inputAllocator) throws IOException {
-      super(inputContext, conf, numInputs, bufferSize, ifileReadAheadEnabled,
-          ifileReadAheadLength, codec, inputAllocator, 0);
+    ShuffleManagerForTest(
+        InputContext inputContext,
+        Configuration conf,
+        int numInputs,
+        int bufferSize,
+        boolean ifileReadAheadEnabled,
+        int ifileReadAheadLength,
+        CompressionCodec codec,
+        FetchedInputAllocator inputAllocator)
+        throws IOException {
+      super(
+          inputContext,
+          conf,
+          numInputs,
+          bufferSize,
+          ifileReadAheadEnabled,
+          ifileReadAheadLength,
+          codec,
+          inputAllocator,
+          0,
+          APPATTEMPT_ID);
     }
 
     @Override
@@ -269,19 +312,21 @@ public class RssShuffleManagerTest {
       final Fetcher fetcher = spy(super.constructFetcherForHost(inputHost, conf));
       final FetchResult mockFetcherResult = mock(FetchResult.class);
       try {
-        doAnswer(new Answer<FetchResult>() {
-          @Override
-          public FetchResult answer(InvocationOnMock invocation) throws Throwable {
-            for (InputAttemptIdentifier input : fetcher.getSrcAttempts()) {
-              ShuffleManagerForTest.this.fetchSucceeded(
-                  fetcher.getHost(), input, new TestFetchedInput(input), 0, 0,
-                  0);
-            }
-            return mockFetcherResult;
-          }
-        }).when(fetcher).callInternal();
+        doAnswer(
+                new Answer<FetchResult>() {
+                  @Override
+                  public FetchResult answer(InvocationOnMock invocation) throws Throwable {
+                    for (InputAttemptIdentifier input : fetcher.getSrcAttempts()) {
+                      ShuffleManagerForTest.this.fetchSucceeded(
+                          fetcher.getHost(), input, new TestFetchedInput(input), 0, 0, 0);
+                    }
+                    return mockFetcherResult;
+                  }
+                })
+            .when(fetcher)
+            .callInternal();
       } catch (Exception e) {
-        //ignore
+        // ignore
       }
       return fetcher;
     }
@@ -297,7 +342,6 @@ public class RssShuffleManagerTest {
 
   /**
    * Fake input that is added to the completed input list in case an input does not have any data.
-   *
    */
   @VisibleForTesting
   static class TestFetchedInput extends FetchedInput {
@@ -327,15 +371,12 @@ public class RssShuffleManagerTest {
     }
 
     @Override
-    public void commit() throws IOException {
-    }
+    public void commit() throws IOException {}
 
     @Override
-    public void abort() throws IOException {
-    }
+    public void abort() throws IOException {}
 
     @Override
-    public void free() {
-    }
+    public void free() {}
   }
 }

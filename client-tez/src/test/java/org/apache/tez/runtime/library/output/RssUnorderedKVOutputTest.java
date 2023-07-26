@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.tez.runtime.library.output;
 
 import java.io.IOException;
@@ -35,7 +34,6 @@ import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.tez.common.GetShuffleServerResponse;
-import org.apache.tez.common.IdUtils;
 import org.apache.tez.common.ShuffleAssignmentsInfoWritable;
 import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezRemoteShuffleUmbilicalProtocol;
@@ -80,10 +78,11 @@ public class RssUnorderedKVOutputTest {
   public void setup() throws IOException {
     conf = new Configuration();
     localFs = FileSystem.getLocal(conf);
-    workingDir = new Path(System.getProperty("test.build.data",
-        System.getProperty("java.io.tmpdir", "/tmp")),
-        RssOrderedPartitionedKVOutputTest.class.getName()).makeQualified(
-        localFs.getUri(), localFs.getWorkingDirectory());
+    workingDir =
+        new Path(
+                System.getProperty("test.build.data", System.getProperty("java.io.tmpdir", "/tmp")),
+                RssOrderedPartitionedKVOutputTest.class.getName())
+            .makeQualified(localFs.getUri(), localFs.getWorkingDirectory());
     conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS, Text.class.getName());
     conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_VALUE_CLASS, Text.class.getName());
     conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, workingDir.toString());
@@ -115,8 +114,8 @@ public class RssUnorderedKVOutputTest {
     ShuffleUserPayloads.DataMovementEventPayloadProto shufflePayload =
         ShuffleUserPayloads.DataMovementEventPayloadProto.parseFrom(ByteString.copyFrom(bb));
     assertTrue(shufflePayload.hasEmptyPartitions());
-    byte[] emptyPartitions = TezCommonUtils.decompressByteStringToByteArray(shufflePayload
-        .getEmptyPartitions());
+    byte[] emptyPartitions =
+        TezCommonUtils.decompressByteStringToByteArray(shufflePayload.getEmptyPartitions());
     BitSet emptyPartionsBitSet = TezUtilsInternal.fromByteArray(emptyPartitions);
     assertEquals(numPartitions, emptyPartionsBitSet.cardinality());
     for (int i = 0; i < numPartitions; i++) {
@@ -127,28 +126,28 @@ public class RssUnorderedKVOutputTest {
   @Test
   @Timeout(value = 5000, unit = TimeUnit.MILLISECONDS)
   public void testClose() throws Exception {
-    try (MockedStatic<RPC> rpc = Mockito.mockStatic(RPC.class);) {
+    try (MockedStatic<RPC> rpc = Mockito.mockStatic(RPC.class); ) {
       TezRemoteShuffleUmbilicalProtocol protocol = mock(TezRemoteShuffleUmbilicalProtocol.class);
       GetShuffleServerResponse response = new GetShuffleServerResponse();
-      ShuffleAssignmentsInfo shuffleAssignmentsInfo = new ShuffleAssignmentsInfo(new HashMap(), new HashMap());
-      response.setShuffleAssignmentsInfoWritable(new ShuffleAssignmentsInfoWritable(shuffleAssignmentsInfo));
+      ShuffleAssignmentsInfo shuffleAssignmentsInfo =
+          new ShuffleAssignmentsInfo(new HashMap(), new HashMap());
+      response.setShuffleAssignmentsInfoWritable(
+          new ShuffleAssignmentsInfoWritable(shuffleAssignmentsInfo));
       doReturn(response).when(protocol).getShuffleAssignments(any());
       rpc.when(() -> RPC.getProxy(any(), anyLong(), any(), any())).thenReturn(protocol);
-      try (MockedStatic<IdUtils> idUtils = Mockito.mockStatic(IdUtils.class)) {
-        idUtils.when(() -> IdUtils.getApplicationAttemptId()).thenReturn(OutputTestHelpers.APP_ATTEMPT_ID);
-        idUtils.when(() -> IdUtils.getAppAttemptId()).thenReturn(OutputTestHelpers.APP_ATTEMPT_ID.getAttemptId());
-        try (MockedStatic<ConverterUtils> converterUtils = Mockito.mockStatic(ConverterUtils.class)) {
-          ContainerId containerId = ContainerId.newContainerId(OutputTestHelpers.APP_ATTEMPT_ID, 1);
-          converterUtils.when(() -> ConverterUtils.toContainerId(null)).thenReturn(containerId);
-          converterUtils.when(() -> ConverterUtils.toContainerId(anyString())).thenReturn(containerId);
-          OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
-          int numPartitions = 1;
-          RssUnorderedKVOutput output = new RssUnorderedKVOutput(outputContext, numPartitions);
-          output.initialize();
-          output.start();
-          Assertions.assertNotNull(output.getWriter());
-          output.close();
-        }
+      try (MockedStatic<ConverterUtils> converterUtils = Mockito.mockStatic(ConverterUtils.class)) {
+        ContainerId containerId = ContainerId.newContainerId(OutputTestHelpers.APP_ATTEMPT_ID, 1);
+        converterUtils.when(() -> ConverterUtils.toContainerId(null)).thenReturn(containerId);
+        converterUtils
+            .when(() -> ConverterUtils.toContainerId(anyString()))
+            .thenReturn(containerId);
+        OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
+        int numPartitions = 1;
+        RssUnorderedKVOutput output = new RssUnorderedKVOutput(outputContext, numPartitions);
+        output.initialize();
+        output.start();
+        Assertions.assertNotNull(output.getWriter());
+        output.close();
       }
     }
   }

@@ -62,31 +62,32 @@ public class SortWriteBufferManagerTest {
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
     Counters.Counter mapOutputRecordCounter = new Counters.Counter();
     SortWriteBufferManager<BytesWritable, BytesWritable> manager;
-    manager = new SortWriteBufferManager<BytesWritable, BytesWritable>(
-        10240,
-        1L,
-        10,
-        serializationFactory.getSerializer(BytesWritable.class),
-        serializationFactory.getSerializer(BytesWritable.class),
-        WritableComparator.get(BytesWritable.class),
-        0.9,
-        "test",
-        client,
-        500,
-        5 * 1000,
-        partitionToServers,
-        successBlocks,
-        failedBlocks,
-        mapOutputByteCounter,
-        mapOutputRecordCounter,
-        1,
-        100,
-        1000,
-        true,
-        5,
-        0.2f,
-        1024000L,
-        new RssConf());
+    manager =
+        new SortWriteBufferManager<BytesWritable, BytesWritable>(
+            10240,
+            1L,
+            10,
+            serializationFactory.getSerializer(BytesWritable.class),
+            serializationFactory.getSerializer(BytesWritable.class),
+            WritableComparator.get(BytesWritable.class),
+            0.9,
+            "test",
+            client,
+            500,
+            5 * 1000,
+            partitionToServers,
+            successBlocks,
+            failedBlocks,
+            mapOutputByteCounter,
+            mapOutputRecordCounter,
+            1,
+            100,
+            1000,
+            true,
+            5,
+            0.2f,
+            1024000L,
+            new RssConf());
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -112,31 +113,32 @@ public class SortWriteBufferManagerTest {
     }
     assertFalse(failedBlocks.isEmpty());
     isException = false;
-    manager = new SortWriteBufferManager<BytesWritable, BytesWritable>(
-        100,
-        1L,
-        10,
-        serializationFactory.getSerializer(BytesWritable.class),
-        serializationFactory.getSerializer(BytesWritable.class),
-        WritableComparator.get(BytesWritable.class),
-        0.9,
-        "test",
-        client,
-        500,
-        5 * 1000,
-        partitionToServers,
-        successBlocks,
-        failedBlocks,
-        mapOutputByteCounter,
-        mapOutputRecordCounter,
-        1,
-        100,
-        1000,
-        true,
-        5,
-        0.2f,
-        1024000L,
-        new RssConf());
+    manager =
+        new SortWriteBufferManager<BytesWritable, BytesWritable>(
+            100,
+            1L,
+            10,
+            serializationFactory.getSerializer(BytesWritable.class),
+            serializationFactory.getSerializer(BytesWritable.class),
+            WritableComparator.get(BytesWritable.class),
+            0.9,
+            "test",
+            client,
+            500,
+            5 * 1000,
+            partitionToServers,
+            successBlocks,
+            failedBlocks,
+            mapOutputByteCounter,
+            mapOutputRecordCounter,
+            1,
+            100,
+            1000,
+            true,
+            5,
+            0.2f,
+            1024000L,
+            new RssConf());
     byte[] key = new byte[20];
     byte[] value = new byte[1024];
     random.nextBytes(key);
@@ -162,31 +164,32 @@ public class SortWriteBufferManagerTest {
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
     Counters.Counter mapOutputRecordCounter = new Counters.Counter();
     SortWriteBufferManager<BytesWritable, BytesWritable> manager;
-    manager = new SortWriteBufferManager<BytesWritable, BytesWritable>(
-        10240,
-        1L,
-        10,
-        serializationFactory.getSerializer(BytesWritable.class),
-        serializationFactory.getSerializer(BytesWritable.class),
-        WritableComparator.get(BytesWritable.class),
-        0.9,
-        "test",
-        client,
-        500,
-        5 * 1000,
-        partitionToServers,
-        successBlocks,
-        failedBlocks,
-        mapOutputByteCounter,
-        mapOutputRecordCounter,
-        1,
-        100,
-        2000,
-        true,
-        5,
-        0.2f,
-        100L,
-        new RssConf());
+    manager =
+        new SortWriteBufferManager<BytesWritable, BytesWritable>(
+            10240,
+            1L,
+            10,
+            serializationFactory.getSerializer(BytesWritable.class),
+            serializationFactory.getSerializer(BytesWritable.class),
+            WritableComparator.get(BytesWritable.class),
+            0.9,
+            "test",
+            client,
+            500,
+            5 * 1000,
+            partitionToServers,
+            successBlocks,
+            failedBlocks,
+            mapOutputByteCounter,
+            mapOutputRecordCounter,
+            1,
+            100,
+            2000,
+            true,
+            5,
+            0.2f,
+            100L,
+            new RssConf());
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -211,31 +214,32 @@ public class SortWriteBufferManagerTest {
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
     Counters.Counter mapOutputRecordCounter = new Counters.Counter();
     SortWriteBufferManager<BytesWritable, BytesWritable> manager;
-    manager = new SortWriteBufferManager<BytesWritable, BytesWritable>(
-        10240,
-        1L,
-        10,
-        serializationFactory.getSerializer(BytesWritable.class),
-        serializationFactory.getSerializer(BytesWritable.class),
-        WritableComparator.get(BytesWritable.class),
-        0.9,
-        "test",
-        client,
-        500,
-        5 * 1000,
-        partitionToServers,
-        successBlocks,
-        failedBlocks,
-        mapOutputByteCounter,
-        mapOutputRecordCounter,
-        1,
-        100,
-        2000,
-        true,
-        5,
-        0.2f,
-        1024000L,
-        new RssConf());
+    manager =
+        new SortWriteBufferManager<BytesWritable, BytesWritable>(
+            10240,
+            1L,
+            10,
+            serializationFactory.getSerializer(BytesWritable.class),
+            serializationFactory.getSerializer(BytesWritable.class),
+            WritableComparator.get(BytesWritable.class),
+            0.9,
+            "test",
+            client,
+            500,
+            5 * 1000,
+            partitionToServers,
+            successBlocks,
+            failedBlocks,
+            mapOutputByteCounter,
+            mapOutputRecordCounter,
+            1,
+            100,
+            2000,
+            true,
+            5,
+            0.2f,
+            1024000L,
+            new RssConf());
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -275,31 +279,32 @@ public class SortWriteBufferManagerTest {
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
     Counters.Counter mapOutputRecordCounter = new Counters.Counter();
     SortWriteBufferManager<BytesWritable, BytesWritable> manager;
-    manager = new SortWriteBufferManager<BytesWritable, BytesWritable>(
-        10240,
-        1L,
-        10,
-        serializationFactory.getSerializer(BytesWritable.class),
-        serializationFactory.getSerializer(BytesWritable.class),
-        WritableComparator.get(BytesWritable.class),
-        0.9,
-        "test",
-        client,
-        500,
-        5 * 1000,
-        partitionToServers,
-        successBlocks,
-        failedBlocks,
-        mapOutputByteCounter,
-        mapOutputRecordCounter,
-        1,
-        100,
-        1,
-        false,
-        5,
-        0.2f,
-        1024000L,
-        new RssConf());
+    manager =
+        new SortWriteBufferManager<BytesWritable, BytesWritable>(
+            10240,
+            1L,
+            10,
+            serializationFactory.getSerializer(BytesWritable.class),
+            serializationFactory.getSerializer(BytesWritable.class),
+            WritableComparator.get(BytesWritable.class),
+            0.9,
+            "test",
+            client,
+            500,
+            5 * 1000,
+            partitionToServers,
+            successBlocks,
+            failedBlocks,
+            mapOutputByteCounter,
+            mapOutputRecordCounter,
+            1,
+            100,
+            1,
+            false,
+            5,
+            0.2f,
+            1024000L,
+            new RssConf());
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -312,12 +317,15 @@ public class SortWriteBufferManagerTest {
     manager.waitSendFinished();
     assertTrue(manager.getWaitSendBuffers().isEmpty());
     // When MEMOEY storage type is disable, all blocks should flush.
-    assertEquals(client.mockedShuffleServer.getFinishBlockSize(), client.mockedShuffleServer.getFlushBlockSize());
+    assertEquals(
+        client.mockedShuffleServer.getFinishBlockSize(),
+        client.mockedShuffleServer.getFlushBlockSize());
   }
 
   class MockShuffleServer {
 
-    // All methods of MockShuffle are thread safe, because send-thread may do something in concurrent way.
+    // All methods of MockShuffle are thread safe, because send-thread may do something in
+    // concurrent way.
     private List<ShuffleBlockInfo> cachedBlockInfos = new ArrayList<>();
     private List<ShuffleBlockInfo> flushBlockInfos = new ArrayList<>();
     private List<Long> finishedBlockInfos = new ArrayList<>();
@@ -354,7 +362,9 @@ public class SortWriteBufferManagerTest {
     }
 
     @Override
-    public SendShuffleDataResult sendShuffleData(String appId, List<ShuffleBlockInfo> shuffleBlockInfoList,
+    public SendShuffleDataResult sendShuffleData(
+        String appId,
+        List<ShuffleBlockInfo> shuffleBlockInfoList,
         Supplier<Boolean> needCancelRequest) {
       if (mode == 0) {
         throw new RssException("send data failed");
@@ -379,14 +389,10 @@ public class SortWriteBufferManagerTest {
     }
 
     @Override
-    public void sendAppHeartbeat(String appId, long timeoutMs) {
-
-    }
+    public void sendAppHeartbeat(String appId, long timeoutMs) {}
 
     @Override
-    public void registerApplicationInfo(String appId, long timeoutMs, String user) {
-
-    }
+    public void registerApplicationInfo(String appId, long timeoutMs, String user) {}
 
     @Override
     public void registerShuffle(
@@ -396,11 +402,11 @@ public class SortWriteBufferManagerTest {
         List<PartitionRange> partitionRanges,
         RemoteStorageInfo remoteStorage,
         ShuffleDataDistributionType distributionType,
-        int maxConcurrencyPerPartitionToWrite) {
-    }
+        int maxConcurrencyPerPartitionToWrite) {}
 
     @Override
-    public boolean sendCommit(Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps) {
+    public boolean sendCommit(
+        Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps) {
       if (mode == 3) {
         committedMaps++;
         if (committedMaps >= numMaps) {
@@ -412,9 +418,7 @@ public class SortWriteBufferManagerTest {
     }
 
     @Override
-    public void registerCoordinators(String coordinators) {
-
-    }
+    public void registerCoordinators(String coordinators) {}
 
     @Override
     public Map<String, String> fetchClientConf(int timeoutMs) {
@@ -427,41 +431,57 @@ public class SortWriteBufferManagerTest {
     }
 
     @Override
-    public void reportShuffleResult(Map<Integer, List<ShuffleServerInfo>> partitionToServers, String appId,
-        int shuffleId, long taskAttemptId, Map<Integer, List<Long>> partitionToBlockIds, int bitmapNum) {
+    public void reportShuffleResult(
+        Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+        String appId,
+        int shuffleId,
+        long taskAttemptId,
+        Map<Integer, List<Long>> partitionToBlockIds,
+        int bitmapNum) {
       if (mode == 3) {
         mockedShuffleServer.addFinishedBlockInfos(
-            partitionToBlockIds.values().stream().flatMap(it -> it.stream()).collect(Collectors.toList()));
+            partitionToBlockIds.values().stream()
+                .flatMap(it -> it.stream())
+                .collect(Collectors.toList()));
       }
     }
 
     @Override
-    public ShuffleAssignmentsInfo getShuffleAssignments(String appId, int shuffleId, int partitionNum,
-        int partitionNumPerRange, Set<String> requiredTags, int assignmentShuffleServerNumber,
+    public ShuffleAssignmentsInfo getShuffleAssignments(
+        String appId,
+        int shuffleId,
+        int partitionNum,
+        int partitionNumPerRange,
+        Set<String> requiredTags,
+        int assignmentShuffleServerNumber,
         int estimateTaskConcurrency) {
       return null;
     }
 
     @Override
-    public Roaring64NavigableMap getShuffleResult(String clientType, Set<ShuffleServerInfo> shuffleServerInfoSet,
-        String appId, int shuffleId, int partitionId) {
+    public Roaring64NavigableMap getShuffleResult(
+        String clientType,
+        Set<ShuffleServerInfo> shuffleServerInfoSet,
+        String appId,
+        int shuffleId,
+        int partitionId) {
       return null;
     }
 
     @Override
-    public Roaring64NavigableMap getShuffleResultForMultiPart(String clientType, Map<ShuffleServerInfo,
-        Set<Integer>> serverToPartitions, String appId, int shuffleId) {
+    public Roaring64NavigableMap getShuffleResultForMultiPart(
+        String clientType,
+        Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
+        String appId,
+        int shuffleId,
+        Set<Integer> failedPartitions) {
       return null;
     }
 
     @Override
-    public void close() {
-
-    }
+    public void close() {}
 
     @Override
-    public void unregisterShuffle(String appId, int shuffleId) {
-
-    }
+    public void unregisterShuffle(String appId, int shuffleId) {}
   }
 }

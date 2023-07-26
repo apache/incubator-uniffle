@@ -73,6 +73,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     coordinatorConf.setLong("rss.coordinator.server.heartbeat.timeout", 3000);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    shuffleServerConf.remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
     createShuffleServer(shuffleServerConf);
     shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 1);
     shuffleServerConf.setInteger("rss.jetty.http.port", 18081);
@@ -87,17 +88,25 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     Map<Integer, List<ShuffleServerInfo>> partitionToServers =
         coordinatorClient.getPartitionToServers(testResponse);
 
-    assertEquals(Arrays.asList(new ShuffleServerInfo("id1", "0.0.0.1", 100),
-        new ShuffleServerInfo("id2", "0.0.0.2", 100)),
+    assertEquals(
+        Arrays.asList(
+            new ShuffleServerInfo("id1", "0.0.0.1", 100),
+            new ShuffleServerInfo("id2", "0.0.0.2", 100)),
         partitionToServers.get(0));
-    assertEquals(Arrays.asList(new ShuffleServerInfo("id1", "0.0.0.1", 100),
-        new ShuffleServerInfo("id2", "0.0.0.2", 100)),
+    assertEquals(
+        Arrays.asList(
+            new ShuffleServerInfo("id1", "0.0.0.1", 100),
+            new ShuffleServerInfo("id2", "0.0.0.2", 100)),
         partitionToServers.get(1));
-    assertEquals(Arrays.asList(new ShuffleServerInfo("id3", "0.0.0.3", 100),
-        new ShuffleServerInfo("id4", "0.0.0.4", 100)),
+    assertEquals(
+        Arrays.asList(
+            new ShuffleServerInfo("id3", "0.0.0.3", 100),
+            new ShuffleServerInfo("id4", "0.0.0.4", 100)),
         partitionToServers.get(2));
-    assertEquals(Arrays.asList(new ShuffleServerInfo("id3", "0.0.0.3", 100),
-        new ShuffleServerInfo("id4", "0.0.0.4", 100)),
+    assertEquals(
+        Arrays.asList(
+            new ShuffleServerInfo("id3", "0.0.0.3", 100),
+            new ShuffleServerInfo("id4", "0.0.0.4", 100)),
         partitionToServers.get(3));
     assertNull(partitionToServers.get(4));
   }
@@ -107,18 +116,24 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     GetShuffleAssignmentsResponse testResponse = generateShuffleAssignmentsResponse();
     Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
         coordinatorClient.getServerToPartitionRanges(testResponse);
-    List<ShuffleRegisterInfo> expected = Arrays.asList(
-        new ShuffleRegisterInfo(new ShuffleServerInfo("id1", "0.0.0.1", 100),
-            Lists.newArrayList(new PartitionRange(0, 1))),
-        new ShuffleRegisterInfo(new ShuffleServerInfo("id2", "0.0.0.2", 100),
-            Lists.newArrayList(new PartitionRange(0, 1))),
-        new ShuffleRegisterInfo(new ShuffleServerInfo("id3", "0.0.0.3", 100),
-            Lists.newArrayList(new PartitionRange(2, 3))),
-        new ShuffleRegisterInfo(new ShuffleServerInfo("id4", "0.0.0.4", 100),
-            Lists.newArrayList(new PartitionRange(2, 3))));
+    List<ShuffleRegisterInfo> expected =
+        Arrays.asList(
+            new ShuffleRegisterInfo(
+                new ShuffleServerInfo("id1", "0.0.0.1", 100),
+                Lists.newArrayList(new PartitionRange(0, 1))),
+            new ShuffleRegisterInfo(
+                new ShuffleServerInfo("id2", "0.0.0.2", 100),
+                Lists.newArrayList(new PartitionRange(0, 1))),
+            new ShuffleRegisterInfo(
+                new ShuffleServerInfo("id3", "0.0.0.3", 100),
+                Lists.newArrayList(new PartitionRange(2, 3))),
+            new ShuffleRegisterInfo(
+                new ShuffleServerInfo("id4", "0.0.0.4", 100),
+                Lists.newArrayList(new PartitionRange(2, 3))));
     assertEquals(4, serverToPartitionRanges.size());
     for (ShuffleRegisterInfo sri : expected) {
-      List<PartitionRange> partitionRanges = serverToPartitionRanges.get(sri.getShuffleServerInfo());
+      List<PartitionRange> partitionRanges =
+          serverToPartitionRanges.get(sri.getShuffleServerInfo());
       assertEquals(sri.getPartitionRanges(), partitionRanges);
     }
   }
@@ -126,7 +141,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
   @Test
   public void getShuffleAssignmentsTest() throws Exception {
     final String appId = "getShuffleAssignmentsTest";
-    CoordinatorTestUtils.waitForRegister(coordinatorClient,2);
+    CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
     // When the shuffleServerHeartbeat Test is completed before the current test,
     // the server's tags will be [ss_v4, GRPC_NETTY] and [ss_v4, GRPC], respectively.
     // We need to remove the first machine's tag from GRPC_NETTY to GRPC
@@ -135,23 +150,32 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     Class<RssConf> clazz = RssConf.class;
     Field field = clazz.getDeclaredField("settings");
     field.setAccessible(true);
-    ((ConcurrentHashMap<Object, Object>) field.get(shuffleServerConf)).remove(
-            ShuffleServerConf.NETTY_SERVER_PORT.key());
+    ((ConcurrentHashMap<Object, Object>) field.get(shuffleServerConf))
+        .remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
     String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
-    withEnvironmentVariables("RSS_ENV_KEY", storageTypeJsonSource).execute(() -> {
-      ShuffleServer ss = new ShuffleServer((ShuffleServerConf) shuffleServerConf);
-      ss.start();
-      shuffleServers.set(0, ss);
-    });
+    withEnvironmentVariables("RSS_ENV_KEY", storageTypeJsonSource)
+        .execute(
+            () -> {
+              shuffleServerConf.remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
+              ShuffleServer ss = new ShuffleServer((ShuffleServerConf) shuffleServerConf);
+              ss.start();
+              shuffleServers.set(0, ss);
+            });
     Thread.sleep(5000);
     // add tag when ClientType is `GRPC`
-    RssGetShuffleAssignmentsRequest request = new RssGetShuffleAssignmentsRequest(
-        appId, 1, 10, 4, 1,
-        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION, ClientType.GRPC.name()));
+    RssGetShuffleAssignmentsRequest request =
+        new RssGetShuffleAssignmentsRequest(
+            appId,
+            1,
+            10,
+            4,
+            1,
+            Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION, ClientType.GRPC.name()));
     RssGetShuffleAssignmentsResponse response = coordinatorClient.getShuffleAssignments(request);
     Set<Integer> expectedStart = Sets.newHashSet(0, 4, 8);
 
-    Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges = response.getServerToPartitionRanges();
+    Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
+        response.getServerToPartitionRanges();
     assertEquals(2, serverToPartitionRanges.size());
     List<PartitionRange> partitionRanges = Lists.newArrayList();
     for (List<PartitionRange> ranges : serverToPartitionRanges.values()) {
@@ -177,9 +201,14 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     }
     assertTrue(expectedStart.isEmpty());
 
-    request = new RssGetShuffleAssignmentsRequest(
-        appId, 1, 10, 4, 2,
-        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION, ClientType.GRPC.name()));
+    request =
+        new RssGetShuffleAssignmentsRequest(
+            appId,
+            1,
+            10,
+            4,
+            2,
+            Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION, ClientType.GRPC.name()));
     response = coordinatorClient.getShuffleAssignments(request);
     serverToPartitionRanges = response.getServerToPartitionRanges();
     assertEquals(2, serverToPartitionRanges.size());
@@ -213,9 +242,8 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     assertEquals(2, range4To7);
     assertEquals(2, range8To11);
 
-    request = new RssGetShuffleAssignmentsRequest(
-        appId, 3, 2, 1, 1,
-        Sets.newHashSet("fake_version"));
+    request =
+        new RssGetShuffleAssignmentsRequest(appId, 3, 2, 1, 1, Sets.newHashSet("fake_version"));
     try {
       coordinatorClient.getShuffleAssignments(request);
       fail("Exception should be thrown");
@@ -230,11 +258,13 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
         coordinatorClient.registerApplicationInfo(
             new RssApplicationInfoRequest("application_appHeartbeatTest1", 1000, "user"));
     assertEquals(StatusCode.SUCCESS, response.getStatusCode());
-    assertEquals(Sets.newHashSet("application_appHeartbeatTest1"),
+    assertEquals(
+        Sets.newHashSet("application_appHeartbeatTest1"),
         coordinators.get(0).getApplicationManager().getAppIds());
     coordinatorClient.registerApplicationInfo(
         new RssApplicationInfoRequest("application_appHeartbeatTest2", 1000, "user"));
-    assertEquals(Sets.newHashSet("application_appHeartbeatTest1", "application_appHeartbeatTest2"),
+    assertEquals(
+        Sets.newHashSet("application_appHeartbeatTest1", "application_appHeartbeatTest2"),
         coordinators.get(0).getApplicationManager().getAppIds());
     int retry = 0;
     while (retry < 5) {
@@ -244,7 +274,8 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
       Thread.sleep(1000);
     }
     // appHeartbeatTest2 was removed because of expired
-    assertEquals(Sets.newHashSet("application_appHeartbeatTest1"),
+    assertEquals(
+        Sets.newHashSet("application_appHeartbeatTest1"),
         coordinators.get(0).getApplicationManager().getAppIds());
   }
 
@@ -259,8 +290,8 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     ServerNode node = nodes.get(0);
     assertEquals(1, node.getStorageInfo().size());
     StorageInfo infoHead = node.getStorageInfo().values().iterator().next();
-    final StorageInfo expectedStorageInfo = shuffleServers.get(1)
-        .getStorageManager().getStorageInfo().values().iterator().next();
+    final StorageInfo expectedStorageInfo =
+        shuffleServers.get(1).getStorageManager().getStorageInfo().values().iterator().next();
     assertEquals(expectedStorageInfo, infoHead);
     assertEquals(StorageStatus.NORMAL, infoHead.getStatus());
     assertTrue(node.getTags().contains(Constants.SHUFFLE_SERVER_VERSION));
@@ -272,13 +303,15 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     shuffleServerConf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "RSS_ENV_KEY");
     String baseDir = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0);
     String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
-    withEnvironmentVariables("RSS_ENV_KEY", storageTypeJsonSource).execute(() -> {
-      // set this server's tag to ssd
-      shuffleServerConf.set(ShuffleServerConf.TAGS, Lists.newArrayList("SSD"));
-      ShuffleServer ss = new ShuffleServer(shuffleServerConf);
-      ss.start();
-      shuffleServers.set(0, ss);
-    });
+    withEnvironmentVariables("RSS_ENV_KEY", storageTypeJsonSource)
+        .execute(
+            () -> {
+              // set this server's tag to ssd
+              shuffleServerConf.set(ShuffleServerConf.TAGS, Lists.newArrayList("SSD"));
+              ShuffleServer ss = new ShuffleServer(shuffleServerConf);
+              ss.start();
+              shuffleServers.set(0, ss);
+            });
     Thread.sleep(3000);
     assertEquals(2, coordinators.get(0).getClusterManager().getNodesNum());
     nodes = scm.getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION, "SSD"));
@@ -293,57 +326,86 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
 
   @Test
   public void rpcMetricsTest() throws Exception {
-    double oldValue = coordinators.get(0).getGrpcMetrics().getCounterMap()
-        .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD).get();
+    double oldValue =
+        coordinators
+            .get(0)
+            .getGrpcMetrics()
+            .getCounterMap()
+            .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD)
+            .get();
     CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
-    double newValue = coordinators.get(0).getGrpcMetrics().getCounterMap()
-        .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD).get();
+    double newValue =
+        coordinators
+            .get(0)
+            .getGrpcMetrics()
+            .getCounterMap()
+            .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD)
+            .get();
     assertTrue(newValue - oldValue > 1);
 
     String appId = "rpcMetricsTest";
-    RssGetShuffleAssignmentsRequest request = new RssGetShuffleAssignmentsRequest(
-        appId, 1, 10, 4, 1,
-        Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
-    oldValue = coordinators.get(0).getGrpcMetrics().getCounterMap()
-        .get(CoordinatorGrpcMetrics.GET_SHUFFLE_ASSIGNMENTS_METHOD).get();
+    RssGetShuffleAssignmentsRequest request =
+        new RssGetShuffleAssignmentsRequest(
+            appId, 1, 10, 4, 1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
+    oldValue =
+        coordinators
+            .get(0)
+            .getGrpcMetrics()
+            .getCounterMap()
+            .get(CoordinatorGrpcMetrics.GET_SHUFFLE_ASSIGNMENTS_METHOD)
+            .get();
     coordinatorClient.getShuffleAssignments(request);
-    newValue = coordinators.get(0).getGrpcMetrics().getCounterMap()
-        .get(CoordinatorGrpcMetrics.GET_SHUFFLE_ASSIGNMENTS_METHOD).get();
+    newValue =
+        coordinators
+            .get(0)
+            .getGrpcMetrics()
+            .getCounterMap()
+            .get(CoordinatorGrpcMetrics.GET_SHUFFLE_ASSIGNMENTS_METHOD)
+            .get();
     assertEquals(oldValue + 1, newValue, 0.5);
 
-    double connectionSize = coordinators.get(0)
-        .getGrpcMetrics().getGaugeMap().get(GRPC_SERVER_CONNECTION_NUMBER_KEY).get();
+    double connectionSize =
+        coordinators
+            .get(0)
+            .getGrpcMetrics()
+            .getGaugeMap()
+            .get(GRPC_SERVER_CONNECTION_NUMBER_KEY)
+            .get();
     assertTrue(connectionSize > 0);
   }
 
   private GetShuffleAssignmentsResponse generateShuffleAssignmentsResponse() {
-    ShuffleServerId ss1 = RssProtos.ShuffleServerId.newBuilder()
-        .setIp("0.0.0.1")
-        .setPort(100)
-        .setNettyPort(-1)
-        .setId("id1")
-        .build();
+    ShuffleServerId ss1 =
+        RssProtos.ShuffleServerId.newBuilder()
+            .setIp("0.0.0.1")
+            .setPort(100)
+            .setNettyPort(-1)
+            .setId("id1")
+            .build();
 
-    ShuffleServerId ss2 = RssProtos.ShuffleServerId.newBuilder()
-        .setIp("0.0.0.2")
-        .setPort(100)
-        .setNettyPort(-1)
-        .setId("id2")
-        .build();
+    ShuffleServerId ss2 =
+        RssProtos.ShuffleServerId.newBuilder()
+            .setIp("0.0.0.2")
+            .setPort(100)
+            .setNettyPort(-1)
+            .setId("id2")
+            .build();
 
-    ShuffleServerId ss3 = RssProtos.ShuffleServerId.newBuilder()
-        .setIp("0.0.0.3")
-        .setPort(100)
-        .setNettyPort(-1)
-        .setId("id3")
-        .build();
+    ShuffleServerId ss3 =
+        RssProtos.ShuffleServerId.newBuilder()
+            .setIp("0.0.0.3")
+            .setPort(100)
+            .setNettyPort(-1)
+            .setId("id3")
+            .build();
 
-    ShuffleServerId ss4 = RssProtos.ShuffleServerId.newBuilder()
-        .setIp("0.0.0.4")
-        .setPort(100)
-        .setNettyPort(-1)
-        .setId("id4")
-        .build();
+    ShuffleServerId ss4 =
+        RssProtos.ShuffleServerId.newBuilder()
+            .setIp("0.0.0.4")
+            .setPort(100)
+            .setNettyPort(-1)
+            .setId("id4")
+            .build();
 
     PartitionRangeAssignment assignment1 =
         RssProtos.PartitionRangeAssignment.newBuilder()

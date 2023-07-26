@@ -33,10 +33,9 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
 @Path("/metrics")
-@Produces({ MediaType.APPLICATION_JSON })
+@Produces({MediaType.APPLICATION_JSON})
 public class MetricResource extends BaseMetricResource {
-  @Context
-  protected ServletContext servletContext;
+  @Context protected ServletContext servletContext;
 
   @GET
   @Path("/")
@@ -47,8 +46,7 @@ public class MetricResource extends BaseMetricResource {
   @GET
   @Path("/{type}")
   public MetricsJsonObj metrics(
-      @PathParam("type") String type,
-      @QueryParam("name[]") Set<String> names) {
+      @PathParam("type") String type, @QueryParam("name[]") Set<String> names) {
     Enumeration<Collector.MetricFamilySamples> mfs =
         getCollectorRegistry(servletContext, type).filteredMetricFamilySamples(names);
     List<Collector.MetricFamilySamples.Sample> metrics = new LinkedList<>();
@@ -76,6 +74,5 @@ public class MetricResource extends BaseMetricResource {
     public long getTimeStamp() {
       return timeStamp;
     }
-
   }
 }

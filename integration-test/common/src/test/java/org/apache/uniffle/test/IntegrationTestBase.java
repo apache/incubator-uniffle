@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterAll;
@@ -60,6 +61,9 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
   protected static List<ShuffleServer> shuffleServers = Lists.newArrayList();
   protected static List<CoordinatorServer> coordinators = Lists.newArrayList();
 
+  protected static final int NETTY_PORT = 21000;
+  protected static AtomicInteger nettyPortCounter = new AtomicInteger();
+
   public static void startServers() throws Exception {
     for (CoordinatorServer coordinator : coordinators) {
       coordinator.start();
@@ -95,9 +99,10 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
       CoordinatorConf coordinatorConf, Map<String, String> dynamicConf) throws Exception {
     File file = createDynamicConfFile(dynamicConf);
     coordinatorConf.setBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
-    coordinatorConf.setString(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH,
-        file.getAbsolutePath());
-    coordinatorConf.setInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 5);
+    coordinatorConf.setString(
+        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, file.getAbsolutePath());
+    coordinatorConf.setInteger(
+        CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 5);
   }
 
   protected static ShuffleServerConf getShuffleServerConf() throws Exception {
@@ -122,6 +127,9 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     serverConf.setBoolean("rss.server.health.check.enable", false);
     serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     serverConf.set(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL, 500L);
+    serverConf.setInteger(
+        ShuffleServerConf.NETTY_SERVER_PORT, NETTY_PORT + nettyPortCounter.getAndIncrement());
+    serverConf.setString("rss.server.tags", "GRPC,GRPC_NETTY");
     return serverConf;
   }
 
@@ -138,8 +146,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
   }
 
   protected static void createAndStartServers(
-      ShuffleServerConf shuffleServerConf,
-      CoordinatorConf coordinatorConf) throws Exception {
+      ShuffleServerConf shuffleServerConf, CoordinatorConf coordinatorConf) throws Exception {
     createCoordinatorServer(coordinatorConf);
     createShuffleServer(shuffleServerConf);
     startServers();
@@ -151,8 +158,8 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     return dynamicConfFile;
   }
 
-  protected static void writeRemoteStorageConf(
-      File cfgFile, Map<String, String> dynamicConf) throws Exception {
+  protected static void writeRemoteStorageConf(File cfgFile, Map<String, String> dynamicConf)
+      throws Exception {
     // sleep 2 secs to make sure the modified time will be updated
     Thread.sleep(2000);
     FileWriter fileWriter = new FileWriter(cfgFile);

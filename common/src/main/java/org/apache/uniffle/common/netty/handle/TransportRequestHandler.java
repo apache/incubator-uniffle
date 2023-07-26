@@ -58,4 +58,3 @@ public class TransportRequestHandler extends MessageHandler<RequestMessage> {
     msgHandler.receive(reverseClient, request);
   }
 }
-

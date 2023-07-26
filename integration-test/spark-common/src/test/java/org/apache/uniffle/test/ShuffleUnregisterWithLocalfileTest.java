@@ -57,8 +57,7 @@ public class ShuffleUnregisterWithLocalfileTest extends SparkIntegrationTestBase
   }
 
   @Override
-  public void updateSparkConfCustomer(SparkConf sparkConf) {
-  }
+  public void updateSparkConfCustomer(SparkConf sparkConf) {}
 
   private int runCounter = 0;
 
@@ -72,16 +71,24 @@ public class ShuffleUnregisterWithLocalfileTest extends SparkIntegrationTestBase
     // take a rest to make sure shuffle server is registered
     Thread.sleep(3000);
     JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
-    JavaPairRDD<String, String> javaPairRDD1 = jsc.parallelizePairs(Lists.newArrayList(
-        new Tuple2<>("a", "1"), new Tuple2<>("b", "2"),
-        new Tuple2<>("c", "3"), new Tuple2<>("d", "4")), 2);
+    JavaPairRDD<String, String> javaPairRDD1 =
+        jsc.parallelizePairs(
+            Lists.newArrayList(
+                new Tuple2<>("a", "1"), new Tuple2<>("b", "2"),
+                new Tuple2<>("c", "3"), new Tuple2<>("d", "4")),
+            2);
     JavaPairRDD<String, Iterable<String>> javaPairRDD = javaPairRDD1.groupByKey().sortByKey();
     Map map = javaPairRDD.collectAsMap();
 
-    // The second run will use the rss. and we should check the effectiveness of unregisterShuffle method.
+    // The second run will use the rss. and we should check the effectiveness of unregisterShuffle
+    // method.
     if (runCounter == 1) {
-      String path = shuffleServers.get(0).getShuffleServerConf()
-          .get(RssBaseConf.RSS_STORAGE_BASE_PATH).get(0);
+      String path =
+          shuffleServers
+              .get(0)
+              .getShuffleServerConf()
+              .get(RssBaseConf.RSS_STORAGE_BASE_PATH)
+              .get(0);
       String appPath = new File(path).listFiles()[0].getAbsolutePath();
 
       String shufflePath = appPath + "/0";
@@ -98,9 +105,8 @@ public class ShuffleUnregisterWithLocalfileTest extends SparkIntegrationTestBase
       map = javaPairRDD.collectAsMap();
       shufflePath = appPath + "/1";
       assertTrue(new File(shufflePath).exists());
-    } else {
-      runCounter++;
     }
+    runCounter++;
     return map;
   }
 }

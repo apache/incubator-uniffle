@@ -54,12 +54,14 @@ public abstract class AbstractAssignmentStrategy implements AssignmentStrategy {
     } else if (selectPartitionStrategyName == SelectPartitionStrategyName.CONTINUOUS) {
       selectPartitionStrategy = new ContinuousSelectPartitionStrategy();
     } else {
-      throw new RssException("Unsupported partition assignment strategy:" + selectPartitionStrategyName);
+      throw new RssException(
+          "Unsupported partition assignment strategy:" + selectPartitionStrategyName);
     }
   }
 
   private void loadHostAssignmentStrategy() {
-    HostAssignmentStrategyName hostAssignmentStrategyName = conf.get(COORDINATOR_ASSIGNMENT_HOST_STRATEGY);
+    HostAssignmentStrategyName hostAssignmentStrategyName =
+        conf.get(COORDINATOR_ASSIGNMENT_HOST_STRATEGY);
     if (hostAssignmentStrategyName == HostAssignmentStrategyName.MUST_DIFF) {
       hostAssignmentStrategy = new MustDiffHostAssignmentStrategy();
     } else if (hostAssignmentStrategyName == HostAssignmentStrategyName.PREFER_DIFF) {
@@ -67,7 +69,8 @@ public abstract class AbstractAssignmentStrategy implements AssignmentStrategy {
     } else if (hostAssignmentStrategyName == HostAssignmentStrategyName.NONE) {
       hostAssignmentStrategy = new BasicHostAssignmentStrategy();
     } else {
-      throw new RssException("Unsupported partition assignment strategy:" + hostAssignmentStrategyName);
+      throw new RssException(
+          "Unsupported partition assignment strategy:" + hostAssignmentStrategyName);
     }
   }
 
@@ -76,10 +79,13 @@ public abstract class AbstractAssignmentStrategy implements AssignmentStrategy {
   }
 
   protected SortedMap<PartitionRange, List<ServerNode>> getPartitionAssignment(
-      int totalPartitionNum, int partitionNumPerRange, int replica, List<ServerNode> candidatesNodes,
+      int totalPartitionNum,
+      int partitionNumPerRange,
+      int replica,
+      List<ServerNode> candidatesNodes,
       int estimateTaskConcurrency) {
-    return selectPartitionStrategy.assign(totalPartitionNum, partitionNumPerRange, replica,
-        candidatesNodes, estimateTaskConcurrency);
+    return selectPartitionStrategy.assign(
+        totalPartitionNum, partitionNumPerRange, replica, candidatesNodes, estimateTaskConcurrency);
   }
 
   public enum HostAssignmentStrategyName {

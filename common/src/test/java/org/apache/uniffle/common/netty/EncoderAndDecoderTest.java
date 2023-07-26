@@ -74,11 +74,15 @@ public class EncoderAndDecoderTest {
         assertEquals(EXPECTED_MESSAGE, rpcResponse.getRetMessage());
       } else if (msg instanceof SendShuffleDataRequest) {
         SendShuffleDataRequest sendShuffleDataRequest = (SendShuffleDataRequest) msg;
-        assertTrue(NettyProtocolTestUtils.compareSendShuffleDataRequest(sendShuffleDataRequest, DATA_REQUEST));
-        sendShuffleDataRequest.getPartitionToBlocks().values().stream().flatMap(Collection::stream)
+        assertTrue(
+            NettyProtocolTestUtils.compareSendShuffleDataRequest(
+                sendShuffleDataRequest, DATA_REQUEST));
+        sendShuffleDataRequest.getPartitionToBlocks().values().stream()
+            .flatMap(Collection::stream)
             .forEach(shuffleBlockInfo -> shuffleBlockInfo.getData().release());
-        sendShuffleDataRequest.getPartitionToBlocks().values().stream().flatMap(Collection::stream)
-            .forEach(shuffleBlockInfo -> assertEquals(0,shuffleBlockInfo.getData().refCnt()));
+        sendShuffleDataRequest.getPartitionToBlocks().values().stream()
+            .flatMap(Collection::stream)
+            .forEach(shuffleBlockInfo -> assertEquals(0, shuffleBlockInfo.getData().refCnt()));
         RpcResponse rpcResponse = new RpcResponse(REQUEST_ID, STATUS_CODE, EXPECTED_MESSAGE);
         ctx.writeAndFlush(rpcResponse);
       } else {
@@ -92,8 +96,7 @@ public class EncoderAndDecoderTest {
   public void test() throws InterruptedException {
     EventLoopGroup workerGroup = NettyUtils.createEventLoop(IOMode.NIO, 2, "netty-client");
     PooledByteBufAllocator pooledByteBufAllocator =
-        NettyUtils.createPooledByteBufAllocator(
-            true, false /* allowCache */, 2);
+        NettyUtils.createPooledByteBufAllocator(true, false /* allowCache */, 2);
     Bootstrap bootstrap = new Bootstrap();
     bootstrap
         .group(workerGroup)
@@ -107,7 +110,8 @@ public class EncoderAndDecoderTest {
         new ChannelInitializer<SocketChannel>() {
           @Override
           public void initChannel(SocketChannel ch) {
-            ch.pipeline().addLast("ClientEncoder", MessageEncoder.INSTANCE)
+            ch.pipeline()
+                .addLast("ClientEncoder", MessageEncoder.INSTANCE)
                 .addLast("ClientDecoder", new TransportFrameDecoder())
                 .addLast("ClientResponseHandler", new MockResponseHandler());
             channelRef.set(ch);
@@ -118,25 +122,64 @@ public class EncoderAndDecoderTest {
     Thread.sleep(200);
     channelRef.get().writeAndFlush(DATA_REQUEST);
     channelRef.get().closeFuture().await(3L, TimeUnit.SECONDS);
-    DATA_REQUEST.getPartitionToBlocks().values().stream().flatMap(Collection::stream)
+    DATA_REQUEST.getPartitionToBlocks().values().stream()
+        .flatMap(Collection::stream)
         .forEach(shuffleBlockInfo -> shuffleBlockInfo.getData().release());
   }
 
   private static SendShuffleDataRequest generateShuffleDataRequest() {
     String appId = "test_app";
-    byte[] data = new byte[]{1, 2, 3};
-    List<ShuffleServerInfo> shuffleServerInfoList = Arrays.asList(new ShuffleServerInfo("aaa", 1),
-        new ShuffleServerInfo("bbb", 2));
+    byte[] data = new byte[] {1, 2, 3};
+    List<ShuffleServerInfo> shuffleServerInfoList =
+        Arrays.asList(new ShuffleServerInfo("aaa", 1), new ShuffleServerInfo("bbb", 2));
     List<ShuffleBlockInfo> shuffleBlockInfoList1 =
-        Arrays.asList(new ShuffleBlockInfo(1, 1, 1, 10, 123,
-                Unpooled.wrappedBuffer(data).retain(), shuffleServerInfoList, 5, 0, 1),
-            new ShuffleBlockInfo(1, 1, 1, 10, 123,
-                Unpooled.wrappedBuffer(data).retain(), shuffleServerInfoList, 5, 0, 1));
+        Arrays.asList(
+            new ShuffleBlockInfo(
+                1,
+                1,
+                1,
+                10,
+                123,
+                Unpooled.wrappedBuffer(data).retain(),
+                shuffleServerInfoList,
+                5,
+                0,
+                1),
+            new ShuffleBlockInfo(
+                1,
+                1,
+                1,
+                10,
+                123,
+                Unpooled.wrappedBuffer(data).retain(),
+                shuffleServerInfoList,
+                5,
+                0,
+                1));
     List<ShuffleBlockInfo> shuffleBlockInfoList2 =
-        Arrays.asList(new ShuffleBlockInfo(1, 2, 1, 10, 123,
-                Unpooled.wrappedBuffer(data).retain(), shuffleServerInfoList, 5, 0, 1),
-            new ShuffleBlockInfo(1, 1, 2, 10, 123,
-                Unpooled.wrappedBuffer(data).retain(), shuffleServerInfoList, 5, 0, 1));
+        Arrays.asList(
+            new ShuffleBlockInfo(
+                1,
+                2,
+                1,
+                10,
+                123,
+                Unpooled.wrappedBuffer(data).retain(),
+                shuffleServerInfoList,
+                5,
+                0,
+                1),
+            new ShuffleBlockInfo(
+                1,
+                1,
+                2,
+                10,
+                123,
+                Unpooled.wrappedBuffer(data).retain(),
+                shuffleServerInfoList,
+                5,
+                0,
+                1));
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     partitionToBlocks.put(1, shuffleBlockInfoList1);
     partitionToBlocks.put(2, shuffleBlockInfoList2);
@@ -147,16 +190,19 @@ public class EncoderAndDecoderTest {
   public void startNettyServer() {
     bossGroup = NettyUtils.createEventLoop(IOMode.NIO, 1, "netty-boss-group");
     workerGroup = NettyUtils.createEventLoop(IOMode.NIO, 5, "netty-worker-group");
-    ServerBootstrap serverBootstrap = new ServerBootstrap().group(bossGroup, workerGroup)
-                                          .channel(NioServerSocketChannel.class);
-    serverBootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
-      @Override
-      public void initChannel(final SocketChannel ch) {
-        ch.pipeline().addLast("ServerEncoder", MessageEncoder.INSTANCE)
-            .addLast("ServerDecoder", new TransportFrameDecoder())
-            .addLast("ServerResponseHandler", new MockResponseHandler());
-      }
-    })
+    ServerBootstrap serverBootstrap =
+        new ServerBootstrap().group(bossGroup, workerGroup).channel(NioServerSocketChannel.class);
+    serverBootstrap
+        .childHandler(
+            new ChannelInitializer<SocketChannel>() {
+              @Override
+              public void initChannel(final SocketChannel ch) {
+                ch.pipeline()
+                    .addLast("ServerEncoder", MessageEncoder.INSTANCE)
+                    .addLast("ServerDecoder", new TransportFrameDecoder())
+                    .addLast("ServerResponseHandler", new MockResponseHandler());
+              }
+            })
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .childOption(ChannelOption.TCP_NODELAY, true)

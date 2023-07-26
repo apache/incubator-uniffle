@@ -17,10 +17,13 @@
 
 package org.apache.spark.shuffle.writer;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -40,6 +43,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.Partitioner;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
+import org.apache.spark.TaskContext;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.scheduler.MapStatus;
 import org.apache.spark.scheduler.MapStatus$;
@@ -84,6 +88,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private long sendCheckInterval;
   private boolean isMemoryShuffleEnabled;
   private final Function<String, Boolean> taskFailureCallback;
+  private final Set<Long> blockIds = Sets.newConcurrentHashSet();
 
   public RssShuffleWriter(
       String appId,
@@ -101,22 +106,20 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleId,
         taskId,
         taskAttemptId,
-        bufferManager,
         shuffleWriteMetrics,
         shuffleManager,
         sparkConf,
         shuffleWriteClient,
         rssHandle,
-        (tid) -> true
-    );
+        (tid) -> true);
+    this.bufferManager = bufferManager;
   }
 
-  public RssShuffleWriter(
+  private RssShuffleWriter(
       String appId,
       int shuffleId,
       String taskId,
       long taskAttemptId,
-      WriteBufferManager bufferManager,
       ShuffleWriteMetrics shuffleWriteMetrics,
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
@@ -124,7 +127,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback) {
     this.appId = appId;
-    this.bufferManager = bufferManager;
     this.shuffleId = shuffleId;
     this.taskId = taskId;
     this.taskAttemptId = taskAttemptId;
@@ -141,22 +143,60 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.shuffleWriteClient = shuffleWriteClient;
     this.shuffleServersForData = rssHandle.getShuffleServersForData();
     this.partitionToServers = rssHandle.getPartitionToServers();
-    this.isMemoryShuffleEnabled = isMemoryShuffleEnabled(
-        sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
+    this.isMemoryShuffleEnabled =
+        isMemoryShuffleEnabled(sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
     this.taskFailureCallback = taskFailureCallback;
+  }
+
+  public RssShuffleWriter(
+      String appId,
+      int shuffleId,
+      String taskId,
+      long taskAttemptId,
+      ShuffleWriteMetrics shuffleWriteMetrics,
+      RssShuffleManager shuffleManager,
+      SparkConf sparkConf,
+      ShuffleWriteClient shuffleWriteClient,
+      RssShuffleHandle<K, V, C> rssHandle,
+      Function<String, Boolean> taskFailureCallback,
+      TaskContext context) {
+    this(
+        appId,
+        shuffleId,
+        taskId,
+        taskAttemptId,
+        shuffleWriteMetrics,
+        shuffleManager,
+        sparkConf,
+        shuffleWriteClient,
+        rssHandle,
+        taskFailureCallback);
+    BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
+    final WriteBufferManager bufferManager =
+        new WriteBufferManager(
+            shuffleId,
+            taskId,
+            taskAttemptId,
+            bufferOptions,
+            rssHandle.getDependency().serializer(),
+            rssHandle.getPartitionToServers(),
+            context.taskMemoryManager(),
+            shuffleWriteMetrics,
+            RssSparkConfig.toRssConf(sparkConf),
+            this::processShuffleBlockInfos);
+    this.bufferManager = bufferManager;
   }
 
   private boolean isMemoryShuffleEnabled(String storageType) {
     return StorageType.withMemory(StorageType.valueOf(storageType));
   }
 
-  /**
-   * Create dummy BlockManagerId and embed partition->blockIds
-   */
+  /** Create dummy BlockManagerId and embed partition->blockIds */
   private BlockManagerId createDummyBlockManagerId(String executorId, long taskAttemptId) {
     // dummy values are used there for host and port check in BlockManagerId
     // hack: use topologyInfo field in BlockManagerId to store [partition, blockIds]
-    return BlockManagerId.apply(executorId, DUMMY_HOST, DUMMY_PORT, Option.apply(Long.toString(taskAttemptId)));
+    return BlockManagerId.apply(
+        executorId, DUMMY_HOST, DUMMY_PORT, Option.apply(Long.toString(taskAttemptId)));
   }
 
   @Override
@@ -169,9 +209,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
   }
 
-  private void writeImpl(Iterator<Product2<K,V>> records) {
+  private void writeImpl(Iterator<Product2<K, V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos;
-    Set<Long> blockIds = Sets.newHashSet();
     while (records.hasNext()) {
       Product2<K, V> record = records.next();
       int partition = getPartition(record._1());
@@ -182,12 +221,12 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       } else {
         shuffleBlockInfos = bufferManager.addRecord(partition, record._1(), record._2());
       }
-      processShuffleBlockInfos(shuffleBlockInfos, blockIds);
+      processShuffleBlockInfos(shuffleBlockInfos);
     }
 
     final long start = System.currentTimeMillis();
     shuffleBlockInfos = bufferManager.clear();
-    processShuffleBlockInfos(shuffleBlockInfos, blockIds);
+    processShuffleBlockInfos(shuffleBlockInfos);
     long s = System.currentTimeMillis();
     checkBlockSendResult(blockIds);
     final long checkDuration = System.currentTimeMillis() - s;
@@ -199,54 +238,78 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
     long writeDurationMs = bufferManager.getWriteTime() + (System.currentTimeMillis() - start);
     shuffleWriteMetrics.incWriteTime(TimeUnit.MILLISECONDS.toNanos(writeDurationMs));
-    LOG.info("Finish write shuffle for appId[" + appId + "], shuffleId[" + shuffleId
-        + "], taskId[" + taskId + "] with write " + writeDurationMs + " ms, include checkSendResult["
-        + checkDuration + "], commit[" + commitDuration + "], " + bufferManager.getManagerCostInfo());
+    LOG.info(
+        "Finish write shuffle for appId["
+            + appId
+            + "], shuffleId["
+            + shuffleId
+            + "], taskId["
+            + taskId
+            + "] with write "
+            + writeDurationMs
+            + " ms, include checkSendResult["
+            + checkDuration
+            + "], commit["
+            + commitDuration
+            + "], "
+            + bufferManager.getManagerCostInfo());
   }
 
   /**
-   * ShuffleBlock will be added to queue and send to shuffle server
-   * maintenance the following information:
-   * 1. add blockId to set, check if it is send later
-   * 2. update shuffle server info, they will be used in commit phase
-   * 3. update [partition, blockIds], it will be set to MapStatus,
+   * ShuffleBlock will be added to queue and send to shuffle server maintenance the following
+   * information: 1. add blockId to set, check if it is send later 2. update shuffle server info,
+   * they will be used in commit phase 3. update [partition, blockIds], it will be set to MapStatus,
    * and shuffle reader will do the integration check with them
    *
    * @param shuffleBlockInfoList
-   * @param blockIds
    */
-  private void processShuffleBlockInfos(List<ShuffleBlockInfo> shuffleBlockInfoList, Set<Long> blockIds) {
+  private List<CompletableFuture<Long>> processShuffleBlockInfos(
+      List<ShuffleBlockInfo> shuffleBlockInfoList) {
     if (shuffleBlockInfoList != null && !shuffleBlockInfoList.isEmpty()) {
-      shuffleBlockInfoList.stream().forEach(sbi -> {
-        long blockId = sbi.getBlockId();
-        // add blockId to set, check if it is send later
-        blockIds.add(blockId);
-        // update [partition, blockIds], it will be sent to shuffle server
-        int partitionId = sbi.getPartitionId();
-        partitionToBlockIds.computeIfAbsent(partitionId, k -> Sets.newHashSet()).add(blockId);
-      });
-      postBlockEvent(shuffleBlockInfoList);
+      shuffleBlockInfoList.stream()
+          .forEach(
+              sbi -> {
+                long blockId = sbi.getBlockId();
+                // add blockId to set, check if it is send later
+                blockIds.add(blockId);
+                // update [partition, blockIds], it will be sent to shuffle server
+                int partitionId = sbi.getPartitionId();
+                partitionToBlockIds
+                    .computeIfAbsent(partitionId, k -> Sets.newHashSet())
+                    .add(blockId);
+              });
+      return postBlockEvent(shuffleBlockInfoList);
     }
+    return Collections.emptyList();
   }
 
-  // don't send huge block to shuffle server, or there will be OOM if shuffle sever receives data more than expected
-  protected void postBlockEvent(List<ShuffleBlockInfo> shuffleBlockInfoList) {
+  // don't send huge block to shuffle server, or there will be OOM if shuffle sever receives data
+  // more than expected
+  protected List<CompletableFuture<Long>> postBlockEvent(
+      List<ShuffleBlockInfo> shuffleBlockInfoList) {
+    List<CompletableFuture<Long>> futures = new ArrayList<>();
     for (AddBlockEvent event : bufferManager.buildBlockEvents(shuffleBlockInfoList)) {
-      shuffleManager.sendData(event);
+      futures.add(shuffleManager.sendData(event));
     }
+    return futures;
   }
 
   @VisibleForTesting
   protected void sendCommit() {
     ExecutorService executor = Executors.newSingleThreadExecutor();
-    Future<Boolean> future = executor.submit(
-        () -> shuffleWriteClient.sendCommit(shuffleServersForData, appId, shuffleId, numMaps));
+    Future<Boolean> future =
+        executor.submit(
+            () -> shuffleWriteClient.sendCommit(shuffleServersForData, appId, shuffleId, numMaps));
     long start = System.currentTimeMillis();
     int currentWait = 200;
     int maxWait = 5000;
     while (!future.isDone()) {
-      LOG.info("Wait commit to shuffle server for task[" + taskAttemptId + "] cost "
-          + (System.currentTimeMillis() - start) + " ms");
+      LOG.info(
+          "Wait commit to shuffle server for task["
+              + taskAttemptId
+              + "] cost "
+              + (System.currentTimeMillis() - start)
+              + " ms");
       Uninterruptibles.sleepUninterruptibly(currentWait, TimeUnit.MILLISECONDS);
       currentWait = Math.min(currentWait * 2, maxWait);
     }
@@ -273,7 +336,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       // if failed when send data to shuffle server, mark task as failed
       if (failedBlockIds.size() > 0) {
         String errorMsg =
-            "Send failed: Task[" + taskId + "] failed because " + failedBlockIds.size()
+            "Send failed: Task["
+                + taskId
+                + "] failed because "
+                + failedBlockIds.size()
                 + " blocks can't be sent to shuffle server.";
         LOG.error(errorMsg);
         throw new RssException(errorMsg);
@@ -288,8 +354,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       Uninterruptibles.sleepUninterruptibly(sendCheckInterval, TimeUnit.MILLISECONDS);
       if (System.currentTimeMillis() - start > sendCheckTimeout) {
         String errorMsg =
-            "Timeout: Task[" + taskId + "] failed because " + blockIds.size()
-                + " blocks can't be sent to shuffle server in " + sendCheckTimeout + " ms.";
+            "Timeout: Task["
+                + taskId
+                + "] failed because "
+                + blockIds.size()
+                + " blocks can't be sent to shuffle server in "
+                + sendCheckTimeout
+                + " ms.";
         LOG.error(errorMsg);
         throw new RssException(errorMsg);
       }
@@ -300,7 +371,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   public Option<MapStatus> stop(boolean success) {
     try {
       if (success) {
-        // fill partitionLengths with non zero dummy value so map output tracker could work correctly
+        // fill partitionLengths with non zero dummy value so map output tracker could work
+        // correctly
         long[] partitionLengths = new long[partitioner.numPartitions()];
         Arrays.fill(partitionLengths, 1);
         final BlockManagerId blockManagerId =
@@ -311,10 +383,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
           ptb.put(entry.getKey(), Lists.newArrayList(entry.getValue()));
         }
         long start = System.currentTimeMillis();
-        shuffleWriteClient.reportShuffleResult(partitionToServers, appId, shuffleId,
-            taskAttemptId, ptb, bitmapSplitNum);
-        LOG.info("Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
-            taskAttemptId, bitmapSplitNum, (System.currentTimeMillis() - start));
+        shuffleWriteClient.reportShuffleResult(
+            partitionToServers, appId, shuffleId, taskAttemptId, ptb, bitmapSplitNum);
+        LOG.info(
+            "Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
+            taskAttemptId,
+            bitmapSplitNum,
+            (System.currentTimeMillis() - start));
         MapStatus mapStatus = MapStatus$.MODULE$.apply(blockManagerId, partitionLengths);
         return Option.apply(mapStatus);
       } else {

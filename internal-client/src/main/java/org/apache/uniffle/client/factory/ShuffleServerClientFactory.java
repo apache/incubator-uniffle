@@ -43,12 +43,14 @@ public class ShuffleServerClientFactory {
     return LazyHolder.INSTANCE;
   }
 
-  private ShuffleServerClient createShuffleServerClient(String clientType,
-      ShuffleServerInfo shuffleServerInfo, RssConf rssConf) {
+  private ShuffleServerClient createShuffleServerClient(
+      String clientType, ShuffleServerInfo shuffleServerInfo, RssConf rssConf) {
     if (clientType.equalsIgnoreCase(ClientType.GRPC.name())) {
-      return new ShuffleServerGrpcClient(shuffleServerInfo.getHost(), shuffleServerInfo.getGrpcPort());
+      return new ShuffleServerGrpcClient(
+          shuffleServerInfo.getHost(), shuffleServerInfo.getGrpcPort());
     } else if (clientType.equalsIgnoreCase(ClientType.GRPC_NETTY.name())) {
-      return new ShuffleServerGrpcNettyClient(rssConf,
+      return new ShuffleServerGrpcNettyClient(
+          rssConf,
           shuffleServerInfo.getHost(),
           shuffleServerInfo.getGrpcPort(),
           shuffleServerInfo.getNettyPort());
@@ -67,7 +69,8 @@ public class ShuffleServerClientFactory {
     clients.putIfAbsent(clientType, JavaUtils.newConcurrentMap());
     Map<ShuffleServerInfo, ShuffleServerClient> serverToClients = clients.get(clientType);
     if (serverToClients.get(shuffleServerInfo) == null) {
-      serverToClients.put(shuffleServerInfo, createShuffleServerClient(clientType, shuffleServerInfo, rssConf));
+      serverToClients.put(
+          shuffleServerInfo, createShuffleServerClient(clientType, shuffleServerInfo, rssConf));
     }
     return serverToClients.get(shuffleServerInfo);
   }

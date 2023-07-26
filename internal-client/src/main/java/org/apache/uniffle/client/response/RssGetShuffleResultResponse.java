@@ -28,7 +28,8 @@ public class RssGetShuffleResultResponse extends ClientResponse {
 
   private Roaring64NavigableMap blockIdBitmap;
 
-  public RssGetShuffleResultResponse(StatusCode statusCode, byte[] serializedBitmap) throws IOException {
+  public RssGetShuffleResultResponse(StatusCode statusCode, byte[] serializedBitmap)
+      throws IOException {
     super(statusCode);
     blockIdBitmap = RssUtils.deserializeBitMap(serializedBitmap);
   }

@@ -49,11 +49,10 @@ public class MultiStorageManagerTest {
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
     List<ShufflePartitionedBlock> blocks =
         Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
-    ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
-        1, appId, 1, 1, 1, 1000, blocks, null, null);
+    ShuffleDataFlushEvent event =
+        new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
     assertTrue((manager.selectStorage(event) instanceof LocalStorage));
-    event = new ShuffleDataFlushEvent(
-        1, appId, 1, 1, 1, 1000000, blocks, null, null);
+    event = new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000000, blocks, null, null);
     assertTrue((manager.selectStorage(event) instanceof HadoopStorage));
   }
 
@@ -64,32 +63,31 @@ public class MultiStorageManagerTest {
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 10000L);
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
-    conf.setString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
+    conf.setString(
+        ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
         RotateStorageManagerFallbackStrategy.class.getCanonicalName());
     conf.set(
         ShuffleServerConf.MULTISTORAGE_MANAGER_SELECTOR_CLASS,
-        "org.apache.uniffle.server.storage.multi.HugePartitionSensitiveStorageManagerSelector"
-    );
+        "org.apache.uniffle.server.storage.multi.HugePartitionSensitiveStorageManagerSelector");
     MultiStorageManager manager = new MultiStorageManager(conf);
     String remoteStorage = "test";
     String appId = "selectStorageManagerIfCanNotWriteTest_appId";
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
 
     /**
-     * case1: only event owned by huge partition will be flushed to cold storage
-     * when the
-     * {@link org.apache.uniffle.server.storage.multi.StorageManagerSelector.ColdStoragePreferredFactor.HUGE_PARTITION}
+     * case1: only event owned by huge partition will be flushed to cold storage when the {@link
+     * org.apache.uniffle.server.storage.multi.StorageManagerSelector.ColdStoragePreferredFactor.HUGE_PARTITION}
      * is enabled.
      */
-    List<ShufflePartitionedBlock> blocks = Lists.newArrayList(
-        new ShufflePartitionedBlock(10001, 1000, 1, 1, 1L, (byte[]) null)
-    );
-    ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
-        1, appId, 1, 1, 1, 100000, blocks, null, null);
+    List<ShufflePartitionedBlock> blocks =
+        Lists.newArrayList(new ShufflePartitionedBlock(10001, 1000, 1, 1, 1L, (byte[]) null));
+    ShuffleDataFlushEvent event =
+        new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 100000, blocks, null, null);
     Storage storage = manager.selectStorage(event);
     assertTrue(storage instanceof LocalStorage);
 
-    ShuffleDataFlushEvent event1 = new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 10, blocks, null, null);
+    ShuffleDataFlushEvent event1 =
+        new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 10, blocks, null, null);
     event1.markOwnedByHugePartition();
     storage = manager.selectStorage(event1);
     assertTrue(storage instanceof HadoopStorage);
@@ -102,34 +100,29 @@ public class MultiStorageManagerTest {
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 10000L);
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
-    conf.setString(ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS, 
+    conf.setString(
+        ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
         RotateStorageManagerFallbackStrategy.class.getCanonicalName());
     MultiStorageManager manager = new MultiStorageManager(conf);
     String remoteStorage = "test";
     String appId = "selectStorageManagerIfCanNotWriteTest_appId";
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
 
-    /**
-     * case1: big event should be written into cold storage directly
-     */
-    List<ShufflePartitionedBlock> blocks = Lists.newArrayList(
-        new ShufflePartitionedBlock(10001, 1000, 1, 1, 1L, (byte[]) null)
-    );
-    ShuffleDataFlushEvent hugeEvent = new ShuffleDataFlushEvent(
-        1, appId, 1, 1, 1, 10001, blocks, null, null);
+    /** case1: big event should be written into cold storage directly */
+    List<ShufflePartitionedBlock> blocks =
+        Lists.newArrayList(new ShufflePartitionedBlock(10001, 1000, 1, 1, 1L, (byte[]) null));
+    ShuffleDataFlushEvent hugeEvent =
+        new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 10001, blocks, null, null);
     assertTrue(manager.selectStorage(hugeEvent) instanceof HadoopStorage);
 
-    /**
-     * case2: fallback when disk can not write
-     */
+    /** case2: fallback when disk can not write */
     blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
-    ShuffleDataFlushEvent event = new ShuffleDataFlushEvent(
-        1, appId, 1, 1, 1, 1000, blocks, null, null);
+    ShuffleDataFlushEvent event =
+        new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
     Storage storage = manager.selectStorage(event);
     assertTrue((storage instanceof LocalStorage));
-    ((LocalStorage)storage).markCorrupted();
-    event = new ShuffleDataFlushEvent(
-        1, appId, 1, 1, 1, 1000, blocks, null, null);
+    ((LocalStorage) storage).markCorrupted();
+    event = new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
     assertTrue((manager.selectStorage(event) instanceof HadoopStorage));
   }
 }

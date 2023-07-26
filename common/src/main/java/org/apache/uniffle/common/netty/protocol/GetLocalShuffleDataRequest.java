@@ -31,8 +31,16 @@ public class GetLocalShuffleDataRequest extends RequestMessage {
   private int length;
   private long timestamp;
 
-  public GetLocalShuffleDataRequest(long requestId, String appId, int shuffleId, int partitionId,
-      int partitionNumPerRange, int partitionNum, long offset, int length, long timestamp) {
+  public GetLocalShuffleDataRequest(
+      long requestId,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int partitionNumPerRange,
+      int partitionNum,
+      long offset,
+      int length,
+      long timestamp) {
     super(requestId);
     this.appId = appId;
     this.shuffleId = shuffleId;
@@ -51,7 +59,10 @@ public class GetLocalShuffleDataRequest extends RequestMessage {
 
   @Override
   public int encodedLength() {
-    return REQUEST_ID_ENCODE_LENGTH + ByteBufUtils.encodedLength(appId) + 2 * Long.BYTES + 5 * Integer.BYTES;
+    return REQUEST_ID_ENCODE_LENGTH
+        + ByteBufUtils.encodedLength(appId)
+        + 2 * Long.BYTES
+        + 5 * Integer.BYTES;
   }
 
   @Override
@@ -77,8 +88,16 @@ public class GetLocalShuffleDataRequest extends RequestMessage {
     long offset = byteBuf.readLong();
     int length = byteBuf.readInt();
     long timestamp = byteBuf.readLong();
-    return new GetLocalShuffleDataRequest(requestId, appId, shuffleId, partitionId, partitionNumPerRange,
-        partitionNum, offset, length, timestamp);
+    return new GetLocalShuffleDataRequest(
+        requestId,
+        appId,
+        shuffleId,
+        partitionId,
+        partitionNumPerRange,
+        partitionNum,
+        offset,
+        length,
+        timestamp);
   }
 
   public String getAppId() {

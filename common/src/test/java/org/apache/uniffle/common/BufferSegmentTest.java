@@ -39,23 +39,26 @@ public class BufferSegmentTest {
 
   @ParameterizedTest
   @CsvSource({
-      "6, 1, 2, 3, 4, 5",
-      "0, 6, 2, 3, 4, 5",
-      "0, 1, 6, 3, 4, 5",
-      "0, 1, 2, 6, 4, 5",
-      "0, 1, 2, 3, 6, 5",
-      "0, 1, 2, 3, 4, 6",
+    "6, 1, 2, 3, 4, 5",
+    "0, 6, 2, 3, 4, 5",
+    "0, 1, 6, 3, 4, 5",
+    "0, 1, 2, 6, 4, 5",
+    "0, 1, 2, 3, 6, 5",
+    "0, 1, 2, 3, 4, 6",
   })
-  public void testNotEquals(long blockId, long offset, int length, int uncompressLength, long crc, long taskAttemptId) {
+  public void testNotEquals(
+      long blockId, long offset, int length, int uncompressLength, long crc, long taskAttemptId) {
     BufferSegment segment1 = new BufferSegment(0, 1, 2, 3, 4, 5);
-    BufferSegment segment2 = new BufferSegment(blockId, offset, length, uncompressLength, crc, taskAttemptId);
+    BufferSegment segment2 =
+        new BufferSegment(blockId, offset, length, uncompressLength, crc, taskAttemptId);
     assertNotEquals(segment1, segment2);
   }
 
   @Test
   public void testToString() {
     BufferSegment segment = new BufferSegment(0, 1, 2, 3, 4, 5);
-    assertEquals("BufferSegment{blockId[0], taskAttemptId[5], offset[1], length[2], crc[4], uncompressLength[3]}",
+    assertEquals(
+        "BufferSegment{blockId[0], taskAttemptId[5], offset[1], length[2], crc[4], uncompressLength[3]}",
         segment.toString());
   }
 
@@ -66,5 +69,4 @@ public class BufferSegmentTest {
     BufferSegment segment2 = new BufferSegment(0, (long) Integer.MAX_VALUE + 1, 2, 3, 4, 5);
     assertThrows(RuntimeException.class, segment2::getOffset);
   }
-
 }

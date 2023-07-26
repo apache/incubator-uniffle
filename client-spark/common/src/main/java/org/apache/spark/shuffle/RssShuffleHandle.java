@@ -74,5 +74,4 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
   public Set<ShuffleServerInfo> getShuffleServersForData() {
     return handlerInfoBd.value().getShuffleServersForData();
   }
-
 }

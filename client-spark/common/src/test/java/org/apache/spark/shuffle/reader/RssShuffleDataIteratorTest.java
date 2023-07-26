@@ -75,16 +75,16 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     Map<String, String> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    writeTestData(writeHandler, 2, 5, expectedData,
-        blockIdBitmap, "key", KRYO_SERIALIZER, 0);
+    writeTestData(writeHandler, 2, 5, expectedData, blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
-    RssShuffleDataIterator rssShuffleDataIterator = getDataIterator(basePath, blockIdBitmap,
-        taskIdBitmap, Lists.newArrayList(ssi1));
+    RssShuffleDataIterator rssShuffleDataIterator =
+        getDataIterator(basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1));
 
     validateResult(rssShuffleDataIterator, expectedData, 10);
 
     blockIdBitmap.add(ClientUtils.getBlockId(0, 0, Constants.MAX_SEQUENCE_NO));
-    rssShuffleDataIterator = getDataIterator(basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1));
+    rssShuffleDataIterator =
+        getDataIterator(basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1));
     int recNum = 0;
     try {
       // can't find all expected block id, data loss
@@ -99,17 +99,36 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     assertEquals(10, recNum);
   }
 
-  private RssShuffleDataIterator getDataIterator(String basePath, Roaring64NavigableMap blockIdBitmap,
-      Roaring64NavigableMap taskIdBitmap, List<ShuffleServerInfo> serverInfos) {
+  private RssShuffleDataIterator getDataIterator(
+      String basePath,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> serverInfos) {
     return getDataIterator(basePath, blockIdBitmap, taskIdBitmap, serverInfos, true);
   }
 
-  private RssShuffleDataIterator getDataIterator(String basePath, Roaring64NavigableMap blockIdBitmap,
-       Roaring64NavigableMap taskIdBitmap, List<ShuffleServerInfo> serverInfos, boolean compress) {
-    ShuffleReadClientImpl readClient = new ShuffleReadClientImpl(
-        StorageType.HDFS.name(), "appId", 0, 1, 100, 2,
-        10, 10000, basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(serverInfos),
-        new Configuration(), new DefaultIdHelper());
+  private RssShuffleDataIterator getDataIterator(
+      String basePath,
+      Roaring64NavigableMap blockIdBitmap,
+      Roaring64NavigableMap taskIdBitmap,
+      List<ShuffleServerInfo> serverInfos,
+      boolean compress) {
+    ShuffleReadClientImpl readClient =
+        new ShuffleReadClientImpl(
+            StorageType.HDFS.name(),
+            "appId",
+            0,
+            1,
+            100,
+            2,
+            10,
+            10000,
+            basePath,
+            blockIdBitmap,
+            taskIdBitmap,
+            Lists.newArrayList(serverInfos),
+            new Configuration(),
+            new DefaultIdHelper());
     RssConf rc;
     if (!compress) {
       SparkConf sc = new SparkConf();
@@ -118,8 +137,7 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     } else {
       rc = new RssConf();
     }
-    return new RssShuffleDataIterator(KRYO_SERIALIZER, readClient,
-        new ShuffleReadMetrics(), rc);
+    return new RssShuffleDataIterator(KRYO_SERIALIZER, readClient, new ShuffleReadMetrics(), rc);
   }
 
   @Test
@@ -138,26 +156,34 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     Map<String, String> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    writeTestData(writeHandler1, 2, 5, expectedData,
-        blockIdBitmap, "key1", KRYO_SERIALIZER, 0);
-    writeTestData(writeHandler2, 2, 5, expectedData,
-        blockIdBitmap, "key2", KRYO_SERIALIZER, 0);
+    writeTestData(writeHandler1, 2, 5, expectedData, blockIdBitmap, "key1", KRYO_SERIALIZER, 0);
+    writeTestData(writeHandler2, 2, 5, expectedData, blockIdBitmap, "key2", KRYO_SERIALIZER, 0);
 
     // duplicate file created, it should be used in product environment
     String shuffleFolder = basePath + "/appId/0/0-1";
     String ssi1Prefix = shuffleFolder + "/" + ssi1.getId();
     String ssi2Prefix = shuffleFolder + "/" + ssi2.getId();
-    FileUtil.copy(fs, new Path(ssi1Prefix + "_0.data"), fs,
-        new Path(ssi1Prefix + "_0.cp.data"), false, conf);
-    FileUtil.copy(fs, new Path(ssi1Prefix + "_0.index"), fs,
-        new Path(ssi1Prefix + "_0.cp.index"), false, conf);
-    FileUtil.copy(fs, new Path(ssi2Prefix + "_0.data"), fs,
-        new Path(ssi2Prefix + "_0.cp.data"), false, conf);
-    FileUtil.copy(fs, new Path(ssi2Prefix + "_0.index"), fs,
-        new Path(ssi2Prefix + "_0.cp.index"), false, conf);
+    FileUtil.copy(
+        fs, new Path(ssi1Prefix + "_0.data"), fs, new Path(ssi1Prefix + "_0.cp.data"), false, conf);
+    FileUtil.copy(
+        fs,
+        new Path(ssi1Prefix + "_0.index"),
+        fs,
+        new Path(ssi1Prefix + "_0.cp.index"),
+        false,
+        conf);
+    FileUtil.copy(
+        fs, new Path(ssi2Prefix + "_0.data"), fs, new Path(ssi2Prefix + "_0.cp.data"), false, conf);
+    FileUtil.copy(
+        fs,
+        new Path(ssi2Prefix + "_0.index"),
+        fs,
+        new Path(ssi2Prefix + "_0.cp.index"),
+        false,
+        conf);
 
-    RssShuffleDataIterator rssShuffleDataIterator = getDataIterator(basePath, blockIdBitmap,
-        taskIdBitmap, Lists.newArrayList(ssi1, ssi2));
+    RssShuffleDataIterator rssShuffleDataIterator =
+        getDataIterator(basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1, ssi2));
 
     validateResult(rssShuffleDataIterator, expectedData, 20);
   }
@@ -171,11 +197,10 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     Map<String, String> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    writeTestData(writeHandler, 2, 5, expectedData,
-        blockIdBitmap, "key", KRYO_SERIALIZER, 0);
+    writeTestData(writeHandler, 2, 5, expectedData, blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
-    RssShuffleDataIterator rssShuffleDataIterator = getDataIterator(basePath, blockIdBitmap,
-        taskIdBitmap, Lists.newArrayList(ssi1));
+    RssShuffleDataIterator rssShuffleDataIterator =
+        getDataIterator(basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1));
     // data file is deleted after iterator initialization
     Path dataFile = new Path(basePath + "/appId/0/0-1/" + ssi1.getId() + "_0.data");
     fs.delete(dataFile, true);
@@ -205,12 +230,12 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     Map<String, String> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    writeTestData(writeHandler, 2, 5, expectedData,
-        blockIdBitmap, "key", KRYO_SERIALIZER, 0);
+    writeTestData(writeHandler, 2, 5, expectedData, blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
-    final RssShuffleDataIterator rssShuffleDataIterator = getDataIterator(basePath, blockIdBitmap,
-        taskIdBitmap, Lists.newArrayList(ssi1));
-    // index file is deleted after iterator initialization, it should be ok, all index infos are read already
+    final RssShuffleDataIterator rssShuffleDataIterator =
+        getDataIterator(basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1));
+    // index file is deleted after iterator initialization, it should be ok, all index infos are
+    // read already
     Path indexFile = new Path(basePath + "/appId/0/0-1/" + ssi1.getId() + ".index");
     fs.delete(indexFile, true);
     try {
@@ -231,13 +256,12 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     Map<String, String> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    writeTestData(writeHandler, 2, 5, expectedData,
-        blockIdBitmap, "key", KRYO_SERIALIZER, 0);
+    writeTestData(writeHandler, 2, 5, expectedData, blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
-    RssShuffleDataIterator rssShuffleDataIterator = getDataIterator(basePath, blockIdBitmap,
-        taskIdBitmap, Lists.newArrayList(ssi1));
-    RssShuffleDataIterator rssShuffleDataIterator2 = getDataIterator(basePath, blockIdBitmap,
-        taskIdBitmap, Lists.newArrayList(ssi1, ssi2));
+    RssShuffleDataIterator rssShuffleDataIterator =
+        getDataIterator(basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1));
+    RssShuffleDataIterator rssShuffleDataIterator2 =
+        getDataIterator(basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1, ssi2));
     // crc32 is incorrect
     try (MockedStatic<ChecksumUtils> checksumUtilsMock = Mockito.mockStatic(ChecksumUtils.class)) {
       checksumUtilsMock.when(() -> ChecksumUtils.getCrc32((ByteBuffer) any())).thenReturn(-1L);
@@ -277,13 +301,14 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     Map<String, String> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    writeTestData(writeHandler1, 2, 5, expectedData,
-        blockIdBitmap, "key1", KRYO_SERIALIZER, 0, compress);
-    writeTestData(writeHandler2, 2, 5, expectedData,
-        blockIdBitmap, "key2", KRYO_SERIALIZER, 0, compress);
+    writeTestData(
+        writeHandler1, 2, 5, expectedData, blockIdBitmap, "key1", KRYO_SERIALIZER, 0, compress);
+    writeTestData(
+        writeHandler2, 2, 5, expectedData, blockIdBitmap, "key2", KRYO_SERIALIZER, 0, compress);
 
-    RssShuffleDataIterator rssShuffleDataIterator = getDataIterator(basePath, blockIdBitmap,
-        taskIdBitmap, Lists.newArrayList(ssi1, ssi2), compress);
+    RssShuffleDataIterator rssShuffleDataIterator =
+        getDataIterator(
+            basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1, ssi2), compress);
     Object codec = FieldUtils.readField(rssShuffleDataIterator, "codec", true);
     if (compress) {
       Assertions.assertNotNull(codec);
@@ -301,9 +326,9 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     ShuffleReadClient mockClient = mock(ShuffleReadClient.class);
     doNothing().when(mockClient).close();
     RssShuffleDataIterator dataIterator =
-        new RssShuffleDataIterator(KRYO_SERIALIZER, mockClient, new ShuffleReadMetrics(), new RssConf());
+        new RssShuffleDataIterator(
+            KRYO_SERIALIZER, mockClient, new ShuffleReadMetrics(), new RssConf());
     dataIterator.cleanup();
     verify(mockClient, times(1)).close();
   }
-
 }

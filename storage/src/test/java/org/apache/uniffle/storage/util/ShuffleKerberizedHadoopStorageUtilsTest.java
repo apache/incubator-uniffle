@@ -40,7 +40,6 @@ public class ShuffleKerberizedHadoopStorageUtilsTest extends KerberizedHadoopBas
         tempDir,
         kerberizedHadoop.getFileSystem(),
         kerberizedHadoop.getSchemeAndAuthorityPrefix(),
-        kerberizedHadoop.getConf()
-    );
+        kerberizedHadoop.getConf());
   }
 }

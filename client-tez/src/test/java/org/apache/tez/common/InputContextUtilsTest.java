@@ -30,9 +30,11 @@ public class InputContextUtilsTest {
   @Test
   public void testGetTezTaskAttemptID() {
     InputContext inputContext = mock(InputContext.class);
-    when(inputContext.getUniqueIdentifier()).thenReturn("attempt_1685094627632_0157_1_01_000000_0_10006");
+    when(inputContext.getUniqueIdentifier())
+        .thenReturn("attempt_1685094627632_0157_1_01_000000_0_10006");
 
-    TezTaskAttemptID rightTaskAttemptID = TezTaskAttemptID.fromString("attempt_1685094627632_0157_1_01_000000_0");
+    TezTaskAttemptID rightTaskAttemptID =
+        TezTaskAttemptID.fromString("attempt_1685094627632_0157_1_01_000000_0");
     assertEquals(rightTaskAttemptID, InputContextUtils.getTezTaskAttemptID(inputContext));
   }
 }

@@ -46,9 +46,7 @@ import org.apache.uniffle.common.util.NettyUtils;
 
 public class TransportClientFactory implements Closeable {
 
-  /**
-   * A simple data structure to track the pool of clients between two peer nodes.
-   */
+  /** A simple data structure to track the pool of clients between two peer nodes. */
   private static class ClientPool {
     TransportClient[] clients;
     Object[] locks;
@@ -68,9 +66,7 @@ public class TransportClientFactory implements Closeable {
   private final TransportConf conf;
   private final ConcurrentHashMap<SocketAddress, ClientPool> connectionPool;
 
-  /**
-   * Random number generator for picking connections between peers.
-   */
+  /** Random number generator for picking connections between peers. */
   private final Random rand;
 
   private final int numConnectionsPerPeer;
@@ -88,8 +84,7 @@ public class TransportClientFactory implements Closeable {
 
     IOMode ioMode = conf.ioMode();
     this.socketChannelClass = NettyUtils.getClientChannelClass(ioMode);
-    this.workerGroup =
-        NettyUtils.createEventLoop(ioMode, conf.clientThreads(), "netty-rpc-client");
+    this.workerGroup = NettyUtils.createEventLoop(ioMode, conf.clientThreads(), "netty-rpc-client");
     this.pooledAllocator =
         NettyUtils.createPooledByteBufAllocator(
             conf.preferDirectBufs(), false, conf.clientThreads());
@@ -110,8 +105,9 @@ public class TransportClientFactory implements Closeable {
         InetSocketAddress.createUnresolved(remoteHost, remotePort);
 
     // Create the ClientPool if we don't have it yet.
-    ClientPool clientPool = connectionPool.computeIfAbsent(unresolvedAddress, x
-        -> new ClientPool(numConnectionsPerPeer));
+    ClientPool clientPool =
+        connectionPool.computeIfAbsent(
+            unresolvedAddress, x -> new ClientPool(numConnectionsPerPeer));
 
     int clientIndex =
         partitionId < 0 ? rand.nextInt(numConnectionsPerPeer) : partitionId % numConnectionsPerPeer;
@@ -200,7 +196,8 @@ public class TransportClientFactory implements Closeable {
         new ChannelInitializer<SocketChannel>() {
           @Override
           public void initChannel(SocketChannel ch) {
-            TransportChannelHandler transportResponseHandler = context.initializePipeline(ch, decoder);
+            TransportChannelHandler transportResponseHandler =
+                context.initializePipeline(ch, decoder);
             clientRef.set(transportResponseHandler.getClient());
             channelRef.set(ch);
           }
@@ -223,9 +220,7 @@ public class TransportClientFactory implements Closeable {
     return client;
   }
 
-  /**
-   * Close all connections in the connection pool, and shutdown the worker thread pool.
-   */
+  /** Close all connections in the connection pool, and shutdown the worker thread pool. */
   @Override
   public void close() {
     // Go through all clients and close them if they are active.
@@ -240,7 +235,6 @@ public class TransportClientFactory implements Closeable {
     }
     connectionPool.clear();
 
-    
     if (workerGroup != null && !workerGroup.isShuttingDown()) {
       workerGroup.shutdownGracefully();
     }

@@ -40,7 +40,7 @@ public class CoordinatorClientFactory {
   }
 
   public CoordinatorClient createCoordinatorClient(String host, int port) {
-    if (clientType.equals(ClientType.GRPC)) {
+    if (clientType.equals(ClientType.GRPC) || clientType.equals(ClientType.GRPC_NETTY)) {
       return new CoordinatorGrpcClient(host, port);
     } else {
       throw new UnsupportedOperationException("Unsupported client type " + clientType);
@@ -57,7 +57,7 @@ public class CoordinatorClientFactory {
       throw new RssException(msg);
     }
 
-    for (String coordinator: coordinatorList) {
+    for (String coordinator : coordinatorList) {
       String[] ipPort = coordinator.trim().split(":");
       if (ipPort.length != 2) {
         String msg = "Invalid coordinator format " + Arrays.toString(ipPort);
@@ -71,8 +71,11 @@ public class CoordinatorClientFactory {
       coordinatorClients.add(coordinatorClient);
       LOG.info("Add coordinator client {}", coordinatorClient.getDesc());
     }
-    LOG.info("Finish create coordinator clients {}",
-        coordinatorClients.stream().map(CoordinatorClient::getDesc).collect(Collectors.joining(", ")));
+    LOG.info(
+        "Finish create coordinator clients {}",
+        coordinatorClients.stream()
+            .map(CoordinatorClient::getDesc)
+            .collect(Collectors.joining(", ")));
     return coordinatorClients;
   }
 }

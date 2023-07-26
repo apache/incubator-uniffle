@@ -43,62 +43,93 @@ public class LocalFileHandlerTest {
   public void writeTest(@TempDir File tmpDir) throws Exception {
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
-    String[] basePaths = new String[]{dataDir1.getAbsolutePath(),
-        dataDir2.getAbsolutePath()};
-    final LocalFileWriteHandler writeHandler1 = new LocalFileWriteHandler("appId", 0, 1, 1,
-        basePaths[0], "pre");
-    final LocalFileWriteHandler writeHandler2 = new LocalFileWriteHandler("appId", 0, 2, 2,
-        basePaths[0], "pre");
+    String[] basePaths = new String[] {dataDir1.getAbsolutePath(), dataDir2.getAbsolutePath()};
+    final LocalFileWriteHandler writeHandler1 =
+        new LocalFileWriteHandler("appId", 0, 1, 1, basePaths[0], "pre");
+    final LocalFileWriteHandler writeHandler2 =
+        new LocalFileWriteHandler("appId", 0, 2, 2, basePaths[0], "pre");
 
-    String possiblePath1 = ShuffleStorageUtils.getFullShuffleDataFolder(dataDir1.getAbsolutePath(),
-        ShuffleStorageUtils.getShuffleDataPath("appId", 0, 1, 1));
-    String possiblePath2 = ShuffleStorageUtils.getFullShuffleDataFolder(dataDir2.getAbsolutePath(),
-        ShuffleStorageUtils.getShuffleDataPath("appId", 0, 1, 1));
-    assertTrue(writeHandler1.getBasePath().endsWith(possiblePath1)
-        || writeHandler1.getBasePath().endsWith(possiblePath2));
+    String possiblePath1 =
+        ShuffleStorageUtils.getFullShuffleDataFolder(
+            dataDir1.getAbsolutePath(), ShuffleStorageUtils.getShuffleDataPath("appId", 0, 1, 1));
+    String possiblePath2 =
+        ShuffleStorageUtils.getFullShuffleDataFolder(
+            dataDir2.getAbsolutePath(), ShuffleStorageUtils.getShuffleDataPath("appId", 0, 1, 1));
+    assertTrue(
+        writeHandler1.getBasePath().endsWith(possiblePath1)
+            || writeHandler1.getBasePath().endsWith(possiblePath2));
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     final Set<Long> expectedBlockIds1 = Sets.newHashSet();
     final Set<Long> expectedBlockIds2 = Sets.newHashSet();
 
-    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(1, 32),
-        writeHandler1, expectedData, expectedBlockIds1);
-    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(2, 32),
-        writeHandler1, expectedData, expectedBlockIds1);
-    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(3, 32),
-        writeHandler1, expectedData, expectedBlockIds1);
-    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(4, 32),
-        writeHandler1, expectedData, expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(
+        LocalFileHandlerTestBase.generateBlocks(1, 32),
+        writeHandler1,
+        expectedData,
+        expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(
+        LocalFileHandlerTestBase.generateBlocks(2, 32),
+        writeHandler1,
+        expectedData,
+        expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(
+        LocalFileHandlerTestBase.generateBlocks(3, 32),
+        writeHandler1,
+        expectedData,
+        expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(
+        LocalFileHandlerTestBase.generateBlocks(4, 32),
+        writeHandler1,
+        expectedData,
+        expectedBlockIds1);
 
-    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(3, 32),
-        writeHandler2, expectedData, expectedBlockIds2);
-    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(3, 32),
-        writeHandler2, expectedData, expectedBlockIds2);
-    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(2, 32),
-        writeHandler2, expectedData, expectedBlockIds2);
-    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(1, 32),
-        writeHandler2, expectedData, expectedBlockIds2);
+    LocalFileHandlerTestBase.writeTestData(
+        LocalFileHandlerTestBase.generateBlocks(3, 32),
+        writeHandler2,
+        expectedData,
+        expectedBlockIds2);
+    LocalFileHandlerTestBase.writeTestData(
+        LocalFileHandlerTestBase.generateBlocks(3, 32),
+        writeHandler2,
+        expectedData,
+        expectedBlockIds2);
+    LocalFileHandlerTestBase.writeTestData(
+        LocalFileHandlerTestBase.generateBlocks(2, 32),
+        writeHandler2,
+        expectedData,
+        expectedBlockIds2);
+    LocalFileHandlerTestBase.writeTestData(
+        LocalFileHandlerTestBase.generateBlocks(1, 32),
+        writeHandler2,
+        expectedData,
+        expectedBlockIds2);
 
     RssBaseConf conf = new RssBaseConf();
-    conf.setString("rss.storage.basePath", dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath());
-    LocalFileServerReadHandler readHandler1 = new LocalFileServerReadHandler(
-        "appId", 0, 1, 1, 10, dataDir1.getAbsolutePath());
-    LocalFileServerReadHandler readHandler2 = new LocalFileServerReadHandler(
-        "appId", 0, 2, 1, 10, dataDir1.getAbsolutePath());
+    conf.setString(
+        "rss.storage.basePath", dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath());
+    LocalFileServerReadHandler readHandler1 =
+        new LocalFileServerReadHandler("appId", 0, 1, 1, 10, dataDir1.getAbsolutePath());
+    LocalFileServerReadHandler readHandler2 =
+        new LocalFileServerReadHandler("appId", 0, 2, 1, 10, dataDir1.getAbsolutePath());
 
     LocalFileHandlerTestBase.validateResult(readHandler1, expectedBlockIds1, expectedData);
     LocalFileHandlerTestBase.validateResult(readHandler2, expectedBlockIds2, expectedData);
 
     // after first read, write more data
-    LocalFileHandlerTestBase.writeTestData(LocalFileHandlerTestBase.generateBlocks(1, 32),
-        writeHandler1, expectedData, expectedBlockIds1);
+    LocalFileHandlerTestBase.writeTestData(
+        LocalFileHandlerTestBase.generateBlocks(1, 32),
+        writeHandler1,
+        expectedData,
+        expectedBlockIds1);
     // new data should be read
     LocalFileHandlerTestBase.validateResult(readHandler1, expectedBlockIds1, expectedData);
 
     ShuffleIndexResult shuffleIndexResult = LocalFileHandlerTestBase.readIndex(readHandler1);
     assertFalse(shuffleIndexResult.isEmpty());
     assertEquals(352, shuffleIndexResult.getDataFileLen());
-    List<ShuffleDataResult> shuffleDataResults = LocalFileHandlerTestBase.readData(readHandler1, shuffleIndexResult);
+    List<ShuffleDataResult> shuffleDataResults =
+        LocalFileHandlerTestBase.readData(readHandler1, shuffleIndexResult);
     assertFalse(shuffleDataResults.isEmpty());
     File targetDataFile = new File(possiblePath1, "pre.data");
     targetDataFile.delete();
@@ -110,10 +141,10 @@ public class LocalFileHandlerTest {
   }
 
   @Test
-  public void writeBigDataTest(@TempDir File tmpDir) throws IOException  {
+  public void writeBigDataTest(@TempDir File tmpDir) throws IOException {
     File writeFile = new File(tmpDir, "writetest");
     LocalFileWriter writer = new LocalFileWriter(writeFile);
-    int  size = Integer.MAX_VALUE / 100;
+    int size = Integer.MAX_VALUE / 100;
     byte[] data = new byte[size];
     for (int i = 0; i < 200; i++) {
       writer.writeData(data);
@@ -123,8 +154,5 @@ public class LocalFileHandlerTest {
   }
 
   @Test
-  public void testReadIndex() {
-
-  }
-
+  public void testReadIndex() {}
 }

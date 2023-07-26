@@ -41,8 +41,8 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 /**
- * A {@link DataPusher} that is responsible for sending data to remote
- * shuffle servers asynchronously.
+ * A {@link DataPusher} that is responsible for sending data to remote shuffle servers
+ * asynchronously.
  */
 public class DataPusher implements Closeable {
   private static final Logger LOGGER = LoggerFactory.getLogger(DataPusher.class);
@@ -58,7 +58,8 @@ public class DataPusher implements Closeable {
   // Must be thread safe
   private final Set<String> failedTaskIds;
 
-  public DataPusher(ShuffleWriteClient shuffleWriteClient,
+  public DataPusher(
+      ShuffleWriteClient shuffleWriteClient,
       Map<String, Set<Long>> taskToSuccessBlockIds,
       Map<String, Set<Long>> taskToFailedBlockIds,
       Set<String> failedTaskIds,
@@ -68,52 +69,53 @@ public class DataPusher implements Closeable {
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
     this.taskToFailedBlockIds = taskToFailedBlockIds;
     this.failedTaskIds = failedTaskIds;
-    this.executorService = new ThreadPoolExecutor(
-        threadPoolSize,
-        threadPoolSize * 2,
-        threadKeepAliveTime,
-        TimeUnit.SECONDS,
-        Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
-        ThreadUtils.getThreadFactory(this.getClass().getName())
-    );
+    this.executorService =
+        new ThreadPoolExecutor(
+            threadPoolSize,
+            threadPoolSize * 2,
+            threadKeepAliveTime,
+            TimeUnit.SECONDS,
+            Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
+            ThreadUtils.getThreadFactory(this.getClass().getName()));
   }
 
   public CompletableFuture<Long> send(AddBlockEvent event) {
     if (rssAppId == null) {
       throw new RssException("RssAppId should be set.");
     }
-    return CompletableFuture.supplyAsync(() -> {
-      String taskId = event.getTaskId();
-      List<ShuffleBlockInfo> shuffleBlockInfoList = event.getShuffleDataInfoList();
-      try {
-        SendShuffleDataResult result = shuffleWriteClient.sendShuffleData(
-            rssAppId,
-            shuffleBlockInfoList,
-            () -> !isValidTask(taskId)
-        );
-        putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
-        putBlockId(taskToFailedBlockIds, taskId, result.getFailedBlockIds());
-      } finally {
-        List<Runnable> callbackChain = Optional.of(event.getProcessedCallbackChain()).orElse(Collections.EMPTY_LIST);
-        for (Runnable runnable : callbackChain) {
-          runnable.run();
-        }
-      }
-      return shuffleBlockInfoList.stream()
-          .map(x -> x.getFreeMemory())
-          .reduce((a, b) -> a + b)
-          .get();
-    }, executorService);
+    return CompletableFuture.supplyAsync(
+        () -> {
+          String taskId = event.getTaskId();
+          List<ShuffleBlockInfo> shuffleBlockInfoList = event.getShuffleDataInfoList();
+          try {
+            SendShuffleDataResult result =
+                shuffleWriteClient.sendShuffleData(
+                    rssAppId, shuffleBlockInfoList, () -> !isValidTask(taskId));
+            putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
+            putBlockId(taskToFailedBlockIds, taskId, result.getFailedBlockIds());
+          } finally {
+            List<Runnable> callbackChain =
+                Optional.of(event.getProcessedCallbackChain()).orElse(Collections.EMPTY_LIST);
+            for (Runnable runnable : callbackChain) {
+              runnable.run();
+            }
+          }
+          return shuffleBlockInfoList.stream()
+              .map(x -> x.getFreeMemory())
+              .reduce((a, b) -> a + b)
+              .get();
+        },
+        executorService);
   }
 
   private synchronized void putBlockId(
-      Map<String, Set<Long>> taskToBlockIds,
-      String taskAttemptId,
-      Set<Long> blockIds) {
+      Map<String, Set<Long>> taskToBlockIds, String taskAttemptId, Set<Long> blockIds) {
     if (blockIds == null || blockIds.isEmpty()) {
       return;
     }
-    taskToBlockIds.computeIfAbsent(taskAttemptId, x -> Sets.newConcurrentHashSet()).addAll(blockIds);
+    taskToBlockIds
+        .computeIfAbsent(taskAttemptId, x -> Sets.newConcurrentHashSet())
+        .addAll(blockIds);
   }
 
   public boolean isValidTask(String taskId) {

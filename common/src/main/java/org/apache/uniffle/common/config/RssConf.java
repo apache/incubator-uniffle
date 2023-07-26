@@ -26,20 +26,17 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.util.UnitConverter;
 
 public class RssConf implements Cloneable {
 
-  /**
-   * Stores the concrete key/value pairs of this configuration object.
-   */
+  /** Stores the concrete key/value pairs of this configuration object. */
   private ConcurrentHashMap<String, Object> settings;
 
-  /**
-   * Creates a new empty configuration.
-   */
+  /** Creates a new empty configuration. */
   public RssConf() {
     this.settings = new ConcurrentHashMap<>();
   }
@@ -64,14 +61,12 @@ public class RssConf implements Cloneable {
    * Returns the value associated with the given key as a string.
    *
    * @param key the key pointing to the associated value
-   * @param defaultValue the default value which is returned when there is no
-   *     value associated with the given key
+   * @param defaultValue the default value which is returned when there is no value associated with
+   *     the given key
    * @return the (default) value associated with the given key
    */
   public String getString(String key, String defaultValue) {
-    return getRawValue(key)
-        .map(ConfigUtils::convertToString)
-        .orElse(defaultValue);
+    return getRawValue(key).map(ConfigUtils::convertToString).orElse(defaultValue);
   }
 
   /**
@@ -81,21 +76,19 @@ public class RssConf implements Cloneable {
    * @return the (default) value associated with the given config option
    */
   public String getString(ConfigOption<String> configOption) {
-    return getOptional(configOption)
-        .orElseGet(configOption::defaultValue);
+    return getOptional(configOption).orElseGet(configOption::defaultValue);
   }
 
   /**
-   * Returns the value associated with the given config option as a string.
-   * If no value is mapped under any key of the option, it returns the specified
-   * default instead of the option's default value.
+   * Returns the value associated with the given config option as a string. If no value is mapped
+   * under any key of the option, it returns the specified default instead of the option's default
+   * value.
    *
    * @param configOption The configuration option
    * @return the (default) value associated with the given config option
    */
   public String getString(ConfigOption<String> configOption, String overrideDefault) {
-    return getOptional(configOption)
-        .orElse(overrideDefault);
+    return getOptional(configOption).orElse(overrideDefault);
   }
 
   /**
@@ -109,8 +102,8 @@ public class RssConf implements Cloneable {
   }
 
   /**
-   * Adds the given value to the configuration object.
-   * The main key of the config option will be used to map the value.
+   * Adds the given value to the configuration object. The main key of the config option will be
+   * used to map the value.
    *
    * @param key the option specifying the key to be added
    * @param value the value of the key/value pair to be added
@@ -123,14 +116,12 @@ public class RssConf implements Cloneable {
    * Returns the value associated with the given key as an integer.
    *
    * @param key the key pointing to the associated value
-   * @param defaultValue the default value which is returned when there is no
-   *     value associated with the given key
+   * @param defaultValue the default value which is returned when there is no value associated with
+   *     the given key
    * @return the (default) value associated with the given key
    */
   public int getInteger(String key, int defaultValue) {
-    return getRawValue(key)
-        .map(ConfigUtils::convertToInt)
-        .orElse(defaultValue);
+    return getRawValue(key).map(ConfigUtils::convertToInt).orElse(defaultValue);
   }
 
   /**
@@ -140,22 +131,20 @@ public class RssConf implements Cloneable {
    * @return the (default) value associated with the given config option
    */
   public int getInteger(ConfigOption<Integer> configOption) {
-    return getOptional(configOption)
-        .orElseGet(configOption::defaultValue);
+    return getOptional(configOption).orElseGet(configOption::defaultValue);
   }
 
   /**
-   * Returns the value associated with the given config option as an integer.
-   * If no value is mapped under any key of the option, it returns the specified
-   * default instead of the option's default value.
+   * Returns the value associated with the given config option as an integer. If no value is mapped
+   * under any key of the option, it returns the specified default instead of the option's default
+   * value.
    *
    * @param configOption The configuration option
    * @param overrideDefault The value to return if no value was mapper for any key of the option
    * @return the configured value associated with the given config option, or the overrideDefault
    */
   public int getInteger(ConfigOption<Integer> configOption, int overrideDefault) {
-    return getOptional(configOption)
-        .orElse(overrideDefault);
+    return getOptional(configOption).orElse(overrideDefault);
   }
 
   /**
@@ -169,8 +158,8 @@ public class RssConf implements Cloneable {
   }
 
   /**
-   * Adds the given value to the configuration object.
-   * The main key of the config option will be used to map the value.
+   * Adds the given value to the configuration object. The main key of the config option will be
+   * used to map the value.
    *
    * @param key the option specifying the key to be added
    * @param value the value of the key/value pair to be added
@@ -183,14 +172,12 @@ public class RssConf implements Cloneable {
    * Returns the value associated with the given key as a long.
    *
    * @param key the key pointing to the associated value
-   * @param defaultValue the default value which is returned in case there is no value
-   *     associated with the given key
+   * @param defaultValue the default value which is returned in case there is no value associated
+   *     with the given key
    * @return the (default) value associated with the given key
    */
   public long getLong(String key, long defaultValue) {
-    return getRawValue(key)
-        .map(ConfigUtils::convertToLong)
-        .orElse(defaultValue);
+    return getRawValue(key).map(ConfigUtils::convertToLong).orElse(defaultValue);
   }
 
   /**
@@ -200,22 +187,20 @@ public class RssConf implements Cloneable {
    * @return the (default) value associated with the given config option
    */
   public long getLong(ConfigOption<Long> configOption) {
-    return getOptional(configOption)
-        .orElseGet(configOption::defaultValue);
+    return getOptional(configOption).orElseGet(configOption::defaultValue);
   }
 
   /**
-   * Returns the value associated with the given config option as a long integer.
-   * If no value is mapped under any key of the option, it returns the specified
-   * default instead of the option's default value.
+   * Returns the value associated with the given config option as a long integer. If no value is
+   * mapped under any key of the option, it returns the specified default instead of the option's
+   * default value.
    *
    * @param configOption The configuration option
    * @param overrideDefault The value to return if no value was mapper for any key of the option
    * @return the configured value associated with the given config option, or the overrideDefault
    */
   public long getLong(ConfigOption<Long> configOption, long overrideDefault) {
-    return getOptional(configOption)
-        .orElse(overrideDefault);
+    return getOptional(configOption).orElse(overrideDefault);
   }
 
   /**
@@ -229,8 +214,8 @@ public class RssConf implements Cloneable {
   }
 
   /**
-   * Adds the given value to the configuration object.
-   * The main key of the config option will be used to map the value.
+   * Adds the given value to the configuration object. The main key of the config option will be
+   * used to map the value.
    *
    * @param key the option specifying the key to be added
    * @param value the value of the key/value pair to be added
@@ -243,14 +228,12 @@ public class RssConf implements Cloneable {
    * Returns the value associated with the given key as a boolean.
    *
    * @param key the key pointing to the associated value
-   * @param defaultValue the default value which is returned when there is no value
-   *     associated with the given key
+   * @param defaultValue the default value which is returned when there is no value associated with
+   *     the given key
    * @return the (default) value associated with the given key
    */
   public boolean getBoolean(String key, boolean defaultValue) {
-    return getRawValue(key)
-        .map(ConfigUtils::convertToBoolean)
-        .orElse(defaultValue);
+    return getRawValue(key).map(ConfigUtils::convertToBoolean).orElse(defaultValue);
   }
 
   /**
@@ -260,22 +243,20 @@ public class RssConf implements Cloneable {
    * @return the (default) value associated with the given config option
    */
   public boolean getBoolean(ConfigOption<Boolean> configOption) {
-    return getOptional(configOption)
-        .orElseGet(configOption::defaultValue);
+    return getOptional(configOption).orElseGet(configOption::defaultValue);
   }
 
   /**
-   * Returns the value associated with the given config option as a boolean.
-   * If no value is mapped under any key of the option, it returns the specified
-   * default instead of the option's default value.
+   * Returns the value associated with the given config option as a boolean. If no value is mapped
+   * under any key of the option, it returns the specified default instead of the option's default
+   * value.
    *
    * @param configOption The configuration option
    * @param overrideDefault The value to return if no value was mapper for any key of the option
    * @return the configured value associated with the given config option, or the overrideDefault
    */
   public boolean getBoolean(ConfigOption<Boolean> configOption, boolean overrideDefault) {
-    return getOptional(configOption)
-        .orElse(overrideDefault);
+    return getOptional(configOption).orElse(overrideDefault);
   }
 
   /**
@@ -289,8 +270,8 @@ public class RssConf implements Cloneable {
   }
 
   /**
-   * Adds the given value to the configuration object.
-   * The main key of the config option will be used to map the value.
+   * Adds the given value to the configuration object. The main key of the config option will be
+   * used to map the value.
    *
    * @param key the option specifying the key to be added
    * @param value the value of the key/value pair to be added
@@ -303,14 +284,12 @@ public class RssConf implements Cloneable {
    * Returns the value associated with the given key as a float.
    *
    * @param key the key pointing to the associated value
-   * @param defaultValue the default value which is returned in case there is no value associated with the
-   *     given key
+   * @param defaultValue the default value which is returned in case there is no value associated
+   *     with the given key
    * @return the (default) value associated with the given key
    */
   public float getFloat(String key, float defaultValue) {
-    return getRawValue(key)
-        .map(ConfigUtils::convertToFloat)
-        .orElse(defaultValue);
+    return getRawValue(key).map(ConfigUtils::convertToFloat).orElse(defaultValue);
   }
 
   /**
@@ -320,22 +299,20 @@ public class RssConf implements Cloneable {
    * @return the (default) value associated with the given config option
    */
   public float getFloat(ConfigOption<Float> configOption) {
-    return getOptional(configOption)
-        .orElseGet(configOption::defaultValue);
+    return getOptional(configOption).orElseGet(configOption::defaultValue);
   }
 
   /**
-   * Returns the value associated with the given config option as a float.
-   * If no value is mapped under any key of the option, it returns the specified
-   * default instead of the option's default value.
+   * Returns the value associated with the given config option as a float. If no value is mapped
+   * under any key of the option, it returns the specified default instead of the option's default
+   * value.
    *
    * @param configOption The configuration option
    * @param overrideDefault The value to return if no value was mapper for any key of the option
    * @return the configured value associated with the given config option, or the overrideDefault
    */
   public float getFloat(ConfigOption<Float> configOption, float overrideDefault) {
-    return getOptional(configOption)
-        .orElse(overrideDefault);
+    return getOptional(configOption).orElse(overrideDefault);
   }
 
   /**
@@ -349,8 +326,8 @@ public class RssConf implements Cloneable {
   }
 
   /**
-   * Adds the given value to the configuration object.
-   * The main key of the config option will be used to map the value.
+   * Adds the given value to the configuration object. The main key of the config option will be
+   * used to map the value.
    *
    * @param key the option specifying the key to be added
    * @param value the value of the key/value pair to be added
@@ -363,14 +340,12 @@ public class RssConf implements Cloneable {
    * Returns the value associated with the given key as a double.
    *
    * @param key the key pointing to the associated value
-   * @param defaultValue the default value which is returned when there is no value associated with the given
-   *     key
+   * @param defaultValue the default value which is returned when there is no value associated with
+   *     the given key
    * @return the (default) value associated with the given key
    */
   public double getDouble(String key, double defaultValue) {
-    return getRawValue(key)
-        .map(ConfigUtils::convertToDouble)
-        .orElse(defaultValue);
+    return getRawValue(key).map(ConfigUtils::convertToDouble).orElse(defaultValue);
   }
 
   /**
@@ -380,22 +355,20 @@ public class RssConf implements Cloneable {
    * @return the (default) value associated with the given config option
    */
   public double getDouble(ConfigOption<Double> configOption) {
-    return getOptional(configOption)
-        .orElseGet(configOption::defaultValue);
+    return getOptional(configOption).orElseGet(configOption::defaultValue);
   }
 
   /**
-   * Returns the value associated with the given config option as a {@code double}.
-   * If no value is mapped under any key of the option, it returns the specified
-   * default instead of the option's default value.
+   * Returns the value associated with the given config option as a {@code double}. If no value is
+   * mapped under any key of the option, it returns the specified default instead of the option's
+   * default value.
    *
    * @param configOption The configuration option
    * @param overrideDefault The value to return if no value was mapper for any key of the option
    * @return the configured value associated with the given config option, or the overrideDefault
    */
   public double getDouble(ConfigOption<Double> configOption, double overrideDefault) {
-    return getOptional(configOption)
-        .orElse(overrideDefault);
+    return getOptional(configOption).orElse(overrideDefault);
   }
 
   /**
@@ -409,8 +382,8 @@ public class RssConf implements Cloneable {
   }
 
   /**
-   * Adds the given value to the configuration object.
-   * The main key of the config option will be used to map the value.
+   * Adds the given value to the configuration object. The main key of the config option will be
+   * used to map the value.
    *
    * @param key the option specifying the key to be added
    * @param value the value of the key/value pair to be added
@@ -423,22 +396,20 @@ public class RssConf implements Cloneable {
    * Returns the value associated with the given key as size in bytes.
    *
    * @param key the key pointing to the associated value
-   * @param defaultValue the default value which is returned in case there is no value
-   *     associated with the given key
+   * @param defaultValue the default value which is returned in case there is no value associated
+   *     with the given key
    * @return the (default) value associated with the given key
    */
   public long getSizeInBytes(String key, long defaultValue) {
-    return getRawValue(key)
-      .map(ConfigUtils::convertToSizeInBytes)
-      .orElse(defaultValue);
+    return getRawValue(key).map(ConfigUtils::convertToSizeInBytes).orElse(defaultValue);
   }
 
   /**
    * Returns the value associated with the given key as size in bytes.
    *
    * @param key the key pointing to the associated value
-   * @param defaultValue the default value which is returned in case there is no value
-   *     associated with the given key
+   * @param defaultValue the default value which is returned in case there is no value associated
+   *     with the given key
    * @return the (default) value associated with the given key
    */
   public long getSizeAsBytes(String key, String defaultValue) {
@@ -466,8 +437,8 @@ public class RssConf implements Cloneable {
   }
 
   /**
-   * Adds the given value to the configuration object.
-   * The main key of the config option will be used to map the value.
+   * Adds the given value to the configuration object. The main key of the config option will be
+   * used to map the value.
    *
    * @param key the option specifying the key to be added
    * @param value the value of the key/value pair to be added
@@ -477,8 +448,8 @@ public class RssConf implements Cloneable {
   }
 
   /**
-   * Adds the given value to the configuration object.
-   * The main key of the config option will be used to map the value.
+   * Adds the given value to the configuration object. The main key of the config option will be
+   * used to map the value.
    *
    * @param key the option specifying the key to be added
    * @param value the value of the key/value pair to be added
@@ -487,30 +458,31 @@ public class RssConf implements Cloneable {
     setValueInternal(key.key(), UnitConverter.byteStringAsBytes(value));
   }
 
-
   /**
    * Returns the value associated with the given key as a byte array.
    *
    * @param key The key pointing to the associated value.
-   * @param defaultValue The default value which is returned in case there is no value associated with the
-   *     given key.
+   * @param defaultValue The default value which is returned in case there is no value associated
+   *     with the given key.
    * @return the (default) value associated with the given key.
    */
   public byte[] getBytes(String key, byte[] defaultValue) {
-    return getRawValue(key).map(o -> {
-          if (o.getClass().equals(byte[].class)) {
-            return (byte[]) o;
-          } else {
-            throw new IllegalArgumentException(String.format(
-                "Configuration cannot evaluate value %s as a byte[] value",
-                o));
-          }
-        }
-    ).orElse(defaultValue);
+    return getRawValue(key)
+        .map(
+            o -> {
+              if (o.getClass().equals(byte[].class)) {
+                return (byte[]) o;
+              } else {
+                throw new IllegalArgumentException(
+                    String.format("Configuration cannot evaluate value %s as a byte[] value", o));
+              }
+            })
+        .orElse(defaultValue);
   }
 
   /**
-   * Adds the given byte array to the configuration object. If key is <code>null</code> then nothing is added.
+   * Adds the given byte array to the configuration object. If key is <code>null</code> then nothing
+   * is added.
    *
    * @param key The key under which the bytes are added.
    * @param bytes The bytes to be added.
@@ -526,7 +498,8 @@ public class RssConf implements Cloneable {
    * @return the (default) value associated with the given config option
    */
   public String getValue(ConfigOption<?> configOption) {
-    return Optional.ofNullable(getRawValueFromOption(configOption).orElseGet(configOption::defaultValue))
+    return Optional.ofNullable(
+            getRawValueFromOption(configOption).orElseGet(configOption::defaultValue))
         .map(String::valueOf)
         .orElse(null);
   }
@@ -566,8 +539,7 @@ public class RssConf implements Cloneable {
   }
 
   public <T> T get(ConfigOption<T> option) {
-    return getOptional(option)
-        .orElseGet(option::defaultValue);
+    return getOptional(option).orElseGet(option::defaultValue);
   }
 
   private Optional<Object> geRawValFromFallbackKeys(Iterator<FallbackKey> iter) {
@@ -620,6 +592,7 @@ public class RssConf implements Cloneable {
 
   /**
    * loadConf
+   *
    * @param properties all config items in configration file
    * @param configOptions the config items defined in base config class
    * @param includeMissingKey if include the keys which not defined in base config class
@@ -634,17 +607,18 @@ public class RssConf implements Cloneable {
     }
     Map<String, ConfigOption<Object>> configOptionMap =
         configOptions.stream().collect(Collectors.toMap(c -> c.key().toLowerCase(), c -> c));
-    properties.forEach((k, v) -> {
-      ConfigOption<Object> config = configOptionMap.get(k.toLowerCase());
-      if (config == null) {
-        // if the key is not defined in configOptions, set it as a string value
-        if (includeMissingKey) {
-          setString(k, v);
-        }
-      } else {
-        set(config, ConfigUtils.convertValue(v, config.getClazz()));
-      }
-    });
+    properties.forEach(
+        (k, v) -> {
+          ConfigOption<Object> config = configOptionMap.get(k.toLowerCase());
+          if (config == null) {
+            // if the key is not defined in configOptions, set it as a string value
+            if (includeMissingKey) {
+              setString(k, v);
+            }
+          } else {
+            set(config, ConfigUtils.convertValue(v, config.getClazz()));
+          }
+        });
     return true;
   }
 
@@ -693,4 +667,8 @@ public class RssConf implements Cloneable {
     return System.getenv(key);
   }
 
+  @VisibleForTesting
+  public void remove(String key) {
+    this.settings.remove(key);
+  }
 }
