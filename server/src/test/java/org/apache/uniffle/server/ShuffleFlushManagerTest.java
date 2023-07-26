@@ -102,6 +102,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     ShuffleServerMetrics.register();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    shuffleServerConf.setInteger(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, 1);
     LogManager.getRootLogger().setLevel(Level.INFO);
   }
 
