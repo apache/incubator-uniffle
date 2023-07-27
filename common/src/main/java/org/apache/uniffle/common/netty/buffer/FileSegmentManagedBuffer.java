@@ -34,10 +34,10 @@ import org.apache.uniffle.common.util.JavaUtils;
 public class FileSegmentManagedBuffer extends ManagedBuffer {
 
   private final File file;
-  private final int offset;
+  private final long offset;
   private final int length;
 
-  public FileSegmentManagedBuffer(File file, int offset, int length) {
+  public FileSegmentManagedBuffer(File file, long offset, int length) {
     this.file = file;
     this.offset = offset;
     this.length = length;
