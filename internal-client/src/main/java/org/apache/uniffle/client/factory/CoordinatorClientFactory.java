@@ -19,6 +19,7 @@ package org.apache.uniffle.client.factory;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
@@ -29,47 +30,68 @@ import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.JavaUtils;
 
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
+  private Map<String, Map<String, CoordinatorClient>> clients = JavaUtils.newConcurrentMap();
 
-  private ClientType clientType;
-
-  public CoordinatorClientFactory(ClientType clientType) {
-    this.clientType = clientType;
+  private static class LazyHolder {
+    static final CoordinatorClientFactory INSTANCE = new CoordinatorClientFactory();
   }
 
-  public CoordinatorClient createCoordinatorClient(String host, int port) {
-    if (clientType.equals(ClientType.GRPC) || clientType.equals(ClientType.GRPC_NETTY)) {
-      return new CoordinatorGrpcClient(host, port);
-    } else {
-      throw new UnsupportedOperationException("Unsupported client type " + clientType);
+  public static CoordinatorClientFactory getInstance() {
+    return LazyHolder.INSTANCE;
+  }
+
+  public CoordinatorClient getOrCreateCoordinatorClient(String type, String host, int port) {
+    String coordinator = host.concat(String.valueOf(port));
+    Map<String, CoordinatorClient> typeToClients = clients.get(type);
+    if (typeToClients != null) {
+      CoordinatorClient coordinatorClient = typeToClients.get(coordinator);
+      if (coordinatorClient != null) {
+        return coordinatorClient;
+      }
+    }
+
+    switch (ClientType.valueOf(type)) {
+      case GRPC:
+        CoordinatorClient grpcClient = new CoordinatorGrpcClient(host, port);
+        typeToClients.put(coordinator, grpcClient);
+        clients.put(type, typeToClients);
+        return grpcClient;
+      default:
+        throw new UnsupportedOperationException("Unsupported client type " + type);
     }
   }
 
-  public List<CoordinatorClient> createCoordinatorClient(String coordinators) {
-    LOG.info("Start to create coordinator clients from {}", coordinators);
-    List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
+  public List<CoordinatorClient> getOrCreateCoordinatorClients(String type, String coordinators) {
     String[] coordinatorList = coordinators.trim().split(",");
     if (coordinatorList.length == 0) {
       String msg = "Invalid " + coordinators;
       LOG.error(msg);
       throw new RssException(msg);
     }
-
+    List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
     for (String coordinator : coordinatorList) {
+      clients.computeIfAbsent(type, key -> JavaUtils.newConcurrentMap());
+      Map<String, CoordinatorClient> typeToClients = clients.get(type);
+      CoordinatorClient coordinatorClient = typeToClients.get(coordinator);
+      if (coordinatorClient != null) {
+        coordinatorClients.add(coordinatorClient);
+        continue;
+      }
+      LOG.info("Start to create coordinator clients from {}", coordinator);
       String[] ipPort = coordinator.trim().split(":");
       if (ipPort.length != 2) {
         String msg = "Invalid coordinator format " + Arrays.toString(ipPort);
         LOG.error(msg);
         throw new RssException(msg);
       }
-
       String host = ipPort[0];
       int port = Integer.parseInt(ipPort[1]);
-      CoordinatorClient coordinatorClient = createCoordinatorClient(host, port);
-      coordinatorClients.add(coordinatorClient);
-      LOG.info("Add coordinator client {}", coordinatorClient.getDesc());
+      CoordinatorClient newClient = getOrCreateCoordinatorClient(type, host, port);
+      coordinatorClients.add(newClient);
     }
     LOG.info(
         "Finish create coordinator clients {}",

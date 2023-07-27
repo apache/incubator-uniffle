@@ -26,13 +26,15 @@ import org.apache.uniffle.common.ClientType;
 
 public class CoordinatorTestBase extends IntegrationTestBase {
 
-  protected CoordinatorClientFactory factory = new CoordinatorClientFactory(ClientType.GRPC);
+  protected CoordinatorClientFactory factory = CoordinatorClientFactory.getInstance();
   protected CoordinatorGrpcClient coordinatorClient;
 
   @BeforeEach
   public void createClient() {
     coordinatorClient =
-        (CoordinatorGrpcClient) factory.createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1);
+        (CoordinatorGrpcClient)
+            factory.getOrCreateCoordinatorClient(
+                ClientType.GRPC.name(), LOCALHOST, COORDINATOR_PORT_1);
   }
 
   @AfterEach
