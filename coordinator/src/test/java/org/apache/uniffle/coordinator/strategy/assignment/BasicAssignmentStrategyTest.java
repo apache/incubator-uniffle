@@ -53,6 +53,9 @@ public class BasicAssignmentStrategyTest {
   @BeforeEach
   public void setUp() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
+    ssc.set(
+        CoordinatorConf.COORDINATOR_SELECT_PARTITION_STRATEGY,
+        AbstractAssignmentStrategy.SelectPartitionStrategyName.ROUND);
     ssc.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, shuffleNodesMax);
     clusterManager = new SimpleClusterManager(ssc, new Configuration());
     strategy = new BasicAssignmentStrategy(clusterManager, ssc);
