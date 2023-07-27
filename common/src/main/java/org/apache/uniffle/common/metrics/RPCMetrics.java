@@ -91,22 +91,22 @@ public abstract class RPCMetrics {
     }
   }
 
-  public void incCounter(String methodName) {
+  public void incCounter(String metricKey) {
     if (isRegistered) {
-      Gauge.Child gauge = gaugeMap.get(methodName);
+      Gauge.Child gauge = gaugeMap.get(metricKey);
       if (gauge != null) {
         gauge.inc();
       }
-      Counter.Child counter = counterMap.get(methodName);
+      Counter.Child counter = counterMap.get(metricKey);
       if (counter != null) {
         counter.inc();
       }
     }
   }
 
-  public void decCounter(String methodName) {
+  public void decCounter(String metricKey) {
     if (isRegistered) {
-      Gauge.Child gauge = gaugeMap.get(methodName);
+      Gauge.Child gauge = gaugeMap.get(metricKey);
       if (gauge != null) {
         gauge.dec();
       }

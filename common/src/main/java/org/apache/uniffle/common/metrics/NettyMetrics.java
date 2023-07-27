@@ -38,28 +38,6 @@ public abstract class NettyMetrics extends RPCMetrics {
     counterNettyException = metricsManager.addLabeledCounter(NETTY_HANDLE_EXCEPTION);
   }
 
-  public void incRequest(String className) {
-    if (isRegistered) {
-      Gauge.Child gauge = gaugeMap.get(className);
-      if (gauge != null) {
-        gauge.inc();
-      }
-      Counter.Child counter = counterMap.get(className);
-      if (counter != null) {
-        counter.inc();
-      }
-    }
-  }
-
-  public void decRequest(String className) {
-    if (isRegistered) {
-      Gauge.Child gauge = gaugeMap.get(className);
-      if (gauge != null) {
-        gauge.dec();
-      }
-    }
-  }
-
   public Counter.Child getCounterNettyException() {
     return counterNettyException;
   }

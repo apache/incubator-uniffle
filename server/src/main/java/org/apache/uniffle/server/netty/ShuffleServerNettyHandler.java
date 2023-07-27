@@ -71,7 +71,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
 
   @Override
   public void receive(TransportClient client, RequestMessage msg) {
-    shuffleServer.getNettyMetrics().incRequest(msg.getClass().getName());
+    shuffleServer.getNettyMetrics().incCounter(msg.getClass().getName());
     if (msg instanceof SendShuffleDataRequest) {
       handleSendShuffleDataRequest(client, (SendShuffleDataRequest) msg);
     } else if (msg instanceof GetLocalShuffleDataRequest) {
@@ -83,7 +83,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     } else {
       throw new RssException("Can not handle message " + msg.type());
     }
-    shuffleServer.getNettyMetrics().decRequest(msg.getClass().getName());
+    shuffleServer.getNettyMetrics().decCounter(msg.getClass().getName());
   }
 
   @Override
