@@ -27,12 +27,15 @@ import java.nio.file.StandardOpenOption;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.DefaultFileRegion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.JavaUtils;
 
 public class FileSegmentManagedBuffer extends ManagedBuffer {
 
+  private static final Logger LOG = LoggerFactory.getLogger(FileSegmentManagedBuffer.class);
   private final File file;
   private final long offset;
   private final int length;
@@ -80,7 +83,9 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
       } catch (IOException ignored) {
         // ignore
       }
-      throw new RssException(errorMessage, e);
+
+      LOG.error(errorMessage, e);
+      return ByteBuffer.allocate(0);
     } finally {
       JavaUtils.closeQuietly(channel);
     }
