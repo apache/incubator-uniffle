@@ -19,7 +19,6 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +27,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.netty.buffer.FileSegmentManagedBuffer;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
@@ -128,55 +128,25 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
     return fileName.substring(0, point);
   }
 
-  private LocalFileReader createFileReader(String path) throws Exception {
-    return new LocalFileReader(path);
-  }
-
   @Override
   public ShuffleDataResult getShuffleData(long offset, int length) {
-    byte[] readBuffer = new byte[0];
-
-    try {
-      long start = System.currentTimeMillis();
-      try (LocalFileReader reader = createFileReader(dataFileName)) {
-        readBuffer = reader.read(offset, length);
-      }
-      LOG.debug(
-          "Read File segment: {}, offset[{}], length[{}], cost: {} ms, for appId[{}], shuffleId[{}], partitionId[{}]",
-          dataFileName,
-          offset,
-          length,
-          System.currentTimeMillis() - start,
-          appId,
-          shuffleId,
-          partitionId);
-    } catch (Exception e) {
-      LOG.warn("Can't read data for{}, offset[{}], length[{}]", dataFileName, offset, length);
-    }
-
-    return new ShuffleDataResult(readBuffer);
+    return new ShuffleDataResult(
+        new FileSegmentManagedBuffer(new File(dataFileName), offset, length));
   }
 
   @Override
   public ShuffleIndexResult getShuffleIndex() {
-    int indexNum = 0;
-    int len = 0;
-    try (LocalFileReader reader = createFileReader(indexFileName)) {
-      long indexFileSize = new File(indexFileName).length();
-      indexNum = (int) (indexFileSize / FileBasedShuffleSegment.SEGMENT_SIZE);
-      len = indexNum * FileBasedShuffleSegment.SEGMENT_SIZE;
-      if (indexFileSize != len) {
-        LOG.warn(
-            "Maybe the index file: {} is being written due to the shuffle-buffer flushing.",
-            indexFileName);
-      }
-      byte[] indexData = reader.read(0, len);
-      // get dataFileSize for read segment generation in DataSkippableReadHandler#readShuffleData
-      long dataFileSize = new File(dataFileName).length();
-      return new ShuffleIndexResult(ByteBuffer.wrap(indexData), dataFileSize);
-    } catch (Exception e) {
-      LOG.error("Fail to read index file {} indexNum {} len {}", indexFileName, indexNum, len);
-      return new ShuffleIndexResult();
+    File indexFile = new File(indexFileName);
+    long indexFileSize = indexFile.length();
+    int indexNum = (int) (indexFileSize / FileBasedShuffleSegment.SEGMENT_SIZE);
+    int len = indexNum * FileBasedShuffleSegment.SEGMENT_SIZE;
+    if (indexFileSize != len) {
+      LOG.warn(
+          "Maybe the index file: {} is being written due to the shuffle-buffer flushing.",
+          indexFileName);
     }
+    // get dataFileSize for read segment generation in DataSkippableReadHandler#readShuffleData
+    long dataFileSize = new File(dataFileName).length();
+    return new ShuffleIndexResult(new FileSegmentManagedBuffer(indexFile, 0, len), dataFileSize);
   }
 }
