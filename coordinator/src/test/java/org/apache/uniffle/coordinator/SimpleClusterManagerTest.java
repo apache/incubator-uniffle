@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
@@ -484,6 +485,32 @@ public class SimpleClusterManagerTest {
       availableNodes = scm.getServerList(testTags);
       assertEquals(
           remainNodes, availableNodes.stream().map(ServerNode::getId).collect(Collectors.toSet()));
+    }
+  }
+
+  @Test
+  public void excludeNodesNoDelayTest() throws Exception {
+    String excludeNodesFolder =
+            (new File(ClassLoader.getSystemResource("empty").getFile())).getParent();
+    String excludeNodesPath = excludeNodesFolder + "/excludeNodes";
+    CoordinatorConf ssc = new CoordinatorConf();
+    ssc.setString(
+            CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH,
+            URI.create(excludeNodesPath).toString());
+    ssc.setLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL, 5000);
+
+    final Set<String> nodes = Sets.newHashSet("node1-1999", "node2-1999");
+    writeExcludeHosts(excludeNodesPath, nodes);
+
+    try (SimpleClusterManager scm = new SimpleClusterManager(ssc, new Configuration())) {
+      // waiting for excludeNode file parse.
+      Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+      scm.add(new ServerNode("node1-1999", "ip", 0, 100L, 50L, 20, 10, testTags));
+      scm.add(new ServerNode("node2-1999", "ip", 0, 100L, 50L, 20, 10, testTags));
+      scm.add(new ServerNode("node3-1999", "ip", 0, 100L, 50L, 20, 10, testTags));
+      scm.add(new ServerNode("node4-1999", "ip", 0, 100L, 50L, 20, 10, testTags));
+      assertEquals(4, scm.getNodesNum());
+      assertEquals(2, scm.getExcludeNodes().size());
     }
   }
 
