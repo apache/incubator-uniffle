@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
 
+import static org.apache.tez.runtime.library.common.shuffle.impl.RssShuffleManagerTest.APPATTEMPT_ID;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RssUnSorterTest {
@@ -91,6 +92,7 @@ public class RssUnSorterTest {
             5,
             initialMemoryAvailable,
             shuffleId,
+            APPATTEMPT_ID,
             partitionToServers);
 
     rssSorter.collect(new Text("0"), new Text("0"), 0);

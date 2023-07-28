@@ -73,6 +73,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     coordinatorConf.setLong("rss.coordinator.server.heartbeat.timeout", 3000);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    shuffleServerConf.remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
     createShuffleServer(shuffleServerConf);
     shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 1);
     shuffleServerConf.setInteger("rss.jetty.http.port", 18081);
@@ -155,6 +156,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     withEnvironmentVariables("RSS_ENV_KEY", storageTypeJsonSource)
         .execute(
             () -> {
+              shuffleServerConf.remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
               ShuffleServer ss = new ShuffleServer((ShuffleServerConf) shuffleServerConf);
               ss.start();
               shuffleServers.set(0, ss);

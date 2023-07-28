@@ -27,7 +27,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import scala.Tuple2;
@@ -50,10 +49,8 @@ import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.shuffle.reader.RssShuffleReader;
 import org.apache.spark.shuffle.writer.AddBlockEvent;
-import org.apache.spark.shuffle.writer.BufferManagerOptions;
 import org.apache.spark.shuffle.writer.DataPusher;
 import org.apache.spark.shuffle.writer.RssShuffleWriter;
-import org.apache.spark.shuffle.writer.WriteBufferManager;
 import org.apache.spark.sql.internal.SQLConf;
 import org.apache.spark.storage.BlockId;
 import org.apache.spark.storage.BlockManagerId;
@@ -73,6 +70,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
@@ -448,38 +446,26 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     setPusherAppId(rssHandle);
     int shuffleId = rssHandle.getShuffleId();
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
-    BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
+
     ShuffleWriteMetrics writeMetrics;
     if (metrics != null) {
       writeMetrics = new WriteMetrics(metrics);
     } else {
       writeMetrics = context.taskMetrics().shuffleWriteMetrics();
     }
-    WriteBufferManager bufferManager =
-        new WriteBufferManager(
-            shuffleId,
-            taskId,
-            context.taskAttemptId(),
-            bufferOptions,
-            rssHandle.getDependency().serializer(),
-            rssHandle.getPartitionToServers(),
-            context.taskMemoryManager(),
-            writeMetrics,
-            RssSparkConfig.toRssConf(sparkConf),
-            this::sendData);
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
     return new RssShuffleWriter<>(
         rssHandle.getAppId(),
         shuffleId,
         taskId,
         context.taskAttemptId(),
-        bufferManager,
         writeMetrics,
         this,
         sparkConf,
         shuffleWriteClient,
         rssHandle,
-        (Function<String, Boolean>) this::markFailedTask);
+        this::markFailedTask,
+        context);
   }
 
   public void setPusherAppId(RssShuffleHandle rssShuffleHandle) {
@@ -597,8 +583,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         RssUtils.generateServerToPartitions(requirePartitionToServers);
     long start = System.currentTimeMillis();
     Roaring64NavigableMap blockIdBitmap =
-        shuffleWriteClient.getShuffleResultForMultiPart(
-            clientType, serverToPartitions, rssShuffleHandle.getAppId(), shuffleId);
+        getShuffleResultForMultiPart(
+            clientType,
+            serverToPartitions,
+            rssShuffleHandle.getAppId(),
+            shuffleId,
+            context.stageAttemptNumber());
     LOG.info(
         "Get shuffle blockId cost "
             + (System.currentTimeMillis() - start)
@@ -978,5 +968,21 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
   public boolean isValidTask(String taskId) {
     return !failedTaskIds.contains(taskId);
+  }
+
+  private Roaring64NavigableMap getShuffleResultForMultiPart(
+      String clientType,
+      Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
+      String appId,
+      int shuffleId,
+      int stageAttemptId) {
+    Set<Integer> failedPartitions = Sets.newHashSet();
+    try {
+      return shuffleWriteClient.getShuffleResultForMultiPart(
+          clientType, serverToPartitions, appId, shuffleId, failedPartitions);
+    } catch (RssFetchFailedException e) {
+      throw RssSparkShuffleUtils.reportRssFetchFailedException(
+          e, sparkConf, appId, shuffleId, stageAttemptId, failedPartitions);
+    }
   }
 }

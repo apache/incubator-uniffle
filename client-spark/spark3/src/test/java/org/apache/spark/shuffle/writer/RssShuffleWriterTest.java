@@ -18,7 +18,9 @@
 package org.apache.spark.shuffle.writer;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,7 +38,6 @@ import com.google.common.collect.Sets;
 import org.apache.spark.Partitioner;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
-import org.apache.spark.SparkContext;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.executor.TaskMetrics;
 import org.apache.spark.memory.TaskMemoryManager;
@@ -79,8 +80,6 @@ public class RssShuffleWriterTest {
         .set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(), "1000")
         .set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name())
         .set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "127.0.0.1:12345,127.0.0.1:12346");
-    // init SparkContext
-    final SparkContext sc = SparkContext.getOrCreate(conf);
     Map<String, Set<Long>> failBlocks = JavaUtils.newConcurrentMap();
     Map<String, Set<Long>> successBlocks = JavaUtils.newConcurrentMap();
     Serializer kryoSerializer = new KryoSerializer(conf);
@@ -149,8 +148,6 @@ public class RssShuffleWriterTest {
     assertTrue(e3.getMessage().startsWith("Send failed:"));
     successBlocks.clear();
     failBlocks.clear();
-
-    sc.stop();
   }
 
   static class FakedDataPusher extends DataPusher {
@@ -185,6 +182,99 @@ public class RssShuffleWriterTest {
   }
 
   @Test
+  public void dataConsistencyWhenSpillTriggeredTest() throws Exception {
+    SparkConf conf = new SparkConf();
+    conf.set("spark.rss.client.memory.spill.enabled", "true");
+    conf.setAppName("dataConsistencyWhenSpillTriggeredTest_app")
+        .setMaster("local[2]")
+        .set(RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.key(), "32")
+        .set(RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key(), "32")
+        .set(RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.key(), "32")
+        .set(RssSparkConfig.RSS_TEST_FLAG.key(), "true")
+        .set(RssSparkConfig.RSS_TEST_MODE_ENABLE.key(), "true")
+        .set(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.key(), "32")
+        .set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(), "1000")
+        .set(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key(), "100000")
+        .set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY.name())
+        .set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "127.0.0.1:12345,127.0.0.1:12346");
+
+    Map<String, Set<Long>> successBlockIds = Maps.newConcurrentMap();
+
+    List<Long> freeMemoryList = new ArrayList<>();
+    FakedDataPusher dataPusher =
+        new FakedDataPusher(
+            event -> {
+              event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+              long sum =
+                  event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
+              freeMemoryList.add(sum);
+              successBlockIds.putIfAbsent(event.getTaskId(), new HashSet<>());
+              successBlockIds
+                  .get(event.getTaskId())
+                  .add(event.getShuffleDataInfoList().get(0).getBlockId());
+              return CompletableFuture.completedFuture(sum);
+            });
+
+    final RssShuffleManager manager =
+        TestUtils.createShuffleManager(
+            conf, false, dataPusher, successBlockIds, JavaUtils.newConcurrentMap());
+
+    WriteBufferManagerTest.FakedTaskMemoryManager fakedTaskMemoryManager =
+        new WriteBufferManagerTest.FakedTaskMemoryManager();
+    BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
+    WriteBufferManager bufferManager =
+        new WriteBufferManager(
+            0,
+            "taskId",
+            0,
+            bufferOptions,
+            new KryoSerializer(conf),
+            Maps.newHashMap(),
+            fakedTaskMemoryManager,
+            new ShuffleWriteMetrics(),
+            RssSparkConfig.toRssConf(conf),
+            null);
+
+    Serializer kryoSerializer = new KryoSerializer(conf);
+    Partitioner mockPartitioner = mock(Partitioner.class);
+    final ShuffleWriteClient mockShuffleWriteClient = mock(ShuffleWriteClient.class);
+    ShuffleDependency<String, String, String> mockDependency = mock(ShuffleDependency.class);
+    RssShuffleHandle<String, String, String> mockHandle = mock(RssShuffleHandle.class);
+    when(mockHandle.getDependency()).thenReturn(mockDependency);
+    when(mockDependency.serializer()).thenReturn(kryoSerializer);
+    when(mockDependency.partitioner()).thenReturn(mockPartitioner);
+    when(mockPartitioner.numPartitions()).thenReturn(1);
+
+    RssShuffleWriter<String, String, String> rssShuffleWriter =
+        new RssShuffleWriter<>(
+            "appId",
+            0,
+            "taskId",
+            1L,
+            bufferManager,
+            new ShuffleWriteMetrics(),
+            manager,
+            conf,
+            mockShuffleWriteClient,
+            mockHandle);
+    rssShuffleWriter.getBufferManager().setSpillFunc(rssShuffleWriter::processShuffleBlockInfos);
+
+    MutableList<Product2<String, String>> data = new MutableList<>();
+    // One record is 26 bytes
+    data.appendElem(new Tuple2<>("Key", "Value11111111111111"));
+    data.appendElem(new Tuple2<>("Key", "Value11111111111111"));
+    data.appendElem(new Tuple2<>("Key", "Value11111111111111"));
+    data.appendElem(new Tuple2<>("Key", "Value11111111111111"));
+
+    // case1: all blocks are sent and pass the blocks check when spill is triggered
+    rssShuffleWriter.write(data.iterator());
+    assertEquals(4, successBlockIds.get("taskId").size());
+    for (int i = 0; i < 4; i++) {
+      assertEquals(32, freeMemoryList.get(i));
+    }
+  }
+
+  @Test
   public void writeTest() throws Exception {
     SparkConf conf = new SparkConf();
     conf.setAppName("testApp")
@@ -198,9 +288,7 @@ public class RssShuffleWriterTest {
         .set(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key(), "128")
         .set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name())
         .set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "127.0.0.1:12345,127.0.0.1:12346");
-    // init SparkContext
     List<ShuffleBlockInfo> shuffleBlockInfos = Lists.newArrayList();
-    final SparkContext sc = SparkContext.getOrCreate(conf);
     Map<String, Set<Long>> successBlockIds = Maps.newConcurrentMap();
 
     FakedDataPusher dataPusher =
@@ -331,7 +419,6 @@ public class RssShuffleWriterTest {
     assertEquals(2, partitionToBlockIds.get(0).size());
     assertEquals(2, partitionToBlockIds.get(2).size());
     partitionToBlockIds.clear();
-    sc.stop();
   }
 
   @Test

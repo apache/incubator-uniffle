@@ -74,6 +74,7 @@ public class OutputTestHelpers {
     doReturn(statsReporter).when(ctx).getStatisticsReporter();
     doReturn(new ExecutionContextImpl("localhost")).when(ctx).getExecutionContext();
     doReturn(APP_ID).when(ctx).getApplicationId();
+    doReturn(APP_ATTEMPT_ID.getAttemptId()).when(ctx).getDAGAttemptNumber();
     return ctx;
   }
 }

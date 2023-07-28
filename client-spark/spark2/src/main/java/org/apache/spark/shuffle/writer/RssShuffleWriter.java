@@ -17,10 +17,13 @@
 
 package org.apache.spark.shuffle.writer;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -40,6 +43,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.Partitioner;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
+import org.apache.spark.TaskContext;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.scheduler.MapStatus;
 import org.apache.spark.scheduler.MapStatus$;
@@ -84,6 +88,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private long sendCheckInterval;
   private boolean isMemoryShuffleEnabled;
   private final Function<String, Boolean> taskFailureCallback;
+  private final Set<Long> blockIds = Sets.newConcurrentHashSet();
 
   public RssShuffleWriter(
       String appId,
@@ -101,21 +106,20 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleId,
         taskId,
         taskAttemptId,
-        bufferManager,
         shuffleWriteMetrics,
         shuffleManager,
         sparkConf,
         shuffleWriteClient,
         rssHandle,
         (tid) -> true);
+    this.bufferManager = bufferManager;
   }
 
-  public RssShuffleWriter(
+  private RssShuffleWriter(
       String appId,
       int shuffleId,
       String taskId,
       long taskAttemptId,
-      WriteBufferManager bufferManager,
       ShuffleWriteMetrics shuffleWriteMetrics,
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
@@ -123,7 +127,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback) {
     this.appId = appId;
-    this.bufferManager = bufferManager;
     this.shuffleId = shuffleId;
     this.taskId = taskId;
     this.taskAttemptId = taskAttemptId;
@@ -143,6 +146,45 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.isMemoryShuffleEnabled =
         isMemoryShuffleEnabled(sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
     this.taskFailureCallback = taskFailureCallback;
+  }
+
+  public RssShuffleWriter(
+      String appId,
+      int shuffleId,
+      String taskId,
+      long taskAttemptId,
+      ShuffleWriteMetrics shuffleWriteMetrics,
+      RssShuffleManager shuffleManager,
+      SparkConf sparkConf,
+      ShuffleWriteClient shuffleWriteClient,
+      RssShuffleHandle<K, V, C> rssHandle,
+      Function<String, Boolean> taskFailureCallback,
+      TaskContext context) {
+    this(
+        appId,
+        shuffleId,
+        taskId,
+        taskAttemptId,
+        shuffleWriteMetrics,
+        shuffleManager,
+        sparkConf,
+        shuffleWriteClient,
+        rssHandle,
+        taskFailureCallback);
+    BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
+    final WriteBufferManager bufferManager =
+        new WriteBufferManager(
+            shuffleId,
+            taskId,
+            taskAttemptId,
+            bufferOptions,
+            rssHandle.getDependency().serializer(),
+            rssHandle.getPartitionToServers(),
+            context.taskMemoryManager(),
+            shuffleWriteMetrics,
+            RssSparkConfig.toRssConf(sparkConf),
+            this::processShuffleBlockInfos);
+    this.bufferManager = bufferManager;
   }
 
   private boolean isMemoryShuffleEnabled(String storageType) {
@@ -169,7 +211,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private void writeImpl(Iterator<Product2<K, V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos;
-    Set<Long> blockIds = Sets.newHashSet();
     while (records.hasNext()) {
       Product2<K, V> record = records.next();
       int partition = getPartition(record._1());
@@ -180,12 +221,12 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       } else {
         shuffleBlockInfos = bufferManager.addRecord(partition, record._1(), record._2());
       }
-      processShuffleBlockInfos(shuffleBlockInfos, blockIds);
+      processShuffleBlockInfos(shuffleBlockInfos);
     }
 
     final long start = System.currentTimeMillis();
     shuffleBlockInfos = bufferManager.clear();
-    processShuffleBlockInfos(shuffleBlockInfos, blockIds);
+    processShuffleBlockInfos(shuffleBlockInfos);
     long s = System.currentTimeMillis();
     checkBlockSendResult(blockIds);
     final long checkDuration = System.currentTimeMillis() - s;
@@ -221,10 +262,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
    * and shuffle reader will do the integration check with them
    *
    * @param shuffleBlockInfoList
-   * @param blockIds
    */
-  private void processShuffleBlockInfos(
-      List<ShuffleBlockInfo> shuffleBlockInfoList, Set<Long> blockIds) {
+  private List<CompletableFuture<Long>> processShuffleBlockInfos(
+      List<ShuffleBlockInfo> shuffleBlockInfoList) {
     if (shuffleBlockInfoList != null && !shuffleBlockInfoList.isEmpty()) {
       shuffleBlockInfoList.stream()
           .forEach(
@@ -238,16 +278,20 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                     .computeIfAbsent(partitionId, k -> Sets.newHashSet())
                     .add(blockId);
               });
-      postBlockEvent(shuffleBlockInfoList);
+      return postBlockEvent(shuffleBlockInfoList);
     }
+    return Collections.emptyList();
   }
 
   // don't send huge block to shuffle server, or there will be OOM if shuffle sever receives data
   // more than expected
-  protected void postBlockEvent(List<ShuffleBlockInfo> shuffleBlockInfoList) {
+  protected List<CompletableFuture<Long>> postBlockEvent(
+      List<ShuffleBlockInfo> shuffleBlockInfoList) {
+    List<CompletableFuture<Long>> futures = new ArrayList<>();
     for (AddBlockEvent event : bufferManager.buildBlockEvents(shuffleBlockInfoList)) {
-      shuffleManager.sendData(event);
+      futures.add(shuffleManager.sendData(event));
     }
+    return futures;
   }
 
   @VisibleForTesting

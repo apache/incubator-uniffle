@@ -47,6 +47,7 @@ public class ShuffleServerMetricsTest {
   private static final String SERVER_METRICS_URL = "http://127.0.0.1:12345/metrics/server";
   private static final String SERVER_JVM_URL = "http://127.0.0.1:12345/metrics/jvm";
   private static final String SERVER_GRPC_URL = "http://127.0.0.1:12345/metrics/grpc";
+  private static final String SERVER_NETTY_URL = "http://127.0.0.1:12345/metrics/netty";
   private static final String REMOTE_STORAGE_PATH = "hdfs://hdfs1:9000/rss";
   private static final String STORAGE_HOST = "hdfs1";
   private static ShuffleServer shuffleServer;
@@ -192,6 +193,15 @@ public class ShuffleServerMetricsTest {
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
     assertEquals(69, actualObj.get("metrics").size());
+  }
+
+  @Test
+  public void testNettyMetrics() throws Exception {
+    String content = TestUtils.httpGet(SERVER_NETTY_URL);
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode actualObj = mapper.readTree(content);
+    assertEquals(2, actualObj.size());
+    assertEquals(66, actualObj.get("metrics").size());
   }
 
   @Test

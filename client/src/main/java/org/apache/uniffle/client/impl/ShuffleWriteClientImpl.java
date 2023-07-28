@@ -792,7 +792,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       String clientType,
       Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
       String appId,
-      int shuffleId) {
+      int shuffleId,
+      Set<Integer> failedPartitions) {
     Map<Integer, Integer> partitionReadSuccess = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     for (Map.Entry<ShuffleServerInfo, Set<Integer>> entry : serverToPartitions.entrySet()) {
@@ -819,6 +820,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           }
         }
       } catch (Exception e) {
+        failedPartitions.addAll(requestPartitions);
         LOG.warn(
             "Get shuffle result is failed from "
                 + shuffleServerInfo

@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import scala.Option;
 import scala.Tuple2;
@@ -44,10 +43,8 @@ import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.shuffle.reader.RssShuffleReader;
 import org.apache.spark.shuffle.writer.AddBlockEvent;
-import org.apache.spark.shuffle.writer.BufferManagerOptions;
 import org.apache.spark.shuffle.writer.DataPusher;
 import org.apache.spark.shuffle.writer.RssShuffleWriter;
-import org.apache.spark.shuffle.writer.WriteBufferManager;
 import org.apache.spark.storage.BlockId;
 import org.apache.spark.storage.BlockManagerId;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -65,6 +62,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
@@ -418,33 +416,19 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
       int shuffleId = rssHandle.getShuffleId();
       String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
-      BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
       ShuffleWriteMetrics writeMetrics = context.taskMetrics().shuffleWriteMetrics();
-      WriteBufferManager bufferManager =
-          new WriteBufferManager(
-              shuffleId,
-              taskId,
-              context.taskAttemptId(),
-              bufferOptions,
-              rssHandle.getDependency().serializer(),
-              rssHandle.getPartitionToServers(),
-              context.taskMemoryManager(),
-              writeMetrics,
-              RssSparkConfig.toRssConf(sparkConf),
-              this::sendData);
-
       return new RssShuffleWriter<>(
           rssHandle.getAppId(),
           shuffleId,
           taskId,
           context.taskAttemptId(),
-          bufferManager,
           writeMetrics,
           this,
           sparkConf,
           shuffleWriteClient,
           rssHandle,
-          (Function<String, Boolean>) this::markFailedTask);
+          this::markFailedTask,
+          context);
     } else {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
@@ -477,12 +461,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       Map<Integer, List<ShuffleServerInfo>> partitionToServers =
           rssShuffleHandle.getPartitionToServers();
       Roaring64NavigableMap blockIdBitmap =
-          shuffleWriteClient.getShuffleResult(
+          getShuffleResult(
               clientType,
               Sets.newHashSet(partitionToServers.get(startPartition)),
               rssShuffleHandle.getAppId(),
               shuffleId,
-              startPartition);
+              startPartition,
+              context.stageAttemptNumber());
       LOG.info(
           "Get shuffle blockId cost "
               + (System.currentTimeMillis() - start)
@@ -686,5 +671,21 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   @Override
   public int getNumMaps(int shuffleId) {
     return shuffleIdToNumMapTasks.getOrDefault(shuffleId, 0);
+  }
+
+  private Roaring64NavigableMap getShuffleResult(
+      String clientType,
+      Set<ShuffleServerInfo> shuffleServerInfoSet,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int stageAttemptId) {
+    try {
+      return shuffleWriteClient.getShuffleResult(
+          clientType, shuffleServerInfoSet, appId, shuffleId, partitionId);
+    } catch (RssFetchFailedException e) {
+      throw RssSparkShuffleUtils.reportRssFetchFailedException(
+          e, sparkConf, appId, shuffleId, stageAttemptId, Sets.newHashSet(partitionId));
+    }
   }
 }

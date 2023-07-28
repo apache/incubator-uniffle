@@ -69,7 +69,7 @@ public class TransportClient implements Closeable {
     if (logger.isTraceEnabled()) {
       logger.trace("Pushing data to {}", NettyUtils.getRemoteAddress(channel));
     }
-    long requestId = requestId();
+    long requestId = message.getRequestId();
     handler.addResponseCallback(requestId, callback);
     RpcChannelListener listener = new RpcChannelListener(requestId, callback);
     return channel.writeAndFlush(message).addListener(listener);

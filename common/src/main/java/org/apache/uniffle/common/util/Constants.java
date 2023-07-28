@@ -79,4 +79,10 @@ public final class Constants {
   public static final String GRPC_SERVICE_NAME = "grpc.server";
 
   public static final int COMPOSITE_BYTE_BUF_MAX_COMPONENTS = 1024;
+
+  // The `driver.host` is matching spark's `DRIVER_HOST_ADDRESS` configuration, which is
+  // `spark.driver.host`.
+  // We are accessing this configuration through RssConf, the spark prefix is stripped, hence, this
+  // field.
+  public static final String DRIVER_HOST = "driver.host";
 }

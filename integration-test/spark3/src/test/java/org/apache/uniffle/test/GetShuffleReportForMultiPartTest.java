@@ -83,6 +83,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
       ShuffleServerConf serverConf = new ShuffleServerConf();
       dataFolder.deleteOnExit();
       serverConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + i);
+      serverConf.setInteger("rss.server.netty.port", NETTY_PORT + i);
       serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
       serverConf.setString("rss.storage.basePath", dataFolder.getAbsolutePath());
       serverConf.setString("rss.server.buffer.capacity", "671088640");
@@ -98,6 +99,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
       serverConf.setString("rss.server.hadoop.dfs.replication", "2");
       serverConf.setLong("rss.server.disk.capacity", 10L * 1024L * 1024L * 1024L);
       serverConf.setBoolean("rss.server.health.check.enable", false);
+      serverConf.setString("rss.server.tags", "GRPC,GRPC_NETTY");
       createMockedShuffleServer(serverConf);
     }
     enableRecordGetShuffleResult();

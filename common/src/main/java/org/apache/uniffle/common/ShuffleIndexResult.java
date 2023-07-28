@@ -19,21 +19,47 @@ package org.apache.uniffle.common;
 
 import java.nio.ByteBuffer;
 
+import io.netty.buffer.Unpooled;
+
+import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
+import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
+import org.apache.uniffle.common.util.ByteBufUtils;
+
 public class ShuffleIndexResult {
-  private final ByteBuffer indexData;
+  private final ManagedBuffer buffer;
   private long dataFileLen;
 
   public ShuffleIndexResult() {
     this(ByteBuffer.wrap(new byte[0]), -1);
   }
 
-  public ShuffleIndexResult(ByteBuffer bytes, long dataFileLen) {
-    this.indexData = bytes;
+  public ShuffleIndexResult(byte[] data, long dataFileLen) {
+    this(data != null ? ByteBuffer.wrap(data) : null, dataFileLen);
+  }
+
+  public ShuffleIndexResult(ByteBuffer data, long dataFileLen) {
+    this.buffer =
+        new NettyManagedBuffer(data != null ? Unpooled.wrappedBuffer(data) : Unpooled.EMPTY_BUFFER);
     this.dataFileLen = dataFileLen;
   }
 
+  public ShuffleIndexResult(ManagedBuffer buffer, long dataFileLen) {
+    this.buffer = buffer;
+    this.dataFileLen = dataFileLen;
+  }
+
+  public byte[] getData() {
+    if (buffer == null) {
+      return null;
+    }
+    if (buffer.nioByteBuffer().hasArray()) {
+      return buffer.nioByteBuffer().array();
+    }
+    return ByteBufUtils.readBytes(buffer.byteBuf());
+  }
+
   public ByteBuffer getIndexData() {
-    return indexData;
+    return buffer.nioByteBuffer();
   }
 
   public long getDataFileLen() {
@@ -41,6 +67,6 @@ public class ShuffleIndexResult {
   }
 
   public boolean isEmpty() {
-    return indexData == null || indexData.remaining() == 0;
+    return buffer == null || buffer.size() == 0;
   }
 }

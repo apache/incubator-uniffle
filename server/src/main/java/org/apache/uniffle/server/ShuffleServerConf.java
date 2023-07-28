@@ -86,7 +86,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Integer> SERVER_FLUSH_HADOOP_THREAD_POOL_SIZE =
       ConfigOptions.key("rss.server.flush.hadoop.threadPool.size")
           .intType()
-          .defaultValue(10)
+          .defaultValue(60)
           .withDescription("thread pool for flush data to hadoop storage");
 
   public static final ConfigOption<Integer> SERVER_FLUSH_THREAD_POOL_QUEUE_SIZE =
@@ -339,14 +339,14 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Boolean> SINGLE_BUFFER_FLUSH_ENABLED =
       ConfigOptions.key("rss.server.single.buffer.flush.enabled")
           .booleanType()
-          .defaultValue(false)
+          .defaultValue(true)
           .withDescription(
               "Whether single buffer flush when size exceeded rss.server.single.buffer.flush.threshold");
 
   public static final ConfigOption<Long> SINGLE_BUFFER_FLUSH_THRESHOLD =
       ConfigOptions.key("rss.server.single.buffer.flush.threshold")
           .longType()
-          .defaultValue(64 * 1024 * 1024L)
+          .defaultValue(128 * 1024 * 1024L)
           .withDescription("The threshold of single shuffle buffer flush");
 
   public static final ConfigOption<Long> STORAGEMANAGER_CACHE_TIMEOUT =
@@ -364,7 +364,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Integer> SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION =
       ConfigOptions.key("rss.server.max.concurrency.of.per-partition.write")
           .intType()
-          .defaultValue(1)
+          .defaultValue(30)
           .withDescription(
               "The max concurrency of single partition writer, the data partition file number is "
                   + "equal to this value. Default value is 1.")

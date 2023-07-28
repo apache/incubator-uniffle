@@ -17,9 +17,6 @@
 
 package org.apache.tez.common;
 
-import org.apache.hadoop.yarn.api.ApplicationConstants;
-import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
-import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,21 +33,5 @@ public class IdUtils {
   public static TezTaskAttemptID convertTezTaskAttemptID(String pathComponent) {
     LOG.info("convertTezTaskAttemptID, pathComponent:{}", pathComponent);
     return TezTaskAttemptID.fromString(pathComponent.substring(0, pathComponent.length() - 6));
-  }
-
-  /** @return ApplicationAttemptId, eg: appattempt_1681717153064_2719964_000001 */
-  public static ApplicationAttemptId getApplicationAttemptId() {
-    String containerIdStr = System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
-    ContainerId containerId = ContainerId.fromString(containerIdStr);
-    return containerId.getApplicationAttemptId();
-  }
-
-  /**
-   * Get application id attempt.
-   *
-   * @return ApplicationAttemptId attempt id, eg: 1, 2, 3
-   */
-  public static int getAppAttemptId() {
-    return getApplicationAttemptId().getAttemptId();
   }
 }
