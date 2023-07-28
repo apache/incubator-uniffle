@@ -207,6 +207,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     if (isDriver) {
       heartBeatScheduledExecutorService =
           ThreadUtils.getDaemonSingleThreadScheduledExecutor("rss-heartbeat");
+      rssConf = RssSparkConfig.toRssConf(sparkConf);
       if (rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
           && RssSparkShuffleUtils.isStageResubmitSupported()) {
         LOG.info("stage resubmit is supported and enabled");

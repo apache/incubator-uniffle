@@ -45,6 +45,7 @@ public class RSSStageResubmitTest extends SparkIntegrationTestBase {
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
+    dynamicConf.put(RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_RESUBMIT_STAGE, "true");
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -79,8 +80,6 @@ public class RSSStageResubmitTest extends SparkIntegrationTestBase {
 
   @Override
   public void updateSparkConfCustomer(SparkConf sparkConf) {
-    sparkConf.set(
-        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_RESUBMIT_STAGE, "true");
     sparkConf.set("spark.task.maxFailures", String.valueOf(maxTaskFailures));
   }
 
