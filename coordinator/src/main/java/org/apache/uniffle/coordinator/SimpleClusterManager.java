@@ -114,7 +114,7 @@ public class SimpleClusterManager implements ClusterManager {
           ThreadUtils.getDaemonSingleThreadScheduledExecutor("UpdateExcludeNodes");
       checkNodesExecutorService.scheduleAtFixedRate(
           () -> updateExcludeNodes(excludeNodesPath),
-          updateNodesInterval,
+          0,
           updateNodesInterval,
           TimeUnit.MILLISECONDS);
     }
