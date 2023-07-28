@@ -62,7 +62,7 @@ public class UniffleTestCLI {
     assertTrue(dataOut.toString().contains("This is coordinator server host."));
     assertTrue(dataOut.toString().contains("-port,--coordinatorPort <arg>"));
     assertTrue(dataOut.toString().contains("This is coordinator server port."));
-    assertTrue(dataOut.toString().contains("-s,--ssl"));
+    assertTrue(dataOut.toString().contains("--ssl"));
     assertTrue(dataOut.toString().contains("use SSL"));
 
     System.setOut(oldOutPrintStream);
