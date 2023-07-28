@@ -156,14 +156,15 @@ public class UniffleCLI extends AbstractCustomCommandLine {
             System.out.println("The output file cannot be empty.");
           }
           try (FileOutputStream fos = new FileOutputStream(uniffleOutPutFile);
-             OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
+              OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
             osw.write(json);
             System.out.println(
                 "applications json data has been written to the file(" + uniffleOutPutFile + ").");
           } catch (IOException e) {
             System.out.println(
                 "An error occurred while writing the applications json data to the file("
-                + uniffleOutPutFile + ").");
+                    + uniffleOutPutFile
+                    + ").");
           }
         }
 
