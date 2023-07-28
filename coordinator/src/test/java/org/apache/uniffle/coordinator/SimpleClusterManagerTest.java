@@ -504,7 +504,7 @@ public class SimpleClusterManagerTest {
 
     try (SimpleClusterManager scm = new SimpleClusterManager(ssc, new Configuration())) {
       // waiting for excludeNode file parse.
-      Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+      Uninterruptibles.sleepUninterruptibly(20, TimeUnit.MILLISECONDS);
       scm.add(new ServerNode("node1-1999", "ip", 0, 100L, 50L, 20, 10, testTags));
       scm.add(new ServerNode("node2-1999", "ip", 0, 100L, 50L, 20, 10, testTags));
       scm.add(new ServerNode("node3-1999", "ip", 0, 100L, 50L, 20, 10, testTags));
