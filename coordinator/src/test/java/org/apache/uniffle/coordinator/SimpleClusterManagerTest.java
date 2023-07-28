@@ -491,12 +491,12 @@ public class SimpleClusterManagerTest {
   @Test
   public void excludeNodesNoDelayTest() throws Exception {
     String excludeNodesFolder =
-            (new File(ClassLoader.getSystemResource("empty").getFile())).getParent();
+        (new File(ClassLoader.getSystemResource("empty").getFile())).getParent();
     String excludeNodesPath = excludeNodesFolder + "/excludeNodes";
     CoordinatorConf ssc = new CoordinatorConf();
     ssc.setString(
-            CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH,
-            URI.create(excludeNodesPath).toString());
+        CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH,
+        URI.create(excludeNodesPath).toString());
     ssc.setLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL, 5000);
 
     final Set<String> nodes = Sets.newHashSet("node1-1999", "node2-1999");
