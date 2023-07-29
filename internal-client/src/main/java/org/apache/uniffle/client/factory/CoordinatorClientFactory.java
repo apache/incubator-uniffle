@@ -86,7 +86,7 @@ public class CoordinatorClientFactory {
         CoordinatorClient newClient = getOrCreateCoordinatorClient(type, host, port);
         coordinatorClients.add(newClient);
         LOG.info("Add coordinator client {}", newClient.getDesc());
-      } catch(UnsupportedOperationException e) {
+      } catch (UnsupportedOperationException e) {
         throw e;
       }
     }
