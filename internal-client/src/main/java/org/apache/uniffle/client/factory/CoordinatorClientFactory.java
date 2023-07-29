@@ -82,8 +82,13 @@ public class CoordinatorClientFactory {
       }
       String host = ipPort[0];
       int port = Integer.parseInt(ipPort[1]);
-      CoordinatorClient newClient = getOrCreateCoordinatorClient(type, host, port);
-      coordinatorClients.add(newClient);
+      try {
+        CoordinatorClient newClient = getOrCreateCoordinatorClient(type, host, port);
+        coordinatorClients.add(newClient);
+        LOG.info("Add coordinator client {}", newClient.getDesc());
+      } catch(UnsupportedOperationException e) {
+        throw e;
+      }
     }
     LOG.info(
         "Finish create coordinator clients {}",
