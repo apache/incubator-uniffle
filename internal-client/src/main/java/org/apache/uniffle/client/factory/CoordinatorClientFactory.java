@@ -53,7 +53,7 @@ public class CoordinatorClientFactory {
         return coordinatorClient;
       }
     }
-
+    typeToClients = new java.util.HashMap<>();
     switch (ClientType.valueOf(type)) {
       case GRPC:
         CoordinatorClient grpcClient = new CoordinatorGrpcClient(host, port);
@@ -74,14 +74,6 @@ public class CoordinatorClientFactory {
     }
     List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
     for (String coordinator : coordinatorList) {
-      clients.computeIfAbsent(type, key -> JavaUtils.newConcurrentMap());
-      Map<String, CoordinatorClient> typeToClients = clients.get(type);
-      CoordinatorClient coordinatorClient = typeToClients.get(coordinator);
-      if (coordinatorClient != null) {
-        coordinatorClients.add(coordinatorClient);
-        continue;
-      }
-      LOG.info("Start to create coordinator clients from {}", coordinator);
       String[] ipPort = coordinator.trim().split(":");
       if (ipPort.length != 2) {
         String msg = "Invalid coordinator format " + Arrays.toString(ipPort);
