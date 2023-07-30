@@ -18,11 +18,11 @@
 package org.apache.uniffle.common;
 
 public enum StorageType {
-    MEMORY,
-    LOCALFILE,
-    MEMORY_LOCALFILE,
-    HDFS,
-    MEMORY_HDFS,
-    LOCALFILE_HDFS,
-    MEMORY_LOCALFILE_HDFS;
+  MEMORY,
+  LOCALFILE,
+  MEMORY_LOCALFILE,
+  HDFS,
+  MEMORY_HDFS,
+  LOCALFILE_HDFS,
+  MEMORY_LOCALFILE_HDFS;
 }
