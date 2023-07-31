@@ -196,7 +196,7 @@ public class CoordinatorConf extends RssBaseConf {
       COORDINATOR_SELECT_PARTITION_STRATEGY =
           ConfigOptions.key("rss.coordinator.select.partition.strategy")
               .enumType(AbstractAssignmentStrategy.SelectPartitionStrategyName.class)
-              .defaultValue(AbstractAssignmentStrategy.SelectPartitionStrategyName.ROUND)
+              .defaultValue(AbstractAssignmentStrategy.SelectPartitionStrategyName.CONTINUOUS)
               .withDescription("Strategy for selecting partitions");
   public static final ConfigOption<Integer> COORDINATOR_QUOTA_DEFAULT_APP_NUM =
       ConfigOptions.key("rss.coordinator.quota.default.app.num")

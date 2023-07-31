@@ -27,16 +27,17 @@ This document will introduce how to collect metrics from servers.
 ### Fetch metrics by REST API
 ``` shell
 # For json format
-curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/metric # fetch all metrics
-curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/metric/server # only fetch server metrics
-curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/metric/grpc # only fetch grpc metrics
-curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/metric/jvm # only fetch jvm metrics
+curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/metrics # fetch all metrics
+curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/metrics/all # fetch all metrics
+curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/metrics/server # only fetch server metrics
+curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/metrics/grpc # only fetch grpc metrics
+curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/metrics/jvm # only fetch jvm metrics
 
 # For Prometheus format
-curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/prometheus/ # fetch all metrics
-curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/prometheus/metric/server # only fetch server metrics
-curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/prometheus/metric/grpc # only fetch grpc metrics
-curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/prometheus/metric/jvm # only fetch jvm metrics
+curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/prometheus/metrics/all # fetch all metrics
+curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/prometheus/metrics/server # only fetch server metrics
+curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/prometheus/metrics/grpc # only fetch grpc metrics
+curl http://${SERVER_HOST}:${SERVER_HTTP_PORT}/prometheus/metrics/jvm # only fetch jvm metrics
 
 ```
 

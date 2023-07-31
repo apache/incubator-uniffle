@@ -57,6 +57,13 @@ public class RssSparkConfig {
           .defaultValue(true)
           .withDescription("indicates row based shuffle, set false when use in columnar shuffle");
 
+  public static final ConfigOption<Boolean> RSS_MEMORY_SPILL_ENABLED =
+      ConfigOptions.key("rss.client.memory.spill.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "The memory spill switch triggered by Spark TaskMemoryManager, default value is false.");
+
   public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
 
   public static final ConfigEntry<Integer> RSS_PARTITION_NUM_PER_RANGE =
@@ -358,6 +365,13 @@ public class RssSparkConfig {
                   .internal()
                   .doc(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT.description()))
           .createWithDefault(-1);
+
+  public static final ConfigEntry<Boolean> RSS_RESUBMIT_STAGE =
+      createBooleanBuilder(
+              new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_RESUBMIT_STAGE)
+                  .internal()
+                  .doc("Whether to enable the resubmit stage."))
+          .createWithDefault(false);
 
   // spark2 doesn't have this key defined
   public static final String SPARK_SHUFFLE_COMPRESS_KEY = "spark.shuffle.compress";

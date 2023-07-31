@@ -52,7 +52,6 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.server.ShuffleServerGrpcMetrics;
 import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.ShuffleTaskManager;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
@@ -72,6 +71,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
 
   @Override
   public void receive(TransportClient client, RequestMessage msg) {
+    shuffleServer.getNettyMetrics().incCounter(msg.getClass().getName());
     if (msg instanceof SendShuffleDataRequest) {
       handleSendShuffleDataRequest(client, (SendShuffleDataRequest) msg);
     } else if (msg instanceof GetLocalShuffleDataRequest) {
@@ -83,6 +83,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     } else {
       throw new RssException("Can not handle message " + msg.type());
     }
+    shuffleServer.getNettyMetrics().decCounter(msg.getClass().getName());
   }
 
   @Override
@@ -107,8 +108,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       long transportTime = System.currentTimeMillis() - timestamp;
       if (transportTime > 0) {
         shuffleServer
-            .getGrpcMetrics()
-            .recordTransportTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, transportTime);
+            .getNettyMetrics()
+            .recordTransportTime(SendShuffleDataRequest.class.getName(), transportTime);
       }
     }
     int requireSize = shuffleServer.getShuffleTaskManager().getRequireBufferSize(requireBufferId);
@@ -133,7 +134,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         responseMessage = errorMsg;
         rpcResponse =
             new RpcResponse(req.getRequestId(), StatusCode.INTERNAL_ERROR, responseMessage);
-        client.sendRpcSync(rpcResponse, RPC_TIMEOUT);
+        client.getChannel().writeAndFlush(rpcResponse);
         return;
       }
       final long start = System.currentTimeMillis();
@@ -190,8 +191,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       rpcResponse = new RpcResponse(req.getRequestId(), ret, responseMessage);
       long costTime = System.currentTimeMillis() - start;
       shuffleServer
-          .getGrpcMetrics()
-          .recordProcessTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, costTime);
+          .getNettyMetrics()
+          .recordProcessTime(SendShuffleDataRequest.class.getName(), costTime);
       LOG.debug(
           "Cache Shuffle Data for appId["
               + appId
@@ -209,7 +210,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           new RpcResponse(req.getRequestId(), StatusCode.INTERNAL_ERROR, "No data in request");
     }
 
-    client.sendRpcSync(rpcResponse, RPC_TIMEOUT);
+    client.getChannel().writeAndFlush(rpcResponse);
   }
 
   public void handleGetMemoryShuffleDataRequest(
@@ -225,9 +226,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       long transportTime = System.currentTimeMillis() - timestamp;
       if (transportTime > 0) {
         shuffleServer
-            .getGrpcMetrics()
-            .recordTransportTime(
-                ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD, transportTime);
+            .getNettyMetrics()
+            .recordTransportTime(GetMemoryShuffleDataRequest.class.getName(), transportTime);
       }
     }
     long start = System.currentTimeMillis();
@@ -260,8 +260,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         }
         long costTime = System.currentTimeMillis() - start;
         shuffleServer
-            .getGrpcMetrics()
-            .recordProcessTime(ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD, costTime);
+            .getNettyMetrics()
+            .recordProcessTime(GetMemoryShuffleDataRequest.class.getName(), costTime);
         LOG.info(
             "Successfully getInMemoryShuffleData cost {} ms with {} bytes shuffle" + " data for {}",
             costTime,
@@ -292,7 +292,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           new GetMemoryShuffleDataResponse(
               req.getRequestId(), status, msg, Lists.newArrayList(), Unpooled.EMPTY_BUFFER);
     }
-    client.sendRpcSync(response, RPC_TIMEOUT);
+    client.getChannel().writeAndFlush(response);
   }
 
   public void handleGetLocalShuffleIndexRequest(
@@ -374,7 +374,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           new GetLocalShuffleIndexResponse(
               req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER, 0L);
     }
-    client.sendRpcSync(response, RPC_TIMEOUT);
+    client.getChannel().writeAndFlush(response);
   }
 
   public void handleGetLocalShuffleData(TransportClient client, GetLocalShuffleDataRequest req) {
@@ -390,8 +390,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       long transportTime = System.currentTimeMillis() - timestamp;
       if (transportTime > 0) {
         shuffleServer
-            .getGrpcMetrics()
-            .recordTransportTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, transportTime);
+            .getNettyMetrics()
+            .recordTransportTime(GetLocalShuffleDataRequest.class.getName(), transportTime);
       }
     }
     String storageType = shuffleServer.getShuffleServerConf().get(RssBaseConf.RSS_STORAGE_TYPE);
@@ -444,8 +444,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getData().length);
         ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getData().length);
         shuffleServer
-            .getGrpcMetrics()
-            .recordProcessTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, readTime);
+            .getNettyMetrics()
+            .recordProcessTime(GetLocalShuffleDataRequest.class.getName(), readTime);
         LOG.info(
             "Successfully getShuffleData cost {} ms for shuffle" + " data with {}",
             readTime,
@@ -471,7 +471,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           new GetLocalShuffleDataResponse(
               req.getRequestId(), status, msg, new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
     }
-    client.sendRpcSync(response, RPC_TIMEOUT);
+    client.getChannel().writeAndFlush(response);
   }
 
   private List<ShufflePartitionedData> toPartitionedData(SendShuffleDataRequest req) {

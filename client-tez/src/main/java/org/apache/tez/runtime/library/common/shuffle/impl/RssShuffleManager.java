@@ -65,6 +65,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.util.Time;
+import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
 import org.apache.tez.common.InputContextUtils;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
@@ -112,6 +113,7 @@ public class RssShuffleManager extends ShuffleManager {
   private final InputContext inputContext;
   private final int numInputs;
   private final int shuffleId;
+  private final ApplicationAttemptId applicationAttemptId;
 
   private final DecimalFormat mbpsFormat = new DecimalFormat("0.00");
 
@@ -224,7 +226,8 @@ public class RssShuffleManager extends ShuffleManager {
       int ifileReadAheadLength,
       CompressionCodec codec,
       FetchedInputAllocator inputAllocator,
-      int shuffleId)
+      int shuffleId,
+      ApplicationAttemptId applicationAttemptId)
       throws IOException {
     super(
         inputContext,
@@ -239,6 +242,7 @@ public class RssShuffleManager extends ShuffleManager {
     this.conf = conf;
     this.numInputs = numInputs;
     this.shuffleId = shuffleId;
+    this.applicationAttemptId = applicationAttemptId;
 
     this.shuffledInputsCounter =
         inputContext.getCounters().findCounter(TaskCounter.NUM_SHUFFLED_INPUTS);
@@ -593,6 +597,7 @@ public class RssShuffleManager extends ShuffleManager {
                         inputManager,
                         partition,
                         shuffleId,
+                        applicationAttemptId,
                         partitionToInput.get(partition),
                         new HashSet<ShuffleServerInfo>(partitionToServers.get(partition)),
                         rssAllBlockIdBitmapMap,

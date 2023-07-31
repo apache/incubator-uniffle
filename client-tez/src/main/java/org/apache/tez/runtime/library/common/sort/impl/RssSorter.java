@@ -25,10 +25,7 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
-import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.dag.records.TezTaskAttemptID;
@@ -63,6 +60,7 @@ public class RssSorter extends ExternalSorter {
       int numOutputs,
       long initialMemoryAvailable,
       int shuffleId,
+      ApplicationAttemptId applicationAttemptId,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers)
       throws IOException {
     super(outputContext, conf, numOutputs, initialMemoryAvailable);
@@ -135,11 +133,6 @@ public class RssSorter extends ExternalSorter {
       LOG.info("bitmapSplitNum is {}", bitmapSplitNum);
     }
 
-    String containerIdStr = System.getenv(ApplicationConstants.Environment.CONTAINER_ID.name());
-    ContainerId containerId = ConverterUtils.toContainerId(containerIdStr);
-    ApplicationAttemptId applicationAttemptId = containerId.getApplicationAttemptId();
-    LOG.info("containerIdStr is {}", containerIdStr);
-    LOG.info("containerId is {}", containerId);
     LOG.info("applicationAttemptId is {}", applicationAttemptId.toString());
 
     bufferManager =
@@ -167,7 +160,8 @@ public class RssSorter extends ExternalSorter {
             sendCheckTimeout,
             bitmapSplitNum,
             shuffleId,
-            true);
+            true,
+            mapOutputByteCounter);
     LOG.info("Initialized WriteBufferManager.");
   }
 

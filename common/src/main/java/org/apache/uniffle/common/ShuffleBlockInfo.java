@@ -22,6 +22,8 @@ import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+import org.apache.uniffle.common.util.ByteBufUtils;
+
 public class ShuffleBlockInfo {
 
   private int partitionId;
@@ -149,5 +151,9 @@ public class ShuffleBlockInfo {
     }
 
     return sb.toString();
+  }
+
+  public synchronized void copyDataTo(ByteBuf to) {
+    ByteBufUtils.copyByteBuf(data, to);
   }
 }

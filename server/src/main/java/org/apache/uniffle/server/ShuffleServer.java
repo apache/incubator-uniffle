@@ -42,6 +42,7 @@ import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
 import org.apache.uniffle.common.metrics.MetricReporter;
 import org.apache.uniffle.common.metrics.MetricReporterFactory;
+import org.apache.uniffle.common.metrics.NettyMetrics;
 import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
@@ -86,6 +87,7 @@ public class ShuffleServer {
   private HealthCheck healthCheck;
   private Set<String> tags = Sets.newHashSet();
   private GRPCMetrics grpcMetrics;
+  private NettyMetrics nettyMetrics;
   private MetricReporter metricReporter;
 
   private AtomicReference<ServerStatus> serverStatus = new AtomicReference(ServerStatus.ACTIVE);
@@ -215,12 +217,15 @@ public class ShuffleServer {
     jettyServer.registerInstance(
         CollectorRegistry.class.getCanonicalName() + "#grpc", grpcMetrics.getCollectorRegistry());
     jettyServer.registerInstance(
+        CollectorRegistry.class.getCanonicalName() + "#netty", nettyMetrics.getCollectorRegistry());
+    jettyServer.registerInstance(
         CollectorRegistry.class.getCanonicalName() + "#jvm", JvmMetrics.getCollectorRegistry());
     jettyServer.registerInstance(
         CollectorRegistry.class.getCanonicalName() + "#all",
         new CoalescedCollectorRegistry(
             ShuffleServerMetrics.getCollectorRegistry(),
             grpcMetrics.getCollectorRegistry(),
+            nettyMetrics.getCollectorRegistry(),
             JvmMetrics.getCollectorRegistry()));
 
     SecurityConfig securityConfig = null;
@@ -290,6 +295,8 @@ public class ShuffleServer {
     ShuffleServerMetrics.register(shuffleServerCollectorRegistry, tags);
     grpcMetrics = new ShuffleServerGrpcMetrics(tags);
     grpcMetrics.register(new CollectorRegistry(true));
+    nettyMetrics = new ShuffleServerNettyMetrics(tags);
+    nettyMetrics.register(new CollectorRegistry(true));
     CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
     boolean verbose =
         shuffleServerConf.getBoolean(ShuffleServerConf.RSS_JVM_METRICS_VERBOSE_ENABLE);
@@ -463,6 +470,10 @@ public class ShuffleServer {
 
   public GRPCMetrics getGrpcMetrics() {
     return grpcMetrics;
+  }
+
+  public NettyMetrics getNettyMetrics() {
+    return nettyMetrics;
   }
 
   public boolean isDecommissioning() {

@@ -23,8 +23,13 @@ function uniffle_usage
   uniffle_add_option "--daemon (start|status|stop)" "operate on a daemon"
   uniffle_add_subcommand "client-cli" client "prints uniffle-cli args information"
   uniffle_add_subcommand "admin-cli" admin "prints uniffle-admin args information"
+  uniffle_add_subcommand "shuffle-server" daemon "run the shuffle-server"
+  uniffle_add_subcommand "coordinator" daemon "run the coordinator"
   uniffle_generate_usage "${UNIFFLE_SHELL_EXECNAME}" true
 }
+
+uniffle_parse_args "$@"
+shift "${UNIFFLE_PARSE_COUNTER}"
 
 function uniffle_cmd_case
 {
@@ -37,6 +42,65 @@ function uniffle_cmd_case
     ;;
     admin-cli)
       UNIFFLE_CLASSNAME=org.apache.uniffle.cli.UniffleAdminCLI
+    ;;
+    shuffle-server)
+      MAX_DIRECT_MEMORY_OPTS=""
+      if [ -n "${MAX_DIRECT_MEMORY_SIZE:-}" ]; then
+        MAX_DIRECT_MEMORY_OPTS="-XX:MaxDirectMemorySize=$MAX_DIRECT_MEMORY_SIZE"
+      fi
+
+      JVM_ARGS=" -server \
+          -Xmx${XMX_SIZE} \
+          -Xms${XMX_SIZE} \
+          ${MAX_DIRECT_MEMORY_OPTS} \
+          -XX:+UseG1GC \
+          -XX:MaxGCPauseMillis=200 \
+          -XX:ParallelGCThreads=20 \
+          -XX:ConcGCThreads=5 \
+          -XX:InitiatingHeapOccupancyPercent=20 \
+          -XX:G1HeapRegionSize=32m \
+          -XX:+UnlockExperimentalVMOptions \
+          -XX:G1NewSizePercent=10 \
+          -XX:+PrintGC \
+          -XX:+PrintAdaptiveSizePolicy \
+          -XX:+PrintGCDateStamps \
+          -XX:+PrintGCTimeStamps \
+          -XX:+PrintGCDetails \
+          -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
+
+      JAVA11_EXTRA_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
+          -Xlog:gc:tags,time,uptime,level"
+      UNIFFLE_OPTS="$UNIFFLE_OPTS $JVM_ARGS $JAVA11_EXTRA_ARGS"
+
+      UNIFFLE_SUBCMD_SUPPORT_DAEMONIZATION="true"
+      RSS_CONF_FILE="${RSS_CONF_DIR}/server.conf"
+      uniffle_add_classpath "${RSS_HOME}/jars/server/*"
+      UNIFFLE_CLASSNAME=org.apache.uniffle.server.ShuffleServer
+    ;;
+    coordinator)
+      JVM_ARGS=" -server \
+          -Xmx${XMX_SIZE:-8g} \
+          -Xms${XMX_SIZE:-8g} \
+          -XX:+UseG1GC \
+          -XX:MaxGCPauseMillis=200 \
+          -XX:ParallelGCThreads=20 \
+          -XX:ConcGCThreads=5 \
+          -XX:InitiatingHeapOccupancyPercent=45 \
+          -XX:+PrintGC \
+          -XX:+PrintAdaptiveSizePolicy \
+          -XX:+PrintGCDateStamps \
+          -XX:+PrintGCTimeStamps \
+          -XX:+PrintGCDetails \
+          -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
+
+      JAVA11_EXTRA_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
+          -Xlog:gc:tags,time,uptime,level"
+      UNIFFLE_OPTS="$UNIFFLE_OPTS $JVM_ARGS $JAVA11_EXTRA_ARGS"
+
+      UNIFFLE_SUBCMD_SUPPORT_DAEMONIZATION="true"
+      RSS_CONF_FILE="${RSS_CONF_DIR}/coordinator.conf"
+      uniffle_add_classpath "${RSS_HOME}/jars/coordinator/*"
+      UNIFFLE_CLASSNAME=org.apache.uniffle.coordinator.CoordinatorServer
     ;;
     *)
       UNIFFLE_CLASSNAME="${subcmd}"
@@ -67,6 +131,8 @@ source "$(dirname "$0")/utils.sh"
 UNIFFLE_SHELL_SCRIPT_DEBUG=false
 load_rss_env
 uniffle_java_setup
+uniffle_basic_init
+uniffle_finalize_uniffle_opts
 
 CLASSPATH=""
 
@@ -74,6 +140,9 @@ JAR_DIR="${RSS_HOME}/jars"
 for file in $(ls ${JAR_DIR}/cli/*.jar 2>/dev/null); do
   CLASSPATH=$CLASSPATH:$file
 done
+
+HADOOP_DEPENDENCY="$("$HADOOP_HOME/bin/hadoop" classpath --glob)"
+CLASSPATH=$CLASSPATH:$HADOOP_CONF_DIR:$HADOOP_DEPENDENCY
 
 set +u
 uniffle_cmd_case "${UNIFFLE_SUBCMD}" "${UNIFFLE_SUBCMD_ARGS[@]}"

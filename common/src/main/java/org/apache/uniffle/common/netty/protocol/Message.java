@@ -131,4 +131,6 @@ public abstract class Message implements Encodable {
         throw new IllegalArgumentException("Unexpected message type: " + msgType);
     }
   }
+
+  public abstract long getRequestId();
 }

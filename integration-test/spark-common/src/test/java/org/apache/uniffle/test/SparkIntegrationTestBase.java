@@ -58,15 +58,23 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     updateSparkConfCustomer(sparkConf);
     start = System.currentTimeMillis();
     Map resultWithRss = runSparkApp(sparkConf, fileName);
-    long durationWithRss = System.currentTimeMillis() - start;
+    final long durationWithRss = System.currentTimeMillis() - start;
 
+    updateSparkConfWithRssNetty(sparkConf);
+    start = System.currentTimeMillis();
+    Map resultWithRssNetty = runSparkApp(sparkConf, fileName);
+    final long durationWithRssNetty = System.currentTimeMillis() - start;
     verifyTestResult(resultWithoutRss, resultWithRss);
+    verifyTestResult(resultWithoutRss, resultWithRssNetty);
 
     LOG.info(
         "Test: durationWithoutRss["
             + durationWithoutRss
             + "], durationWithRss["
             + durationWithRss
+            + "]"
+            + "], durationWithRssNetty["
+            + durationWithRssNetty
             + "]");
   }
 
@@ -108,6 +116,10 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     sparkConf.set(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key(), "1m");
     sparkConf.set(RssSparkConfig.RSS_HEARTBEAT_INTERVAL.key(), "2000");
     sparkConf.set(RssSparkConfig.RSS_TEST_MODE_ENABLE.key(), "true");
+  }
+
+  public void updateSparkConfWithRssNetty(SparkConf sparkConf) {
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_TYPE, "GRPC_NETTY");
   }
 
   protected void verifyTestResult(Map expected, Map actual) {

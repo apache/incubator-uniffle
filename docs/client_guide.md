@@ -234,4 +234,11 @@ This experimental feature allows reduce tasks to spill data to remote storage (e
 |mapreduce.rss.reduce.remote.spill.retries|5| The retry number to spill data to Hadoop FS                            |
 
 Notice: this feature requires the MEMORY_LOCAL_HADOOP mode.
+
+
+### Tez Specialized Setting
+
+| Property Name                  | Default | Description                                                             |
+|--------------------------------|---------|-------------------------------------------------------------------------|
+| tez.rss.avoid.recompute.succeeded.task | false   | Whether to avoid recompute succeeded task when node is unhealthy or black-listed |
  

@@ -40,7 +40,7 @@ public class CoordinatorClientFactory {
   }
 
   public CoordinatorClient createCoordinatorClient(String host, int port) {
-    if (clientType.equals(ClientType.GRPC)) {
+    if (clientType.equals(ClientType.GRPC) || clientType.equals(ClientType.GRPC_NETTY)) {
       return new CoordinatorGrpcClient(host, port);
     } else {
       throw new UnsupportedOperationException("Unsupported client type " + clientType);

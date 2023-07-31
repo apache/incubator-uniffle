@@ -42,6 +42,7 @@ github:
     - cchung100m
     - slfan1989
     - yl09099
+    - bin41215
   enabled_merge_buttons:
     squash: true
     merge: false
@@ -56,5 +57,5 @@ github:
 
 notifications:
   commits: commits@uniffle.apache.org
-  issues: dev@uniffle.apache.org
+  issues: issues@uniffle.apache.org
   pullrequests: issues@uniffle.apache.org

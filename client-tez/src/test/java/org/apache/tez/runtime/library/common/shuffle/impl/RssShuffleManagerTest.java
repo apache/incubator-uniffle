@@ -33,6 +33,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.security.token.Token;
+import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tez.common.TezExecutors;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.TezSharedExecutor;
@@ -81,6 +83,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class RssShuffleManagerTest {
+  public static final ApplicationId APP_ID = ApplicationId.newInstance(9999, 72);
+  public static final ApplicationAttemptId APPATTEMPT_ID =
+      ApplicationAttemptId.newInstance(APP_ID, 1);
   private static final String FETCHER_HOST = "localhost";
   private static final int PORT = 8080;
   private static final String PATH_COMPONENT = "attempttmp";
@@ -119,6 +124,8 @@ public class RssShuffleManagerTest {
     doReturn("Reducer 1").when(inputContext).getTaskVertexName();
     when(inputContext.getUniqueIdentifier())
         .thenReturn("attempt_1685094627632_0157_1_01_000000_0_10006");
+    doReturn(APP_ID).when(inputContext).getApplicationId();
+    doReturn(APPATTEMPT_ID.getAttemptId()).when(inputContext).getDAGAttemptNumber();
     return inputContext;
   }
 
@@ -296,7 +303,8 @@ public class RssShuffleManagerTest {
           ifileReadAheadLength,
           codec,
           inputAllocator,
-          0);
+          0,
+          APPATTEMPT_ID);
     }
 
     @Override

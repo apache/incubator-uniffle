@@ -34,6 +34,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.TezUtils;
@@ -92,6 +93,7 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
   private SimpleFetchedInputAllocator inputManager;
   private ShuffleEventHandler inputEventHandler;
   private int shuffleId;
+  private ApplicationAttemptId applicationAttemptId;
 
   public RssUnorderedKVInput(InputContext inputContext, int numPhysicalInputs) {
     super(inputContext, numPhysicalInputs);
@@ -132,6 +134,9 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
     assert destinationVertexId != -1;
     this.shuffleId =
         RssTezUtils.computeShuffleId(tezDAGID.getId(), sourceVertexId, destinationVertexId);
+    this.applicationAttemptId =
+        ApplicationAttemptId.newInstance(
+            getContext().getApplicationId(), getContext().getDAGAttemptNumber());
     return Collections.emptyList();
   }
 
@@ -192,7 +197,8 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
               ifileReadAheadLength,
               codec,
               inputManager,
-              shuffleId);
+              shuffleId,
+              applicationAttemptId);
 
       this.inputEventHandler =
           new ShuffleInputEventHandlerImpl(

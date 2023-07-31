@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterAll;
@@ -59,6 +60,9 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
 
   protected static List<ShuffleServer> shuffleServers = Lists.newArrayList();
   protected static List<CoordinatorServer> coordinators = Lists.newArrayList();
+
+  protected static final int NETTY_PORT = 21000;
+  protected static AtomicInteger nettyPortCounter = new AtomicInteger();
 
   public static void startServers() throws Exception {
     for (CoordinatorServer coordinator : coordinators) {
@@ -123,6 +127,9 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     serverConf.setBoolean("rss.server.health.check.enable", false);
     serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     serverConf.set(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL, 500L);
+    serverConf.setInteger(
+        ShuffleServerConf.NETTY_SERVER_PORT, NETTY_PORT + nettyPortCounter.getAndIncrement());
+    serverConf.setString("rss.server.tags", "GRPC,GRPC_NETTY");
     return serverConf;
   }
 
