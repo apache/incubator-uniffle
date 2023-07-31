@@ -190,9 +190,13 @@ public class ShuffleBufferManager {
   }
 
   public boolean checkIfRegistered(String appId, int shuffleId, List<Integer> partitionIds) {
-    for (int partitionId: partitionIds) {
+    for (int partitionId : partitionIds) {
       if (getShuffleBufferEntry(appId, shuffleId, partitionId) == null) {
-        LOG.warn("Check app not registered, appId: {} ,shuffleId: {}, partitionId: {} ", appId, shuffleId, partitionId);
+        LOG.warn(
+            "Check app not registered, appId: {} ,shuffleId: {}, partitionId: {} ",
+            appId,
+            shuffleId,
+            partitionId);
         return false;
       }
     }
