@@ -262,7 +262,9 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
 
   public static MockedShuffleServer createServer(int id, File tmpDir) throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    shuffleServerConf.setString(
+        shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
+        StorageType.LOCALFILE.name());
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5000L);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 40.0);
@@ -273,8 +275,9 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     File dataDir1 = new File(tmpDir, id + "_1");
     File dataDir2 = new File(tmpDir, id + "_2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    shuffleServerConf.set(
-        ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    shuffleServerConf.setString(
+        shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
+        StorageType.MEMORY_LOCALFILE_HDFS.name());
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 450L);
     shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 20 + id);
     shuffleServerConf.setInteger("rss.jetty.http.port", 19081 + id * 100);

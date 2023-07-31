@@ -55,7 +55,8 @@ public class StorageCheckerTest {
   public void checkTest(@TempDir File baseDir) throws Exception {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.setBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE, true);
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    conf.setString(
+        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.LOCALFILE.name());
     String st1 = new File(baseDir, "st1").getPath();
     String st2 = new File(baseDir, "st2").getPath();
     String st3 = new File(baseDir, "st3").getPath();

@@ -89,8 +89,9 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     File dataDir1 = new File(tmpDir, "data1");
     String basePath = dataDir1.getAbsolutePath();
-    shuffleServerConf.set(
-        ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    shuffleServerConf.setString(
+        shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
+        StorageType.MEMORY_LOCALFILE_HDFS.name());
     shuffleServerConf.set(
         ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, EVENT_THRESHOLD_SIZE);
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));

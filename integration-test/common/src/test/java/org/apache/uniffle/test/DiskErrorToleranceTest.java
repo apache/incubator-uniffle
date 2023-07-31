@@ -68,7 +68,9 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    shuffleServerConf.setString(
+        shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
+        StorageType.LOCALFILE.name());
     shuffleServerConf.set(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH,
         Arrays.asList(data1.getAbsolutePath(), data2.getAbsolutePath()));

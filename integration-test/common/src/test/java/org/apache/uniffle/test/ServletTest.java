@@ -85,7 +85,8 @@ public class ServletTest extends IntegrationTestBase {
     File dataDir2 = new File(tmpDir, "data2");
     List<String> basePath =
         Lists.newArrayList(dataDir1.getAbsolutePath(), dataDir2.getAbsolutePath());
-    shuffleServerConf.setString(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    shuffleServerConf.setString(
+        shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE).name(), StorageType.LOCALFILE.name());
     shuffleServerConf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, basePath);
     createShuffleServer(shuffleServerConf);
     File dataDir3 = new File(tmpDir, "data3");

@@ -69,7 +69,7 @@ public class ShuffleFlushManager {
     this.storageManager = storageManager;
     initHadoopConf();
     retryMax = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_WRITE_RETRY_MAX);
-    storageType = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE);
+    storageType = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE).name();
     storageDataReplica = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_DATA_REPLICA);
 
     storageBasePaths = RssUtils.getConfiguredLocalDirs(shuffleServerConf);

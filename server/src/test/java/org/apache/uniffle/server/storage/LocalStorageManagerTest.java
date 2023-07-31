@@ -88,7 +88,7 @@ public class LocalStorageManagerTest {
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
     conf.setString(
-        ShuffleServerConf.RSS_STORAGE_TYPE,
+        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
         org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
 
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
@@ -112,7 +112,7 @@ public class LocalStorageManagerTest {
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
     conf.setString(
-        ShuffleServerConf.RSS_STORAGE_TYPE,
+        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
         org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
 
@@ -177,7 +177,7 @@ public class LocalStorageManagerTest {
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
     conf.setString(
-        ShuffleServerConf.RSS_STORAGE_TYPE,
+        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
         org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
 
@@ -198,7 +198,9 @@ public class LocalStorageManagerTest {
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/a/rss-data", "/b/rss-data"));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
     conf.setLong(ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER, 1);
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    conf.setString(
+        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
+        StorageType.MEMORY_LOCALFILE_HDFS.name());
     try {
       LocalStorageManager localStorageManager = new LocalStorageManager(conf);
       fail();
@@ -252,7 +254,7 @@ public class LocalStorageManagerTest {
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
     conf.setString(
-        ShuffleServerConf.RSS_STORAGE_TYPE,
+        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
         org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
     Map<String, StorageInfo> storageInfo = localStorageManager.getStorageInfo();
@@ -292,7 +294,7 @@ public class LocalStorageManagerTest {
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
     conf.setString(
-        ShuffleServerConf.RSS_STORAGE_TYPE,
+        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
         org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
     conf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "env_key");
     withEnvironmentVariables("env_key", "{\"/tmp\": \"ssd\"}")

@@ -54,7 +54,9 @@ public class HadoopStorageManagerTest {
   @Test
   public void testRemoveResources() {
     ShuffleServerConf conf = new ShuffleServerConf();
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    conf.setString(
+        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
+        StorageType.MEMORY_LOCALFILE_HDFS.name());
     HadoopStorageManager hadoopStorageManager = new HadoopStorageManager(conf);
     final String remoteStoragePath1 = "hdfs://path1";
     String appId = "testRemoveResources_appId";
@@ -80,7 +82,9 @@ public class HadoopStorageManagerTest {
     conf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 2000L);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    conf.setString(
+        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
+        StorageType.MEMORY_LOCALFILE_HDFS.name());
     HadoopStorageManager hadoopStorageManager = new HadoopStorageManager(conf);
     final String remoteStoragePath1 = "hdfs://path1";
     final String remoteStoragePath2 = "hdfs://path2";
