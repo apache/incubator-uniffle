@@ -405,6 +405,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     if (requireBufferId == -1) {
       status = StatusCode.NO_BUFFER;
       ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
+    } else if (requireBufferId == -4) {
+      status = StatusCode.NO_REGISTER;
+      ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
     }
     RequireBufferResponse response =
         RequireBufferResponse.newBuilder()

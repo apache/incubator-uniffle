@@ -408,6 +408,10 @@ public class ShuffleTaskManager {
 
   public long requireBuffer(
       String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
+    boolean isRegistered = shuffleBufferManager.checkIfRegistered(appId, shuffleId, partitionIds);
+    if (!isRegistered) {
+      return -4;  // Keep the same with StatusCode
+    }
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
     if (shuffleTaskInfo != null) {
       for (int partitionId : partitionIds) {

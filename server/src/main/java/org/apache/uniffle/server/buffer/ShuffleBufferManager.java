@@ -189,6 +189,16 @@ public class ShuffleBufferManager {
     shuffleIdToSize.get(shuffleId).addAndGet(size);
   }
 
+  public boolean checkIfRegistered(String appId, int shuffleId, List<Integer> partitionIds) {
+    for (int partitionId: partitionIds) {
+      if (getShuffleBufferEntry(appId, shuffleId, partitionId) == null) {
+        LOG.warn("Check app not registered, appId: {} ,shuffleId: {}, partitionId: {} ", appId, shuffleId, partitionId);
+        return false;
+      }
+    }
+    return true;
+  }
+
   public Entry<Range<Integer>, ShuffleBuffer> getShuffleBufferEntry(
       String appId, int shuffleId, int partitionId) {
     Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);

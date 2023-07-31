@@ -109,6 +109,10 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     String appId = "hugePartitionMemoryUsageLimitTest_appId";
     int shuffleId = 1;
 
+    // case1, return -4 means not registered.
+    long requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+    assertEquals(-4, requiredId);
+
     shuffleTaskManager.registerShuffle(
         appId,
         shuffleId,
@@ -116,18 +120,18 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
         RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
         StringUtils.EMPTY);
 
-    // case1
-    long requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+    // case2
+    requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
     assertNotEquals(-1, requiredId);
 
-    // case2
+    // case3
     ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 500);
     shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData0);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
     requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
     assertNotEquals(-1, requiredId);
 
-    // case3
+    // case4
     partitionedData0 = createPartitionedData(1, 1, 500);
     shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData0);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
@@ -141,7 +145,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     assertEquals(1, ShuffleServerMetrics.gaugeHugePartitionNum.get());
     assertEquals(1, ShuffleServerMetrics.gaugeAppWithHugePartitionNum.get());
 
-    // case4
+    // case5
     shuffleTaskManager.removeResources(appId);
     assertEquals(0, ShuffleServerMetrics.gaugeHugePartitionNum.get());
     assertEquals(0, ShuffleServerMetrics.gaugeAppWithHugePartitionNum.get());
