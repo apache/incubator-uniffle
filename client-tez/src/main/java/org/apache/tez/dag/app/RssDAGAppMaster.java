@@ -37,12 +37,14 @@ import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.helpers.Loader;
 import org.apache.log4j.helpers.OptionConverter;
+import org.apache.tez.common.AsyncDispatcher;
 import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezClassLoader;
@@ -56,10 +58,15 @@ import org.apache.tez.dag.api.InputDescriptor;
 import org.apache.tez.dag.api.OutputDescriptor;
 import org.apache.tez.dag.api.TezConstants;
 import org.apache.tez.dag.api.TezUncheckedException;
+import org.apache.tez.dag.api.oldrecords.TaskAttemptState;
 import org.apache.tez.dag.api.records.DAGProtos;
 import org.apache.tez.dag.api.records.DAGProtos.AMPluginDescriptorProto;
 import org.apache.tez.dag.app.dag.DAG;
 import org.apache.tez.dag.app.dag.DAGState;
+import org.apache.tez.dag.app.dag.Task;
+import org.apache.tez.dag.app.dag.TaskAttempt;
+import org.apache.tez.dag.app.dag.event.TaskAttemptEvent;
+import org.apache.tez.dag.app.dag.event.TaskAttemptEventType;
 import org.apache.tez.dag.app.dag.impl.DAGImpl;
 import org.apache.tez.dag.app.dag.impl.Edge;
 import org.apache.tez.dag.library.vertexmanager.ShuffleVertexManager;
@@ -76,8 +83,12 @@ import static org.apache.log4j.LogManager.CONFIGURATOR_CLASS_KEY;
 import static org.apache.log4j.LogManager.DEFAULT_CONFIGURATION_KEY;
 import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
 import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
+import static org.apache.tez.common.RssTezConfig.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK;
+import static org.apache.tez.common.RssTezConfig.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK_DEFAULT;
 import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_ID;
 import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
+import static org.apache.tez.dag.api.TezConfiguration.TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS;
+import static org.apache.tez.dag.api.TezConfiguration.TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS_DEFAULT;
 
 public class RssDAGAppMaster extends DAGAppMaster {
   private static final Logger LOG = LoggerFactory.getLogger(RssDAGAppMaster.class);
@@ -125,6 +136,10 @@ public class RssDAGAppMaster extends DAGAppMaster {
   @Override
   public synchronized void serviceInit(Configuration conf) throws Exception {
     super.serviceInit(conf);
+    if (conf.getBoolean(
+        RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK, RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK_DEFAULT)) {
+      overrideTaskAttemptEventDispatcher();
+    }
     initAndStartRSSClient(this, conf);
   }
 
@@ -336,6 +351,16 @@ public class RssDAGAppMaster extends DAGAppMaster {
         }
       }
 
+      if (conf.getBoolean(
+              RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK, RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK_DEFAULT)
+          && conf.getBoolean(
+              TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS,
+              TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS_DEFAULT)) {
+        LOG.info(
+            "When rss.avoid.recompute.succeeded.task is enable, "
+                + "we can not rescheduler succeeded task on unhealthy node");
+        conf.setBoolean(TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS, false);
+      }
       initAndStartAppMaster(appMaster, conf);
     } catch (Throwable t) {
       LOG.error("Error starting RssDAGAppMaster", t);
@@ -476,12 +501,50 @@ public class RssDAGAppMaster extends DAGAppMaster {
     }
   }
 
-  private static void reconfigureLog4j() {
+  static void reconfigureLog4j() {
     String configuratorClassName = OptionConverter.getSystemProperty(CONFIGURATOR_CLASS_KEY, null);
     String configurationOptionStr =
         OptionConverter.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
     URL url = Loader.getResource(configurationOptionStr);
     OptionConverter.selectAndConfigure(
         url, configuratorClassName, LogManager.getLoggerRepository());
+  }
+
+  protected void overrideTaskAttemptEventDispatcher()
+      throws NoSuchFieldException, IllegalAccessException {
+    AsyncDispatcher dispatcher = (AsyncDispatcher) this.getDispatcher();
+    Field field = dispatcher.getClass().getDeclaredField("eventHandlers");
+    field.setAccessible(true);
+    Map<Class<? extends Enum>, EventHandler> eventHandlers =
+        (Map<Class<? extends Enum>, EventHandler>) field.get(dispatcher);
+    eventHandlers.put(TaskAttemptEventType.class, new RssTaskAttemptEventDispatcher());
+  }
+
+  private class RssTaskAttemptEventDispatcher implements EventHandler<TaskAttemptEvent> {
+    @SuppressWarnings("unchecked")
+    @Override
+    public void handle(TaskAttemptEvent event) {
+      DAG dag = getContext().getCurrentDAG();
+      int eventDagIndex = event.getTaskAttemptID().getTaskID().getVertexID().getDAGId().getId();
+      if (dag == null || eventDagIndex != dag.getID().getId()) {
+        return; // event not relevant any more
+      }
+      Task task =
+          dag.getVertex(event.getTaskAttemptID().getTaskID().getVertexID())
+              .getTask(event.getTaskAttemptID().getTaskID());
+      TaskAttempt attempt = task.getAttempt(event.getTaskAttemptID());
+
+      if (attempt.getState() == TaskAttemptState.SUCCEEDED
+          && event.getType() == TaskAttemptEventType.TA_NODE_FAILED) {
+        // Here we only handle TA_NODE_FAILED. TA_KILL_REQUEST and TA_KILLED also could trigger
+        // TerminatedAfterSuccessTransition, but the reason is not about bad node.
+        LOG.info(
+            "We should not recompute the succeeded task attempt, though task attempt {} recieved envent {}",
+            attempt,
+            event);
+        return;
+      }
+      ((EventHandler<TaskAttemptEvent>) attempt).handle(event);
+    }
   }
 }

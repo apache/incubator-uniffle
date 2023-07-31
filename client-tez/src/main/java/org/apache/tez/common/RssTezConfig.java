@@ -201,6 +201,10 @@ public class RssTezConfig {
   public static final String RSS_SHUFFLE_DESTINATION_VERTEX_ID =
       TEZ_RSS_CONFIG_PREFIX + "rss.shuffle.destination.vertex.id";
 
+  public static final String RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK =
+      TEZ_RSS_CONFIG_PREFIX + "rss.avoid.recompute.succeeded.task";
+  public static final boolean RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK_DEFAULT = false;
+
   public static RssConf toRssConf(Configuration jobConf) {
     RssConf rssConf = new RssConf();
     for (Map.Entry<String, String> entry : jobConf) {
