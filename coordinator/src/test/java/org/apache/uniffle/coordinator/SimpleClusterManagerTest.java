@@ -512,6 +512,8 @@ public class SimpleClusterManagerTest {
       assertEquals(4, scm.getNodesNum());
       assertEquals(2, scm.getExcludeNodes().size());
     }
+    File blacklistFile = new File(excludeNodesPath);
+    assertTrue(blacklistFile.delete());
   }
 
   private void writeExcludeHosts(String path, Set<String> values) throws Exception {
