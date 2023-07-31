@@ -98,8 +98,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
   public void hugePartitionMemoryUsageLimitTest() throws Exception {
     String confFile = ClassLoader.getSystemResource("server.conf").getFile();
     ShuffleServerConf conf = new ShuffleServerConf(confFile);
-    conf.setString(
-        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.MEMORY_LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
     conf.setString(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD.key(), "1K");
     conf.setString("rss.server.buffer.capacity", "10K");
     conf.set(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO, 0.1);
@@ -152,8 +151,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
   public void partitionDataSizeSummaryTest() throws Exception {
     String confFile = ClassLoader.getSystemResource("server.conf").getFile();
     ShuffleServerConf conf = new ShuffleServerConf(confFile);
-    conf.setString(
-        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.MEMORY_LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
     shuffleServer = new ShuffleServer(conf);
     ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
 
@@ -190,7 +188,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 128L);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
-    conf.setString(conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.HDFS.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
@@ -243,7 +241,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 128L);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
-    conf.setString(conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.HDFS.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 3000L);
@@ -459,7 +457,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 100000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
-    conf.setString(conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), "LOCALFILE");
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), "LOCALFILE");
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     java.nio.file.Path path1 = Files.createTempDirectory("removeShuffleDataWithLocalfileTest");
     java.nio.file.Path path2 = Files.createTempDirectory("removeShuffleDataWithLocalfileTest");
@@ -516,7 +514,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storageBasePath));
-    conf.setString(conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.HDFS.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
@@ -588,7 +586,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storageBasePath));
-    conf.setString(conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.HDFS.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
@@ -639,7 +637,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storageBasePath));
-    conf.setString(conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.HDFS.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
@@ -776,7 +774,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storageBasePath));
-    conf.setString(conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.HDFS.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
@@ -843,7 +841,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storageBasePath));
-    conf.setString(conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.HDFS.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
@@ -881,8 +879,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
-    conf.setString(
-        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     // make sure not to check leak shuffle data automatically

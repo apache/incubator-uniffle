@@ -63,8 +63,7 @@ public class SparkSQLWithDelegationShuffleManagerFallbackTest extends SparkSQLTe
     File dataDir2 = new File(tmpDir, "data2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     shuffleServerConf.setString(
-        shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
-        StorageType.LOCALFILE.name());
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
     shuffleServerConf.setString(ShuffleServerConf.SERVER_BUFFER_CAPACITY.key(), "512mb");
     createShuffleServer(shuffleServerConf);

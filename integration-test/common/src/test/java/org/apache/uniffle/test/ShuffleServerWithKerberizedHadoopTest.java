@@ -100,8 +100,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     serverConf.setString("rss.server.hadoop.dfs.replication", "2");
     serverConf.setLong("rss.server.disk.capacity", 10L * 1024L * 1024L * 1024L);
     serverConf.setBoolean("rss.server.health.check.enable", false);
-    serverConf.setString(
-        serverConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.HDFS.name());
+    serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     return serverConf;
   }

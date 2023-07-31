@@ -58,8 +58,7 @@ public class ShuffleServerWithHadoopTest extends ShuffleReadWriteBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setString(
-        shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.HDFS.name());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     createShuffleServer(shuffleServerConf);
     startServers();
   }

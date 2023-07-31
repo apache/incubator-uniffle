@@ -72,8 +72,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   public void setUp(@TempDir File tmpDir) {
     conf = new ShuffleServerConf();
     File dataDir = new File(tmpDir, "data");
-    conf.setString(
-        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
     conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 500L);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
@@ -438,8 +437,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   public void flushSingleBufferForHugePartitionTest(@TempDir File tmpDir) throws Exception {
     ShuffleServerConf shuffleConf = new ShuffleServerConf();
     File dataDir = new File(tmpDir, "data");
-    shuffleConf.setString(
-        shuffleConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.LOCALFILE.name());
+    shuffleConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     shuffleConf.set(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
     shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
@@ -501,8 +499,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   public void flushSingleBufferTest(@TempDir File tmpDir) throws Exception {
     ShuffleServerConf shuffleConf = new ShuffleServerConf();
     File dataDir = new File(tmpDir, "data");
-    shuffleConf.setString(
-        shuffleConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(), StorageType.LOCALFILE.name());
+    shuffleConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     shuffleConf.set(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
     shuffleConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 200L);

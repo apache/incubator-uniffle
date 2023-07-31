@@ -43,8 +43,7 @@ public class MultiStorageManagerTest {
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     conf.setString(
-        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
-        StorageType.MEMORY_LOCALFILE_HDFS.name());
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     MultiStorageManager manager = new MultiStorageManager(conf);
     String remoteStorage = "test";
     String appId = "selectStorageManagerTest_appId";
@@ -65,8 +64,7 @@ public class MultiStorageManagerTest {
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 10000L);
     conf.setString(
-        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
-        StorageType.MEMORY_LOCALFILE_HDFS.name());
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     conf.setString(
         ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
         RotateStorageManagerFallbackStrategy.class.getCanonicalName());
@@ -104,8 +102,7 @@ public class MultiStorageManagerTest {
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 10000L);
     conf.setString(
-        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
-        StorageType.MEMORY_LOCALFILE_HDFS.name());
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     conf.setString(
         ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
         RotateStorageManagerFallbackStrategy.class.getCanonicalName());

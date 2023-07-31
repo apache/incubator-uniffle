@@ -42,8 +42,7 @@ public class StorageManagerFallbackStrategyTest {
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("test"));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 10000L);
     conf.setString(
-        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
-        StorageType.MEMORY_LOCALFILE_HDFS.name());
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
   }
 
   @Test

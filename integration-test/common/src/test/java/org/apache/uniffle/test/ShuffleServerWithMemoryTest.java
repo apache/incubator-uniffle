@@ -66,8 +66,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     File dataDir = new File(tmpDir, "data");
     String basePath = dataDir.getAbsolutePath();
     shuffleServerConf.setString(
-        shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
-        StorageType.LOCALFILE.name());
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5000L);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);

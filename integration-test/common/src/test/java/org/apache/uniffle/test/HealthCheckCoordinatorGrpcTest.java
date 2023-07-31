@@ -75,8 +75,7 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE, true);
     shuffleServerConf.setString(
-        shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
-        StorageType.LOCALFILE.name());
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     shuffleServerConf.set(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(data1.getAbsolutePath()));
     shuffleServerConf.setDouble(
@@ -87,8 +86,7 @@ public class HealthCheckCoordinatorGrpcTest extends CoordinatorTestBase {
     shuffleServerConf.setInteger(ShuffleServerConf.RPC_SERVER_PORT, SHUFFLE_SERVER_PORT + 1);
     shuffleServerConf.setInteger(ShuffleServerConf.JETTY_HTTP_PORT, 18081);
     shuffleServerConf.setString(
-        shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name(),
-        StorageType.LOCALFILE.name());
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     shuffleServerConf.set(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(data2.getAbsolutePath()));
     shuffleServerConf.setDouble(
