@@ -187,7 +187,6 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
               taskIdBitmap,
               new ArrayList<>(serverInfoSet),
               readerJobConf,
-              new TezIdHelper(),
               expectedTaskIdsBitmapFilterEnable,
               RssTezConfig.toRssConf(this.conf));
       ShuffleReadClient shuffleReadClient =
