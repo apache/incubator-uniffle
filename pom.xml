@@ -1071,7 +1071,6 @@
             <exclude>deploy/kubernetes/operator/go.mod</exclude>
             <exclude>deploy/kubernetes/operator/go.sum</exclude>
             <exclude>deploy/kubernetes/operator/PROJECT</exclude>
-            <exclude>licenses-binary/*</exclude>
           </excludes>
         </configuration>
       </plugin>
