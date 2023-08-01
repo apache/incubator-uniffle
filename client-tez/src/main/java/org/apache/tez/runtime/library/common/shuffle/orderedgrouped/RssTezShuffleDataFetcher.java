@@ -240,7 +240,7 @@ public class RssTezShuffleDataFetcher extends CallableWithNdc<Void> {
       throw ioe;
     }
     // Check if we can shuffle *now* ...
-    if (mapOutput == null || mapOutput.getType() == MapOutput.Type.WAIT) {
+    if (mapOutput == null) {
       LOG.info("RssMRFetcher" + " - MergeManager returned status WAIT ...");
       // Not an error but wait to process data.
       // Use a retry flag to avoid re-fetch and re-uncompress.
