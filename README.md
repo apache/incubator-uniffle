@@ -179,7 +179,8 @@ rss-xxx.tgz will be generated for deployment
 ### Deploy Shuffle Server
 We recommend to use JDK 11+ if we want to have better performance when we deploy the shuffle server.
 Some benchmark tests among different JDK is as below:
-(using spark to write shuffle data with 20 executors. Single executor will total write 1G, and each time write 14M)
+(using spark to write shuffle data with 20 executors. Single executor will total write 1G, and each time write 14M.
+Shuffle Server use GRPC to transfer data)
 
 | Java version | ShuffleServer GC  | Max pause time | ThroughOutput |
 | ------------- | ------------- | ------------- | ------------- |
