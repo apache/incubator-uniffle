@@ -188,6 +188,7 @@ Some benchmark tests among different JDK is as below:
 | 18  | G1  | 2.5s | 0.8 |
 | 18  | ZGC  | 0.2ms | 0.99997 |
 
+Deploy Steps:
 1. unzip package to RSS_HOME
 2. update RSS_HOME/bin/rss-env.sh, e.g.,
    ```
