@@ -177,6 +177,16 @@ rss-xxx.tgz will be generated for deployment
    ```
 
 ### Deploy Shuffle Server
+We recommend to use JDK 11+ if we want to have better performance when we deploy the shuffle server.
+Some benchmark tests among different JDK is as below:
+(using spark to write shuffle data with 20 executors. Single executor will total write 1G, and each time write 14M)
+
+| Java version | ShuffleServer GC  | Max pause time | ThroughOutput |
+| ------------- | ------------- | ------------- | ------------- |
+| 8  | G1  | 30s | 0.3 |
+| 11  | G1  | 2.5s | 0.8 |
+| 18  | G1  | 2.5s | 0.8 |
+| 18  | ZGC  | 0.2ms | 0.99997 |
 
 1. unzip package to RSS_HOME
 2. update RSS_HOME/bin/rss-env.sh, e.g.,
