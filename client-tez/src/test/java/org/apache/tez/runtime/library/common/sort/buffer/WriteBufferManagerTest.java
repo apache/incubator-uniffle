@@ -89,6 +89,7 @@ public class WriteBufferManagerTest {
         serializationFactory.getSerializer(BytesWritable.class);
     long maxBufferSize = 14 * 1024 * 1024;
     double memoryThreshold = 0.8f;
+    int sendThreadNum = 1;
     double sendThreshold = 0.2f;
     int batch = 50;
     int numMaps = 1;
@@ -132,6 +133,7 @@ public class WriteBufferManagerTest {
             valSerializer,
             maxBufferSize,
             memoryThreshold,
+            sendThreadNum,
             sendThreshold,
             batch,
             rssConf,
@@ -185,6 +187,7 @@ public class WriteBufferManagerTest {
         serializationFactory.getSerializer(BytesWritable.class);
     long maxBufferSize = 14 * 1024 * 1024;
     double memoryThreshold = 0.8f;
+    int sendThreadNum = 1;
     double sendThreshold = 0.2f;
     int batch = 50;
     int numMaps = 1;
@@ -228,6 +231,7 @@ public class WriteBufferManagerTest {
             valSerializer,
             maxBufferSize,
             memoryThreshold,
+            sendThreadNum,
             sendThreshold,
             batch,
             rssConf,
@@ -292,6 +296,7 @@ public class WriteBufferManagerTest {
         serializationFactory.getSerializer(BytesWritable.class);
     long maxBufferSize = 14 * 1024 * 1024;
     double memoryThreshold = 0.8f;
+    int sendThreadNum = 1;
     double sendThreshold = 0.2f;
     int batch = 50;
     int numMaps = 1;
@@ -334,6 +339,7 @@ public class WriteBufferManagerTest {
             valSerializer,
             maxBufferSize,
             memoryThreshold,
+            sendThreadNum,
             sendThreshold,
             batch,
             rssConf,

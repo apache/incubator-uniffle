@@ -113,6 +113,7 @@ public class WriteBufferManager<K, V> {
       Serializer<V> valSerializer,
       long maxBufferSize,
       double memoryThreshold,
+      int sendThreadNum,
       double sendThreshold,
       int batch,
       RssConf rssConf,
@@ -152,7 +153,7 @@ public class WriteBufferManager<K, V> {
     this.isNeedSorted = isNeedSorted;
     this.mapOutputByteCounter = mapOutputByteCounter;
     this.sendExecutorService =
-        Executors.newFixedThreadPool(1, ThreadUtils.getThreadFactory("send-thread"));
+        Executors.newFixedThreadPool(sendThreadNum, ThreadUtils.getThreadFactory("send-thread"));
   }
 
   /** add record */
