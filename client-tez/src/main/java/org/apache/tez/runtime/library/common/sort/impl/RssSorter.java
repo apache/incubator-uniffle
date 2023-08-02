@@ -94,6 +94,9 @@ public class RssSorter extends ExternalSorter {
         conf.getDouble(
             RssTezConfig.RSS_CLIENT_MEMORY_THRESHOLD,
             RssTezConfig.RSS_CLIENT_DEFAULT_MEMORY_THRESHOLD);
+    int sendThreadNum =
+        conf.getInt(
+            RssTezConfig.RSS_CLIENT_SEND_THREAD_NUM, RssTezConfig.RSS_CLIENT_DEFAULT_THREAD_NUM);
     double sendThreshold =
         conf.getDouble(
             RssTezConfig.RSS_CLIENT_SEND_THRESHOLD, RssTezConfig.RSS_CLIENT_DEFAULT_SEND_THRESHOLD);
@@ -125,6 +128,7 @@ public class RssSorter extends ExternalSorter {
       LOG.info("maxSegmentSize is {}", maxSegmentSize);
       LOG.info("maxBufferSize is {}", maxBufferSize);
       LOG.info("memoryThreshold is {}", memoryThreshold);
+      LOG.info("sendThreadNum is {}", sendThreadNum);
       LOG.info("sendThreshold is {}", sendThreshold);
       LOG.info("batch is {}", batch);
       LOG.info("storageType is {}", storageType);
@@ -150,6 +154,7 @@ public class RssSorter extends ExternalSorter {
             valSerializer,
             maxBufferSize,
             memoryThreshold,
+            sendThreadNum,
             sendThreshold,
             batch,
             new RssConf(),
