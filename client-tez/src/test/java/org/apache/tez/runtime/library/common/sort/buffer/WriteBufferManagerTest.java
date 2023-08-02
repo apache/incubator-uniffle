@@ -519,14 +519,7 @@ public class WriteBufferManagerTest {
       return null;
     }
 
-    public Roaring64NavigableMap getShuffleResultForMultiPart(
-        String clientType,
-        Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
-        String appId,
-        int shuffleId) {
-      return null;
-    }
-
+    @Override
     public Roaring64NavigableMap getShuffleResultForMultiPart(
         String clientType,
         Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
