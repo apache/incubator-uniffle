@@ -172,6 +172,9 @@ public class WriteBufferManager<K, V> {
       memoryLock.unlock();
     }
 
+    // Fast fail if there are some failed blocks.
+    checkFailedBlocks();
+
     if (!buffers.containsKey(partitionId)) {
       WriteBuffer<K, V> sortWriterBuffer =
           new WriteBuffer(
@@ -282,14 +285,7 @@ public class WriteBufferManager<K, V> {
     }
     long start = System.currentTimeMillis();
     while (true) {
-      if (failedBlockIds.size() > 0) {
-        String errorMsg =
-            "Send failed: failed because "
-                + failedBlockIds.size()
-                + " blocks can't be sent to shuffle server.";
-        LOG.error(errorMsg);
-        throw new RssException(errorMsg);
-      }
+      checkFailedBlocks();
       allBlockIds.removeAll(successBlockIds);
       if (allBlockIds.isEmpty()) {
         break;
@@ -333,6 +329,17 @@ public class WriteBufferManager<K, V> {
         commitDuration,
         copyTime,
         sortTime);
+  }
+
+  private void checkFailedBlocks() {
+    if (failedBlockIds.size() > 0) {
+      String errorMsg =
+          "Send failed: failed because "
+              + failedBlockIds.size()
+              + " blocks can't be sent to shuffle server.";
+      LOG.error(errorMsg);
+      throw new RssException(errorMsg);
+    }
   }
 
   ShuffleBlockInfo createShuffleBlock(WriteBuffer wb) {
