@@ -172,7 +172,7 @@ public class WriteBufferManager<K, V> {
       memoryLock.unlock();
     }
 
-    // Fast fail if there are some failed blocks.
+    // Fail fast if there are some failed blocks.
     checkFailedBlocks();
 
     if (!buffers.containsKey(partitionId)) {
@@ -331,6 +331,7 @@ public class WriteBufferManager<K, V> {
         sortTime);
   }
 
+  // Check if there are some failed blocks, if true then throw Exception.
   private void checkFailedBlocks() {
     if (failedBlockIds.size() > 0) {
       String errorMsg =
