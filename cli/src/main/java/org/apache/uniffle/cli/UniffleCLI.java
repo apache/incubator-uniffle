@@ -42,11 +42,13 @@ import org.apache.uniffle.util.FormattingCLIUtils;
 public class UniffleCLI extends AbstractCustomCommandLine {
 
   private static final Logger LOG = LoggerFactory.getLogger(UniffleCLI.class);
+  private static final int EXIT_SUCCESS = 0;
+  private static final int EXIT_ERROR = 1;
   private final Options allOptions;
   private final Option uniffleClientCli;
   private final Option uniffleAdminCli;
   private final Option uniffleApplicationCli;
-  private final Option uniffleOutPutFormatJson;
+  private final Option uniffleOutFormat;
   private final Option uniffleOutPutFile;
   private final Option help;
 
@@ -76,12 +78,13 @@ public class UniffleCLI extends AbstractCustomCommandLine {
             "The command will be used to print a list of applications. \n"
                 + "We usually use the command like this: \n"
                 + "uniffle --applications application_167671938823_0001,application_167671938823_0002.");
-    uniffleOutPutFormatJson =
+    uniffleOutFormat =
         new Option(
             shortPrefix + "o",
-            longPrefix + "output-format",
+            longPrefix + "--output-format",
             true,
-            "We can use the -o|--output json option to output application information to json.");
+            "We can use the -o|--output-format json option to output application information to json." +
+            "We currently only support output in Json format");
     uniffleOutPutFile =
         new Option(
             shortPrefix + "f",
@@ -95,7 +98,7 @@ public class UniffleCLI extends AbstractCustomCommandLine {
     allOptions.addOption(uniffleApplicationCli);
     allOptions.addOption(coordinatorHost);
     allOptions.addOption(coordinatorPort);
-    allOptions.addOption(uniffleOutPutFormatJson);
+    allOptions.addOption(uniffleOutFormat);
     allOptions.addOption(uniffleOutPutFile);
     allOptions.addOption(ssl);
     allOptions.addOption(help);
@@ -106,7 +109,7 @@ public class UniffleCLI extends AbstractCustomCommandLine {
 
     if (args.length < 1) {
       printUsage();
-      return 1;
+      return EXIT_ERROR;
     }
 
     if (cmd.hasOption(help.getOpt())) {
@@ -117,13 +120,13 @@ public class UniffleCLI extends AbstractCustomCommandLine {
     if (cmd.hasOption(uniffleClientCli.getOpt())) {
       String cliArgs = cmd.getOptionValue(uniffleClientCli.getOpt());
       System.out.println("uniffle-client-cli : " + cliArgs);
-      return 0;
+      return EXIT_SUCCESS;
     }
 
     if (cmd.hasOption(uniffleAdminCli.getOpt())) {
       String cliArgs = cmd.getOptionValue(uniffleAdminCli.getOpt());
       System.out.println("uniffle-admin-cli : " + cliArgs);
-      return 0;
+      return EXIT_SUCCESS;
     }
 
     if (cmd.hasOption(coordinatorHost.getOpt()) && cmd.hasOption(coordinatorPort.getOpt())) {
@@ -135,26 +138,37 @@ public class UniffleCLI extends AbstractCustomCommandLine {
       LOG.info("uniffle-client-cli : get applications");
 
       // If we want to output json file
-      if (cmd.hasOption(uniffleOutPutFormatJson.getOpt())) {
-        String outPutFormat = cmd.getOptionValue(uniffleOutPutFormatJson.getOpt()).trim();
+      if (cmd.hasOption(uniffleOutFormat.getOpt())) {
+        // Get the OutFormat.
+        String outPutFormat = cmd.getOptionValue(uniffleOutFormat.getOpt()).trim();
         if (StringUtils.isBlank(outPutFormat)) {
           System.out.println("output format is not null.");
-          return 1;
+          return EXIT_ERROR;
         }
 
-        if (!StringUtils.equals(outPutFormat, "json")) {
+        // We allow users to enter json\Json\JSON etc.
+        // If the user enters another format, we will prompt the user that we only support JSON.
+        if (!StringUtils.equalsAnyIgnoreCase(outPutFormat, "json")) {
           System.out.println("The output currently supports only JSON format.");
-          return 1;
+          return EXIT_ERROR;
         }
 
         String json = getApplicationsJson(cmd);
+        if (StringUtils.isBlank(json)) {
+          System.out.println("no output result.");
+          return EXIT_ERROR;
+        }
         System.out.println("application: " + json);
 
         if (cmd.hasOption(uniffleOutPutFile.getOpt())) {
-          String uniffleOutPutFile = cmd.getOptionValue(uniffleOutPutFormatJson.getOpt()).trim();
+
+          // Get output file location.
+          String uniffleOutPutFile = cmd.getOptionValue(uniffleOutFormat.getOpt()).trim();
           if (StringUtils.isBlank(uniffleOutPutFile)) {
             System.out.println("The output file cannot be empty.");
+            return EXIT_ERROR;
           }
+
           try (FileOutputStream fos = new FileOutputStream(uniffleOutPutFile);
               OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
             osw.write(json);
@@ -165,10 +179,11 @@ public class UniffleCLI extends AbstractCustomCommandLine {
                 "An error occurred while writing the applications json data to the file("
                     + uniffleOutPutFile
                     + ").");
+            return EXIT_ERROR;
           }
         }
 
-        return 0;
+        return EXIT_SUCCESS;
       }
 
       try (PrintWriter writer =
@@ -187,11 +202,11 @@ public class UniffleCLI extends AbstractCustomCommandLine {
         }
         writer.print(formattingCLIUtils.render());
         writer.flush();
-        return 0;
+        return EXIT_SUCCESS;
       }
     }
 
-    return 1;
+    return EXIT_ERROR;
   }
 
   @Override
