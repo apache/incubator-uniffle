@@ -96,8 +96,7 @@ public class RssSorter extends ExternalSorter {
             RssTezConfig.RSS_CLIENT_DEFAULT_MEMORY_THRESHOLD);
     int sendThreadNum =
         conf.getInt(
-            RssTezConfig.RSS_CLIENT_SEND_THREAD_NUM,
-            RssTezConfig.RSS_CLIENT_DEFAULT_THREAD_NUM);
+            RssTezConfig.RSS_CLIENT_SEND_THREAD_NUM, RssTezConfig.RSS_CLIENT_DEFAULT_THREAD_NUM);
     double sendThreshold =
         conf.getDouble(
             RssTezConfig.RSS_CLIENT_SEND_THRESHOLD, RssTezConfig.RSS_CLIENT_DEFAULT_SEND_THRESHOLD);
