@@ -167,7 +167,7 @@ rss-xxx.tgz will be generated for deployment
     # multiple remote storages are supported, and client will get assignment from coordinator
     rss.coordinator.remote.storage.path hdfs://cluster1/path,hdfs://cluster2/path
     rss.writer.require.memory.retryMax 1200
-    rss.client.retry.max 100
+    rss.client.retry.max 50
     rss.writer.send.check.timeout 600000
     rss.client.read.buffer.size 14m
    ```
