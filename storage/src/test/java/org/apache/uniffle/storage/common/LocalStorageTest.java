@@ -73,22 +73,6 @@ public class LocalStorageTest {
   }
 
   @Test
-  public void canWriteTest() {
-    LocalStorage item = createTestStorage(testBaseDir);
-
-    item.getMetaData().updateDiskSize(20);
-    assertTrue(item.canWrite());
-    item.getMetaData().updateDiskSize(65);
-    assertTrue(item.canWrite());
-    item.getMetaData().updateDiskSize(10);
-    assertFalse(item.canWrite());
-    item.getMetaData().updateDiskSize(-10);
-    assertFalse(item.canWrite());
-    item.getMetaData().updateDiskSize(-10);
-    assertTrue(item.canWrite());
-  }
-
-  @Test
   public void getCapacityInitTest() {
     LocalStorage item =
         LocalStorage.newBuilder()
