@@ -144,12 +144,23 @@ public class LocalStorage extends AbstractStorage {
 
   @Override
   public boolean canWrite() {
-    if (isSpaceEnough) {
-      isSpaceEnough = metaData.getDiskSize().doubleValue() * 100 / capacity < highWaterMarkOfWrite;
-    } else {
-      isSpaceEnough = metaData.getDiskSize().doubleValue() * 100 / capacity < lowWaterMarkOfWrite;
+    if (isCorrupted) {
+      return false;
     }
-    return isSpaceEnough && !isCorrupted;
+    File base = new File(basePath);
+    long used = base.getTotalSpace() - base.getUsableSpace();
+    if (isSpaceEnough) {
+      isSpaceEnough = used * 100 / capacity < highWaterMarkOfWrite;
+      if (!isSpaceEnough) {
+        LOG.warn("The storage:[{}] reaches high watermark, it will be marked as unavailable.", basePath);
+      }
+    } else {
+      isSpaceEnough = used * 100 / capacity < lowWaterMarkOfWrite;
+      if (isSpaceEnough) {
+        LOG.info("The storage:[{}] reduces to low watermark, it will be marked as available", basePath);
+      }
+    }
+    return isSpaceEnough;
   }
 
   public String getBasePath() {
