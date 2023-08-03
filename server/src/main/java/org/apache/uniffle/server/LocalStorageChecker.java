@@ -79,6 +79,7 @@ public class LocalStorageChecker extends Checker {
     AtomicInteger num = new AtomicInteger(0);
     AtomicLong totalSpace = new AtomicLong(0L);
     AtomicLong usedSpace = new AtomicLong(0L);
+    AtomicLong uniffleUsedSpace = new AtomicLong(0L);
     AtomicInteger corruptedDirs = new AtomicInteger(0);
     CountDownLatch cdl = new CountDownLatch(storageInfos.size());
     storageInfos
@@ -94,6 +95,7 @@ public class LocalStorageChecker extends Checker {
 
               totalSpace.addAndGet(getTotalSpace(storageInfo.storageDir));
               usedSpace.addAndGet(getUsedSpace(storageInfo.storageDir));
+              uniffleUsedSpace.addAndGet(getUniffleUsedSpace(storageInfo.storageDir));
 
               if (storageInfo.checkIsSpaceEnough()) {
                 num.incrementAndGet();
@@ -107,6 +109,7 @@ public class LocalStorageChecker extends Checker {
     }
     ShuffleServerMetrics.gaugeLocalStorageTotalSpace.set(totalSpace.get());
     ShuffleServerMetrics.gaugeLocalStorageUsedSpace.set(usedSpace.get());
+    ShuffleServerMetrics.gaugeLocalStorageUniffleUsedSpace.set(uniffleUsedSpace.get());
     ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.set(storageInfos.size());
     ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.set(corruptedDirs.get());
     ShuffleServerMetrics.gaugeLocalStorageUsedSpaceRatio.set(
@@ -145,6 +148,32 @@ public class LocalStorageChecker extends Checker {
   @VisibleForTesting
   long getUsedSpace(File file) {
     return file.getTotalSpace() - file.getUsableSpace();
+  }
+
+  protected static long getUniffleUsedSpace(File storageDir) {
+    if (storageDir == null || !storageDir.exists()) {
+      return 0;
+    }
+
+    if (storageDir.isFile()) {
+      return storageDir.length();
+    }
+
+    File[] files = storageDir.listFiles();
+    if (files == null) {
+      return 0;
+    }
+
+    long totalUsage = 0;
+    for (File file : files) {
+      if (file.isFile()) {
+        totalUsage += file.length();
+      } else {
+        totalUsage += getUniffleUsedSpace(file);
+      }
+    }
+
+    return totalUsage;
   }
 
   // todo: This function will be integrated to MultiStorageManager, currently we only support disk
