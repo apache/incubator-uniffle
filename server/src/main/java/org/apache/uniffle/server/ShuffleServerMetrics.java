@@ -293,7 +293,8 @@ public class ShuffleServerMetrics {
         metricsManager.addLabeledGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM);
     gaugeLocalStorageTotalSpace = metricsManager.addLabeledGauge(LOCAL_STORAGE_TOTAL_SPACE);
     gaugeLocalStorageUsedSpace = metricsManager.addLabeledGauge(LOCAL_STORAGE_USED_SPACE);
-    gaugeLocalStorageUniffleUsedSpace = metricsManager.addLabeledGauge(LOCAL_STORAGE_UNIFFLE_USED_SPACE);
+    gaugeLocalStorageUniffleUsedSpace =
+        metricsManager.addLabeledGauge(LOCAL_STORAGE_UNIFFLE_USED_SPACE);
     gaugeLocalStorageUsedSpaceRatio =
         metricsManager.addLabeledGauge(LOCAL_STORAGE_USED_SPACE_RATIO);
 

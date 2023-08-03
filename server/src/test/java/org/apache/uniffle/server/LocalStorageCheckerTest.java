@@ -44,7 +44,6 @@ public class LocalStorageCheckerTest {
 
     // Assert that the calculated result matches the expected value
     Assertions.assertEquals(expectedUsage, calculatedUsage);
-
   }
 
   private File createTempFile(File directory, String fileName, long fileSize) throws IOException {
