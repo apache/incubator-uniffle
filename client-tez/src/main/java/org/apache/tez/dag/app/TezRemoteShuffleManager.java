@@ -199,7 +199,8 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
             RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
     RemoteStorageInfo defaultRemoteStorage =
         new RemoteStorageInfo(conf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH, ""));
-    String storageType = conf.get(RssTezConfig.RSS_STORAGE_TYPE);
+    String storageType =
+        conf.get(RssTezConfig.RSS_STORAGE_TYPE, RssTezConfig.RSS_STORAGE_TYPE_DEFAULT_VALUE);
     boolean testMode = conf.getBoolean(RssTezConfig.RSS_TEST_MODE_ENABLE, false);
     ClientUtils.validateTestModeConf(testMode, storageType);
     RemoteStorageInfo remoteStorage =
