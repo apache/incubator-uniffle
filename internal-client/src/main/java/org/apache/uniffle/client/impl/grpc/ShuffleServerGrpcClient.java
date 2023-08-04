@@ -194,10 +194,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
 
   // Only for tests
   @VisibleForTesting
-  public long requirePreAllocation(int requireSize, int retryMax, long retryIntervalMax)
+  public long requirePreAllocation(String appId, int requireSize, int retryMax, long retryIntervalMax)
       throws Exception {
     return requirePreAllocation(
-        "EMPTY", 0, Collections.emptyList(), requireSize, retryMax, retryIntervalMax);
+      appId, 0, Collections.emptyList(), requireSize, retryMax, retryIntervalMax);
   }
 
   public long requirePreAllocation(
