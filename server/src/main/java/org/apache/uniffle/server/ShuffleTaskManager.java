@@ -410,7 +410,7 @@ public class ShuffleTaskManager {
   public long requireBuffer(
       String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
-    if (null == shuffleTaskInfo) {
+    if (null == shuffleTaskInfo && !"EMPTY".equals(appId)) {
       return RequireBufferStatusCode.NO_REGISTER.statusCode();
     }
     for (int partitionId : partitionIds) {
