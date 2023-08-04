@@ -200,14 +200,6 @@ public class RssDAGAppMaster extends DAGAppMaster {
         heartbeatInterval,
         TimeUnit.MILLISECONDS);
 
-    Token<JobTokenIdentifier> sessionToken =
-        TokenCache.getSessionToken(appMaster.getContext().getAppCredentials());
-    appMaster.setTezRemoteShuffleManager(
-        new TezRemoteShuffleManager(
-            appMaster.getAppID().toString(), sessionToken, conf, strAppAttemptId, client));
-    appMaster.getTezRemoteShuffleManager().initialize();
-    appMaster.getTezRemoteShuffleManager().start();
-
     // apply dynamic configuration
     boolean dynamicConfEnabled =
         conf.getBoolean(
@@ -220,6 +212,21 @@ public class RssDAGAppMaster extends DAGAppMaster {
                   RssTezConfig.RSS_ACCESS_TIMEOUT_MS,
                   RssTezConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
     }
+
+    Configuration shuffleManagerConf = new Configuration(conf);
+    RssTezUtils.applyDynamicClientConf(shuffleManagerConf, appMaster.getClusterClientConf());
+
+    Token<JobTokenIdentifier> sessionToken =
+        TokenCache.getSessionToken(appMaster.getContext().getAppCredentials());
+    appMaster.setTezRemoteShuffleManager(
+        new TezRemoteShuffleManager(
+            appMaster.getAppID().toString(),
+            sessionToken,
+            shuffleManagerConf,
+            strAppAttemptId,
+            client));
+    appMaster.getTezRemoteShuffleManager().initialize();
+    appMaster.getTezRemoteShuffleManager().start();
 
     mayCloseTezSlowStart(conf);
   }

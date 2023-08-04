@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -295,5 +296,10 @@ public class ShuffleFlushManager {
 
   public ShuffleDataDistributionType getDataDistributionType(String appId) {
     return shuffleServer.getShuffleTaskManager().getDataDistributionType(appId);
+  }
+
+  @VisibleForTesting
+  public FlushEventHandler getEventHandler() {
+    return eventHandler;
   }
 }
