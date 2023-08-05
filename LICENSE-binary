@@ -206,53 +206,50 @@ This project bundles some components that are also licensed under the Apache
 License Version 2.0:
 
 org.apache.commons:commons-lang3
-org.apache.tez:tez-api
-org.apache.tez:tez-common
-org.apache.tez:tez-dag
-org.apache.tez:tez-runtime-internals
-org.apache.tez:tez-runtime-library
-org.apache.tez:tez-tests
 org.eclipse.jetty:jetty-server
 org.eclipse.jetty:jetty-servlet
 org.eclipse.jetty:jetty-util
+org.eclipse.jetty:jetty-http
+org.eclipse.jetty:jetty-io
+org.eclipse.jetty:jetty-security
 commons-cli:commons-cli
 org.apache.hbase.thirdparty:hbase-shaded-jersey
-org.apache.directory.api:api-asn1-api
 org.apache.httpcomponents:httpclient
 net.jpountz.lz4:lz4
 com.google.guava:guava
+com.google.guava::listenablefuture
+com.google.guava:failureaccess
 com.fasterxml.jackson.core:jackson-annotations
 com.fasterxml.jackson.core:jackson-core
 com.fasterxml.jackson.core:jackson-databind
 com.fasterxml.jackson.module:jackson-module-scala_2.12
 info.picocli:picocli
-org.apache.directory.server:apacheds-kerberos-codec
-org.apache.hadoop:hadoop-common
-org.apache.hadoop:hadoop-mapreduce-client-app
-org.apache.hadoop:hadoop-mapreduce-client-core
-org.apache.hadoop:hadoop-mapreduce-examples
-org.apache.hadoop:hadoop-minicluster
-org.apache.hadoop:hadoop-minikdc
-org.apache.hadoop:hadoop-yarn-api
-org.apache.hadoop:hadoop-yarn-server-common
 com.google.errorprone:error_prone_annotations
 io.netty:netty-all
 org.xerial.snappy:snappy-java
 io.grpc:grpc-netty-shaded
 io.grpc:grpc-protobuf
 io.grpc:grpc-stub
-io.grpc:grpc-testing
-org.awaitility:awaitility
+io.grpc:grpc-core
+io.grpc:grpc-context
+io.grpc:grpc-api
+io.grpc:grpc-protobuf-lite
 io.prometheus:simpleclient
 io.prometheus:simpleclient_hotspot
 io.prometheus:simpleclient_httpserver
 io.prometheus:simpleclient_jetty
 io.prometheus:simpleclient_pushgateway
 io.prometheus:simpleclient_servlet
-org.apache.spark:spark-core_2.12
-org.apache.spark:spark-sql_2.12
 org.roaringbitmap:RoaringBitmap
+org.roaringbitmap:shims
 javax.inject:javax.inject
+com.google.code.gson:gson
+com.google.j2objc:j2objc-annotations
+com.google.api.grpc:proto-google-common-protos
+org.javassist:javassist
+com.google.code.findbugs:jsr305
+jakarta.validation:jakarta.validation-api
+
 
 -----------------------------------------------------------------------------------
 This product bundles various third-party components under other open source licenses.
@@ -261,32 +258,34 @@ for text of these licenses.
 
 BSD 2-Clause
 ------------
+
 com.github.luben:zstd-jni
 
 BSD 3-Clause
 ------------
+
 com.google.protobuf:protobuf-java
 com.google.protobuf:protobuf-java-util
 
 MIT License
 -----------
+
 org.slf4j:slf4j-api
 org.slf4j:slf4j-reload4j
-org.mockito:mockito-core
-org.mockito:mockito-inline
-uk.org.webcompere:system-stubs-jupiter
+org.codehaus.mojo:animal-sniffer-annotations
 
 Common Development and Distribution License (CDDL) 1.1
 ------------------------------------------------------
+
 javax.annotation:javax.annotation-api
 javax.xml.bind:jaxb-api
 javax.servlet:javax.servlet-api
+javax.activation:activation
 
 Eclipse Public License (EPL) 2.0
 --------------------------------
-org.junit.platform:junit-platform-launcher
-org.junit.jupiter:junit-jupiter
+jakarta.annotation:jakarta.annotation-api
+org.glassfish.hk2.external:jakarta.inject
 
-Common Public License (CPL) 1.0
---------------------------------
-com.github.stefanbirkner:system-rule
+
+
