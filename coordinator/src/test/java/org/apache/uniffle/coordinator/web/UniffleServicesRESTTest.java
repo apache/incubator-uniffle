@@ -49,7 +49,6 @@ import static org.apache.uniffle.coordinator.web.Response.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mortbay.jetty.HttpHeaders.USER_AGENT;
 
 public class UniffleServicesRESTTest {
 
@@ -149,7 +148,7 @@ public class UniffleServicesRESTTest {
     URL obj = new URL(getURL);
     HttpURLConnection con = (HttpURLConnection) obj.openConnection();
     con.setRequestMethod("GET");
-    con.setRequestProperty("User-Agent", USER_AGENT);
+    con.setRequestProperty("User-Agent", "User-Agent");
     int responseCode = con.getResponseCode();
     LOG.info("GET Response Code : {}", responseCode);
 
@@ -176,7 +175,7 @@ public class UniffleServicesRESTTest {
     URL obj = new URL(postURL);
     HttpURLConnection con = (HttpURLConnection) obj.openConnection();
     con.setRequestMethod("POST");
-    con.setRequestProperty("User-Agent", USER_AGENT);
+    con.setRequestProperty("User-Agent", "User-Agent");
     con.setRequestProperty("Content-Type", "application/json");
 
     con.setDoOutput(true);
