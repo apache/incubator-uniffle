@@ -83,8 +83,8 @@ public class UniffleCLI extends AbstractCustomCommandLine {
             shortPrefix + "o",
             longPrefix + "--output-format",
             true,
-            "We can use the -o|--output-format json option to output application information to json." +
-            "We currently only support output in Json format");
+            "We can use the -o|--output-format json option to output application information to json."
+                + "We currently only support output in Json format");
     uniffleOutPutFile =
         new Option(
             shortPrefix + "f",

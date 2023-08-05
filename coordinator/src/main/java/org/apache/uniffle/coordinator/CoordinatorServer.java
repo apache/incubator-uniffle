@@ -255,7 +255,7 @@ public class CoordinatorServer extends ReconfigurableBase {
   }
 
   /** Await termination on the main thread since the grpc library uses daemon threads. */
-  private void blockUntilShutdown() throws InterruptedException {
+  protected void blockUntilShutdown() throws InterruptedException {
     server.blockUntilShutdown();
   }
 

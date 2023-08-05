@@ -21,8 +21,14 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
+/** This class is mainly used for Application requests. */
 public class ApplicationRequest {
   private Set<String> applications;
+  private int pageSize = 10;
+  private int currentPage = 1;
+  private String heartBeatStartTime;
+  private String heartBeatEndTime;
+  private String appPrefix;
 
   public Set<String> getApplications() {
     return applications;
@@ -30,6 +36,46 @@ public class ApplicationRequest {
 
   public void setApplications(Set<String> applications) {
     this.applications = applications;
+  }
+
+  public int getPageSize() {
+    return pageSize;
+  }
+
+  public void setPageSize(int pageSize) {
+    this.pageSize = pageSize;
+  }
+
+  public int getCurrentPage() {
+    return currentPage;
+  }
+
+  public void setCurrentPage(int currentPage) {
+    this.currentPage = currentPage;
+  }
+
+  public String getHeartBeatStartTime() {
+    return heartBeatStartTime;
+  }
+
+  public void setHeartBeatStartTime(String heartBeatStartTime) {
+    this.heartBeatStartTime = heartBeatStartTime;
+  }
+
+  public String getHeartBeatEndTime() {
+    return heartBeatEndTime;
+  }
+
+  public void setHeartBeatEndTime(String heartBeatEndTime) {
+    this.heartBeatEndTime = heartBeatEndTime;
+  }
+
+  public String getAppPrefix() {
+    return appPrefix;
+  }
+
+  public void setAppPrefix(String appPrefix) {
+    this.appPrefix = appPrefix;
   }
 
   @Override

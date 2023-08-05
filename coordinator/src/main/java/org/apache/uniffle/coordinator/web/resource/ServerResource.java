@@ -50,6 +50,12 @@ public class ServerResource extends BaseResource {
   @Context protected ServletContext servletContext;
 
   @GET
+  @Path("/status")
+  public Response<String> status() {
+    return execute(() -> "success");
+  }
+
+  @GET
   @Path("/nodes/{id}")
   public Response<ServerNode> node(@PathParam("id") String id) {
     return execute(() -> getClusterManager().getServerNodeById(id));
@@ -130,13 +136,23 @@ public class ServerResource extends BaseResource {
   @Path("/applications")
   @Produces({MediaType.APPLICATION_JSON})
   public Response<Object> application(ApplicationRequest params) {
+
     Set<String> filterApplications = new HashSet<>();
     if (params != null && CollectionUtils.isNotEmpty(params.getApplications())) {
       filterApplications = params.getApplications();
     }
+
+    int currentPage = params.getCurrentPage();
+    int pageSize = params.getPageSize();
+    String startTime = params.getHeartBeatStartTime();
+    String endTime = params.getHeartBeatEndTime();
+    String appPrefix = params.getAppPrefix();
+
     try {
       ApplicationManager applicationManager = getApplicationManager();
-      Set<Application> applicationSet = applicationManager.getApplications(filterApplications);
+      List<Application> applicationSet =
+          applicationManager.getApplications(
+              filterApplications, pageSize, currentPage, startTime, endTime, appPrefix);
       return Response.success(applicationSet);
     } catch (Exception e) {
       return Response.fail(e.getMessage());

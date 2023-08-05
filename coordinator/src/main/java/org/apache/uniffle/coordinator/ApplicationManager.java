@@ -20,18 +20,20 @@ package org.apache.uniffle.coordinator;
 import java.io.Closeable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -369,17 +371,49 @@ public class ApplicationManager implements Closeable {
   /**
    * Get Applications, The list contains applicationId, user, lastHeartBeatTime, remoteStoragePath.
    *
-   * @param appIds Application List
+   * <p>We have set 6 criteria for filtering applicationId, and these criteria are in an 'AND'
+   * relationship. All the criteria must be met for the applicationId to be selected.
+   *
+   * @param appIds Application List.
+   * @param pageSize Items per page.
+   * @param currentPage The number of pages to be queried.
+   * @param pHeartBeatStartTime heartbeat start time.
+   * @param pHeartBeatEndTime heartbeat end time.
+   * @param appIdRegex applicationId regular expression.
    * @return Applications.
    */
-  public Set<Application> getApplications(Set<String> appIds) {
-    Set<Application> applications = new HashSet<>();
+  public List<Application> getApplications(
+      Set<String> appIds,
+      int pageSize,
+      int currentPage,
+      String pHeartBeatStartTime,
+      String pHeartBeatEndTime,
+      String appIdRegex) {
+    List<Application> applications = new ArrayList<>();
     for (Map.Entry<String, Map<String, Long>> entry : currentUserAndApp.entrySet()) {
       String user = entry.getKey();
       Map<String, Long> apps = entry.getValue();
       apps.forEach(
           (appId, heartBeatTime) -> {
-            if (appIds.size() == 0 || appIds.contains(appId)) {
+            // Filter condition 1: Check whether applicationId is included in the filter list.
+            boolean match = appIds.size() == 0 || appIds.contains(appId);
+
+            // Filter condition 2: whether it meets the applicationId rule.
+            if (StringUtils.isNotBlank(appIdRegex) && match) {
+              match = match && matchApplicationId(appId, appIdRegex);
+            }
+
+            // Filter condition 3: Determine whether the start and
+            // end of the heartbeat time are in line with expectations.
+            if (StringUtils.isNotBlank(pHeartBeatStartTime)
+                || StringUtils.isNotBlank(pHeartBeatEndTime)) {
+              match =
+                  matchHeartBeatStartTimeAndEndTime(
+                      pHeartBeatStartTime, pHeartBeatEndTime, heartBeatTime);
+            }
+
+            // If it meets expectations, add to the list to be returned.
+            if (match) {
               RemoteStorageInfo remoteStorageInfo =
                   appIdToRemoteStorageInfo.getOrDefault(appId, null);
               Application application =
@@ -393,8 +427,66 @@ public class ApplicationManager implements Closeable {
             }
           });
     }
-    LOG.info("getApplications >> appIds = {}", applications);
-    return applications;
+
+    int startIndex = (currentPage - 1) * pageSize;
+    int endIndex = Math.min(startIndex + pageSize, applications.size());
+
+    LOG.info("getApplications >> appIds = {}.", applications);
+    return applications.subList(startIndex, endIndex);
+  }
+
+  /**
+   * Based on the regular expression, determine if the applicationId matches the regular expression.
+   *
+   * @param applicationId applicationId
+   * @param regex regular expression pattern.
+   * @return If it returns true, it means the regular expression successfully matches the
+   *     applicationId; otherwise, the regular expression fails to match the applicationId.
+   */
+  private boolean matchApplicationId(String applicationId, String regex) {
+    Pattern pattern = Pattern.compile(regex);
+    return pattern.matcher(applicationId).matches();
+  }
+
+  /**
+   * Filter heartbeat time based on query conditions.
+   *
+   * @param pStartTime heartbeat start time.
+   * @param pEndTime heartbeat end time.
+   * @param appHeartBeatTime application HeartBeatTime
+   * @return Returns true if the heartbeat time is within the given query range, otherwise returns
+   *     false.
+   */
+  private boolean matchHeartBeatStartTimeAndEndTime(
+      String pStartTime, String pEndTime, long appHeartBeatTime) {
+    long startTime = 0;
+    long endTime = Long.MAX_VALUE;
+
+    if (StringUtils.isNotBlank(pStartTime)) {
+      startTime = parseLongValue(pStartTime, "heartBeatStartTime");
+    }
+
+    if (StringUtils.isNotBlank(pEndTime)) {
+      endTime = parseLongValue(pEndTime, "heartBeatEndTime");
+    }
+
+    Range<Long> heartBeatTime = Range.between(startTime, endTime);
+    return heartBeatTime.contains(appHeartBeatTime);
+  }
+
+  /**
+   * Convert String to Long.
+   *
+   * @param strValue String Value
+   * @param fieldName Field Name
+   * @return Long value.
+   */
+  private long parseLongValue(String strValue, String fieldName) {
+    try {
+      return Long.parseLong(strValue);
+    } catch (NumberFormatException e) {
+      throw new RuntimeException(fieldName + " value must be a number!");
+    }
   }
 
   public Map<String, Integer> getDefaultUserApps() {
