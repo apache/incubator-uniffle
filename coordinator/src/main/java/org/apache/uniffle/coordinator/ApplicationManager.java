@@ -22,6 +22,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -427,7 +428,7 @@ public class ApplicationManager implements Closeable {
             }
           });
     }
-
+    Collections.sort(applications);
     int startIndex = (currentPage - 1) * pageSize;
     int endIndex = Math.min(startIndex + pageSize, applications.size());
 

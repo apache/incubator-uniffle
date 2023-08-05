@@ -28,7 +28,7 @@ public class ApplicationRequest {
   private int currentPage = 1;
   private String heartBeatStartTime;
   private String heartBeatEndTime;
-  private String appPrefix;
+  private String appIdRegex;
 
   public Set<String> getApplications() {
     return applications;
@@ -70,12 +70,12 @@ public class ApplicationRequest {
     this.heartBeatEndTime = heartBeatEndTime;
   }
 
-  public String getAppPrefix() {
-    return appPrefix;
+  public String getAppIdRegex() {
+    return appIdRegex;
   }
 
-  public void setAppPrefix(String appPrefix) {
-    this.appPrefix = appPrefix;
+  public void setAppIdRegex(String appIdRegex) {
+    this.appIdRegex = appIdRegex;
   }
 
   @Override

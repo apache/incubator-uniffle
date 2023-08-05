@@ -23,7 +23,7 @@ import org.apache.commons.lang3.time.DateFormatUtils;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 
-public class Application {
+public class Application implements Comparable<Application> {
 
   private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
   private String applicationId;
@@ -129,6 +129,11 @@ public class Application {
         .append(this.getLastHeartBeatTime())
         .append(this.getRemoteStoragePath())
         .toHashCode();
+  }
+
+  @Override
+  public int compareTo(Application other) {
+    return this.applicationId.compareTo(other.applicationId);
   }
 
   @Override

@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,7 @@ public class UniffleServicesRESTTest {
   public static final String DEFAULT_TEST_DATA_DIR =
       "target" + File.separator + "test" + File.separator + "data";
   public static final String COORDINATOR_CONF_PATH = "./src/test/resources/coordinator.conf";
+  public static final String APPLICATIONS = "/api/server/applications";
   private static UniffleJavaProcess coordinatorServer;
   private static String coordinatorAddress;
   private static CoordinatorConf conf;
@@ -171,6 +173,12 @@ public class UniffleServicesRESTTest {
     return "";
   }
 
+  /**
+   * @param postURL
+   * @param postParams
+   * @return
+   * @throws IOException
+   */
   private static String sendPOST(String postURL, String postParams) throws IOException {
     URL obj = new URL(postURL);
     HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -242,6 +250,10 @@ public class UniffleServicesRESTTest {
 
   @Test
   public void testGetApplications() throws Exception {
+    // In this test case,
+    // we tested the filter condition 1: applications collection,
+    // we added 3 application_ids to the collection,
+    // and the Coordinator will return the information of these 3 applications.
 
     final ApplicationRequest request = new ApplicationRequest();
 
@@ -254,7 +266,72 @@ public class UniffleServicesRESTTest {
     Gson gson = new Gson();
     String params = gson.toJson(request);
 
-    String response = sendPOST(coordinatorAddress + "/api/server/applications", params);
+    String response = sendPOST(coordinatorAddress + APPLICATIONS, params);
+    assertNotNull(response);
+
+    ApplicationDatas dataModel = gson.fromJson(response, ApplicationDatas.class);
+    assertNotNull(dataModel);
+
+    List<Application> datas = dataModel.getData();
+    assertNotNull(datas);
+    assertEquals(3, datas.size());
+
+    for (Application application : datas) {
+      assertTrue(applications.contains(application.getApplicationId()));
+    }
+  }
+
+  @Test
+  public void testGetApplicationsWithNoFilter() throws Exception {
+    // In this test case, we did not set any filter conditions,
+    // we will get 10 records from the coordinator
+
+    final ApplicationRequest request = new ApplicationRequest();
+
+    Gson gson = new Gson();
+    String params = gson.toJson(request);
+
+    String response = sendPOST(coordinatorAddress + APPLICATIONS, params);
+    assertNotNull(response);
+
+    ApplicationDatas dataModel = gson.fromJson(response, ApplicationDatas.class);
+    assertNotNull(dataModel);
+
+    List<Application> datas = dataModel.getData();
+    assertNotNull(datas);
+    assertEquals(10, datas.size());
+
+    // We sort the result set, we should get the following application:
+    // application_[0,1,10,100,1000,1001,1002,1003,1004,1005]
+    Set<String> applications = new HashSet<>();
+    applications.add("application_0");
+    applications.add("application_1");
+    applications.add("application_10");
+    applications.add("application_100");
+    applications.add("application_1000");
+    applications.add("application_1001");
+    applications.add("application_1002");
+    applications.add("application_1003");
+    applications.add("application_1004");
+    applications.add("application_1005");
+
+    for (Application application : datas) {
+      assertTrue(applications.contains(application.getApplicationId()));
+    }
+  }
+
+  @Test
+  public void testGetApplicationsWithAppRegex() throws Exception {
+
+    // In this test case, we will test the functionality of regular expression matching.
+    // We want to match application_id that contains 1000.
+    final ApplicationRequest request = new ApplicationRequest();
+    request.setAppIdRegex(".*1000.*");
+
+    Gson gson = new Gson();
+    String params = gson.toJson(request);
+
+    String response = sendPOST(coordinatorAddress + APPLICATIONS, params);
     assertNotNull(response);
 
     ApplicationDatas dataModel = gson.fromJson(response, ApplicationDatas.class);
@@ -262,6 +339,119 @@ public class UniffleServicesRESTTest {
 
     List<Application> data = dataModel.getData();
     assertNotNull(data);
-    assertEquals(3, data.size());
+    assertEquals(1, data.size());
+
+    Application application = data.get(0);
+    assertNotNull(application);
+    assertEquals("application_1000", application.getApplicationId());
+    assertEquals("test", application.getUser());
+  }
+
+  @Test
+  public void testGetApplicationsPage() throws Exception {
+
+    // In this test case, we apply to read the records on page 2,
+    // and set up to return 20 records per page.
+    final ApplicationRequest request = new ApplicationRequest();
+    request.setCurrentPage(2);
+    request.setPageSize(20);
+
+    Gson gson = new Gson();
+    String params = gson.toJson(request);
+
+    String response = sendPOST(coordinatorAddress + APPLICATIONS, params);
+    assertNotNull(response);
+
+    ApplicationDatas dataModel = gson.fromJson(response, ApplicationDatas.class);
+    assertNotNull(dataModel);
+
+    List<Application> datas = dataModel.getData();
+    assertNotNull(datas);
+    assertEquals(20, datas.size());
+
+    // 5 records. application_[1015,1016,1017,1018,1019]
+    // 11 records. application_[102,1020,1021,1022,1023,1024,1025,1026,1027,1028,1029]
+    // 4 records. application_[103,1030,1031,1032]
+    Set<String> applications = new HashSet<>();
+    applications.add("application_1015");
+    applications.add("application_1016");
+    applications.add("application_1017");
+    applications.add("application_1018");
+    applications.add("application_1019");
+    applications.add("application_102");
+    applications.add("application_1020");
+    applications.add("application_1021");
+    applications.add("application_1022");
+    applications.add("application_1023");
+    applications.add("application_1024");
+    applications.add("application_1025");
+    applications.add("application_1026");
+    applications.add("application_1027");
+    applications.add("application_1028");
+    applications.add("application_1029");
+    applications.add("application_103");
+    applications.add("application_1030");
+    applications.add("application_1031");
+    applications.add("application_1032");
+
+    for (Application application : datas) {
+      assertTrue(applications.contains(application.getApplicationId()));
+    }
+  }
+
+  @Test
+  public void testGetApplicationsWithNull() throws Exception {
+    // In this test case, we apply to read the records on page 2,
+    // and set up to return 20 records per page.
+    final ApplicationRequest request = null;
+    Gson gson = new Gson();
+    String params = gson.toJson(request);
+
+    String response = sendPOST(coordinatorAddress + APPLICATIONS, params);
+    assertNotNull(response);
+
+    ApplicationDatas dataModel = gson.fromJson(response, ApplicationDatas.class);
+    assertNotNull(dataModel);
+    assertEquals(-1, dataModel.code);
+    assertEquals("ApplicationRequest Is not null", dataModel.errMsg);
+  }
+
+  @Test
+  public void testGetApplicationsWithStartTimeAndEndTime() throws Exception {
+
+    // In this test case, we set two groups of heartBeatStartTime and heartBeatEndTime respectively.
+    // We expect no data to be obtained in the first group,
+    // and we expect to obtain 10 data in the second group.
+    long startTime = new Date().getTime();
+    long endTime = new Date().getTime() + 100;
+
+    final ApplicationRequest request = new ApplicationRequest();
+    request.setHeartBeatStartTime(String.valueOf(startTime));
+    request.setHeartBeatEndTime(String.valueOf(endTime));
+
+    Gson gson = new Gson();
+    String params = gson.toJson(request);
+    String response = sendPOST(coordinatorAddress + APPLICATIONS, params);
+    assertNotNull(response);
+
+    ApplicationDatas dataModel = gson.fromJson(response, ApplicationDatas.class);
+    assertNotNull(dataModel);
+    List<Application> datas = dataModel.getData();
+    assertNotNull(datas);
+    assertEquals(0, datas.size());
+
+    startTime = 0;
+    final ApplicationRequest request2 = new ApplicationRequest();
+    request2.setHeartBeatStartTime(String.valueOf(startTime));
+    request2.setHeartBeatEndTime(String.valueOf(endTime));
+
+    String params2 = gson.toJson(request2);
+    String response2 = sendPOST(coordinatorAddress + APPLICATIONS, params2);
+    assertNotNull(response2);
+    ApplicationDatas dataModel2 = gson.fromJson(response2, ApplicationDatas.class);
+    assertNotNull(dataModel2);
+    List<Application> datas2 = dataModel2.getData();
+
+    assertEquals(10, datas2.size());
   }
 }

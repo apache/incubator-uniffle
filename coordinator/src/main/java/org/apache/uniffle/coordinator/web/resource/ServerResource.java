@@ -150,13 +150,13 @@ public class ServerResource extends BaseResource {
     int pageSize = params.getPageSize();
     String startTime = params.getHeartBeatStartTime();
     String endTime = params.getHeartBeatEndTime();
-    String appPrefix = params.getAppPrefix();
+    String appIdRegex = params.getAppIdRegex();
 
     try {
       ApplicationManager applicationManager = getApplicationManager();
       List<Application> applicationSet =
           applicationManager.getApplications(
-              filterApplications, pageSize, currentPage, startTime, endTime, appPrefix);
+              filterApplications, pageSize, currentPage, startTime, endTime, appIdRegex);
       return Response.success(applicationSet);
     } catch (Exception e) {
       return Response.fail(e.getMessage());
