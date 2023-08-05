@@ -250,7 +250,6 @@ org.javassist:javassist
 com.google.code.findbugs:jsr305
 jakarta.validation:jakarta.validation-api
 
-
 -----------------------------------------------------------------------------------
 This product bundles various third-party components under other open source licenses.
 This section summarizes those components and their licenses. See licenses-binary/
@@ -273,6 +272,7 @@ MIT License
 org.slf4j:slf4j-api
 org.slf4j:slf4j-reload4j
 org.codehaus.mojo:animal-sniffer-annotations
+org.checkerframework:checker-qual
 
 Common Development and Distribution License (CDDL) 1.1
 ------------------------------------------------------
