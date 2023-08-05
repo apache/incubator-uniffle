@@ -485,7 +485,7 @@ public class ApplicationManager implements Closeable {
     try {
       return Long.parseLong(strValue);
     } catch (NumberFormatException e) {
-      throw new RuntimeException(fieldName + " value must be a number!");
+      throw new NumberFormatException(fieldName + " value must be a number!");
     }
   }
 

@@ -137,8 +137,12 @@ public class ServerResource extends BaseResource {
   @Produces({MediaType.APPLICATION_JSON})
   public Response<Object> application(ApplicationRequest params) {
 
+    if(params == null){
+      return Response.fail("ApplicationRequest Is not null");
+    }
+
     Set<String> filterApplications = new HashSet<>();
-    if (params != null && CollectionUtils.isNotEmpty(params.getApplications())) {
+    if (CollectionUtils.isNotEmpty(params.getApplications())) {
       filterApplications = params.getApplications();
     }
 
