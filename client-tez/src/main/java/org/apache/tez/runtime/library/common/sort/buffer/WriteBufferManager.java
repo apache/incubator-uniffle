@@ -97,6 +97,7 @@ public class WriteBufferManager<K, V> {
   private final int shuffleId;
   private final boolean isNeedSorted;
   private final TezCounter mapOutputByteCounter;
+  private final TezCounter mapOutputRecordCounter;
 
   /** WriteBufferManager */
   public WriteBufferManager(
@@ -125,7 +126,8 @@ public class WriteBufferManager<K, V> {
       int bitmapSplitNum,
       int shuffleId,
       boolean isNeedSorted,
-      TezCounter mapOutputByteCounter) {
+      TezCounter mapOutputByteCounter,
+      TezCounter mapOutputRecordCounter) {
     this.tezTaskAttemptID = tezTaskAttemptID;
     this.maxMemSize = maxMemSize;
     this.appId = appId;
@@ -152,6 +154,7 @@ public class WriteBufferManager<K, V> {
     this.shuffleId = shuffleId;
     this.isNeedSorted = isNeedSorted;
     this.mapOutputByteCounter = mapOutputByteCounter;
+    this.mapOutputRecordCounter = mapOutputRecordCounter;
     this.sendExecutorService =
         Executors.newFixedThreadPool(sendThreadNum, ThreadUtils.getThreadFactory("send-thread"));
   }
@@ -200,6 +203,7 @@ public class WriteBufferManager<K, V> {
         && inSendListBytes.get() <= maxMemSize * sendThreshold) {
       sendBuffersToServers();
     }
+    mapOutputRecordCounter.increment(1);
     mapOutputByteCounter.increment(length);
   }
 

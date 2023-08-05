@@ -119,6 +119,8 @@ public class WriteBufferManagerTest {
     OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
     TezCounter mapOutputByteCounter =
         outputContext.getCounters().findCounter(TaskCounter.OUTPUT_BYTES);
+    TezCounter mapOutputRecordCounter =
+        outputContext.getCounters().findCounter(TaskCounter.OUTPUT_RECORDS);
 
     WriteBufferManager<BytesWritable, BytesWritable> bufferManager =
         new WriteBufferManager(
@@ -147,7 +149,8 @@ public class WriteBufferManagerTest {
             bitmapSplitNum,
             shuffleId,
             true,
-            mapOutputByteCounter);
+            mapOutputByteCounter,
+            mapOutputRecordCounter);
 
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
@@ -158,6 +161,7 @@ public class WriteBufferManagerTest {
       bufferManager.addRecord(1, new BytesWritable(key), new BytesWritable(value));
     }
 
+    assertEquals(1000, mapOutputRecordCounter.getValue());
     assertEquals(1052000, mapOutputByteCounter.getValue());
 
     boolean isException = false;
@@ -219,6 +223,8 @@ public class WriteBufferManagerTest {
     OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
     TezCounter mapOutputByteCounter =
         outputContext.getCounters().findCounter(TaskCounter.OUTPUT_BYTES);
+    TezCounter mapOutputRecordCounter =
+        outputContext.getCounters().findCounter(TaskCounter.OUTPUT_RECORDS);
 
     WriteBufferManager<BytesWritable, BytesWritable> bufferManager =
         new WriteBufferManager(
@@ -247,7 +253,8 @@ public class WriteBufferManagerTest {
             bitmapSplitNum,
             shuffleId,
             true,
-            mapOutputByteCounter);
+            mapOutputByteCounter,
+            mapOutputRecordCounter);
 
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
@@ -259,6 +266,7 @@ public class WriteBufferManagerTest {
       bufferManager.addRecord(partitionId, new BytesWritable(key), new BytesWritable(value));
     }
 
+    assertEquals(1000, mapOutputRecordCounter.getValue());
     assertEquals(1052000, mapOutputByteCounter.getValue());
     bufferManager.waitSendFinished();
     assertTrue(bufferManager.getWaitSendBuffers().isEmpty());
@@ -329,6 +337,8 @@ public class WriteBufferManagerTest {
     OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
     TezCounter mapOutputByteCounter =
         outputContext.getCounters().findCounter(TaskCounter.OUTPUT_BYTES);
+    TezCounter mapOutputRecordCounter =
+        outputContext.getCounters().findCounter(TaskCounter.OUTPUT_RECORDS);
 
     WriteBufferManager<BytesWritable, BytesWritable> bufferManager =
         new WriteBufferManager(
@@ -357,7 +367,8 @@ public class WriteBufferManagerTest {
             bitmapSplitNum,
             shuffleId,
             true,
-            mapOutputByteCounter);
+            mapOutputByteCounter,
+            mapOutputRecordCounter);
 
     Random random = new Random();
     for (int i = 0; i < 10000; i++) {
@@ -370,6 +381,7 @@ public class WriteBufferManagerTest {
     }
     bufferManager.waitSendFinished();
 
+    assertEquals(10000, mapOutputRecordCounter.getValue());
     assertEquals(10520000, mapOutputByteCounter.getValue());
     assertTrue(bufferManager.getWaitSendBuffers().isEmpty());
     assertEquals(
@@ -429,6 +441,8 @@ public class WriteBufferManagerTest {
     OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
     TezCounter mapOutputByteCounter =
         outputContext.getCounters().findCounter(TaskCounter.OUTPUT_BYTES);
+    TezCounter mapOutputRecordCounter =
+        outputContext.getCounters().findCounter(TaskCounter.OUTPUT_RECORDS);
 
     WriteBufferManager<BytesWritable, BytesWritable> bufferManager =
         new WriteBufferManager(
@@ -457,7 +471,8 @@ public class WriteBufferManagerTest {
             bitmapSplitNum,
             shuffleId,
             true,
-            mapOutputByteCounter);
+            mapOutputByteCounter,
+            mapOutputRecordCounter);
 
     Random random = new Random();
     RssException rssException =
@@ -479,6 +494,7 @@ public class WriteBufferManagerTest {
     rssException = assertThrows(RssException.class, bufferManager::waitSendFinished);
     assertTrue(rssException.getMessage().contains("Send failed"));
 
+    assertTrue(mapOutputRecordCounter.getValue() < 10000);
     assertTrue(mapOutputByteCounter.getValue() < 10520000);
   }
 
