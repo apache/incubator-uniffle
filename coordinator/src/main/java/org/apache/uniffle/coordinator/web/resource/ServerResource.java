@@ -137,7 +137,7 @@ public class ServerResource extends BaseResource {
   @Produces({MediaType.APPLICATION_JSON})
   public Response<Object> application(ApplicationRequest params) {
 
-    if(params == null){
+    if (params == null) {
       return Response.fail("ApplicationRequest Is not null");
     }
 
