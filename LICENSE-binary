@@ -216,7 +216,7 @@ commons-cli:commons-cli
 org.apache.httpcomponents:httpclient
 net.jpountz.lz4:lz4
 com.google.guava:guava
-com.google.guava::listenablefuture
+com.google.guava:listenablefuture
 com.google.guava:failureaccess
 com.fasterxml.jackson.core:jackson-annotations
 com.fasterxml.jackson.core:jackson-core
