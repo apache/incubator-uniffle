@@ -32,6 +32,7 @@ Currently it supports [Apache Spark][1], [Apache Hadoop MapReduce][2] and [Apach
 [![Codecov](https://codecov.io/gh/apache/incubator-uniffle/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/incubator-uniffle)
 [![License](https://img.shields.io/github/license/apache/incubator-uniffle)](https://github.com/apache/incubator-uniffle/blob/master/LICENSE)
 [![Release](https://img.shields.io/github/v/release/apache/incubator-uniffle)](https://github.com/apache/incubator-uniffle/releases)
+[![Slack](https://img.shields.io/badge/chat-on%20Slack-brightgreen.svg)](https://join.slack.com/t/the-asf/shared_invite/zt-1fm9561yr-uzTpjqg3jf5nxSJV5AE3KQ)
 
 ## Architecture
 ![Rss Architecture](docs/asset/rss_architecture.png)
