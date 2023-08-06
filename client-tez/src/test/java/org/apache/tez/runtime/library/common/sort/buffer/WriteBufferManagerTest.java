@@ -378,8 +378,7 @@ public class WriteBufferManagerTest {
   }
 
   @Test
-  public void testFastFailWhenSendBlocksFailed(@TempDir File tmpDir)
-      throws IOException, InterruptedException {
+  public void testFailFastWhenFailedToSendBlocks(@TempDir File tmpDir) throws IOException {
     TezTaskAttemptID tezTaskAttemptID =
         TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
     final long maxMemSize = 10240;
