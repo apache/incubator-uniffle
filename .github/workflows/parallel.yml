@@ -92,11 +92,6 @@ jobs:
       if: ${{ failure() && inputs.summary != '' }}
       run: ${{ inputs.summary }}
       continue-on-error: true
-    - name:  Run Integration Tests and Check test status
-      run: |
-        chmod +x ./deploy/kubernetes/integration-test/e2e/start-e2e.sh
-        set -e
-        ./deploy/kubernetes/integration-test/e2e/start-e2e.sh
     - name: Upload test reports
       if: ${{ failure() && inputs.reports-path != '' }}
       uses: actions/upload-artifact@v3

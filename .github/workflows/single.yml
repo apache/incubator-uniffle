@@ -80,6 +80,11 @@ jobs:
     - name: Execute `mvn ${{ inputs.maven-args }}`
       run: mvn -B -fae ${{ inputs.maven-args }} | tee /tmp/maven.log
       shell: bash
+    - name:  Run Integration Tests and Check test status
+      run: |
+        chmod +x ./deploy/kubernetes/integration-test/e2e/start-e2e.sh
+        set -e
+        ./deploy/kubernetes/integration-test/e2e/start-e2e.sh      
     - name: Summary of failures
       if: ${{ failure() && inputs.summary != '' }}
       run: ${{ inputs.summary }}
