@@ -192,7 +192,7 @@ public class ShuffleServer {
 
   private void initialization() throws Exception {
     boolean testMode = shuffleServerConf.getBoolean(RSS_TEST_MODE_ENABLE);
-    String storageType = shuffleServerConf.getString(RSS_STORAGE_TYPE);
+    String storageType = shuffleServerConf.get(RSS_STORAGE_TYPE).name();
     if (!testMode
         && (StorageType.LOCALFILE.name().equals(storageType)
             || (StorageType.HDFS.name()).equals(storageType))) {
