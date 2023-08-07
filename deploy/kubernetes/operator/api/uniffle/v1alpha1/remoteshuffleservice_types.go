@@ -366,7 +366,7 @@ type RemoteShuffleServiceList struct {
 	Items           []RemoteShuffleService `json:"items"`
 }
 
+
 func init() {
 	SchemeBuilder.Register(&RemoteShuffleService{}, &RemoteShuffleServiceList{})
 }
-
