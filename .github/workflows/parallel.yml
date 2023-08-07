@@ -92,6 +92,10 @@ jobs:
       if: ${{ failure() && inputs.summary != '' }}
       run: ${{ inputs.summary }}
       continue-on-error: true
+    - name:  Run Integration Tests and Check test status
+      run: |
+        set -e
+        ./integration_tests.sh
     - name: Upload test reports
       if: ${{ failure() && inputs.reports-path != '' }}
       uses: actions/upload-artifact@v3
