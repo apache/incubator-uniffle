@@ -164,7 +164,8 @@ public class RssUnSorter extends ExternalSorter {
             bitmapSplitNum,
             shuffleId,
             false,
-            mapOutputByteCounter);
+            mapOutputByteCounter,
+            mapOutputRecordCounter);
     LOG.info("Initialized WriteBufferManager.");
   }
 
