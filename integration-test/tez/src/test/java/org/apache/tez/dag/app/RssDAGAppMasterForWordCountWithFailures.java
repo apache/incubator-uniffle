@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.yarn.YarnUncaughtExceptionHandler;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
@@ -238,6 +239,10 @@ public class RssDAGAppMasterForWordCountWithFailures extends RssDAGAppMaster {
               jobUserName,
               amPluginDescriptorProto,
               testMode);
+      ShutdownHookManager.get()
+          .addShutdownHook(
+              new RssDAGAppMaster.RssDAGAppMasterShutdownHook(appMaster),
+              RSS_SHUTDOWN_HOOK_PRIORITY);
 
       // log the system properties
       if (LOG.isInfoEnabled()) {
