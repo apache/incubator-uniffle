@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RawKeyValueIterator;
 import org.apache.hadoop.mapred.Reporter;
@@ -56,7 +57,7 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
 
   private org.apache.hadoop.mapreduce.TaskAttemptID reduceId;
   private JobConf mrJobConf;
-  private JobConf rssJobConf;
+  private Configuration rssJobConf;
   private Reporter reporter;
   private ShuffleClientMetrics metrics;
   private TaskUmbilicalProtocol umbilical;
@@ -102,19 +103,16 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     this.replicaWrite =
         RssMRUtils.getInt(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_DATA_REPLICA_WRITE,
             RssMRConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
     this.replicaRead =
         RssMRUtils.getInt(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_DATA_REPLICA_READ,
             RssMRConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
     this.replica =
         RssMRUtils.getInt(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_DATA_REPLICA,
             RssMRConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
 
@@ -122,13 +120,11 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     this.partitionNumPerRange =
         RssMRUtils.getInt(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_PARTITION_NUM_PER_RANGE,
             RssMRConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
-    this.basePath =
-        RssMRUtils.getString(rssJobConf, mrJobConf, RssMRConfig.RSS_REMOTE_STORAGE_PATH);
+    this.basePath = RssMRUtils.getString(rssJobConf, RssMRConfig.RSS_REMOTE_STORAGE_PATH);
     String remoteStorageConf =
-        RssMRUtils.getString(rssJobConf, mrJobConf, RssMRConfig.RSS_REMOTE_STORAGE_CONF, "");
+        RssMRUtils.getString(rssJobConf, RssMRConfig.RSS_REMOTE_STORAGE_CONF, "");
     this.remoteStorageInfo = new RemoteStorageInfo(basePath, remoteStorageConf);
     this.merger = createMergeManager(context);
   }
@@ -137,7 +133,6 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     boolean useRemoteSpill =
         RssMRUtils.getBoolean(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
             RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT);
     if (useRemoteSpill) {
@@ -146,13 +141,11 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
       int replication =
           RssMRUtils.getInt(
               rssJobConf,
-              mrJobConf,
               RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION,
               RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION_DEFAULT);
       int retries =
           RssMRUtils.getInt(
               rssJobConf,
-              mrJobConf,
               RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES,
               RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES_DEFAULT);
       return new RssRemoteMergeManagerImpl(

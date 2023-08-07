@@ -246,12 +246,12 @@ public class RssMRUtilsTest {
     JobConf rssJobConf = new JobConf();
     rssJobConf.setInt("mapreduce.job.maps", 500);
     rssJobConf.setInt("mapreduce.job.reduces", 20);
-    RssMRUtils.validateRssClientConf(rssJobConf, jobConf);
+    RssMRUtils.validateRssClientConf(rssJobConf);
     rssJobConf.setInt(RssMRConfig.RSS_CLIENT_RETRY_MAX, 5);
     rssJobConf.setLong(RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX, 1000L);
     rssJobConf.setLong(RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS, 4999L);
     try {
-      RssMRUtils.validateRssClientConf(rssJobConf, jobConf);
+      RssMRUtils.validateRssClientConf(rssJobConf);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("should not bigger than"));
