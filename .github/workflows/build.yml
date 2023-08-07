@@ -96,6 +96,26 @@ jobs:
     needs: [kubernetes]
     runs-on: ubuntu-20.04
     steps:
+    - name: Checkout project
+      uses: actions/checkout@v3
+    - name: Set up JDK ${{ inputs.java-version }}
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ inputs.java-version }}
+        distribution: ${{ inputs.jdk-distro }}
+    - name: Cache local Maven repository
+      if: ${{ inputs.cache-key != '' }}
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-
+    - name: Set up Go ${{ inputs.go-version }}
+      if: ${{ inputs.go-version != '' }}
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ inputs.go-version }}
     - name: Compile kubernetes operator
       run: |
         mvn package -Pkubernetes -DskipTests
