@@ -401,4 +401,11 @@ public class RssUtils {
     }
     PlatformDependent.freeDirectBuffer(byteBuffer);
   }
+
+  public static Constructor<?> getConstructor(String className, Class<?>... parameterTypes)
+      throws ClassNotFoundException, NoSuchMethodException {
+    Class<?> klass = Class.forName(className);
+    Constructor<?> constructor = klass.getConstructor(parameterTypes);
+    return constructor;
+  }
 }
