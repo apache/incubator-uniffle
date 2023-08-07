@@ -91,3 +91,16 @@ jobs:
       maven-args: package -Pkubernetes -DskipUTs -DskipITs -DskipBuildImage=${{ needs.changes.outputs.rss_server_docker == 'false' }}
       cache-key: package
       go-version: '1.17'
+
+  kubernetes-integration:
+    needs: [kubernetes]
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Compile kubernetes operator
+      run: |
+        mvn package -Pkubernetes -DskipTests
+    - name:  Run local Integration Tests
+      run: |
+        chmod +x ./deploy/kubernetes/integration-test/e2e/start-e2e.sh
+        set -e
+        ./deploy/kubernetes/integration-test/e2e/start-e2e.sh  
