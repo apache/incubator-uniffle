@@ -359,13 +359,12 @@ type RemoteShuffleService struct {
 
 //+kubebuilder:object:root=true
 
-// RemoteShuffleServiceList contains a list of RemoteShuffleService
+// RemoteShuffleServiceList contains a list of  RemoteShuffleService
 type RemoteShuffleServiceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []RemoteShuffleService `json:"items"`
 }
-
 
 func init() {
 	SchemeBuilder.Register(&RemoteShuffleService{}, &RemoteShuffleServiceList{})
