@@ -394,8 +394,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             .recordTransportTime(GetLocalShuffleDataRequest.class.getName(), transportTime);
       }
     }
-    String storageType =
-        shuffleServer.getShuffleServerConf().get(RssBaseConf.RSS_STORAGE_TYPE).name();
+    String storageType = shuffleServer.getShuffleServerConf().get(RssBaseConf.RSS_STORAGE_TYPE);
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetLocalShuffleDataResponse response;

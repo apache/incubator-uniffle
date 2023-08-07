@@ -58,9 +58,9 @@ public class HealthCheckTest extends CoordinatorTestBase {
         ShuffleServerConf.HEALTH_CHECKER_CLASS_NAMES.key(),
         LocalStorageChecker.class.getCanonicalName());
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("s1"));
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     assertConf(conf);
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     conf.set(ShuffleServerConf.HEALTH_MIN_STORAGE_PERCENTAGE, -1.0);
     assertConf(conf);
     conf.set(ShuffleServerConf.HEALTH_MIN_STORAGE_PERCENTAGE, 102.0);

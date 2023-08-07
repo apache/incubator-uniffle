@@ -57,7 +57,7 @@ public class LocalStorageChecker extends Checker {
     if (CollectionUtils.isEmpty(basePaths)) {
       throw new IllegalArgumentException("The base path cannot be empty");
     }
-    String storageType = conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name();
+    String storageType = conf.getString(ShuffleServerConf.RSS_STORAGE_TYPE);
     if (!ShuffleStorageUtils.containsLocalFile(storageType)) {
       throw new IllegalArgumentException(
           "Only StorageType contains LOCALFILE support storageChecker");

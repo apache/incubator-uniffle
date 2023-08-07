@@ -55,8 +55,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       StorageManager storageManager,
       Consumer<ShuffleDataFlushEvent> eventConsumer) {
     this.shuffleServerConf = conf;
-    this.storageType =
-        StorageType.valueOf(shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE).name());
+    this.storageType = StorageType.valueOf(shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE));
     this.storageManager = storageManager;
     this.eventConsumer = eventConsumer;
     initFlushEventExecutor();
