@@ -555,7 +555,7 @@ public class ShuffleTaskManager {
       int partitionNumPerRange,
       int partitionNum) {
     refreshAppId(appId);
-    String storageType = conf.get(RssBaseConf.RSS_STORAGE_TYPE).name();
+    String storageType = conf.getString(RssBaseConf.RSS_STORAGE_TYPE);
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
     request.setAppId(appId);
     request.setShuffleId(shuffleId);
