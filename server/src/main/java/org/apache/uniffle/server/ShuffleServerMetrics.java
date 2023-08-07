@@ -61,8 +61,8 @@ public class ShuffleServerMetrics {
   private static final String LOCAL_STORAGE_TOTAL_DIRS_NUM = "local_storage_total_dirs_num";
   private static final String LOCAL_STORAGE_CORRUPTED_DIRS_NUM = "local_storage_corrupted_dirs_num";
   private static final String LOCAL_STORAGE_TOTAL_SPACE = "local_storage_total_space";
-  private static final String LOCAL_STORAGE_USED_SPACE = "local_storage_used_space";
-  private static final String LOCAL_STORAGE_UNIFFLE_USED_SPACE = "local_storage_uniffle_used_space";
+  private static final String LOCAL_STORAGE_WHOLE_DISK_USED_SPACE = "local_storage_whole_disk_used_space";
+  private static final String LOCAL_STORAGE_SERVICE_USED_SPACE = "local_storage_service_used_space";
   private static final String LOCAL_STORAGE_USED_SPACE_RATIO = "local_storage_used_space_ratio";
 
   private static final String IS_HEALTHY = "is_healthy";
@@ -144,8 +144,8 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeLocalStorageTotalDirsNum;
   public static Gauge.Child gaugeLocalStorageCorruptedDirsNum;
   public static Gauge.Child gaugeLocalStorageTotalSpace;
-  public static Gauge.Child gaugeLocalStorageUsedSpace;
-  public static Gauge.Child gaugeLocalStorageUniffleUsedSpace;
+  public static Gauge.Child gaugeLocalStorageWholeDiskUsedSpace;
+  public static Gauge.Child gaugeLocalStorageServiceUsedSpace;
   public static Gauge.Child gaugeLocalStorageUsedSpaceRatio;
 
   public static Gauge.Child gaugeIsHealthy;
@@ -292,9 +292,9 @@ public class ShuffleServerMetrics {
     gaugeLocalStorageCorruptedDirsNum =
         metricsManager.addLabeledGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM);
     gaugeLocalStorageTotalSpace = metricsManager.addLabeledGauge(LOCAL_STORAGE_TOTAL_SPACE);
-    gaugeLocalStorageUsedSpace = metricsManager.addLabeledGauge(LOCAL_STORAGE_USED_SPACE);
-    gaugeLocalStorageUniffleUsedSpace =
-        metricsManager.addLabeledGauge(LOCAL_STORAGE_UNIFFLE_USED_SPACE);
+    gaugeLocalStorageWholeDiskUsedSpace = metricsManager.addLabeledGauge(LOCAL_STORAGE_WHOLE_DISK_USED_SPACE);
+    gaugeLocalStorageServiceUsedSpace =
+        metricsManager.addLabeledGauge(LOCAL_STORAGE_SERVICE_USED_SPACE);
     gaugeLocalStorageUsedSpaceRatio =
         metricsManager.addLabeledGauge(LOCAL_STORAGE_USED_SPACE_RATIO);
 

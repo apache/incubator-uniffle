@@ -37,7 +37,7 @@ public class LocalStorageCheckerTest {
     File file4 = createTempFile(subdir2, "file4.txt", 1500);
 
     // Call the method to calculate disk usage
-    long calculatedUsage = LocalStorageChecker.getUniffleUsedSpace(tempDir);
+    long calculatedUsage = LocalStorageChecker.getServiceUsedSpace(tempDir);
 
     // The expected total usage should be the sum of file1 + file2 + file3 + file4
     long expectedUsage = file1.length() + file2.length() + file3.length() + file4.length();
