@@ -265,6 +265,11 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           port,
           System.currentTimeMillis() - start);
       result = rpcResponse.getRequireBufferId();
+    } else if (rpcResponse.getStatus() == RssProtos.StatusCode.NO_REGISTER) {
+      String msg = "Can't require " + requireSize + " bytes from " + host + ":" + port
+        + ", statusCode=" + rpcResponse.getStatus()
+        + ", errorMsg:" + rpcResponse.getRetMsg();
+      throw new NotRetryException(msg);
     }
     return result;
   }
