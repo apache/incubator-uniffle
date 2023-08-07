@@ -92,11 +92,16 @@ import static org.apache.tez.dag.api.TezConfiguration.TEZ_AM_NODE_UNHEALTHY_RESC
 
 public class RssDAGAppMaster extends DAGAppMaster {
   private static final Logger LOG = LoggerFactory.getLogger(RssDAGAppMaster.class);
+
+  // RSS_SHUTDOWN_HOOK_PRIORITY is higher than SHUTDOWN_HOOK_PRIORITY(30) and will execute rss
+  // shutdown hook first.
+  public static final int RSS_SHUTDOWN_HOOK_PRIORITY = 50;
+
   private ShuffleWriteClient shuffleWriteClient;
   private TezRemoteShuffleManager tezRemoteShuffleManager;
   private Map<String, String> clusterClientConf;
 
-  final ScheduledExecutorService scheduledExecutorService =
+  final ScheduledExecutorService heartBeatExecutorService =
       Executors.newSingleThreadScheduledExecutor(ThreadUtils.getThreadFactory("AppHeartbeat"));
 
   public RssDAGAppMaster(
@@ -187,7 +192,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
     long heartbeatTimeout = conf.getLong(RssTezConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
     client.registerApplicationInfo(strAppAttemptId, heartbeatTimeout, "user");
 
-    appMaster.scheduledExecutorService.scheduleAtFixedRate(
+    appMaster.heartBeatExecutorService.scheduleAtFixedRate(
         () -> {
           try {
             client.sendAppHeartbeat(strAppAttemptId, heartbeatTimeout);
@@ -236,6 +241,52 @@ public class RssDAGAppMaster extends DAGAppMaster {
     DAGImpl dag = createDAG(dagPB, null);
     registerStateEnteredCallback(dag, this);
     return dag;
+  }
+
+  @Override
+  public void serviceStop() throws Exception {
+    releaseRssResources(this);
+    super.serviceStop();
+  }
+
+  static class RssDAGAppMasterShutdownHook implements Runnable {
+    RssDAGAppMaster appMaster;
+
+    RssDAGAppMasterShutdownHook(RssDAGAppMaster appMaster) {
+      this.appMaster = appMaster;
+    }
+
+    @Override
+    public void run() {
+      releaseRssResources(appMaster);
+
+      LOG.info(
+          "RssDAGAppMaster received a signal. Signaling RMCommunicator and JobHistoryEventHandler.");
+      this.appMaster.stop();
+    }
+  }
+
+  static void releaseRssResources(RssDAGAppMaster appMaster) {
+    try {
+      LOG.info("RssDAGAppMaster releaseRssResources invoked");
+      appMaster.heartBeatExecutorService.shutdownNow();
+
+      if (appMaster.shuffleWriteClient != null) {
+        appMaster.shuffleWriteClient.close();
+      }
+      appMaster.shuffleWriteClient = null;
+
+      if (appMaster.tezRemoteShuffleManager != null) {
+        try {
+          appMaster.tezRemoteShuffleManager.shutdown();
+        } catch (Exception e) {
+          LOG.info("Failed to shutdown TezRemoteShuffleManager.", e);
+        }
+      }
+      appMaster.tezRemoteShuffleManager = null;
+    } catch (Throwable t) {
+      LOG.error("Failed to release Rss resources.", t);
+    }
   }
 
   /**
@@ -348,7 +399,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
       ShutdownHookManager.get()
           .addShutdownHook(new DAGAppMasterShutdownHook(appMaster), SHUTDOWN_HOOK_PRIORITY);
       ShutdownHookManager.get()
-          .addShutdownHook(new RssDAGAppMasterShutdownHook(appMaster), SHUTDOWN_HOOK_PRIORITY);
+          .addShutdownHook(new RssDAGAppMasterShutdownHook(appMaster), RSS_SHUTDOWN_HOOK_PRIORITY);
 
       // log the system properties
       if (LOG.isInfoEnabled()) {
@@ -380,33 +431,6 @@ public class RssDAGAppMaster extends DAGAppMaster {
         RssTezConfig.RSS_AM_SLOW_START_ENABLE, RssTezConfig.RSS_AM_SLOW_START_ENABLE_DEFAULT)) {
       conf.setFloat(ShuffleVertexManager.TEZ_SHUFFLE_VERTEX_MANAGER_MIN_SRC_FRACTION, 1.0f);
       conf.setFloat(ShuffleVertexManager.TEZ_SHUFFLE_VERTEX_MANAGER_MAX_SRC_FRACTION, 1.0f);
-    }
-  }
-
-  static class RssDAGAppMasterShutdownHook implements Runnable {
-    RssDAGAppMaster appMaster;
-
-    RssDAGAppMasterShutdownHook(RssDAGAppMaster appMaster) {
-      this.appMaster = appMaster;
-    }
-
-    @Override
-    public void run() {
-      if (appMaster.shuffleWriteClient != null) {
-        appMaster.shuffleWriteClient.close();
-      }
-
-      if (appMaster.tezRemoteShuffleManager != null) {
-        try {
-          appMaster.tezRemoteShuffleManager.shutdown();
-        } catch (Exception e) {
-          RssDAGAppMaster.LOG.info("TezRemoteShuffleManager shutdown error: " + e.getMessage());
-        }
-      }
-
-      RssDAGAppMaster.LOG.info(
-          "RssDAGAppMaster received a signal. Signaling RMCommunicator and JobHistoryEventHandler.");
-      this.appMaster.stop();
     }
   }
 
