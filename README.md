@@ -67,7 +67,7 @@ The shuffle data is stored with index file and data file. Data file has all bloc
 ![Rss Shuffle_Write](docs/asset/rss_data_format.png)
 
 ## Supported Spark Version
-Currently supports Spark 2.3.x, Spark 2.4.x, Spark 3.0.x, Spark 3.1.x, Spark 3.2.x, Spark 3.3.x
+Currently supports Spark 2.3.x, Spark 2.4.x, Spark 3.0.x, Spark 3.1.x, Spark 3.2.x, Spark 3.3.x, Spark 3.4.x
 
 Note: To support dynamic allocation, the patch(which is included in patch/spark folder) should be applied to Spark
 
