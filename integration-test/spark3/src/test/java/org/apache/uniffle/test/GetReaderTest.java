@@ -303,7 +303,7 @@ public class GetReaderTest extends IntegrationTestBase {
     public int partitionId() {
       return 0;
     }
-    
+
     public int numPartitions() {
       return 0;
     }
