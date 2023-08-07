@@ -61,7 +61,8 @@ public class ShuffleServerMetrics {
   private static final String LOCAL_STORAGE_TOTAL_DIRS_NUM = "local_storage_total_dirs_num";
   private static final String LOCAL_STORAGE_CORRUPTED_DIRS_NUM = "local_storage_corrupted_dirs_num";
   private static final String LOCAL_STORAGE_TOTAL_SPACE = "local_storage_total_space";
-  private static final String LOCAL_STORAGE_WHOLE_DISK_USED_SPACE = "local_storage_whole_disk_used_space";
+  private static final String LOCAL_STORAGE_WHOLE_DISK_USED_SPACE =
+      "local_storage_whole_disk_used_space";
   private static final String LOCAL_STORAGE_SERVICE_USED_SPACE = "local_storage_service_used_space";
   private static final String LOCAL_STORAGE_USED_SPACE_RATIO = "local_storage_used_space_ratio";
 
@@ -292,7 +293,8 @@ public class ShuffleServerMetrics {
     gaugeLocalStorageCorruptedDirsNum =
         metricsManager.addLabeledGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM);
     gaugeLocalStorageTotalSpace = metricsManager.addLabeledGauge(LOCAL_STORAGE_TOTAL_SPACE);
-    gaugeLocalStorageWholeDiskUsedSpace = metricsManager.addLabeledGauge(LOCAL_STORAGE_WHOLE_DISK_USED_SPACE);
+    gaugeLocalStorageWholeDiskUsedSpace =
+        metricsManager.addLabeledGauge(LOCAL_STORAGE_WHOLE_DISK_USED_SPACE);
     gaugeLocalStorageServiceUsedSpace =
         metricsManager.addLabeledGauge(LOCAL_STORAGE_SERVICE_USED_SPACE);
     gaugeLocalStorageUsedSpaceRatio =
