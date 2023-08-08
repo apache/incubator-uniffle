@@ -649,6 +649,7 @@ public class ShuffleTaskManager {
   public void removeResources(String appId) {
     LOG.info("Start remove resource for appId[" + appId + "]");
     final long start = System.currentTimeMillis();
+    String user = getUserByAppId(appId);
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.remove(appId);
     if (shuffleTaskInfo == null) {
       LOG.info("Resource for appId[" + appId + "] had been removed before.");
@@ -661,8 +662,7 @@ public class ShuffleTaskManager {
     shuffleFlushManager.removeResources(appId);
     if (!shuffleToCachedBlockIds.isEmpty()) {
       storageManager.removeResources(
-          new AppPurgeEvent(
-              appId, getUserByAppId(appId), new ArrayList<>(shuffleToCachedBlockIds.keySet())));
+          new AppPurgeEvent(appId, user, new ArrayList<>(shuffleToCachedBlockIds.keySet())));
     }
     if (shuffleTaskInfo.hasHugePartition()) {
       ShuffleServerMetrics.gaugeAppWithHugePartitionNum.dec();
