@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.common.StorageType;
 import org.apache.uniffle.common.util.RssUtils;
 
 public class RssBaseConf extends RssConf {
@@ -137,9 +138,9 @@ public class RssBaseConf extends RssConf {
           .defaultValue(60 * 1000L)
           .withDescription("Remote shuffle service client type grpc timeout (ms)");
 
-  public static final ConfigOption<String> RSS_STORAGE_TYPE =
+  public static final ConfigOption<StorageType> RSS_STORAGE_TYPE =
       ConfigOptions.key("rss.storage.type")
-          .stringType()
+          .enumType(StorageType.class)
           .noDefaultValue()
           .withDescription("Data storage for remote shuffle service");
 
