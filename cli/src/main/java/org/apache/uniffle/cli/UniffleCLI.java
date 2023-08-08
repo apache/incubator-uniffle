@@ -93,7 +93,8 @@ public class UniffleCLI extends AbstractCustomCommandLine {
     uniffleApplicationPageSize =
         new Option(null, longPrefix + "app-pageSize", true, "Application pagination page number");
     uniffleApplicationCurrentPage =
-        new Option(null, longPrefix + "app-currentPage", true, "Application pagination current page");
+        new Option(
+            null, longPrefix + "app-currentPage", true, "Application pagination current page");
     uniffleApplicationHbStartTime =
         new Option(
             null, longPrefix + "app-heartbeatStartTime", true, "Application Heartbeat StartTime");
@@ -198,15 +199,17 @@ public class UniffleCLI extends AbstractCustomCommandLine {
             }
 
             try (FileOutputStream fos = new FileOutputStream(uniffleOutPutFile);
-                 OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
+                OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
               osw.write(json);
               System.out.println(
-                      "applications json data has been written to the file(" + uniffleOutPutFile + ").");
+                  "applications json data has been written to the file("
+                      + uniffleOutPutFile
+                      + ").");
             } catch (IOException e) {
               System.out.println(
-                      "An error occurred while writing the applications json data to the file("
-                              + uniffleOutPutFile
-                              + ").");
+                  "An error occurred while writing the applications json data to the file("
+                      + uniffleOutPutFile
+                      + ").");
               return EXIT_ERROR;
             }
           }
@@ -215,18 +218,18 @@ public class UniffleCLI extends AbstractCustomCommandLine {
         }
 
         try (PrintWriter writer =
-                     new PrintWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8))) {
+            new PrintWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8))) {
           FormattingCLIUtils formattingCLIUtils =
-                  new FormattingCLIUtils("Uniffle Applications").addHeaders(APPLICATIONS_HEADER);
+              new FormattingCLIUtils("Uniffle Applications").addHeaders(APPLICATIONS_HEADER);
           List<Application> applications = getApplications(cmd);
           if (applications != null) {
             applications.forEach(
-                    app ->
-                            formattingCLIUtils.addLine(
-                                    app.getApplicationId(),
-                                    app.getUser(),
-                                    app.getLastHeartBeatTime(),
-                                    app.getRemoteStoragePath()));
+                app ->
+                    formattingCLIUtils.addLine(
+                        app.getApplicationId(),
+                        app.getUser(),
+                        app.getLastHeartBeatTime(),
+                        app.getRemoteStoragePath()));
           }
           writer.print(formattingCLIUtils.render());
           writer.flush();
@@ -267,7 +270,6 @@ public class UniffleCLI extends AbstractCustomCommandLine {
       throw new UniffleCliArgsException(
           "Missing Coordinator host address and grpc port parameters.");
     }
-    AdminRestApi adminRestApi = new AdminRestApi(client);
 
     // Condition 1: uniffleApplicationListCli
     String applications = null;
@@ -305,6 +307,7 @@ public class UniffleCLI extends AbstractCustomCommandLine {
       heartBeatEndTime = cmd.getOptionValue(uniffleApplicationHbEndTime.getLongOpt()).trim();
     }
 
+    AdminRestApi adminRestApi = new AdminRestApi(client);
     return adminRestApi.getApplications(
         applications,
         applicationIdRegex,
