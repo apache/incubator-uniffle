@@ -130,7 +130,7 @@ For HADOOP FS, the conf value of `rss.server.single.buffer.flush.threshold` shou
 Finally, to improve the speed of writing to HDFS for a single partition, the value of `rss.server.max.concurrency.of.per-partition.write` and `rss.server.flush.hdfs.threadPool.size` could be increased to 50 or 100.
 
 ### Netty
-In version 0.0.8, we introduced Netty. Enabling netty on ShuffleServer can significantly reduce GC time in high-throughput scenarios. We can enable netty through the parameter `rss.server.netty.port`. Note: After enabling netty, the ShuffleServer The node will be automatically tagged with `grpc_netty`, that is, the node can only be assigned to clients of `spark.rss.client.type=GRPC_NETTY`.
+In version 0.8.0, we introduced Netty. Enabling netty on ShuffleServer can significantly reduce GC time in high-throughput scenarios. We can enable netty through the parameter `rss.server.netty.port`. Note: After enabling netty, the ShuffleServer The node will be automatically tagged with `grpc_netty`, that is, the node can only be assigned to clients of `spark.rss.client.type=GRPC_NETTY`.
 
 When enabling Netty, we should also consider memory related configuration, the following is an example.
 
