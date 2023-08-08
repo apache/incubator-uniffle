@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
-
 import org.apache.hadoop.conf.Configuration;
+
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.config.RssConf;
 

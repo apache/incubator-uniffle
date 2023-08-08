@@ -112,9 +112,7 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
             RssMRConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
     this.replica =
         RssMRUtils.getInt(
-            rssJobConf,
-            RssMRConfig.RSS_DATA_REPLICA,
-            RssMRConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
+            rssJobConf, RssMRConfig.RSS_DATA_REPLICA, RssMRConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
 
     this.partitionNum = mrJobConf.getNumReduceTasks();
     this.partitionNumPerRange =
