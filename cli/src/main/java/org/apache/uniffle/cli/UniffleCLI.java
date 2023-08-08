@@ -53,6 +53,8 @@ public class UniffleCLI extends AbstractCustomCommandLine {
   private final Option uniffleApplicationListCli;
   private final Option uniffleApplicationPageSize;
   private final Option uniffleApplicationCurrentPage;
+  private final Option uniffleApplicationHbStartTime;
+  private final Option uniffleApplicationHbEndTime;
   private final Option uniffleOutFormat;
   private final Option uniffleOutPutFile;
   // private final Option uniffleLimit;
@@ -84,14 +86,20 @@ public class UniffleCLI extends AbstractCustomCommandLine {
             "The command will be used to print a list of applications.");
     uniffleApplicationListCli =
         new Option(
-            null, longPrefix + "app-list", false, "We can provide an application query list.");
+            null, longPrefix + "app-list", true, "We can provide an application query list.");
     uniffleApplicationRegex =
         new Option(
             null, longPrefix + "appId-regex", true, "ApplicationId Regex filter expression.");
     uniffleApplicationPageSize =
-        new Option(null, longPrefix + "pageSize", true, "Application pagination page number");
+        new Option(null, longPrefix + "app-pageSize", true, "Application pagination page number");
     uniffleApplicationCurrentPage =
-        new Option(null, longPrefix + "currentPage", true, "Application pagination current page");
+        new Option(null, longPrefix + "app-currentPage", true, "Application pagination current page");
+    uniffleApplicationHbStartTime =
+        new Option(
+            null, longPrefix + "app-heartbeatStartTime", true, "Application Heartbeat StartTime");
+    uniffleApplicationHbEndTime =
+        new Option(
+            null, longPrefix + "app-heartbeatEndTime", true, "Application Heartbeat EndTime");
     uniffleOutFormat =
         new Option(
             shortPrefix + "o",
@@ -118,6 +126,8 @@ public class UniffleCLI extends AbstractCustomCommandLine {
     allOptions.addOption(coordinatorPort);
     allOptions.addOption(uniffleOutFormat);
     allOptions.addOption(uniffleOutPutFile);
+    allOptions.addOption(uniffleApplicationHbStartTime);
+    allOptions.addOption(uniffleApplicationHbEndTime);
     allOptions.addOption(ssl);
     allOptions.addOption(help);
   }
@@ -149,79 +159,79 @@ public class UniffleCLI extends AbstractCustomCommandLine {
 
     if (cmd.hasOption(coordinatorHost.getOpt()) && cmd.hasOption(coordinatorPort.getOpt())) {
       getUniffleRestClient(cmd);
-    }
 
-    // If we use application-cli
-    if (cmd.hasOption(uniffleApplicationCli.getLongOpt())) {
-      LOG.info("uniffle-client-cli : get applications");
+      // If we use application-cli
+      if (cmd.hasOption(uniffleApplicationCli.getLongOpt())) {
+        LOG.info("uniffle-client-cli : get applications");
 
-      // If we want to output json file
-      if (cmd.hasOption(uniffleOutFormat.getOpt())) {
+        // If we want to output json file
+        if (cmd.hasOption(uniffleOutFormat.getOpt())) {
 
-        // Get the OutFormat.
-        String outPutFormat = cmd.getOptionValue(uniffleOutFormat.getOpt()).trim();
-        if (StringUtils.isBlank(outPutFormat)) {
-          System.out.println("output format is not null.");
-          return EXIT_ERROR;
-        }
-
-        // We allow users to enter json\Json\JSON etc.
-        // If the user enters another format, we will prompt the user that we only support JSON.
-        if (!StringUtils.equalsAnyIgnoreCase(outPutFormat, "json")) {
-          System.out.println("The output currently supports only JSON format.");
-          return EXIT_ERROR;
-        }
-
-        String json = getApplicationsJson(cmd);
-        if (StringUtils.isBlank(json)) {
-          System.out.println("no output result.");
-          return EXIT_ERROR;
-        }
-        System.out.println("application: " + json);
-
-        if (cmd.hasOption(uniffleOutPutFile.getOpt())) {
-
-          // Get output file location.
-          String uniffleOutPutFile = cmd.getOptionValue(uniffleOutFormat.getOpt()).trim();
-          if (StringUtils.isBlank(uniffleOutPutFile)) {
-            System.out.println("The output file cannot be empty.");
+          // Get the OutFormat.
+          String outPutFormat = cmd.getOptionValue(uniffleOutFormat.getOpt()).trim();
+          if (StringUtils.isBlank(outPutFormat)) {
+            System.out.println("output format is not null.");
             return EXIT_ERROR;
           }
 
-          try (FileOutputStream fos = new FileOutputStream(uniffleOutPutFile);
-              OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
-            osw.write(json);
-            System.out.println(
-                "applications json data has been written to the file(" + uniffleOutPutFile + ").");
-          } catch (IOException e) {
-            System.out.println(
-                "An error occurred while writing the applications json data to the file("
-                    + uniffleOutPutFile
-                    + ").");
+          // We allow users to enter json\Json\JSON etc.
+          // If the user enters another format, we will prompt the user that we only support JSON.
+          if (!StringUtils.equalsAnyIgnoreCase(outPutFormat, "json")) {
+            System.out.println("The output currently supports only JSON format.");
             return EXIT_ERROR;
           }
+
+          String json = getApplicationsJson(cmd);
+          if (StringUtils.isBlank(json)) {
+            System.out.println("no output result.");
+            return EXIT_ERROR;
+          }
+          System.out.println("application: " + json);
+
+          if (cmd.hasOption(uniffleOutPutFile.getOpt())) {
+
+            // Get output file location.
+            String uniffleOutPutFile = cmd.getOptionValue(uniffleOutFormat.getOpt()).trim();
+            if (StringUtils.isBlank(uniffleOutPutFile)) {
+              System.out.println("The output file cannot be empty.");
+              return EXIT_ERROR;
+            }
+
+            try (FileOutputStream fos = new FileOutputStream(uniffleOutPutFile);
+                 OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
+              osw.write(json);
+              System.out.println(
+                      "applications json data has been written to the file(" + uniffleOutPutFile + ").");
+            } catch (IOException e) {
+              System.out.println(
+                      "An error occurred while writing the applications json data to the file("
+                              + uniffleOutPutFile
+                              + ").");
+              return EXIT_ERROR;
+            }
+          }
+
+          return EXIT_SUCCESS;
         }
 
-        return EXIT_SUCCESS;
-      }
-
-      try (PrintWriter writer =
-          new PrintWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8))) {
-        FormattingCLIUtils formattingCLIUtils =
-            new FormattingCLIUtils("Uniffle Applications").addHeaders(APPLICATIONS_HEADER);
-        List<Application> applications = getApplications(cmd);
-        if (applications != null) {
-          applications.forEach(
-              app ->
-                  formattingCLIUtils.addLine(
-                      app.getApplicationId(),
-                      app.getUser(),
-                      app.getLastHeartBeatTime(),
-                      app.getRemoteStoragePath()));
+        try (PrintWriter writer =
+                     new PrintWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8))) {
+          FormattingCLIUtils formattingCLIUtils =
+                  new FormattingCLIUtils("Uniffle Applications").addHeaders(APPLICATIONS_HEADER);
+          List<Application> applications = getApplications(cmd);
+          if (applications != null) {
+            applications.forEach(
+                    app ->
+                            formattingCLIUtils.addLine(
+                                    app.getApplicationId(),
+                                    app.getUser(),
+                                    app.getLastHeartBeatTime(),
+                                    app.getRemoteStoragePath()));
+          }
+          writer.print(formattingCLIUtils.render());
+          writer.flush();
+          return EXIT_SUCCESS;
         }
-        writer.print(formattingCLIUtils.render());
-        writer.flush();
-        return EXIT_SUCCESS;
       }
     }
 
@@ -258,8 +268,50 @@ public class UniffleCLI extends AbstractCustomCommandLine {
           "Missing Coordinator host address and grpc port parameters.");
     }
     AdminRestApi adminRestApi = new AdminRestApi(client);
-    String applications = cmd.getOptionValue(uniffleApplicationCli.getOpt()).trim();
-    return adminRestApi.getApplications(applications);
+
+    // Condition 1: uniffleApplicationListCli
+    String applications = null;
+    if (cmd.hasOption(uniffleApplicationListCli.getLongOpt())) {
+      applications = cmd.getOptionValue(uniffleApplicationListCli.getLongOpt()).trim();
+    }
+
+    // Condition 2: uniffleApplicationRegex
+    String applicationIdRegex = null;
+    if (cmd.hasOption(uniffleApplicationRegex.getLongOpt())) {
+      applicationIdRegex = cmd.getOptionValue(uniffleApplicationRegex.getLongOpt()).trim();
+    }
+
+    // Condition 3: pageSize
+    String pageSize = null;
+    if (cmd.hasOption(uniffleApplicationPageSize.getLongOpt())) {
+      pageSize = cmd.getOptionValue(uniffleApplicationPageSize.getLongOpt()).trim();
+    }
+
+    // Condition 4: currentPage
+    String currentPage = null;
+    if (cmd.hasOption(uniffleApplicationCurrentPage.getLongOpt())) {
+      currentPage = cmd.getOptionValue(uniffleApplicationCurrentPage.getLongOpt()).trim();
+    }
+
+    // Condition 5: heartBeatStartTime
+    String heartBeatStartTime = null;
+    if (cmd.hasOption(uniffleApplicationHbStartTime.getLongOpt())) {
+      heartBeatStartTime = cmd.getOptionValue(uniffleApplicationHbStartTime.getLongOpt()).trim();
+    }
+
+    // Condition 6: heartBeatEndTime
+    String heartBeatEndTime = null;
+    if (cmd.hasOption(uniffleApplicationHbStartTime.getLongOpt())) {
+      heartBeatEndTime = cmd.getOptionValue(uniffleApplicationHbEndTime.getLongOpt()).trim();
+    }
+
+    return adminRestApi.getApplications(
+        applications,
+        applicationIdRegex,
+        pageSize,
+        currentPage,
+        heartBeatStartTime,
+        heartBeatEndTime);
   }
 
   /**
@@ -274,39 +326,9 @@ public class UniffleCLI extends AbstractCustomCommandLine {
    */
   private String getApplicationsJson(CommandLine cmd)
       throws UniffleCliArgsException, JsonProcessingException {
-    if (client == null) {
-      throw new UniffleCliArgsException(
-          "Missing Coordinator host address and grpc port parameters.");
-    }
-    AdminRestApi adminRestApi = new AdminRestApi(client);
-
-    // Condition 1: uniffleApplicationListCli
-    String applications = null;
-    if (cmd.hasOption(uniffleApplicationListCli.getLongOpt())) {
-      applications = cmd.getOptionValue(uniffleApplicationListCli.getOpt()).trim();
-    }
-
-    // Condition 2: uniffleApplicationRegex
-    String applicationRegex = null;
-    if (cmd.hasOption(uniffleApplicationRegex.getLongOpt())) {
-      applicationRegex = cmd.getOptionValue(uniffleApplicationRegex.getLongOpt()).trim();
-    }
-
-    // Condition 3: pageSize
-    String pageSize = null;
-    if (cmd.hasOption(uniffleApplicationPageSize.getLongOpt())) {
-      pageSize = cmd.getOptionValue(uniffleApplicationRegex.getLongOpt()).trim();
-    }
-
-    // Condition 4: currentPage
-    String currentPage = null;
-    if (cmd.hasOption(uniffleApplicationCurrentPage.getLongOpt())) {
-      currentPage = cmd.getOptionValue(uniffleApplicationCurrentPage.getLongOpt()).trim();
-    }
-
-    List<Application> applicationList = adminRestApi.getApplications(applications);
+    List<Application> applications = getApplications(cmd);
     Gson gson = new Gson();
-    return gson.toJson(applicationList);
+    return gson.toJson(applications);
   }
 
   public static void main(String[] args) {

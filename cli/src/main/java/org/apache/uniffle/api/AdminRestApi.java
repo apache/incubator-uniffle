@@ -46,9 +46,23 @@ public class AdminRestApi {
     return this.getClient().get("/api/admin/refreshChecker", params, null);
   }
 
-  public List<Application> getApplications(String applications) throws JsonProcessingException {
+  public List<Application> getApplications(
+      String applications,
+      String applicationIdRegex,
+      String pageSize,
+      String currentPage,
+      String heartBeatStartTime,
+      String heartBeatEndTime)
+      throws JsonProcessingException {
     List<Application> results = new ArrayList<>();
-    String postJson = getApplicationsJson(applications);
+    String postJson =
+        getApplicationsJson(
+            applications,
+            applicationIdRegex,
+            pageSize,
+            currentPage,
+            heartBeatStartTime,
+            heartBeatEndTime);
     if (StringUtils.isNotBlank(postJson)) {
       ObjectMapper objectMapper = new ObjectMapper();
       ApplicationResponse response =
@@ -60,10 +74,40 @@ public class AdminRestApi {
     return results;
   }
 
-  public String getApplicationsJson(String applications) {
+  public String getApplicationsJson(
+      String applications,
+      String applicationIdRegex,
+      String pageSize,
+      String currentPage,
+      String heartBeatStartTime,
+      String heartBeatEndTime) {
     Map<String, Object> params = new HashMap<>();
-    String[] applicationArrays = applications.split(",");
-    params.put("applications", applicationArrays);
+
+    if (StringUtils.isNotBlank(applications)) {
+      String[] applicationArrays = applications.split(",");
+      params.put("applications", applicationArrays);
+    }
+
+    if (StringUtils.isNotBlank(applicationIdRegex)) {
+      params.put("appIdRegex", applicationIdRegex);
+    }
+
+    if (StringUtils.isNotBlank(pageSize)) {
+      params.put("pageSize", Integer.valueOf(pageSize));
+    }
+
+    if (StringUtils.isNotBlank(currentPage)) {
+      params.put("currentPage", Integer.valueOf(currentPage));
+    }
+
+    if (StringUtils.isNotBlank(heartBeatStartTime)) {
+      params.put("heartBeatStartTime", heartBeatStartTime);
+    }
+
+    if (StringUtils.isNotBlank(heartBeatEndTime)) {
+      params.put("heartBeatEndTime", heartBeatEndTime);
+    }
+
     return this.getClient().post("/api/server/applications", params, null);
   }
 
