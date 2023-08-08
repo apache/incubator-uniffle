@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.uniffle.common.ClientType;
-import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.StorageType;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.RssUtils;
 
 public class RssBaseConf extends RssConf {

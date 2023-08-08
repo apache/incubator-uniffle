@@ -61,7 +61,8 @@ public class RepartitionWithHadoopMultiStorageRssTest extends RepartitionTest {
     File dataDir2 = new File(tmpDir, "data2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS.name());
+    shuffleServerConf.setString(
+            ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE_HDFS.name());
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1024L * 1024L);
 
     createShuffleServer(shuffleServerConf);

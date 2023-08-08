@@ -31,7 +31,7 @@ public class StorageManagerFactory {
   }
 
   public StorageManager createStorageManager(ShuffleServerConf conf) {
-    StorageType type = StorageType.valueOf(conf.get(ShuffleServerConf.RSS_STORAGE_TYPE));
+    StorageType type = StorageType.valueOf(conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name());
     if (StorageType.LOCALFILE.equals(type) || StorageType.MEMORY_LOCALFILE.equals(type)) {
       return new LocalStorageManager(conf);
     } else if (StorageType.HDFS.equals(type) || StorageType.MEMORY_HDFS.equals(type)) {
