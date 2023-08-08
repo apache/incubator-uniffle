@@ -17,6 +17,7 @@
 
 package org.apache.tez.dag.app;
 
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.List;
@@ -25,17 +26,29 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.SystemClock;
+import org.apache.tez.client.TezApiVersionInfo;
 import org.apache.tez.common.AsyncDispatcher;
+import org.apache.tez.common.RssTezUtils;
+import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezUtils;
 import org.apache.tez.common.security.ACLManager;
+import org.apache.tez.common.security.JobTokenIdentifier;
+import org.apache.tez.common.security.JobTokenSecretManager;
+import org.apache.tez.common.security.TokenCache;
 import org.apache.tez.dag.api.DAG;
 import org.apache.tez.dag.api.DataSourceDescriptor;
 import org.apache.tez.dag.api.Edge;
@@ -45,6 +58,8 @@ import org.apache.tez.dag.api.EdgeManagerPluginOnDemand;
 import org.apache.tez.dag.api.InputDescriptor;
 import org.apache.tez.dag.api.InputInitializerDescriptor;
 import org.apache.tez.dag.api.ProcessorDescriptor;
+import org.apache.tez.dag.api.TezConfiguration;
+import org.apache.tez.dag.api.TezConstants;
 import org.apache.tez.dag.api.UserPayload;
 import org.apache.tez.dag.api.Vertex;
 import org.apache.tez.dag.api.records.DAGProtos;
@@ -72,6 +87,9 @@ import org.apache.tez.runtime.library.processor.SimpleProcessor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
+import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
@@ -86,6 +104,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class RssDAGAppMasterTest {
+
+  private static final File TEST_DIR =
+      new File(
+              System.getProperty("test.build.data", System.getProperty("java.io.tmpdir")),
+              RssDAGAppMasterTest.class.getSimpleName())
+          .getAbsoluteFile();
 
   @Test
   public void testHookAfterDagInited() throws Exception {
@@ -346,6 +370,179 @@ public class RssDAGAppMasterTest {
     public EventRouteMetadata routeInputSourceTaskFailedEventToDestination(
         int sourceTaskIndex, int destinationTaskIndex) throws Exception {
       return null;
+    }
+  }
+
+  @Test
+  public void testFetchRemoteStorageFromDynamicConf() throws Exception {
+    final ApplicationId appId = ApplicationId.newInstance(1, 1);
+    final ApplicationAttemptId appAttemptId = ApplicationAttemptId.newInstance(appId, 1);
+    TezConfiguration conf = new TezConfiguration();
+
+    Credentials amCreds = new Credentials();
+    JobTokenSecretManager jtsm = new JobTokenSecretManager();
+    JobTokenIdentifier identifier = new JobTokenIdentifier(new Text(appId.toString()));
+    Token<JobTokenIdentifier> sessionToken = new Token<JobTokenIdentifier>(identifier, jtsm);
+    sessionToken.setService(identifier.getJobId());
+    TokenCache.setSessionToken(sessionToken, amCreds);
+
+    FileSystem fs = FileSystem.getLocal(conf);
+    FSDataOutputStream sessionJarsPBOutStream =
+        TezCommonUtils.createFileForAM(
+            fs, new Path(TEST_DIR.toString(), TezConstants.TEZ_AM_LOCAL_RESOURCES_PB_FILE_NAME));
+    DAGProtos.PlanLocalResourcesProto.getDefaultInstance().writeDelimitedTo(sessionJarsPBOutStream);
+    sessionJarsPBOutStream.close();
+
+    RssDAGAppMaster appMaster =
+        new RssDAGAppMaster(
+            appAttemptId,
+            ContainerId.newInstance(appAttemptId, 1),
+            "127.0.0.1",
+            0,
+            0,
+            new SystemClock(),
+            1,
+            true,
+            TEST_DIR.toString(),
+            new String[] {TEST_DIR.toString()},
+            new String[] {TEST_DIR.toString()},
+            new TezApiVersionInfo().getVersion(),
+            amCreds,
+            "someuser",
+            null);
+    appMaster.setShuffleWriteClient(new FakedShuffleWriteClient(1));
+    appMaster.init(conf);
+
+    Configuration mergedConf = new Configuration(false);
+    RssTezUtils.applyDynamicClientConf(mergedConf, appMaster.getClusterClientConf());
+    Assertions.assertEquals(4, mergedConf.size());
+    Assertions.assertEquals("hdfs://ns1/rss/", mergedConf.get("tez.rss.remote.storage.path"));
+    Assertions.assertEquals(
+        "key1=value1,key2=value2", mergedConf.get("tez.rss.remote.storage.conf"));
+    Assertions.assertEquals("MEMORY_LOCALFILE_HDFS", mergedConf.get("tez.rss.storage.type"));
+    Assertions.assertEquals("testvalue", mergedConf.get("tez.rss.test.config"));
+  }
+
+  @Test
+  public void testFetchRemoteStorageFromCoordinator() throws Exception {
+    final ApplicationId appId = ApplicationId.newInstance(1, 1);
+    final ApplicationAttemptId appAttemptId = ApplicationAttemptId.newInstance(appId, 1);
+    TezConfiguration conf = new TezConfiguration();
+
+    Credentials amCreds = new Credentials();
+    JobTokenSecretManager jtsm = new JobTokenSecretManager();
+    JobTokenIdentifier identifier = new JobTokenIdentifier(new Text(appId.toString()));
+    Token<JobTokenIdentifier> sessionToken = new Token<JobTokenIdentifier>(identifier, jtsm);
+    sessionToken.setService(identifier.getJobId());
+    TokenCache.setSessionToken(sessionToken, amCreds);
+
+    FileSystem fs = FileSystem.getLocal(conf);
+    FSDataOutputStream sessionJarsPBOutStream =
+        TezCommonUtils.createFileForAM(
+            fs, new Path(TEST_DIR.toString(), TezConstants.TEZ_AM_LOCAL_RESOURCES_PB_FILE_NAME));
+    DAGProtos.PlanLocalResourcesProto.getDefaultInstance().writeDelimitedTo(sessionJarsPBOutStream);
+    sessionJarsPBOutStream.close();
+
+    RssDAGAppMaster appMaster =
+        new RssDAGAppMaster(
+            appAttemptId,
+            ContainerId.newInstance(appAttemptId, 1),
+            "127.0.0.1",
+            0,
+            0,
+            new SystemClock(),
+            1,
+            true,
+            TEST_DIR.toString(),
+            new String[] {TEST_DIR.toString()},
+            new String[] {TEST_DIR.toString()},
+            new TezApiVersionInfo().getVersion(),
+            amCreds,
+            "someuser",
+            null);
+    appMaster.setShuffleWriteClient(new FakedShuffleWriteClient(2));
+    appMaster.init(conf);
+
+    Configuration mergedConf = new Configuration(false);
+    RssTezUtils.applyDynamicClientConf(mergedConf, appMaster.getClusterClientConf());
+    Assertions.assertEquals(4, mergedConf.size());
+    Assertions.assertEquals("hdfs://ns2/rss/", mergedConf.get("tez.rss.remote.storage.path"));
+    Assertions.assertEquals(
+        "key11=value11,key22=value22", mergedConf.get("tez.rss.remote.storage.conf"));
+    Assertions.assertEquals("MEMORY_LOCALFILE_HDFS", mergedConf.get("tez.rss.storage.type"));
+    Assertions.assertEquals("testvalue", mergedConf.get("tez.rss.test.config"));
+  }
+
+  static class FakedShuffleWriteClient extends ShuffleWriteClientImpl {
+
+    /*
+     * Mode 1: rss.remote.storage.path and rss.remote.storage.conf is set by dynamic config,
+     *         appMaster will use this as default remote storage path.
+     * Mode 2: rss.remote.storage.path and rss.remote.storage.conf is not set by dynamic config,
+     *         appMaster will fetch remote storage conf from coordinator.
+     * */
+    private int mode;
+
+    FakedShuffleWriteClient(int mode) {
+      this("GRPC", 1, 1, 10, 1, 1, 1, false, 1, 1, 1, 1);
+      this.mode = mode;
+    }
+
+    private FakedShuffleWriteClient(
+        String clientType,
+        int retryMax,
+        long retryIntervalMax,
+        int heartBeatThreadNum,
+        int replica,
+        int replicaWrite,
+        int replicaRead,
+        boolean replicaSkipEnabled,
+        int dataTransferPoolSize,
+        int dataCommitPoolSize,
+        int unregisterThreadPoolSize,
+        int unregisterRequestTimeSec) {
+      super(
+          clientType,
+          retryMax,
+          retryIntervalMax,
+          heartBeatThreadNum,
+          replica,
+          replicaWrite,
+          replicaRead,
+          replicaSkipEnabled,
+          dataTransferPoolSize,
+          dataCommitPoolSize,
+          unregisterThreadPoolSize,
+          unregisterRequestTimeSec);
+    }
+
+    @Override
+    public void registerCoordinators(String coordinators) {}
+
+    @Override
+    public Map<String, String> fetchClientConf(int timeoutMs) {
+      Map<String, String> clientConf = new HashMap();
+      if (mode == 1) {
+        clientConf.put("rss.remote.storage.path", "hdfs://ns1/rss/");
+        clientConf.put("rss.remote.storage.conf", "key1=value1,key2=value2");
+        clientConf.put("rss.storage.type", "MEMORY_LOCALFILE_HDFS");
+        clientConf.put("rss.test.config", "testvalue");
+      } else if (mode == 2) {
+        clientConf.put("rss.storage.type", "MEMORY_LOCALFILE_HDFS");
+        clientConf.put("rss.test.config", "testvalue");
+      } else {
+        throw new RssException("Wrong test mode.");
+      }
+      return clientConf;
+    }
+
+    @Override
+    public RemoteStorageInfo fetchRemoteStorage(String appId) {
+      if (mode == 2) {
+        return new RemoteStorageInfo("hdfs://ns2/rss/", "key11=value11,key22=value22");
+      } else {
+        throw new RssException("Wrong test mode.");
+      }
     }
   }
 }

@@ -179,25 +179,29 @@ public class RssDAGAppMaster extends DAGAppMaster {
    */
   public static void initAndStartRSSClient(final RssDAGAppMaster appMaster, Configuration conf)
       throws Exception {
-
-    ShuffleWriteClient client = RssTezUtils.createShuffleClient(conf);
-    appMaster.setShuffleWriteClient(client);
+    ShuffleWriteClient client = appMaster.getShuffleWriteClient();
+    if (client == null) {
+      client = RssTezUtils.createShuffleClient(conf);
+      appMaster.setShuffleWriteClient(client);
+    }
 
     String coordinators = conf.get(RssTezConfig.RSS_COORDINATOR_QUORUM);
     LOG.info("Registering coordinators {}", coordinators);
-    client.registerCoordinators(coordinators);
+    appMaster.getShuffleWriteClient().registerCoordinators(coordinators);
 
     String strAppAttemptId = appMaster.getAttemptID().toString();
     long heartbeatInterval =
         conf.getLong(
             RssTezConfig.RSS_HEARTBEAT_INTERVAL, RssTezConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
     long heartbeatTimeout = conf.getLong(RssTezConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
-    client.registerApplicationInfo(strAppAttemptId, heartbeatTimeout, "user");
+    appMaster
+        .getShuffleWriteClient()
+        .registerApplicationInfo(strAppAttemptId, heartbeatTimeout, "user");
 
     appMaster.heartBeatExecutorService.scheduleAtFixedRate(
         () -> {
           try {
-            client.sendAppHeartbeat(strAppAttemptId, heartbeatTimeout);
+            appMaster.getShuffleWriteClient().sendAppHeartbeat(strAppAttemptId, heartbeatTimeout);
             LOG.debug("Finish send heartbeat to coordinator and servers");
           } catch (Exception e) {
             LOG.warn("Fail to send heartbeat to coordinator and servers", e);
