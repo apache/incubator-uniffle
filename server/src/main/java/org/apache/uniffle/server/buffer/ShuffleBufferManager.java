@@ -654,4 +654,8 @@ public class ShuffleBufferManager {
     }
     return false;
   }
+
+  public boolean containsBufferByApp(String appId) {
+    return bufferPool.containsKey(appId);
+  }
 }
