@@ -157,7 +157,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
     Roaring64NavigableMap taskIdBitmap =
         RssTezUtils.fetchAllRssTaskIds(new HashSet<>(inputs), numPhysicalInputs, appAttemptId);
     LOG.info(
-        "inputs:{}, num input:{}, appAttemptId:{}, taskIdBitmap:{}",
+        "Inputs:{}, num input:{}, appAttemptId:{}, taskIdBitmap:{}",
         inputs,
         numPhysicalInputs,
         appAttemptId,

@@ -81,6 +81,7 @@ import org.apache.uniffle.proto.RssProtos.ShuffleRegisterRequest;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerImplBase;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
+import org.apache.uniffle.server.buffer.RequireBufferStatusCode;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -402,8 +403,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     }
 
     StatusCode status = StatusCode.SUCCESS;
-    if (requireBufferId == -1) {
+    if (requireBufferId == RequireBufferStatusCode.NO_BUFFER.statusCode()) {
       status = StatusCode.NO_BUFFER;
+      ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
+    } else if (requireBufferId == RequireBufferStatusCode.NO_REGISTER.statusCode()) {
+      status = StatusCode.NO_REGISTER;
       ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
     }
     RequireBufferResponse response =

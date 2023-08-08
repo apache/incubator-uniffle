@@ -1273,10 +1273,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
       String inputHostName, int port, int partitionId, CompositeInputAttemptIdentifier srcAttempt) {
 
     LOG.info(
-        "AddKnownMapOutput thread:{}, obj:{}, RssShuffleScheduler, addKnownMapOutput, inputHostName length:{}, "
-            + "port:{}, partitionId:{}, srcAttempt:{}, inputHostName:{}",
-        Thread.currentThread().getName(),
-        this,
+        "AddKnownMapOutput inputHostName length:{}, port:{}, partitionId:{}, srcAttempt:{}, inputHostName:{}",
         inputHostName.length(),
         port,
         partitionId,
