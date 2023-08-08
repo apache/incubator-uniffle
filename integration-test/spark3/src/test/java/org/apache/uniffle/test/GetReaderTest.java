@@ -304,6 +304,10 @@ public class GetReaderTest extends IntegrationTestBase {
       return 0;
     }
 
+    public int numPartitions() {
+      return 0;
+    }
+
     @Override
     public Option<String> getKillReason() {
       return null;

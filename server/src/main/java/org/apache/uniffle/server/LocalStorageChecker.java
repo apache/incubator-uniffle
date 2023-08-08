@@ -78,7 +78,8 @@ public class LocalStorageChecker extends Checker {
   public boolean checkIsHealthy() {
     AtomicInteger num = new AtomicInteger(0);
     AtomicLong totalSpace = new AtomicLong(0L);
-    AtomicLong usedSpace = new AtomicLong(0L);
+    AtomicLong wholeDiskUsedSpace = new AtomicLong(0L);
+    AtomicLong serviceUsedSpace = new AtomicLong(0L);
     AtomicInteger corruptedDirs = new AtomicInteger(0);
     CountDownLatch cdl = new CountDownLatch(storageInfos.size());
     storageInfos
@@ -93,7 +94,8 @@ public class LocalStorageChecker extends Checker {
               }
 
               totalSpace.addAndGet(getTotalSpace(storageInfo.storageDir));
-              usedSpace.addAndGet(getUsedSpace(storageInfo.storageDir));
+              wholeDiskUsedSpace.addAndGet(getWholeDiskUsedSpace(storageInfo.storageDir));
+              serviceUsedSpace.addAndGet(getServiceUsedSpace(storageInfo.storageDir));
 
               if (storageInfo.checkIsSpaceEnough()) {
                 num.incrementAndGet();
@@ -106,11 +108,12 @@ public class LocalStorageChecker extends Checker {
       LOG.error("Failed to check local storage!");
     }
     ShuffleServerMetrics.gaugeLocalStorageTotalSpace.set(totalSpace.get());
-    ShuffleServerMetrics.gaugeLocalStorageUsedSpace.set(usedSpace.get());
+    ShuffleServerMetrics.gaugeLocalStorageWholeDiskUsedSpace.set(wholeDiskUsedSpace.get());
+    ShuffleServerMetrics.gaugeLocalStorageServiceUsedSpace.set(serviceUsedSpace.get());
     ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.set(storageInfos.size());
     ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.set(corruptedDirs.get());
     ShuffleServerMetrics.gaugeLocalStorageUsedSpaceRatio.set(
-        usedSpace.get() * 1.0 / totalSpace.get());
+        wholeDiskUsedSpace.get() * 1.0 / totalSpace.get());
 
     if (storageInfos.isEmpty()) {
       if (isHealthy) {
@@ -143,8 +146,34 @@ public class LocalStorageChecker extends Checker {
 
   // Only for testing
   @VisibleForTesting
-  long getUsedSpace(File file) {
+  long getWholeDiskUsedSpace(File file) {
     return file.getTotalSpace() - file.getUsableSpace();
+  }
+
+  protected static long getServiceUsedSpace(File storageDir) {
+    if (storageDir == null || !storageDir.exists()) {
+      return 0;
+    }
+
+    if (storageDir.isFile()) {
+      return storageDir.length();
+    }
+
+    File[] files = storageDir.listFiles();
+    if (files == null) {
+      return 0;
+    }
+
+    long totalUsage = 0;
+    for (File file : files) {
+      if (file.isFile()) {
+        totalUsage += file.length();
+      } else {
+        totalUsage += getServiceUsedSpace(file);
+      }
+    }
+
+    return totalUsage;
   }
 
   // todo: This function will be integrated to MultiStorageManager, currently we only support disk
@@ -167,7 +196,7 @@ public class LocalStorageChecker extends Checker {
         this.isHealthy = false;
         return false;
       }
-      double usagePercent = getUsedSpace(storageDir) * 100.0 / getTotalSpace(storageDir);
+      double usagePercent = getWholeDiskUsedSpace(storageDir) * 100.0 / getTotalSpace(storageDir);
       if (isHealthy) {
         if (Double.compare(usagePercent, diskMaxUsagePercentage) >= 0) {
           isHealthy = false;

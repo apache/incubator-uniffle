@@ -97,6 +97,7 @@ public class WriteBufferManager<K, V> {
   private final int shuffleId;
   private final boolean isNeedSorted;
   private final TezCounter mapOutputByteCounter;
+  private final TezCounter mapOutputRecordCounter;
 
   /** WriteBufferManager */
   public WriteBufferManager(
@@ -113,6 +114,7 @@ public class WriteBufferManager<K, V> {
       Serializer<V> valSerializer,
       long maxBufferSize,
       double memoryThreshold,
+      int sendThreadNum,
       double sendThreshold,
       int batch,
       RssConf rssConf,
@@ -124,7 +126,8 @@ public class WriteBufferManager<K, V> {
       int bitmapSplitNum,
       int shuffleId,
       boolean isNeedSorted,
-      TezCounter mapOutputByteCounter) {
+      TezCounter mapOutputByteCounter,
+      TezCounter mapOutputRecordCounter) {
     this.tezTaskAttemptID = tezTaskAttemptID;
     this.maxMemSize = maxMemSize;
     this.appId = appId;
@@ -151,8 +154,9 @@ public class WriteBufferManager<K, V> {
     this.shuffleId = shuffleId;
     this.isNeedSorted = isNeedSorted;
     this.mapOutputByteCounter = mapOutputByteCounter;
+    this.mapOutputRecordCounter = mapOutputRecordCounter;
     this.sendExecutorService =
-        Executors.newFixedThreadPool(1, ThreadUtils.getThreadFactory("send-thread"));
+        Executors.newFixedThreadPool(sendThreadNum, ThreadUtils.getThreadFactory("send-thread"));
   }
 
   /** add record */
@@ -170,6 +174,9 @@ public class WriteBufferManager<K, V> {
     } finally {
       memoryLock.unlock();
     }
+
+    // Fail fast if there are some failed blocks.
+    checkFailedBlocks();
 
     if (!buffers.containsKey(partitionId)) {
       WriteBuffer<K, V> sortWriterBuffer =
@@ -196,6 +203,7 @@ public class WriteBufferManager<K, V> {
         && inSendListBytes.get() <= maxMemSize * sendThreshold) {
       sendBuffersToServers();
     }
+    mapOutputRecordCounter.increment(1);
     mapOutputByteCounter.increment(length);
   }
 
@@ -281,14 +289,7 @@ public class WriteBufferManager<K, V> {
     }
     long start = System.currentTimeMillis();
     while (true) {
-      if (failedBlockIds.size() > 0) {
-        String errorMsg =
-            "Send failed: failed because "
-                + failedBlockIds.size()
-                + " blocks can't be sent to shuffle server.";
-        LOG.error(errorMsg);
-        throw new RssException(errorMsg);
-      }
+      checkFailedBlocks();
       allBlockIds.removeAll(successBlockIds);
       if (allBlockIds.isEmpty()) {
         break;
@@ -332,6 +333,18 @@ public class WriteBufferManager<K, V> {
         commitDuration,
         copyTime,
         sortTime);
+  }
+
+  // Check if there are some failed blocks, if true then throw Exception.
+  private void checkFailedBlocks() {
+    if (failedBlockIds.size() > 0) {
+      String errorMsg =
+          "Send failed: failed because "
+              + failedBlockIds.size()
+              + " blocks can't be sent to shuffle server.";
+      LOG.error(errorMsg);
+      throw new RssException(errorMsg);
+    }
   }
 
   ShuffleBlockInfo createShuffleBlock(WriteBuffer wb) {

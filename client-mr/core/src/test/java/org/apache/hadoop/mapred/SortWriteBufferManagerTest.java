@@ -47,6 +47,7 @@ import org.apache.uniffle.common.util.JavaUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SortWriteBufferManagerTest {
@@ -61,6 +62,7 @@ public class SortWriteBufferManagerTest {
     Set<Long> failedBlocks = Sets.newConcurrentHashSet();
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
     Counters.Counter mapOutputRecordCounter = new Counters.Counter();
+    RssException rssException;
     SortWriteBufferManager<BytesWritable, BytesWritable> manager;
     manager =
         new SortWriteBufferManager<BytesWritable, BytesWritable>(
@@ -88,6 +90,8 @@ public class SortWriteBufferManagerTest {
             0.2f,
             1024000L,
             new RssConf());
+
+    // case 1
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -96,23 +100,32 @@ public class SortWriteBufferManagerTest {
       random.nextBytes(value);
       manager.addRecord(1, new BytesWritable(key), new BytesWritable(value));
     }
-    boolean isException = false;
-    try {
-      manager.waitSendFinished();
-    } catch (RssException re) {
-      isException = true;
-    }
-    assertTrue(isException);
+    rssException = assertThrows(RssException.class, manager::waitSendFinished);
+    assertTrue(rssException.getMessage().contains("Timeout"));
+
+    // case 2
     client.setMode(1);
-    for (int i = 0; i < 1000; i++) {
-      byte[] key = new byte[20];
-      byte[] value = new byte[1024];
-      random.nextBytes(key);
-      random.nextBytes(value);
-      manager.addRecord(1, new BytesWritable(key), new BytesWritable(value));
-    }
+    SortWriteBufferManager<BytesWritable, BytesWritable> finalManager = manager;
+    rssException =
+        assertThrows(
+            RssException.class,
+            () -> {
+              for (int i = 0; i < 1000; i++) {
+                byte[] key = new byte[20];
+                byte[] value = new byte[1024];
+                random.nextBytes(key);
+                random.nextBytes(value);
+                finalManager.addRecord(1, new BytesWritable(key), new BytesWritable(value));
+              }
+            });
     assertFalse(failedBlocks.isEmpty());
-    isException = false;
+    assertTrue(rssException.getMessage().contains("Send failed"));
+
+    rssException = assertThrows(RssException.class, finalManager::waitSendFinished);
+    assertTrue(rssException.getMessage().contains("Send failed"));
+
+    // case 3
+    client.setMode(0);
     manager =
         new SortWriteBufferManager<BytesWritable, BytesWritable>(
             100,
@@ -127,8 +140,8 @@ public class SortWriteBufferManagerTest {
             500,
             5 * 1000,
             partitionToServers,
-            successBlocks,
-            failedBlocks,
+            Sets.newConcurrentHashSet(),
+            Sets.newConcurrentHashSet(),
             mapOutputByteCounter,
             mapOutputRecordCounter,
             1,
@@ -143,13 +156,13 @@ public class SortWriteBufferManagerTest {
     byte[] value = new byte[1024];
     random.nextBytes(key);
     random.nextBytes(value);
-    try {
-      manager.addRecord(1, new BytesWritable(key), new BytesWritable(value));
-    } catch (RssException re) {
-      assertTrue(re.getMessage().contains("too big"));
-      isException = true;
-    }
-    assertTrue(isException);
+
+    SortWriteBufferManager<BytesWritable, BytesWritable> finalManager1 = manager;
+    rssException =
+        assertThrows(
+            RssException.class,
+            () -> finalManager1.addRecord(1, new BytesWritable(key), new BytesWritable(value)));
+    assertTrue(rssException.getMessage().contains("too big"));
   }
 
   @Test

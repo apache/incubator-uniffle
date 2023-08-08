@@ -96,6 +96,10 @@ public class RssTezConfig {
   public static final String RSS_CLIENT_MEMORY_THRESHOLD =
       TEZ_RSS_CONFIG_PREFIX + "rss.client.memory.threshold";
   public static final double RSS_CLIENT_DEFAULT_MEMORY_THRESHOLD = 0.8f;
+  public static final String RSS_CLIENT_SEND_THREAD_NUM =
+      TEZ_RSS_CONFIG_PREFIX + "rss.client.send.thread.num";
+  public static final int RSS_CLIENT_DEFAULT_THREAD_NUM =
+      RssClientConfig.RSS_CLIENT_DEFAULT_SEND_NUM;
   public static final String RSS_CLIENT_SEND_THRESHOLD =
       TEZ_RSS_CONFIG_PREFIX + "rss.client.send.threshold";
   public static final double RSS_CLIENT_DEFAULT_SEND_THRESHOLD = 0.2f;
@@ -200,6 +204,10 @@ public class RssTezConfig {
       TEZ_RSS_CONFIG_PREFIX + "rss.shuffle.source.vertex.id";
   public static final String RSS_SHUFFLE_DESTINATION_VERTEX_ID =
       TEZ_RSS_CONFIG_PREFIX + "rss.shuffle.destination.vertex.id";
+
+  public static final String RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK =
+      TEZ_RSS_CONFIG_PREFIX + "rss.avoid.recompute.succeeded.task";
+  public static final boolean RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK_DEFAULT = false;
 
   public static RssConf toRssConf(Configuration jobConf) {
     RssConf rssConf = new RssConf();

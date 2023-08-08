@@ -61,7 +61,7 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(TezIntegrationTestBase.class);
   private static String TEST_ROOT_DIR =
-      "target" + Path.SEPARATOR + TezWordCountTest.class.getName() + "-tmpDir";
+      "target" + Path.SEPARATOR + TezIntegrationTestBase.class.getName() + "-tmpDir";
 
   private Path remoteStagingDir = null;
   protected static MiniTezCluster miniTezCluster;

@@ -32,6 +32,7 @@ Currently it supports [Apache Spark][1], [Apache Hadoop MapReduce][2] and [Apach
 [![Codecov](https://codecov.io/gh/apache/incubator-uniffle/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/incubator-uniffle)
 [![License](https://img.shields.io/github/license/apache/incubator-uniffle)](https://github.com/apache/incubator-uniffle/blob/master/LICENSE)
 [![Release](https://img.shields.io/github/v/release/apache/incubator-uniffle)](https://github.com/apache/incubator-uniffle/releases)
+[![Slack](https://img.shields.io/badge/chat-on%20Slack-brightgreen.svg)](https://join.slack.com/t/the-asf/shared_invite/zt-1fm9561yr-uzTpjqg3jf5nxSJV5AE3KQ)
 
 ## Architecture
 ![Rss Architecture](docs/asset/rss_architecture.png)
@@ -66,7 +67,7 @@ The shuffle data is stored with index file and data file. Data file has all bloc
 ![Rss Shuffle_Write](docs/asset/rss_data_format.png)
 
 ## Supported Spark Version
-Currently supports Spark 2.3.x, Spark 2.4.x, Spark 3.0.x, Spark 3.1.x, Spark 3.2.x, Spark 3.3.x
+Currently supports Spark 2.3.x, Spark 2.4.x, Spark 3.0.x, Spark 3.1.x, Spark 3.2.x, Spark 3.3.x, Spark 3.4.x
 
 Note: To support dynamic allocation, the patch(which is included in patch/spark folder) should be applied to Spark
 
@@ -167,7 +168,7 @@ rss-xxx.tgz will be generated for deployment
     # multiple remote storages are supported, and client will get assignment from coordinator
     rss.coordinator.remote.storage.path hdfs://cluster1/path,hdfs://cluster2/path
     rss.writer.require.memory.retryMax 1200
-    rss.client.retry.max 100
+    rss.client.retry.max 50
     rss.writer.send.check.timeout 600000
     rss.client.read.buffer.size 14m
    ```
@@ -177,7 +178,19 @@ rss-xxx.tgz will be generated for deployment
    ```
 
 ### Deploy Shuffle Server
+We recommend to use JDK 11+ if we want to have better performance when we deploy the shuffle server.
+Some benchmark tests among different JDK is as below:
+(using spark to write shuffle data with 20 executors. Single executor will total write 1G, and each time write 14M.
+Shuffle Server use GRPC to transfer data)
 
+| Java version | ShuffleServer GC  | Max pause time | ThroughOutput |
+| ------------- | ------------- | ------------- | ------------- |
+| 8  | G1  | 30s | 0.3 |
+| 11  | G1  | 2.5s | 0.8 |
+| 18  | G1  | 2.5s | 0.8 |
+| 18  | ZGC  | 0.2ms | 0.99997 |
+
+Deploy Steps:
 1. unzip package to RSS_HOME
 2. update RSS_HOME/bin/rss-env.sh, e.g.,
    ```
