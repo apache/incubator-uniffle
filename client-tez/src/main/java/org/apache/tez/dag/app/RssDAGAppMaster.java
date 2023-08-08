@@ -76,6 +76,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ThreadUtils;
 
@@ -218,8 +220,32 @@ public class RssDAGAppMaster extends DAGAppMaster {
                   RssTezConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
     }
 
-    Configuration shuffleManagerConf = new Configuration(conf);
-    RssTezUtils.applyDynamicClientConf(shuffleManagerConf, appMaster.getClusterClientConf());
+    Configuration mergedConf = new Configuration(conf);
+    RssTezUtils.applyDynamicClientConf(mergedConf, appMaster.getClusterClientConf());
+
+    // get remote storage from coordinator if necessary
+    RemoteStorageInfo defaultRemoteStorage =
+        new RemoteStorageInfo(
+            mergedConf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH, ""),
+            mergedConf.get(RssTezConfig.RSS_REMOTE_STORAGE_CONF, ""));
+    String storageType =
+        mergedConf.get(RssTezConfig.RSS_STORAGE_TYPE, RssTezConfig.RSS_STORAGE_TYPE_DEFAULT_VALUE);
+    boolean testMode = mergedConf.getBoolean(RssTezConfig.RSS_TEST_MODE_ENABLE, false);
+    ClientUtils.validateTestModeConf(testMode, storageType);
+    RemoteStorageInfo remoteStorage =
+        ClientUtils.fetchRemoteStorage(
+            appMaster.getAppID().toString(),
+            defaultRemoteStorage,
+            dynamicConfEnabled,
+            storageType,
+            client);
+    // set the remote storage with actual value
+    appMaster
+        .getClusterClientConf()
+        .put(RssTezConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage.getPath());
+    appMaster
+        .getClusterClientConf()
+        .put(RssTezConfig.RSS_REMOTE_STORAGE_CONF, remoteStorage.getConfString());
 
     Token<JobTokenIdentifier> sessionToken =
         TokenCache.getSessionToken(appMaster.getContext().getAppCredentials());
@@ -227,9 +253,10 @@ public class RssDAGAppMaster extends DAGAppMaster {
         new TezRemoteShuffleManager(
             appMaster.getAppID().toString(),
             sessionToken,
-            shuffleManagerConf,
+            mergedConf,
             strAppAttemptId,
-            client));
+            client,
+            remoteStorage));
     appMaster.getTezRemoteShuffleManager().initialize();
     appMaster.getTezRemoteShuffleManager().start();
 

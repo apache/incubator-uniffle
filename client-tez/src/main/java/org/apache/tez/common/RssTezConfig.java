@@ -174,6 +174,8 @@ public class RssTezConfig {
 
   public static final String RSS_REMOTE_STORAGE_PATH =
       TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_STORAGE_PATH;
+  public static final String RSS_REMOTE_STORAGE_CONF =
+      TEZ_RSS_CONFIG_PREFIX + "rss.remote.storage.conf";
 
   // Whether enable test mode for the MR Client
   public static final String RSS_TEST_MODE_ENABLE =

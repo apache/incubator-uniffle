@@ -53,7 +53,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
-import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
@@ -77,19 +76,22 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   private TezRemoteShuffleUmbilicalProtocolImpl tezRemoteShuffleUmbilical;
   private ShuffleWriteClient rssClient;
   private String appId;
+  private RemoteStorageInfo remoteStorage;
 
   public TezRemoteShuffleManager(
       String tokenIdentifier,
       Token<JobTokenIdentifier> sessionToken,
       Configuration conf,
       String appId,
-      ShuffleWriteClient rssClient) {
+      ShuffleWriteClient rssClient,
+      RemoteStorageInfo remoteStorage) {
     this.tokenIdentifier = tokenIdentifier;
     this.sessionToken = sessionToken;
     this.conf = conf;
     this.appId = appId;
     this.rssClient = rssClient;
     this.tezRemoteShuffleUmbilical = new TezRemoteShuffleUmbilicalProtocolImpl();
+    this.remoteStorage = remoteStorage;
   }
 
   @Override
@@ -191,21 +193,6 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
       assignmentTags.addAll(Arrays.asList(rawTags.split(",")));
     }
     assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
-
-    // get remote storage from coordinator if necessary
-    boolean dynamicConfEnabled =
-        conf.getBoolean(
-            RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
-            RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
-    RemoteStorageInfo defaultRemoteStorage =
-        new RemoteStorageInfo(conf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH, ""));
-    String storageType =
-        conf.get(RssTezConfig.RSS_STORAGE_TYPE, RssTezConfig.RSS_STORAGE_TYPE_DEFAULT_VALUE);
-    boolean testMode = conf.getBoolean(RssTezConfig.RSS_TEST_MODE_ENABLE, false);
-    ClientUtils.validateTestModeConf(testMode, storageType);
-    RemoteStorageInfo remoteStorage =
-        ClientUtils.fetchRemoteStorage(
-            appId, defaultRemoteStorage, dynamicConfEnabled, storageType, rssClient);
 
     try {
       shuffleAssignmentsInfo =
