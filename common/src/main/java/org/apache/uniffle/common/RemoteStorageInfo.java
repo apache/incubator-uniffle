@@ -50,13 +50,17 @@ public class RemoteStorageInfo implements Serializable {
   public RemoteStorageInfo(String path, String confString) {
     this.path = path;
     this.confItems = Maps.newHashMap();
+    confString = confString.replace("\\" + Constants.COMMA_SPLIT_CHAR, "\r");
+    confString = confString.replace("\\" + Constants.EQUAL_SPLIT_CHAR, "\n");
     if (!StringUtils.isEmpty(confString)) {
       String[] items = confString.split(Constants.COMMA_SPLIT_CHAR);
       if (!ArrayUtils.isEmpty(items)) {
         for (String item : items) {
           String[] kv = item.split(Constants.EQUAL_SPLIT_CHAR);
           if (kv.length == 2) {
-            this.confItems.put(kv[0], kv[1]);
+            String value = kv[1].replace("\r", Constants.COMMA_SPLIT_CHAR);
+            value = value.replace("\n", Constants.EQUAL_SPLIT_CHAR);
+            this.confItems.put(kv[0], value);
           }
         }
       }
