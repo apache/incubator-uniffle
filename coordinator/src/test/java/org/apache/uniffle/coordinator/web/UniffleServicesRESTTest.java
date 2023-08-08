@@ -40,8 +40,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.Application;
 import org.apache.uniffle.common.config.RssBaseConf;
-import org.apache.uniffle.coordinator.Application;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.GenericTestUtils;
 import org.apache.uniffle.coordinator.web.request.ApplicationRequest;

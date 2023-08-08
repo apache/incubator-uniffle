@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator;
+package org.apache.uniffle.common;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.time.DateFormatUtils;
-
-import org.apache.uniffle.common.RemoteStorageInfo;
 
 public class Application implements Comparable<Application> {
 

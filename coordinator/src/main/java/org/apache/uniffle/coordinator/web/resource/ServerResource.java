@@ -35,8 +35,8 @@ import org.apache.hbase.thirdparty.javax.ws.rs.QueryParam;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
+import org.apache.uniffle.common.Application;
 import org.apache.uniffle.common.ServerStatus;
-import org.apache.uniffle.coordinator.Application;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.ClusterManager;
 import org.apache.uniffle.coordinator.ServerNode;

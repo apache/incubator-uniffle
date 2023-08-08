@@ -19,11 +19,12 @@ package org.apache.uniffle.entity;
 
 import java.util.List;
 
-import org.apache.uniffle.coordinator.Application;
+import org.apache.uniffle.common.Application;
 
 public class ApplicationResponse {
   private List<Application> data;
   private int code;
+  private String errMsg;
 
   public List<Application> getData() {
     return data;
@@ -39,5 +40,13 @@ public class ApplicationResponse {
 
   public void setCode(int code) {
     this.code = code;
+  }
+
+  public String getErrMsg() {
+    return errMsg;
+  }
+
+  public void setErrMsg(String errMsg) {
+    this.errMsg = errMsg;
   }
 }

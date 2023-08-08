@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.gson.Gson;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -36,7 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.AbstractCustomCommandLine;
 import org.apache.uniffle.UniffleCliArgsException;
 import org.apache.uniffle.api.AdminRestApi;
-import org.apache.uniffle.coordinator.Application;
+import org.apache.uniffle.common.Application;
 import org.apache.uniffle.util.FormattingCLIUtils;
 
 public class UniffleCLI extends AbstractCustomCommandLine {
@@ -48,8 +49,13 @@ public class UniffleCLI extends AbstractCustomCommandLine {
   private final Option uniffleClientCli;
   private final Option uniffleAdminCli;
   private final Option uniffleApplicationCli;
+  private final Option uniffleApplicationRegex;
+  private final Option uniffleApplicationListCli;
+  private final Option uniffleApplicationPageSize;
+  private final Option uniffleApplicationCurrentPage;
   private final Option uniffleOutFormat;
   private final Option uniffleOutPutFile;
+  // private final Option uniffleLimit;
   private final Option help;
 
   private static final List<String> APPLICATIONS_HEADER =
@@ -72,16 +78,24 @@ public class UniffleCLI extends AbstractCustomCommandLine {
             "This is an admin command that will print args.");
     uniffleApplicationCli =
         new Option(
-            null,
+            shortPrefix + "app",
             longPrefix + "applications",
-            true,
-            "The command will be used to print a list of applications. \n"
-                + "We usually use the command like this: \n"
-                + "uniffle --applications application_167671938823_0001,application_167671938823_0002.");
+            false,
+            "The command will be used to print a list of applications.");
+    uniffleApplicationListCli =
+        new Option(
+            null, longPrefix + "app-list", false, "We can provide an application query list.");
+    uniffleApplicationRegex =
+        new Option(
+            null, longPrefix + "appId-regex", true, "ApplicationId Regex filter expression.");
+    uniffleApplicationPageSize =
+        new Option(null, longPrefix + "pageSize", true, "Application pagination page number");
+    uniffleApplicationCurrentPage =
+        new Option(null, longPrefix + "currentPage", true, "Application pagination current page");
     uniffleOutFormat =
         new Option(
             shortPrefix + "o",
-            longPrefix + "--output-format",
+            longPrefix + "output-format",
             true,
             "We can use the -o|--output-format json option to output application information to json."
                 + "We currently only support output in Json format");
@@ -96,6 +110,10 @@ public class UniffleCLI extends AbstractCustomCommandLine {
     allOptions.addOption(uniffleClientCli);
     allOptions.addOption(uniffleAdminCli);
     allOptions.addOption(uniffleApplicationCli);
+    allOptions.addOption(uniffleApplicationListCli);
+    allOptions.addOption(uniffleApplicationRegex);
+    allOptions.addOption(uniffleApplicationPageSize);
+    allOptions.addOption(uniffleApplicationCurrentPage);
     allOptions.addOption(coordinatorHost);
     allOptions.addOption(coordinatorPort);
     allOptions.addOption(uniffleOutFormat);
@@ -134,11 +152,12 @@ public class UniffleCLI extends AbstractCustomCommandLine {
     }
 
     // If we use application-cli
-    if (cmd.hasOption(uniffleApplicationCli.getOpt())) {
+    if (cmd.hasOption(uniffleApplicationCli.getLongOpt())) {
       LOG.info("uniffle-client-cli : get applications");
 
       // If we want to output json file
       if (cmd.hasOption(uniffleOutFormat.getOpt())) {
+
         // Get the OutFormat.
         String outPutFormat = cmd.getOptionValue(uniffleOutFormat.getOpt()).trim();
         if (StringUtils.isBlank(outPutFormat)) {
@@ -260,8 +279,34 @@ public class UniffleCLI extends AbstractCustomCommandLine {
           "Missing Coordinator host address and grpc port parameters.");
     }
     AdminRestApi adminRestApi = new AdminRestApi(client);
-    String applications = cmd.getOptionValue(uniffleApplicationCli.getOpt()).trim();
-    return adminRestApi.getApplicationsJson(applications);
+
+    // Condition 1: uniffleApplicationListCli
+    String applications = null;
+    if (cmd.hasOption(uniffleApplicationListCli.getLongOpt())) {
+      applications = cmd.getOptionValue(uniffleApplicationListCli.getOpt()).trim();
+    }
+
+    // Condition 2: uniffleApplicationRegex
+    String applicationRegex = null;
+    if (cmd.hasOption(uniffleApplicationRegex.getLongOpt())) {
+      applicationRegex = cmd.getOptionValue(uniffleApplicationRegex.getLongOpt()).trim();
+    }
+
+    // Condition 3: pageSize
+    String pageSize = null;
+    if (cmd.hasOption(uniffleApplicationPageSize.getLongOpt())) {
+      pageSize = cmd.getOptionValue(uniffleApplicationRegex.getLongOpt()).trim();
+    }
+
+    // Condition 4: currentPage
+    String currentPage = null;
+    if (cmd.hasOption(uniffleApplicationCurrentPage.getLongOpt())) {
+      currentPage = cmd.getOptionValue(uniffleApplicationCurrentPage.getLongOpt()).trim();
+    }
+
+    List<Application> applicationList = adminRestApi.getApplications(applications);
+    Gson gson = new Gson();
+    return gson.toJson(applicationList);
   }
 
   public static void main(String[] args) {

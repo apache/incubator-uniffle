@@ -103,8 +103,9 @@ public abstract class AbstractCustomCommandLine implements CustomCommandLine {
   protected void getUniffleRestClient(CommandLine cmd) {
     String host = cmd.getOptionValue(coordinatorHost.getOpt()).trim();
     int port = Integer.parseInt(cmd.getOptionValue(coordinatorPort.getOpt()).trim());
+    System.out.println("host:" + host + ",port:" + port);
     String hostUrl;
-    if (cmd.hasOption(ssl.getOpt())) {
+    if (cmd.hasOption(ssl.getLongOpt())) {
       hostUrl = String.format("https://%s:%d", host, port);
     } else {
       hostUrl = String.format("http://%s:%d", host, port);

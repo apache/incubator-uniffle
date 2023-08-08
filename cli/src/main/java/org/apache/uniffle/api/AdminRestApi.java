@@ -29,7 +29,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.client.RestClient;
 import org.apache.uniffle.client.UniffleRestClient;
-import org.apache.uniffle.coordinator.Application;
+import org.apache.uniffle.common.Application;
 import org.apache.uniffle.entity.ApplicationResponse;
 
 public class AdminRestApi {
