@@ -37,7 +37,6 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
-import org.apache.uniffle.common.security.HadoopSecurityContextTest;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
@@ -59,7 +58,7 @@ public class KerberizedShuffleTaskManagerTest extends KerberizedHadoopBase {
 
   @BeforeAll
   public static void beforeAll() throws Exception {
-    testRunner = HadoopSecurityContextTest.class;
+    testRunner = KerberizedShuffleTaskManagerTest.class;
     KerberizedHadoopBase.init();
     fs = kerberizedHadoop.getFileSystem();
     hdfsUri = fs.getUri().toString();
