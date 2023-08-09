@@ -75,7 +75,7 @@ and Continuous partition assignment mechanism.
         # Default value is 1.0, used to estimate task concurrency, how likely is this part of the resource between spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors to be allocated
         --conf spark.rss.estimate.task.concurrency.dynamic.factor=1.0
       ```
-   
+
 Since v0.8.0, `RssShuffleManager` would disable local shuffle reader(`set spark.sql.adaptive.localShuffleReader.enabled=false`) optimization by default.
 
 Local shuffle reader as its name indicates is suitable and optimized for spark's external shuffle service, and shall not be used for remote shuffle service. It would cause many random small IOs and network connections with Uniffle's shuffle server
@@ -164,7 +164,7 @@ Other configuration:
 |spark.rss.access.timeout.ms|10000|The timeout to access Uniffle coordinator|
 |spark.rss.client.access.retry.interval.ms|20000|The interval between retries fallback to SortShuffleManager|
 |spark.rss.client.access.retry.times|0|The number of retries fallback to SortShuffleManager|
-  
+
 
 ### Client Quorum Setting 
 
@@ -241,7 +241,8 @@ Notice: this feature requires the MEMORY_LOCAL_HADOOP mode.
 | Property Name                  | Default | Description                                                             |
 |--------------------------------|---------|-------------------------------------------------------------------------|
 | tez.rss.avoid.recompute.succeeded.task | false   | Whether to avoid recompute succeeded task when node is unhealthy or black-listed |
- 
+| tez.rss.client.max.buffer.size | 3k | The max buffer size in map side |
+
 ### Netty Setting
 | Property Name                                       | Default | Description                                                                                                                                                                                                                                                                                                                         |
 |-----------------------------------------------------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
