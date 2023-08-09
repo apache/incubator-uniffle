@@ -61,7 +61,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
 import org.apache.tez.common.InputContextUtils;
@@ -97,6 +96,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.UnitConverter;
@@ -280,6 +280,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   private final int readBufferSize;
   private final int partitionNumPerRange;
   private String basePath;
+  private RemoteStorageInfo remoteStorageInfo;
   private int indexReadLimit;
 
   RssShuffleScheduler(
@@ -535,6 +536,9 @@ class RssShuffleScheduler extends ShuffleScheduler {
         conf.getInt(
             RssTezConfig.RSS_PARTITION_NUM_PER_RANGE,
             RssTezConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
+    this.basePath = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH);
+    String remoteStorageConf = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_CONF);
+    this.remoteStorageInfo = new RemoteStorageInfo(basePath, remoteStorageConf);
 
     LOG.info(
         "RSSShuffleScheduler running for sourceVertex: "
@@ -1785,8 +1789,14 @@ class RssShuffleScheduler extends ShuffleScheduler {
     return true;
   }
 
-  private JobConf getRemoteConf() {
-    return new JobConf(conf);
+  private Configuration getRemoteConf() {
+    Configuration remoteConf = new Configuration(conf);
+    if (!remoteStorageInfo.isEmpty()) {
+      for (Map.Entry<String, String> entry : remoteStorageInfo.getConfItems().entrySet()) {
+        remoteConf.set(entry.getKey(), entry.getValue());
+      }
+    }
+    return remoteConf;
   }
 
   private synchronized void waitAndNotifyProgress() throws InterruptedException {
@@ -1836,7 +1846,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
           "In reduce: "
               + inputContext.getTaskVertexName()
               + ", Rss Tez client starts to fetch blocks from RSS server");
-      JobConf readerJobConf = getRemoteConf();
+      Configuration hadoopConf = getRemoteConf();
 
       int partitionNum = partitionToServers.size();
       boolean expectedTaskIdsBitmapFilterEnable = shuffleServerInfoSet.size() > 1;
@@ -1852,7 +1862,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
               blockIdBitmap,
               taskIdBitmap,
               shuffleServerInfoList,
-              readerJobConf,
+              hadoopConf,
               new TezIdHelper(),
               expectedTaskIdsBitmapFilterEnable,
               RssTezConfig.toRssConf(conf));
