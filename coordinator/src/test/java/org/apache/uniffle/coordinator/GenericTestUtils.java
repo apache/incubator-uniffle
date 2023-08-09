@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.util.Time;
 
 public class GenericTestUtils {
@@ -58,9 +59,7 @@ public class GenericTestUtils {
     if (!result) {
       final String exceptionErrorMsg =
           "Timed out waiting for condition. "
-              + (org.apache.commons.lang3.StringUtils.isNotEmpty(errorMsg)
-                  ? "Error Message: " + errorMsg
-                  : "");
+              + (StringUtils.isNotEmpty(errorMsg) ? "Error Message: " + errorMsg : "");
       throw new TimeoutException(exceptionErrorMsg);
     }
   }
