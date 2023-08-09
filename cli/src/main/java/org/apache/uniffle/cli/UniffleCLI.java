@@ -38,7 +38,6 @@ import org.apache.uniffle.AbstractCustomCommandLine;
 import org.apache.uniffle.UniffleCliArgsException;
 import org.apache.uniffle.api.AdminRestApi;
 import org.apache.uniffle.common.Application;
-import org.apache.uniffle.util.FormattingCLIUtils;
 
 public class UniffleCLI extends AbstractCustomCommandLine {
 
@@ -53,8 +52,7 @@ public class UniffleCLI extends AbstractCustomCommandLine {
   private final Option uniffleApplicationListCli;
   private final Option uniffleApplicationPageSize;
   private final Option uniffleApplicationCurrentPage;
-  private final Option uniffleApplicationHbStartTime;
-  private final Option uniffleApplicationHbEndTime;
+  private final Option uniffleApplicationHbTimeRange;
   private final Option uniffleOutFormat;
   private final Option uniffleOutPutFile;
   // private final Option uniffleLimit;
@@ -95,12 +93,9 @@ public class UniffleCLI extends AbstractCustomCommandLine {
     uniffleApplicationCurrentPage =
         new Option(
             null, longPrefix + "app-currentPage", true, "Application pagination current page");
-    uniffleApplicationHbStartTime =
+    uniffleApplicationHbTimeRange =
         new Option(
-            null, longPrefix + "app-heartbeatStartTime", true, "Application Heartbeat StartTime");
-    uniffleApplicationHbEndTime =
-        new Option(
-            null, longPrefix + "app-heartbeatEndTime", true, "Application Heartbeat EndTime");
+            null, longPrefix + "app-heartbeatTimeRange", true, "Application Heartbeat TimeRange");
     uniffleOutFormat =
         new Option(
             shortPrefix + "o",
@@ -127,8 +122,7 @@ public class UniffleCLI extends AbstractCustomCommandLine {
     allOptions.addOption(coordinatorPort);
     allOptions.addOption(uniffleOutFormat);
     allOptions.addOption(uniffleOutPutFile);
-    allOptions.addOption(uniffleApplicationHbStartTime);
-    allOptions.addOption(uniffleApplicationHbEndTime);
+    allOptions.addOption(uniffleApplicationHbTimeRange);
     allOptions.addOption(ssl);
     allOptions.addOption(help);
   }
@@ -219,8 +213,8 @@ public class UniffleCLI extends AbstractCustomCommandLine {
 
         try (PrintWriter writer =
             new PrintWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8))) {
-          FormattingCLIUtils formattingCLIUtils =
-              new FormattingCLIUtils("Uniffle Applications").addHeaders(APPLICATIONS_HEADER);
+          CLIContentUtils formattingCLIUtils =
+              new CLIContentUtils("Uniffle Applications").addHeaders(APPLICATIONS_HEADER);
           List<Application> applications = getApplications(cmd);
           if (applications != null) {
             applications.forEach(
@@ -296,25 +290,14 @@ public class UniffleCLI extends AbstractCustomCommandLine {
     }
 
     // Condition 5: heartBeatStartTime
-    String heartBeatStartTime = null;
-    if (cmd.hasOption(uniffleApplicationHbStartTime.getLongOpt())) {
-      heartBeatStartTime = cmd.getOptionValue(uniffleApplicationHbStartTime.getLongOpt()).trim();
-    }
-
-    // Condition 6: heartBeatEndTime
-    String heartBeatEndTime = null;
-    if (cmd.hasOption(uniffleApplicationHbStartTime.getLongOpt())) {
-      heartBeatEndTime = cmd.getOptionValue(uniffleApplicationHbEndTime.getLongOpt()).trim();
+    String heartBeatTimeRange = null;
+    if (cmd.hasOption(uniffleApplicationHbTimeRange.getLongOpt())) {
+      heartBeatTimeRange = cmd.getOptionValue(uniffleApplicationHbTimeRange.getLongOpt()).trim();
     }
 
     AdminRestApi adminRestApi = new AdminRestApi(client);
     return adminRestApi.getApplications(
-        applications,
-        applicationIdRegex,
-        pageSize,
-        currentPage,
-        heartBeatStartTime,
-        heartBeatEndTime);
+        applications, applicationIdRegex, pageSize, currentPage, heartBeatTimeRange);
   }
 
   /**
