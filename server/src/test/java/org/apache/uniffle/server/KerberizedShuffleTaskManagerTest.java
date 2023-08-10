@@ -27,7 +27,6 @@ import com.google.common.collect.RangeMap;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.security.authentication.util.KerberosName;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,8 +41,6 @@ import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -81,8 +78,6 @@ public class KerberizedShuffleTaskManagerTest extends KerberizedHadoopBase {
     }
   }
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(KerberizedShuffleTaskManagerTest.class);
-
   /**
    * Clean up the shuffle data of stage level for one app
    *
@@ -104,7 +99,6 @@ public class KerberizedShuffleTaskManagerTest extends KerberizedHadoopBase {
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, Long.MAX_VALUE);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
-    LOGGER.info("rules is ", KerberosName.getRules());
     String user = UserGroupInformation.getCurrentUser().getShortUserName();
     List<String> keytabAndPrincipals = kerberizedHadoop.generateKeyTab(user);
     conf.set(ShuffleServerConf.RSS_SECURITY_HADOOP_KERBEROS_ENABLE, true);
