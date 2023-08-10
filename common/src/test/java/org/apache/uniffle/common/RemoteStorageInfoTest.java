@@ -122,7 +122,7 @@ public class RemoteStorageInfoTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"k1=v1\\,v11,k2=v2\\,v22"})
-  public void testParseReservedSymbo(String confString) {
+  public void testParseReservedSymbol(String confString) {
     RemoteStorageInfo info = new RemoteStorageInfo(TEST_PATH, confString);
     assertEquals(TEST_PATH, info.getPath());
     assertEquals("v1,v11", info.getConfItems().get("k1"));
