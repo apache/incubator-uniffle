@@ -19,6 +19,7 @@ package org.apache.tez.dag.app;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,6 +35,7 @@ import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.ipc.Server;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authorize.PolicyProvider;
 import org.apache.hadoop.security.token.Token;
 import org.apache.tez.common.GetShuffleServerRequest;
@@ -76,6 +78,7 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   private TezRemoteShuffleUmbilicalProtocolImpl tezRemoteShuffleUmbilical;
   private ShuffleWriteClient rssClient;
   private String appId;
+  private UserGroupInformation requestUgi;
   private RemoteStorageInfo remoteStorage;
 
   public TezRemoteShuffleManager(
@@ -84,13 +87,15 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
       Configuration conf,
       String appId,
       ShuffleWriteClient rssClient,
-      RemoteStorageInfo remoteStorage) {
+      RemoteStorageInfo remoteStorage)
+      throws IOException {
     this.tokenIdentifier = tokenIdentifier;
     this.sessionToken = sessionToken;
     this.conf = conf;
     this.appId = appId;
     this.rssClient = rssClient;
     this.tezRemoteShuffleUmbilical = new TezRemoteShuffleUmbilicalProtocolImpl();
+    this.requestUgi = UserGroupInformation.getCurrentUser();
     this.remoteStorage = remoteStorage;
   }
 
@@ -197,42 +202,54 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
     try {
       shuffleAssignmentsInfo =
           RetryUtils.retry(
-              () -> {
-                ShuffleAssignmentsInfo shuffleAssignments =
-                    rssClient.getShuffleAssignments(
-                        appId,
-                        shuffleId,
-                        partitionNum,
-                        1,
-                        Sets.newHashSet(assignmentTags),
-                        requiredAssignmentShuffleServersNum,
-                        -1);
+              // When communicate with TezRemoteShuffleUmbilicalProtocol, tez use applicationId
+              // as ugi name. In security hdfs cluster, if we communicate with shuffle server with
+              // applicationId ugi, the user of remote storage will be application_xxx_xx
+              // As we knonw, the max id of hadoop user is 16777215. So we should use execute ugi.
+              () ->
+                  requestUgi.doAs(
+                      new PrivilegedExceptionAction<ShuffleAssignmentsInfo>() {
+                        @Override
+                        public ShuffleAssignmentsInfo run() throws Exception {
+                          ShuffleAssignmentsInfo shuffleAssignments =
+                              rssClient.getShuffleAssignments(
+                                  appId,
+                                  shuffleId,
+                                  partitionNum,
+                                  1,
+                                  Sets.newHashSet(assignmentTags),
+                                  requiredAssignmentShuffleServersNum,
+                                  -1);
 
-                Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
-                    shuffleAssignments.getServerToPartitionRanges();
+                          Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
+                              shuffleAssignments.getServerToPartitionRanges();
 
-                if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
-                  return null;
-                }
-                LOG.info("Start to register shuffle");
-                long start = System.currentTimeMillis();
-                serverToPartitionRanges
-                    .entrySet()
-                    .forEach(
-                        entry ->
-                            rssClient.registerShuffle(
-                                entry.getKey(),
-                                appId,
-                                shuffleId,
-                                entry.getValue(),
-                                remoteStorage,
-                                ShuffleDataDistributionType.NORMAL,
-                                RssTezConfig.toRssConf(conf)
-                                    .get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE)));
-                LOG.info(
-                    "Finish register shuffle with " + (System.currentTimeMillis() - start) + " ms");
-                return shuffleAssignments;
-              },
+                          if (serverToPartitionRanges == null
+                              || serverToPartitionRanges.isEmpty()) {
+                            return null;
+                          }
+                          LOG.info("Start to register shuffle");
+                          long start = System.currentTimeMillis();
+                          serverToPartitionRanges
+                              .entrySet()
+                              .forEach(
+                                  entry ->
+                                      rssClient.registerShuffle(
+                                          entry.getKey(),
+                                          appId,
+                                          shuffleId,
+                                          entry.getValue(),
+                                          remoteStorage,
+                                          ShuffleDataDistributionType.NORMAL,
+                                          RssTezConfig.toRssConf(conf)
+                                              .get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE)));
+                          LOG.info(
+                              "Finish register shuffle with "
+                                  + (System.currentTimeMillis() - start)
+                                  + " ms");
+                          return shuffleAssignments;
+                        }
+                      }),
               retryInterval,
               retryTimes);
     } catch (Throwable throwable) {
