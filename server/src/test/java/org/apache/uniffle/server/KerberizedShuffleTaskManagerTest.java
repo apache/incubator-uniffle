@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.server;
 
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -100,13 +99,15 @@ public class KerberizedShuffleTaskManagerTest extends KerberizedHadoopBase {
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, Long.MAX_VALUE);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
     String user = UserGroupInformation.getCurrentUser().getShortUserName();
-    List<String> keytabAndPrincipals = kerberizedHadoop.generateKeyTab(user);
     conf.set(ShuffleServerConf.RSS_SECURITY_HADOOP_KERBEROS_ENABLE, true);
     conf.set(
         ShuffleServerConf.RSS_SECURITY_HADOOP_KRB5_CONF_FILE, kerberizedHadoop.getKrb5ConfFile());
     conf.set(
-        ShuffleServerConf.RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE, keytabAndPrincipals.get(0));
-    conf.set(ShuffleServerConf.RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL, keytabAndPrincipals.get(1));
+        ShuffleServerConf.RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE,
+        kerberizedHadoop.getHdfsKeytab());
+    conf.set(
+        ShuffleServerConf.RSS_SECURITY_HADOOP_KERBEROS_PRINCIPAL,
+        kerberizedHadoop.getHdfsPrincipal());
     conf.setString(
         ShuffleServerConf.PREFIX_HADOOP_CONF + ".hadoop.security.authentication", "kerberos");
 

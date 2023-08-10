@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.JavaVersion;
 import org.apache.commons.lang3.SystemUtils;
@@ -349,15 +348,5 @@ public class KerberizedHadoop implements Serializable {
     public Configuration getConf() {
       return null;
     }
-  }
-
-  public List<String> generateKeyTab(String user) throws Exception {
-    if (user.equals("hdfs")) {
-      return Lists.newArrayList(hdfsKeytab, hdfsPrincipal);
-    }
-    String principal = user + "/" + RssUtils.getHostIp();
-    File keytab = new File(workDir, user + ".keytab");
-    kdc.createPrincipal(keytab, principal);
-    return Lists.newArrayList(keytab.getPath(), principal + "@" + kdc.getRealm());
   }
 }
