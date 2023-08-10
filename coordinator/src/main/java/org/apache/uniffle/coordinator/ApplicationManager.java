@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -148,6 +149,13 @@ public class ApplicationManager implements Closeable {
   }
 
   public void refreshRemoteStorage(String remoteStoragePath, String remoteStorageConf) {
+    refreshRemoteStorage(remoteStoragePath, remoteStorageConf, new HashMap<>());
+  }
+
+  public void refreshRemoteStorage(
+      String remoteStoragePath,
+      String remoteStorageConf,
+      Map<String, String> remoteStorageConfByCluster) {
     if (!StringUtils.isEmpty(remoteStoragePath)) {
       LOG.info("Refresh remote storage with {} {}", remoteStoragePath, remoteStorageConf);
       Set<String> paths = Sets.newHashSet(remoteStoragePath.split(Constants.COMMA_SPLIT_CHAR));
@@ -166,8 +174,16 @@ public class ApplicationManager implements Closeable {
               });
         }
         String storageHost = getStorageHost(path);
-        RemoteStorageInfo rsInfo =
-            new RemoteStorageInfo(path, confKVs.getOrDefault(storageHost, Maps.newHashMap()));
+        RemoteStorageInfo rsInfo;
+        String newRemoteStoragePath = remoteStorageConfByCluster.get(storageHost);
+        // rss.coordinator.remote.storage.conf.{cluster} have higher priority than
+        // cluster conf in rss.coordinator.remote.storage.cluster.conf
+        if (StringUtils.isNotBlank(newRemoteStoragePath)) {
+          rsInfo = new RemoteStorageInfo(path, newRemoteStoragePath);
+        } else {
+          rsInfo =
+              new RemoteStorageInfo(path, confKVs.getOrDefault(storageHost, Maps.newHashMap()));
+        }
         availableRemoteStorageInfo.put(path, rsInfo);
       }
       // remove unused remote path if exist

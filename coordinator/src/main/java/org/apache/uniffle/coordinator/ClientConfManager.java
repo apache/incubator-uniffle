@@ -20,6 +20,7 @@ package org.apache.uniffle.coordinator;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -111,6 +112,7 @@ public class ClientConfManager implements Closeable {
     boolean hasRemoteStorageConf = false;
     String remoteStoragePath = "";
     String remoteStorageConf = "";
+    Map<String, String> remoteStorageConfByCluster = new HashMap<>();
     for (String item : content.split(IOUtils.LINE_SEPARATOR_UNIX)) {
       String confItem = item.trim();
       if (!StringUtils.isEmpty(confItem)) {
@@ -123,6 +125,13 @@ public class ClientConfManager implements Closeable {
               .key()
               .equals(confKV[0])) {
             remoteStorageConf = confKV[1];
+          } else if (confKV[0].startsWith(
+              CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CONF_BY_CLUSTER.key())) {
+            hasRemoteStorageConf = true;
+            remoteStorageConfByCluster.put(
+                confKV[0].substring(
+                    CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CONF_BY_CLUSTER.key().length() + 1),
+                confKV[1]);
           } else {
             newClientConf.put(confKV[0], confKV[1]);
           }
@@ -130,7 +139,8 @@ public class ClientConfManager implements Closeable {
       }
     }
     if (hasRemoteStorageConf) {
-      applicationManager.refreshRemoteStorage(remoteStoragePath, remoteStorageConf);
+      applicationManager.refreshRemoteStorage(
+          remoteStoragePath, remoteStorageConf, remoteStorageConfByCluster);
     }
 
     clientConf = newClientConf;

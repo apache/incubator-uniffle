@@ -148,6 +148,13 @@ public class CoordinatorConf extends RssBaseConf {
           .noDefaultValue()
           .withDescription(
               "Remote Storage Cluster related conf with format $clusterId,$key=$value, separated by ';'");
+  public static final ConfigOption<String> COORDINATOR_REMOTE_STORAGE_CONF_BY_CLUSTER =
+      ConfigOptions.key("rss.coordinator.remote.storage.conf")
+          .stringType()
+          .noDefaultValue()
+          .withDescription(
+              "Remote Storage related conf in specific cluster. This config allow ',' in remote storage config. "
+                  + "For example: rss.coordinator.remote.storage.conf.$cluster $key1=$value1;$key2=$value21,$value22\n");
   public static final ConfigOption<ApplicationManager.StrategyName>
       COORDINATOR_REMOTE_STORAGE_SELECT_STRATEGY =
           ConfigOptions.key("rss.coordinator.remote.storage.select.strategy")

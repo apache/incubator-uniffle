@@ -51,7 +51,7 @@ public class RemoteStorageInfo implements Serializable {
     this.path = path;
     this.confItems = Maps.newHashMap();
     if (!StringUtils.isEmpty(confString)) {
-      String[] items = confString.split(Constants.COMMA_SPLIT_CHAR);
+      String[] items = confString.split(Constants.SEMICOLON_SPLIT_CHAR);
       if (!ArrayUtils.isEmpty(items)) {
         for (String item : items) {
           String[] kv = item.split(Constants.EQUAL_SPLIT_CHAR);
@@ -81,7 +81,7 @@ public class RemoteStorageInfo implements Serializable {
     }
     return confItems.entrySet().stream()
         .map(e -> String.join("=", e.getKey(), e.getValue()))
-        .collect(Collectors.joining(","));
+        .collect(Collectors.joining(Constants.SEMICOLON_SPLIT_CHAR));
   }
 
   @Override
@@ -128,7 +128,7 @@ public class RemoteStorageInfo implements Serializable {
       return String.join(
           Constants.COMMA_SPLIT_CHAR,
           path,
-          Joiner.on(",").withKeyValueSeparator("=").join(confItems));
+          Joiner.on(Constants.SEMICOLON_SPLIT_CHAR).withKeyValueSeparator("=").join(confItems));
     }
   }
 

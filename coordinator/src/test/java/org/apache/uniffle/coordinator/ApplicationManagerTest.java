@@ -20,8 +20,10 @@ package org.apache.uniffle.coordinator;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,10 +40,10 @@ public class ApplicationManagerTest {
 
   private ApplicationManager applicationManager;
   private long appExpiredTime = 2000L;
-  private String remotePath1 = "hdfs://path1";
-  private String remotePath2 = "hdfs://path2";
-  private String remotePath3 = "hdfs://path3";
-  private String remoteStorageConf = "path1,k1=v1,k2=v2;path2,k3=v3";
+  private String remotePath1 = "hdfs://ns1/path1";
+  private String remotePath2 = "hdfs://ns2/path2";
+  private String remotePath3 = "hdfs://ns3/path3";
+  private String remoteStorageConf = "ns1,k1=v1,k2=v2;ns2,k3=v3";
 
   @BeforeAll
   public static void setup() {
@@ -99,6 +101,62 @@ public class ApplicationManagerTest {
     remoteStorageInfo = storages.get(remotePath2);
     assertEquals(1, remoteStorageInfo.getConfItems().size());
     assertEquals("v3", remoteStorageInfo.getConfItems().get("k3"));
+    assertEquals(
+        expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
+    assertEquals(
+        expectedAvailablePath, applicationManager.getRemoteStoragePathRankValue().keySet());
+    assertFalse(applicationManager.hasErrorInStatusCheck());
+
+    // Load the remote storage conf from rss.coordinator.remote.storage.conf.{cluster}
+    remoteStoragePath = remotePath1 + Constants.COMMA_SPLIT_CHAR + remotePath2;
+    expectedAvailablePath = Sets.newHashSet(remotePath1, remotePath2);
+    Map<String, String> remoteStorageConfByCluster =
+        ImmutableMap.of("ns1", "k1=v1;k2=v2,v22", "ns2", "k3=v3,v33;k4=v4");
+    applicationManager.refreshRemoteStorage(remoteStoragePath, "", remoteStorageConfByCluster);
+    storages = applicationManager.getAvailableRemoteStorageInfo();
+    Assertions.assertEquals(2, storages.size());
+    remoteStorageInfo = storages.get(remotePath1);
+    assertEquals(2, remoteStorageInfo.getConfItems().size());
+    assertEquals("v1", remoteStorageInfo.getConfItems().get("k1"));
+    assertEquals("v2,v22", remoteStorageInfo.getConfItems().get("k2"));
+    remoteStorageInfo = storages.get(remotePath2);
+    assertEquals(2, remoteStorageInfo.getConfItems().size());
+    assertEquals("v3,v33", remoteStorageInfo.getConfItems().get("k3"));
+    assertEquals("v4", remoteStorageInfo.getConfItems().get("k4"));
+    assertEquals(
+        expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
+    assertEquals(
+        expectedAvailablePath, applicationManager.getRemoteStoragePathRankValue().keySet());
+    assertFalse(applicationManager.hasErrorInStatusCheck());
+
+    // Load the remote storage conf from rss.coordinator.remote.storage.conf.{cluster} and
+    // rss.coordinator.remote.storage.cluster.conf. Notice:
+    // rss.coordinator.remote.storage.conf.{cluster}
+    // have a higher priority.
+    remoteStoragePath =
+        remotePath1
+            + Constants.COMMA_SPLIT_CHAR
+            + remotePath2
+            + Constants.COMMA_SPLIT_CHAR
+            + remotePath3;
+    expectedAvailablePath = Sets.newHashSet(remotePath1, remotePath2, remotePath3);
+    remoteStorageConfByCluster =
+        ImmutableMap.of("ns1", "k1=v1;k2=v2,v22", "ns3", "k3=v3,v33;k4=v4");
+    applicationManager.refreshRemoteStorage(
+        remoteStoragePath, remoteStorageConf, remoteStorageConfByCluster);
+    storages = applicationManager.getAvailableRemoteStorageInfo();
+    Assertions.assertEquals(3, storages.size());
+    remoteStorageInfo = storages.get(remotePath1);
+    assertEquals(2, remoteStorageInfo.getConfItems().size());
+    assertEquals("v1", remoteStorageInfo.getConfItems().get("k1"));
+    assertEquals("v2,v22", remoteStorageInfo.getConfItems().get("k2"));
+    remoteStorageInfo = storages.get(remotePath2);
+    assertEquals(1, remoteStorageInfo.getConfItems().size());
+    assertEquals("v3", remoteStorageInfo.getConfItems().get("k3"));
+    remoteStorageInfo = storages.get(remotePath3);
+    assertEquals(2, remoteStorageInfo.getConfItems().size());
+    assertEquals("v3,v33", remoteStorageInfo.getConfItems().get("k3"));
+    assertEquals("v4", remoteStorageInfo.getConfItems().get("k4"));
     assertEquals(
         expectedAvailablePath, applicationManager.getAvailableRemoteStorageInfo().keySet());
     assertEquals(

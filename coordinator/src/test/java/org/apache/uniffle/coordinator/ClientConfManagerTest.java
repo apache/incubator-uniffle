@@ -29,6 +29,7 @@ import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -138,6 +139,36 @@ public class ClientConfManagerTest {
     assertEquals(2, clientConf.size());
     assertFalse(clientConf.containsKey("spark.mock.6"));
     assertFalse(clientConf.containsKey("spark.mock.7"));
+
+    // load remote storage config
+    cfgFileTmp = new File(cfgFileName + ".tmp");
+    fileWriter = new FileWriter(cfgFileTmp);
+    printWriter = new PrintWriter(fileWriter);
+    printWriter.println(
+        "rss.coordinator.remote.storage.path hdfs://ns1/path1,hdfs://ns2/path2,hdfs://ns3/path3");
+    printWriter.println("rss.coordinator.remote.storage.conf.ns1 k1=v1;k2=v2,v22");
+    printWriter.println("rss.coordinator.remote.storage.conf.ns3 k3=v3,v33;k4=v4");
+    printWriter.println("rss.coordinator.remote.storage.cluster.conf ns1,k1=v1,k2=v2;ns2,k3=v3");
+    printWriter.close();
+    assertTrue(cfgFile.delete());
+    FileUtils.moveFile(cfgFileTmp, cfgFile);
+    Set expectedAvailablePath =
+        Sets.newHashSet("hdfs://ns1/path1", "hdfs://ns2/path2", "hdfs://ns3/path3");
+    waitForUpdate(expectedAvailablePath, applicationManager);
+    Map<String, RemoteStorageInfo> storages = applicationManager.getAvailableRemoteStorageInfo();
+    Assertions.assertEquals(3, storages.size());
+    RemoteStorageInfo remoteStorageInfo = storages.get("hdfs://ns1/path1");
+    assertEquals(2, remoteStorageInfo.getConfItems().size());
+    assertEquals("v1", remoteStorageInfo.getConfItems().get("k1"));
+    assertEquals("v2,v22", remoteStorageInfo.getConfItems().get("k2"));
+    remoteStorageInfo = storages.get("hdfs://ns2/path2");
+    assertEquals(1, remoteStorageInfo.getConfItems().size());
+    assertEquals("v3", remoteStorageInfo.getConfItems().get("k3"));
+    remoteStorageInfo = storages.get("hdfs://ns3/path3");
+    assertEquals(2, remoteStorageInfo.getConfItems().size());
+    assertEquals("v3,v33", remoteStorageInfo.getConfItems().get("k3"));
+    assertEquals("v4", remoteStorageInfo.getConfItems().get("k4"));
+    assertFalse(applicationManager.hasErrorInStatusCheck());
     clientConfManager.close();
   }
 

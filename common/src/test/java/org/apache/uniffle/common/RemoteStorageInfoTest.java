@@ -40,7 +40,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class RemoteStorageInfoTest {
   private static final String TEST_PATH = "hdfs://test";
-  private static final String CONF_STRING = "k1=v1,k2=v2";
+  private static final String CONF_STRING = "k1=v1;k2=v2";
   private static final Map<String, String> confMap = ImmutableMap.of("k1", "v1", "k2", "v2");
 
   private static Stream<Arguments> confItemsParams() {
@@ -85,7 +85,7 @@ public class RemoteStorageInfoTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {",", "=,", ",="})
+  @ValueSource(strings = {";", "=;", ";="})
   public void testUncommonConfString(String confString) {
     RemoteStorageInfo info = new RemoteStorageInfo(TEST_PATH, confString);
     assertEquals(TEST_PATH, info.getPath());
@@ -106,7 +106,7 @@ public class RemoteStorageInfoTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"k1=v1", "k1=v1,k2=v3", "k1=v1,k3=v2"})
+  @ValueSource(strings = {"k1=v1", "k1=v1;k2=v3", "k1=v1;k3=v2"})
   public void testNotEquals(String confString) {
     RemoteStorageInfo info = new RemoteStorageInfo(TEST_PATH, CONF_STRING);
     RemoteStorageInfo info2 = new RemoteStorageInfo(TEST_PATH, confString);
@@ -118,5 +118,15 @@ public class RemoteStorageInfoTest {
     RemoteStorageInfo info = new RemoteStorageInfo(TEST_PATH, confMap);
     RemoteStorageInfo info1 = new RemoteStorageInfo(TEST_PATH, CONF_STRING);
     assertEquals(info.hashCode(), info1.hashCode());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"k1=v1,v11;k2=v2,v22"})
+  public void testParseReservedSymbol(String confString) {
+    RemoteStorageInfo info = new RemoteStorageInfo(TEST_PATH, confString);
+    assertEquals(TEST_PATH, info.getPath());
+    assertEquals("v1,v11", info.getConfItems().get("k1"));
+    assertEquals("v2,v22", info.getConfItems().get("k2"));
+    assertEquals("k1=v1,v11;k2=v2,v22", info.getConfString());
   }
 }
