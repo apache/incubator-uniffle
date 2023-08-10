@@ -87,7 +87,7 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
       Configuration conf,
       String appId,
       ShuffleWriteClient rssClient,
-      RemoteStorageInfo remoteStorage) 
+      RemoteStorageInfo remoteStorage)
       throws IOException {
     this.tokenIdentifier = tokenIdentifier;
     this.sessionToken = sessionToken;
