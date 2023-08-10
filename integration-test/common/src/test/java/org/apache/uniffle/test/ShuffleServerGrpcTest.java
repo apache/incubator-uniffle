@@ -89,8 +89,8 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     File dataDir1 = new File(tmpDir, "data1");
     String basePath = dataDir1.getAbsolutePath();
-    shuffleServerConf.set(
-        ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    shuffleServerConf.setString(
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     shuffleServerConf.set(
         ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, EVENT_THRESHOLD_SIZE);
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
@@ -616,7 +616,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
             .getCounterMap()
             .get(ShuffleServerGrpcMetrics.REQUIRE_BUFFER_METHOD)
             .get();
-    shuffleServerClient.requirePreAllocation(100, 10, 1000);
+    shuffleServerClient.requirePreAllocation(appId, 100, 10, 1000);
     newValue =
         shuffleServers
             .get(0)
@@ -852,11 +852,11 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
     oldValue = ShuffleServerMetrics.counterTotalRequireBufferFailed.get();
     // the next two allocations will fail
-    assertEquals(shuffleServerClient.requirePreAllocation(GB, 0, 10), -1);
-    assertEquals(shuffleServerClient.requirePreAllocation(GB, 0, 10), -1);
+    assertEquals(shuffleServerClient.requirePreAllocation(appId, GB, 0, 10), -1);
+    assertEquals(shuffleServerClient.requirePreAllocation(appId, GB, 0, 10), -1);
     // the next two allocations will success
-    assertNotEquals(shuffleServerClient.requirePreAllocation(10, 0, 10), -1);
-    assertNotEquals(shuffleServerClient.requirePreAllocation(10, 0, 10), -1);
+    assertNotEquals(shuffleServerClient.requirePreAllocation(appId, 10, 0, 10), -1);
+    assertNotEquals(shuffleServerClient.requirePreAllocation(appId, 10, 0, 10), -1);
     newValue = ShuffleServerMetrics.counterTotalRequireBufferFailed.get();
     assertEquals((int) newValue, (int) oldValue + 2);
   }

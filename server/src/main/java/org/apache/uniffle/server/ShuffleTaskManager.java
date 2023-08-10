@@ -58,6 +58,7 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
+import org.apache.uniffle.server.buffer.RequireBufferStatusCode;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.event.AppPurgeEvent;
@@ -409,14 +410,15 @@ public class ShuffleTaskManager {
   public long requireBuffer(
       String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
-    if (shuffleTaskInfo != null) {
-      for (int partitionId : partitionIds) {
-        long partitionUsedDataSize = getPartitionDataSize(appId, shuffleId, partitionId);
-        if (shuffleBufferManager.limitHugePartition(
-            appId, shuffleId, partitionId, partitionUsedDataSize)) {
-          ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.inc();
-          return -1;
-        }
+    if (null == shuffleTaskInfo) {
+      return RequireBufferStatusCode.NO_REGISTER.statusCode();
+    }
+    for (int partitionId : partitionIds) {
+      long partitionUsedDataSize = getPartitionDataSize(appId, shuffleId, partitionId);
+      if (shuffleBufferManager.limitHugePartition(
+          appId, shuffleId, partitionId, partitionUsedDataSize)) {
+        ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.inc();
+        return RequireBufferStatusCode.NO_BUFFER.statusCode();
       }
     }
     return requireBuffer(requireSize);
@@ -555,7 +557,7 @@ public class ShuffleTaskManager {
       int partitionNumPerRange,
       int partitionNum) {
     refreshAppId(appId);
-    String storageType = conf.getString(RssBaseConf.RSS_STORAGE_TYPE);
+    String storageType = conf.get(RssBaseConf.RSS_STORAGE_TYPE).name();
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
     request.setAppId(appId);
     request.setShuffleId(shuffleId);
