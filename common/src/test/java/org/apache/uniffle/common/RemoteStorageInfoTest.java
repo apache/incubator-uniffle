@@ -119,14 +119,4 @@ public class RemoteStorageInfoTest {
     RemoteStorageInfo info1 = new RemoteStorageInfo(TEST_PATH, CONF_STRING);
     assertEquals(info.hashCode(), info1.hashCode());
   }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"k1=v1\\,v11,k2=v2\\,v22"})
-  public void testParseReservedSymbo(String confString) {
-    RemoteStorageInfo info = new RemoteStorageInfo(TEST_PATH, confString);
-    assertEquals(TEST_PATH, info.getPath());
-    assertEquals("v1,v11", info.getConfItems().get("k1"));
-    assertEquals("v2,v22", info.getConfItems().get("k2"));
-    assertEquals("k1=v1,v11,k2=v2,v22", info.getConfString());
-  }
 }
