@@ -140,7 +140,7 @@ These configurations are shared by all types of clients.
 |<client_type>.rss.client.max.concurrency.of.per-partition.write|-| The maximum number of files that can be written concurrently to a single partition is determined. This value will only be respected by the remote shuffle server if it is greater than 0.                                                                                                                                                                                                                                                                                                    |
 Notice:
 
-1. `<client_type>` should be `spark` or `mapreduce`
+1. `<client_type>` should be `mapreduce` `tez` or `spark`
 
 2. `<client_type>.rss.coordinator.quorum` is compulsory, and other configurations are optional when coordinator dynamic configuration is enabled.
 
@@ -242,7 +242,6 @@ Notice: this feature requires the MEMORY_LOCAL_HADOOP mode.
 |--------------------------------|---------|-------------------------------------------------------------------------|
 | tez.rss.avoid.recompute.succeeded.task | false   | Whether to avoid recompute succeeded task when node is unhealthy or black-listed |
 | tez.rss.client.max.buffer.size | 3k | The max buffer size in map side |
-| tez.rss.writer.buffer.size | 3m | Buffer size for single partition data |
 
 ### Netty Setting
 | Property Name                                       | Default | Description                                                                                                                                                                                                                                                                                                                         |
