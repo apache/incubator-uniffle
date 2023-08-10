@@ -126,7 +126,6 @@ public class ShuffleServerMetrics {
   public static Counter.Child counterTotalReadTime;
   public static Counter.Child counterTotalFailedWrittenEventNum;
   public static Counter.Child counterTotalDroppedEventNum;
-  public static Counter counterTotalHadoopWriteDataSize;
   public static Counter.Child counterTotalLocalFileWriteDataSize;
   public static Counter.Child counterTotalRequireBufferFailed;
   public static Counter.Child counterTotalRequireBufferFailedForHugePartition;
@@ -159,10 +158,13 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeEventQueueSize;
   public static Gauge.Child gaugeAppNum;
   public static Gauge.Child gaugeTotalPartitionNum;
+
   public static Counter counterRemoteStorageTotalWrite;
   public static Counter counterRemoteStorageRetryWrite;
   public static Counter counterRemoteStorageFailedWrite;
   public static Counter counterRemoteStorageSuccessWrite;
+  public static Counter counterTotalHadoopWriteDataSize;
+
   private static String tags;
   public static Counter counterLocalFileEventFlush;
   public static Counter counterHadoopEventFlush;
