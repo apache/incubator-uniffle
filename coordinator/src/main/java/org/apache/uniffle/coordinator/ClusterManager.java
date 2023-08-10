@@ -36,6 +36,15 @@ public interface ClusterManager extends Closeable, Reconfigurable {
    * Get available nodes from the cluster
    *
    * @param requiredTags tags for filter
+   * @param excludeServerNodes servernode information that is excluded because of an exception
+   * @return list of available server nodes
+   */
+  List<ServerNode> getServerList(Set<String> requiredTags, Set<String> excludeServerNodes);
+
+  /**
+   * Get available nodes from the cluster
+   *
+   * @param requiredTags tags for filter
    * @return list of available server nodes
    */
   List<ServerNode> getServerList(Set<String> requiredTags);

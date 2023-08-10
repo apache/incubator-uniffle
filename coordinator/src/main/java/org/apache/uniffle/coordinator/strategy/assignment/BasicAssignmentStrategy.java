@@ -48,13 +48,15 @@ public class BasicAssignmentStrategy extends AbstractAssignmentStrategy {
       int replica,
       Set<String> requiredTags,
       int requiredShuffleServerNumber,
-      int estimateTaskConcurrency) {
+      int estimateTaskConcurrency,
+      Set<String> excludeServerNodes) {
     int shuffleNodesMax = clusterManager.getShuffleNodesMax();
     int expectedShuffleNodesNum = shuffleNodesMax;
     if (requiredShuffleServerNumber < shuffleNodesMax && requiredShuffleServerNumber > 0) {
       expectedShuffleNodesNum = requiredShuffleServerNumber;
     }
-    List<ServerNode> servers = getRequiredServers(requiredTags, expectedShuffleNodesNum);
+    List<ServerNode> servers =
+        getRequiredServers(requiredTags, expectedShuffleNodesNum, excludeServerNodes);
     if (servers.isEmpty() || servers.size() < replica) {
       return new PartitionRangeAssignment(null);
     }
@@ -66,8 +68,40 @@ public class BasicAssignmentStrategy extends AbstractAssignmentStrategy {
     return new PartitionRangeAssignment(assignments);
   }
 
-  private List<ServerNode> getRequiredServers(Set<String> requiredTags, int expectedNum) {
-    List<ServerNode> servers = clusterManager.getServerList(requiredTags);
+  @Override
+  public PartitionRangeAssignment assign(
+      int totalPartitionNum,
+      int partitionNumPerRange,
+      int replica,
+      Set<String> requiredTags,
+      int requiredShuffleServerNumber,
+      int estimateTaskConcurrency) {
+    int shuffleNodesMax = clusterManager.getShuffleNodesMax();
+    int expectedShuffleNodesNum = shuffleNodesMax;
+    if (requiredShuffleServerNumber < shuffleNodesMax && requiredShuffleServerNumber > 0) {
+      expectedShuffleNodesNum = requiredShuffleServerNumber;
+    }
+    List<ServerNode> servers = getRequiredServers(requiredTags, expectedShuffleNodesNum, null);
+    if (servers.isEmpty() || servers.size() < replica) {
+      return new PartitionRangeAssignment(null);
+    }
+
+    SortedMap<PartitionRange, List<ServerNode>> assignments =
+        getPartitionAssignment(
+            totalPartitionNum, partitionNumPerRange, replica, servers, estimateTaskConcurrency);
+
+    return new PartitionRangeAssignment(assignments);
+  }
+
+  /**
+   * @param requiredTags filter of tags
+   * @param expectedNum the number of expect servernode
+   * @param excludeServerInfos servernode information that is excluded because of an exception
+   * @return
+   */
+  private List<ServerNode> getRequiredServers(
+      Set<String> requiredTags, int expectedNum, Set<String> excludeServerInfos) {
+    List<ServerNode> servers = clusterManager.getServerList(requiredTags, excludeServerInfos);
     // shuffle server update the status according to heartbeat, if every server is in initial
     // status,
     // random the order of list to avoid always pick same nodes

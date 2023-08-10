@@ -15,26 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.strategy.assignment;
+package org.apache.uniffle.common.exception;
 
-import java.util.Set;
+public class RssWaitFailedException extends RuntimeException {
+  public RssWaitFailedException(String message) {
+    super(message);
+  }
 
-public interface AssignmentStrategy {
+  public RssWaitFailedException(Throwable e) {
+    super(e);
+  }
 
-  PartitionRangeAssignment assign(
-      int totalPartitionNum,
-      int partitionNumPerRange,
-      int replica,
-      Set<String> requiredTags,
-      int requiredShuffleServerNumber,
-      int estimateTaskConcurrency,
-      Set<String> serversList);
-
-  PartitionRangeAssignment assign(
-      int totalPartitionNum,
-      int partitionNumPerRange,
-      int replica,
-      Set<String> requiredTags,
-      int requiredShuffleServerNumber,
-      int estimateTaskConcurrency);
+  public RssWaitFailedException(String message, Throwable e) {
+    super(message, e);
+  }
 }

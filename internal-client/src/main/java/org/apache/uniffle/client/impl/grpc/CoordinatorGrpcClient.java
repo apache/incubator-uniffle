@@ -38,6 +38,7 @@ import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
 import org.apache.uniffle.client.request.RssApplicationInfoRequest;
 import org.apache.uniffle.client.request.RssFetchClientConfRequest;
 import org.apache.uniffle.client.request.RssFetchRemoteStorageRequest;
+import org.apache.uniffle.client.request.RssGetReShuffleAssignmentsRequest;
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
 import org.apache.uniffle.client.request.RssSendHeartBeatRequest;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
@@ -188,6 +189,33 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
     return blockingStub.getShuffleAssignments(getServerRequest);
   }
 
+  public RssProtos.GetShuffleAssignmentsResponse doGetReShuffleAssignments(
+      String appId,
+      int shuffleId,
+      int numMaps,
+      int partitionNumPerRange,
+      int dataReplica,
+      Set<String> requiredTags,
+      int assignmentShuffleServerNumber,
+      int estimateTaskConcurrency,
+      Set<String> shuffleServerInfos) {
+
+    RssProtos.GetReShuffleServerRequest getServerRequest =
+        RssProtos.GetReShuffleServerRequest.newBuilder()
+            .setApplicationId(appId)
+            .setShuffleId(shuffleId)
+            .setPartitionNum(numMaps)
+            .setPartitionNumPerRange(partitionNumPerRange)
+            .setDataReplica(dataReplica)
+            .addAllRequireTags(requiredTags)
+            .setAssignmentShuffleServerNumber(assignmentShuffleServerNumber)
+            .setEstimateTaskConcurrency(estimateTaskConcurrency)
+            .addAllShuffleServerIds(shuffleServerInfos)
+            .build();
+
+    return blockingStub.getReShuffleAssignments(getServerRequest);
+  }
+
   @Override
   public RssSendHeartBeatResponse sendHeartBeat(RssSendHeartBeatRequest request) {
     ShuffleServerHeartBeatResponse rpcResponse =
@@ -276,6 +304,46 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             request.getRequiredTags(),
             request.getAssignmentShuffleServerNumber(),
             request.getEstimateTaskConcurrency());
+
+    RssGetShuffleAssignmentsResponse response;
+    RssProtos.StatusCode statusCode = rpcResponse.getStatus();
+    switch (statusCode) {
+      case SUCCESS:
+        response = new RssGetShuffleAssignmentsResponse(StatusCode.SUCCESS);
+        // get all register info according to coordinator's response
+        Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
+            getServerToPartitionRanges(rpcResponse);
+        Map<Integer, List<ShuffleServerInfo>> partitionToServers =
+            getPartitionToServers(rpcResponse);
+        response.setServerToPartitionRanges(serverToPartitionRanges);
+        response.setPartitionToServers(partitionToServers);
+        break;
+      case TIMEOUT:
+        response = new RssGetShuffleAssignmentsResponse(StatusCode.TIMEOUT);
+        break;
+      default:
+        response =
+            new RssGetShuffleAssignmentsResponse(
+                StatusCode.INTERNAL_ERROR, rpcResponse.getRetMsg());
+    }
+
+    return response;
+  }
+
+  @Override
+  public RssGetShuffleAssignmentsResponse getReShuffleAssignments(
+      RssGetReShuffleAssignmentsRequest request) {
+    RssProtos.GetShuffleAssignmentsResponse rpcResponse =
+        doGetReShuffleAssignments(
+            request.getAppId(),
+            request.getShuffleId(),
+            request.getPartitionNum(),
+            request.getPartitionNumPerRange(),
+            request.getDataReplica(),
+            request.getRequiredTags(),
+            request.getAssignmentShuffleServerNumber(),
+            request.getEstimateTaskConcurrency(),
+            request.getShuffleServerIds());
 
     RssGetShuffleAssignmentsResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();

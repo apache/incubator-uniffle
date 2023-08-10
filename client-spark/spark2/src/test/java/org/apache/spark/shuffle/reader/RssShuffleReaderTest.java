@@ -98,7 +98,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 10,
                 blockIdBitmap,
                 taskIdBitmap,
-                rssConf));
+                rssConf,null));
 
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
   }

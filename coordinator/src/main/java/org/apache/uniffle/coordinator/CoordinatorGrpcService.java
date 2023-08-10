@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +41,7 @@ import org.apache.uniffle.coordinator.access.AccessInfo;
 import org.apache.uniffle.coordinator.strategy.assignment.PartitionRangeAssignment;
 import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
+import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AccessClusterRequest;
 import org.apache.uniffle.proto.RssProtos.AccessClusterResponse;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
@@ -139,6 +141,73 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
                   requiredTags,
                   requiredShuffleServerNumber,
                   estimateTaskConcurrency);
+      response = CoordinatorUtils.toGetShuffleAssignmentsResponse(pra);
+      logAssignmentResult(appId, shuffleId, pra);
+      responseObserver.onNext(response);
+    } catch (Exception e) {
+      LOG.error(
+          "Errors on getting shuffle assignments for app: {}, shuffleId: {}, partitionNum: {}, "
+              + "partitionNumPerRange: {}, replica: {}, requiredTags: {}",
+          appId,
+          shuffleId,
+          partitionNum,
+          partitionNumPerRange,
+          replica,
+          requiredTags,
+          e);
+      response =
+          GetShuffleAssignmentsResponse.newBuilder()
+              .setStatus(StatusCode.INTERNAL_ERROR)
+              .setRetMsg(e.getMessage())
+              .build();
+      responseObserver.onNext(response);
+    } finally {
+      responseObserver.onCompleted();
+    }
+  }
+
+  @Override
+  public void getReShuffleAssignments(
+      RssProtos.GetReShuffleServerRequest request,
+      StreamObserver<GetShuffleAssignmentsResponse> responseObserver) {
+    final String appId = request.getApplicationId();
+    final int shuffleId = request.getShuffleId();
+    final int partitionNum = request.getPartitionNum();
+    final int partitionNumPerRange = request.getPartitionNumPerRange();
+    final int replica = request.getDataReplica();
+    final Set<String> requiredTags = Sets.newHashSet(request.getRequireTagsList());
+    final int requiredShuffleServerNumber = request.getAssignmentShuffleServerNumber();
+    final int estimateTaskConcurrency = request.getEstimateTaskConcurrency();
+    final Set<String> servers = new HashSet<>(request.getShuffleServerIdsList());
+
+    LOG.info(
+        "Request of redo getShuffleAssignments for appId[{}], shuffleId[{}], partitionNum[{}], "
+            + " partitionNumPerRange[{}], replica[{}], requiredTags[{}], requiredShuffleServerNumber[{}]",
+        appId,
+        shuffleId,
+        partitionNum,
+        partitionNumPerRange,
+        replica,
+        requiredTags,
+        requiredShuffleServerNumber);
+
+    GetShuffleAssignmentsResponse response;
+    try {
+      if (!coordinatorServer.getClusterManager().isReadyForServe()) {
+        throw new Exception("Coordinator is out-of-service when in starting.");
+      }
+
+      final PartitionRangeAssignment pra =
+          coordinatorServer
+              .getAssignmentStrategy()
+              .assign(
+                  partitionNum,
+                  partitionNumPerRange,
+                  replica,
+                  requiredTags,
+                  requiredShuffleServerNumber,
+                  estimateTaskConcurrency,
+                  servers);
       response = CoordinatorUtils.toGetShuffleAssignmentsResponse(pra);
       logAssignmentResult(appId, shuffleId, pra);
       responseObserver.onNext(response);

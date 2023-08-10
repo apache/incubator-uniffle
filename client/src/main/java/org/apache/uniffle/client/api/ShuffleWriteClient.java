@@ -78,6 +78,16 @@ public interface ShuffleWriteClient {
       int assignmentShuffleServerNumber,
       int estimateTaskConcurrency);
 
+  ShuffleAssignmentsInfo getReShuffleAssignments(
+      String appId,
+      int shuffleId,
+      int partitionNum,
+      int partitionNumPerRange,
+      Set<String> requiredTags,
+      int assignmentShuffleServerNumber,
+      int estimateTaskConcurrency,
+      Set<String> failuresShuffleServerIds);
+
   Roaring64NavigableMap getShuffleResult(
       String clientType,
       Set<ShuffleServerInfo> shuffleServerInfoSet,

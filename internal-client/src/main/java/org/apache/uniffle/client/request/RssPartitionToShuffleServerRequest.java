@@ -15,26 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.strategy.assignment;
+package org.apache.uniffle.client.request;
 
-import java.util.Set;
+import org.apache.uniffle.proto.RssProtos;
 
-public interface AssignmentStrategy {
+public class RssPartitionToShuffleServerRequest {
+  private int shuffleId;
 
-  PartitionRangeAssignment assign(
-      int totalPartitionNum,
-      int partitionNumPerRange,
-      int replica,
-      Set<String> requiredTags,
-      int requiredShuffleServerNumber,
-      int estimateTaskConcurrency,
-      Set<String> serversList);
+  public RssPartitionToShuffleServerRequest(int shuffleId) {
+    this.shuffleId = shuffleId;
+  }
 
-  PartitionRangeAssignment assign(
-      int totalPartitionNum,
-      int partitionNumPerRange,
-      int replica,
-      Set<String> requiredTags,
-      int requiredShuffleServerNumber,
-      int estimateTaskConcurrency);
+  public int getShuffleId() {
+    return shuffleId;
+  }
+
+  public RssProtos.PartitionToShuffleServerRequest toProto() {
+    RssProtos.PartitionToShuffleServerRequest.Builder builder =
+        RssProtos.PartitionToShuffleServerRequest.newBuilder();
+    builder.setShuffleId(shuffleId);
+    return builder.build();
+  }
 }

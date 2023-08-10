@@ -82,9 +82,11 @@ public class RssShuffleWriterTest {
         .set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "127.0.0.1:12345,127.0.0.1:12346");
     Map<String, Set<Long>> failBlocks = JavaUtils.newConcurrentMap();
     Map<String, Set<Long>> successBlocks = JavaUtils.newConcurrentMap();
+    Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsWithShuffleServer
+        = JavaUtils.newConcurrentMap();
     Serializer kryoSerializer = new KryoSerializer(conf);
     RssShuffleManager manager =
-        TestUtils.createShuffleManager(conf, false, null, successBlocks, failBlocks);
+        TestUtils.createShuffleManager(conf, false, null, successBlocks, failBlocks,taskToFailedBlockIdsWithShuffleServer);
 
     ShuffleWriteClient mockShuffleWriteClient = mock(ShuffleWriteClient.class);
     Partitioner mockPartitioner = mock(Partitioner.class);
@@ -120,7 +122,10 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            mockHandle);
+            mockHandle,
+            null,
+            null,
+            null);
     doReturn(1000000L).when(bufferManagerSpy).acquireMemory(anyLong());
 
     // case 1: all blocks are sent successfully
@@ -154,13 +159,13 @@ public class RssShuffleWriterTest {
     private final Function<AddBlockEvent, CompletableFuture<Long>> sendFunc;
 
     FakedDataPusher(Function<AddBlockEvent, CompletableFuture<Long>> sendFunc) {
-      this(null, null, null, null, 1, 1, sendFunc);
+      this(null, null,null, null, null, 1, 1, sendFunc);
     }
 
     private FakedDataPusher(
         ShuffleWriteClient shuffleWriteClient,
         Map<String, Set<Long>> taskToSuccessBlockIds,
-        Map<String, Set<Long>> taskToFailedBlockIds,
+        Map<String, Set<Long>> taskToFailedBlockIds,Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
         Set<String> failedTaskIds,
         int threadPoolSize,
         int threadKeepAliveTime,
@@ -169,6 +174,7 @@ public class RssShuffleWriterTest {
           shuffleWriteClient,
           taskToSuccessBlockIds,
           taskToFailedBlockIds,
+          taskToFailedBlockIdsAndServer,
           failedTaskIds,
           threadPoolSize,
           threadKeepAliveTime);
@@ -217,7 +223,7 @@ public class RssShuffleWriterTest {
 
     final RssShuffleManager manager =
         TestUtils.createShuffleManager(
-            conf, false, dataPusher, successBlockIds, JavaUtils.newConcurrentMap());
+            conf, false, dataPusher, successBlockIds, JavaUtils.newConcurrentMap(),JavaUtils.newConcurrentMap());
 
     WriteBufferManagerTest.FakedTaskMemoryManager fakedTaskMemoryManager =
         new WriteBufferManagerTest.FakedTaskMemoryManager();
@@ -256,7 +262,10 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            mockHandle);
+            mockHandle,
+            null,
+            null,
+            null);
     rssShuffleWriter.getBufferManager().setSpillFunc(rssShuffleWriter::processShuffleBlockInfos);
 
     MutableList<Product2<String, String>> data = new MutableList<>();
@@ -309,7 +318,7 @@ public class RssShuffleWriterTest {
 
     final RssShuffleManager manager =
         TestUtils.createShuffleManager(
-            conf, false, dataPusher, successBlockIds, JavaUtils.newConcurrentMap());
+            conf, false, dataPusher, successBlockIds, JavaUtils.newConcurrentMap(),JavaUtils.newConcurrentMap());
     Serializer kryoSerializer = new KryoSerializer(conf);
     Partitioner mockPartitioner = mock(Partitioner.class);
     final ShuffleWriteClient mockShuffleWriteClient = mock(ShuffleWriteClient.class);
@@ -374,7 +383,10 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            mockHandle);
+            mockHandle,
+            null,
+            null,
+            null);
     doReturn(1000000L).when(bufferManagerSpy).acquireMemory(anyLong());
 
     RssShuffleWriter<String, String, String> rssShuffleWriterSpy = spy(rssShuffleWriter);
@@ -461,7 +473,7 @@ public class RssShuffleWriterTest {
     RssShuffleManager mockShuffleManager =
         spy(
             TestUtils.createShuffleManager(
-                sparkConf, false, dataPusher, Maps.newConcurrentMap(), Maps.newConcurrentMap()));
+                sparkConf, false, dataPusher, Maps.newConcurrentMap(), Maps.newConcurrentMap(),JavaUtils.newConcurrentMap()));
 
     RssShuffleHandle<String, String, String> mockHandle = mock(RssShuffleHandle.class);
     when(mockHandle.getDependency()).thenReturn(mockDependency);
@@ -479,7 +491,10 @@ public class RssShuffleWriterTest {
             mockShuffleManager,
             conf,
             mockWriteClient,
-            mockHandle);
+            mockHandle,
+            null,
+            null,
+            null);
     writer.postBlockEvent(shuffleBlockInfoList);
     Awaitility.await().timeout(Duration.ofSeconds(1)).until(() -> events.size() == 1);
     assertEquals(1, events.get(0).getShuffleDataInfoList().size());

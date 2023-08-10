@@ -15,26 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.strategy.assignment;
+package org.apache.uniffle.server;
 
-import java.util.Set;
+import com.google.common.collect.Lists;
+import org.apache.commons.lang3.tuple.Pair;
 
-public interface AssignmentStrategy {
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.metrics.GRPCMetrics;
+import org.apache.uniffle.common.rpc.GrpcServer;
 
-  PartitionRangeAssignment assign(
-      int totalPartitionNum,
-      int partitionNumPerRange,
-      int replica,
-      Set<String> requiredTags,
-      int requiredShuffleServerNumber,
-      int estimateTaskConcurrency,
-      Set<String> serversList);
+public class MockedShuffleWriteGrpcServer extends GrpcServer {
+  MockedShuffleServerWriteGrpcService service;
 
-  PartitionRangeAssignment assign(
-      int totalPartitionNum,
-      int partitionNumPerRange,
-      int replica,
-      Set<String> requiredTags,
-      int requiredShuffleServerNumber,
-      int estimateTaskConcurrency);
+  public MockedShuffleWriteGrpcServer(
+      RssBaseConf conf, MockedShuffleServerWriteGrpcService service, GRPCMetrics grpcMetrics) {
+    super(conf, Lists.newArrayList(Pair.of(service, Lists.newArrayList())), grpcMetrics);
+    this.service = service;
+  }
+
+  public MockedShuffleServerWriteGrpcService getService() {
+    return service;
+  }
 }

@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -93,11 +94,12 @@ public class DataPusherTest {
 
     Map<String, Set<Long>> taskToSuccessBlockIds = Maps.newConcurrentMap();
     Map<String, Set<Long>> taskToFailedBlockIds = Maps.newConcurrentMap();
+    Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer = Maps.newConcurrentMap();
     Set<String> failedTaskIds = new HashSet<>();
 
     DataPusher dataPusher =
         new DataPusher(
-            shuffleWriteClient, taskToSuccessBlockIds, taskToFailedBlockIds, failedTaskIds, 1, 2);
+            shuffleWriteClient, taskToSuccessBlockIds, taskToFailedBlockIds,taskToFailedBlockIdsAndServer, failedTaskIds, 1, 2);
     dataPusher.setRssAppId("testSendData_appId");
 
     // sync send
@@ -106,7 +108,7 @@ public class DataPusherTest {
             "taskId",
             Arrays.asList(new ShuffleBlockInfo(1, 1, 1, 1, 1, new byte[1], null, 1, 100, 1)));
     shuffleWriteClient.setFakedShuffleDataResult(
-        new SendShuffleDataResult(Sets.newHashSet(1L, 2L), Sets.newHashSet(3L, 4L)));
+        new SendShuffleDataResult(Sets.newHashSet(1L, 2L), Sets.newHashSet(3L, 4L),Maps.newConcurrentMap()));
     CompletableFuture<Long> future = dataPusher.send(event);
     long memoryFree = future.get();
     assertEquals(100, memoryFree);

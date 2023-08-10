@@ -18,6 +18,7 @@
 package org.apache.spark.shuffle.reader;
 
 import java.util.List;
+import java.util.Map;
 
 import scala.Function0;
 import scala.Option;
@@ -84,7 +85,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       int partitionNum,
       Roaring64NavigableMap blockIdBitmap,
       Roaring64NavigableMap taskIdBitmap,
-      RssConf rssConf) {
+      RssConf rssConf,
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers) {
     this.appId = rssShuffleHandle.getAppId();
     this.startPartition = startPartition;
     this.endPartition = endPartition;
@@ -100,7 +102,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.taskIdBitmap = taskIdBitmap;
     this.hadoopConf = hadoopConf;
     this.shuffleServerInfoList =
-        (List<ShuffleServerInfo>) (rssShuffleHandle.getPartitionToServers().get(startPartition));
+        (List<ShuffleServerInfo>) (partitionToServers.get(startPartition));
     this.rssConf = rssConf;
     expectedTaskIdsBitmapFilterEnable = shuffleServerInfoList.size() > 1;
   }

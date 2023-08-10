@@ -22,6 +22,7 @@ import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
 import org.apache.uniffle.client.request.RssApplicationInfoRequest;
 import org.apache.uniffle.client.request.RssFetchClientConfRequest;
 import org.apache.uniffle.client.request.RssFetchRemoteStorageRequest;
+import org.apache.uniffle.client.request.RssGetReShuffleAssignmentsRequest;
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
 import org.apache.uniffle.client.request.RssSendHeartBeatRequest;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
@@ -41,6 +42,9 @@ public interface CoordinatorClient {
   RssSendHeartBeatResponse sendHeartBeat(RssSendHeartBeatRequest request);
 
   RssGetShuffleAssignmentsResponse getShuffleAssignments(RssGetShuffleAssignmentsRequest request);
+
+  RssGetShuffleAssignmentsResponse getReShuffleAssignments(
+      RssGetReShuffleAssignmentsRequest request);
 
   RssAccessClusterResponse accessCluster(RssAccessClusterRequest request);
 

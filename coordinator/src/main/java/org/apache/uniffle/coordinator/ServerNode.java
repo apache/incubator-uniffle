@@ -17,8 +17,10 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
 
@@ -261,5 +263,23 @@ public class ServerNode implements Comparable<ServerNode> {
 
   public int getNettyPort() {
     return nettyPort;
+  }
+
+  private static ServerNode convertToServerNode(ShuffleServerId shuffleServerId) {
+    ServerNode serverNode =
+        new ServerNode(
+            shuffleServerId.getId(),
+            shuffleServerId.getIp(),
+            shuffleServerId.getPort(),
+            0L,
+            0L,
+            0L,
+            0,
+            null);
+    return serverNode;
+  }
+
+  public static List<ServerNode> fromProto(List<ShuffleServerId> servers) {
+    return servers.stream().map(server -> convertToServerNode(server)).collect(Collectors.toList());
   }
 }

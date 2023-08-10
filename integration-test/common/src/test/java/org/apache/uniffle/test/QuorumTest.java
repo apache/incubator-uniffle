@@ -18,6 +18,7 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mortbay.log.Log;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
@@ -1032,6 +1034,10 @@ public class QuorumTest extends ShuffleReadWriteBase {
                   shuffleServerInfo3,
                   shuffleServerInfo4));
       SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
+      Log.info(
+          "SendShuffleDataResult:{}---{}",
+          Arrays.asList(result.getSuccessBlockIds().toArray()),
+          Arrays.asList(result.getFailedBlockIds().toArray()));
       assertTrue(result.getSuccessBlockIds().size() == 3);
       assertTrue(result.getFailedBlockIds().size() == 0);
     }

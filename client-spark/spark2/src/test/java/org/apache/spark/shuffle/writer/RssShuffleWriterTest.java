@@ -25,6 +25,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.spark.TaskContext;
+import org.apache.spark.shuffle.ShuffleHandleInfo;
+import org.apache.uniffle.client.api.ShuffleManagerClient;
 import scala.Product2;
 import scala.Tuple2;
 import scala.collection.mutable.MutableList;
@@ -92,7 +95,9 @@ public class RssShuffleWriterTest {
     when(mockPartitioner.numPartitions()).thenReturn(2);
     when(mockHandle.getPartitionToServers()).thenReturn(Maps.newHashMap());
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
-
+    TaskContext contextMock = mock(TaskContext.class);
+    ShuffleHandleInfo shuffleHandleInfo = mock(ShuffleHandleInfo.class);
+    ShuffleManagerClient shuffleManagerClient = mock(ShuffleManagerClient.class);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
     WriteBufferManager bufferManager =
         new WriteBufferManager(
@@ -118,7 +123,10 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            mockHandle);
+            mockHandle,
+            shuffleHandleInfo,
+            contextMock,
+            shuffleManagerClient);
 
     // case 1: all blocks are sent successfully
     manager.addSuccessBlockIds(taskId, Sets.newHashSet(1L, 2L, 3L));
@@ -155,13 +163,14 @@ public class RssShuffleWriterTest {
     private final Function<AddBlockEvent, CompletableFuture<Long>> sendFunc;
 
     FakedDataPusher(Function<AddBlockEvent, CompletableFuture<Long>> sendFunc) {
-      this(null, null, null, null, 1, 1, sendFunc);
+      this(null, null,null, null, null, 1, 1, sendFunc);
     }
 
     private FakedDataPusher(
         ShuffleWriteClient shuffleWriteClient,
         Map<String, Set<Long>> taskToSuccessBlockIds,
         Map<String, Set<Long>> taskToFailedBlockIds,
+        Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
         Set<String> failedTaskIds,
         int threadPoolSize,
         int threadKeepAliveTime,
@@ -170,6 +179,7 @@ public class RssShuffleWriterTest {
           shuffleWriteClient,
           taskToSuccessBlockIds,
           taskToFailedBlockIds,
+          taskToFailedBlockIdsAndServer,
           failedTaskIds,
           threadPoolSize,
           threadKeepAliveTime);
@@ -221,6 +231,10 @@ public class RssShuffleWriterTest {
     ShuffleDependency<String, String, String> mockDependency = mock(ShuffleDependency.class);
     final ShuffleWriteClient mockShuffleWriteClient = mock(ShuffleWriteClient.class);
     RssShuffleHandle<String, String, String> mockHandle = mock(RssShuffleHandle.class);
+    TaskContext contextMock = mock(TaskContext.class);
+    ShuffleHandleInfo shuffleHandleInfo = mock(ShuffleHandleInfo.class);
+    ShuffleManagerClient shuffleManagerClient = mock(ShuffleManagerClient.class);
+
     when(mockHandle.getDependency()).thenReturn(mockDependency);
     Serializer kryoSerializer = new KryoSerializer(conf);
     when(mockDependency.serializer()).thenReturn(kryoSerializer);
@@ -283,7 +297,10 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            mockHandle);
+            mockHandle,
+            shuffleHandleInfo,
+            contextMock,
+            shuffleManagerClient);
 
     RssShuffleWriter<String, String, String> rssShuffleWriterSpy = spy(rssShuffleWriter);
     doNothing().when(rssShuffleWriterSpy).sendCommit();
@@ -355,6 +372,9 @@ public class RssShuffleWriterTest {
         .set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
 
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
+    TaskContext contextMock = mock(TaskContext.class);
+    ShuffleHandleInfo shuffleHandleInfo = mock(ShuffleHandleInfo.class);
+    ShuffleManagerClient shuffleManagerClient = mock(ShuffleManagerClient.class);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
     WriteBufferManager bufferManager =
         new WriteBufferManager(
@@ -391,7 +411,10 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockWriteClient,
-            mockHandle);
+            mockHandle,
+            shuffleHandleInfo,
+            contextMock,
+            shuffleManagerClient);
     List<ShuffleBlockInfo> shuffleBlockInfoList = createShuffleBlockList(1, 31);
     writer.postBlockEvent(shuffleBlockInfoList);
     Thread.sleep(500);

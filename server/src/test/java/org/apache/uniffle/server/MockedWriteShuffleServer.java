@@ -15,26 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.strategy.assignment;
+package org.apache.uniffle.server;
 
-import java.util.Set;
+public class MockedWriteShuffleServer extends ShuffleServer {
+  public MockedWriteShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
+    super(shuffleServerConf);
+  }
 
-public interface AssignmentStrategy {
-
-  PartitionRangeAssignment assign(
-      int totalPartitionNum,
-      int partitionNumPerRange,
-      int replica,
-      Set<String> requiredTags,
-      int requiredShuffleServerNumber,
-      int estimateTaskConcurrency,
-      Set<String> serversList);
-
-  PartitionRangeAssignment assign(
-      int totalPartitionNum,
-      int partitionNumPerRange,
-      int replica,
-      Set<String> requiredTags,
-      int requiredShuffleServerNumber,
-      int estimateTaskConcurrency);
+  @Override
+  public void setServer() {
+    setServer(new MockedWriteShuffleServerFactory(this).getServer());
+  }
 }

@@ -33,6 +33,7 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.server.MockedShuffleServer;
+import org.apache.uniffle.server.MockedWriteShuffleServer;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
@@ -139,6 +140,11 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
 
   protected static void createShuffleServer(ShuffleServerConf serverConf) throws Exception {
     shuffleServers.add(new ShuffleServer(serverConf));
+  }
+
+  protected static void createWriteMockedShuffleServer(ShuffleServerConf serverConf)
+      throws Exception {
+    shuffleServers.add(new MockedWriteShuffleServer(serverConf));
   }
 
   protected static void createMockedShuffleServer(ShuffleServerConf serverConf) throws Exception {
