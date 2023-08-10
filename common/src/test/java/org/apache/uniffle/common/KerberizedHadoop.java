@@ -352,16 +352,12 @@ public class KerberizedHadoop implements Serializable {
   }
 
   public List<String> generateKeyTab(String user) throws Exception {
-    LOGGER.info("generateKeyTab user is {}", user);
     if (user.equals("hdfs")) {
       return Lists.newArrayList(hdfsKeytab, hdfsPrincipal);
     }
     String principal = user + "/" + RssUtils.getHostIp();
     File keytab = new File(workDir, user + ".keytab");
-    LOGGER.info("generateKeyTab principal is {}, keytab is {}", principal, keytab.toString());
     kdc.createPrincipal(keytab, principal);
-    LOGGER.info("generateKeyTab keytab path is {}, all principal is {}", 
-        keytab.getPath(), principal + "@" + kdc.getRealm());
     return Lists.newArrayList(keytab.getPath(), principal + "@" + kdc.getRealm());
   }
 }
