@@ -19,6 +19,7 @@ ARG BASE_IMAGE=uniffle-base:latest
 FROM ${BASE_IMAGE}
 
 ARG HADOOP_VERSION
+ARG HADOOP_SHORT_VERSION
 ARG RSS_VERSION
 ARG AUTHOR=unknown
 ARG GIT_BRANCH=unknown
@@ -33,11 +34,11 @@ RUN mkdir -p /data/rssadmin/
 RUN chown -R rssadmin:rssadmin /data
 USER rssadmin
 
-COPY rss-${RSS_VERSION}.tgz /data/rssadmin
-RUN tar -xvf /data/rssadmin/rss-${RSS_VERSION}.tgz -C /data/rssadmin
-RUN mv /data/rssadmin/rss-${RSS_VERSION} /data/rssadmin/rss
+COPY rss-${RSS_VERSION}-hadoop${HADOOP_SHORT_VERSION}.tgz /data/rssadmin
+RUN tar -xvf /data/rssadmin/rss-${RSS_VERSION}-hadoop${HADOOP_SHORT_VERSION}.tgz -C /data/rssadmin
+RUN mv /data/rssadmin/rss-${RSS_VERSION}-hadoop${HADOOP_SHORT_VERSION} /data/rssadmin/rss
 RUN rm /data/rssadmin/rss/bin/rss-env.sh
-RUN rm -rf /data/rssadmin/rss-${RSS_VERSION}.tgz
+RUN rm -rf /data/rssadmin/rss-${RSS_VERSION}-hadoop${HADOOP_SHORT_VERSION}.tgz
 
 COPY rss-env.sh /data/rssadmin/rss/bin
 
