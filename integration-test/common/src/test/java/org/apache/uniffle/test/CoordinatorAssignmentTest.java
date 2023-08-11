@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
@@ -52,6 +53,8 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
 
   private static final String QUORUM =
       LOCALHOST + ":" + COORDINATOR_PORT_1 + "," + LOCALHOST + ":" + COORDINATOR_PORT_2;
+
+  private ShuffleWriteClientImpl shuffleWriteClient;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
@@ -96,12 +99,15 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     Thread.sleep(1000 * 5);
   }
 
-  @Test
-  public void testSilentPeriod() throws Exception {
-    ShuffleWriteClientImpl shuffleWriteClient =
+  @BeforeEach
+  public void createClient() {
+    shuffleWriteClient =
         new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1, 1, 1, 1, true, 1, 1, 10, 10);
     shuffleWriteClient.registerCoordinators(QUORUM);
+  }
 
+  @Test
+  public void testSilentPeriod() throws Exception {
     // Case1: Disable silent period
     ShuffleAssignmentsInfo info =
         shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, -1, -1);
@@ -125,10 +131,6 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
 
   @Test
   public void testAssignmentServerNodesNumber() throws Exception {
-    ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1, 1, 1, 1, true, 1, 1, 10, 10);
-    shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
-
     /**
      * case1: user specify the illegal shuffle node num(<0) it will use the default shuffle nodes
      * num when having enough servers.
@@ -161,28 +163,30 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
 
   @Test
   public void testReconfigureNodeMax() throws Exception {
+    ShuffleAssignmentsInfo info =
+        shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
+    assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
+    Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
+
     String fileName =
         coordinators
             .get(0)
             .getCoordinatorConf()
             .getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, "");
     new File(fileName).createNewFile();
-    ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1, 1, 1, 1, true, 1, 1, 10, 10);
-    shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
-    ShuffleAssignmentsInfo info =
-        shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
-    assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
-    Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
+
     try (FileWriter fileWriter = new FileWriter(fileName)) {
       fileWriter.append(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key() + " " + 5);
     }
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
-    info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
+    info = shuffleWriteClient.getShuffleAssignments("app1", 0, 5, 1, TAGS, SERVER_NUM + 10, -1);
     assertEquals(5, info.getServerToPartitionRanges().keySet().size());
+
     try (FileWriter fileWriter = new FileWriter(fileName)) {
       fileWriter.append(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key() + " " + 10);
     }
+    info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
+    assertEquals(10, info.getServerToPartitionRanges().keySet().size());
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
   }
 }
