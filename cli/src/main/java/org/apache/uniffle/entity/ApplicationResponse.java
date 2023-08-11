@@ -15,14 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client;
+package org.apache.uniffle.entity;
 
-import java.util.Map;
+import java.util.List;
 
-/** A underlying http client interface for common rest request. */
-public interface RestClient extends AutoCloseable, Cloneable {
+import org.apache.uniffle.common.Application;
 
-  String get(String path, Map<String, Object> params, String authHeader);
+public class ApplicationResponse {
+  private List<Application> data;
+  private int code;
+  private String errMsg;
 
-  String post(String path, Map<String, Object> params, String authHeader);
+  public List<Application> getData() {
+    return data;
+  }
+
+  public void setData(List<Application> data) {
+    this.data = data;
+  }
+
+  public int getCode() {
+    return code;
+  }
+
+  public void setCode(int code) {
+    this.code = code;
+  }
+
+  public String getErrMsg() {
+    return errMsg;
+  }
+
+  public void setErrMsg(String errMsg) {
+    this.errMsg = errMsg;
+  }
 }

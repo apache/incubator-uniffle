@@ -50,15 +50,20 @@ public class UniffleTestCLI {
     String[] args1 = {"-help"};
     assertEquals(0, uniffleCLI.run(args1));
     oldOutPrintStream.println(dataOut);
-    assertTrue(
-        dataOut
-            .toString()
-            .contains("-a,--admin <arg>   This is an admin command that will print args."));
-    assertTrue(
-        dataOut
-            .toString()
-            .contains("-c,--cli <arg>     This is an client cli command that will print args."));
-    assertTrue(dataOut.toString().contains("-h,--help          Help for the Uniffle CLI."));
+
+    String cmdHelpMsg = dataOut.toString();
+    assertTrue(cmdHelpMsg.contains("-a,--admin <arg>"));
+    assertTrue(cmdHelpMsg.contains("This is an admin command that will print args."));
+    assertTrue(dataOut.toString().contains("-c,--cli <arg>"));
+    assertTrue(dataOut.toString().contains("This is an client cli command that will print args."));
+    assertTrue(dataOut.toString().contains("-h,--help"));
+    assertTrue(dataOut.toString().contains("Help for the Uniffle CLI."));
+    assertTrue(dataOut.toString().contains("-host,--coordinatorHost <arg>"));
+    assertTrue(dataOut.toString().contains("This is coordinator server host."));
+    assertTrue(dataOut.toString().contains("-port,--coordinatorPort <arg>"));
+    assertTrue(dataOut.toString().contains("This is coordinator server port."));
+    assertTrue(dataOut.toString().contains("--ssl"));
+    assertTrue(dataOut.toString().contains("use SSL"));
 
     System.setOut(oldOutPrintStream);
     System.setErr(oldErrPrintStream);
