@@ -289,8 +289,6 @@ public class RssDAGAppMaster extends DAGAppMaster {
 
     @Override
     public void run() {
-      releaseRssResources(appMaster);
-
       LOG.info(
           "RssDAGAppMaster received a signal. Signaling RMCommunicator and JobHistoryEventHandler.");
       this.appMaster.stop();
@@ -301,20 +299,14 @@ public class RssDAGAppMaster extends DAGAppMaster {
     try {
       LOG.info("RssDAGAppMaster releaseRssResources invoked");
       appMaster.heartBeatExecutorService.shutdownNow();
-
+      if (appMaster.tezRemoteShuffleManager != null) {
+        appMaster.tezRemoteShuffleManager.shutdown();
+        appMaster.tezRemoteShuffleManager = null;
+      }
       if (appMaster.shuffleWriteClient != null) {
         appMaster.shuffleWriteClient.close();
+        appMaster.shuffleWriteClient = null;
       }
-      appMaster.shuffleWriteClient = null;
-
-      if (appMaster.tezRemoteShuffleManager != null) {
-        try {
-          appMaster.tezRemoteShuffleManager.shutdown();
-        } catch (Exception e) {
-          LOG.info("Failed to shutdown TezRemoteShuffleManager.", e);
-        }
-      }
-      appMaster.tezRemoteShuffleManager = null;
     } catch (Throwable t) {
       LOG.error("Failed to release Rss resources.", t);
     }
