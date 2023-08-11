@@ -109,6 +109,14 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
 
   @Override
   public void shutdown() throws Exception {
+    if (rssClient != null) {
+      LOG.info("unregister all shuffle for appid {}", appId);
+      Map<Integer, ShuffleAssignmentsInfo> infos =
+          tezRemoteShuffleUmbilical.getShuffleIdToShuffleAssignsInfo();
+      for (Map.Entry<Integer, ShuffleAssignmentsInfo> entry : infos.entrySet()) {
+        rssClient.unregisterShuffle(appId, entry.getKey());
+      }
+    }
     server.stop();
   }
 
@@ -172,6 +180,10 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
       }
 
       return response;
+    }
+
+    Map<Integer, ShuffleAssignmentsInfo> getShuffleIdToShuffleAssignsInfo() {
+      return shuffleIdToShuffleAssignsInfo;
     }
   }
 
