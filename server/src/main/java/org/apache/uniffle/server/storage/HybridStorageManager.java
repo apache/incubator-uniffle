@@ -35,7 +35,7 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.event.PurgeEvent;
-import org.apache.uniffle.server.storage.multi.StorageManagerSelector;
+import org.apache.uniffle.server.storage.hybrid.StorageManagerSelector;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 

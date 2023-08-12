@@ -78,7 +78,7 @@ public class HybridStorageManagerTest {
 
     /**
      * case1: only event owned by huge partition will be flushed to cold storage when the {@link
-     * org.apache.uniffle.server.storage.multi.StorageManagerSelector.ColdStoragePreferredFactor.HUGE_PARTITION}
+     * org.apache.uniffle.server.storage.hybrid.StorageManagerSelector.ColdStoragePreferredFactor.HUGE_PARTITION}
      * is enabled.
      */
     List<ShufflePartitionedBlock> blocks =
