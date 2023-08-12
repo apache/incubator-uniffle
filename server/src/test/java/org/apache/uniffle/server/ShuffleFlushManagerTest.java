@@ -58,7 +58,7 @@ import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.storage.HadoopStorageManager;
 import org.apache.uniffle.server.storage.LocalStorageManager;
 import org.apache.uniffle.server.storage.LocalStorageManagerFallbackStrategy;
-import org.apache.uniffle.server.storage.MultiStorageManager;
+import org.apache.uniffle.server.storage.HybridStorageManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
 import org.apache.uniffle.storage.HadoopTestBase;
@@ -612,8 +612,8 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     ShuffleDataFlushEvent bigEvent =
         new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, blocks, null, null);
     bigEvent.setUnderStorage(
-        ((MultiStorageManager) storageManager).getWarmStorageManager().selectStorage(event));
-    ((MultiStorageManager) storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
+        ((HybridStorageManager) storageManager).getWarmStorageManager().selectStorage(event));
+    ((HybridStorageManager) storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
 
     event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100);
     flushManager.addToFlushQueue(event);
@@ -666,8 +666,8 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     ShuffleDataFlushEvent bigEvent =
         new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, blocks, null, null);
     bigEvent.setUnderStorage(
-        ((MultiStorageManager) storageManager).getWarmStorageManager().selectStorage(event));
-    ((MultiStorageManager) storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
+        ((HybridStorageManager) storageManager).getWarmStorageManager().selectStorage(event));
+    ((HybridStorageManager) storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
 
     event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100);
     flushManager.addToFlushQueue(event);

@@ -27,7 +27,7 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.storage.LocalStorageManager;
 import org.apache.uniffle.server.storage.LocalStorageManagerFallbackStrategy;
-import org.apache.uniffle.server.storage.MultiStorageManager;
+import org.apache.uniffle.server.storage.HybridStorageManager;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.StorageType;
@@ -61,7 +61,7 @@ public class MultiStorageLocalFileFallbackTest extends MultiStorageFaultToleranc
   public void makeChaos() {
     LocalStorageManager warmStorageManager =
         (LocalStorageManager)
-            ((MultiStorageManager) shuffleServers.get(0).getStorageManager())
+            ((HybridStorageManager) shuffleServers.get(0).getStorageManager())
                 .getWarmStorageManager();
     for (Storage storage : warmStorageManager.getStorages()) {
       LocalStorage localStorage = (LocalStorage) storage;

@@ -34,7 +34,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class MultiStorageManagerTest {
+public class HybridStorageManagerTest {
 
   @Test
   public void selectStorageManagerTest() {
@@ -44,7 +44,7 @@ public class MultiStorageManagerTest {
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     conf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
-    MultiStorageManager manager = new MultiStorageManager(conf);
+    HybridStorageManager manager = new HybridStorageManager(conf);
     String remoteStorage = "test";
     String appId = "selectStorageManagerTest_appId";
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
@@ -71,7 +71,7 @@ public class MultiStorageManagerTest {
     conf.set(
         ShuffleServerConf.MULTISTORAGE_MANAGER_SELECTOR_CLASS,
         "org.apache.uniffle.server.storage.multi.HugePartitionSensitiveStorageManagerSelector");
-    MultiStorageManager manager = new MultiStorageManager(conf);
+    HybridStorageManager manager = new HybridStorageManager(conf);
     String remoteStorage = "test";
     String appId = "selectStorageManagerIfCanNotWriteTest_appId";
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
@@ -106,7 +106,7 @@ public class MultiStorageManagerTest {
     conf.setString(
         ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
         RotateStorageManagerFallbackStrategy.class.getCanonicalName());
-    MultiStorageManager manager = new MultiStorageManager(conf);
+    HybridStorageManager manager = new HybridStorageManager(conf);
     String remoteStorage = "test";
     String appId = "selectStorageManagerIfCanNotWriteTest_appId";
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));

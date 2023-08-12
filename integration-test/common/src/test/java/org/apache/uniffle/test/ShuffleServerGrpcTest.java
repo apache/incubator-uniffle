@@ -66,7 +66,7 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerGrpcMetrics;
 import org.apache.uniffle.server.ShuffleServerMetrics;
-import org.apache.uniffle.server.storage.MultiStorageManager;
+import org.apache.uniffle.server.storage.HybridStorageManager;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -397,7 +397,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
         new ShuffleDataFlushEvent(1, appId2, 1, 1, 1, EVENT_THRESHOLD_SIZE + 1, null, null, null);
     try {
       // can't find storage info with appId2
-      ((MultiStorageManager) shuffleServers.get(0).getStorageManager())
+      ((HybridStorageManager) shuffleServers.get(0).getStorageManager())
           .getColdStorageManager()
           .selectStorage(event2)
           .getStoragePath();

@@ -39,16 +39,16 @@ import org.apache.uniffle.server.storage.multi.StorageManagerSelector;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 
-public class MultiStorageManager implements StorageManager {
+public class HybridStorageManager implements StorageManager {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MultiStorageManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(HybridStorageManager.class);
 
   private final StorageManager warmStorageManager;
   private final StorageManager coldStorageManager;
   private final Cache<ShuffleDataFlushEvent, StorageManager> eventOfUnderStorageManagers;
   private final StorageManagerSelector storageManagerSelector;
 
-  MultiStorageManager(ShuffleServerConf conf) {
+  HybridStorageManager(ShuffleServerConf conf) {
     warmStorageManager = new LocalStorageManager(conf);
     coldStorageManager = new HadoopStorageManager(conf);
 
