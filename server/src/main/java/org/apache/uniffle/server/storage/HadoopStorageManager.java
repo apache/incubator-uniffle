@@ -52,7 +52,7 @@ import org.apache.uniffle.storage.request.CreateShuffleDeleteHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class HadoopStorageManager extends SingleStorageManager {
+public class HadoopStorageManager extends RemoteStorageManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(HadoopStorageManager.class);
 

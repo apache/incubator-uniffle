@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common;
+package org.apache.uniffle.server.storage;
 
-public enum StorageType {
-  MEMORY,
-  LOCALFILE,
-  MEMORY_LOCALFILE,
-  HDFS,
-  MEMORY_HDFS,
-  LOCALFILE_HDFS,
-  MEMORY_LOCALFILE_HDFS,
-  MEMORY_OBJECT,
-  MEMORY_LOCALFILE_OBJECT;
+import org.apache.uniffle.server.ShuffleServerConf;
+
+
+public abstract class ObjectStorageManager extends RemoteStorageManager implements SupportsListShufflePartitions {
+
+  public ObjectStorageManager(ShuffleServerConf conf) {
+    super(conf);
+  }
+
+
+  public static ObjectStorageManager createObjectManagerImpl(ShuffleServerConf conf) {
+    return null;
+  }
+
+  public
 }

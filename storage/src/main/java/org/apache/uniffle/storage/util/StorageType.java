@@ -21,10 +21,14 @@ public enum StorageType {
   MEMORY(1),
   LOCALFILE(2),
   HDFS(4),
+  OBJECT(8),
   LOCALFILE_HDFS(6),
   MEMORY_LOCALFILE(3),
   MEMORY_HDFS(5),
-  MEMORY_LOCALFILE_HDFS(7);
+  MEMORY_LOCALFILE_HDFS(7),
+
+  MEMORY_OBJECT(9),
+  MEMORY_LOCALFILE_OBJECT(11);
 
   private int val;
 
@@ -48,7 +52,10 @@ public enum StorageType {
     return (storageType.getVal() & HDFS.getVal()) != 0;
   }
 
+  public static boolean withObject(StorageType storageType) {
+    return (storageType.getVal() & OBJECT.getVal()) != 0;
+  }
   public static boolean withRemoteStorage(StorageType storageType) {
-    return withHadoop(storageType);
+    return withHadoop(storageType) || withObject(storageType);
   }
 }

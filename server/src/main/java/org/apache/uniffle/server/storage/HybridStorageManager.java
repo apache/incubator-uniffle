@@ -39,7 +39,7 @@ import org.apache.uniffle.server.storage.hybrid.StorageManagerSelector;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 
-public class HybridStorageManager implements StorageManager {
+public class HybridStorageManager implements StorageManager, SupportsReadData, SupportsReadIndex, SupportsListShufflePartitions{
 
   private static final Logger LOG = LoggerFactory.getLogger(HybridStorageManager.class);
 
@@ -50,7 +50,7 @@ public class HybridStorageManager implements StorageManager {
 
   HybridStorageManager(ShuffleServerConf conf) {
     warmStorageManager = new LocalStorageManager(conf);
-    coldStorageManager = new HadoopStorageManager(conf);
+    coldStorageManager = RemoteStorageManager.create(conf);
 
     try {
       AbstractStorageManagerFallbackStrategy storageManagerFallbackStrategy =

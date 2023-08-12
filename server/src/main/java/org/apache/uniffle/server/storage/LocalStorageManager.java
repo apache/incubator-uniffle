@@ -73,7 +73,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.server.ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER;
 
-public class LocalStorageManager extends SingleStorageManager {
+public class LocalStorageManager extends SingleStorageManager implements SupportsReadIndex, SupportsReadData {
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorageManager.class);
   private static final String UNKNOWN_USER_NAME = "unknown";
 
