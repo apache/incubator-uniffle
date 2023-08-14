@@ -17,32 +17,12 @@
 
 name: build
 
-on:
-  workflow_call:
-    inputs:
-      maven-args:
-        required: true
-        type: string
-      summary:
-        default: "grep -e '^\\[ERROR\\]' /tmp/maven.log || true"
-        required: false
-        type: string
-      reports-path:
-        default: ''
-        required: false
-        type: string
-      reports-name:
-        default: 'test-reports'
-        required: false
-        type: string
-      java-version:
-        default: '8'
-        required: false
-        type: string
-      jdk-distro:
-        default: 'temurin'
-        required: false
-        type: string
+on: [push, pull_request]
+env:
+  cache-key: ''
+  jdk-distro: 'temurin'
+  java-version: '8'
+  go-version: '1.17'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -80,7 +60,7 @@ jobs:
   
   java-11:
     needs: [spotbugs] # delay execution
-    name: 'compile'
+    name: 'compile-java11'
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: package -DskipTests -Djava.version=11
@@ -89,7 +69,7 @@ jobs:
 
   java-17:
     needs: [spotbugs] # delay execution
-    name: 'compile'
+    name: 'compile-java17'
     uses: ./.github/workflows/sequential.yml
     with:
       maven-args: package -DskipTests -Djava.version=17
@@ -123,24 +103,24 @@ jobs:
     steps:
     - name: Checkout project
       uses: actions/checkout@v3
-    - name: Set up JDK ${{ inputs.java-version }}
+    - name: Set up JDK ${{ env.java-version }}
       uses: actions/setup-java@v3
       with:
-        java-version: ${{ inputs.java-version }}
-        distribution: ${{ inputs.jdk-distro }}
+        java-version: ${{ env.java-version }}
+        distribution: ${{ env.jdk-distro }}
     - name: Cache local Maven repository
-      if: ${{ inputs.cache-key != '' }}
+      if: ${{ env.cache-key != '' }}
       uses: actions/cache@v3
       with:
         path: ~/.m2/repository
-        key: mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-${{ hashFiles('**/pom.xml') }}
+        key: mvn-${{ env.java-version }}-${{ env.cache-key }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
-          mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-
-    - name: Set up Go ${{ inputs.go-version }}
-      if: ${{ inputs.go-version != '' }}
+          mvn-${{ env.java-version }}-${{ env.cache-key }}-
+    - name: Set up Go ${{ env.go-version }}
+      if: ${{ env.go-version != '' }}
       uses: actions/setup-go@v3
       with:
-        go-version: ${{ inputs.go-version }}
+        go-version: ${{ env.go-version }}
     - name: Compile kubernetes operator
       run: |
         mvn package -Pkubernetes -DskipTests
