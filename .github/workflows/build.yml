@@ -127,5 +127,6 @@ jobs:
     - name:  Run local Integration Tests
       run: |
         chmod +x ./deploy/kubernetes/integration-test/e2e/start-e2e.sh
+        chmod +x ./deploy/kubernetes/integration-test/e2e/set-up-local-cluster.sh
         set -e
         ./deploy/kubernetes/integration-test/e2e/start-e2e.sh  
