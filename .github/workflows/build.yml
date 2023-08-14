@@ -126,6 +126,4 @@ jobs:
         mvn package -Pkubernetes -DskipTests
     - name:  Run local Integration Tests
       run: |
-        chmod +x ./deploy/kubernetes/integration-test/e2e/start-e2e.sh
-        chmod +x ./deploy/kubernetes/integration-test/e2e/set-up-local-cluster.sh
-        ./deploy/kubernetes/integration-test/e2e/start-e2e.sh  
+        cd deploy/kubernetes/integration-test/e2e && sh start-e2e.sh 
