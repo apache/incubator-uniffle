@@ -17,11 +17,15 @@
 
 package org.apache.uniffle.client;
 
+import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -33,6 +37,7 @@ import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
@@ -44,6 +49,8 @@ public class RestClientImpl implements RestClient {
   private static final Logger LOG = LoggerFactory.getLogger(RestClientImpl.class);
   private CloseableHttpClient httpclient;
   private String baseUrl;
+  private final ObjectMapper mapper =
+      new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
   public RestClientImpl(String baseUrl, CloseableHttpClient httpclient) {
     this.httpclient = httpclient;
@@ -60,6 +67,22 @@ public class RestClientImpl implements RestClient {
   @Override
   public String get(String path, Map<String, Object> params, String authHeader) {
     return doRequest(buildURI(path, params), authHeader, RequestBuilder.get());
+  }
+
+  @Override
+  public String post(String path, Map<String, Object> params, String authHeader) {
+    RequestBuilder post = RequestBuilder.post();
+    String requestBody = "";
+    try {
+      requestBody = mapper.writeValueAsString(params);
+      StringEntity requestEntity = new StringEntity(requestBody);
+      post.setEntity(requestEntity);
+    } catch (JsonProcessingException e) {
+      LOG.error("params{} to json error.", params, e);
+    } catch (UnsupportedEncodingException e) {
+      LOG.error("params{} to StringEntity error.", params, e);
+    }
+    return doRequest(buildURI(path, null), authHeader, post);
   }
 
   private String doRequest(URI uri, String authHeader, RequestBuilder requestBuilder) {
@@ -108,7 +131,7 @@ public class RestClientImpl implements RestClient {
       String url = StringUtils.isNotBlank(path) ? this.baseUrl + "/" + path : this.baseUrl;
       URIBuilder builder = new URIBuilder(url);
 
-      if (!params.isEmpty()) {
+      if (params != null && !params.isEmpty()) {
         for (Map.Entry<String, Object> entry : params.entrySet()) {
           if (entry.getValue() != null) {
             builder.addParameter(entry.getKey(), entry.getValue().toString());

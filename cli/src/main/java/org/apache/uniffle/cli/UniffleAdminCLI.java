@@ -34,15 +34,11 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   private final Options allOptions;
   private final Option refreshCheckerCli;
-  private final Option coordinatorHost;
-  private final Option coordinatorPort;
-  private final Option ssl;
-
   private final Option help;
-  protected UniffleRestClient client;
 
   public UniffleAdminCLI(String shortPrefix, String longPrefix) {
     allOptions = new Options();
+
     refreshCheckerCli =
         new Option(
             shortPrefix + "r",
@@ -52,24 +48,8 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
     help =
         new Option(
             shortPrefix + "h", longPrefix + "help", false, "Help for the Uniffle Admin CLI.");
-    coordinatorHost =
-        new Option(
-            shortPrefix + "s",
-            longPrefix + "coordinatorHost",
-            true,
-            "This is coordinator server host.");
-    coordinatorPort =
-        new Option(
-            shortPrefix + "p",
-            longPrefix + "coordinatorPort",
-            true,
-            "This is coordinator server port.");
-    ssl = new Option(null, longPrefix + "ssl", false, "use SSL.");
 
     allOptions.addOption(refreshCheckerCli);
-    allOptions.addOption(coordinatorHost);
-    allOptions.addOption(coordinatorPort);
-    allOptions.addOption(ssl);
     allOptions.addOption(help);
   }
 
@@ -92,16 +72,7 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
     }
 
     if (cmd.hasOption(coordinatorHost.getOpt()) && cmd.hasOption(coordinatorPort.getOpt())) {
-      String host = cmd.getOptionValue(coordinatorHost.getOpt()).trim();
-      int port = Integer.parseInt(cmd.getOptionValue(coordinatorPort.getOpt()).trim());
-      String hostUrl;
-      if (cmd.hasOption(ssl.getOpt())) {
-        hostUrl = String.format("https://%s:%d", host, port);
-      } else {
-        hostUrl = String.format("http://%s:%d", host, port);
-      }
-      LOG.info("connected to coordinator: {}.", hostUrl);
-      client = UniffleRestClient.builder(hostUrl).build();
+      getUniffleRestClient(cmd);
     }
 
     if (cmd.hasOption(refreshCheckerCli.getOpt())) {
@@ -123,10 +94,9 @@ public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
   @Override
   public void addRunOptions(Options baseOptions) {
-    baseOptions.addOption(refreshCheckerCli);
-    baseOptions.addOption(coordinatorHost);
-    baseOptions.addOption(coordinatorPort);
-    baseOptions.addOption(ssl);
+    for (Object option : allOptions.getOptions()) {
+      baseOptions.addOption((Option) option);
+    }
   }
 
   @Override

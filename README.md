@@ -49,15 +49,15 @@ Depending on different situations, Uniffle supports Memory & Local, Memory & Rem
 * Spark driver ask coordinator to get shuffle server for shuffle process
 * Spark task write shuffle data to shuffle server with following step:
 ![Rss Shuffle_Write](docs/asset/rss_shuffle_write.png)
-   1. Send KV data to buffer
-   2. Flush buffer to queue when buffer is full or buffer manager is full
-   3. Thread pool get data from queue
-   4. Request memory from shuffle server first and send the shuffle data
-   5. Shuffle server cache data in memory first and flush to queue when buffer manager is full
-   6. Thread pool get data from queue
-   7. Write data to storage with index file and data file
-   8. After write data, task report all blockId to shuffle server, this step is used for data validation later
-   9. Store taskAttemptId in MapStatus to support Spark speculation
+ 1. Send KV data to buffer
+ 2. Flush buffer to queue when buffer is full or buffer manager is full
+ 3. Thread pool get data from queue
+ 4. Request memory from shuffle server first and send the shuffle data
+ 5. Shuffle server cache data in memory first and flush to queue when buffer manager is full
+ 6. Thread pool get data from queue
+ 7. Write data to storage with index file and data file
+ 8. After write data, task report all blockId to shuffle server, this step is used for data validation later
+ 9. Store taskAttemptId in MapStatus to support Spark speculation
 
 * Depending on different storage types, the spark task will read shuffle data from shuffle server or remote storage or both of them.
 

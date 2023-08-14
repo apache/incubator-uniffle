@@ -68,7 +68,12 @@ public class HadoopStorageManager extends SingleStorageManager {
   @Override
   public void updateWriteMetrics(ShuffleDataFlushEvent event, long writeTime) {
     super.updateWriteMetrics(event, writeTime);
-    ShuffleServerMetrics.counterTotalHadoopWriteDataSize.inc(event.getSize());
+    Storage storage = event.getUnderStorage();
+    if (storage == null) {
+      LOG.warn("The storage owned by event: {} is null, this should not happen", event);
+      return;
+    }
+    ShuffleServerMetrics.incHadoopStorageWriteDataSize(storage.getStorageHost(), event.getSize());
   }
 
   @Override

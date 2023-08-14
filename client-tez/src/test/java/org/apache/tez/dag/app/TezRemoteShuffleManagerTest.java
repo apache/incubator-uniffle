@@ -116,7 +116,7 @@ public class TezRemoteShuffleManagerTest {
       secretManager.addTokenForJob(tokenIdentifier, sessionToken);
       TezRemoteShuffleManager tezRemoteShuffleManager =
           new TezRemoteShuffleManager(
-              appId.toString(), sessionToken, conf, appId.toString(), client);
+              appId.toString(), sessionToken, conf, appId.toString(), client, null);
       tezRemoteShuffleManager.initialize();
       tezRemoteShuffleManager.start();
 
@@ -224,7 +224,7 @@ public class TezRemoteShuffleManagerTest {
       secretManager.addTokenForJob(tokenIdentifier, sessionToken);
       TezRemoteShuffleManager tezRemoteShuffleManager =
           new TezRemoteShuffleManager(
-              appId.toString(), sessionToken, conf, appId.toString(), client);
+              appId.toString(), sessionToken, conf, appId.toString(), client, null);
       tezRemoteShuffleManager.initialize();
       tezRemoteShuffleManager.start();
 

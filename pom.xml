@@ -1077,6 +1077,7 @@
             <exclude>deploy/kubernetes/operator/go.mod</exclude>
             <exclude>deploy/kubernetes/operator/go.sum</exclude>
             <exclude>deploy/kubernetes/operator/PROJECT</exclude>
+            <exclude>licenses-binary/*</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -1976,6 +1977,12 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-yarn-api</artifactId>
             <version>${hadoop.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-yarn-client</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>test</scope>
           </dependency>
           <dependency>
             <groupId>org.apache.hadoop</groupId>

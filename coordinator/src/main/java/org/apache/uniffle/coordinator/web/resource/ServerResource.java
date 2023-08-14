@@ -19,7 +19,9 @@ package org.apache.uniffle.coordinator.web.resource;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.servlet.ServletContext;
 
@@ -33,16 +35,25 @@ import org.apache.hbase.thirdparty.javax.ws.rs.QueryParam;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
+import org.apache.uniffle.common.Application;
 import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.ClusterManager;
 import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.web.Response;
+import org.apache.uniffle.coordinator.web.request.ApplicationRequest;
 import org.apache.uniffle.coordinator.web.request.CancelDecommissionRequest;
 import org.apache.uniffle.coordinator.web.request.DecommissionRequest;
 
 @Produces({MediaType.APPLICATION_JSON})
 public class ServerResource extends BaseResource {
   @Context protected ServletContext servletContext;
+
+  @GET
+  @Path("/status")
+  public Response<String> status() {
+    return execute(() -> "success");
+  }
 
   @GET
   @Path("/nodes/{id}")
@@ -121,7 +132,43 @@ public class ServerResource extends BaseResource {
         });
   }
 
+  @POST
+  @Path("/applications")
+  @Produces({MediaType.APPLICATION_JSON})
+  public Response<Object> application(ApplicationRequest params) {
+
+    if (params == null) {
+      return Response.fail("ApplicationRequest Is not null");
+    }
+
+    Set<String> filterApplications = new HashSet<>();
+    if (CollectionUtils.isNotEmpty(params.getApplications())) {
+      filterApplications = params.getApplications();
+    }
+
+    int currentPage = params.getCurrentPage();
+    int pageSize = params.getPageSize();
+    String startTime = params.getHeartBeatStartTime();
+    String endTime = params.getHeartBeatEndTime();
+    String appIdRegex = params.getAppIdRegex();
+
+    try {
+      ApplicationManager applicationManager = getApplicationManager();
+      List<Application> applicationSet =
+          applicationManager.getApplications(
+              filterApplications, pageSize, currentPage, startTime, endTime, appIdRegex);
+      return Response.success(applicationSet);
+    } catch (Exception e) {
+      return Response.fail(e.getMessage());
+    }
+  }
+
   private ClusterManager getClusterManager() {
     return (ClusterManager) servletContext.getAttribute(ClusterManager.class.getCanonicalName());
+  }
+
+  private ApplicationManager getApplicationManager() {
+    return (ApplicationManager)
+        servletContext.getAttribute(ApplicationManager.class.getCanonicalName());
   }
 }

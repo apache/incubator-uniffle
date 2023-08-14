@@ -37,6 +37,10 @@ public class RssTezBypassWriter {
   private static final byte[] HEADER = new byte[] {(byte) 'T', (byte) 'I', (byte) 'F', (byte) 0};
 
   public static void write(MapOutput mapOutput, byte[] buffer) {
+    LOG.info(
+        "RssTezBypassWriter write mapOutput, type:{}, buffer length:{}",
+        mapOutput.getType(),
+        buffer.length);
     // Write and commit uncompressed data to MapOutput.
     // In the majority of cases, merger allocates memory to accept data,
     // but when data size exceeds the threshold, merger can also allocate disk.
@@ -57,6 +61,10 @@ public class RssTezBypassWriter {
   }
 
   public static void write(final FetchedInput mapOutput, byte[] buffer) throws IOException {
+    LOG.info(
+        "RssTezBypassWriter write mapOutput, type:{}, buffer length:{}",
+        mapOutput.getType(),
+        buffer.length);
     // Write and commit uncompressed data to MapOutput.
     // In the majority of cases, merger allocates memory to accept data,
     // but when data size exceeds the threshold, merger can also allocate disk.

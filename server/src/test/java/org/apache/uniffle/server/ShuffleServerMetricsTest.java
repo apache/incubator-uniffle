@@ -60,7 +60,8 @@ public class ShuffleServerMetricsTest {
     ssc.set(ShuffleServerConf.RPC_SERVER_PORT, 12346);
     ssc.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("tmp"));
     ssc.set(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
-    ssc.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    ssc.setString(
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     ssc.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "fake.coordinator:123");
     ssc.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1000L);
     shuffleServer = new ShuffleServer(ssc);
@@ -129,6 +130,42 @@ public class ShuffleServerMetricsTest {
       }
     }
     assertTrue(bingo);
+  }
+
+  @Test
+  public void testHadoopStorageWriteDataSize() {
+    // case1
+    String host1 = "hadoop-cluster01";
+    ShuffleServerMetrics.incHadoopStorageWriteDataSize(host1, 1000);
+    assertEquals(
+        1000.0,
+        ShuffleServerMetrics.counterTotalHadoopWriteDataSize
+            .labels(Constants.SHUFFLE_SERVER_VERSION, host1)
+            .get());
+
+    // case2
+    ShuffleServerMetrics.incHadoopStorageWriteDataSize(host1, 500);
+    assertEquals(
+        1500.0,
+        ShuffleServerMetrics.counterTotalHadoopWriteDataSize
+            .labels(Constants.SHUFFLE_SERVER_VERSION, host1)
+            .get());
+
+    // case3
+    String host2 = "hadoop-cluster2";
+    ShuffleServerMetrics.incHadoopStorageWriteDataSize(host2, 2000);
+    assertEquals(
+        2000.0,
+        ShuffleServerMetrics.counterTotalHadoopWriteDataSize
+            .labels(Constants.SHUFFLE_SERVER_VERSION, host2)
+            .get());
+
+    // case4
+    assertEquals(
+        3500.0,
+        ShuffleServerMetrics.counterTotalHadoopWriteDataSize
+            .labels(Constants.SHUFFLE_SERVER_VERSION, ShuffleServerMetrics.STORAGE_HOST_LABEL_ALL)
+            .get());
   }
 
   @Test

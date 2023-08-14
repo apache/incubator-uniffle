@@ -85,6 +85,7 @@ public class ShuffleServerMetrics {
   private static final String STORAGE_FAILED_WRITE_LOCAL = "storage_failed_write_local";
   private static final String STORAGE_SUCCESS_WRITE_LOCAL = "storage_success_write_local";
   private static final String STORAGE_HOST_LABEL = "storage_host";
+  public static final String STORAGE_HOST_LABEL_ALL = "ALL";
   public static final String STORAGE_TOTAL_WRITE_REMOTE = "storage_total_write_remote";
   public static final String STORAGE_RETRY_WRITE_REMOTE = "storage_retry_write_remote";
   public static final String STORAGE_FAILED_WRITE_REMOTE = "storage_failed_write_remote";
@@ -125,7 +126,6 @@ public class ShuffleServerMetrics {
   public static Counter.Child counterTotalReadTime;
   public static Counter.Child counterTotalFailedWrittenEventNum;
   public static Counter.Child counterTotalDroppedEventNum;
-  public static Counter.Child counterTotalHadoopWriteDataSize;
   public static Counter.Child counterTotalLocalFileWriteDataSize;
   public static Counter.Child counterTotalRequireBufferFailed;
   public static Counter.Child counterTotalRequireBufferFailedForHugePartition;
@@ -158,10 +158,13 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeEventQueueSize;
   public static Gauge.Child gaugeAppNum;
   public static Gauge.Child gaugeTotalPartitionNum;
+
   public static Counter counterRemoteStorageTotalWrite;
   public static Counter counterRemoteStorageRetryWrite;
   public static Counter counterRemoteStorageFailedWrite;
   public static Counter counterRemoteStorageSuccessWrite;
+  public static Counter counterTotalHadoopWriteDataSize;
+
   private static String tags;
   public static Counter counterLocalFileEventFlush;
   public static Counter counterHadoopEventFlush;
@@ -231,6 +234,14 @@ public class ShuffleServerMetrics {
     }
   }
 
+  public static void incHadoopStorageWriteDataSize(String storageHost, long size) {
+    if (StringUtils.isEmpty(storageHost)) {
+      return;
+    }
+    counterTotalHadoopWriteDataSize.labels(tags, storageHost).inc(size);
+    counterTotalHadoopWriteDataSize.labels(tags, STORAGE_HOST_LABEL_ALL).inc(size);
+  }
+
   private static void setUpMetrics() {
     counterTotalReceivedDataSize = metricsManager.addLabeledCounter(TOTAL_RECEIVED_DATA);
     counterTotalWriteDataSize = metricsManager.addLabeledCounter(TOTAL_WRITE_DATA);
@@ -253,7 +264,9 @@ public class ShuffleServerMetrics {
     counterTotalDroppedEventNum = metricsManager.addLabeledCounter(TOTAL_DROPPED_EVENT_NUM);
     counterTotalFailedWrittenEventNum =
         metricsManager.addLabeledCounter(TOTAL_FAILED_WRITTEN_EVENT_NUM);
-    counterTotalHadoopWriteDataSize = metricsManager.addLabeledCounter(TOTAL_HADOOP_WRITE_DATA);
+    counterTotalHadoopWriteDataSize =
+        metricsManager.addCounter(
+            TOTAL_HADOOP_WRITE_DATA, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
     counterTotalLocalFileWriteDataSize =
         metricsManager.addLabeledCounter(TOTAL_LOCALFILE_WRITE_DATA);
     counterTotalRequireBufferFailed = metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED);

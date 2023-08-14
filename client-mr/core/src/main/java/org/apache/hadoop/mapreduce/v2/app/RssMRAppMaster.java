@@ -90,6 +90,7 @@ public class RssMRAppMaster extends MRAppMaster {
   private final int rssNmHttpPort;
   private final ContainerId rssContainerID;
   private RssContainerAllocatorRouter rssContainerAllocator;
+  private ShuffleWriteClient shuffleWriteClient;
 
   public RssMRAppMaster(
       ApplicationAttemptId applicationAttemptId,
@@ -97,7 +98,8 @@ public class RssMRAppMaster extends MRAppMaster {
       String nmHost,
       int nmPort,
       int nmHttpPort,
-      long appSubmitTime) {
+      long appSubmitTime,
+      ShuffleWriteClient client) {
     super(
         applicationAttemptId,
         containerId,
@@ -111,20 +113,32 @@ public class RssMRAppMaster extends MRAppMaster {
     rssNmHttpPort = nmHttpPort;
     rssContainerID = containerId;
     rssContainerAllocator = null;
+    shuffleWriteClient = client;
   }
 
   private static final Logger LOG = LoggerFactory.getLogger(RssMRAppMaster.class);
+
+  @Override
+  protected void serviceStop() throws Exception {
+    LOG.info("Unregister shuffle for app {}", this.getAttemptID());
+    if (shuffleWriteClient != null) {
+      shuffleWriteClient.unregisterShuffle(getAttemptID().toString(), 0);
+    }
+    super.serviceStop();
+  }
 
   public static void main(String[] args) {
 
     JobConf conf = new JobConf(new YarnConfiguration());
     conf.addResource(new Path(MRJobConfig.JOB_CONF_FILE));
 
+    ShuffleWriteClient shuffleWriteClient = null;
     int numReduceTasks = conf.getInt(MRJobConfig.NUM_REDUCES, 0);
     if (numReduceTasks > 0) {
       String coordinators = conf.get(RssMRConfig.RSS_COORDINATOR_QUORUM);
 
       ShuffleWriteClient client = RssMRUtils.createShuffleClient(conf);
+      shuffleWriteClient = client;
 
       LOG.info("Registering coordinators {}", coordinators);
       client.registerCoordinators(coordinators);
@@ -369,7 +383,8 @@ public class RssMRAppMaster extends MRAppMaster {
               nodeHostString,
               Integer.parseInt(nodePortString),
               Integer.parseInt(nodeHttpPortString),
-              appSubmitTime);
+              appSubmitTime,
+              shuffleWriteClient);
       ShutdownHookManager.get().addShutdownHook(new RssMRAppMasterShutdownHook(appMaster), 30);
       MRWebAppUtil.initialize(conf);
       String systemPropsToLog = MRApps.getSystemPropertiesToLog(conf);
