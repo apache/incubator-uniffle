@@ -17,7 +17,32 @@
 
 name: build
 
-on: [push, pull_request]
+on:
+  workflow_call:
+    inputs:
+      maven-args:
+        required: true
+        type: string
+      summary:
+        default: "grep -e '^\\[ERROR\\]' /tmp/maven.log || true"
+        required: false
+        type: string
+      reports-path:
+        default: ''
+        required: false
+        type: string
+      reports-name:
+        default: 'test-reports'
+        required: false
+        type: string
+      java-version:
+        default: '8'
+        required: false
+        type: string
+      jdk-distro:
+        default: 'temurin'
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
