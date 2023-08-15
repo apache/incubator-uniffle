@@ -560,6 +560,9 @@ public class FetcherTest {
 
     @Override
     public void unregisterShuffle(String appId, int shuffleId) {}
+
+    @Override
+    public void unregisterShuffle(String appId) {}
   }
 
   static class MockedShuffleReadClient implements ShuffleReadClient {
