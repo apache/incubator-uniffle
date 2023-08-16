@@ -408,10 +408,16 @@ public class WriteBufferManager extends MemoryConsumer {
                 + totalSize
                 + " bytes");
         // Use final temporary variables for closures
-        final long _memoryUsed = memoryUsed;
+        final long memoryUsedTemp = memoryUsed;
+        final List<ShuffleBlockInfo> shuffleBlocksTemp = shuffleBlockInfosPerEvent;
         events.add(
             new AddBlockEvent(
-                taskId, shuffleBlockInfosPerEvent, () -> freeAllocatedMemory(_memoryUsed)));
+                taskId,
+                shuffleBlockInfosPerEvent,
+                () -> {
+                  freeAllocatedMemory(memoryUsedTemp);
+                  shuffleBlocksTemp.stream().forEach(x -> x.getData().release());
+                }));
         shuffleBlockInfosPerEvent = Lists.newArrayList();
         totalSize = 0;
         memoryUsed = 0;
@@ -425,17 +431,15 @@ public class WriteBufferManager extends MemoryConsumer {
               + totalSize
               + " bytes");
       // Use final temporary variables for closures
-      final long _memoryUsed = memoryUsed;
-      final List<ShuffleBlockInfo> finalShuffleBlockInfosPerEvent = shuffleBlockInfoList;
+      final long memoryUsedTemp = memoryUsed;
+      final List<ShuffleBlockInfo> shuffleBlocksTemp = shuffleBlockInfosPerEvent;
       events.add(
           new AddBlockEvent(
               taskId,
               shuffleBlockInfosPerEvent,
               () -> {
-                freeAllocatedMemory(_memoryUsed);
-                for (ShuffleBlockInfo shuffleBlockInfo : finalShuffleBlockInfosPerEvent) {
-                  shuffleBlockInfo.getData().release();
-                }
+                freeAllocatedMemory(memoryUsedTemp);
+                shuffleBlocksTemp.stream().forEach(x -> x.getData().release());
               }));
     }
     return events;
