@@ -409,7 +409,7 @@ public class WriteBufferManager extends MemoryConsumer {
                 + " bytes");
         // Use final temporary variables for closures
         final long _memoryUsed = memoryUsed;
-        List<ShuffleBlockInfo> _blocks = shuffleBlockInfosPerEvent;
+        final List<ShuffleBlockInfo> _blocks = shuffleBlockInfosPerEvent;
         events.add(
             new AddBlockEvent(
                 taskId,
