@@ -17,36 +17,42 @@
 
 package org.apache.uniffle.test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.LargeSorter;
-import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.RssMRConfig;
 import org.apache.hadoop.util.Tool;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.storage.util.StorageType;
 
-public class LargeSorterTest extends MRIntegrationTestBase {
+public class HadoopConfTest extends MRIntegrationTestBase {
 
   @BeforeAll
   public static void setupServers() throws Exception {
-    MRIntegrationTestBase.setupServers(MRIntegrationTestBase.getDynamicConf());
+    MRIntegrationTestBase.setupServers(HadoopConfTest.getDynamicConf());
+  }
+
+  protected static Map<String, String> getDynamicConf() {
+    return new HashMap<>();
   }
 
   @Test
-  public void largeSorterTest() throws Exception {
+  public void hadoopConfTest() throws Exception {
     run();
   }
 
   @Override
   protected void updateRssConfiguration(Configuration jobConf) {
     jobConf.set(RssMRConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
+    jobConf.set(RssMRConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    jobConf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, HDFS_URI + "rss/test");
     jobConf.setInt(LargeSorter.NUM_MAP_TASKS, 1);
     jobConf.setInt(LargeSorter.MBS_PER_MAP, 256);
-    jobConf.set(
-        MRJobConfig.MR_AM_COMMAND_OPTS,
-        "-XX:+TraceClassLoading org.apache.uniffle.test.FailoverAppMaster");
   }
 
   @Override
