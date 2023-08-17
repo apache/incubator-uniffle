@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.mapreduce.JobContext;
@@ -67,11 +68,10 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     }
     partitions = mrJobConf.getNumReduceTasks();
     MapTask mapTask = context.getMapTask();
-    JobConf rssJobConf = new JobConf(RssMRConfig.RSS_CONF_FILE);
+    Configuration rssJobConf = new JobConf(RssMRConfig.RSS_CONF_FILE);
     double sortThreshold =
         RssMRUtils.getDouble(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_CLIENT_SORT_MEMORY_USE_THRESHOLD,
             RssMRConfig.RSS_CLIENT_DEFAULT_SORT_MEMORY_USE_THRESHOLD);
     if (sortThreshold <= 0 || Double.compare(sortThreshold, 1.0) > 0) {
@@ -81,14 +81,12 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     int batch =
         RssMRUtils.getInt(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_CLIENT_BATCH_TRIGGER_NUM,
             RssMRConfig.RSS_CLIENT_DEFAULT_BATCH_TRIGGER_NUM);
     RawComparator<K> comparator = mrJobConf.getOutputKeyComparator();
     double memoryThreshold =
         RssMRUtils.getDouble(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_CLIENT_MEMORY_THRESHOLD,
             RssMRConfig.RSS_CLIENT_DEFAULT_MEMORY_THRESHOLD);
     ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
@@ -99,30 +97,26 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     double sendThreshold =
         RssMRUtils.getDouble(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_CLIENT_SEND_THRESHOLD,
             RssMRConfig.RSS_CLIENT_DEFAULT_SEND_THRESHOLD);
 
     long sendCheckInterval =
         RssMRUtils.getLong(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS,
             RssMRConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE);
     long sendCheckTimeout =
         RssMRUtils.getLong(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
             RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE);
     int bitmapSplitNum =
         RssMRUtils.getInt(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_CLIENT_BITMAP_NUM,
             RssMRConfig.RSS_CLIENT_DEFAULT_BITMAP_NUM);
     int numMaps = mrJobConf.getNumMapTasks();
-    String storageType = RssMRUtils.getString(rssJobConf, mrJobConf, RssMRConfig.RSS_STORAGE_TYPE);
+    String storageType = RssMRUtils.getString(rssJobConf, RssMRConfig.RSS_STORAGE_TYPE);
     if (StringUtils.isEmpty(storageType)) {
       throw new RssException("storage type mustn't be empty");
     }
@@ -133,19 +127,16 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     long maxSegmentSize =
         RssMRUtils.getLong(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_CLIENT_MAX_SEGMENT_SIZE,
             RssMRConfig.RSS_CLIENT_DEFAULT_MAX_SEGMENT_SIZE);
     int sendThreadNum =
         RssMRUtils.getInt(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_CLIENT_SEND_THREAD_NUM,
             RssMRConfig.RSS_CLIENT_DEFAULT_SEND_THREAD_NUM);
     long maxBufferSize =
         RssMRUtils.getLong(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_WRITER_BUFFER_SIZE,
             RssMRConfig.RSS_WRITER_BUFFER_SIZE_DEFAULT_VALUE);
     shuffleClient = RssMRUtils.createShuffleClient(mrJobConf);
@@ -177,7 +168,7 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
             RssMRConfig.toRssConf(rssJobConf));
   }
 
-  private Map<Integer, List<ShuffleServerInfo>> createAssignmentMap(JobConf jobConf) {
+  private Map<Integer, List<ShuffleServerInfo>> createAssignmentMap(Configuration jobConf) {
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
     for (int i = 0; i < partitions; i++) {
       String servers = jobConf.get(RssMRConfig.RSS_ASSIGNMENT_PREFIX + i);

@@ -18,11 +18,14 @@
 package org.apache.hadoop.mapreduce;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
@@ -128,7 +131,7 @@ public class RssMRUtils {
     return client;
   }
 
-  public static Set<ShuffleServerInfo> getAssignedServers(JobConf jobConf, int reduceID) {
+  public static Set<ShuffleServerInfo> getAssignedServers(Configuration jobConf, int reduceID) {
     String servers = jobConf.get(RssMRConfig.RSS_ASSIGNMENT_PREFIX + String.valueOf(reduceID));
     String[] splitServers = servers.split(",");
     Set<ShuffleServerInfo> assignServers = Sets.newHashSet();
@@ -142,7 +145,41 @@ public class RssMRUtils {
     return containerId.getApplicationAttemptId();
   }
 
-  public static void applyDynamicClientConf(JobConf jobConf, Map<String, String> confItems) {
+  public static void applyClientConf(Configuration jobConf, JobConf mrJobConf) {
+
+    if (jobConf == null) {
+      LOG.warn("Job conf is null");
+      return;
+    }
+
+    if (mrJobConf == null) {
+      LOG.warn("Empty conf items");
+      return;
+    }
+
+    Iterator<Map.Entry<String, String>> iterator = mrJobConf.iterator();
+    Map<String, String> confItems = new HashMap<>();
+
+    while (iterator.hasNext()) {
+      Map.Entry<String, String> entry = iterator.next();
+      String key = entry.getKey();
+      if (!key.startsWith(RssMRConfig.MR_RSS_CONFIG_PREFIX)) {
+        continue;
+      }
+      confItems.put(entry.getKey(), entry.getValue());
+    }
+
+    for (Map.Entry<String, String> kv : confItems.entrySet()) {
+      String mrConfKey = kv.getKey();
+      String mrConfVal = kv.getValue();
+      if (StringUtils.isEmpty(jobConf.get(mrConfKey, ""))) {
+        LOG.warn("Use conf client conf {} = {}", mrConfKey, mrConfVal);
+        jobConf.set(mrConfKey, mrConfVal);
+      }
+    }
+  }
+
+  public static void applyDynamicClientConf(Configuration jobConf, Map<String, String> confItems) {
     if (jobConf == null) {
       LOG.warn("Job conf is null");
       return;
@@ -155,8 +192,8 @@ public class RssMRUtils {
 
     for (Map.Entry<String, String> kv : confItems.entrySet()) {
       String mrConfKey = kv.getKey();
-      if (!mrConfKey.startsWith(RssMRConfig.MR_RSS_CONFIG_PREFIX)) {
-        mrConfKey = RssMRConfig.MR_RSS_CONFIG_PREFIX + mrConfKey;
+      if (!mrConfKey.startsWith(RssMRConfig.MR_CONFIG_PREFIX)) {
+        mrConfKey = RssMRConfig.MR_CONFIG_PREFIX + mrConfKey;
       }
       String mrConfVal = kv.getValue();
       if (StringUtils.isEmpty(jobConf.get(mrConfKey, ""))
@@ -167,31 +204,28 @@ public class RssMRUtils {
     }
   }
 
-  public static int getInt(JobConf rssJobConf, JobConf mrJobCOnf, String key, int defaultValue) {
-    return rssJobConf.getInt(key, mrJobCOnf.getInt(key, defaultValue));
+  public static int getInt(Configuration rssJobConf, String key, int defaultValue) {
+    return rssJobConf.getInt(key, defaultValue);
   }
 
-  public static long getLong(JobConf rssJobConf, JobConf mrJobConf, String key, long defaultValue) {
-    return rssJobConf.getLong(key, mrJobConf.getLong(key, defaultValue));
+  public static long getLong(Configuration rssJobConf, String key, long defaultValue) {
+    return rssJobConf.getLong(key, defaultValue);
   }
 
-  public static boolean getBoolean(
-      JobConf rssJobConf, JobConf mrJobConf, String key, boolean defaultValue) {
-    return rssJobConf.getBoolean(key, mrJobConf.getBoolean(key, defaultValue));
+  public static boolean getBoolean(Configuration rssJobConf, String key, boolean defaultValue) {
+    return rssJobConf.getBoolean(key, defaultValue);
   }
 
-  public static double getDouble(
-      JobConf rssJobConf, JobConf mrJobConf, String key, double defaultValue) {
-    return rssJobConf.getDouble(key, mrJobConf.getDouble(key, defaultValue));
+  public static double getDouble(Configuration rssJobConf, String key, double defaultValue) {
+    return rssJobConf.getDouble(key, defaultValue);
   }
 
-  public static String getString(JobConf rssJobConf, JobConf mrJobConf, String key) {
-    return rssJobConf.get(key, mrJobConf.get(key));
+  public static String getString(Configuration rssJobConf, String key) {
+    return rssJobConf.get(key, "");
   }
 
-  public static String getString(
-      JobConf rssJobConf, JobConf mrJobConf, String key, String defaultValue) {
-    return rssJobConf.get(key, mrJobConf.get(key, defaultValue));
+  public static String getString(Configuration rssJobConf, String key, String defaultValue) {
+    return rssJobConf.get(key, defaultValue);
   }
 
   public static long getBlockId(long partitionId, long taskAttemptId, int nextSeqNo) {
@@ -283,23 +317,20 @@ public class RssMRUtils {
     return (int) Math.ceil(taskConcurrency * 1.0 / taskConcurrencyPerServer);
   }
 
-  public static void validateRssClientConf(JobConf rssJobConf, JobConf mrJobConf) {
+  public static void validateRssClientConf(Configuration rssJobConf) {
     int retryMax =
         getInt(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_CLIENT_RETRY_MAX,
             RssMRConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
     long retryIntervalMax =
         getLong(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
             RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
     long sendCheckTimeout =
         getLong(
             rssJobConf,
-            mrJobConf,
             RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
             RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE);
     if (retryIntervalMax * retryMax > sendCheckTimeout) {
