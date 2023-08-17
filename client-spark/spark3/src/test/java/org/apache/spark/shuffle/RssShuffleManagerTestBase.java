@@ -20,6 +20,7 @@ package org.apache.spark.shuffle;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import org.apache.spark.shuffle.sort.SortShuffleManager;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.mockito.MockedStatic;
@@ -28,8 +29,10 @@ import org.mockito.Mockito;
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.Constants;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -48,6 +51,20 @@ public class RssShuffleManagerTestBase {
     mockedStaticRssShuffleUtils.close();
   }
 
+  protected ShuffleManager createEssShuffleManager() {
+    SortShuffleManager mockedShuffleManager = mock(SortShuffleManager.class);
+    ShuffleHandle mockedShuffleHandle = mock(ShuffleHandle.class);
+    when(mockedShuffleManager.registerShuffle(anyInt(), any())).thenReturn(mockedShuffleHandle);
+    return mockedShuffleManager;
+  }
+
+  protected ShuffleManager createRssShuffleManager() {
+    RssShuffleManager mockedShuffleManager = mock(RssShuffleManager.class);
+    ShuffleHandle mockedShuffleHandle = mock(ShuffleHandle.class);
+    when(mockedShuffleManager.registerShuffle(anyInt(), any())).thenReturn(mockedShuffleHandle);
+    return mockedShuffleManager;
+  }
+
   protected CoordinatorClient createCoordinatorClient(StatusCode status) {
     CoordinatorClient mockedCoordinatorClient = mock(CoordinatorClient.class);
     when(mockedCoordinatorClient.accessCluster(any()))
@@ -62,5 +79,16 @@ public class RssShuffleManagerTestBase {
     mockedStaticRssShuffleUtils
         .when(() -> RssSparkShuffleUtils.createCoordinatorClients(any()))
         .thenReturn(coordinatorClients);
+  }
+
+  void setupMockedShuffleManager() {
+    ShuffleManager essManager = createEssShuffleManager();
+    ShuffleManager rssManager = createRssShuffleManager();
+    mockedStaticRssShuffleUtils
+        .when(
+            () ->
+                RssSparkShuffleUtils.loadShuffleManager(
+                    eq(Constants.SORT_SHUFFLE_MANAGER_NAME), any(), anyBoolean()))
+        .thenReturn(essManager);
   }
 }
