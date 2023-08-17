@@ -590,7 +590,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetLocalShuffleDataResponse reply = null;
-    ShuffleDataResult sdr;
+    ShuffleDataResult sdr = null;
     String requestInfo =
         "appId["
             + appId
@@ -658,6 +658,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 .setRetMsg(msg)
                 .build();
       } finally {
+        if (sdr != null) {
+          sdr.release();
+        }
         shuffleServer.getShuffleBufferManager().releaseReadMemory(length);
       }
     } else {
@@ -706,9 +709,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             .getShuffleServerConf()
             .getLong(ShuffleServerConf.SERVER_SHUFFLE_INDEX_SIZE_HINT);
     if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(assumedFileSize)) {
+      ShuffleIndexResult shuffleIndexResult = null;
       try {
         long start = System.currentTimeMillis();
-        ShuffleIndexResult shuffleIndexResult =
+        shuffleIndexResult =
             shuffleServer
                 .getShuffleTaskManager()
                 .getShuffleIndex(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
@@ -744,6 +748,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 .setRetMsg(msg)
                 .build();
       } finally {
+        if (shuffleIndexResult != null) {
+          shuffleIndexResult.release();
+        }
         shuffleServer.getShuffleBufferManager().releaseReadMemory(assumedFileSize);
       }
     } else {
@@ -789,6 +796,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
     // todo: if can get the exact memory size?
     if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(readBufferSize)) {
+      ShuffleDataResult shuffleDataResult = null;
       try {
         Roaring64NavigableMap expectedTaskIds = null;
         if (request.getSerializedExpectedTaskIdsBitmap() != null
@@ -797,7 +805,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               RssUtils.deserializeBitMap(
                   request.getSerializedExpectedTaskIdsBitmap().toByteArray());
         }
-        ShuffleDataResult shuffleDataResult =
+        shuffleDataResult =
             shuffleServer
                 .getShuffleTaskManager()
                 .getInMemoryShuffleData(
@@ -843,6 +851,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 .setRetMsg(msg)
                 .build();
       } finally {
+        if (shuffleDataResult != null) {
+          shuffleDataResult.release();
+        }
         shuffleServer.getShuffleBufferManager().releaseReadMemory(readBufferSize);
       }
     } else {
