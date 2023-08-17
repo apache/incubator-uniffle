@@ -709,9 +709,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             .getShuffleServerConf()
             .getLong(ShuffleServerConf.SERVER_SHUFFLE_INDEX_SIZE_HINT);
     if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(assumedFileSize)) {
+      ShuffleIndexResult shuffleIndexResult = null;
       try {
         long start = System.currentTimeMillis();
-        ShuffleIndexResult shuffleIndexResult =
+        shuffleIndexResult =
             shuffleServer
                 .getShuffleTaskManager()
                 .getShuffleIndex(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
@@ -747,6 +748,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 .setRetMsg(msg)
                 .build();
       } finally {
+        if (shuffleIndexResult != null) {
+          shuffleIndexResult.release();
+        }
         shuffleServer.getShuffleBufferManager().releaseReadMemory(assumedFileSize);
       }
     } else {
