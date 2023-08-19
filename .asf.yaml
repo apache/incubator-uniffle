@@ -33,7 +33,6 @@ github:
     # Enable projects for project management boards
     projects: true
   collaborators:
-    - leixm
     - wangao1236
     - lifeSo
     - zhengchenyu
