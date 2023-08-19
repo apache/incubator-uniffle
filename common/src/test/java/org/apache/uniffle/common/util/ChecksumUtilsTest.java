@@ -21,17 +21,26 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
 import java.util.zip.CRC32;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ChecksumUtilsTest {
+
+  @TempDir File tempDir;
+
+  @BeforeEach
+  void beforeEach() {
+    assertTrue(this.tempDir.isDirectory());
+  }
 
   @Test
   public void crc32TestWithByte() {
@@ -56,7 +65,6 @@ public class ChecksumUtilsTest {
     byte[] data = new byte[length];
     new Random().nextBytes(data);
 
-    String tempDir = Files.createTempDirectory("rss").toString();
     File file = new File(tempDir, "crc_test.txt");
     file.createNewFile();
     file.deleteOnExit();

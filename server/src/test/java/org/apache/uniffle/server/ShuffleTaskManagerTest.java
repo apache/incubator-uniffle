@@ -18,7 +18,6 @@
 package org.apache.uniffle.server;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -80,10 +79,15 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
 
   private ShuffleServer shuffleServer;
 
+  @TempDir File tempDir1;
+  @TempDir File tempDir2;
+
   @BeforeEach
   public void beforeEach() {
     ShuffleServerMetrics.clear();
     ShuffleServerMetrics.register();
+    assertTrue(this.tempDir1.isDirectory());
+    assertTrue(this.tempDir2.isDirectory());
   }
 
   @AfterEach
@@ -463,11 +467,9 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
 
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), "LOCALFILE");
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
-    java.nio.file.Path path1 = Files.createTempDirectory("removeShuffleDataWithLocalfileTest");
-    java.nio.file.Path path2 = Files.createTempDirectory("removeShuffleDataWithLocalfileTest");
     conf.setString(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH.key(),
-        path1.toAbsolutePath().toString() + "," + path2.toAbsolutePath().toString());
+        tempDir1.getAbsolutePath() + "," + tempDir2.getAbsolutePath());
 
     shuffleServer = new ShuffleServer(conf);
     ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
