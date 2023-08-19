@@ -37,11 +37,6 @@ public class ChecksumUtilsTest {
 
   @TempDir File tempDir;
 
-  @BeforeEach
-  void beforeEach() {
-    assertTrue(this.tempDir.isDirectory());
-  }
-
   @Test
   public void crc32TestWithByte() {
     byte[] data = new byte[32 * 1024 * 1024];
