@@ -76,6 +76,7 @@ public class ShuffleServerMetrics {
   private static final String TOTAL_HADOOP_WRITE_DATA = "total_hadoop_write_data";
   private static final String TOTAL_LOCALFILE_WRITE_DATA = "total_localfile_write_data";
   private static final String LOCAL_DISK_PATH_LABEL = "local_disk_path";
+  public static final String LOCAL_DISK_PATH_LABEL_ALL = "ALL";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED = "total_require_buffer_failed";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION =
       "total_require_buffer_failed_for_huge_partition";
