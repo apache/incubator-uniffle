@@ -18,7 +18,6 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +30,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.TestUtils;
@@ -80,13 +80,13 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
   private static CoordinatorServer coordinatorServer;
   private static ShuffleServer shuffleServer;
 
+  static @TempDir File tempDir;
+
   private static ShuffleServerConf getShuffleServerConf() throws Exception {
-    File dataFolder = Files.createTempDirectory("rssdata").toFile();
     ShuffleServerConf serverConf = new ShuffleServerConf();
-    dataFolder.deleteOnExit();
     serverConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT);
     serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
-    serverConf.setString("rss.storage.basePath", dataFolder.getAbsolutePath());
+    serverConf.setString("rss.storage.basePath", tempDir.getAbsolutePath());
     serverConf.setString("rss.server.buffer.capacity", "671088640");
     serverConf.setString("rss.server.memory.shuffle.highWaterMark", "50.0");
     serverConf.setString("rss.server.memory.shuffle.lowWaterMark", "0.0");
