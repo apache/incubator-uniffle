@@ -75,6 +75,8 @@ public class ShuffleServerMetrics {
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
   private static final String TOTAL_HADOOP_WRITE_DATA = "total_hadoop_write_data";
   private static final String TOTAL_LOCALFILE_WRITE_DATA = "total_localfile_write_data";
+  private static final String LOCAL_DISK_PATH_LABEL = "local_disk_path";
+  public static final String LOCAL_DISK_PATH_LABEL_ALL = "ALL";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED = "total_require_buffer_failed";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION =
       "total_require_buffer_failed_for_huge_partition";
@@ -126,7 +128,6 @@ public class ShuffleServerMetrics {
   public static Counter.Child counterTotalReadTime;
   public static Counter.Child counterTotalFailedWrittenEventNum;
   public static Counter.Child counterTotalDroppedEventNum;
-  public static Counter.Child counterTotalLocalFileWriteDataSize;
   public static Counter.Child counterTotalRequireBufferFailed;
   public static Counter.Child counterTotalRequireBufferFailedForHugePartition;
   public static Counter.Child counterTotalRequireBufferFailedForRegularPartition;
@@ -164,6 +165,7 @@ public class ShuffleServerMetrics {
   public static Counter counterRemoteStorageFailedWrite;
   public static Counter counterRemoteStorageSuccessWrite;
   public static Counter counterTotalHadoopWriteDataSize;
+  public static Counter counterTotalLocalFileWriteDataSize;
 
   private static String tags;
   public static Counter counterLocalFileEventFlush;
@@ -268,7 +270,7 @@ public class ShuffleServerMetrics {
         metricsManager.addCounter(
             TOTAL_HADOOP_WRITE_DATA, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
     counterTotalLocalFileWriteDataSize =
-        metricsManager.addLabeledCounter(TOTAL_LOCALFILE_WRITE_DATA);
+        metricsManager.addCounter(TOTAL_LOCALFILE_WRITE_DATA, LOCAL_DISK_PATH_LABEL);
     counterTotalRequireBufferFailed = metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED);
     counterTotalRequireBufferFailedForRegularPartition =
         metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_REGULAR_PARTITION);
