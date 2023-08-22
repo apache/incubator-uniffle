@@ -269,6 +269,11 @@ public class RssDAGAppMaster extends DAGAppMaster {
 
   @Override
   protected DAG createDAG(DAGProtos.DAGPlan dagPB) {
+    // Generally, one application will execute multiple DAGs,
+    // and there is no correlation between the DAGs.
+    // Therefore, after completing the execution of a DAG,
+    // you can unregister the relevant shuffle data.
+    tezRemoteShuffleManager.unregisterShuffle();
     DAGImpl dag = createDAG(dagPB, null);
     registerStateEnteredCallback(dag, this);
     return dag;

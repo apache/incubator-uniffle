@@ -109,15 +109,16 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
 
   @Override
   public void shutdown() throws Exception {
+    unregisterShuffle();
+    server.stop();
+  }
+
+  public void unregisterShuffle() {
+    tezRemoteShuffleUmbilical.clearShuffleInfo();
     if (rssClient != null) {
       LOG.info("unregister all shuffle for appid {}", appId);
-      Map<Integer, ShuffleAssignmentsInfo> infos =
-          tezRemoteShuffleUmbilical.getShuffleIdToShuffleAssignsInfo();
-      for (Map.Entry<Integer, ShuffleAssignmentsInfo> entry : infos.entrySet()) {
-        rssClient.unregisterShuffle(appId, entry.getKey());
-      }
+      rssClient.unregisterShuffle(appId);
     }
-    server.stop();
   }
 
   public InetSocketAddress getAddress() {
@@ -182,8 +183,8 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
       return response;
     }
 
-    Map<Integer, ShuffleAssignmentsInfo> getShuffleIdToShuffleAssignsInfo() {
-      return shuffleIdToShuffleAssignsInfo;
+    void clearShuffleInfo() {
+      this.shuffleIdToShuffleAssignsInfo.clear();
     }
   }
 
