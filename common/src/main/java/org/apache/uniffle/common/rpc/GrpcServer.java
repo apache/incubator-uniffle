@@ -204,6 +204,7 @@ public class GrpcServer implements ServerInterface {
     LOG.info("Grpc server started, configured port: {}, listening on {}.", port, listenPort);
   }
 
+  @Override
   public void stop() throws InterruptedException {
     if (server != null) {
       server.shutdown().awaitTermination(10, TimeUnit.SECONDS);
@@ -214,6 +215,7 @@ public class GrpcServer implements ServerInterface {
     }
   }
 
+  @Override
   public void blockUntilShutdown() throws InterruptedException {
     if (server != null) {
       server.awaitTermination();
