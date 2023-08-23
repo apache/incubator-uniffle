@@ -21,17 +21,17 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.netty.IOMode;
 
-import static org.apache.uniffle.common.compression.Codec.Type.LZ4;
+import static org.apache.uniffle.common.compression.Codec.Type.ZSTD;
 
 public class RssClientConf {
 
   public static final ConfigOption<Codec.Type> COMPRESSION_TYPE =
       ConfigOptions.key("rss.client.io.compression.codec")
           .enumType(Codec.Type.class)
-          .defaultValue(LZ4)
+          .defaultValue(ZSTD)
           .withDescription(
               "The compression codec is used to compress the shuffle data. "
-                  + "Default codec is `LZ4`. Other options are`ZSTD` and `SNAPPY`.");
+                  + "Default codec is `ZSTD`. Other options are`LZ4` and `SNAPPY`.");
 
   public static final ConfigOption<Integer> ZSTD_COMPRESSION_LEVEL =
       ConfigOptions.key("rss.client.io.compression.zstd.level")
