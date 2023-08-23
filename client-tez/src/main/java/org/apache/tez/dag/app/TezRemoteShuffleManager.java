@@ -51,6 +51,7 @@ import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.dag.api.TezException;
 import org.apache.tez.dag.api.TezUncheckedException;
 import org.apache.tez.dag.app.security.authorize.RssTezAMPolicyProvider;
+import org.apache.tez.dag.records.TezDAGID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,10 +115,29 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   }
 
   public void unregisterShuffle() {
-    tezRemoteShuffleUmbilical.clearShuffleInfo();
     if (rssClient != null) {
       LOG.info("unregister all shuffle for appid {}", appId);
       rssClient.unregisterShuffle(appId);
+    }
+  }
+
+  public void unregisterShuffleByDagId(TezDAGID dagId) {
+    try {
+      tezRemoteShuffleUmbilical.getShuffleIdToShuffleAssignsInfo().keySet().stream()
+          .filter(shuffleId -> dagId.getId() == RssTezUtils.parseDagId(shuffleId))
+          .forEach(
+              shuffleId -> {
+                long startTime = System.currentTimeMillis();
+                rssClient.unregisterShuffle(appId, shuffleId);
+                LOG.info(
+                    "Unregister shuffle successfully, appId={}, dagId={}, shuffleId={}, cost={}ms",
+                    appId,
+                    dagId,
+                    shuffleId,
+                    System.currentTimeMillis() - startTime);
+              });
+    } catch (Exception e) {
+      LOG.info("Failed to unregister shuffle by dagId: {}", dagId, e);
     }
   }
 
@@ -183,8 +203,8 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
       return response;
     }
 
-    void clearShuffleInfo() {
-      this.shuffleIdToShuffleAssignsInfo.clear();
+    Map<Integer, ShuffleAssignmentsInfo> getShuffleIdToShuffleAssignsInfo() {
+      return shuffleIdToShuffleAssignsInfo;
     }
   }
 

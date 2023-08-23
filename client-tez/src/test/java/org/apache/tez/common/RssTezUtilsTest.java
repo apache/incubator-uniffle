@@ -29,7 +29,6 @@ import org.apache.tez.dag.records.TezDAGID;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.dag.records.TezTaskID;
 import org.apache.tez.dag.records.TezVertexID;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -40,6 +39,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.apache.tez.common.RssTezConfig.RSS_STORAGE_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RssTezUtilsTest {
@@ -207,9 +207,9 @@ public class RssTezUtilsTest {
     dynamic.put(RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
     dynamic.put("config2", "value2");
     RssTezUtils.applyDynamicClientConf(conf, dynamic);
-    Assertions.assertEquals("value1", conf.get("tez.config1"));
-    Assertions.assertEquals("value2", conf.get("tez.config2"));
-    Assertions.assertEquals(StorageType.LOCALFILE.name(), conf.get(RSS_STORAGE_TYPE));
+    assertEquals("value1", conf.get("tez.config1"));
+    assertEquals("value2", conf.get("tez.config2"));
+    assertEquals(StorageType.LOCALFILE.name(), conf.get(RSS_STORAGE_TYPE));
   }
 
   @Test
@@ -218,7 +218,15 @@ public class RssTezUtilsTest {
     conf1.set("tez.config1", "value1");
     conf1.set("config2", "value2");
     Configuration conf2 = RssTezUtils.filterRssConf(conf1);
-    Assertions.assertEquals("value1", conf2.get("tez.config1"));
-    Assertions.assertNull(conf2.get("config2"));
+    assertEquals("value1", conf2.get("tez.config1"));
+    assertNull(conf2.get("config2"));
+  }
+
+  @Test
+  public void testParseDagId() {
+    int shuffleId = RssTezUtils.computeShuffleId(1, 2, 3);
+    assertEquals(1, RssTezUtils.parseDagId(shuffleId));
+    assertThrows(IllegalArgumentException.class, () -> RssTezUtils.parseDagId(-1));
+    assertThrows(RssException.class, () -> RssTezUtils.parseDagId(100));
   }
 }

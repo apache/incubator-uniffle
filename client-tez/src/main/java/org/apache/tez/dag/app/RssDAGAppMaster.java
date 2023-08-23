@@ -65,6 +65,9 @@ import org.apache.tez.dag.app.dag.DAG;
 import org.apache.tez.dag.app.dag.DAGState;
 import org.apache.tez.dag.app.dag.Task;
 import org.apache.tez.dag.app.dag.TaskAttempt;
+import org.apache.tez.dag.app.dag.event.DAGAppMasterEvent;
+import org.apache.tez.dag.app.dag.event.DAGAppMasterEventDAGFinished;
+import org.apache.tez.dag.app.dag.event.DAGAppMasterEventType;
 import org.apache.tez.dag.app.dag.event.TaskAttemptEvent;
 import org.apache.tez.dag.app.dag.event.TaskAttemptEventType;
 import org.apache.tez.dag.app.dag.impl.DAGImpl;
@@ -102,6 +105,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
   private ShuffleWriteClient shuffleWriteClient;
   private TezRemoteShuffleManager tezRemoteShuffleManager;
   private Map<String, String> clusterClientConf;
+  private RssDAGAppMasterEventHandler rssDAGAppMasterEventHandler;
 
   final ScheduledExecutorService heartBeatExecutorService =
       Executors.newSingleThreadScheduledExecutor(ThreadUtils.getThreadFactory("AppHeartbeat"));
@@ -263,17 +267,22 @@ public class RssDAGAppMaster extends DAGAppMaster {
             remoteStorage));
     appMaster.getTezRemoteShuffleManager().initialize();
     appMaster.getTezRemoteShuffleManager().start();
+    appMaster.rssDAGAppMasterEventHandler.setTezRemoteShuffleManager(
+        appMaster.getTezRemoteShuffleManager());
 
     mayCloseTezSlowStart(conf);
   }
 
   @Override
+  protected AsyncDispatcher createDispatcher() {
+    AsyncDispatcher dispatcher = super.createDispatcher();
+    rssDAGAppMasterEventHandler = new RssDAGAppMasterEventHandler();
+    dispatcher.register(DAGAppMasterEventType.class, rssDAGAppMasterEventHandler);
+    return dispatcher;
+  }
+
+  @Override
   protected DAG createDAG(DAGProtos.DAGPlan dagPB) {
-    // Generally, one application will execute multiple DAGs,
-    // and there is no correlation between the DAGs.
-    // Therefore, after completing the execution of a DAG,
-    // you can unregister the relevant shuffle data.
-    tezRemoteShuffleManager.unregisterShuffle();
     DAGImpl dag = createDAG(dagPB, null);
     registerStateEnteredCallback(dag, this);
     return dag;
@@ -598,12 +607,51 @@ public class RssDAGAppMaster extends DAGAppMaster {
         // Here we only handle TA_NODE_FAILED. TA_KILL_REQUEST and TA_KILLED also could trigger
         // TerminatedAfterSuccessTransition, but the reason is not about bad node.
         LOG.info(
-            "We should not recompute the succeeded task attempt, though task attempt {} recieved envent {}",
+            "We should not recompute the succeeded task attempt, though task attempt {} received event {}",
             attempt,
             event);
         return;
       }
       ((EventHandler<TaskAttemptEvent>) attempt).handle(event);
+    }
+  }
+
+  private static class RssDAGAppMasterEventHandler implements EventHandler<DAGAppMasterEvent> {
+
+    private TezRemoteShuffleManager tezRemoteShuffleManager;
+
+    public RssDAGAppMasterEventHandler() {}
+
+    public RssDAGAppMasterEventHandler(TezRemoteShuffleManager tezRemoteShuffleManager) {
+      this.tezRemoteShuffleManager = tezRemoteShuffleManager;
+    }
+
+    public void setTezRemoteShuffleManager(TezRemoteShuffleManager tezRemoteShuffleManager) {
+      this.tezRemoteShuffleManager = tezRemoteShuffleManager;
+    }
+
+    @Override
+    public void handle(DAGAppMasterEvent event) {
+      if (tezRemoteShuffleManager == null) {
+        return;
+      }
+
+      if (event.getType() == DAGAppMasterEventType.DAG_FINISHED) {
+        DAGAppMasterEventDAGFinished finishEvt = (DAGAppMasterEventDAGFinished) event;
+        LOG.info(
+            "Receive a DAG_FINISHED event, dagId={}, dagState={}",
+            finishEvt.getDAGId(),
+            finishEvt.getDAGState());
+        long startTime = System.currentTimeMillis();
+        // Generally, one application will execute multiple DAGs, and there is no correlation
+        // between the DAGs.
+        // Therefore, after executing a DAG, you can unregister the relevant shuffle data.
+        tezRemoteShuffleManager.unregisterShuffleByDagId(finishEvt.getDAGId());
+        LOG.info(
+            "Complete the task of unregister shuffle, dagId={}, cost={}ms",
+            finishEvt.getDAGId(),
+            System.currentTimeMillis() - startTime);
+      }
     }
   }
 }
