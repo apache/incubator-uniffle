@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
@@ -153,7 +153,8 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   }
 
   private class TezRemoteShuffleUmbilicalProtocolImpl implements TezRemoteShuffleUmbilicalProtocol {
-    private Map<Integer, ShuffleAssignmentsInfo> shuffleIdToShuffleAssignsInfo = new HashMap<>();
+    private Map<Integer, ShuffleAssignmentsInfo> shuffleIdToShuffleAssignsInfo =
+        new ConcurrentHashMap<>();
 
     @Override
     public long getProtocolVersion(String s, long l) throws IOException {
