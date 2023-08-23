@@ -25,7 +25,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
 import org.apache.tez.common.RssTezConfig;
@@ -44,6 +43,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.UnitConverter;
 
@@ -69,6 +69,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
 
   private String storageType;
   private String basePath;
+  private RemoteStorageInfo remoteStorageInfo;
   private final int readBufferSize;
   private final int partitionNumPerRange;
   private final int partitionNum;
@@ -118,6 +119,9 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
     this.storageType =
         conf.get(RssTezConfig.RSS_STORAGE_TYPE, RssTezConfig.RSS_STORAGE_TYPE_DEFAULT_VALUE);
     LOG.info("RssTezFetcherTask storageType:{}", storageType);
+    this.basePath = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH);
+    String remoteStorageConf = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_CONF);
+    this.remoteStorageInfo = new RemoteStorageInfo(basePath, remoteStorageConf);
 
     String readBufferSize =
         conf.get(
@@ -158,7 +162,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
     Roaring64NavigableMap taskIdBitmap =
         RssTezUtils.fetchAllRssTaskIds(new HashSet<>(inputs), numPhysicalInputs, appAttemptId);
     LOG.info(
-        "inputs:{}, num input:{}, appAttemptId:{}, taskIdBitmap:{}",
+        "Inputs:{}, num input:{}, appAttemptId:{}, taskIdBitmap:{}",
         inputs,
         numPhysicalInputs,
         appAttemptId,
@@ -172,7 +176,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
     if (!taskIdBitmap.isEmpty()) {
       LOG.info(
           "In reduce: " + reduceId + ", Rss Tez client starts to fetch blocks from RSS server");
-      JobConf readerJobConf = getRemoteConf();
+      Configuration hadoopConf = getRemoteConf();
       LOG.info("RssTezFetcherTask storageType:{}", storageType);
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoSet.size() > 1;
       CreateShuffleReadClientRequest request =
@@ -186,7 +190,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
               blockIdBitmap,
               taskIdBitmap,
               new ArrayList<>(serverInfoSet),
-              readerJobConf,
+              hadoopConf,
               new TezIdHelper(),
               expectedTaskIdsBitmapFilterEnable,
               RssTezConfig.toRssConf(this.conf));
@@ -211,8 +215,14 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
 
   public void shutdown() {}
 
-  private JobConf getRemoteConf() {
-    return new JobConf(conf);
+  private Configuration getRemoteConf() {
+    Configuration remoteConf = new Configuration(conf);
+    if (!remoteStorageInfo.isEmpty()) {
+      for (Map.Entry<String, String> entry : remoteStorageInfo.getConfItems().entrySet()) {
+        remoteConf.set(entry.getKey(), entry.getValue());
+      }
+    }
+    return remoteConf;
   }
 
   public int getPartitionId() {

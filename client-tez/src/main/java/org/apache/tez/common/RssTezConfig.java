@@ -96,6 +96,10 @@ public class RssTezConfig {
   public static final String RSS_CLIENT_MEMORY_THRESHOLD =
       TEZ_RSS_CONFIG_PREFIX + "rss.client.memory.threshold";
   public static final double RSS_CLIENT_DEFAULT_MEMORY_THRESHOLD = 0.8f;
+  public static final String RSS_CLIENT_SEND_THREAD_NUM =
+      TEZ_RSS_CONFIG_PREFIX + "rss.client.send.thread.num";
+  public static final int RSS_CLIENT_DEFAULT_THREAD_NUM =
+      RssClientConfig.RSS_CLIENT_DEFAULT_SEND_NUM;
   public static final String RSS_CLIENT_SEND_THRESHOLD =
       TEZ_RSS_CONFIG_PREFIX + "rss.client.send.threshold";
   public static final double RSS_CLIENT_DEFAULT_SEND_THRESHOLD = 0.2f;
@@ -170,6 +174,8 @@ public class RssTezConfig {
 
   public static final String RSS_REMOTE_STORAGE_PATH =
       TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_STORAGE_PATH;
+  public static final String RSS_REMOTE_STORAGE_CONF =
+      TEZ_RSS_CONFIG_PREFIX + "rss.remote.storage.conf";
 
   // Whether enable test mode for the MR Client
   public static final String RSS_TEST_MODE_ENABLE =

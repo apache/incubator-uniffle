@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -90,6 +91,7 @@ public class RssMRAppMaster extends MRAppMaster {
   private final int rssNmHttpPort;
   private final ContainerId rssContainerID;
   private RssContainerAllocatorRouter rssContainerAllocator;
+  private ShuffleWriteClient shuffleWriteClient;
 
   public RssMRAppMaster(
       ApplicationAttemptId applicationAttemptId,
@@ -97,7 +99,8 @@ public class RssMRAppMaster extends MRAppMaster {
       String nmHost,
       int nmPort,
       int nmHttpPort,
-      long appSubmitTime) {
+      long appSubmitTime,
+      ShuffleWriteClient client) {
     super(
         applicationAttemptId,
         containerId,
@@ -111,35 +114,35 @@ public class RssMRAppMaster extends MRAppMaster {
     rssNmHttpPort = nmHttpPort;
     rssContainerID = containerId;
     rssContainerAllocator = null;
+    shuffleWriteClient = client;
   }
 
   private static final Logger LOG = LoggerFactory.getLogger(RssMRAppMaster.class);
+
+  @Override
+  protected void serviceStop() throws Exception {
+    LOG.info("Unregister shuffle for app {}", this.getAttemptID());
+    if (shuffleWriteClient != null) {
+      shuffleWriteClient.unregisterShuffle(getAttemptID().toString(), 0);
+    }
+    super.serviceStop();
+  }
 
   public static void main(String[] args) {
 
     JobConf conf = new JobConf(new YarnConfiguration());
     conf.addResource(new Path(MRJobConfig.JOB_CONF_FILE));
 
+    ShuffleWriteClient shuffleWriteClient = null;
     int numReduceTasks = conf.getInt(MRJobConfig.NUM_REDUCES, 0);
     if (numReduceTasks > 0) {
       String coordinators = conf.get(RssMRConfig.RSS_COORDINATOR_QUORUM);
 
       ShuffleWriteClient client = RssMRUtils.createShuffleClient(conf);
+      shuffleWriteClient = client;
 
       LOG.info("Registering coordinators {}", coordinators);
       client.registerCoordinators(coordinators);
-
-      // Get the configured server assignment tags and it will also add default shuffle version tag.
-      Set<String> assignmentTags = new HashSet<>();
-      String rawTags = conf.get(RssMRConfig.RSS_CLIENT_ASSIGNMENT_TAGS, "");
-      if (StringUtils.isNotEmpty(rawTags)) {
-        rawTags = rawTags.trim();
-        assignmentTags.addAll(Arrays.asList(rawTags.split(",")));
-      }
-      assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
-      String clientType = conf.get(RssMRConfig.RSS_CLIENT_TYPE);
-      ClientUtils.validateClientType(clientType);
-      assignmentTags.add(clientType);
 
       final ScheduledExecutorService scheduledExecutorService =
           Executors.newSingleThreadScheduledExecutor(
@@ -152,8 +155,12 @@ public class RssMRAppMaster extends MRAppMaster {
                 }
               });
 
-      JobConf extraConf = new JobConf();
+      // set loadDefaults to false, rss_conf.xml should only contain conf of RSS,
+      // Hadoop conf is not necessary.
+      Configuration extraConf = new JobConf(false);
       extraConf.clear();
+
+      RssMRUtils.applyClientConf(extraConf, conf);
 
       // get remote storage from coordinator if necessary
       boolean dynamicConfEnabled =
@@ -171,21 +178,33 @@ public class RssMRAppMaster extends MRAppMaster {
         RssMRUtils.applyDynamicClientConf(extraConf, clusterClientConf);
       }
 
-      String storageType = RssMRUtils.getString(extraConf, conf, RssMRConfig.RSS_STORAGE_TYPE);
-      boolean testMode =
-          RssMRUtils.getBoolean(extraConf, conf, RssMRConfig.RSS_TEST_MODE_ENABLE, false);
+      // Get the configured server assignment tags and it will also add default shuffle version tag.
+      Set<String> assignmentTags = new HashSet<>();
+      String rawTags = conf.get(RssMRConfig.RSS_CLIENT_ASSIGNMENT_TAGS, "");
+      if (StringUtils.isNotEmpty(rawTags)) {
+        rawTags = rawTags.trim();
+        assignmentTags.addAll(Arrays.asList(rawTags.split(",")));
+      }
+      assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
+      String clientType =
+          extraConf.get(RssMRConfig.RSS_CLIENT_TYPE, RssMRConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
+      ClientUtils.validateClientType(clientType);
+      assignmentTags.add(clientType);
+
+      String storageType = RssMRUtils.getString(extraConf, RssMRConfig.RSS_STORAGE_TYPE);
+      boolean testMode = RssMRUtils.getBoolean(extraConf, RssMRConfig.RSS_TEST_MODE_ENABLE, false);
       ClientUtils.validateTestModeConf(testMode, storageType);
       ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
       String appId = applicationAttemptId.toString();
       RemoteStorageInfo defaultRemoteStorage =
-          new RemoteStorageInfo(conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH, ""));
+          new RemoteStorageInfo(extraConf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH, ""));
       RemoteStorageInfo remoteStorage =
           ClientUtils.fetchRemoteStorage(
               appId, defaultRemoteStorage, dynamicConfEnabled, storageType, client);
       // set the remote storage with actual value
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage.getPath());
       extraConf.set(RssMRConfig.RSS_REMOTE_STORAGE_CONF, remoteStorage.getConfString());
-      RssMRUtils.validateRssClientConf(extraConf, conf);
+      RssMRUtils.validateRssClientConf(extraConf);
       // When containers have disk with very limited space, reduce is allowed to spill data to hdfs
       if (conf.getBoolean(
           RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
@@ -368,7 +387,8 @@ public class RssMRAppMaster extends MRAppMaster {
               nodeHostString,
               Integer.parseInt(nodePortString),
               Integer.parseInt(nodeHttpPortString),
-              appSubmitTime);
+              appSubmitTime,
+              shuffleWriteClient);
       ShutdownHookManager.get().addShutdownHook(new RssMRAppMasterShutdownHook(appMaster), 30);
       MRWebAppUtil.initialize(conf);
       String systemPropsToLog = MRApps.getSystemPropertiesToLog(conf);
@@ -405,7 +425,7 @@ public class RssMRAppMaster extends MRAppMaster {
     }
   }
 
-  static void writeExtraConf(JobConf conf, JobConf extraConf) {
+  static void writeExtraConf(JobConf conf, Configuration extraConf) {
     try {
       FileSystem fs = new Cluster(conf).getFileSystem();
       String jobDirStr = conf.get(MRJobConfig.MAPREDUCE_JOB_DIR);

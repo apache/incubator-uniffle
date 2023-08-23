@@ -21,7 +21,9 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
@@ -45,6 +47,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -62,7 +67,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     }
   }
 
-  private static Path TEST_ROOT_DIR =
+  private static final Path TEST_ROOT_DIR =
       localFs.makeQualified(new Path("target", TestMRJobs.class.getName() + "-tmpDir"));
   static Path APP_JAR = new Path(TEST_ROOT_DIR, "MRAppJar.jar");
   private static final String OUTPUT_ROOT_DIR = "/tmp/" + TestMRJobs.class.getSimpleName();
@@ -176,7 +181,6 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
             + ","
             + MRJobConfig.DEFAULT_MAPREDUCE_APPLICATION_CLASSPATH);
     jobConf.set(RssMRConfig.RSS_COORDINATOR_QUORUM, COORDINATOR_QUORUM);
-    jobConf.set(RssMRConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
     updateRssConfiguration(jobConf);
     runMRApp(jobConf, getTestTool(), getTestArgs());
   }
@@ -185,7 +189,25 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     return new String[0];
   }
 
-  protected void updateRssConfiguration(Configuration jobConf) {}
+  protected static void setupServers(Map<String, String> dynamicConf) throws Exception {
+    CoordinatorConf coordinatorConf = getCoordinatorConf();
+    addDynamicConf(coordinatorConf, dynamicConf);
+    createCoordinatorServer(coordinatorConf);
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    createShuffleServer(shuffleServerConf);
+    startServers();
+  }
+
+  protected static Map<String, String> getDynamicConf() {
+    Map<String, String> dynamicConf = new HashMap<>();
+    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
+    dynamicConf.put(RssMRConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    return dynamicConf;
+  }
+
+  protected void updateRssConfiguration(Configuration jobConf) {
+    jobConf.set(RssMRConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
+  }
 
   private void runMRApp(Configuration conf, Tool tool, String[] args) throws Exception {
     assertEquals(0, ToolRunner.run(conf, tool, args), tool.getClass().getName() + " failed");

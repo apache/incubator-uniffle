@@ -95,4 +95,6 @@ public interface ShuffleWriteClient {
   void close();
 
   void unregisterShuffle(String appId, int shuffleId);
+
+  void unregisterShuffle(String appId);
 }

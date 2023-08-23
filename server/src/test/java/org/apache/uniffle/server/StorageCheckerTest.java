@@ -55,7 +55,7 @@ public class StorageCheckerTest {
   public void checkTest(@TempDir File baseDir) throws Exception {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.setBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE, true);
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     String st1 = new File(baseDir, "st1").getPath();
     String st2 = new File(baseDir, "st2").getPath();
     String st3 = new File(baseDir, "st3").getPath();
@@ -69,7 +69,7 @@ public class StorageCheckerTest {
 
     assertTrue(checker.checkIsHealthy());
     assertEquals(3000, ShuffleServerMetrics.gaugeLocalStorageTotalSpace.get());
-    assertEquals(600, ShuffleServerMetrics.gaugeLocalStorageUsedSpace.get());
+    assertEquals(600, ShuffleServerMetrics.gaugeLocalStorageWholeDiskUsedSpace.get());
     assertEquals(0.2, ShuffleServerMetrics.gaugeLocalStorageUsedSpaceRatio.get());
     assertEquals(3, ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.get());
     assertEquals(0, ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.get());
@@ -77,14 +77,14 @@ public class StorageCheckerTest {
     callTimes++;
     assertTrue(checker.checkIsHealthy());
     assertEquals(3000, ShuffleServerMetrics.gaugeLocalStorageTotalSpace.get());
-    assertEquals(1400, ShuffleServerMetrics.gaugeLocalStorageUsedSpace.get());
+    assertEquals(1400, ShuffleServerMetrics.gaugeLocalStorageWholeDiskUsedSpace.get());
     assertEquals(3, ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.get());
     assertEquals(0, ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.get());
 
     callTimes++;
     assertFalse(checker.checkIsHealthy());
     assertEquals(3000, ShuffleServerMetrics.gaugeLocalStorageTotalSpace.get());
-    assertEquals(2100, ShuffleServerMetrics.gaugeLocalStorageUsedSpace.get());
+    assertEquals(2100, ShuffleServerMetrics.gaugeLocalStorageWholeDiskUsedSpace.get());
     assertEquals(3, ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.get());
     assertEquals(0, ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.get());
 
@@ -94,7 +94,7 @@ public class StorageCheckerTest {
     checker = new MockStorageChecker(conf, storages);
     assertFalse(checker.checkIsHealthy());
     assertEquals(3000, ShuffleServerMetrics.gaugeLocalStorageTotalSpace.get());
-    assertEquals(1600, ShuffleServerMetrics.gaugeLocalStorageUsedSpace.get());
+    assertEquals(1600, ShuffleServerMetrics.gaugeLocalStorageWholeDiskUsedSpace.get());
     assertEquals(3, ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.get());
     assertEquals(0, ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.get());
 
@@ -102,7 +102,7 @@ public class StorageCheckerTest {
     checker.checkIsHealthy();
     assertTrue(checker.checkIsHealthy());
     assertEquals(3000, ShuffleServerMetrics.gaugeLocalStorageTotalSpace.get());
-    assertEquals(250, ShuffleServerMetrics.gaugeLocalStorageUsedSpace.get());
+    assertEquals(250, ShuffleServerMetrics.gaugeLocalStorageWholeDiskUsedSpace.get());
     assertEquals(3, ShuffleServerMetrics.gaugeLocalStorageTotalDirsNum.get());
     assertEquals(0, ShuffleServerMetrics.gaugeLocalStorageCorruptedDirsNum.get());
 
@@ -133,7 +133,7 @@ public class StorageCheckerTest {
     // we mock this method, and will return different values according
     // to call times.
     @Override
-    long getUsedSpace(File file) {
+    long getWholeDiskUsedSpace(File file) {
       long result = 0;
       switch (file.getName()) {
         case "st1":

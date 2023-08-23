@@ -17,9 +17,6 @@
 
 package org.apache.uniffle.test;
 
-import java.util.Map;
-
-import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.LargeSorter;
 import org.apache.hadoop.mapreduce.MRJobConfig;
@@ -28,23 +25,13 @@ import org.apache.hadoop.util.Tool;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.storage.util.StorageType;
+import org.apache.uniffle.common.ClientType;
 
 public class LargeSorterTest extends MRIntegrationTestBase {
 
   @BeforeAll
   public static void setupServers() throws Exception {
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
-    Map<String, String> dynamicConf = Maps.newHashMap();
-    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssMRConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
-    addDynamicConf(coordinatorConf, dynamicConf);
-    createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    createShuffleServer(shuffleServerConf);
-    startServers();
+    MRIntegrationTestBase.setupServers(MRIntegrationTestBase.getDynamicConf());
   }
 
   @Test
@@ -54,6 +41,7 @@ public class LargeSorterTest extends MRIntegrationTestBase {
 
   @Override
   protected void updateRssConfiguration(Configuration jobConf) {
+    jobConf.set(RssMRConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
     jobConf.setInt(LargeSorter.NUM_MAP_TASKS, 1);
     jobConf.setInt(LargeSorter.MBS_PER_MAP, 256);
     jobConf.set(

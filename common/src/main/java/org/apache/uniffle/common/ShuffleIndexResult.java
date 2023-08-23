@@ -69,4 +69,10 @@ public class ShuffleIndexResult {
   public boolean isEmpty() {
     return buffer == null || buffer.size() == 0;
   }
+
+  public void release() {
+    if (this.buffer != null) {
+      this.buffer.release();
+    }
+  }
 }

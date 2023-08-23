@@ -70,6 +70,13 @@ This document will introduce how to deploy Uniffle shuffle servers.
 | rss.rpc.server.port                                     | -       | RPC port for Shuffle server, if set zero, grpc server start on random port.                                                                                                                                                                                                                                                                                                                  |
 | rss.jetty.http.port                                     | -       | Http port for Shuffle server                                                                                                                                                                                                                                                                                                                                                                 |
 | rss.server.netty.port                                   | -1      | Netty port for Shuffle server, if set zero, netty server start on random port.                                                                                                                                                                                                                                                                                                               |
+| rss.server.netty.epoll.enable                           | false   | If enable epoll model with netty server.                                                                                                                                                                                                                                                                                                                                                     |
+| rss.server.netty.accept.thread                          | 10      | Accept thread count in netty.                                                                                                                                                                                                                                                                                                                                                                |
+| rss.server.netty.worker.thread                          | 100     | Worker thread count in netty.                                                                                                                                                                                                                                                                                                                                                                |
+| rss.server.netty.connect.backlog                        | 0       | For netty server, requested maximum length of the queue of incoming connections.                                                                                                                                                                                                                                                                                                             |
+| rss.server.netty.connect.timeout                        | 5000    | Timeout for connection in netty.                                                                                                                                                                                                                                                                                                                                                             |
+| rss.server.netty.receive.buf                            | 0       | Receive buffer size (SO_RCVBUF). Note: the optimal size for receive buffer and send buffer should be latency * network_bandwidth. Assuming latency = 1ms, network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB. Default is 0, the operating system automatically estimates the receive buffer size based on default settings.                                                          |
+| rss.server.netty.send.buf                               | 0       | Send buffer size (SO_SNDBUF).                                                                                                                                                                                                                                                                                                                                                                |
 | rss.server.buffer.capacity                              | -1      | Max memory of buffer manager for shuffle server. If negative, JVM heap size * buffer.ratio is used                                                                                                                                                                                                                                                                                           |
 | rss.server.buffer.capacity.ratio                        | 0.8     | when `rss.server.buffer.capacity`=-1, then the buffer capacity is JVM heap size * ratio                                                                                                                                                                                                                                                                                                      |
 | rss.server.memory.shuffle.highWaterMark.percentage      | 75.0    | Threshold of spill data to storage, percentage of rss.server.buffer.capacity                                                                                                                                                                                                                                                                                                                 |
@@ -121,6 +128,22 @@ If you don't use HADOOP FS, the huge partition may be flushed to local disk, whi
 For HADOOP FS, the conf value of `rss.server.single.buffer.flush.threshold` should be greater than the value of `rss.server.flush.cold.storage.threshold.size`, which will flush data directly to Hadoop FS. 
 
 Finally, to improve the speed of writing to HDFS for a single partition, the value of `rss.server.max.concurrency.of.per-partition.write` and `rss.server.flush.hdfs.threadPool.size` could be increased to 50 or 100.
+
+### Netty
+In version 0.0.8, we introduced Netty. Enabling netty on ShuffleServer can significantly reduce GC time in high-throughput scenarios. We can enable netty through the parameter `rss.server.netty.port`. Note: After enabling netty, the ShuffleServer The node will be automatically tagged with `grpc_netty`, that is, the node can only be assigned to clients of `spark.rss.client.type=GRPC_NETTY`.
+
+When enabling Netty, we should also consider memory related configuration, the following is an example.
+
+#### rss-env.sh
+```
+XMX_SIZE=80g
+MAX_DIRECT_MEMORY_SIZE=60g
+```
+#### server.conf
+```
+rss.server.buffer.capacity 40g
+rss.server.read.buffer.capacity 20g
+```
 
 #### Example of server conf
 ```

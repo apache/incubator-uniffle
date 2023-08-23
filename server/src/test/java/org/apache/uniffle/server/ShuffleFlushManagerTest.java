@@ -101,7 +101,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   public void prepare() {
     ShuffleServerMetrics.register();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     shuffleServerConf.setInteger(ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, 1);
     LogManager.getRootLogger().setLevel(Level.INFO);
   }
@@ -131,7 +131,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   public void concurrentWrite2HdfsWriteOneByOne() throws Exception {
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     int maxConcurrency = 3;
     shuffleServerConf.setInteger(
         ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, maxConcurrency);
@@ -163,7 +163,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   public void concurrentWrite2HdfsWriteOfSinglePartition() throws Exception {
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
+    shuffleServerConf.setString(shuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     int maxConcurrency = 3;
     shuffleServerConf.setInteger(
         ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, maxConcurrency);
@@ -270,7 +270,8 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   public void localMetricsTest(@TempDir File tempDir) throws Exception {
     shuffleServerConf.set(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
+    shuffleServerConf.setString(
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
 
     String appId = "localMetricsTest_appId";
     StorageManager storageManager =
@@ -282,7 +283,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     // wait for write data
     waitForFlush(manager, appId, 1, 5);
 
-    validateLocalMetadata(storageManager, 160L);
+    validateLocalMetadata(storageManager, 0, 160L);
 
     ShuffleDataFlushEvent event12 = createShuffleDataFlushEvent(appId, 1, 1, 1, null);
     manager.addToFlushQueue(event12);
@@ -290,7 +291,60 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     // wait for write data
     waitForFlush(manager, appId, 1, 10);
 
-    validateLocalMetadata(storageManager, 320L);
+    validateLocalMetadata(storageManager, 0, 320L);
+  }
+
+  @Test
+  public void totalLocalFileWriteDataMetricTest() throws Exception {
+    List<String> storagePaths = Arrays.asList("/tmp/rss-data1", "/tmp/rss-data2", "/tmp/rss-data3");
+
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, storagePaths);
+    shuffleServerConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
+    shuffleServerConf.setString(
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
+
+    String appId = "localMetricsTest_appId";
+    StorageManager storageManager =
+        StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
+    ShuffleFlushManager manager =
+        new ShuffleFlushManager(shuffleServerConf, mockShuffleServer, storageManager);
+
+    ShuffleDataFlushEvent flushEvent = createShuffleDataFlushEvent(appId, 1, 1, 1, 10, 100, null);
+    manager.addToFlushQueue(flushEvent);
+    // wait for write data
+    waitForFlush(manager, appId, 1, 10);
+    int storageIndex = storagePaths.indexOf(flushEvent.getUnderStorage().getStoragePath());
+    validateLocalMetadata(storageManager, storageIndex, 1000L);
+
+    flushEvent = createShuffleDataFlushEvent(appId, 2, 1, 1, 10, 101, null);
+    manager.addToFlushQueue(flushEvent);
+    // wait for write data
+    waitForFlush(manager, appId, 2, 10);
+    int storageIndex1 = storagePaths.indexOf(flushEvent.getUnderStorage().getStoragePath());
+    validateLocalMetadata(storageManager, storageIndex1, 1010L);
+
+    flushEvent = createShuffleDataFlushEvent(appId, 3, 1, 1, 10, 102, null);
+    manager.addToFlushQueue(flushEvent);
+    // wait for write data
+    waitForFlush(manager, appId, 3, 10);
+    int storageIndex2 = storagePaths.indexOf(flushEvent.getUnderStorage().getStoragePath());
+    validateLocalMetadata(storageManager, storageIndex2, 1020L);
+
+    assertEquals(
+        1000L,
+        ShuffleServerMetrics.counterTotalLocalFileWriteDataSize
+            .labels(storagePaths.get(storageIndex))
+            .get());
+    assertEquals(
+        1010L,
+        ShuffleServerMetrics.counterTotalLocalFileWriteDataSize
+            .labels(storagePaths.get(storageIndex1))
+            .get());
+    assertEquals(
+        1020L,
+        ShuffleServerMetrics.counterTotalLocalFileWriteDataSize
+            .labels(storagePaths.get(storageIndex2))
+            .get());
   }
 
   @Test
@@ -403,7 +457,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     ShuffleServerConf serverConf = new ShuffleServerConf();
     serverConf.set(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
-    serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     serverConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(serverConf);
@@ -514,6 +568,26 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         null);
   }
 
+  public static ShuffleDataFlushEvent createShuffleDataFlushEvent(
+      String appId,
+      int shuffleId,
+      int startPartition,
+      int endPartition,
+      int blockNum,
+      int blockSize,
+      Supplier<Boolean> isValid) {
+    return new ShuffleDataFlushEvent(
+        ATOMIC_LONG.getAndIncrement(),
+        appId,
+        shuffleId,
+        startPartition,
+        endPartition,
+        (long) blockNum * blockSize,
+        createBlock(blockNum, blockSize),
+        isValid,
+        null);
+  }
+
   public static List<ShufflePartitionedBlock> createBlock(int num, int length) {
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
     for (int i = 0; i < num; i++) {
@@ -575,7 +649,8 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   public void fallbackWrittenWhenMultiStorageManagerEnableTest(@TempDir File tempDir)
       throws InterruptedException {
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 10000L);
-    shuffleServerConf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS.toString());
+    shuffleServerConf.setString(
+        RssBaseConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE_HDFS.toString());
     shuffleServerConf.set(
         RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
     shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
@@ -623,7 +698,8 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   @Test
   public void defaultFlushEventHandlerTest(@TempDir File tempDir) throws Exception {
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 10000L);
-    shuffleServerConf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE_HDFS.toString());
+    shuffleServerConf.setString(
+        RssBaseConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE_HDFS.toString());
     shuffleServerConf.set(
         RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
     shuffleServerConf.set(ShuffleServerConf.DISK_CAPACITY, 100L);
@@ -674,9 +750,10 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     assertEquals(2, ShuffleServerMetrics.counterHadoopEventFlush.get());
   }
 
-  private void validateLocalMetadata(StorageManager storageManager, Long size) {
+  private void validateLocalMetadata(StorageManager storageManager, int storageIndex, Long size) {
     assertInstanceOf(LocalStorageManager.class, storageManager);
-    LocalStorage localStorage = ((LocalStorageManager) storageManager).getStorages().get(0);
+    LocalStorage localStorage =
+        ((LocalStorageManager) storageManager).getStorages().get(storageIndex);
     assertEquals(size, localStorage.getMetaData().getDiskSize().longValue());
   }
 }

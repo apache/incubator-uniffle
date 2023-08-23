@@ -79,8 +79,8 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
       ShuffleServerConf shuffleServerConf = getShuffleServerConf();
       File dataDir1 = new File(tmpDir, "data1");
       String basePath = dataDir1.getAbsolutePath();
-      shuffleServerConf.set(
-          ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+      shuffleServerConf.setString(
+          ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
       shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
       shuffleServerConf.set(RssBaseConf.RPC_METRICS_ENABLED, true);
       shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);

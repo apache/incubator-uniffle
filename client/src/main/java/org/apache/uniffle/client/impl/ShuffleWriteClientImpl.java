@@ -995,6 +995,15 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
   }
 
+  @Override
+  public void unregisterShuffle(String appId) {
+    Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
+    if (appServerMap == null) {
+      return;
+    }
+    appServerMap.keySet().forEach(shuffleId -> unregisterShuffle(appId, shuffleId));
+  }
+
   private void throwExceptionIfNecessary(ClientResponse response, String errorMsg) {
     if (response != null && response.getStatusCode() != StatusCode.SUCCESS) {
       LOG.error(errorMsg);

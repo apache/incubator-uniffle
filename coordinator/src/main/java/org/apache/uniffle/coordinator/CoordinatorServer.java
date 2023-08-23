@@ -192,6 +192,7 @@ public class CoordinatorServer extends ReconfigurableBase {
         "org.apache.uniffle.coordinator.web.resource", "org.apache.uniffle.common.web.resource");
     jettyServer.registerInstance(ClusterManager.class, clusterManager);
     jettyServer.registerInstance(AccessManager.class, accessManager);
+    jettyServer.registerInstance(ApplicationManager.class, applicationManager);
     jettyServer.registerInstance(
         CollectorRegistry.class.getCanonicalName() + "#server",
         CoordinatorMetrics.getCollectorRegistry());
@@ -254,7 +255,7 @@ public class CoordinatorServer extends ReconfigurableBase {
   }
 
   /** Await termination on the main thread since the grpc library uses daemon threads. */
-  private void blockUntilShutdown() throws InterruptedException {
+  protected void blockUntilShutdown() throws InterruptedException {
     server.blockUntilShutdown();
   }
 

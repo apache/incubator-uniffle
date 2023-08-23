@@ -90,7 +90,10 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
             () -> {
               long requireId =
                   requirePreAllocation(
-                      allocateSize, request.getRetryMax(), request.getRetryIntervalMax());
+                      request.getAppId(),
+                      allocateSize,
+                      request.getRetryMax(),
+                      request.getRetryIntervalMax());
               if (requireId == FAILED_REQUIRE_ID) {
                 throw new RssException(
                     String.format(

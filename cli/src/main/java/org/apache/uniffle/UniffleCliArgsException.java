@@ -17,6 +17,11 @@
 
 package org.apache.uniffle;
 
+/**
+ * The "UniffleCliArgsException" is an exception that indicates an error or issue related to
+ * command-line arguments in the Uniffle program. It is likely thrown when there is a problem with
+ * parsing, validating, or processing the command-line arguments provided by the user.
+ */
 public class UniffleCliArgsException extends Exception {
   private static final long serialVersionUID = 1L;
 
