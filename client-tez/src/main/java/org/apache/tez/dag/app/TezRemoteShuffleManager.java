@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
@@ -121,24 +122,30 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
     }
   }
 
-  public void unregisterShuffleByDagId(TezDAGID dagId) {
+  public boolean unregisterShuffleByDagId(TezDAGID dagId) {
     try {
-      tezRemoteShuffleUmbilical.getShuffleIdToShuffleAssignsInfo().keySet().stream()
-          .filter(shuffleId -> dagId.getId() == RssTezUtils.parseDagId(shuffleId))
-          .forEach(
-              shuffleId -> {
-                long startTime = System.currentTimeMillis();
-                rssClient.unregisterShuffle(appId, shuffleId);
-                LOG.info(
-                    "Unregister shuffle successfully, appId={}, dagId={}, shuffleId={}, cost={}ms",
-                    appId,
-                    dagId,
-                    shuffleId,
-                    System.currentTimeMillis() - startTime);
-              });
+      Set<Integer> shuffleIds =
+          tezRemoteShuffleUmbilical.getShuffleIdToShuffleAssignsInfo().keySet().stream()
+              .filter(shuffleId -> dagId.getId() == RssTezUtils.parseDagId(shuffleId))
+              .collect(Collectors.toSet());
+
+      shuffleIds.forEach(
+          shuffleId -> {
+            long startTime = System.currentTimeMillis();
+            rssClient.unregisterShuffle(appId, shuffleId);
+            tezRemoteShuffleUmbilical.removeShuffleInfo(shuffleId);
+            LOG.info(
+                "Unregister shuffle successfully, appId={}, dagId={}, shuffleId={}, cost={}ms",
+                appId,
+                dagId,
+                shuffleId,
+                System.currentTimeMillis() - startTime);
+          });
     } catch (Exception e) {
       LOG.info("Failed to unregister shuffle by dagId: {}", dagId, e);
+      return false;
     }
+    return true;
   }
 
   public InetSocketAddress getAddress() {
@@ -205,6 +212,10 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
 
     Map<Integer, ShuffleAssignmentsInfo> getShuffleIdToShuffleAssignsInfo() {
       return shuffleIdToShuffleAssignsInfo;
+    }
+
+    void removeShuffleInfo(int shuffleId) {
+      shuffleIdToShuffleAssignsInfo.remove(shuffleId);
     }
   }
 
