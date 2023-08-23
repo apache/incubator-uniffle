@@ -620,11 +620,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
 
     private TezRemoteShuffleManager tezRemoteShuffleManager;
 
-    public RssDAGAppMasterEventHandler() {}
-
-    public RssDAGAppMasterEventHandler(TezRemoteShuffleManager tezRemoteShuffleManager) {
-      this.tezRemoteShuffleManager = tezRemoteShuffleManager;
-    }
+    RssDAGAppMasterEventHandler() {}
 
     public void setTezRemoteShuffleManager(TezRemoteShuffleManager tezRemoteShuffleManager) {
       this.tezRemoteShuffleManager = tezRemoteShuffleManager;
