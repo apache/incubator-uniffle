@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -63,6 +64,8 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
 
   protected static final int NETTY_PORT = 21000;
   protected static AtomicInteger nettyPortCounter = new AtomicInteger();
+
+  static @TempDir File tempDir;
 
   public static void startServers() throws Exception {
     for (CoordinatorServer coordinator : coordinators) {
@@ -106,12 +109,10 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
   }
 
   protected static ShuffleServerConf getShuffleServerConf() throws Exception {
-    File dataFolder = Files.createTempDirectory("rssdata").toFile();
     ShuffleServerConf serverConf = new ShuffleServerConf();
-    dataFolder.deleteOnExit();
     serverConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT);
     serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
-    serverConf.setString("rss.storage.basePath", dataFolder.getAbsolutePath());
+    serverConf.setString("rss.storage.basePath", tempDir.getAbsolutePath());
     serverConf.setString("rss.server.buffer.capacity", "671088640");
     serverConf.setString("rss.server.memory.shuffle.highWaterMark", "50.0");
     serverConf.setString("rss.server.memory.shuffle.lowWaterMark", "0.0");

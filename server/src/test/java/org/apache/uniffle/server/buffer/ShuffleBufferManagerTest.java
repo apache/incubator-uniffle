@@ -21,6 +21,7 @@ import java.io.File;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -39,6 +40,7 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.server.DefaultFlushEventHandler;
 import org.apache.uniffle.server.ShuffleFlushManager;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -72,7 +74,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   public void setUp(@TempDir File tmpDir) {
     conf = new ShuffleServerConf();
     File dataDir = new File(tmpDir, "data");
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
     conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 500L);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
@@ -437,7 +439,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   public void flushSingleBufferForHugePartitionTest(@TempDir File tmpDir) throws Exception {
     ShuffleServerConf shuffleConf = new ShuffleServerConf();
     File dataDir = new File(tmpDir, "data");
-    shuffleConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    shuffleConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     shuffleConf.set(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
     shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
@@ -499,7 +501,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   public void flushSingleBufferTest(@TempDir File tmpDir) throws Exception {
     ShuffleServerConf shuffleConf = new ShuffleServerConf();
     File dataDir = new File(tmpDir, "data");
-    shuffleConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    shuffleConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     shuffleConf.set(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
     shuffleConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 200L);
@@ -637,5 +639,59 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     assertEquals(
         (long) (Runtime.getRuntime().maxMemory() * readRatio),
         shuffleBufferManager.getReadCapacity());
+  }
+
+  @Test
+  public void flushBufferTestWhenNotSelectedStorage(@TempDir File tmpDir) throws Exception {
+    // In this test, rss.server.single.buffer.flush.threshold and
+    // rss.server.flush.cold.storage.threshold.size are 16.
+    // When cacheShuffleData with 64 bytes, will flush to HDFS storage, but we do not register
+    // remote storage.
+    // Then storageManager.selectStorage will return null, we should make sure that when we can not
+    // select a storage,
+    // the resources will not leak.
+    ShuffleServerConf shuffleConf = new ShuffleServerConf();
+    File dataDir = new File(tmpDir, "data");
+    shuffleConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
+    shuffleConf.set(
+        ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
+    shuffleConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 200L);
+    shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
+    shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 80.0);
+    shuffleConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
+    shuffleConf.setBoolean(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, true);
+    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 16L);
+    shuffleConf.setSizeAsBytes(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 16L);
+    shuffleConf.setString(
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE_HDFS.name());
+    ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
+    StorageManager storageManager =
+        StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
+    ShuffleFlushManager shuffleFlushManager =
+        new ShuffleFlushManager(shuffleConf, mockShuffleServer, storageManager);
+    shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager);
+
+    when(mockShuffleServer.getShuffleFlushManager()).thenReturn(shuffleFlushManager);
+    when(mockShuffleServer.getShuffleBufferManager()).thenReturn(shuffleBufferManager);
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mock(ShuffleTaskManager.class));
+
+    String appId = "bufferSizeTest";
+    int shuffleId = 1;
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
+    shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 64));
+    shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(2, 64));
+    // wait flush event drained
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> shuffleFlushManager.getEventNumInFlush() == 0);
+    // make sure all cleanup tasks are done.
+    DefaultFlushEventHandler flushEventHandler =
+        (DefaultFlushEventHandler) shuffleFlushManager.getEventHandler();
+    ThreadPoolExecutor executor =
+        ((ThreadPoolExecutor) flushEventHandler.getFallbackThreadPoolExecutor());
+    executor.shutdown();
+    assertEquals(0, shuffleBufferManager.getUsedMemory());
+    assertEquals(0, shuffleBufferManager.getInFlushSize());
   }
 }

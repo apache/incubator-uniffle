@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -69,7 +70,7 @@ public class ShuffleFlushManager {
     this.storageManager = storageManager;
     initHadoopConf();
     retryMax = shuffleServerConf.getInteger(ShuffleServerConf.SERVER_WRITE_RETRY_MAX);
-    storageType = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE);
+    storageType = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE).name();
     storageDataReplica = shuffleServerConf.get(RssBaseConf.RSS_STORAGE_DATA_REPLICA);
 
     storageBasePaths = RssUtils.getConfiguredLocalDirs(shuffleServerConf);
@@ -295,5 +296,10 @@ public class ShuffleFlushManager {
 
   public ShuffleDataDistributionType getDataDistributionType(String appId) {
     return shuffleServer.getShuffleTaskManager().getDataDistributionType(appId);
+  }
+
+  @VisibleForTesting
+  public FlushEventHandler getEventHandler() {
+    return eventHandler;
   }
 }

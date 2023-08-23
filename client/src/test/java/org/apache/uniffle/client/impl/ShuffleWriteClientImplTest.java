@@ -116,6 +116,12 @@ public class ShuffleWriteClientImplTest {
     shuffleWriteClient.addShuffleServer(appId1, 1, server1);
     shuffleWriteClient.unregisterShuffle(appId1, 1);
     assertEquals(1, shuffleWriteClient.getAllShuffleServers(appId1).size());
+    shuffleWriteClient.unregisterShuffle(appId1);
+    assertEquals(0, shuffleWriteClient.getAllShuffleServers(appId1).size());
+    shuffleWriteClient.addShuffleServer(appId2, 2, server1);
+    assertEquals(2, shuffleWriteClient.getAllShuffleServers(appId2).size());
+    shuffleWriteClient.unregisterShuffle(appId2);
+    assertEquals(0, shuffleWriteClient.getAllShuffleServers(appId2).size());
   }
 
   @Test

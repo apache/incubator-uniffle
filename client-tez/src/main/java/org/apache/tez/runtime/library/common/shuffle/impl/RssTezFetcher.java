@@ -133,7 +133,7 @@ public class RssTezFetcher {
         hasPendingData = false;
         uncompressedData = null;
       } else {
-        LOG.info("uncompressedData is null");
+        LOG.info("UncompressedData is null");
         // if reserve fail, return and wait
         waitCount++;
         startWait = System.currentTimeMillis();
@@ -144,13 +144,13 @@ public class RssTezFetcher {
       copyBlockCount++;
       copyTime = readTime + decompressTime + serializeTime + waitTime;
     } else {
-      LOG.info("uncompressedData is null");
+      LOG.info("UncompressedData is null");
       // finish reading data, close related reader and check data consistent
       shuffleReadClient.close();
       shuffleReadClient.checkProcessedBlockIds();
       shuffleReadClient.logStatics();
       LOG.info(
-          "reduce task partition:"
+          "Reduce task partition:"
               + partitionId
               + " read block cnt: "
               + copyBlockCount

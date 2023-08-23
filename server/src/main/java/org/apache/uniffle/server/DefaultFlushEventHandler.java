@@ -23,12 +23,12 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Queues;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.config.RssBaseConf;
-import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.common.HadoopStorage;
@@ -43,6 +43,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
   private final StorageManager storageManager;
   private Executor localFileThreadPoolExecutor;
   private Executor hadoopThreadPoolExecutor;
+  private Executor fallbackThreadPoolExecutor;
   private final StorageType storageType;
   protected final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
   private Consumer<ShuffleDataFlushEvent> eventConsumer;
@@ -54,7 +55,8 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       StorageManager storageManager,
       Consumer<ShuffleDataFlushEvent> eventConsumer) {
     this.shuffleServerConf = conf;
-    this.storageType = StorageType.valueOf(shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE));
+    this.storageType =
+        StorageType.valueOf(shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE).name());
     this.storageManager = storageManager;
     this.eventConsumer = eventConsumer;
     initFlushEventExecutor();
@@ -93,6 +95,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
           shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_HADOOP_THREAD_POOL_SIZE);
       hadoopThreadPoolExecutor = createFlushEventExecutor(poolSize, "HadoopFlushEventThreadPool");
     }
+    fallbackThreadPoolExecutor = createFlushEventExecutor(5, "FallBackFlushEventThreadPool");
     startEventProcessor();
   }
 
@@ -119,7 +122,10 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       } else if (storage instanceof LocalStorage) {
         localFileThreadPoolExecutor.execute(() -> handleEventAndUpdateMetrics(event, true));
       } else {
-        throw new RssException("Unexpected storage type!");
+        // When we did not select storage for this event, we will ignore this event.
+        // Then we must doCleanup, or will result to resource leak.
+        fallbackThreadPoolExecutor.execute(() -> event.doCleanup());
+        LOG.error("Found unexpected storage type, will not flush for event {}.", event);
       }
     } catch (Exception e) {
       LOG.error("Exception happened when process event.", e);
@@ -148,5 +154,10 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
   @Override
   public void stop() {
     stopped = true;
+  }
+
+  @VisibleForTesting
+  public Executor getFallbackThreadPoolExecutor() {
+    return fallbackThreadPoolExecutor;
   }
 }

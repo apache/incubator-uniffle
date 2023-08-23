@@ -17,12 +17,11 @@
 
 package org.apache.uniffle.common.metrics;
 
-import java.lang.reflect.Constructor;
-
 import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.RssUtils;
 
 public class MetricReporterFactory {
 
@@ -31,9 +30,8 @@ public class MetricReporterFactory {
     if (StringUtils.isEmpty(name)) {
       return null;
     }
-    Class<?> klass = Class.forName(name);
-    Constructor<?> constructor;
-    constructor = klass.getConstructor(RssConf.class, String.class);
-    return (AbstractMetricReporter) constructor.newInstance(conf, instanceId);
+
+    return (AbstractMetricReporter)
+        RssUtils.getConstructor(name, RssConf.class, String.class).newInstance(conf, instanceId);
   }
 }

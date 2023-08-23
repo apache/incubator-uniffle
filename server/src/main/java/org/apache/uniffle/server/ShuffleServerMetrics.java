@@ -61,7 +61,9 @@ public class ShuffleServerMetrics {
   private static final String LOCAL_STORAGE_TOTAL_DIRS_NUM = "local_storage_total_dirs_num";
   private static final String LOCAL_STORAGE_CORRUPTED_DIRS_NUM = "local_storage_corrupted_dirs_num";
   private static final String LOCAL_STORAGE_TOTAL_SPACE = "local_storage_total_space";
-  private static final String LOCAL_STORAGE_USED_SPACE = "local_storage_used_space";
+  private static final String LOCAL_STORAGE_WHOLE_DISK_USED_SPACE =
+      "local_storage_whole_disk_used_space";
+  private static final String LOCAL_STORAGE_SERVICE_USED_SPACE = "local_storage_service_used_space";
   private static final String LOCAL_STORAGE_USED_SPACE_RATIO = "local_storage_used_space_ratio";
 
   private static final String IS_HEALTHY = "is_healthy";
@@ -73,6 +75,8 @@ public class ShuffleServerMetrics {
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
   private static final String TOTAL_HADOOP_WRITE_DATA = "total_hadoop_write_data";
   private static final String TOTAL_LOCALFILE_WRITE_DATA = "total_localfile_write_data";
+  private static final String LOCAL_DISK_PATH_LABEL = "local_disk_path";
+  public static final String LOCAL_DISK_PATH_LABEL_ALL = "ALL";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED = "total_require_buffer_failed";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION =
       "total_require_buffer_failed_for_huge_partition";
@@ -83,6 +87,7 @@ public class ShuffleServerMetrics {
   private static final String STORAGE_FAILED_WRITE_LOCAL = "storage_failed_write_local";
   private static final String STORAGE_SUCCESS_WRITE_LOCAL = "storage_success_write_local";
   private static final String STORAGE_HOST_LABEL = "storage_host";
+  public static final String STORAGE_HOST_LABEL_ALL = "ALL";
   public static final String STORAGE_TOTAL_WRITE_REMOTE = "storage_total_write_remote";
   public static final String STORAGE_RETRY_WRITE_REMOTE = "storage_retry_write_remote";
   public static final String STORAGE_FAILED_WRITE_REMOTE = "storage_failed_write_remote";
@@ -123,8 +128,6 @@ public class ShuffleServerMetrics {
   public static Counter.Child counterTotalReadTime;
   public static Counter.Child counterTotalFailedWrittenEventNum;
   public static Counter.Child counterTotalDroppedEventNum;
-  public static Counter.Child counterTotalHadoopWriteDataSize;
-  public static Counter.Child counterTotalLocalFileWriteDataSize;
   public static Counter.Child counterTotalRequireBufferFailed;
   public static Counter.Child counterTotalRequireBufferFailedForHugePartition;
   public static Counter.Child counterTotalRequireBufferFailedForRegularPartition;
@@ -143,7 +146,8 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeLocalStorageTotalDirsNum;
   public static Gauge.Child gaugeLocalStorageCorruptedDirsNum;
   public static Gauge.Child gaugeLocalStorageTotalSpace;
-  public static Gauge.Child gaugeLocalStorageUsedSpace;
+  public static Gauge.Child gaugeLocalStorageWholeDiskUsedSpace;
+  public static Gauge.Child gaugeLocalStorageServiceUsedSpace;
   public static Gauge.Child gaugeLocalStorageUsedSpaceRatio;
 
   public static Gauge.Child gaugeIsHealthy;
@@ -155,10 +159,14 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeEventQueueSize;
   public static Gauge.Child gaugeAppNum;
   public static Gauge.Child gaugeTotalPartitionNum;
+
   public static Counter counterRemoteStorageTotalWrite;
   public static Counter counterRemoteStorageRetryWrite;
   public static Counter counterRemoteStorageFailedWrite;
   public static Counter counterRemoteStorageSuccessWrite;
+  public static Counter counterTotalHadoopWriteDataSize;
+  public static Counter counterTotalLocalFileWriteDataSize;
+
   private static String tags;
   public static Counter counterLocalFileEventFlush;
   public static Counter counterHadoopEventFlush;
@@ -228,6 +236,14 @@ public class ShuffleServerMetrics {
     }
   }
 
+  public static void incHadoopStorageWriteDataSize(String storageHost, long size) {
+    if (StringUtils.isEmpty(storageHost)) {
+      return;
+    }
+    counterTotalHadoopWriteDataSize.labels(tags, storageHost).inc(size);
+    counterTotalHadoopWriteDataSize.labels(tags, STORAGE_HOST_LABEL_ALL).inc(size);
+  }
+
   private static void setUpMetrics() {
     counterTotalReceivedDataSize = metricsManager.addLabeledCounter(TOTAL_RECEIVED_DATA);
     counterTotalWriteDataSize = metricsManager.addLabeledCounter(TOTAL_WRITE_DATA);
@@ -250,9 +266,11 @@ public class ShuffleServerMetrics {
     counterTotalDroppedEventNum = metricsManager.addLabeledCounter(TOTAL_DROPPED_EVENT_NUM);
     counterTotalFailedWrittenEventNum =
         metricsManager.addLabeledCounter(TOTAL_FAILED_WRITTEN_EVENT_NUM);
-    counterTotalHadoopWriteDataSize = metricsManager.addLabeledCounter(TOTAL_HADOOP_WRITE_DATA);
+    counterTotalHadoopWriteDataSize =
+        metricsManager.addCounter(
+            TOTAL_HADOOP_WRITE_DATA, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
     counterTotalLocalFileWriteDataSize =
-        metricsManager.addLabeledCounter(TOTAL_LOCALFILE_WRITE_DATA);
+        metricsManager.addCounter(TOTAL_LOCALFILE_WRITE_DATA, LOCAL_DISK_PATH_LABEL);
     counterTotalRequireBufferFailed = metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED);
     counterTotalRequireBufferFailedForRegularPartition =
         metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_REGULAR_PARTITION);
@@ -290,7 +308,10 @@ public class ShuffleServerMetrics {
     gaugeLocalStorageCorruptedDirsNum =
         metricsManager.addLabeledGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM);
     gaugeLocalStorageTotalSpace = metricsManager.addLabeledGauge(LOCAL_STORAGE_TOTAL_SPACE);
-    gaugeLocalStorageUsedSpace = metricsManager.addLabeledGauge(LOCAL_STORAGE_USED_SPACE);
+    gaugeLocalStorageWholeDiskUsedSpace =
+        metricsManager.addLabeledGauge(LOCAL_STORAGE_WHOLE_DISK_USED_SPACE);
+    gaugeLocalStorageServiceUsedSpace =
+        metricsManager.addLabeledGauge(LOCAL_STORAGE_SERVICE_USED_SPACE);
     gaugeLocalStorageUsedSpaceRatio =
         metricsManager.addLabeledGauge(LOCAL_STORAGE_USED_SPACE_RATIO);
 

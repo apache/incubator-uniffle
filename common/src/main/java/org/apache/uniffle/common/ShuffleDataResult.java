@@ -93,4 +93,10 @@ public class ShuffleDataResult {
         || buffer == null
         || buffer.size() == 0;
   }
+
+  public void release() {
+    if (this.buffer != null) {
+      this.buffer.release();
+    }
+  }
 }

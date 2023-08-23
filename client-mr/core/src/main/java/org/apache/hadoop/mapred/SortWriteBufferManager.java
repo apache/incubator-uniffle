@@ -163,6 +163,9 @@ public class SortWriteBufferManager<K, V> {
       memoryLock.unlock();
     }
 
+    // Fail fast if there are some failed blocks.
+    checkFailedBlocks();
+
     buffers.computeIfAbsent(
         partitionId,
         k -> {
@@ -270,16 +273,7 @@ public class SortWriteBufferManager<K, V> {
     }
     long start = System.currentTimeMillis();
     while (true) {
-      // if failed when send data to shuffle server, mark task as failed
-      if (failedBlockIds.size() > 0) {
-        String errorMsg =
-            "Send failed: failed because "
-                + failedBlockIds.size()
-                + " blocks can't be sent to shuffle server.";
-        LOG.error(errorMsg);
-        throw new RssException(errorMsg);
-      }
-
+      checkFailedBlocks();
       // remove blockIds which was sent successfully, if there has none left, all data are sent
       allBlockIds.removeAll(successBlockIds);
       if (allBlockIds.isEmpty()) {
@@ -321,6 +315,18 @@ public class SortWriteBufferManager<K, V> {
         commitDuration,
         copyTime,
         sortTime);
+  }
+
+  // if failed when send data to shuffle server, mark task as failed and throw exception.
+  private void checkFailedBlocks() {
+    if (failedBlockIds.size() > 0) {
+      String errorMsg =
+          "Send failed: failed because "
+              + failedBlockIds.size()
+              + " blocks can't be sent to shuffle server.";
+      LOG.error(errorMsg);
+      throw new RssException(errorMsg);
+    }
   }
 
   // transform records to shuffleBlock

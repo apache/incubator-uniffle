@@ -20,7 +20,6 @@ package org.apache.uniffle.test;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
@@ -33,12 +32,15 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class RepartitionTest extends SparkIntegrationTestBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepartitionTest.class);
+
+  static @TempDir File tempDir;
 
   @Test
   public void resultCompareTest() throws Exception {
@@ -63,7 +65,6 @@ public abstract class RepartitionTest extends SparkIntegrationTestBase {
   public abstract void updateRssStorage(SparkConf sparkConf);
 
   protected String generateTextFile(int wordsPerRow, int rows) throws Exception {
-    String tempDir = Files.createTempDirectory("rss").toString();
     File file = new File(tempDir, "wordcount.txt");
     file.createNewFile();
     LOG.info("Create file:" + file.getAbsolutePath());

@@ -23,6 +23,7 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -45,7 +46,9 @@ public class Decoders {
     int shuffleId = byteBuf.readInt();
     long crc = byteBuf.readLong();
     long taskAttemptId = byteBuf.readLong();
-    ByteBuf data = ByteBufUtils.readSlice(byteBuf);
+    int dataLength = byteBuf.readInt();
+    ByteBuf data = Unpooled.directBuffer(dataLength);
+    data.writeBytes(byteBuf, dataLength);
     int lengthOfShuffleServers = byteBuf.readInt();
     List<ShuffleServerInfo> serverInfos = Lists.newArrayList();
     for (int k = 0; k < lengthOfShuffleServers; k++) {

@@ -122,7 +122,7 @@ public class ShuffleServerTest {
   private ShuffleServerConf createShuffleServerConf() throws Exception {
     ShuffleServerConf serverConf = new ShuffleServerConf();
     serverConf.setInteger(ShuffleServerConf.RPC_SERVER_PORT, 9527);
-    serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     serverConf.setInteger(ShuffleServerConf.JETTY_HTTP_PORT, 9528);
     serverConf.setString(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:0");

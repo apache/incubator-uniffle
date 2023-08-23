@@ -90,7 +90,7 @@ public class RssClientConf {
       ConfigOptions.key("rss.client.netty.client.connections.per.peer")
           .intType()
           .defaultValue(2)
-          .withDescription("Number of concurrent connections between two nodes.");
+          .withDescription("Number of concurrent connections between client and ShuffleServer.");
 
   public static final ConfigOption<Integer> NETTY_CLIENT_RECEIVE_BUFFER =
       ConfigOptions.key("rss.client.netty.client.receive.buffer")

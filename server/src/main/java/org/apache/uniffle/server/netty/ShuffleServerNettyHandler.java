@@ -394,7 +394,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             .recordTransportTime(GetLocalShuffleDataRequest.class.getName(), transportTime);
       }
     }
-    String storageType = shuffleServer.getShuffleServerConf().get(RssBaseConf.RSS_STORAGE_TYPE);
+    String storageType =
+        shuffleServer.getShuffleServerConf().get(RssBaseConf.RSS_STORAGE_TYPE).name();
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetLocalShuffleDataResponse response;
@@ -441,8 +442,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                     length);
         long readTime = System.currentTimeMillis() - start;
         ShuffleServerMetrics.counterTotalReadTime.inc(readTime);
-        ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getData().length);
-        ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getData().length);
+        int dataLength = sdr.getDataBuffer().remaining();
+        ShuffleServerMetrics.counterTotalReadDataSize.inc(dataLength);
+        ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(dataLength);
         shuffleServer
             .getNettyMetrics()
             .recordProcessTime(GetLocalShuffleDataRequest.class.getName(), readTime);

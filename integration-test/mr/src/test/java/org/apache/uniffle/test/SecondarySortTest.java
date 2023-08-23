@@ -17,10 +17,8 @@
 
 package org.apache.uniffle.test;
 
-import java.util.Map;
 import java.util.Random;
 
-import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.examples.SecondarySort;
@@ -32,14 +30,9 @@ import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.RssMRConfig;
 import org.apache.hadoop.util.Tool;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.storage.util.StorageType;
 
 public class SecondarySortTest extends MRIntegrationTestBase {
 
@@ -47,15 +40,7 @@ public class SecondarySortTest extends MRIntegrationTestBase {
 
   @BeforeAll
   public static void setupServers() throws Exception {
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
-    Map<String, String> dynamicConf = Maps.newHashMap();
-    dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssMRConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
-    addDynamicConf(coordinatorConf, dynamicConf);
-    createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    createShuffleServer(shuffleServerConf);
-    startServers();
+    MRIntegrationTestBase.setupServers(MRIntegrationTestBase.getDynamicConf());
   }
 
   @Test

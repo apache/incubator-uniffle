@@ -54,7 +54,7 @@
             <configuration>
               <workingDirectory>${basedir}/docker</workingDirectory>
               <executable>${basedir}/docker/build.sh</executable>
-              <commandlineArgs>--push-image false --hadoop-version 2.10.2</commandlineArgs>
+              <commandlineArgs>--push-image false --hadoop-version ${hadoop.version}</commandlineArgs>
               <skip>${skipBuildImage}</skip>
             </configuration>
           </execution>

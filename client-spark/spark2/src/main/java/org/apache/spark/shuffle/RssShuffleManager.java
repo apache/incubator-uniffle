@@ -540,7 +540,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         LOG.warn("Errors on closing data pusher", e);
       }
     }
-    shuffleWriteClient.close();
+    if (shuffleWriteClient != null) {
+      // Unregister shuffle before closing shuffle write client.
+      shuffleWriteClient.unregisterShuffle(appId);
+      shuffleWriteClient.close();
+    }
   }
 
   @Override

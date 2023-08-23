@@ -81,6 +81,7 @@ import org.apache.uniffle.proto.RssProtos.ShuffleRegisterRequest;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerImplBase;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
+import org.apache.uniffle.server.buffer.RequireBufferStatusCode;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -402,8 +403,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     }
 
     StatusCode status = StatusCode.SUCCESS;
-    if (requireBufferId == -1) {
+    if (requireBufferId == RequireBufferStatusCode.NO_BUFFER.statusCode()) {
       status = StatusCode.NO_BUFFER;
+      ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
+    } else if (requireBufferId == RequireBufferStatusCode.NO_REGISTER.statusCode()) {
+      status = StatusCode.NO_REGISTER;
       ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
     }
     RequireBufferResponse response =
@@ -581,11 +585,12 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             .recordTransportTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, transportTime);
       }
     }
-    String storageType = shuffleServer.getShuffleServerConf().get(RssBaseConf.RSS_STORAGE_TYPE);
+    String storageType =
+        shuffleServer.getShuffleServerConf().get(RssBaseConf.RSS_STORAGE_TYPE).name();
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetLocalShuffleDataResponse reply = null;
-    ShuffleDataResult sdr;
+    ShuffleDataResult sdr = null;
     String requestInfo =
         "appId["
             + appId
@@ -653,6 +658,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 .setRetMsg(msg)
                 .build();
       } finally {
+        if (sdr != null) {
+          sdr.release();
+        }
         shuffleServer.getShuffleBufferManager().releaseReadMemory(length);
       }
     } else {
@@ -701,9 +709,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             .getShuffleServerConf()
             .getLong(ShuffleServerConf.SERVER_SHUFFLE_INDEX_SIZE_HINT);
     if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(assumedFileSize)) {
+      ShuffleIndexResult shuffleIndexResult = null;
       try {
         long start = System.currentTimeMillis();
-        ShuffleIndexResult shuffleIndexResult =
+        shuffleIndexResult =
             shuffleServer
                 .getShuffleTaskManager()
                 .getShuffleIndex(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
@@ -739,6 +748,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 .setRetMsg(msg)
                 .build();
       } finally {
+        if (shuffleIndexResult != null) {
+          shuffleIndexResult.release();
+        }
         shuffleServer.getShuffleBufferManager().releaseReadMemory(assumedFileSize);
       }
     } else {
@@ -784,6 +796,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
     // todo: if can get the exact memory size?
     if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(readBufferSize)) {
+      ShuffleDataResult shuffleDataResult = null;
       try {
         Roaring64NavigableMap expectedTaskIds = null;
         if (request.getSerializedExpectedTaskIdsBitmap() != null
@@ -792,7 +805,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               RssUtils.deserializeBitMap(
                   request.getSerializedExpectedTaskIdsBitmap().toByteArray());
         }
-        ShuffleDataResult shuffleDataResult =
+        shuffleDataResult =
             shuffleServer
                 .getShuffleTaskManager()
                 .getInMemoryShuffleData(
@@ -838,6 +851,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 .setRetMsg(msg)
                 .build();
       } finally {
+        if (shuffleDataResult != null) {
+          shuffleDataResult.release();
+        }
         shuffleServer.getShuffleBufferManager().releaseReadMemory(readBufferSize);
       }
     } else {

@@ -772,6 +772,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       heartBeatScheduledExecutorService.shutdownNow();
     }
     if (shuffleWriteClient != null) {
+      // Unregister shuffle before closing shuffle write client.
+      shuffleWriteClient.unregisterShuffle(getAppId());
       shuffleWriteClient.close();
     }
     if (dataPusher != null) {

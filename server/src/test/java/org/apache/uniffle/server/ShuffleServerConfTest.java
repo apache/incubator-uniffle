@@ -47,7 +47,8 @@ public class ShuffleServerConfTest {
             () -> {
               ShuffleServerConf shuffleServerConf = new ShuffleServerConf(null);
               assertEquals(1234, shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
-              assertEquals("HDFS", shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_TYPE));
+              assertEquals(
+                  "HDFS", shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name());
               assertEquals(
                   "/var/tmp/test",
                   shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0));
@@ -60,7 +61,7 @@ public class ShuffleServerConfTest {
   public void confTest() {
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf(confFile);
     assertEquals(1234, shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
-    assertEquals("FILE", shuffleServerConf.getString(ShuffleServerConf.RSS_STORAGE_TYPE));
+    assertEquals("LOCALFILE", shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name());
     assertEquals(
         "/var/tmp/test", shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0));
     assertFalse(shuffleServerConf.loadConfFromFile("/var/tmp/null"));

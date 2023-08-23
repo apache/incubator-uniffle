@@ -241,7 +241,8 @@ public class RssDAGAppMasterForWordCountWithFailures extends RssDAGAppMaster {
               testMode);
       ShutdownHookManager.get()
           .addShutdownHook(
-              new RssDAGAppMaster.RssDAGAppMasterShutdownHook(appMaster), SHUTDOWN_HOOK_PRIORITY);
+              new RssDAGAppMaster.RssDAGAppMasterShutdownHook(appMaster),
+              RSS_SHUTDOWN_HOOK_PRIORITY);
 
       // log the system properties
       if (LOG.isInfoEnabled()) {
