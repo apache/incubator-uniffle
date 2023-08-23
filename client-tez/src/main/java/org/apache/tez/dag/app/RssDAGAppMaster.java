@@ -632,7 +632,8 @@ public class RssDAGAppMaster extends DAGAppMaster {
         return;
       }
 
-      if (event.getType() == DAGAppMasterEventType.DAG_FINISHED) {
+      if (event.getType() == DAGAppMasterEventType.DAG_FINISHED
+          && event instanceof DAGAppMasterEventDAGFinished) {
         DAGAppMasterEventDAGFinished finishEvt = (DAGAppMasterEventDAGFinished) event;
         LOG.info(
             "Receive a DAG_FINISHED event, dagId={}, dagState={}",
