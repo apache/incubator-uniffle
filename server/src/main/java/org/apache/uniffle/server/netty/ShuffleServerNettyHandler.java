@@ -454,7 +454,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             requestInfo);
         response =
             new GetLocalShuffleDataResponse(
-                req.getRequestId(), status, msg, sdr.getManagedBuffer());
+                req.getRequestId(), status, msg, new NettyManagedBuffer(Unpooled.wrappedBuffer(sdr.getManagedBuffer().nioByteBuffer())));
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
         msg = "Error happened when get shuffle data for " + requestInfo + ", " + e.getMessage();
