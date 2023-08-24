@@ -310,7 +310,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     shuffleBuffer = new ShuffleBuffer(200);
     sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 10);
     assertEquals(0, sdr.getBufferSegments().size());
-    assertEquals(0, sdr.getData().length);
+    assertEquals(0, sdr.getDataLength());
 
     // case7: get data with multiple flush buffer and cached buffer
     shuffleBuffer = new ShuffleBuffer(200);

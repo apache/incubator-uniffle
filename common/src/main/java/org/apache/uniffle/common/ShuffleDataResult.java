@@ -71,6 +71,16 @@ public class ShuffleDataResult {
     return ByteBufUtils.readBytes(buffer.byteBuf());
   }
 
+  public int getDataLength() {
+    if (buffer == null) {
+      return 0;
+    }
+    if (buffer.nioByteBuffer().hasArray()) {
+      return buffer.nioByteBuffer().array().length;
+    }
+    return buffer.byteBuf().array().length;
+  }
+
   public ByteBuf getDataBuf() {
     return buffer.byteBuf();
   }

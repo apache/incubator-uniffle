@@ -135,7 +135,7 @@ public class LocalFileHandlerTest {
     targetDataFile.delete();
     shuffleDataResults = LocalFileHandlerTestBase.readData(readHandler1, shuffleIndexResult);
     for (ShuffleDataResult shuffleData : shuffleDataResults) {
-      assertEquals(0, shuffleData.getData().length);
+      assertEquals(0, shuffleData.getDataLength());
       assertTrue(shuffleData.isEmpty());
     }
   }
