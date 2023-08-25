@@ -99,8 +99,11 @@ import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 import static org.apache.tez.common.RssTezConfig.RSS_STORAGE_TYPE;
 import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD_BYTES;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class RssDAGAppMasterTest {
@@ -112,7 +115,7 @@ public class RssDAGAppMasterTest {
           .getAbsoluteFile();
 
   @Test
-  public void testHookAfterDagInited() throws Exception {
+  public void testDagStateChangeCallback() throws Exception {
     // 1 Init and mock some basic module
     AppContext appContext = mock(AppContext.class);
     ApplicationAttemptId appAttemptId =
@@ -132,6 +135,7 @@ public class RssDAGAppMasterTest {
     TezRemoteShuffleManager shuffleManager = mock(TezRemoteShuffleManager.class);
     InetSocketAddress address = NetUtils.createSocketAddrForHost("host", 0);
     when(shuffleManager.getAddress()).thenReturn(address);
+    when(shuffleManager.unregisterShuffleByDagId(any())).thenReturn(true);
     when(appMaster.getTezRemoteShuffleManager()).thenReturn(shuffleManager);
     Configuration clientConf = new Configuration(false);
     clientConf.set(RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
@@ -187,15 +191,24 @@ public class RssDAGAppMasterTest {
     await().atMost(2, TimeUnit.SECONDS).until(() -> dagImpl.getState().equals(DAGState.INITED));
 
     // 8 verify I/O for vertexImpl
-    verfiyOutput(dagImpl, "vertex1", RssOrderedPartitionedKVOutput.class.getName(), 0, 1);
-    verfiyInput(dagImpl, "vertex2", RssOrderedGroupedKVInput.class.getName(), 0, 1);
-    verfiyOutput(dagImpl, "vertex2", RssUnorderedKVOutput.class.getName(), 1, 2);
-    verfiyInput(dagImpl, "vertex3", RssUnorderedKVInput.class.getName(), 1, 2);
-    verfiyOutput(dagImpl, "vertex3", RssUnorderedPartitionedKVOutput.class.getName(), 2, 3);
-    verfiyInput(dagImpl, "vertex4", RssUnorderedKVInput.class.getName(), 2, 3);
+    verifyOutput(dagImpl, "vertex1", RssOrderedPartitionedKVOutput.class.getName(), 0, 1);
+    verifyInput(dagImpl, "vertex2", RssOrderedGroupedKVInput.class.getName(), 0, 1);
+    verifyOutput(dagImpl, "vertex2", RssUnorderedKVOutput.class.getName(), 1, 2);
+    verifyInput(dagImpl, "vertex3", RssUnorderedKVInput.class.getName(), 1, 2);
+    verifyOutput(dagImpl, "vertex3", RssUnorderedPartitionedKVOutput.class.getName(), 2, 3);
+    verifyInput(dagImpl, "vertex4", RssUnorderedKVInput.class.getName(), 2, 3);
+
+    // 9 send INTERNAL_ERROR to dispatcher
+    dispatcher.getEventHandler().handle(new DAGEvent(dagImpl.getID(), DAGEventType.INTERNAL_ERROR));
+
+    // 10 wait DAGImpl transient to INITED state
+    await().atMost(2, TimeUnit.SECONDS).until(() -> dagImpl.getState().equals(DAGState.ERROR));
+
+    // verify
+    verify(shuffleManager, times(1)).unregisterShuffleByDagId(dagId);
   }
 
-  public static void verfiyInput(
+  public static void verifyInput(
       DAGImpl dag,
       String name,
       String expectedInputClassName,
@@ -230,7 +243,7 @@ public class RssDAGAppMasterTest {
         expectedDestinationVertexId, conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1));
   }
 
-  public static void verfiyOutput(
+  public static void verifyOutput(
       DAGImpl dag,
       String name,
       String expectedOutputClassName,

@@ -267,6 +267,15 @@ public class RssTezUtils {
     return shuffleId;
   }
 
+  public static int parseDagId(int shuffleId) {
+    Preconditions.checkArgument(shuffleId > 0, "shuffleId should be positive.");
+    int dagId = shuffleId / (SHUFFLE_ID_MAGIC * SHUFFLE_ID_MAGIC);
+    if (dagId == 0) {
+      throw new RssException("Illegal shuffleId: " + shuffleId);
+    }
+    return dagId;
+  }
+
   /**
    * @param vertexName: vertex name, like "Map 1" or "Reducer 2"
    * @return Map vertex name of String type to int type. Split vertex name, get vertex type and

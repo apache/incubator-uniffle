@@ -21,11 +21,12 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
@@ -51,6 +52,7 @@ import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.dag.api.TezException;
 import org.apache.tez.dag.api.TezUncheckedException;
 import org.apache.tez.dag.app.security.authorize.RssTezAMPolicyProvider;
+import org.apache.tez.dag.records.TezDAGID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,15 +111,41 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
 
   @Override
   public void shutdown() throws Exception {
+    unregisterShuffle();
+    server.stop();
+  }
+
+  public void unregisterShuffle() {
     if (rssClient != null) {
       LOG.info("unregister all shuffle for appid {}", appId);
-      Map<Integer, ShuffleAssignmentsInfo> infos =
-          tezRemoteShuffleUmbilical.getShuffleIdToShuffleAssignsInfo();
-      for (Map.Entry<Integer, ShuffleAssignmentsInfo> entry : infos.entrySet()) {
-        rssClient.unregisterShuffle(appId, entry.getKey());
-      }
+      rssClient.unregisterShuffle(appId);
     }
-    server.stop();
+  }
+
+  public boolean unregisterShuffleByDagId(TezDAGID dagId) {
+    try {
+      Set<Integer> shuffleIds =
+          tezRemoteShuffleUmbilical.getShuffleIdToShuffleAssignsInfo().keySet().stream()
+              .filter(shuffleId -> dagId.getId() == RssTezUtils.parseDagId(shuffleId))
+              .collect(Collectors.toSet());
+
+      shuffleIds.forEach(
+          shuffleId -> {
+            long startTime = System.currentTimeMillis();
+            rssClient.unregisterShuffle(appId, shuffleId);
+            tezRemoteShuffleUmbilical.removeShuffleInfo(shuffleId);
+            LOG.info(
+                "Unregister shuffle successfully, appId={}, dagId={}, shuffleId={}, cost={}ms",
+                appId,
+                dagId,
+                shuffleId,
+                System.currentTimeMillis() - startTime);
+          });
+    } catch (Exception e) {
+      LOG.info("Failed to unregister shuffle by dagId: {}", dagId, e);
+      return false;
+    }
+    return true;
   }
 
   public InetSocketAddress getAddress() {
@@ -125,7 +153,8 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   }
 
   private class TezRemoteShuffleUmbilicalProtocolImpl implements TezRemoteShuffleUmbilicalProtocol {
-    private Map<Integer, ShuffleAssignmentsInfo> shuffleIdToShuffleAssignsInfo = new HashMap<>();
+    private Map<Integer, ShuffleAssignmentsInfo> shuffleIdToShuffleAssignsInfo =
+        new ConcurrentHashMap<>();
 
     @Override
     public long getProtocolVersion(String s, long l) throws IOException {
@@ -184,6 +213,10 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
 
     Map<Integer, ShuffleAssignmentsInfo> getShuffleIdToShuffleAssignsInfo() {
       return shuffleIdToShuffleAssignsInfo;
+    }
+
+    void removeShuffleInfo(int shuffleId) {
+      shuffleIdToShuffleAssignsInfo.remove(shuffleId);
     }
   }
 

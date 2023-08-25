@@ -20,6 +20,8 @@ package org.apache.tez.dag.app;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
@@ -461,6 +463,46 @@ public class RssDAGAppMaster extends DAGAppMaster {
   public static void registerStateEnteredCallback(DAGImpl dag, RssDAGAppMaster appMaster) {
     StateMachineTez stateMachine = (StateMachineTez) getPrivateField(dag, "stateMachine");
     stateMachine.registerStateEnteredCallback(DAGState.INITED, new DagInitialCallback(appMaster));
+    overrideDAGFinalStateCallback(
+        appMaster,
+        (Map) getPrivateField(stateMachine, "callbackMap"),
+        Arrays.asList(DAGState.SUCCEEDED, DAGState.FAILED, DAGState.KILLED, DAGState.ERROR));
+  }
+
+  private static void overrideDAGFinalStateCallback(
+      RssDAGAppMaster appMaster, Map callbackMap, List<DAGState> finalStates) {
+    finalStates.forEach(
+        finalState ->
+            callbackMap.put(
+                finalState,
+                new DagFinalStateCallback(
+                    appMaster, (OnStateChangedCallback) callbackMap.get(finalState))));
+  }
+
+  static class DagFinalStateCallback implements OnStateChangedCallback<DAGState, DAGImpl> {
+
+    private RssDAGAppMaster appMaster;
+    private OnStateChangedCallback callback;
+
+    DagFinalStateCallback(RssDAGAppMaster appMaster, OnStateChangedCallback callback) {
+      this.appMaster = appMaster;
+      this.callback = callback;
+    }
+
+    @Override
+    public void onStateChanged(DAGImpl dag, DAGState dagState) {
+      callback.onStateChanged(dag, dagState);
+      LOG.info("Receive a dag state change event, dagId={}, dagState={}", dag.getID(), dagState);
+      long startTime = System.currentTimeMillis();
+      // Generally, one application will execute multiple DAGs, and there is no correlation between
+      // the DAGs.
+      // Therefore, after executing a DAG, you can unregister the relevant shuffle data.
+      appMaster.getTezRemoteShuffleManager().unregisterShuffleByDagId(dag.getID());
+      LOG.info(
+          "Complete the task of unregister shuffle, dagId={}, cost={}ms ",
+          dag.getID(),
+          System.currentTimeMillis() - startTime);
+    }
   }
 
   static class DagInitialCallback implements OnStateChangedCallback<DAGState, DAGImpl> {
@@ -593,7 +635,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
         // Here we only handle TA_NODE_FAILED. TA_KILL_REQUEST and TA_KILLED also could trigger
         // TerminatedAfterSuccessTransition, but the reason is not about bad node.
         LOG.info(
-            "We should not recompute the succeeded task attempt, though task attempt {} recieved envent {}",
+            "We should not recompute the succeeded task attempt, though task attempt {} received event {}",
             attempt,
             event);
         return;
