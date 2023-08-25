@@ -148,7 +148,7 @@ public class SimpleClusterManager implements ClusterManager {
           if (ServerStatus.LOST.equals(sn.getStatus())) {
             sn.setStatus(ServerStatus.ACTIVE);
             lostNodes.remove(sn);
-          } if (ServerStatus.UNHEALTHY.equals(sn.getStatus())) {
+          } else if (ServerStatus.UNHEALTHY.equals(sn.getStatus())) {
             sn.setStatus(ServerStatus.ACTIVE);
             unhealthyNodes.remove(sn);
           }
