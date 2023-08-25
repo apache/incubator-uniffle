@@ -144,8 +144,8 @@ public class SimpleClusterManager implements ClusterManager {
           unhealthyNodes.add(sn);
           lostNodes.remove(sn);
         } else {
-          unhealthyNodes.remove(sn);
           lostNodes.remove(sn);
+          unhealthyNodes.remove(sn);
         }
       }
       for (ServerNode server : lostNodes) {
