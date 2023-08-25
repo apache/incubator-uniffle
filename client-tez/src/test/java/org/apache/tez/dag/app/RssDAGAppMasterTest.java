@@ -201,10 +201,10 @@ public class RssDAGAppMasterTest {
     // 9 send INTERNAL_ERROR to dispatcher
     dispatcher.getEventHandler().handle(new DAGEvent(dagImpl.getID(), DAGEventType.INTERNAL_ERROR));
 
-    // 10 wait DAGImpl transient to INITED state
+    // 10 wait DAGImpl transient to ERROR state
     await().atMost(2, TimeUnit.SECONDS).until(() -> dagImpl.getState().equals(DAGState.ERROR));
 
-    // verify
+    // 11 verify
     verify(shuffleManager, times(1)).unregisterShuffleByDagId(dagId);
   }
 
