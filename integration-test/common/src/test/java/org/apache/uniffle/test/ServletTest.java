@@ -63,6 +63,7 @@ public class ServletTest extends IntegrationTestBase {
   private static final String NODES_URL = URL_PREFIX + "server/nodes";
   private static final String LOSTNODES_URL = URL_PREFIX + "server/nodes?status=LOST";
   private static final String UNHEALTHYNODES_URL = URL_PREFIX + "server/nodes?status=UNHEALTHY";
+  private static final String DECOMMISSIONEDNODES_URL = URL_PREFIX + "server/nodes?status=DECOMMISSIONED";
   private static final String DECOMMISSION_URL = URL_PREFIX + "server/decommission";
   private static final String CANCEL_DECOMMISSION_URL = URL_PREFIX + "server/cancelDecommission";
   private static final String DECOMMISSION_SINGLENODE_URL = URL_PREFIX + "server/%s/decommission";
@@ -81,6 +82,7 @@ public class ServletTest extends IntegrationTestBase {
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.set(RssBaseConf.RSS_COORDINATOR_QUORUM, "127.0.0.1:12346");
+    shuffleServerConf.set(ShuffleServerConf.SERVER_DECOMMISSION_SHUTDOWN, false);
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     List<String> basePath =
@@ -167,6 +169,28 @@ public class ServletTest extends IntegrationTestBase {
       shuffleIds.add(shuffleId);
     }
     assertTrue(CollectionUtils.isEqualCollection(expectShuffleIds, shuffleIds));
+  }
+
+  @Test
+  public void testDecommissionedNodeServlet() {
+    ShuffleServer shuffleServer = shuffleServers.get(1);
+    shuffleServer.decommission();
+    Awaitility.await()
+        .atMost(30, TimeUnit.SECONDS)
+        .until(
+            () -> {
+              Response<List<HashMap<String, Object>>> response =
+                  objectMapper.readValue(
+                      TestUtils.httpGet(DECOMMISSIONEDNODES_URL),
+                      new TypeReference<Response<List<HashMap<String, Object>>>>() {});
+              List<HashMap<String, Object>> serverList = response.getData();
+              for (HashMap<String, Object> stringObjectHashMap : serverList) {
+                String shuffleId = (String) stringObjectHashMap.get("id");
+                return shuffleServer.getId().equals(shuffleId);
+              }
+              return false;
+            });
+    shuffleServer.cancelDecommission();
   }
 
   @Test
