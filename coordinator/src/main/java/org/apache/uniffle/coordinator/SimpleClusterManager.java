@@ -139,19 +139,18 @@ public class SimpleClusterManager implements ClusterManager {
           LOG.warn("Heartbeat timeout detect, {} will be removed from node list.", sn);
           sn.setStatus(ServerStatus.LOST);
           lostNodes.add(sn);
-          unhealthyNodes.remove(sn);
         } else if (ServerStatus.UNHEALTHY.equals(sn.getStatus())) {
           LOG.warn("Found server {} was unhealthy, will not assign it.", sn);
           unhealthyNodes.add(sn);
           lostNodes.remove(sn);
         } else {
-          sn.setStatus(ServerStatus.ACTIVE);
           lostNodes.remove(sn);
           unhealthyNodes.remove(sn);
         }
       }
       for (ServerNode server : lostNodes) {
         ServerNode sn = servers.remove(server.getId());
+        unhealthyNodes.remove(sn);
         if (sn != null) {
           clientCache.invalidate(sn);
           for (Set<ServerNode> nodesWithTag : tagToNodes.values()) {
@@ -247,9 +246,7 @@ public class SimpleClusterManager implements ClusterManager {
       if (!ServerStatus.ACTIVE.equals(node.getStatus())) {
         continue;
       }
-      if (!excludeNodes.contains(node.getId())
-          && node.getTags().containsAll(requiredTags)
-          && ServerStatus.ACTIVE.equals(node.getStatus())) {
+      if (!excludeNodes.contains(node.getId()) && node.getTags().containsAll(requiredTags)) {
         availableNodes.add(node);
       }
     }

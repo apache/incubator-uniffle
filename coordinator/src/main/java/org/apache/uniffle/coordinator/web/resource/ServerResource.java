@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.coordinator.web.resource;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -71,7 +70,7 @@ public class ServerResource extends BaseResource {
     } else if (ServerStatus.LOST.name().equalsIgnoreCase(status)) {
       serverList = clusterManager.getLostServerList();
     } else {
-      serverList = clusterManager.getServerList(Collections.emptySet());
+      serverList = clusterManager.list();
     }
     serverList =
         serverList.stream()
