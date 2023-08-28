@@ -66,7 +66,6 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
 
   @Override
   public RssSendShuffleDataResponse sendShuffleData(RssSendShuffleDataRequest request) {
-    TransportClient transportClient = getTransportClient();
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks =
         request.getShuffleIdToBlocks();
     boolean isSuccessful = true;
@@ -88,6 +87,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
       try {
         RetryUtils.retry(
             () -> {
+              TransportClient transportClient = getTransportClient();
               long requireId =
                   requirePreAllocation(
                       request.getAppId(),
