@@ -633,8 +633,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                     length);
         long readTime = System.currentTimeMillis() - start;
         ShuffleServerMetrics.counterTotalReadTime.inc(readTime);
-        ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getData().length);
-        ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getData().length);
+        ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getDataLength());
+        ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getDataLength());
         shuffleServer
             .getGrpcMetrics()
             .recordProcessTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, readTime);

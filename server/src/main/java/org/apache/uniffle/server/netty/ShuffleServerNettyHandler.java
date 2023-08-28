@@ -442,9 +442,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                     length);
         long readTime = System.currentTimeMillis() - start;
         ShuffleServerMetrics.counterTotalReadTime.inc(readTime);
-        int dataLength = sdr.getDataBuffer().remaining();
-        ShuffleServerMetrics.counterTotalReadDataSize.inc(dataLength);
-        ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(dataLength);
+        ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getDataLength());
+        ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getDataLength());
         shuffleServer
             .getNettyMetrics()
             .recordProcessTime(GetLocalShuffleDataRequest.class.getName(), readTime);

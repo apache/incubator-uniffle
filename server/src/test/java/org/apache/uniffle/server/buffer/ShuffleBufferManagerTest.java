@@ -199,10 +199,10 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     bufferPool.get(appId).get(3).get(0).getInFlushBlockMap().clear();
     // empty data return
     sdr = shuffleBufferManager.getShuffleData(appId, 2, 0, Constants.INVALID_BLOCK_ID, 60);
-    assertEquals(0, sdr.getData().length);
+    assertEquals(0, sdr.getDataLength());
     lastBlockId = spd2.getBlockList()[0].getBlockId();
     sdr = shuffleBufferManager.getShuffleData(appId, 2, 0, lastBlockId, 100);
-    assertEquals(0, sdr.getData().length);
+    assertEquals(0, sdr.getDataLength());
   }
 
   @Test
