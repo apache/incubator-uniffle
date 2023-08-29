@@ -326,8 +326,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             break;
           }
           LOG.info("Wait " + blockIds.size() + " blocks sent to shuffle server");
-          Object event = finishEventQueue.poll(remainingMs, TimeUnit.MILLISECONDS);
-          if (event != null) {
+          if (finishEventQueue.isEmpty()) {
+            Object event = finishEventQueue.poll(remainingMs, TimeUnit.MILLISECONDS);
+            if (event != null) {
+              continue;
+            }
+          } else {
+            finishEventQueue.clear();
             continue;
           }
           break;
