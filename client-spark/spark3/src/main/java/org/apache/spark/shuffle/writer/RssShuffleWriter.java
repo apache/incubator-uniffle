@@ -24,10 +24,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -92,6 +94,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   protected final long taskAttemptId;
 
   protected final ShuffleWriteMetrics shuffleWriteMetrics;
+
+  private final BlockingQueue<Object> finishEventQueue = new LinkedBlockingQueue<>();
 
   // Only for tests
   @VisibleForTesting
@@ -293,6 +297,12 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       List<ShuffleBlockInfo> shuffleBlockInfoList) {
     List<CompletableFuture<Long>> futures = new ArrayList<>();
     for (AddBlockEvent event : bufferManager.buildBlockEvents(shuffleBlockInfoList)) {
+      event.addCallback(() -> {
+        boolean ret = finishEventQueue.add(new Object());
+        if (!ret) {
+          LOG.error("Add event " + event + " to finishEventQueue fail");
+        }
+      });
       futures.add(shuffleManager.sendData(event));
     }
     return futures;
@@ -300,17 +310,31 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   @VisibleForTesting
   protected void checkBlockSendResult(Set<Long> blockIds) {
-    long start = System.currentTimeMillis();
-    while (true) {
-      checkIfBlocksFailed();
-      Set<Long> successBlockIds = shuffleManager.getSuccessBlockIds(taskId);
-      blockIds.removeAll(successBlockIds);
-      if (blockIds.isEmpty()) {
-        break;
+    boolean interrupted = false;
+
+    try {
+      long remainingNanos = sendCheckTimeout;
+      long end = System.currentTimeMillis() + remainingNanos;
+
+      while(true) {
+        try {
+          checkIfBlocksFailed();
+          Set<Long> successBlockIds = shuffleManager.getSuccessBlockIds(taskId);
+          blockIds.removeAll(successBlockIds);
+          if (blockIds.isEmpty()) {
+            break;
+          }
+          LOG.info("Wait " + blockIds.size() + " blocks sent to shuffle server");
+          finishEventQueue.poll(remainingNanos, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException var12) {
+          interrupted = true;
+          remainingNanos = end - System.currentTimeMillis();
+          if (remainingNanos < 0) {
+            remainingNanos = 0;
+          }
+        }
       }
-      LOG.info("Wait " + blockIds.size() + " blocks sent to shuffle server");
-      Uninterruptibles.sleepUninterruptibly(sendCheckInterval, TimeUnit.MILLISECONDS);
-      if (System.currentTimeMillis() - start > sendCheckTimeout) {
+      if (remainingNanos <= 0) {
         String errorMsg =
             "Timeout: Task["
                 + taskId
@@ -321,6 +345,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                 + " ms.";
         LOG.error(errorMsg);
         throw new RssException(errorMsg);
+      }
+    } finally {
+      if (interrupted) {
+        Thread.currentThread().interrupt();
       }
     }
   }
