@@ -326,8 +326,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
           if (blockIds.isEmpty()) {
             break;
           }
-          LOG.info("Wait " + blockIds.size() + " blocks sent to shuffle server");
           if (finishEventQueue.isEmpty()) {
+            remainingMs = Math.max(end - System.currentTimeMillis(), 0);
             Object event = finishEventQueue.poll(remainingMs, TimeUnit.MILLISECONDS);
             if (event == null) {
               break;
@@ -335,14 +335,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
           }
         } catch (InterruptedException e) {
           interrupted = true;
-        } finally {
-          remainingMs = end - System.currentTimeMillis();
-          if (remainingMs < 0) {
-            remainingMs = 0;
-          }
         }
       }
-      if (remainingMs <= 0) {
+      if (end - System.currentTimeMillis() <= 0) {
         String errorMsg =
             "Timeout: Task["
                 + taskId
