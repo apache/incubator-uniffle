@@ -330,6 +330,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
           break;
         } catch (InterruptedException var12) {
           interrupted = true;
+        } finally {
           remainingMs = end - System.currentTimeMillis();
           if (remainingMs < 0) {
             remainingMs = 0;
