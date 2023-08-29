@@ -297,12 +297,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       List<ShuffleBlockInfo> shuffleBlockInfoList) {
     List<CompletableFuture<Long>> futures = new ArrayList<>();
     for (AddBlockEvent event : bufferManager.buildBlockEvents(shuffleBlockInfoList)) {
-      event.addCallback(() -> {
-        boolean ret = finishEventQueue.add(new Object());
-        if (!ret) {
-          LOG.error("Add event " + event + " to finishEventQueue fail");
-        }
-      });
+      event.addCallback(
+          () -> {
+            boolean ret = finishEventQueue.add(new Object());
+            if (!ret) {
+              LOG.error("Add event " + event + " to finishEventQueue fail");
+            }
+          });
       futures.add(shuffleManager.sendData(event));
     }
     return futures;
@@ -316,7 +317,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       long remainingMs = sendCheckTimeout;
       long end = System.currentTimeMillis() + remainingMs;
 
-      while(true) {
+      while (true) {
         try {
           checkIfBlocksFailed();
           Set<Long> successBlockIds = shuffleManager.getSuccessBlockIds(taskId);
@@ -326,6 +327,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
           }
           LOG.info("Wait " + blockIds.size() + " blocks sent to shuffle server");
           finishEventQueue.poll(remainingMs, TimeUnit.MILLISECONDS);
+          break;
         } catch (InterruptedException var12) {
           interrupted = true;
           remainingMs = end - System.currentTimeMillis();
