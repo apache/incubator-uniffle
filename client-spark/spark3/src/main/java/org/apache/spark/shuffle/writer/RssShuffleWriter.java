@@ -313,8 +313,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     boolean interrupted = false;
 
     try {
-      long remainingNanos = sendCheckTimeout;
-      long end = System.currentTimeMillis() + remainingNanos;
+      long remainingMs = sendCheckTimeout;
+      long end = System.currentTimeMillis() + remainingMs;
 
       while(true) {
         try {
@@ -325,16 +325,16 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             break;
           }
           LOG.info("Wait " + blockIds.size() + " blocks sent to shuffle server");
-          finishEventQueue.poll(remainingNanos, TimeUnit.MILLISECONDS);
+          finishEventQueue.poll(remainingMs, TimeUnit.MILLISECONDS);
         } catch (InterruptedException var12) {
           interrupted = true;
-          remainingNanos = end - System.currentTimeMillis();
-          if (remainingNanos < 0) {
-            remainingNanos = 0;
+          remainingMs = end - System.currentTimeMillis();
+          if (remainingMs < 0) {
+            remainingMs = 0;
           }
         }
       }
-      if (remainingNanos <= 0) {
+      if (remainingMs <= 0) {
         String errorMsg =
             "Timeout: Task["
                 + taskId
