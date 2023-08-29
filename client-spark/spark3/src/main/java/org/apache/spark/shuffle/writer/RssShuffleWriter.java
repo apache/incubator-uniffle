@@ -330,12 +330,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             Object event = finishEventQueue.poll(remainingMs, TimeUnit.MILLISECONDS);
             if (event != null) {
               continue;
+            } else {
+              break;
             }
           } else {
             finishEventQueue.clear();
             continue;
           }
-          break;
         } catch (InterruptedException var12) {
           interrupted = true;
         } finally {
