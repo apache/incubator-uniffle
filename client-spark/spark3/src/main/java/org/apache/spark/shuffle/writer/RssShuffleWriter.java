@@ -337,7 +337,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
           interrupted = true;
         }
       }
-      if (end - System.currentTimeMillis() <= 0) {
+      if (!blockIds.isEmpty()) {
         String errorMsg =
             "Timeout: Task["
                 + taskId
