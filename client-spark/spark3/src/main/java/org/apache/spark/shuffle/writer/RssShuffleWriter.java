@@ -319,6 +319,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
       while (true) {
         try {
+          finishEventQueue.clear();
           checkIfBlocksFailed();
           Set<Long> successBlockIds = shuffleManager.getSuccessBlockIds(taskId);
           blockIds.removeAll(successBlockIds);
@@ -331,10 +332,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             if (event == null) {
               break;
             }
-          } else {
-            finishEventQueue.clear();
           }
-        } catch (InterruptedException var12) {
+        } catch (InterruptedException e) {
           interrupted = true;
         } finally {
           remainingMs = end - System.currentTimeMillis();
