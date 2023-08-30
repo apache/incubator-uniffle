@@ -241,7 +241,7 @@ Deploy Steps:
    ```
    # Uniffle transmits serialized shuffle data over network, therefore a serializer that supports relocation of
    # serialized object should be used. 
-   spark.serialier org.apache.spark.serializer.KryoSerializer # this could also be in the spark-defaults.conf
+   spark.serializer org.apache.spark.serializer.KryoSerializer # this could also be in the spark-defaults.conf
    spark.shuffle.manager org.apache.spark.shuffle.RssShuffleManager
    spark.rss.coordinator.quorum <coordinatorIp1>:19999,<coordinatorIp2>:19999
    # Note: For Spark2, spark.sql.adaptive.enabled should be false because Spark2 doesn't support AQE.
