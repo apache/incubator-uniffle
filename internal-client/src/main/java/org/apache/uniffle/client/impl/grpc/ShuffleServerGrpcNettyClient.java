@@ -61,7 +61,8 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     this(rssConf, host, grpcPort, nettyPort, 3);
   }
 
-  public ShuffleServerGrpcNettyClient(RssConf rssConf, String host, int grpcPort, int nettyPort, int maxRetryAttempts) {
+  public ShuffleServerGrpcNettyClient(
+      RssConf rssConf, String host, int grpcPort, int nettyPort, int maxRetryAttempts) {
     super(host, grpcPort, maxRetryAttempts);
     this.nettyPort = nettyPort;
     TransportContext transportContext = new TransportContext(new TransportConf(rssConf));
