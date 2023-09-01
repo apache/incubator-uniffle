@@ -116,13 +116,15 @@ public class QuotaManagerTest {
     final boolean icCheck =
         applicationManager.getQuotaManager().checkQuota("user4", String.valueOf(i1));
     registerThread.join();
-    assertTrue(icCheck);
+    assertFalse(icCheck);
     assertEquals(
-        applicationManager.getQuotaManager().getCurrentUserAndApp().get("user4").size(), 5);
+        applicationManager.getQuotaManager().getCurrentUserAndApp().get("user4").size(), 6);
   }
 
   @Test
   public void testCheckQuotaMetrics() {
+    CoordinatorMetrics.clear();
+    CoordinatorMetrics.register();
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH, quotaFile);
     conf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 1500);
