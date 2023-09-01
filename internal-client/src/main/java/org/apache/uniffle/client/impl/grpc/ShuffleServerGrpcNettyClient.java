@@ -58,7 +58,12 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
   private TransportClientFactory clientFactory;
 
   public ShuffleServerGrpcNettyClient(RssConf rssConf, String host, int grpcPort, int nettyPort) {
-    super(host, grpcPort);
+    this(rssConf, host, grpcPort, nettyPort, 3);
+  }
+
+  public ShuffleServerGrpcNettyClient(
+      RssConf rssConf, String host, int grpcPort, int nettyPort, int maxRetryAttempts) {
+    super(host, grpcPort, maxRetryAttempts);
     this.nettyPort = nettyPort;
     TransportContext transportContext = new TransportContext(new TransportConf(rssConf));
     this.clientFactory = new TransportClientFactory(transportContext);
@@ -66,7 +71,6 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
 
   @Override
   public RssSendShuffleDataResponse sendShuffleData(RssSendShuffleDataRequest request) {
-    TransportClient transportClient = getTransportClient();
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks =
         request.getShuffleIdToBlocks();
     boolean isSuccessful = true;
@@ -88,6 +92,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
       try {
         RetryUtils.retry(
             () -> {
+              TransportClient transportClient = getTransportClient();
               long requireId =
                   requirePreAllocation(
                       request.getAppId(),
