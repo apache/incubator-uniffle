@@ -58,7 +58,7 @@ func (c *Config) AddFlags() {
 	flag.IntVar(&c.Workers, flagWorkers, 1, "Concurrency of the rss controller.")
 	flag.BoolVar(&c.ManagerOptions.LeaderElection, managerLeaderElection, true, "LeaderElection determines whether or not to use leader election when starting the manager.")
 	flag.StringVar(&c.ManagerOptions.LeaderElectionID, managerLeaderElectionID, c.LeaderElectionID(), "LeaderElectionID determines the name of the resource that leader election will use for holding the leader lock.")
-	flag.StringVar(&c.ManagerOptions.LeaderElectionNamespace, managerLeaderElectionNamespace, "kube-system", "LeaderElectionNamespace determines the namespace in which the leader election resource will be created.")
+	flag.StringVar(&c.ManagerOptions.LeaderElectionNamespace, managerLeaderElectionNamespace, utils.GetCurrentNamespace(), "LeaderElectionNamespace determines the namespace in which the leader election resource will be created.")
 	flag.StringVar(&c.ManagerOptions.Namespace, managerNamespace, "", "Namespace if specified restricts the manager's cache to watch objects in the desired namespace Defaults to all namespaces.")
 	flag.DurationVar(c.ManagerOptions.SyncPeriod, managerSyncPeriod, time.Hour*10, "SyncPeriod determines the minimum frequency at which watched resources are reconciled.")
 	flag.DurationVar(c.ManagerOptions.RetryPeriod, managerRetryPeriod, time.Second*2, "RetryPeriod is the duration the LeaderElector clients should wait between tries of actions.")
