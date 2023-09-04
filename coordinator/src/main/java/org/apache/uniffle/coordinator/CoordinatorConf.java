@@ -202,14 +202,16 @@ public class CoordinatorConf extends RssBaseConf {
       ConfigOptions.key("rss.coordinator.quota.default.app.num")
           .intType()
           .defaultValue(-1)
-          .withDescription("Default number of apps at user level, if set value < 0,then this user app quota "
-              + "check would passed");
+          .withDescription(
+              "Default number of apps at user level, if set value < 0,then this user app quota "
+                  + "check would passed");
   public static final ConfigOption<String> COORDINATOR_QUOTA_DEFAULT_PATH =
       ConfigOptions.key("rss.coordinator.quota.default.path")
           .stringType()
           .noDefaultValue()
-          .withDescription("A configuration file for the number of apps for a user-defined user, if set value < 0,then this user app quota "
-              + "check would passed.");
+          .withDescription(
+              "A configuration file for the number of apps for a user-defined user, if set value < 0,then this user app quota "
+                  + "check would passed.");
   public static final ConfigOption<Long> COORDINATOR_QUOTA_UPDATE_INTERVAL =
       ConfigOptions.key("rss.coordinator.quota.update.interval")
           .longType()
