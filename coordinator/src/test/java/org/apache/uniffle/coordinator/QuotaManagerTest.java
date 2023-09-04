@@ -44,6 +44,7 @@ public class QuotaManagerTest {
   private final String quotaFile =
       Objects.requireNonNull(this.getClass().getClassLoader().getResource(fileName)).getFile();
   private static final String fileName = "quotaFile.properties";
+  private static final AtomicInteger uuid = new AtomicInteger();
 
   @BeforeAll
   public static void setup() {
@@ -91,6 +92,7 @@ public class QuotaManagerTest {
   public void testCheckQuota() throws Exception {
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH, quotaFile);
+    conf.setInteger(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM, 5);
     final ApplicationManager applicationManager = new ApplicationManager(conf);
     final AtomicInteger uuid = new AtomicInteger();
     Map<String, Long> uuidAndTime = new ConcurrentHashMap<>();
@@ -123,6 +125,8 @@ public class QuotaManagerTest {
 
   @Test
   public void testCheckQuotaMetrics() {
+    CoordinatorMetrics.clear();
+    CoordinatorMetrics.register();
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH, quotaFile);
     conf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 1500);
@@ -150,6 +154,7 @@ public class QuotaManagerTest {
     assertFalse(icCheck2);
     // The default number of tasks submitted is 2, and the third will be rejected
     assertTrue(icCheck3);
+    assertFalse(icCheck4);
     assertEquals(
         applicationManager.getQuotaManager().getCurrentUserAndApp().get("user4").size(), 2);
     assertEquals(CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user4").get(), 2);
@@ -163,5 +168,49 @@ public class QuotaManagerTest {
               return CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user4").get() == 0
                   && CoordinatorMetrics.gaugeRunningAppNumToUser.labels("user3").get() == 0;
             });
+  }
+
+  @Test
+  public void testCheckQuotaWithDefault() {
+    CoordinatorConf conf = new CoordinatorConf();
+    conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH, quotaFile);
+    final ApplicationManager applicationManager = new ApplicationManager(conf);
+    Awaitility.await()
+        .timeout(5, TimeUnit.SECONDS)
+        .until(() -> applicationManager.getDefaultUserApps().size() > 2);
+
+    QuotaManager quotaManager = applicationManager.getQuotaManager();
+    Map<String, Map<String, Long>> currentUserAndApp = quotaManager.getCurrentUserAndApp();
+
+    currentUserAndApp.computeIfAbsent("user1", x -> mockUUidAppAndTime(30));
+    currentUserAndApp.computeIfAbsent("user2", x -> mockUUidAppAndTime(20));
+    currentUserAndApp.computeIfAbsent("user3", x -> mockUUidAppAndTime(29));
+    currentUserAndApp.computeIfAbsent("disable_quota_user1", x -> mockUUidAppAndTime(100));
+    currentUserAndApp.computeIfAbsent("blank_user1", x -> mockUUidAppAndTime(0));
+
+    assertEquals(currentUserAndApp.get("user1").size(), 30);
+    assertEquals(currentUserAndApp.get("user2").size(), 20);
+    assertEquals(currentUserAndApp.get("user3").size(), 29);
+    assertEquals(currentUserAndApp.get("disable_quota_user1").size(), 100);
+    assertEquals(currentUserAndApp.get("blank_user1").size(), 0);
+
+    assertTrue(quotaManager.checkQuota("user1", mockUUidAppId()));
+    assertTrue(quotaManager.checkQuota("user2", mockUUidAppId()));
+    assertFalse(quotaManager.checkQuota("user3", mockUUidAppId()));
+    assertTrue(quotaManager.checkQuota("user3", mockUUidAppId()));
+    assertFalse(quotaManager.checkQuota("disable_quota_user1", mockUUidAppId()));
+    assertTrue(quotaManager.checkQuota("blank_user1", mockUUidAppId()));
+  }
+
+  private String mockUUidAppId() {
+    return String.valueOf(uuid.incrementAndGet());
+  }
+
+  private Map<String, Long> mockUUidAppAndTime(int mockAppNum) {
+    Map<String, Long> uuidAndTime = new ConcurrentHashMap<>();
+    for (int i = 0; i < mockAppNum; i++) {
+      uuidAndTime.put(mockUUidAppId(), System.currentTimeMillis());
+    }
+    return uuidAndTime;
   }
 }
