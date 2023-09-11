@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.server.storage.multi;
+package org.apache.uniffle.server.storage.hybrid;
 
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;

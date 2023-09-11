@@ -298,19 +298,21 @@ public class ShuffleServerConf extends RssBaseConf {
           .withDescription(
               "For multistorage, the event size exceed this value, flush data  to cold storage");
 
-  public static final ConfigOption<String> MULTISTORAGE_MANAGER_SELECTOR_CLASS =
-      ConfigOptions.key("rss.server.multistorage.manager.selector.class")
+  public static final ConfigOption<String> HYBRID_STORAGE_MANAGER_SELECTOR_CLASS =
+      ConfigOptions.key("rss.server.hybrid.storage.manager.selector.class")
           .stringType()
-          .defaultValue("org.apache.uniffle.server.storage.multi.DefaultStorageManagerSelector")
+          .defaultValue("org.apache.uniffle.server.storage.hybrid.DefaultStorageManagerSelector")
           .withDescription(
               "For multistorage, the storage manager selector strategy to support "
-                  + "policies of flushing to different storages");
+                  + "policies of flushing to different storages")
+          .withDeprecatedKeys("rss.server.multistorage.manager.selector.class");
 
-  public static final ConfigOption<String> MULTISTORAGE_FALLBACK_STRATEGY_CLASS =
-      ConfigOptions.key("rss.server.multistorage.fallback.strategy.class")
+  public static final ConfigOption<String> HYBRID_STORAGE_FALLBACK_STRATEGY_CLASS =
+      ConfigOptions.key("rss.server.hybrid.storage.fallback.strategy.class")
           .stringType()
           .noDefaultValue()
-          .withDescription("For multistorage, fallback strategy class");
+          .withDescription("For multistorage, fallback strategy class")
+          .withDeprecatedKeys("rss.server.multistorage.fallback.strategy.class");
 
   public static final ConfigOption<Long> FALLBACK_MAX_FAIL_TIMES =
       ConfigOptions.key("rss.server.multistorage.fallback.max.fail.times")
