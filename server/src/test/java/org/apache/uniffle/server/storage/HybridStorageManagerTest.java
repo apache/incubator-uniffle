@@ -70,7 +70,7 @@ public class HybridStorageManagerTest {
         RotateStorageManagerFallbackStrategy.class.getCanonicalName());
     conf.set(
         ShuffleServerConf.HYBRID_STORAGE_MANAGER_SELECTOR_CLASS,
-        "org.apache.uniffle.server.storage.multi.HugePartitionSensitiveStorageManagerSelector");
+        "org.apache.uniffle.server.storage.hybrid.HugePartitionSensitiveStorageManagerSelector");
     HybridStorageManager manager = new HybridStorageManager(conf);
     String remoteStorage = "test";
     String appId = "selectStorageManagerIfCanNotWriteTest_appId";
