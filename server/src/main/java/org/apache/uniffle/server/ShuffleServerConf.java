@@ -301,7 +301,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<String> HYBRID_STORAGE_MANAGER_SELECTOR_CLASS =
       ConfigOptions.key("rss.server.hybrid.storage.manager.selector.class")
           .stringType()
-          .defaultValue("org.apache.uniffle.server.storage.multi.DefaultStorageManagerSelector")
+          .defaultValue("org.apache.uniffle.server.storage.hybrid.DefaultStorageManagerSelector")
           .withDescription(
               "For multistorage, the storage manager selector strategy to support "
                   + "policies of flushing to different storages")
