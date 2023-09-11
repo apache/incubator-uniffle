@@ -47,7 +47,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public abstract class MultiStorageFaultToleranceBase extends ShuffleReadWriteBase {
+public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBase {
   private ShuffleServerGrpcClient shuffleServerClient;
   private static String REMOTE_STORAGE = HDFS_URI + "rss/multi_storage_fault";
 

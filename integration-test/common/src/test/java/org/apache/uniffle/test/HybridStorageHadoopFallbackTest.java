@@ -25,14 +25,11 @@ import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.server.storage.LocalStorageManager;
-import org.apache.uniffle.server.storage.LocalStorageManagerFallbackStrategy;
-import org.apache.uniffle.server.storage.MultiStorageManager;
-import org.apache.uniffle.storage.common.LocalStorage;
-import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class MultiStorageLocalFileFallbackTest extends MultiStorageFaultToleranceBase {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class HybridStorageHadoopFallbackTest extends HybridStorageFaultToleranceBase {
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
@@ -50,22 +47,14 @@ public class MultiStorageLocalFileFallbackTest extends MultiStorageFaultToleranc
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE_HDFS.name());
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
     shuffleServerConf.setLong(
-        ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1000L * 1024L * 1024L);
-    shuffleServerConf.setString(
-        ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
-        LocalStorageManagerFallbackStrategy.class.getCanonicalName());
+        ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1L * 1024L * 1024L);
     createAndStartServers(shuffleServerConf, coordinatorConf);
   }
 
   @Override
   public void makeChaos() {
-    LocalStorageManager warmStorageManager =
-        (LocalStorageManager)
-            ((MultiStorageManager) shuffleServers.get(0).getStorageManager())
-                .getWarmStorageManager();
-    for (Storage storage : warmStorageManager.getStorages()) {
-      LocalStorage localStorage = (LocalStorage) storage;
-      localStorage.markSpaceFull();
-    }
+    assertEquals(1, cluster.getDataNodes().size());
+    cluster.stopDataNode(0);
+    assertEquals(0, cluster.getDataNodes().size());
   }
 }

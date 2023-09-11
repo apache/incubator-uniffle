@@ -34,7 +34,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class MultiStorageManagerTest {
+public class HybridStorageManagerTest {
 
   @Test
   public void selectStorageManagerTest() {
@@ -44,7 +44,7 @@ public class MultiStorageManagerTest {
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     conf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
-    MultiStorageManager manager = new MultiStorageManager(conf);
+    HybridStorageManager manager = new HybridStorageManager(conf);
     String remoteStorage = "test";
     String appId = "selectStorageManagerTest_appId";
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
@@ -66,19 +66,19 @@ public class MultiStorageManagerTest {
     conf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     conf.setString(
-        ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
+        ShuffleServerConf.HYBRID_STORAGE_FALLBACK_STRATEGY_CLASS,
         RotateStorageManagerFallbackStrategy.class.getCanonicalName());
     conf.set(
-        ShuffleServerConf.MULTISTORAGE_MANAGER_SELECTOR_CLASS,
+        ShuffleServerConf.HYBRID_STORAGE_MANAGER_SELECTOR_CLASS,
         "org.apache.uniffle.server.storage.multi.HugePartitionSensitiveStorageManagerSelector");
-    MultiStorageManager manager = new MultiStorageManager(conf);
+    HybridStorageManager manager = new HybridStorageManager(conf);
     String remoteStorage = "test";
     String appId = "selectStorageManagerIfCanNotWriteTest_appId";
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
 
     /**
      * case1: only event owned by huge partition will be flushed to cold storage when the {@link
-     * org.apache.uniffle.server.storage.multi.StorageManagerSelector.ColdStoragePreferredFactor.HUGE_PARTITION}
+     * org.apache.uniffle.server.storage.hybrid.StorageManagerSelector.ColdStoragePreferredFactor.HUGE_PARTITION}
      * is enabled.
      */
     List<ShufflePartitionedBlock> blocks =
@@ -104,9 +104,9 @@ public class MultiStorageManagerTest {
     conf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     conf.setString(
-        ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
+        ShuffleServerConf.HYBRID_STORAGE_FALLBACK_STRATEGY_CLASS,
         RotateStorageManagerFallbackStrategy.class.getCanonicalName());
-    MultiStorageManager manager = new MultiStorageManager(conf);
+    HybridStorageManager manager = new HybridStorageManager(conf);
     String remoteStorage = "test";
     String appId = "selectStorageManagerIfCanNotWriteTest_appId";
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));

@@ -38,7 +38,7 @@ public class StorageManagerFactory {
       return new HadoopStorageManager(conf);
     } else if (StorageType.LOCALFILE_HDFS.equals(type)
         || StorageType.MEMORY_LOCALFILE_HDFS.equals(type)) {
-      return new MultiStorageManager(conf);
+      return new HybridStorageManager(conf);
     } else {
       throw new IllegalArgumentException("unknown storageType was found");
     }

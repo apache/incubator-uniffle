@@ -35,20 +35,20 @@ import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.event.PurgeEvent;
-import org.apache.uniffle.server.storage.multi.StorageManagerSelector;
+import org.apache.uniffle.server.storage.hybrid.StorageManagerSelector;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 
-public class MultiStorageManager implements StorageManager {
+public class HybridStorageManager implements StorageManager {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MultiStorageManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(HybridStorageManager.class);
 
   private final StorageManager warmStorageManager;
   private final StorageManager coldStorageManager;
   private final Cache<ShuffleDataFlushEvent, StorageManager> eventOfUnderStorageManagers;
   private final StorageManagerSelector storageManagerSelector;
 
-  MultiStorageManager(ShuffleServerConf conf) {
+  HybridStorageManager(ShuffleServerConf conf) {
     warmStorageManager = new LocalStorageManager(conf);
     coldStorageManager = new HadoopStorageManager(conf);
 
@@ -73,7 +73,7 @@ public class MultiStorageManager implements StorageManager {
       StorageManager warmStorageManager,
       StorageManager coldStorageManager)
       throws Exception {
-    String name = conf.get(ShuffleServerConf.MULTISTORAGE_MANAGER_SELECTOR_CLASS);
+    String name = conf.get(ShuffleServerConf.HYBRID_STORAGE_MANAGER_SELECTOR_CLASS);
     Class<?> klass = Class.forName(name);
     Constructor<?> constructor =
         klass.getConstructor(
@@ -92,7 +92,7 @@ public class MultiStorageManager implements StorageManager {
       throws Exception {
     String name =
         conf.getString(
-            ShuffleServerConf.MULTISTORAGE_FALLBACK_STRATEGY_CLASS,
+            ShuffleServerConf.HYBRID_STORAGE_FALLBACK_STRATEGY_CLASS,
             HadoopStorageManagerFallbackStrategy.class.getCanonicalName());
     Class<?> klass = Class.forName(name);
     Constructor<?> constructor;
