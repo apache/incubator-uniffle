@@ -110,6 +110,14 @@ spec:
     # HostPathMounts field indicates host path volumes and their mounting path within coordinators' containers.
     hostPathMounts:
       /data/logs/rss: /data/rssadmin/rss/logs
+    volumeMounts:
+      - name: hadoop-config
+        mountPath: "/data/rssadmin/hadoop/conf"
+        readOnly: true
+    volumes:
+       - name: hadoop-config
+         configMap:
+            name: hadoop-configuration
   # shuffleServer represents the relevant configuration of the shuffleServers
   shuffleServer:
     # Sync marks whether the shuffle server needs to be updated or restarted.
@@ -120,6 +128,14 @@ spec:
     replicas: 3
     # Image represents the mirror image used by shuffle servers.
     image: ${shuffle-server-image}
+    volumeMounts:
+       - name: hadoop-config
+         mountPath: "/data/rssadmin/hadoop/conf"
+         readOnly: true
+    volumes:
+       - name: hadoop-config
+         configMap:
+            name: hadoop-configuration
 ```
 
 After a user creates a rss object, the rss-controller component will create the corresponding workloads.
