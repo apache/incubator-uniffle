@@ -112,7 +112,7 @@ public class HadoopSecurityContextTest extends KerberizedHadoopBase {
             kerberizedHadoop.getHdfsPrincipal(),
             1000,
             false)) {
-      Path pathWithHdfsUser = new Path("/alex/HadoopSecurityDisableProxyUserWithUser");
+      Path pathWithHdfsUser = new Path("/alex/HadoopSecurityDisableProxyUser");
       context.runSecured(
           "alex",
           (Callable<Void>)
