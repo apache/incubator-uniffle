@@ -324,7 +324,7 @@ The following security configurations are introduced.
 |rss.security.hadoop.kerberos.keytab.file|-|The kerberos keytab file path. And only when rss.security.hadoop.kerberos.enable is enabled, the option will be valid|
 |rss.security.hadoop.kerberos.principal|-|The kerberos keytab principal. And only when rss.security.hadoop.kerberos.enable is enabled, the option will be valid|
 |rss.security.hadoop.kerberos.relogin.interval.sec|60|The kerberos authentication relogin interval. unit: sec|
-|rss.security.hadoop.kerberos.proxy.user.enable|true|Whether using proxy user for spark job user to access secured Hadoop cluster.|
+|rss.security.hadoop.kerberos.proxy.user.enable|true|Whether using proxy user for job user to access secured Hadoop cluster.|
 
 * The proxy user mechanism is used to keep the data isolation in uniffle, which means the shuffle-data written by 
   shuffle-servers is owned by spark app's user. To achieve the this, the login user specified by above config should 
