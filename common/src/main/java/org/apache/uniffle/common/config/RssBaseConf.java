@@ -175,6 +175,13 @@ public class RssBaseConf extends RssConf {
           .defaultValue(false)
           .withDescription("Whether enable visiting secured hadoop cluster.");
 
+  public static final ConfigOption<Boolean> RSS_SECURITY_HADOOP_KERBEROS_PROXY_USER_ENABLE =
+      ConfigOptions.key("rss.security.hadoop.kerberos.proxy.user.enable")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription(
+              "Whether using proxy user for job user to access secured Hadoop cluster.");
+
   public static final ConfigOption<String> RSS_SECURITY_HADOOP_KRB5_CONF_FILE =
       ConfigOptions.key("rss.security.hadoop.kerberos.krb5-conf.file")
           .stringType()

@@ -104,6 +104,28 @@ public class HadoopSecurityContextTest extends KerberizedHadoopBase {
   }
 
   @Test
+  public void testSecuredDisableProxyUser() throws Exception {
+    try (HadoopSecurityContext context =
+        new HadoopSecurityContext(
+            null,
+            kerberizedHadoop.getHdfsKeytab(),
+            kerberizedHadoop.getHdfsPrincipal(),
+            1000,
+            false)) {
+      Path pathWithHdfsUser = new Path("/alex/HadoopSecurityDisableProxyUser");
+      context.runSecured(
+          "alex",
+          (Callable<Void>)
+              () -> {
+                kerberizedHadoop.getFileSystem().mkdirs(pathWithHdfsUser);
+                return null;
+              });
+      FileStatus fileStatus = kerberizedHadoop.getFileSystem().getFileStatus(pathWithHdfsUser);
+      assertEquals("hdfs", fileStatus.getOwner());
+    }
+  }
+
+  @Test
   public void testCreateIllegalContext() throws Exception {
     System.setProperty("sun.security.krb5.debug", "true");
 
