@@ -17,9 +17,12 @@
 
 package org.apache.uniffle.common.util;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 public class ByteBufUtils {
 
@@ -84,5 +87,10 @@ public class ByteBufUtils {
   public static void readBytes(ByteBuf from, byte[] to, int offset, int length) {
     from.readBytes(to, offset, length);
     from.resetReaderIndex();
+  }
+
+  public static ByteBuf byteStringToByteBuf(ByteString bytes) {
+    final ByteBuffer byteBuffer = bytes.asReadOnlyByteBuffer();
+    return Unpooled.wrappedBuffer(byteBuffer);
   }
 }
