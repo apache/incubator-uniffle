@@ -211,7 +211,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
       assertTrue(e.getMessage().startsWith("Replica config is invalid"));
     }
     try {
-      RssUtils.checkQuorumSetting(0, 0, 0, -1);
+      RssUtils.checkQuorumSetting(1, 1, 1, 0);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Assignment config is unsafe"));
