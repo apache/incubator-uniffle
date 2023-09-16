@@ -31,6 +31,7 @@ import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.Context;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.StringUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -47,6 +48,7 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
@@ -892,6 +894,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     ShufflePartitionedBlock[] ret = new ShufflePartitionedBlock[blocks.size()];
     int i = 0;
     for (ShuffleBlock block : blocks) {
+      ByteBuf data = ByteBufUtils.byteStringToByteBuf(block.getData());
       ret[i] =
           new ShufflePartitionedBlock(
               block.getLength(),
@@ -899,7 +902,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               block.getCrc(),
               block.getBlockId(),
               block.getTaskAttemptId(),
-              block.getData().toByteArray());
+              data);
       i++;
     }
     return ret;
