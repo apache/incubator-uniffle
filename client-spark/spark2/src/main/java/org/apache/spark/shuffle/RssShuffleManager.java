@@ -89,6 +89,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final int dataReplica;
   private final int dataReplicaWrite;
   private final int dataReplicaRead;
+  private final int shuffleServers;
   private final boolean dataReplicaSkipEnabled;
   private final int dataTransferPoolSize;
   private final int dataCommitPoolSize;
@@ -121,6 +122,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.dataReplicaSkipEnabled = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_SKIP_ENABLED);
     this.maxConcurrencyPerPartitionToWrite =
         RssSparkConfig.toRssConf(sparkConf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
+    this.shuffleServers = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
     LOG.info(
         "Check quorum config ["
             + dataReplica
@@ -131,7 +133,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             + ":"
             + dataReplicaSkipEnabled
             + "]");
-    RssUtils.checkQuorumSetting(dataReplica, dataReplicaWrite, dataReplicaRead);
+    RssUtils.checkQuorumSetting(dataReplica, dataReplicaWrite, dataReplicaRead, shuffleServers);
 
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     this.heartbeatInterval = sparkConf.get(RssSparkConfig.RSS_HEARTBEAT_INTERVAL);

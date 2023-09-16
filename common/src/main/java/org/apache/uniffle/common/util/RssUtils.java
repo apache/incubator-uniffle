@@ -307,7 +307,8 @@ public class RssUtils {
     return extensions;
   }
 
-  public static void checkQuorumSetting(int replica, int replicaWrite, int replicaRead) {
+  public static void checkQuorumSetting(
+      int replica, int replicaWrite, int replicaRead, int shuffleServer) {
     if (replica < 1 || replicaWrite > replica || replicaRead > replica) {
       throw new RssException(
           "Replica config is invalid, recommend replica.write + replica.read > replica");
@@ -315,6 +316,10 @@ public class RssUtils {
     if (replicaWrite + replicaRead <= replica) {
       throw new RssException(
           "Replica config is unsafe, recommend replica.write + replica.read > replica");
+    }
+    if (shuffleServer < replica) {
+      throw new RssException(
+          "Assignment config is unsafe, recommend rss.client.assignment.shuffle.nodes.max > replica");
     }
   }
 

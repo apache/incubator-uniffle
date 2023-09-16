@@ -193,22 +193,28 @@ public class QuorumTest extends ShuffleReadWriteBase {
   @Test
   public void quorumConfigTest() throws Exception {
     try {
-      RssUtils.checkQuorumSetting(3, 1, 1);
+      RssUtils.checkQuorumSetting(3, 1, 1, 3);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Replica config is unsafe"));
     }
     try {
-      RssUtils.checkQuorumSetting(3, 4, 1);
+      RssUtils.checkQuorumSetting(3, 4, 1, 3);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Replica config is invalid"));
     }
     try {
-      RssUtils.checkQuorumSetting(0, 0, 0);
+      RssUtils.checkQuorumSetting(0, 0, 0, 3);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Replica config is invalid"));
+    }
+    try {
+      RssUtils.checkQuorumSetting(0, 0, 0, -1);
+      fail(EXPECTED_EXCEPTION_MESSAGE);
+    } catch (Exception e) {
+      assertTrue(e.getMessage().startsWith("Assignment config is unsafe"));
     }
   }
 
