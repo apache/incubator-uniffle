@@ -92,7 +92,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final int dataReplica;
   private final int dataReplicaWrite;
   private final int dataReplicaRead;
-  private final int shuffleServers;
+  private int assignmentShuffleNodesNum;
   private final boolean dataReplicaSkipEnabled;
   private final int dataTransferPoolSize;
   private final int dataCommitPoolSize;
@@ -136,7 +136,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.dataReplicaWrite = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE);
     this.dataReplicaRead = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_READ);
     this.dataReplicaSkipEnabled = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_SKIP_ENABLED);
-    this.shuffleServers = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
+    this.assignmentShuffleNodesNum =
+        sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
     LOG.info(
         "Check quorum config ["
             + dataReplica
@@ -147,7 +148,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             + ":"
             + dataReplicaSkipEnabled
             + "]");
-    RssUtils.checkQuorumSetting(dataReplica, dataReplicaWrite, dataReplicaRead, shuffleServers);
+    RssUtils.checkQuorumSetting(
+        dataReplica, dataReplicaWrite, dataReplicaRead, assignmentShuffleNodesNum);
 
     this.heartbeatInterval = sparkConf.get(RssSparkConfig.RSS_HEARTBEAT_INTERVAL);
     this.heartbeatTimeout =
@@ -280,6 +282,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.dataReplica = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA);
     this.dataReplicaWrite = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE);
     this.dataReplicaRead = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_READ);
+    this.assignmentShuffleNodesNum =
+        sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
     this.dataReplicaSkipEnabled = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_SKIP_ENABLED);
     LOG.info(
         "Check quorum config ["
@@ -291,7 +295,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             + ":"
             + dataReplicaSkipEnabled
             + "]");
-    RssUtils.checkQuorumSetting(dataReplica, dataReplicaWrite, dataReplicaRead);
+    RssUtils.checkQuorumSetting(
+        dataReplica, dataReplicaWrite, dataReplicaRead, assignmentShuffleNodesNum);
 
     int retryMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX);
     long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
