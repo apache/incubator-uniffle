@@ -271,6 +271,20 @@ public class ShuffleServerConf extends RssBaseConf {
           .noDefaultValue()
           .withDescription("The list of the Checker's name");
 
+  public static final ConfigOption<String> HEALTH_CHECKER_SCRIPT_PATH =
+      ConfigOptions.key("rss.server.health.checker.script.path")
+          .stringType()
+          .defaultValue("")
+          .withDescription(
+              "The health script file path for HealthScriptChecker, if script file should have execute permission.");
+
+  public static final ConfigOption<Long> HEALTH_CHECKER_SCRIPT_EXE_TIMEOUT =
+      ConfigOptions.key("rss.server.health.checker.script.exe.timeout")
+          .longType()
+          .defaultValue(5000L)
+          .withDescription(
+              "The health script file execute timeout ms.");
+
   public static final ConfigOption<Double> SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE =
       ConfigOptions.key("rss.server.memory.shuffle.lowWaterMark.percentage")
           .doubleType()
