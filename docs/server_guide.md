@@ -107,7 +107,8 @@ This document will introduce how to deploy Uniffle shuffle servers.
 |rss.server.storageMediaProvider.from.env.key|-| Sometimes, the local storage type/media info is provided by external system. RSS would read the env key defined by this configuration and get info about the storage media of its basePaths |
 |rss.server.decommission.check.interval|60000| The interval(ms) to check if all applications have finish when server is decommissioning                                                                                                        |
 |rss.server.decommission.shutdown|true| Whether shutdown the server after server is decommissioned                                                                                                                                  |
-
+|rss.server.health.checker.script.path| - | The health script path for `HealthScriptChecker`. To enable `HealthScriptChecker`, need to set `rss.server.health.checker.class.names` and set `rss.server.health.check.enable` to true.|
+|rss.server.health.checker.script.execute.timeout| 5000 | Timeout for `HealthScriptChecker` execute health script.(ms)|
 
 ### Huge Partition Optimization
 A huge partition is a common problem for Spark/MR and so on, caused by data skew. And it can cause the shuffle server to become unstable. To solve this, we introduce some mechanisms to limit the writing of huge partitions to avoid affecting regular partitions, more details can be found in [ISSUE-378](https://github.com/apache/incubator-uniffle/issues/378). The basic rules for limiting large partitions are memory usage limits and flushing individual buffers directly to persistent storage.
