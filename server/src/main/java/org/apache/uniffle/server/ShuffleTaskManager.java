@@ -30,8 +30,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
@@ -101,6 +105,7 @@ public class ShuffleTaskManager {
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = JavaUtils.newConcurrentMap();
   private Runnable clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
+  private final Cache<String, Lock> appLocks;
 
   public ShuffleTaskManager(
       ShuffleServerConf conf,
@@ -153,6 +158,11 @@ public class ShuffleTaskManager {
       shuffleBufferManager.setShuffleTaskManager(this);
     }
 
+    appLocks = CacheBuilder.newBuilder()
+        .expireAfterAccess(3600, TimeUnit.SECONDS)
+        .maximumSize(Integer.MAX_VALUE)
+        .build();
+
     // the thread for clear expired resources
     clearResourceThread =
         () -> {
@@ -194,6 +204,15 @@ public class ShuffleTaskManager {
         -1);
   }
 
+  private Lock getAppLock(String appId) {
+    try {
+      return appLocks.get(appId,  ReentrantLock::new);
+    } catch (Throwable t) {
+      LOG.info("Failed to get app lock.", t);
+      return new ReentrantLock();
+    }
+  }
+
   public StatusCode registerShuffle(
       String appId,
       int shuffleId,
@@ -202,26 +221,32 @@ public class ShuffleTaskManager {
       String user,
       ShuffleDataDistributionType dataDistType,
       int maxConcurrencyPerPartitionToWrite) {
-    refreshAppId(appId);
+    Lock lock = getAppLock(appId);
+    try {
+      lock.lock();
+      refreshAppId(appId);
 
-    ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
-    taskInfo.setUser(user);
-    taskInfo.setSpecification(
-        ShuffleSpecification.builder()
-            .maxConcurrencyPerPartitionToWrite(
-                getMaxConcurrencyWriting(maxConcurrencyPerPartitionToWrite, conf))
-            .dataDistributionType(dataDistType)
-            .build());
+      ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
+      taskInfo.setUser(user);
+      taskInfo.setSpecification(
+          ShuffleSpecification.builder()
+              .maxConcurrencyPerPartitionToWrite(
+                  getMaxConcurrencyWriting(maxConcurrencyPerPartitionToWrite, conf))
+              .dataDistributionType(dataDistType)
+              .build());
 
-    partitionsToBlockIds.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());
-    for (PartitionRange partitionRange : partitionRanges) {
-      shuffleBufferManager.registerBuffer(
-          appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
+      partitionsToBlockIds.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());
+      for (PartitionRange partitionRange : partitionRanges) {
+        shuffleBufferManager.registerBuffer(
+            appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
+      }
+      if (!remoteStorageInfo.isEmpty()) {
+        storageManager.registerRemoteStorage(appId, remoteStorageInfo);
+      }
+      return StatusCode.SUCCESS;
+    } finally {
+      lock.unlock();
     }
-    if (!remoteStorageInfo.isEmpty()) {
-      storageManager.registerRemoteStorage(appId, remoteStorageInfo);
-    }
-    return StatusCode.SUCCESS;
   }
 
   @VisibleForTesting
@@ -582,8 +607,7 @@ public class ShuffleTaskManager {
       Set<String> appNames = Sets.newHashSet(shuffleTaskInfos.keySet());
       // remove applications which is timeout according to rss.server.app.expired.withoutHeartbeat
       for (String appId : appNames) {
-        if (System.currentTimeMillis() - shuffleTaskInfos.get(appId).getCurrentTimes()
-            > appExpiredWithoutHB) {
+        if (isAppExpired(appId)) {
           LOG.info(
               "Detect expired appId["
                   + appId
@@ -596,6 +620,11 @@ public class ShuffleTaskManager {
     } catch (Exception e) {
       LOG.warn("Error happened in checkResourceStatus", e);
     }
+  }
+
+  private boolean isAppExpired(String appId) {
+    return System.currentTimeMillis() - shuffleTaskInfos.get(appId).getCurrentTimes()
+        > appExpiredWithoutHB;
   }
 
   /**
@@ -649,33 +678,45 @@ public class ShuffleTaskManager {
 
   @VisibleForTesting
   public void removeResources(String appId) {
-    LOG.info("Start remove resource for appId[" + appId + "]");
-    final long start = System.currentTimeMillis();
-    String user = getUserByAppId(appId);
-    ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.remove(appId);
-    if (shuffleTaskInfo == null) {
-      LOG.info("Resource for appId[" + appId + "] had been removed before.");
-      return;
+    Lock lock = getAppLock(appId);
+    try {
+      lock.lock();
+      LOG.info("Start remove resource for appId[" + appId + "]");
+      final long start = System.currentTimeMillis();
+      String user = getUserByAppId(appId);
+      ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.remove(appId);
+      if (shuffleTaskInfo == null) {
+        LOG.info("Resource for appId[" + appId + "] had been removed before.");
+        return;
+      }
+
+      if (!isAppExpired(appId)) {
+        LOG.info("It seems that this appId[{}] has registered a new shuffle, just ignore this AppPurgeEvent event.", appId);
+        return;
+      }
+
+      final Map<Integer, Roaring64NavigableMap> shuffleToCachedBlockIds =
+          shuffleTaskInfo.getCachedBlockIds();
+      partitionsToBlockIds.remove(appId);
+      shuffleBufferManager.removeBuffer(appId);
+      shuffleFlushManager.removeResources(appId);
+      if (!shuffleToCachedBlockIds.isEmpty()) {
+        storageManager.removeResources(
+            new AppPurgeEvent(appId, user, new ArrayList<>(shuffleToCachedBlockIds.keySet())));
+      }
+      if (shuffleTaskInfo.hasHugePartition()) {
+        ShuffleServerMetrics.gaugeAppWithHugePartitionNum.dec();
+        ShuffleServerMetrics.gaugeHugePartitionNum.dec(shuffleTaskInfo.getHugePartitionSize());
+      }
+      LOG.info(
+          "Finish remove resource for appId["
+              + appId
+              + "] cost "
+              + (System.currentTimeMillis() - start)
+              + " ms");
+    } finally {
+      lock.unlock();
     }
-    final Map<Integer, Roaring64NavigableMap> shuffleToCachedBlockIds =
-        shuffleTaskInfo.getCachedBlockIds();
-    partitionsToBlockIds.remove(appId);
-    shuffleBufferManager.removeBuffer(appId);
-    shuffleFlushManager.removeResources(appId);
-    if (!shuffleToCachedBlockIds.isEmpty()) {
-      storageManager.removeResources(
-          new AppPurgeEvent(appId, user, new ArrayList<>(shuffleToCachedBlockIds.keySet())));
-    }
-    if (shuffleTaskInfo.hasHugePartition()) {
-      ShuffleServerMetrics.gaugeAppWithHugePartitionNum.dec();
-      ShuffleServerMetrics.gaugeHugePartitionNum.dec(shuffleTaskInfo.getHugePartitionSize());
-    }
-    LOG.info(
-        "Finish remove resource for appId["
-            + appId
-            + "] cost "
-            + (System.currentTimeMillis() - start)
-            + " ms");
   }
 
   public void refreshAppId(String appId) {
