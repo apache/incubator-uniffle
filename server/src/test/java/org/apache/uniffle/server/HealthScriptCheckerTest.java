@@ -60,7 +60,7 @@ class HealthScriptCheckerTest {
     assertFalse(checker.checkIsHealthy());
 
     conf.setString(ShuffleServerConf.HEALTH_CHECKER_SCRIPT_PATH, healthScriptTemplate4);
-    conf.setLong(ShuffleServerConf.HEALTH_CHECKER_SCRIPT_EXE_TIMEOUT, 3000L);
+    conf.setLong(ShuffleServerConf.HEALTH_CHECKER_SCRIPT_EXECUTE_TIMEOUT, 3000L);
     checker = new HealthScriptChecker(conf);
     assertFalse(checker.checkIsHealthy());
   }

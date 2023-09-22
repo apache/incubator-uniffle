@@ -41,7 +41,7 @@ public class HealthScriptChecker extends Checker {
               + "or doesn't have execute permission, so abort server.");
       throw new RssException("Health script not available.");
     }
-    this.scriptTimeout = conf.getLong(ShuffleServerConf.HEALTH_CHECKER_SCRIPT_EXE_TIMEOUT);
+    this.scriptTimeout = conf.getLong(ShuffleServerConf.HEALTH_CHECKER_SCRIPT_EXECUTE_TIMEOUT);
   }
 
   @Override

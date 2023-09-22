@@ -274,12 +274,12 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<String> HEALTH_CHECKER_SCRIPT_PATH =
       ConfigOptions.key("rss.server.health.checker.script.path")
           .stringType()
-          .defaultValue("")
+          .noDefaultValue()
           .withDescription(
               "The health script file path for HealthScriptChecker, if script file should have execute permission.");
 
-  public static final ConfigOption<Long> HEALTH_CHECKER_SCRIPT_EXE_TIMEOUT =
-      ConfigOptions.key("rss.server.health.checker.script.exe.timeout")
+  public static final ConfigOption<Long> HEALTH_CHECKER_SCRIPT_EXECUTE_TIMEOUT =
+      ConfigOptions.key("rss.server.health.checker.script.execute.timeout")
           .longType()
           .defaultValue(5000L)
           .withDescription("The health script file execute timeout ms.");
