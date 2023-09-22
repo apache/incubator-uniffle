@@ -34,8 +34,11 @@ public class HealthScriptChecker extends Checker {
     super(conf);
     this.healthScriptPath = conf.getString(ShuffleServerConf.HEALTH_CHECKER_SCRIPT_PATH);
     if (!NodeHealthScriptRunner.shouldRun(healthScriptPath)) {
-      LOG.error("Rss health check script:" + healthScriptPath + " is not available "
-          + "or doesn't have execute permission, so abort server.");
+      LOG.error(
+          "Rss health check script:"
+              + healthScriptPath
+              + " is not available "
+              + "or doesn't have execute permission, so abort server.");
       throw new RssException("Health script not available.");
     }
     this.scriptTimeout = conf.getLong(ShuffleServerConf.HEALTH_CHECKER_SCRIPT_EXE_TIMEOUT);
@@ -45,7 +48,8 @@ public class HealthScriptChecker extends Checker {
   public boolean checkIsHealthy() {
     HealthCheckerExitStatus status = HealthCheckerExitStatus.SUCCESS;
     // always build executor is to load the latest script, the script file can update in need.
-    Shell.ShellCommandExecutor commandExecutor = new Shell.ShellCommandExecutor(new String[] {healthScriptPath}, null, null, scriptTimeout);
+    Shell.ShellCommandExecutor commandExecutor =
+        new Shell.ShellCommandExecutor(new String[] {healthScriptPath}, null, null, scriptTimeout);
     try {
       commandExecutor.execute();
     } catch (Shell.ExitCodeException e) {
@@ -57,7 +61,7 @@ public class HealthScriptChecker extends Checker {
         status = HealthCheckerExitStatus.TIMED_OUT;
       }
     } catch (Exception e) {
-      LOG.warn("execute health script exception,please check script.", e);
+      LOG.warn("execute health script exception, please check script.", e);
       if (!commandExecutor.isTimedOut()) {
         status = HealthCheckerExitStatus.FAILED_WITH_EXCEPTION;
       } else {

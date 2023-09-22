@@ -29,13 +29,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class HealthScriptCheckerTest {
   private String healthScriptTemplate1;
   private String healthScriptTemplate2;
+  private String healthScriptTemplate3;
+  private String healthScriptTemplate4;
 
   @BeforeEach
   void setUp() {
     healthScriptTemplate1 = getScriptFilePath("healthy-script1.sh");
     healthScriptTemplate2 = getScriptFilePath("healthy-script2.sh");
+    healthScriptTemplate3 = getScriptFilePath("healthy-script3.sh");
+    healthScriptTemplate4 = getScriptFilePath("healthy-script4.sh");
     setExecutable(healthScriptTemplate1);
     setExecutable(healthScriptTemplate2);
+    setExecutable(healthScriptTemplate3);
+    setExecutable(healthScriptTemplate4);
   }
 
   @Test
@@ -46,6 +52,15 @@ class HealthScriptCheckerTest {
     assertTrue(checker.checkIsHealthy());
 
     conf.setString(ShuffleServerConf.HEALTH_CHECKER_SCRIPT_PATH, healthScriptTemplate2);
+    checker = new HealthScriptChecker(conf);
+    assertFalse(checker.checkIsHealthy());
+
+    conf.setString(ShuffleServerConf.HEALTH_CHECKER_SCRIPT_PATH, healthScriptTemplate3);
+    checker = new HealthScriptChecker(conf);
+    assertFalse(checker.checkIsHealthy());
+
+    conf.setString(ShuffleServerConf.HEALTH_CHECKER_SCRIPT_PATH, healthScriptTemplate4);
+    conf.setLong(ShuffleServerConf.HEALTH_CHECKER_SCRIPT_EXE_TIMEOUT, 3000L);
     checker = new HealthScriptChecker(conf);
     assertFalse(checker.checkIsHealthy());
   }
@@ -59,6 +74,4 @@ class HealthScriptCheckerTest {
     file.setExecutable(true);
     return file.canExecute();
   }
-
-
 }

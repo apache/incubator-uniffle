@@ -282,8 +282,7 @@ public class ShuffleServerConf extends RssBaseConf {
       ConfigOptions.key("rss.server.health.checker.script.exe.timeout")
           .longType()
           .defaultValue(5000L)
-          .withDescription(
-              "The health script file execute timeout ms.");
+          .withDescription("The health script file execute timeout ms.");
 
   public static final ConfigOption<Double> SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE =
       ConfigOptions.key("rss.server.memory.shuffle.lowWaterMark.percentage")
