@@ -24,6 +24,11 @@ env:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        features:
+          - ""
+          - "memory-prof"
     runs-on: ubuntu-latest
     steps:
       - name: Set up JDK 8
@@ -31,13 +36,27 @@ jobs:
         with:
           java-version: 8
           distribution: 'temurin'
+      - name: Install protoc
+        uses: taiki-e/install-action@v2
+        with:
+          tool: protoc@3.20.3
       - uses: actions/checkout@v3
+      - name: Sccache Setup
+        uses: Xuanwo/sccache-action@c94e27bef21ab3fb4a5152c8a878c53262b4abb0
+        with:
+          version: "v0.4.0-pre.6"
       - name: Build
-        working-directory: ./rust/experimental/server
-        run: cargo build --verbose
+        run: cargo build --features hdfs --verbose
+        if: ${{ matrix.features == '' }}
+      - name: Build with memory-prof
+        run: cargo build --verbose --features memory-prof
+        if: ${{ matrix.features == 'memory-prof' }}
       - name: Code style check
-        working-directory: ./rust/experimental/server
         run: cargo fmt --check
+        if: ${{ matrix.features == '' }}
       - name: Run tests
-        working-directory: ./rust/experimental/server
         run: cargo test --verbose
+        if: ${{ matrix.features == '' }}
+      - name: Run tests with memory-prof
+        run: cargo test --verbose --features memory-prof
+        if: ${{ matrix.features == 'memory-prof' }}
