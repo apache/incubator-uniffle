@@ -42,17 +42,22 @@ jobs:
           version: "23.2"
       - uses: actions/checkout@v3
       - name: Build
+        working-directory: ./rust/experimental/server
         run: cargo build --features hdfs --verbose
         if: ${{ matrix.features == '' }}
       - name: Build with memory-prof
+        working-directory: ./rust/experimental/server
         run: cargo build --verbose --features memory-prof
         if: ${{ matrix.features == 'memory-prof' }}
       - name: Code style check
+        working-directory: ./rust/experimental/server
         run: cargo fmt --check
         if: ${{ matrix.features == '' }}
       - name: Run tests
+        working-directory: ./rust/experimental/server
         run: cargo test --verbose
         if: ${{ matrix.features == '' }}
       - name: Run tests with memory-prof
+        working-directory: ./rust/experimental/server
         run: cargo test --verbose --features memory-prof
         if: ${{ matrix.features == 'memory-prof' }}
