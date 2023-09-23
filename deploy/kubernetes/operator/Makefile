@@ -127,7 +127,7 @@ goimports: ## Download goimports locally if necessary.
 REVIVE = $(LOCAL_DIR)/revive
 .PHONY: revive
 revive: ## Download revive locally if necessary.
-	$(call go-get-tool,$(REVIVE),github.com/mgechev/revive@latest)
+	$(call go-get-tool,$(REVIVE),github.com/mgechev/revive@v1.3.3)
 	files=$$(find . -name '*.go' | egrep -v './vendor|zz_generated|./pkg/generated|./api|./hack'); \
     $(REVIVE) -config hack/revive.toml -formatter friendly $$files
 
