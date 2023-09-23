@@ -36,10 +36,10 @@ jobs:
         with:
           java-version: 8
           distribution: 'temurin'
-      - name: Install protoc
-        uses: taiki-e/install-action@v2
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
         with:
-          tool: protoc@3.20.3
+          version: "23.2"
       - uses: actions/checkout@v3
       - name: Sccache Setup
         uses: Xuanwo/sccache-action@c94e27bef21ab3fb4a5152c8a878c53262b4abb0
