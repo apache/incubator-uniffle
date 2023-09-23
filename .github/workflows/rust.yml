@@ -41,10 +41,6 @@ jobs:
         with:
           version: "23.2"
       - uses: actions/checkout@v3
-      - name: Sccache Setup
-        uses: Xuanwo/sccache-action@c94e27bef21ab3fb4a5152c8a878c53262b4abb0
-        with:
-          version: "v0.4.0-pre.6"
       - name: Build
         run: cargo build --features hdfs --verbose
         if: ${{ matrix.features == '' }}
