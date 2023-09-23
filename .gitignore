@@ -46,3 +46,4 @@ build/
 deploy/kubernetes/integration-test/e2e/rss.yaml
 deploy/kubernetes/integration-test/e2e/rss-controller.yaml
 deploy/kubernetes/integration-test/e2e/rss-webhook.yaml
+rust/experimental/server/target
