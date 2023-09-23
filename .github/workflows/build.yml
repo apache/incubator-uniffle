@@ -91,6 +91,3 @@ jobs:
       maven-args: package -Pkubernetes -DskipUTs -DskipITs -DskipBuildImage=${{ needs.changes.outputs.rss_server_docker == 'false' }}
       cache-key: package
       go-version: '1.17'
-
-  rust:
-    uses: ./.github/workflows/rust.yml
