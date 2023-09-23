@@ -1078,6 +1078,8 @@
             <exclude>deploy/kubernetes/operator/go.sum</exclude>
             <exclude>deploy/kubernetes/operator/PROJECT</exclude>
             <exclude>licenses-binary/*</exclude>
+            <exclude>rust/experimental/server/Cargo.lock</exclude>
+            <exclude>rust/experimental/server/src/proto/uniffle.rs</exclude>
           </excludes>
         </configuration>
       </plugin>
