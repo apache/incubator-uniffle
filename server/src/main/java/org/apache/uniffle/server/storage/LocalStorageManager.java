@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,7 +52,6 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.storage.StorageStatus;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.Checker;
@@ -82,7 +82,7 @@ public class LocalStorageManager extends SingleStorageManager {
   private final List<String> storageBasePaths;
   private final LocalStorageChecker checker;
 
-  private final Map<String, LocalStorage> partitionsOfStorage;
+  private final ConcurrentSkipListMap<String, LocalStorage> partitionsOfStorage;
   private final List<StorageMediaProvider> typeProviders = Lists.newArrayList();
 
   @VisibleForTesting
@@ -92,7 +92,7 @@ public class LocalStorageManager extends SingleStorageManager {
     if (CollectionUtils.isEmpty(storageBasePaths)) {
       throw new IllegalArgumentException("Base path dirs must not be empty");
     }
-    this.partitionsOfStorage = JavaUtils.newConcurrentMap();
+    this.partitionsOfStorage = new ConcurrentSkipListMap<>();
     long capacity = conf.getSizeAsBytes(ShuffleServerConf.DISK_CAPACITY);
     double ratio = conf.getDouble(ShuffleServerConf.DISK_CAPACITY_RATIO);
     double highWaterMarkOfWrite = conf.get(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE);
@@ -302,16 +302,20 @@ public class LocalStorageManager extends SingleStorageManager {
 
   private void cleanupStorageSelectionCache(PurgeEvent event) {
     Function<String, Boolean> deleteConditionFunc = null;
+    String prefixKey = null;
     if (event instanceof AppPurgeEvent) {
+      prefixKey = UnionKey.buildKey(event.getAppId());
       deleteConditionFunc =
           partitionUnionKey -> UnionKey.startsWith(partitionUnionKey, event.getAppId());
     } else if (event instanceof ShufflePurgeEvent) {
+      assert event.getShuffleIds().size() == 1; // only one shuffleId
+      int shuffleId = event.getShuffleIds().get(0);
+      prefixKey = UnionKey.buildKey(event.getAppId(), shuffleId);
       deleteConditionFunc =
-          partitionUnionKey ->
-              UnionKey.startsWith(partitionUnionKey, event.getAppId(), event.getShuffleIds());
+          partitionUnionKey -> UnionKey.startsWith(partitionUnionKey, event.getAppId(), shuffleId);
     }
     long startTime = System.currentTimeMillis();
-    deleteElement(partitionsOfStorage, deleteConditionFunc);
+    deleteElement(partitionsOfStorage.tailMap(prefixKey), deleteConditionFunc);
     LOG.info(
         "Cleaning the storage selection cache costs: {}(ms) for event: {}",
         System.currentTimeMillis() - startTime,
@@ -387,5 +391,11 @@ public class LocalStorageManager extends SingleStorageManager {
 
   public List<LocalStorage> getStorages() {
     return localStorages;
+  }
+
+  // Only for test.
+  @VisibleForTesting
+  public Map<String, LocalStorage> getPartitionsOfStorage() {
+    return partitionsOfStorage;
   }
 }
