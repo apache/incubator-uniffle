@@ -503,7 +503,8 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         new AppPurgeEvent(appId2, StringUtils.EMPTY, Lists.newArrayList(1)));
     assertEquals(0, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     assertEquals(0, storage.getHandlerSize());
-    assertEquals(0, ((LocalStorageManager) storageManager).getPartitionsOfStorage().size());
+    assertEquals(
+        0, ((LocalStorageManager) storageManager).getSortedPartitionsOfStorageMap().size());
   }
 
   private void waitForMetrics(Gauge.Child gauge, double expected, double delta) throws Exception {
