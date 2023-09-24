@@ -55,6 +55,7 @@ import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.event.AppPurgeEvent;
+import org.apache.uniffle.server.event.ShufflePurgeEvent;
 import org.apache.uniffle.server.storage.HadoopStorageManager;
 import org.apache.uniffle.server.storage.HybridStorageManager;
 import org.apache.uniffle.server.storage.LocalStorageManager;
@@ -467,26 +468,37 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     manager.addToFlushQueue(event1);
     ShuffleDataFlushEvent event2 = createShuffleDataFlushEvent(appId2, 1, 0, 1, null);
     manager.addToFlushQueue(event2);
+    ShuffleDataFlushEvent event3 = createShuffleDataFlushEvent(appId2, 2, 0, 1, null);
+    manager.addToFlushQueue(event3);
     assertEquals(storageManager.selectStorage(event1), storageManager.selectStorage(event2));
     final AbstractStorage storage = (AbstractStorage) storageManager.selectStorage(event1);
     waitForFlush(manager, appId1, 1, 5);
     waitForFlush(manager, appId2, 1, 5);
+    waitForFlush(manager, appId2, 2, 5);
     assertEquals(5, manager.getCommittedBlockIds(appId1, 1).getLongCardinality());
     assertEquals(5, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
+    assertEquals(5, manager.getCommittedBlockIds(appId2, 2).getLongCardinality());
     assertEquals(2, storage.getHandlerSize());
     File file = new File(tempDir, appId1);
     assertTrue(file.exists());
     storageManager.removeResources(
+        new ShufflePurgeEvent(appId1, StringUtils.EMPTY, Lists.newArrayList(1)));
+    ShuffleDataFlushEvent event4 = createShuffleDataFlushEvent(appId1, 1, 0, 1, () -> false);
+    manager.addToFlushQueue(event4);
+    Thread.sleep(1000);
+    storageManager.removeResources(
         new AppPurgeEvent(appId1, StringUtils.EMPTY, Lists.newArrayList(1)));
     manager.removeResources(appId1);
     assertFalse(file.exists());
-    ShuffleDataFlushEvent event3 = createShuffleDataFlushEvent(appId1, 1, 0, 1, () -> false);
-    manager.addToFlushQueue(event3);
-    Thread.sleep(1000);
     assertEquals(0, manager.getCommittedBlockIds(appId1, 1).getLongCardinality());
     assertEquals(5, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
+    assertEquals(5, manager.getCommittedBlockIds(appId2, 2).getLongCardinality());
     assertEquals(1, storage.getHandlerSize());
     manager.removeResources(appId2);
+    storageManager.removeResources(
+        new ShufflePurgeEvent(appId2, StringUtils.EMPTY, Lists.newArrayList(1)));
+    storageManager.removeResources(
+        new ShufflePurgeEvent(appId2, StringUtils.EMPTY, Lists.newArrayList(2)));
     storageManager.removeResources(
         new AppPurgeEvent(appId2, StringUtils.EMPTY, Lists.newArrayList(1)));
     assertEquals(0, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());

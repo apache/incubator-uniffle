@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -318,7 +319,15 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   private <K, V> void deleteElement(Map<K, V> map, Function<K, Boolean> deleteConditionFunc) {
-    map.entrySet().removeIf(entry -> deleteConditionFunc.apply(entry.getKey()));
+    Iterator<Map.Entry<K, V>> iterator = map.entrySet().iterator();
+    while (iterator.hasNext()) {
+      Map.Entry<K, V> entry = iterator.next();
+      if (deleteConditionFunc.apply(entry.getKey())) {
+        iterator.remove();
+      } else {
+        break;
+      }
+    }
   }
 
   @Override
