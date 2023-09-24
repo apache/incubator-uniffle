@@ -1069,7 +1069,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
   public void testRegisterShuffleAfterAppIsExpired() throws Exception {
     String confFile = ClassLoader.getSystemResource("server.conf").getFile();
     ShuffleServerConf conf = new ShuffleServerConf(confFile);
-    String storageBasePath = HDFS_URI + "rss/testRegisterShuffleAfterAppIsExpired";
+    final String storageBasePath = HDFS_URI + "rss/testRegisterShuffleAfterAppIsExpired";
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
     conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");

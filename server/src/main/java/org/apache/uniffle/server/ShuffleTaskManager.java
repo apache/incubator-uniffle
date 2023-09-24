@@ -188,6 +188,15 @@ public class ShuffleTaskManager {
     thread.start();
   }
 
+  private Lock getAppLock(String appId) {
+    try {
+      return appLocks.get(appId, ReentrantLock::new);
+    } catch (ExecutionException e) {
+      LOG.error("Failed to get App lock.", e);
+      throw new RssException(e);
+    }
+  }
+
   /** Only for test */
   @VisibleForTesting
   public StatusCode registerShuffle(
@@ -204,15 +213,6 @@ public class ShuffleTaskManager {
         user,
         ShuffleDataDistributionType.NORMAL,
         -1);
-  }
-
-  private Lock getAppLock(String appId) {
-    try {
-      return appLocks.get(appId, ReentrantLock::new);
-    } catch (ExecutionException e) {
-      LOG.error("Failed to get App lock.", e);
-      throw new RssException(e);
-    }
   }
 
   public StatusCode registerShuffle(
