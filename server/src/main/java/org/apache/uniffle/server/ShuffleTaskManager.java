@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -158,10 +159,11 @@ public class ShuffleTaskManager {
       shuffleBufferManager.setShuffleTaskManager(this);
     }
 
-    appLocks = CacheBuilder.newBuilder()
-        .expireAfterAccess(3600, TimeUnit.SECONDS)
-        .maximumSize(Integer.MAX_VALUE)
-        .build();
+    appLocks =
+        CacheBuilder.newBuilder()
+            .expireAfterAccess(3600, TimeUnit.SECONDS)
+            .maximumSize(Integer.MAX_VALUE)
+            .build();
 
     // the thread for clear expired resources
     clearResourceThread =
@@ -170,7 +172,7 @@ public class ShuffleTaskManager {
             try {
               PurgeEvent event = expiredAppIdQueue.take();
               if (event instanceof AppPurgeEvent) {
-                removeResources(event.getAppId());
+                removeResources(event.getAppId(), true);
               }
               if (event instanceof ShufflePurgeEvent) {
                 removeResourcesByShuffleIds(event.getAppId(), event.getShuffleIds());
@@ -206,10 +208,10 @@ public class ShuffleTaskManager {
 
   private Lock getAppLock(String appId) {
     try {
-      return appLocks.get(appId,  ReentrantLock::new);
-    } catch (Throwable t) {
-      LOG.info("Failed to get app lock.", t);
-      return new ReentrantLock();
+      return appLocks.get(appId, ReentrantLock::new);
+    } catch (ExecutionException e) {
+      LOG.error("Failed to get App lock.", e);
+      throw new RssException(e);
     }
   }
 
@@ -623,6 +625,9 @@ public class ShuffleTaskManager {
   }
 
   private boolean isAppExpired(String appId) {
+    if (shuffleTaskInfos.get(appId) == null) {
+      return true;
+    }
     return System.currentTimeMillis() - shuffleTaskInfos.get(appId).getCurrentTimes()
         > appExpiredWithoutHB;
   }
@@ -677,21 +682,22 @@ public class ShuffleTaskManager {
   }
 
   @VisibleForTesting
-  public void removeResources(String appId) {
+  public void removeResources(String appId, boolean checkAppExpired) {
     Lock lock = getAppLock(appId);
     try {
       lock.lock();
       LOG.info("Start remove resource for appId[" + appId + "]");
+      if (checkAppExpired && !isAppExpired(appId)) {
+        LOG.info(
+            "It seems that this appId[{}] has registered a new shuffle, just ignore this AppPurgeEvent event.",
+            appId);
+        return;
+      }
       final long start = System.currentTimeMillis();
       String user = getUserByAppId(appId);
       ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.remove(appId);
       if (shuffleTaskInfo == null) {
         LOG.info("Resource for appId[" + appId + "] had been removed before.");
-        return;
-      }
-
-      if (!isAppExpired(appId)) {
-        LOG.info("It seems that this appId[{}] has registered a new shuffle, just ignore this AppPurgeEvent event.", appId);
         return;
       }
 
