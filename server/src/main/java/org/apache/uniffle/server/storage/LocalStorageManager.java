@@ -22,12 +22,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,7 +52,6 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.storage.StorageStatus;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.Checker;
@@ -81,7 +82,7 @@ public class LocalStorageManager extends SingleStorageManager {
   private final List<String> storageBasePaths;
   private final LocalStorageChecker checker;
 
-  private final Map<String, LocalStorage> partitionsOfStorage;
+  private final ConcurrentSkipListMap<String, LocalStorage> sortedPartitionsOfStorageMap;
   private final List<StorageMediaProvider> typeProviders = Lists.newArrayList();
 
   @VisibleForTesting
@@ -91,7 +92,7 @@ public class LocalStorageManager extends SingleStorageManager {
     if (CollectionUtils.isEmpty(storageBasePaths)) {
       throw new IllegalArgumentException("Base path dirs must not be empty");
     }
-    this.partitionsOfStorage = JavaUtils.newConcurrentMap();
+    this.sortedPartitionsOfStorageMap = new ConcurrentSkipListMap<>();
     long capacity = conf.getSizeAsBytes(ShuffleServerConf.DISK_CAPACITY);
     double ratio = conf.getDouble(ShuffleServerConf.DISK_CAPACITY_RATIO);
     double highWaterMarkOfWrite = conf.get(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE);
@@ -182,7 +183,7 @@ public class LocalStorageManager extends SingleStorageManager {
     int partitionId = event.getStartPartition();
 
     LocalStorage storage =
-        partitionsOfStorage.get(UnionKey.buildKey(appId, shuffleId, partitionId));
+        sortedPartitionsOfStorageMap.get(UnionKey.buildKey(appId, shuffleId, partitionId));
     if (storage != null) {
       if (storage.isCorrupted()) {
         if (storage.containsWriteHandler(appId, shuffleId, partitionId)) {
@@ -210,7 +211,7 @@ public class LocalStorageManager extends SingleStorageManager {
     final LocalStorage selectedStorage =
         candidates.get(
             ShuffleStorageUtils.getStorageIndex(candidates.size(), appId, shuffleId, partitionId));
-    return partitionsOfStorage.compute(
+    return sortedPartitionsOfStorageMap.compute(
         UnionKey.buildKey(appId, shuffleId, partitionId),
         (key, localStorage) -> {
           // If this is the first time to select storage or existing storage is corrupted,
@@ -231,7 +232,7 @@ public class LocalStorageManager extends SingleStorageManager {
     int shuffleId = event.getShuffleId();
     int partitionId = event.getStartPartition();
 
-    return partitionsOfStorage.get(UnionKey.buildKey(appId, shuffleId, partitionId));
+    return sortedPartitionsOfStorageMap.get(UnionKey.buildKey(appId, shuffleId, partitionId));
   }
 
   @Override
@@ -301,24 +302,39 @@ public class LocalStorageManager extends SingleStorageManager {
 
   private void cleanupStorageSelectionCache(PurgeEvent event) {
     Function<String, Boolean> deleteConditionFunc = null;
+    String prefixKey = null;
     if (event instanceof AppPurgeEvent) {
+      prefixKey = UnionKey.buildKey(event.getAppId());
       deleteConditionFunc =
           partitionUnionKey -> UnionKey.startsWith(partitionUnionKey, event.getAppId());
     } else if (event instanceof ShufflePurgeEvent) {
+      int shuffleId = event.getShuffleIds().get(0);
+      prefixKey = UnionKey.buildKey(event.getAppId(), shuffleId);
       deleteConditionFunc =
-          partitionUnionKey ->
-              UnionKey.startsWith(partitionUnionKey, event.getAppId(), event.getShuffleIds());
+          partitionUnionKey -> UnionKey.startsWith(partitionUnionKey, event.getAppId(), shuffleId);
+    }
+    if (prefixKey == null) {
+      throw new RssException("Prefix key is null when handles event: " + event);
     }
     long startTime = System.currentTimeMillis();
-    deleteElement(partitionsOfStorage, deleteConditionFunc);
+    deleteElement(sortedPartitionsOfStorageMap.tailMap(prefixKey), deleteConditionFunc);
     LOG.info(
         "Cleaning the storage selection cache costs: {}(ms) for event: {}",
         System.currentTimeMillis() - startTime,
         event);
   }
 
-  private <K, V> void deleteElement(Map<K, V> map, Function<K, Boolean> deleteConditionFunc) {
-    map.entrySet().removeIf(entry -> deleteConditionFunc.apply(entry.getKey()));
+  private <K, V> void deleteElement(
+      Map<K, V> sortedPartitionsOfStorageMap, Function<K, Boolean> deleteConditionFunc) {
+    Iterator<Map.Entry<K, V>> iterator = sortedPartitionsOfStorageMap.entrySet().iterator();
+    while (iterator.hasNext()) {
+      Map.Entry<K, V> entry = iterator.next();
+      if (deleteConditionFunc.apply(entry.getKey())) {
+        iterator.remove();
+      } else {
+        break;
+      }
+    }
   }
 
   @Override
@@ -378,5 +394,11 @@ public class LocalStorageManager extends SingleStorageManager {
 
   public List<LocalStorage> getStorages() {
     return localStorages;
+  }
+
+  // Only for test.
+  @VisibleForTesting
+  public Map<String, LocalStorage> getSortedPartitionsOfStorageMap() {
+    return sortedPartitionsOfStorageMap;
   }
 }
