@@ -72,10 +72,10 @@ public class TezClassLoader extends URLClassLoader {
   public static void setupTezClassLoader() {
     if (LOG.isDebugEnabled()) {
       LOG.debug(
-              "Setting up TezClassLoader: thread: {}, current thread classloader: {} system classloader: {}",
-              Thread.currentThread().getId(),
-              Thread.currentThread().getContextClassLoader(),
-              ClassLoader.getSystemClassLoader());
+          "Setting up TezClassLoader: thread: {}, current thread classloader: {} system classloader: {}",
+          Thread.currentThread().getId(),
+          Thread.currentThread().getContextClassLoader(),
+          ClassLoader.getSystemClassLoader());
     }
     Thread.currentThread().setContextClassLoader(INSTANCE);
   }

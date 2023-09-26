@@ -119,15 +119,15 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
                   transportClient.sendRpcSync(sendShuffleDataRequest, RPC_TIMEOUT_DEFAULT_MS);
               if (LOG.isDebugEnabled()) {
                 LOG.debug(
-                        "Do sendShuffleData to {}:{} rpc cost:"
-                                + (System.currentTimeMillis() - start)
-                                + " ms for "
-                                + allocateSize
-                                + " bytes with "
-                                + finalBlockNum
-                                + " blocks",
-                        host,
-                        port);
+                    "Do sendShuffleData to {}:{} rpc cost:"
+                        + (System.currentTimeMillis() - start)
+                        + " ms for "
+                        + allocateSize
+                        + " bytes with "
+                        + finalBlockNum
+                        + " blocks",
+                    host,
+                    port);
               }
               if (rpcResponse.getStatusCode() != StatusCode.SUCCESS) {
                 String msg =

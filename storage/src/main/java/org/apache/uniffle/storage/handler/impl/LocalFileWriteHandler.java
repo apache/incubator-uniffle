@@ -117,16 +117,16 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
       }
       if (LOG.isDebugEnabled()) {
         LOG.debug(
-                "Write handler write {} blocks cost {} ms without file open close",
-                shuffleBlocks.size(),
-                (System.currentTimeMillis() - startTime));
+            "Write handler write {} blocks cost {} ms without file open close",
+            shuffleBlocks.size(),
+            (System.currentTimeMillis() - startTime));
       }
     }
     if (LOG.isDebugEnabled()) {
       LOG.debug(
-              "Write handler write {} blocks cost {} ms with file open close",
-              shuffleBlocks.size(),
-              (System.currentTimeMillis() - accessTime));
+          "Write handler write {} blocks cost {} ms with file open close",
+          shuffleBlocks.size(),
+          (System.currentTimeMillis() - accessTime));
     }
   }
 

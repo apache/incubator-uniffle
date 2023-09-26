@@ -140,9 +140,9 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
         }
         if (LOG.isDebugEnabled()) {
           LOG.debug(
-                  "Write handler inside cost {} ms for {}",
-                  (System.currentTimeMillis() - ss),
-                  fileNamePrefix);
+              "Write handler inside cost {} ms for {}",
+              (System.currentTimeMillis() - ss),
+              fileNamePrefix);
         }
       } catch (IOException e) {
         LOG.warn(
@@ -161,10 +161,10 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
     }
     if (LOG.isDebugEnabled()) {
       LOG.debug(
-              "Write handler outside write {} blocks cost {} ms for {}",
-              shuffleBlocks.size(),
-              (System.currentTimeMillis() - start),
-              fileNamePrefix);
+          "Write handler outside write {} blocks cost {} ms for {}",
+          shuffleBlocks.size(),
+          (System.currentTimeMillis() - start),
+          fileNamePrefix);
     }
   }
 

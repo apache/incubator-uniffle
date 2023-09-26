@@ -209,15 +209,15 @@ public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
     if (usedMemory > memoryLimit) {
       if (LOG.isDebugEnabled()) {
         LOG.debug(
-                mapId
-                        + ": Stalling shuffle since usedMemory ("
-                        + usedMemory
-                        + ") is greater than memoryLimit ("
-                        + memoryLimit
-                        + ")."
-                        + " CommitMemory is ("
-                        + commitMemory
-                        + ")");
+            mapId
+                + ": Stalling shuffle since usedMemory ("
+                + usedMemory
+                + ") is greater than memoryLimit ("
+                + memoryLimit
+                + ")."
+                + " CommitMemory is ("
+                + commitMemory
+                + ")");
       }
       return null;
     }
@@ -225,15 +225,15 @@ public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
     // Allow the in-memory shuffle to progress
     if (LOG.isDebugEnabled()) {
       LOG.debug(
-              mapId
-                      + ": Proceeding with shuffle since usedMemory ("
-                      + usedMemory
-                      + ") is lesser than memoryLimit ("
-                      + memoryLimit
-                      + ")."
-                      + "CommitMemory is ("
-                      + commitMemory
-                      + ")");
+          mapId
+              + ": Proceeding with shuffle since usedMemory ("
+              + usedMemory
+              + ") is lesser than memoryLimit ("
+              + memoryLimit
+              + ")."
+              + "CommitMemory is ("
+              + commitMemory
+              + ")");
     }
     usedMemory += requestedSize;
     // use this rss merger as the callback

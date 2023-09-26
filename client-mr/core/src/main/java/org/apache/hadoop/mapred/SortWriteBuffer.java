@@ -142,12 +142,12 @@ public class SortWriteBuffer<K, V> extends OutputStream {
     if (lastIndex != currentIndex) {
       if (LOG.isDebugEnabled()) {
         LOG.debug(
-                "compact lastIndex {}, currentIndex {}, lastOffset {} currentOffset {} dataLength {}",
-                lastIndex,
-                currentIndex,
-                lastOffset,
-                currentOffset,
-                dataLength);
+            "compact lastIndex {}, currentIndex {}, lastOffset {} currentOffset {} dataLength {}",
+            lastIndex,
+            currentIndex,
+            lastOffset,
+            currentOffset,
+            dataLength);
       }
       WrappedBuffer buffer = new WrappedBuffer(lastOffset + dataLength);
       // copy data

@@ -195,17 +195,17 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           .recordProcessTime(SendShuffleDataRequest.class.getName(), costTime);
       if (LOG.isDebugEnabled()) {
         LOG.debug(
-                "Cache Shuffle Data for appId["
-                        + appId
-                        + "], shuffleId["
-                        + shuffleId
-                        + "], cost "
-                        + costTime
-                        + " ms with "
-                        + shufflePartitionedData.size()
-                        + " blocks and "
-                        + requireSize
-                        + " bytes");
+            "Cache Shuffle Data for appId["
+                + appId
+                + "], shuffleId["
+                + shuffleId
+                + "], cost "
+                + costTime
+                + " ms with "
+                + shufflePartitionedData.size()
+                + " blocks and "
+                + requireSize
+                + " bytes");
       }
     } else {
       rpcResponse =

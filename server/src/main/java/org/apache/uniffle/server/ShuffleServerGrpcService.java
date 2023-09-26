@@ -289,17 +289,17 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           .recordProcessTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, costTime);
       if (LOG.isDebugEnabled()) {
         LOG.debug(
-                "Cache Shuffle Data for appId["
-                        + appId
-                        + "], shuffleId["
-                        + shuffleId
-                        + "], cost "
-                        + costTime
-                        + " ms with "
-                        + shufflePartitionedData.size()
-                        + " blocks and "
-                        + requireSize
-                        + " bytes");
+            "Cache Shuffle Data for appId["
+                + appId
+                + "], shuffleId["
+                + shuffleId
+                + "], cost "
+                + costTime
+                + " ms with "
+                + shufflePartitionedData.size()
+                + " blocks and "
+                + requireSize
+                + " bytes");
       }
     } else {
       reply =
@@ -332,13 +332,13 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       commitCount = shuffleServer.getShuffleTaskManager().updateAndGetCommitCount(appId, shuffleId);
       if (LOG.isDebugEnabled()) {
         LOG.debug(
-                "Get commitShuffleTask request for appId["
-                        + appId
-                        + "], shuffleId["
-                        + shuffleId
-                        + "], currentCommitted["
-                        + commitCount
-                        + "]");
+            "Get commitShuffleTask request for appId["
+                + appId
+                + "], shuffleId["
+                + shuffleId
+                + "], currentCommitted["
+                + commitCount
+                + "]");
       }
     } catch (Exception e) {
       status = StatusCode.INTERNAL_ERROR;

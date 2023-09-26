@@ -325,15 +325,15 @@ public class ShuffleBufferManager {
     }
     if (LOG.isDebugEnabled()) {
       LOG.debug(
-              "Require memory failed with "
-                      + size
-                      + " bytes, usedMemory["
-                      + usedMemory.get()
-                      + "] include preAllocation["
-                      + preAllocatedSize.get()
-                      + "], inFlushSize["
-                      + inFlushSize.get()
-                      + "]");
+          "Require memory failed with "
+              + size
+              + " bytes, usedMemory["
+              + usedMemory.get()
+              + "] include preAllocation["
+              + preAllocatedSize.get()
+              + "], inFlushSize["
+              + inFlushSize.get()
+              + "]");
     }
     return false;
   }

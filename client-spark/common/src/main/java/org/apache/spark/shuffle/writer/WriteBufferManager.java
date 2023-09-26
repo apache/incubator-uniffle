@@ -218,15 +218,15 @@ public class WriteBufferManager extends MemoryConsumer {
         buffers.remove(partitionId);
         if (LOG.isDebugEnabled()) {
           LOG.debug(
-                  "Single buffer is full for shuffleId["
-                          + shuffleId
-                          + "] partition["
-                          + partitionId
-                          + "] with memoryUsed["
-                          + wb.getMemoryUsed()
-                          + "], dataLength["
-                          + wb.getDataLength()
-                          + "]");
+              "Single buffer is full for shuffleId["
+                  + shuffleId
+                  + "] partition["
+                  + partitionId
+                  + "] with memoryUsed["
+                  + wb.getMemoryUsed()
+                  + "], dataLength["
+                  + wb.getDataLength()
+                  + "]");
         }
       }
     } else {
@@ -405,11 +405,11 @@ public class WriteBufferManager extends MemoryConsumer {
       if (totalSize > sendSizeLimit) {
         if (LOG.isDebugEnabled()) {
           LOG.debug(
-                  "Build event with "
-                          + shuffleBlockInfosPerEvent.size()
-                          + " blocks and "
-                          + totalSize
-                          + " bytes");
+              "Build event with "
+                  + shuffleBlockInfosPerEvent.size()
+                  + " blocks and "
+                  + totalSize
+                  + " bytes");
         }
         // Use final temporary variables for closures
         final long memoryUsedTemp = memoryUsed;
@@ -430,11 +430,11 @@ public class WriteBufferManager extends MemoryConsumer {
     if (!shuffleBlockInfosPerEvent.isEmpty()) {
       if (LOG.isDebugEnabled()) {
         LOG.debug(
-                "Build event with "
-                        + shuffleBlockInfosPerEvent.size()
-                        + " blocks and "
-                        + totalSize
-                        + " bytes");
+            "Build event with "
+                + shuffleBlockInfosPerEvent.size()
+                + " blocks and "
+                + totalSize
+                + " bytes");
       }
       // Use final temporary variables for closures
       final long memoryUsedTemp = memoryUsed;
