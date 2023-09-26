@@ -258,12 +258,14 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       retry++;
     }
     if (rpcResponse.getStatus() == RssProtos.StatusCode.SUCCESS) {
-      LOG.debug(
-          "Require preAllocated size of {} from {}:{}, cost: {}(ms)",
-          requireSize,
-          host,
-          port,
-          System.currentTimeMillis() - start);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+                "Require preAllocated size of {} from {}:{}, cost: {}(ms)",
+                requireSize,
+                host,
+                port,
+                System.currentTimeMillis() - start);
+      }
       result = rpcResponse.getRequireBufferId();
     } else if (rpcResponse.getStatus() == RssProtos.StatusCode.NO_REGISTER) {
       String msg =
@@ -420,16 +422,18 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                       .setTimestamp(start)
                       .build();
               SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
-              LOG.debug(
-                  "Do sendShuffleData to {}:{} rpc cost:"
-                      + (System.currentTimeMillis() - start)
-                      + " ms for "
-                      + allocateSize
-                      + " bytes with "
-                      + finalBlockNum
-                      + " blocks",
-                  host,
-                  port);
+              if (LOG.isDebugEnabled()) {
+                LOG.debug(
+                        "Do sendShuffleData to {}:{} rpc cost:"
+                                + (System.currentTimeMillis() - start)
+                                + " ms for "
+                                + allocateSize
+                                + " bytes with "
+                                + finalBlockNum
+                                + " blocks",
+                        host,
+                        port);
+              }
               if (response.getStatus() != RssProtos.StatusCode.SUCCESS) {
                 String msg =
                     "Can't send shuffle data with "

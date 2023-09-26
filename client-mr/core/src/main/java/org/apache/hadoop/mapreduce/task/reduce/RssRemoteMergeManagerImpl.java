@@ -207,30 +207,34 @@ public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
       throws IOException {
     // we disable OnDisk MapOutput to avoid merging disk immediate data
     if (usedMemory > memoryLimit) {
-      LOG.debug(
-          mapId
-              + ": Stalling shuffle since usedMemory ("
-              + usedMemory
-              + ") is greater than memoryLimit ("
-              + memoryLimit
-              + ")."
-              + " CommitMemory is ("
-              + commitMemory
-              + ")");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+                mapId
+                        + ": Stalling shuffle since usedMemory ("
+                        + usedMemory
+                        + ") is greater than memoryLimit ("
+                        + memoryLimit
+                        + ")."
+                        + " CommitMemory is ("
+                        + commitMemory
+                        + ")");
+      }
       return null;
     }
 
     // Allow the in-memory shuffle to progress
-    LOG.debug(
-        mapId
-            + ": Proceeding with shuffle since usedMemory ("
-            + usedMemory
-            + ") is lesser than memoryLimit ("
-            + memoryLimit
-            + ")."
-            + "CommitMemory is ("
-            + commitMemory
-            + ")");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(
+              mapId
+                      + ": Proceeding with shuffle since usedMemory ("
+                      + usedMemory
+                      + ") is lesser than memoryLimit ("
+                      + memoryLimit
+                      + ")."
+                      + "CommitMemory is ("
+                      + commitMemory
+                      + ")");
+    }
     usedMemory += requestedSize;
     // use this rss merger as the callback
     return new InMemoryMapOutput<K, V>(jobConf, mapId, this, (int) requestedSize, codec, true);

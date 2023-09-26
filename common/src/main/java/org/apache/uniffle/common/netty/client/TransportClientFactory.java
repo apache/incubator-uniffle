@@ -215,7 +215,9 @@ public class TransportClientFactory implements Closeable {
     TransportClient client = clientRef.get();
     assert client != null : "Channel future completed successfully with null client";
 
-    logger.debug("Connection to {} successful", address);
+    if (logger.isDebugEnabled()) {
+      logger.debug("Connection to {} successful", address);
+    }
 
     return client;
   }

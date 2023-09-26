@@ -175,7 +175,9 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
             .setRetMsg("")
             .setStatus(StatusCode.SUCCESS)
             .build();
-    LOG.debug("Got heartbeat from {}", serverNode);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Got heartbeat from {}", serverNode);
+    }
     responseObserver.onNext(response);
     responseObserver.onCompleted();
   }
@@ -214,7 +216,9 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       AppHeartBeatRequest request, StreamObserver<AppHeartBeatResponse> responseObserver) {
     String appId = request.getAppId();
     coordinatorServer.getApplicationManager().refreshAppId(appId);
-    LOG.debug("Got heartbeat from application: {}", appId);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Got heartbeat from application: {}", appId);
+    }
     AppHeartBeatResponse response =
         AppHeartBeatResponse.newBuilder().setRetMsg("").setStatus(StatusCode.SUCCESS).build();
 
@@ -235,7 +239,9 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     String appId = request.getAppId();
     String user = request.getUser();
     coordinatorServer.getApplicationManager().registerApplicationInfo(appId, user);
-    LOG.debug("Got a registered application info: {}", appId);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Got a registered application info: {}", appId);
+    }
     ApplicationInfoResponse response =
         ApplicationInfoResponse.newBuilder().setRetMsg("").setStatus(StatusCode.SUCCESS).build();
 

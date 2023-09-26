@@ -216,16 +216,18 @@ public class WriteBufferManager extends MemoryConsumer {
         sentBlocks.add(createShuffleBlock(partitionId, wb));
         copyTime += wb.getCopyTime();
         buffers.remove(partitionId);
-        LOG.debug(
-            "Single buffer is full for shuffleId["
-                + shuffleId
-                + "] partition["
-                + partitionId
-                + "] with memoryUsed["
-                + wb.getMemoryUsed()
-                + "], dataLength["
-                + wb.getDataLength()
-                + "]");
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(
+                  "Single buffer is full for shuffleId["
+                          + shuffleId
+                          + "] partition["
+                          + partitionId
+                          + "] with memoryUsed["
+                          + wb.getMemoryUsed()
+                          + "], dataLength["
+                          + wb.getDataLength()
+                          + "]");
+        }
       }
     } else {
       // The true of hasRequested means the former partitioned buffer has been flushed, that is
@@ -401,12 +403,14 @@ public class WriteBufferManager extends MemoryConsumer {
       shuffleBlockInfosPerEvent.add(sbi);
       // split shuffle data according to the size
       if (totalSize > sendSizeLimit) {
-        LOG.debug(
-            "Build event with "
-                + shuffleBlockInfosPerEvent.size()
-                + " blocks and "
-                + totalSize
-                + " bytes");
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(
+                  "Build event with "
+                          + shuffleBlockInfosPerEvent.size()
+                          + " blocks and "
+                          + totalSize
+                          + " bytes");
+        }
         // Use final temporary variables for closures
         final long memoryUsedTemp = memoryUsed;
         final List<ShuffleBlockInfo> shuffleBlocksTemp = shuffleBlockInfosPerEvent;
@@ -424,12 +428,14 @@ public class WriteBufferManager extends MemoryConsumer {
       }
     }
     if (!shuffleBlockInfosPerEvent.isEmpty()) {
-      LOG.debug(
-          "Build event with "
-              + shuffleBlockInfosPerEvent.size()
-              + " blocks and "
-              + totalSize
-              + " bytes");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+                "Build event with "
+                        + shuffleBlockInfosPerEvent.size()
+                        + " blocks and "
+                        + totalSize
+                        + " bytes");
+      }
       // Use final temporary variables for closures
       final long memoryUsedTemp = memoryUsed;
       final List<ShuffleBlockInfo> shuffleBlocksTemp = shuffleBlockInfosPerEvent;
