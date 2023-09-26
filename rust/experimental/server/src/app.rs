@@ -670,8 +670,7 @@ mod test {
                 partition_id: 0,
             },
             blocks: vec![123, 124],
-        })
-        .expect("TODO: panic message");
+        }).await.expect("TODO: panic message");
 
         let data = app
             .get_block_ids(GetBlocksContext {
