@@ -48,6 +48,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
@@ -150,7 +151,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     assertEquals(1, ShuffleServerMetrics.gaugeAppWithHugePartitionNum.get());
 
     // case5
-    shuffleTaskManager.removeResources(appId);
+    shuffleTaskManager.removeResources(appId, false);
     assertEquals(0, ShuffleServerMetrics.gaugeHugePartitionNum.get());
     assertEquals(0, ShuffleServerMetrics.gaugeAppWithHugePartitionNum.get());
   }
@@ -447,7 +448,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     assertTrue(fs.exists(new Path(appBasePath)));
     assertNull(shuffleBufferManager.getBufferPool().get(appId).get(0));
     assertNotNull(shuffleBufferManager.getBufferPool().get(appId).get(1));
-    shuffleTaskManager.removeResources(appId);
+    shuffleTaskManager.removeResources(appId, false);
   }
 
   @Test
@@ -618,7 +619,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
       new Thread(
               () -> {
                 try {
-                  shuffleTaskManager.removeResources(appId);
+                  shuffleTaskManager.removeResources(appId, false);
                 } finally {
                   countDownLatch.countDown();
                 }
@@ -1062,5 +1063,63 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
 
     // case3: client max concurrency exceed 30
     assertEquals(30, ShuffleTaskManager.getMaxConcurrencyWriting(40, conf));
+  }
+
+  @Test
+  public void testRegisterShuffleAfterAppIsExpired() throws Exception {
+    String confFile = ClassLoader.getSystemResource("server.conf").getFile();
+    ShuffleServerConf conf = new ShuffleServerConf(confFile);
+    final String storageBasePath = HDFS_URI + "rss/testRegisterShuffleAfterAppIsExpired";
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
+    conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
+    conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
+
+    shuffleServer = new ShuffleServer(conf);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
+
+    String appId = "appId1";
+    shuffleTaskManager.registerShuffle(
+        appId,
+        1,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        new RemoteStorageInfo(storageBasePath, Maps.newHashMap()),
+        StringUtils.EMPTY);
+    shuffleTaskManager.refreshAppId(appId);
+    assertEquals(1, shuffleTaskManager.getAppIds().size());
+
+    ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 35);
+    shuffleTaskManager.requireBuffer(35);
+    shuffleTaskManager.cacheShuffleData(appId, 0, false, partitionedData0);
+    shuffleTaskManager.updateCachedBlockIds(appId, 0, partitionedData0.getBlockList());
+    shuffleTaskManager.refreshAppId(appId);
+    shuffleTaskManager.checkResourceStatus();
+    assertEquals(1, shuffleTaskManager.getAppIds().size());
+
+    // App is expired due to no heartbeat, so it was added to expired queue and will be removed
+    // resource soon.
+    Thread thread =
+        new Thread(
+            () -> {
+              try {
+                Thread.sleep(1000);
+                shuffleTaskManager.removeResources(appId, true);
+              } catch (InterruptedException e) {
+                throw new RssException(e);
+              }
+            });
+    thread.start();
+
+    // At this moment, this app re-registers shuffle.
+    shuffleTaskManager.registerShuffle(
+        appId,
+        2,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        new RemoteStorageInfo(storageBasePath, Maps.newHashMap()),
+        StringUtils.EMPTY);
+    Thread.sleep(2000);
+
+    // The NO_REGISTER status code should not appear.
+    assertTrue(shuffleTaskManager.requireBuffer(appId, 2, Arrays.asList(1), 35) != -4);
+    shuffleTaskManager.removeResources(appId, false);
   }
 }
