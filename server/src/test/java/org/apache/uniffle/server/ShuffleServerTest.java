@@ -103,7 +103,7 @@ public class ShuffleServerTest {
     // Shuffle server is decommissioning, but we can also decommission it again.
     shuffleServer.decommission();
     shuffleServer.cancelDecommission();
-    shuffleTaskManager.removeResources(appId);
+    shuffleTaskManager.removeResources(appId, false);
     // Wait for 2 seconds, make sure cancel command is work.
     Thread.sleep(2000);
     assertEquals(ServerStatus.ACTIVE, shuffleServer.getServerStatus());
