@@ -1632,7 +1632,7 @@
         <scala.binary.version>2.12</scala.binary.version>
         <spark.version>3.5.0</spark.version>
         <client.type>3</client.type>
-        <jackson.version>2.14.2</jackson.version>
+        <jackson.version>2.15.2</jackson.version>
         <log4j.core.version>2.19.0</log4j.core.version>
       </properties>
       <modules>
