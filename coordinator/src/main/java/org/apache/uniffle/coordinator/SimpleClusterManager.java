@@ -254,6 +254,28 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   @Override
+  public List<ServerNode> getServerList(Set<String> requiredTags, Set<String> faultyServerIds) {
+    List<ServerNode> availableNodes = Lists.newArrayList();
+    for (ServerNode node : servers.values()) {
+      if (!ServerStatus.ACTIVE.equals(node.getStatus())) {
+        continue;
+      }
+      if (isNodeAvailable(requiredTags, faultyServerIds, node)) {
+        availableNodes.add(node);
+      }
+    }
+    return availableNodes;
+  }
+
+  private boolean isNodeAvailable(
+      Set<String> requiredTags, Set<String> faultyServerIds, ServerNode node) {
+    if (faultyServerIds != null && faultyServerIds.contains(node.getId())) {
+      return false;
+    }
+    return !excludeNodes.contains(node.getId()) && node.getTags().containsAll(requiredTags);
+  }
+
+  @Override
   public List<ServerNode> getLostServerList() {
     return Lists.newArrayList(lostNodes);
   }

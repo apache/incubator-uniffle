@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,12 +50,32 @@ public class BasicAssignmentStrategy extends AbstractAssignmentStrategy {
       Set<String> requiredTags,
       int requiredShuffleServerNumber,
       int estimateTaskConcurrency) {
+    return assign(
+        totalPartitionNum,
+        partitionNumPerRange,
+        replica,
+        requiredTags,
+        requiredShuffleServerNumber,
+        estimateTaskConcurrency,
+        Sets.newConcurrentHashSet());
+  }
+
+  @Override
+  public PartitionRangeAssignment assign(
+      int totalPartitionNum,
+      int partitionNumPerRange,
+      int replica,
+      Set<String> requiredTags,
+      int requiredShuffleServerNumber,
+      int estimateTaskConcurrency,
+      Set<String> faultyServerIds) {
     int shuffleNodesMax = clusterManager.getShuffleNodesMax();
     int expectedShuffleNodesNum = shuffleNodesMax;
     if (requiredShuffleServerNumber < shuffleNodesMax && requiredShuffleServerNumber > 0) {
       expectedShuffleNodesNum = requiredShuffleServerNumber;
     }
-    List<ServerNode> servers = getRequiredServers(requiredTags, expectedShuffleNodesNum);
+    List<ServerNode> servers =
+        getRequiredServers(requiredTags, expectedShuffleNodesNum, faultyServerIds);
     if (servers.isEmpty() || servers.size() < replica) {
       return new PartitionRangeAssignment(null);
     }
@@ -66,8 +87,15 @@ public class BasicAssignmentStrategy extends AbstractAssignmentStrategy {
     return new PartitionRangeAssignment(assignments);
   }
 
-  private List<ServerNode> getRequiredServers(Set<String> requiredTags, int expectedNum) {
-    List<ServerNode> servers = clusterManager.getServerList(requiredTags);
+  /**
+   * @param requiredTags filter of tags
+   * @param expectedNum the number of expect servernode
+   * @param faultyServerIds servernode information that is excluded because of an exception
+   * @return
+   */
+  private List<ServerNode> getRequiredServers(
+      Set<String> requiredTags, int expectedNum, Set<String> faultyServerIds) {
+    List<ServerNode> servers = clusterManager.getServerList(requiredTags, faultyServerIds);
     // shuffle server update the status according to heartbeat, if every server is in initial
     // status,
     // random the order of list to avoid always pick same nodes

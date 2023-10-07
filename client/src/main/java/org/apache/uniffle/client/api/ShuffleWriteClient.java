@@ -69,6 +69,20 @@ public interface ShuffleWriteClient {
       Map<Integer, List<Long>> partitionToBlockIds,
       int bitmapNum);
 
+  default ShuffleAssignmentsInfo getShuffleAssignments(
+      String appId,
+      int shuffleId,
+      int partitionNum,
+      int partitionNumPerRange,
+      Set<String> requiredTags,
+      int assignmentShuffleServerNumber,
+      int estimateTaskConcurrency,
+      Set<String> faultyServerIds) {
+    throw new UnsupportedOperationException(
+        this.getClass().getName()
+            + " doesn't implement getShuffleAssignments with faultyServerIds");
+  }
+
   ShuffleAssignmentsInfo getShuffleAssignments(
       String appId,
       int shuffleId,
