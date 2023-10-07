@@ -250,7 +250,7 @@ Deploy Steps:
 ### Support Spark dynamic allocation
 
 To support spark dynamic allocation with Uniffle, spark code should be updated.
-There are 3 patches for spark (2.4.6/3.1.2/3.2.1) in patch/spark folder for reference.
+There are 4 patches for spark (2.4.6/3.1.2/3.2.1/3.3.1) in patch/spark folder for reference.
 
 After apply the patch and rebuild spark, add following configuration in spark conf to enable dynamic allocation:
   ```
