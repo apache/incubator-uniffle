@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.SortedMap;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +68,25 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
       Set<String> requiredTags,
       int requiredShuffleServerNumber,
       int estimateTaskConcurrency) {
+    return assign(
+        totalPartitionNum,
+        partitionNumPerRange,
+        replica,
+        requiredTags,
+        requiredShuffleServerNumber,
+        estimateTaskConcurrency,
+        Sets.newConcurrentHashSet());
+  }
+
+  @Override
+  public PartitionRangeAssignment assign(
+      int totalPartitionNum,
+      int partitionNumPerRange,
+      int replica,
+      Set<String> requiredTags,
+      int requiredShuffleServerNumber,
+      int estimateTaskConcurrency,
+      Set<String> excludeServerNodes) {
 
     if (partitionNumPerRange != 1) {
       throw new RssException("PartitionNumPerRange must be one");
@@ -74,7 +94,7 @@ public class PartitionBalanceAssignmentStrategy extends AbstractAssignmentStrate
 
     SortedMap<PartitionRange, List<ServerNode>> assignments;
     synchronized (this) {
-      List<ServerNode> nodes = clusterManager.getServerList(requiredTags);
+      List<ServerNode> nodes = clusterManager.getServerList(requiredTags, excludeServerNodes);
       Map<ServerNode, PartitionAssignmentInfo> newPartitionInfos = JavaUtils.newConcurrentMap();
       for (ServerNode node : nodes) {
         newPartitionInfos.computeIfAbsent(

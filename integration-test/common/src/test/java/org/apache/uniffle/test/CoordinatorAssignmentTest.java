@@ -22,8 +22,12 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,10 +39,12 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.ReconfigurableBase;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.SimpleClusterManager;
+import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -184,5 +190,28 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
       fileWriter.append(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key() + " " + 10);
     }
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void testGetReShuffleAssignments() {
+    ShuffleWriteClientImpl shuffleWriteClient =
+        new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1, 1, 1, 1, true, 1, 1, 10, 10);
+    shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
+    Set<String> excludeServer = Sets.newConcurrentHashSet();
+    List<ShuffleServer> excludeShuffleServer =
+        shuffleServers.stream().limit(3).collect(Collectors.toList());
+    excludeShuffleServer.stream().map(ss -> ss.getId()).peek(excludeServer::add);
+    ShuffleAssignmentsInfo shuffleAssignmentsInfo =
+        shuffleWriteClient.getShuffleAssignments(
+            "app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1, excludeServer);
+    List<ShuffleServerInfo> resultShuffle = Lists.newArrayList();
+    for (List<ShuffleServerInfo> ssis : shuffleAssignmentsInfo.getPartitionToServers().values()) {
+      resultShuffle.addAll(ssis);
+    }
+
+    List<String> resultShuffleServerId =
+        resultShuffle.stream().map(a -> a.getId()).collect(Collectors.toList());
+    assertEquals(true, resultShuffleServerId.retainAll(excludeServer));
+    assertEquals(true, resultShuffleServerId.isEmpty());
   }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -111,17 +112,19 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     final Set<String> requiredTags = Sets.newHashSet(request.getRequireTagsList());
     final int requiredShuffleServerNumber = request.getAssignmentShuffleServerNumber();
     final int estimateTaskConcurrency = request.getEstimateTaskConcurrency();
+    final Set<String> faultyServerIds = new HashSet<>(request.getFaultyServerIdsList());
 
     LOG.info(
         "Request of getShuffleAssignments for appId[{}], shuffleId[{}], partitionNum[{}], "
-            + " partitionNumPerRange[{}], replica[{}], requiredTags[{}], requiredShuffleServerNumber[{}]",
+            + " partitionNumPerRange[{}], replica[{}], requiredTags[{}], requiredShuffleServerNumber[{}],faultyServerIds[{}]",
         appId,
         shuffleId,
         partitionNum,
         partitionNumPerRange,
         replica,
         requiredTags,
-        requiredShuffleServerNumber);
+        requiredShuffleServerNumber,
+        faultyServerIds.size());
 
     GetShuffleAssignmentsResponse response;
     try {
@@ -138,7 +141,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
                   replica,
                   requiredTags,
                   requiredShuffleServerNumber,
-                  estimateTaskConcurrency);
+                  estimateTaskConcurrency,
+                  faultyServerIds);
       response = CoordinatorUtils.toGetShuffleAssignmentsResponse(pra);
       logAssignmentResult(appId, shuffleId, pra);
       responseObserver.onNext(response);

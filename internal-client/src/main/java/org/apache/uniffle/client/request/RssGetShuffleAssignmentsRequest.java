@@ -20,6 +20,7 @@ package org.apache.uniffle.client.request;
 import java.util.Set;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Sets;
 
 public class RssGetShuffleAssignmentsRequest {
 
@@ -31,6 +32,7 @@ public class RssGetShuffleAssignmentsRequest {
   private Set<String> requiredTags;
   private int assignmentShuffleServerNumber;
   private int estimateTaskConcurrency;
+  private Set<String> faultyServerIds;
 
   @VisibleForTesting
   public RssGetShuffleAssignmentsRequest(
@@ -40,7 +42,16 @@ public class RssGetShuffleAssignmentsRequest {
       int partitionNumPerRange,
       int dataReplica,
       Set<String> requiredTags) {
-    this(appId, shuffleId, partitionNum, partitionNumPerRange, dataReplica, requiredTags, -1, -1);
+    this(
+        appId,
+        shuffleId,
+        partitionNum,
+        partitionNumPerRange,
+        dataReplica,
+        requiredTags,
+        -1,
+        -1,
+        Sets.newHashSet());
   }
 
   public RssGetShuffleAssignmentsRequest(
@@ -51,7 +62,8 @@ public class RssGetShuffleAssignmentsRequest {
       int dataReplica,
       Set<String> requiredTags,
       int assignmentShuffleServerNumber,
-      int estimateTaskConcurrency) {
+      int estimateTaskConcurrency,
+      Set<String> faultyServerIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionNum = partitionNum;
@@ -60,6 +72,7 @@ public class RssGetShuffleAssignmentsRequest {
     this.requiredTags = requiredTags;
     this.assignmentShuffleServerNumber = assignmentShuffleServerNumber;
     this.estimateTaskConcurrency = estimateTaskConcurrency;
+    this.faultyServerIds = faultyServerIds;
   }
 
   public String getAppId() {
@@ -92,5 +105,9 @@ public class RssGetShuffleAssignmentsRequest {
 
   public int getEstimateTaskConcurrency() {
     return estimateTaskConcurrency;
+  }
+
+  public Set<String> getFaultyServerIds() {
+    return faultyServerIds;
   }
 }
