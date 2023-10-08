@@ -159,7 +159,9 @@ public class RssEventFetcher<K, V> {
               maxEventsToFetch,
               (org.apache.hadoop.mapred.TaskAttemptID) reduce);
       events = update.getMapTaskCompletionEvents();
-      LOG.debug("Got " + events.length + " map completion events from " + fromEventIdx);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Got " + events.length + " map completion events from " + fromEventIdx);
+      }
 
       assert !update.shouldReset() : "Unexpected legacy state";
 

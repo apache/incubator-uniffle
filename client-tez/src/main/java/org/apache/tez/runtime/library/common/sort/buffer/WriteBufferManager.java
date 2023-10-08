@@ -270,7 +270,9 @@ public class WriteBufferManager<K, V> {
             } finally {
               try {
                 memoryLock.lock();
-                LOG.debug("memoryUsedSize {} decrease {}", memoryUsedSize, size);
+                if (LOG.isDebugEnabled()) {
+                  LOG.debug("memoryUsedSize {} decrease {}", memoryUsedSize, size);
+                }
                 memoryUsedSize.addAndGet(-size);
                 inSendListBytes.addAndGet(-size);
                 full.signalAll();

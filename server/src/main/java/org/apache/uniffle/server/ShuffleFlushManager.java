@@ -102,8 +102,10 @@ public class ShuffleFlushManager {
         if (shuffleServer != null) {
           long duration = System.currentTimeMillis() - start;
           if (writeSuccess) {
-            LOG.debug(
-                "Flush to file success in {} ms and release {} bytes", duration, event.getSize());
+            if (LOG.isDebugEnabled()) {
+              LOG.debug(
+                  "Flush to file success in {} ms and release {} bytes", duration, event.getSize());
+            }
           } else {
             ShuffleServerMetrics.counterTotalFailedWrittenEventNum.inc();
             LOG.error(

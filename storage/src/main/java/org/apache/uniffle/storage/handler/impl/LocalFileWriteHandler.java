@@ -115,15 +115,19 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
                 block.getTaskAttemptId());
         indexWriter.writeIndex(segment);
       }
-      LOG.debug(
-          "Write handler write {} blocks cost {} ms without file open close",
-          shuffleBlocks.size(),
-          (System.currentTimeMillis() - startTime));
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+            "Write handler write {} blocks cost {} ms without file open close",
+            shuffleBlocks.size(),
+            (System.currentTimeMillis() - startTime));
+      }
     }
-    LOG.debug(
-        "Write handler write {} blocks cost {} ms with file open close",
-        shuffleBlocks.size(),
-        (System.currentTimeMillis() - accessTime));
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(
+          "Write handler write {} blocks cost {} ms with file open close",
+          shuffleBlocks.size(),
+          (System.currentTimeMillis() - accessTime));
+    }
   }
 
   private LocalFileWriter createWriter(String fileName) throws IOException, IllegalStateException {

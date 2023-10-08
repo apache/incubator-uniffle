@@ -287,18 +287,20 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       shuffleServer
           .getGrpcMetrics()
           .recordProcessTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, costTime);
-      LOG.debug(
-          "Cache Shuffle Data for appId["
-              + appId
-              + "], shuffleId["
-              + shuffleId
-              + "], cost "
-              + costTime
-              + " ms with "
-              + shufflePartitionedData.size()
-              + " blocks and "
-              + requireSize
-              + " bytes");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+            "Cache Shuffle Data for appId["
+                + appId
+                + "], shuffleId["
+                + shuffleId
+                + "], cost "
+                + costTime
+                + " ms with "
+                + shufflePartitionedData.size()
+                + " blocks and "
+                + requireSize
+                + " bytes");
+      }
     } else {
       reply =
           SendShuffleDataResponse.newBuilder()
@@ -328,14 +330,16 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         throw new IllegalStateException("AppId " + appId + " was removed already");
       }
       commitCount = shuffleServer.getShuffleTaskManager().updateAndGetCommitCount(appId, shuffleId);
-      LOG.debug(
-          "Get commitShuffleTask request for appId["
-              + appId
-              + "], shuffleId["
-              + shuffleId
-              + "], currentCommitted["
-              + commitCount
-              + "]");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+            "Get commitShuffleTask request for appId["
+                + appId
+                + "], shuffleId["
+                + shuffleId
+                + "], currentCommitted["
+                + commitCount
+                + "]");
+      }
     } catch (Exception e) {
       status = StatusCode.INTERNAL_ERROR;
       msg = "Error happened when commit for appId[" + appId + "], shuffleId[" + shuffleId + "]";

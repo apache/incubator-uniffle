@@ -65,16 +65,18 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
 
     long start = System.currentTimeMillis();
     prepareFilePath(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, path);
-    LOG.debug(
-        "Prepare for appId["
-            + appId
-            + "], shuffleId["
-            + shuffleId
-            + "], partitionId["
-            + partitionId
-            + "] cost "
-            + (System.currentTimeMillis() - start)
-            + " ms");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(
+          "Prepare for appId["
+              + appId
+              + "], shuffleId["
+              + shuffleId
+              + "], partitionId["
+              + partitionId
+              + "] cost "
+              + (System.currentTimeMillis() - start)
+              + " ms");
+    }
   }
 
   private void prepareFilePath(

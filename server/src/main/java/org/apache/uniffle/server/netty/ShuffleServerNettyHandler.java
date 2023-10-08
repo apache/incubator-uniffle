@@ -193,18 +193,20 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       shuffleServer
           .getNettyMetrics()
           .recordProcessTime(SendShuffleDataRequest.class.getName(), costTime);
-      LOG.debug(
-          "Cache Shuffle Data for appId["
-              + appId
-              + "], shuffleId["
-              + shuffleId
-              + "], cost "
-              + costTime
-              + " ms with "
-              + shufflePartitionedData.size()
-              + " blocks and "
-              + requireSize
-              + " bytes");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+            "Cache Shuffle Data for appId["
+                + appId
+                + "], shuffleId["
+                + shuffleId
+                + "], cost "
+                + costTime
+                + " ms with "
+                + shufflePartitionedData.size()
+                + " blocks and "
+                + requireSize
+                + " bytes");
+      }
     } else {
       rpcResponse =
           new RpcResponse(req.getRequestId(), StatusCode.INTERNAL_ERROR, "No data in request");

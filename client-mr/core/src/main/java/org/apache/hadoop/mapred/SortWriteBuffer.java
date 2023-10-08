@@ -140,13 +140,15 @@ public class SortWriteBuffer<K, V> extends OutputStream {
 
   private boolean compact(int lastIndex, int lastOffset, int dataLength) {
     if (lastIndex != currentIndex) {
-      LOG.debug(
-          "compact lastIndex {}, currentIndex {}, lastOffset {} currentOffset {} dataLength {}",
-          lastIndex,
-          currentIndex,
-          lastOffset,
-          currentOffset,
-          dataLength);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+            "compact lastIndex {}, currentIndex {}, lastOffset {} currentOffset {} dataLength {}",
+            lastIndex,
+            currentIndex,
+            lastOffset,
+            currentOffset,
+            dataLength);
+      }
       WrappedBuffer buffer = new WrappedBuffer(lastOffset + dataLength);
       // copy data
       int offset = 0;

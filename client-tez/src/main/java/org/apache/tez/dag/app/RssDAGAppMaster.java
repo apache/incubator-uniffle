@@ -204,7 +204,9 @@ public class RssDAGAppMaster extends DAGAppMaster {
         () -> {
           try {
             appMaster.getShuffleWriteClient().sendAppHeartbeat(strAppAttemptId, heartbeatTimeout);
-            LOG.debug("Finish send heartbeat to coordinator and servers");
+            if (LOG.isDebugEnabled()) {
+              LOG.debug("Finish send heartbeat to coordinator and servers");
+            }
           } catch (Exception e) {
             LOG.warn("Fail to send heartbeat to coordinator and servers", e);
           }
