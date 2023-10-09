@@ -257,6 +257,10 @@ After apply the patch and rebuild spark, add following configuration in spark co
   spark.shuffle.service.enabled false
   spark.dynamicAllocation.enabled true
   ```
+For spark3.5 or above just add one more configuration:
+  ```
+  spark.shuffle.sort.io.plugin.class org.apache.spark.shuffle.RssShuffleDataIo
+  ```
 
 ### Deploy MapReduce Client
 
