@@ -49,7 +49,7 @@ public class ShuffleWriteClientImplTest {
   @Test
   public void testAbandonEventWhenTaskFailed() {
     ShuffleWriteClientImpl shuffleWriteClient =
-        ShuffleClientFactory.newWriterBuilder()
+        ShuffleClientFactory.newWriteBuilder()
             .clientType(ClientType.GRPC.name())
             .retryMax(3)
             .retryIntervalMax(2000)
@@ -95,7 +95,7 @@ public class ShuffleWriteClientImplTest {
   @Test
   public void testSendData() {
     ShuffleWriteClientImpl shuffleWriteClient =
-        ShuffleClientFactory.newWriterBuilder()
+        ShuffleClientFactory.newWriteBuilder()
             .clientType(ClientType.GRPC.name())
             .retryMax(3)
             .retryIntervalMax(2000)
@@ -130,7 +130,7 @@ public class ShuffleWriteClientImplTest {
   @Test
   public void testRegisterAndUnRegisterShuffleServer() {
     ShuffleWriteClientImpl shuffleWriteClient =
-        ShuffleClientFactory.newWriterBuilder()
+        ShuffleClientFactory.newWriteBuilder()
             .clientType(ClientType.GRPC.name())
             .retryMax(3)
             .retryIntervalMax(2000)
@@ -168,7 +168,7 @@ public class ShuffleWriteClientImplTest {
   @Test
   public void testSendDataWithDefectiveServers() {
     ShuffleWriteClientImpl shuffleWriteClient =
-        ShuffleClientFactory.newWriterBuilder()
+        ShuffleClientFactory.newWriteBuilder()
             .clientType(ClientType.GRPC.name())
             .retryMax(3)
             .retryIntervalMax(2000)

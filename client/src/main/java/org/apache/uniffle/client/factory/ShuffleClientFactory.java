@@ -198,7 +198,7 @@ public class ShuffleClientFactory {
     }
   }
 
-  public static WriteClientBuilder newWriterBuilder() {
+  public static WriteClientBuilder newWriteBuilder() {
     return new WriteClientBuilder();
   }
 }

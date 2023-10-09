@@ -111,7 +111,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     final ShuffleWriteClient shuffleWriteClient =
         ShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
-                ShuffleClientFactory.newWriterBuilder()
+                ShuffleClientFactory.newWriteBuilder()
                     .clientType("GRPC")
                     .retryMax(2)
                     .retryIntervalMax(10000L)

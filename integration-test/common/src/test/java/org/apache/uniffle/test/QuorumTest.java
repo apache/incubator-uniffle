@@ -316,7 +316,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     shuffleWriteClientImpl =
         new MockedShuffleWriteClientImpl(
-            ShuffleClientFactory.newWriterBuilder()
+            ShuffleClientFactory.newWriteBuilder()
                 .clientType(ClientType.GRPC.name())
                 .retryMax(3)
                 .retryIntervalMax(1000)

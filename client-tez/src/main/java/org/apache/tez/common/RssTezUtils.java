@@ -111,7 +111,7 @@ public class RssTezUtils {
     ShuffleWriteClient client =
         ShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
-                ShuffleClientFactory.newWriterBuilder()
+                ShuffleClientFactory.newWriteBuilder()
                     .clientType(clientType)
                     .retryMax(retryMax)
                     .retryIntervalMax(retryIntervalMax)

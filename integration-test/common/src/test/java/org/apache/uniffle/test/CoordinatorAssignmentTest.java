@@ -106,7 +106,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
   @Test
   public void testSilentPeriod() throws Exception {
     ShuffleWriteClientImpl shuffleWriteClient =
-        ShuffleClientFactory.newWriterBuilder()
+        ShuffleClientFactory.newWriteBuilder()
             .clientType(ClientType.GRPC.name())
             .retryMax(3)
             .retryIntervalMax(1000)
@@ -146,7 +146,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
   @Test
   public void testAssignmentServerNodesNumber() throws Exception {
     ShuffleWriteClientImpl shuffleWriteClient =
-        ShuffleClientFactory.newWriterBuilder()
+        ShuffleClientFactory.newWriteBuilder()
             .clientType(ClientType.GRPC.name())
             .retryMax(3)
             .retryIntervalMax(1000)
@@ -201,7 +201,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
             .getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, "");
     new File(fileName).createNewFile();
     ShuffleWriteClientImpl shuffleWriteClient =
-        ShuffleClientFactory.newWriterBuilder()
+        ShuffleClientFactory.newWriteBuilder()
             .clientType(ClientType.GRPC.name())
             .retryMax(3)
             .retryIntervalMax(1000)
@@ -235,7 +235,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
   @Test
   public void testGetReShuffleAssignments() {
     ShuffleWriteClientImpl shuffleWriteClient =
-        ShuffleClientFactory.newWriterBuilder()
+        ShuffleClientFactory.newWriteBuilder()
             .clientType(ClientType.GRPC.name())
             .retryMax(3)
             .retryIntervalMax(1000)

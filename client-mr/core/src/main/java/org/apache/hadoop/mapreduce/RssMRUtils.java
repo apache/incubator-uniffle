@@ -117,7 +117,7 @@ public class RssMRUtils {
     ShuffleWriteClient client =
         ShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
-                ShuffleClientFactory.newWriterBuilder()
+                ShuffleClientFactory.newWriteBuilder()
                     .clientType(clientType)
                     .retryMax(retryMax)
                     .retryIntervalMax(retryIntervalMax)

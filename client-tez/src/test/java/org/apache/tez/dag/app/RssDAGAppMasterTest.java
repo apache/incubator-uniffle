@@ -499,7 +499,7 @@ public class RssDAGAppMasterTest {
 
     FakedShuffleWriteClient(int mode) {
       super(
-          ShuffleClientFactory.newWriterBuilder()
+          ShuffleClientFactory.newWriteBuilder()
               .clientType("GRPC")
               .retryMax(1)
               .retryIntervalMax(1)

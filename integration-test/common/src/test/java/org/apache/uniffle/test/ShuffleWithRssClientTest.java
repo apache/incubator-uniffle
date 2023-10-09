@@ -95,7 +95,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
   @BeforeEach
   public void createClient() {
     shuffleWriteClientImpl =
-        ShuffleClientFactory.newWriterBuilder()
+        ShuffleClientFactory.newWriteBuilder()
             .clientType(ClientType.GRPC.name())
             .retryMax(3)
             .retryIntervalMax(1000)

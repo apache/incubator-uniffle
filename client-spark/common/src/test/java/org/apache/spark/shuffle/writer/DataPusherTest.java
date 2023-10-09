@@ -45,7 +45,7 @@ public class DataPusherTest {
 
     FakedShuffleWriteClient() {
       super(
-          ShuffleClientFactory.newWriterBuilder()
+          ShuffleClientFactory.newWriteBuilder()
               .clientType("GRPC")
               .retryMax(1)
               .retryIntervalMax(1)

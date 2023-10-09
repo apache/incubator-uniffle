@@ -168,7 +168,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     shuffleWriteClient =
         ShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
-                ShuffleClientFactory.newWriterBuilder()
+                ShuffleClientFactory.newWriteBuilder()
                     .clientType(clientType)
                     .retryMax(retryMax)
                     .retryIntervalMax(retryIntervalMax)
@@ -303,7 +303,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     shuffleWriteClient =
         ShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
-                ShuffleClientFactory.newWriterBuilder()
+                ShuffleClientFactory.newWriteBuilder()
                     .clientType(clientType)
                     .retryMax(retryMax)
                     .retryIntervalMax(retryIntervalMax)

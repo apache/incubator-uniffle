@@ -152,7 +152,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
   @Test
   public void testTags() throws Exception {
     ShuffleWriteClientImpl shuffleWriteClient =
-        ShuffleClientFactory.newWriterBuilder()
+        ShuffleClientFactory.newWriteBuilder()
             .clientType(ClientType.GRPC.name())
             .retryMax(3)
             .retryIntervalMax(1000)
