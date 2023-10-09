@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BytesWritable;
@@ -382,7 +383,8 @@ public class SortWriteBufferManagerTest {
       if (mode == 0) {
         throw new RssException("send data failed");
       } else if (mode == 1) {
-        return new SendShuffleDataResult(Sets.newHashSet(2L), Sets.newHashSet(1L));
+        return new SendShuffleDataResult(
+            Sets.newHashSet(2L), Sets.newHashSet(1L), Maps.newHashMap());
       } else {
         if (mode == 3) {
           try {
@@ -397,7 +399,7 @@ public class SortWriteBufferManagerTest {
         for (ShuffleBlockInfo blockInfo : shuffleBlockInfoList) {
           successBlockIds.add(blockInfo.getBlockId());
         }
-        return new SendShuffleDataResult(successBlockIds, Sets.newHashSet());
+        return new SendShuffleDataResult(successBlockIds, Sets.newHashSet(), Maps.newHashMap());
       }
     }
 
