@@ -23,10 +23,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleManagerClient;
+import org.apache.uniffle.client.request.RssPartitionToShuffleServerRequest;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
+import org.apache.uniffle.client.response.RssPartitionToShuffleServerResponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.ReportShuffleFetchFailureRequest;
 import org.apache.uniffle.proto.RssProtos.ReportShuffleFetchFailureResponse;
 import org.apache.uniffle.proto.ShuffleManagerGrpc;
@@ -73,5 +76,16 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
       LOG.warn(msg, e);
       throw new RssException(msg, e);
     }
+  }
+
+  @Override
+  public RssPartitionToShuffleServerResponse getPartitionToShufflerServer(
+      RssPartitionToShuffleServerRequest req) {
+    RssProtos.PartitionToShuffleServerRequest protoRequest = req.toProto();
+    RssProtos.PartitionToShuffleServerResponse partitionToShufflerServer =
+        getBlockingStub().getPartitionToShufflerServer(protoRequest);
+    RssPartitionToShuffleServerResponse rssPartitionToShuffleServerResponse =
+        RssPartitionToShuffleServerResponse.fromProto(partitionToShufflerServer);
+    return rssPartitionToShuffleServerResponse;
   }
 }
