@@ -34,124 +34,11 @@ public class ShuffleClientFactory {
     return INSTANCE;
   }
 
-  /** Only for MR engine, which won't used to unregister to remote shuffle-servers */
-  public ShuffleWriteClient createShuffleWriteClient(
-      String clientType,
-      int retryMax,
-      long retryIntervalMax,
-      int heartBeatThreadNum,
-      int replica,
-      int replicaWrite,
-      int replicaRead,
-      boolean replicaSkipEnabled,
-      int dataTransferPoolSize,
-      int dataCommitPoolSize) {
-    return createShuffleWriteClient(
-        clientType,
-        retryMax,
-        retryIntervalMax,
-        heartBeatThreadNum,
-        replica,
-        replicaWrite,
-        replicaRead,
-        replicaSkipEnabled,
-        dataTransferPoolSize,
-        dataCommitPoolSize,
-        10,
-        10,
-        new RssConf());
-  }
-
-  public ShuffleWriteClient createShuffleWriteClient(
-      String clientType,
-      int retryMax,
-      long retryIntervalMax,
-      int heartBeatThreadNum,
-      int replica,
-      int replicaWrite,
-      int replicaRead,
-      boolean replicaSkipEnabled,
-      int dataTransferPoolSize,
-      int dataCommitPoolSize,
-      RssConf rssConf) {
-    return createShuffleWriteClient(
-        clientType,
-        retryMax,
-        retryIntervalMax,
-        heartBeatThreadNum,
-        replica,
-        replicaWrite,
-        replicaRead,
-        replicaSkipEnabled,
-        dataTransferPoolSize,
-        dataCommitPoolSize,
-        10,
-        10,
-        rssConf);
-  }
-
-  public ShuffleWriteClient createShuffleWriteClient(
-      String clientType,
-      int retryMax,
-      long retryIntervalMax,
-      int heartBeatThreadNum,
-      int replica,
-      int replicaWrite,
-      int replicaRead,
-      boolean replicaSkipEnabled,
-      int dataTransferPoolSize,
-      int dataCommitPoolSize,
-      int unregisterThreadPoolSize,
-      int unregisterRequestTimeoutSec) {
-    return createShuffleWriteClient(
-        clientType,
-        retryMax,
-        retryIntervalMax,
-        heartBeatThreadNum,
-        replica,
-        replicaWrite,
-        replicaRead,
-        replicaSkipEnabled,
-        dataTransferPoolSize,
-        dataCommitPoolSize,
-        unregisterThreadPoolSize,
-        unregisterRequestTimeoutSec,
-        new RssConf());
-  }
-
-  public ShuffleWriteClient createShuffleWriteClient(
-      String clientType,
-      int retryMax,
-      long retryIntervalMax,
-      int heartBeatThreadNum,
-      int replica,
-      int replicaWrite,
-      int replicaRead,
-      boolean replicaSkipEnabled,
-      int dataTransferPoolSize,
-      int dataCommitPoolSize,
-      int unregisterThreadPoolSize,
-      int unregisterRequestTimeoutSec,
-      RssConf rssConf) {
-    // If replica > replicaWrite, blocks maybe be sent for 2 rounds.
-    // We need retry less times in this case for let the first round fail fast.
-    if (replicaSkipEnabled && replica > replicaWrite) {
-      retryMax = retryMax / 2;
+  public ShuffleWriteClient createShuffleWriteClient(WriteClientBuilder builder) {
+    if (builder.isReplicaSkipEnabled() && builder.getReplica() > builder.getReplicaWrite()) {
+      builder.retryMax(builder.getRetryMax() / 2);
     }
-    return new ShuffleWriteClientImpl(
-        clientType,
-        retryMax,
-        retryIntervalMax,
-        heartBeatThreadNum,
-        replica,
-        replicaWrite,
-        replicaRead,
-        replicaSkipEnabled,
-        dataTransferPoolSize,
-        dataCommitPoolSize,
-        unregisterThreadPoolSize,
-        unregisterRequestTimeoutSec,
-        rssConf);
+    return builder.build();
   }
 
   public ShuffleReadClient createShuffleReadClient(CreateShuffleReadClientRequest request) {
@@ -170,5 +57,148 @@ public class ShuffleClientFactory {
         request.getShuffleDataDistributionType(),
         request.isExpectedTaskIdsBitmapFilterEnable(),
         request.getRssConf());
+  }
+
+  public static class WriteClientBuilder {
+    private WriteClientBuilder() {}
+
+    private String clientType;
+    private int retryMax;
+    private long retryIntervalMax;
+    private int heartBeatThreadNum;
+    private int replica;
+    private int replicaWrite;
+    private int replicaRead;
+    private boolean replicaSkipEnabled;
+    private int dataTransferPoolSize;
+    private int dataCommitPoolSize;
+    private int unregisterThreadPoolSize;
+    private int unregisterRequestTimeSec;
+    private RssConf rssConf;
+
+    public String getClientType() {
+      return clientType;
+    }
+
+    public int getRetryMax() {
+      return retryMax;
+    }
+
+    public long getRetryIntervalMax() {
+      return retryIntervalMax;
+    }
+
+    public int getHeartBeatThreadNum() {
+      return heartBeatThreadNum;
+    }
+
+    public int getReplica() {
+      return replica;
+    }
+
+    public int getReplicaWrite() {
+      return replicaWrite;
+    }
+
+    public int getReplicaRead() {
+      return replicaRead;
+    }
+
+    public boolean isReplicaSkipEnabled() {
+      return replicaSkipEnabled;
+    }
+
+    public int getDataTransferPoolSize() {
+      return dataTransferPoolSize;
+    }
+
+    public int getDataCommitPoolSize() {
+      return dataCommitPoolSize;
+    }
+
+    public int getUnregisterThreadPoolSize() {
+      return unregisterThreadPoolSize;
+    }
+
+    public int getUnregisterRequestTimeSec() {
+      return unregisterRequestTimeSec;
+    }
+
+    public RssConf getRssConf() {
+      return rssConf;
+    }
+
+    public WriteClientBuilder clientType(String clientType) {
+      this.clientType = clientType;
+      return this;
+    }
+
+    public WriteClientBuilder retryMax(int retryMax) {
+      this.retryMax = retryMax;
+      return this;
+    }
+
+    public WriteClientBuilder retryIntervalMax(long retryIntervalMax) {
+      this.retryIntervalMax = retryIntervalMax;
+      return this;
+    }
+
+    public WriteClientBuilder heartBeatThreadNum(int heartBeatThreadNum) {
+      this.heartBeatThreadNum = heartBeatThreadNum;
+      return this;
+    }
+
+    public WriteClientBuilder replica(int replica) {
+      this.replica = replica;
+      return this;
+    }
+
+    public WriteClientBuilder replicaWrite(int replicaWrite) {
+      this.replicaWrite = replicaWrite;
+      return this;
+    }
+
+    public WriteClientBuilder replicaRead(int replicaRead) {
+      this.replicaRead = replicaRead;
+      return this;
+    }
+
+    public WriteClientBuilder replicaSkipEnabled(boolean replicaSkipEnabled) {
+      this.replicaSkipEnabled = replicaSkipEnabled;
+      return this;
+    }
+
+    public WriteClientBuilder dataTransferPoolSize(int dataTransferPoolSize) {
+      this.dataTransferPoolSize = dataTransferPoolSize;
+      return this;
+    }
+
+    public WriteClientBuilder dataCommitPoolSize(int dataCommitPoolSize) {
+      this.dataCommitPoolSize = dataCommitPoolSize;
+      return this;
+    }
+
+    public WriteClientBuilder unregisterThreadPoolSize(int unregisterThreadPoolSize) {
+      this.unregisterThreadPoolSize = unregisterThreadPoolSize;
+      return this;
+    }
+
+    public WriteClientBuilder unregisterRequestTimeSec(int unregisterRequestTimeSec) {
+      this.unregisterRequestTimeSec = unregisterRequestTimeSec;
+      return this;
+    }
+
+    public WriteClientBuilder rssConf(RssConf rssConf) {
+      this.rssConf = rssConf;
+      return this;
+    }
+
+    public ShuffleWriteClientImpl build() {
+      return new ShuffleWriteClientImpl(this);
+    }
+  }
+
+  public static WriteClientBuilder newWriterBuilder() {
+    return new WriteClientBuilder();
   }
 }

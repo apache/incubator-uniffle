@@ -111,16 +111,17 @@ public class RssTezUtils {
     ShuffleWriteClient client =
         ShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
-                clientType,
-                retryMax,
-                retryIntervalMax,
-                heartBeatThreadNum,
-                replica,
-                replicaWrite,
-                replicaRead,
-                replicaSkipEnabled,
-                dataTransferPoolSize,
-                dataCommitPoolSize);
+                ShuffleClientFactory.newWriterBuilder()
+                    .clientType(clientType)
+                    .retryMax(retryMax)
+                    .retryIntervalMax(retryIntervalMax)
+                    .heartBeatThreadNum(heartBeatThreadNum)
+                    .replica(replica)
+                    .replicaWrite(replicaWrite)
+                    .replicaRead(replicaRead)
+                    .replicaSkipEnabled(replicaSkipEnabled)
+                    .dataTransferPoolSize(dataTransferPoolSize)
+                    .dataCommitPoolSize(dataCommitPoolSize));
     return client;
   }
 

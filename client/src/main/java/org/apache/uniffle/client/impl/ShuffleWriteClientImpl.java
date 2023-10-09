@@ -48,6 +48,7 @@ import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
 import org.apache.uniffle.client.request.RssApplicationInfoRequest;
@@ -115,67 +116,35 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private Set<ShuffleServerInfo> defectiveServers;
   private RssConf rssConf;
 
-  public ShuffleWriteClientImpl(
-      String clientType,
-      int retryMax,
-      long retryIntervalMax,
-      int heartBeatThreadNum,
-      int replica,
-      int replicaWrite,
-      int replicaRead,
-      boolean replicaSkipEnabled,
-      int dataTransferPoolSize,
-      int dataCommitPoolSize,
-      int unregisterThreadPoolSize,
-      int unregisterRequestTimeSec) {
-    this(
-        clientType,
-        retryMax,
-        retryIntervalMax,
-        heartBeatThreadNum,
-        replica,
-        replicaWrite,
-        replicaRead,
-        replicaSkipEnabled,
-        dataTransferPoolSize,
-        dataCommitPoolSize,
-        unregisterThreadPoolSize,
-        unregisterRequestTimeSec,
-        new RssConf());
-  }
-
-  public ShuffleWriteClientImpl(
-      String clientType,
-      int retryMax,
-      long retryIntervalMax,
-      int heartBeatThreadNum,
-      int replica,
-      int replicaWrite,
-      int replicaRead,
-      boolean replicaSkipEnabled,
-      int dataTransferPoolSize,
-      int dataCommitPoolSize,
-      int unregisterThreadPoolSize,
-      int unregisterRequestTimeSec,
-      RssConf rssConf) {
-    this.clientType = clientType;
-    this.retryMax = retryMax;
-    this.retryIntervalMax = retryIntervalMax;
+  public ShuffleWriteClientImpl(ShuffleClientFactory.WriteClientBuilder builder) {
+    // set default value
+    if (builder.getRssConf() != null) {
+      builder.rssConf(new RssConf());
+    }
+    if (builder.getUnregisterThreadPoolSize() == 0) {
+      builder.unregisterThreadPoolSize(10);
+    }
+    if (builder.getUnregisterRequestTimeSec() == 0) {
+      builder.unregisterRequestTimeSec(10);
+    }
+    this.clientType = builder.getClientType();
+    this.retryMax = builder.getRetryMax();
+    this.retryIntervalMax = builder.getRetryIntervalMax();
     this.coordinatorClientFactory = new CoordinatorClientFactory(ClientType.valueOf(clientType));
     this.heartBeatExecutorService =
-        ThreadUtils.getDaemonFixedThreadPool(heartBeatThreadNum, "client-heartbeat");
-    this.replica = replica;
-    this.replicaWrite = replicaWrite;
-    this.replicaRead = replicaRead;
-    this.replicaSkipEnabled = replicaSkipEnabled;
-    this.dataTransferPool = Executors.newFixedThreadPool(dataTransferPoolSize);
-    this.dataCommitPoolSize = dataCommitPoolSize;
-    this.unregisterThreadPoolSize = unregisterThreadPoolSize;
-    this.unregisterRequestTimeSec = unregisterRequestTimeSec;
+        ThreadUtils.getDaemonFixedThreadPool(builder.getHeartBeatThreadNum(), "client-heartbeat");
+    this.replica = builder.getReplica();
+    this.replicaWrite = builder.getReplicaWrite();
+    this.replicaRead = builder.getReplicaRead();
+    this.replicaSkipEnabled = builder.isReplicaSkipEnabled();
+    this.dataTransferPool = Executors.newFixedThreadPool(builder.getDataTransferPoolSize());
+    this.dataCommitPoolSize = builder.getDataCommitPoolSize();
+    this.unregisterThreadPoolSize = builder.getUnregisterThreadPoolSize();
+    this.unregisterRequestTimeSec = builder.getUnregisterRequestTimeSec();
     if (replica > 1) {
       defectiveServers = Sets.newConcurrentHashSet();
     }
-    this.rssConf = rssConf;
+    this.rssConf = builder.getRssConf();
   }
 
   private boolean sendShuffleDataAsync(
