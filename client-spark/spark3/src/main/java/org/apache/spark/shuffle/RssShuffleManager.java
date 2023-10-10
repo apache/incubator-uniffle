@@ -185,19 +185,20 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     shuffleWriteClient =
         ShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
-                clientType,
-                retryMax,
-                retryIntervalMax,
-                heartBeatThreadNum,
-                dataReplica,
-                dataReplicaWrite,
-                dataReplicaRead,
-                dataReplicaSkipEnabled,
-                dataTransferPoolSize,
-                dataCommitPoolSize,
-                unregisterThreadPoolSize,
-                unregisterRequestTimeoutSec,
-                rssConf);
+                ShuffleClientFactory.newWriteBuilder()
+                    .clientType(clientType)
+                    .retryMax(retryMax)
+                    .retryIntervalMax(retryIntervalMax)
+                    .heartBeatThreadNum(heartBeatThreadNum)
+                    .replica(dataReplica)
+                    .replicaWrite(dataReplicaWrite)
+                    .replicaRead(dataReplicaRead)
+                    .replicaSkipEnabled(dataReplicaSkipEnabled)
+                    .dataTransferPoolSize(dataTransferPoolSize)
+                    .dataCommitPoolSize(dataCommitPoolSize)
+                    .unregisterThreadPoolSize(unregisterThreadPoolSize)
+                    .unregisterRequestTimeSec(unregisterRequestTimeoutSec)
+                    .rssConf(rssConf));
     registerCoordinator();
     // fetch client conf and apply them if necessary and disable ESS
     if (isDriver && dynamicConfEnabled) {
@@ -325,19 +326,20 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     shuffleWriteClient =
         ShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
-                clientType,
-                retryMax,
-                retryIntervalMax,
-                heartBeatThreadNum,
-                dataReplica,
-                dataReplicaWrite,
-                dataReplicaRead,
-                dataReplicaSkipEnabled,
-                dataTransferPoolSize,
-                dataCommitPoolSize,
-                unregisterThreadPoolSize,
-                unregisterRequestTimeoutSec,
-                RssSparkConfig.toRssConf(sparkConf));
+                ShuffleClientFactory.newWriteBuilder()
+                    .clientType(clientType)
+                    .retryMax(retryMax)
+                    .retryIntervalMax(retryIntervalMax)
+                    .heartBeatThreadNum(heartBeatThreadNum)
+                    .replica(dataReplica)
+                    .replicaWrite(dataReplicaWrite)
+                    .replicaRead(dataReplicaRead)
+                    .replicaSkipEnabled(dataReplicaSkipEnabled)
+                    .dataTransferPoolSize(dataTransferPoolSize)
+                    .dataCommitPoolSize(dataCommitPoolSize)
+                    .unregisterThreadPoolSize(unregisterThreadPoolSize)
+                    .unregisterRequestTimeSec(unregisterRequestTimeoutSec)
+                    .rssConf(RssSparkConfig.toRssConf(sparkConf)));
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
     this.taskToFailedBlockIds = taskToFailedBlockIds;
     this.taskToFailedBlockIdsAndServer = taskToFailedBlockIdsAndServer;

@@ -116,7 +116,7 @@ kustomize: ## Download kustomize locally if necessary.
 ENVTEST = $(LOCAL_DIR)/setup-envtest
 .PHONY: envtest
 envtest: ## Download envtest-setup locally if necessary.
-	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
+	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20230926180527-c93e2abcb28e)
 
 GOIMPORTS = $(LOCAL_DIR)/goimports
 .PHONY: goimports

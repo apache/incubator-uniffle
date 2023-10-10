@@ -35,6 +35,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
@@ -151,7 +152,20 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
   @Test
   public void testTags() throws Exception {
     ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1, 1, 1, 1, true, 1, 1, 10, 10);
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(1000)
+            .heartBeatThreadNum(1)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterRequestTimeSec(10)
+            .build();
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
 
     // Case1 : only set the single default shuffle version tag

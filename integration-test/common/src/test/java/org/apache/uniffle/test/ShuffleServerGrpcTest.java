@@ -110,7 +110,20 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
   public void clearResourceTest() throws Exception {
     final ShuffleWriteClient shuffleWriteClient =
         ShuffleClientFactory.getInstance()
-            .createShuffleWriteClient("GRPC", 2, 10000L, 4, 1, 1, 1, true, 1, 1, 10, 10);
+            .createShuffleWriteClient(
+                ShuffleClientFactory.newWriteBuilder()
+                    .clientType("GRPC")
+                    .retryMax(2)
+                    .retryIntervalMax(10000L)
+                    .heartBeatThreadNum(4)
+                    .replica(1)
+                    .replicaWrite(1)
+                    .replicaRead(1)
+                    .replicaSkipEnabled(true)
+                    .dataTransferPoolSize(1)
+                    .dataCommitPoolSize(1)
+                    .unregisterThreadPoolSize(10)
+                    .unregisterRequestTimeSec(10));
     shuffleWriteClient.registerCoordinators("127.0.0.1:19999");
     shuffleWriteClient.registerShuffle(
         new ShuffleServerInfo("127.0.0.1-20001", "127.0.0.1", 20001),

@@ -117,17 +117,18 @@ public class RssMRUtils {
     ShuffleWriteClient client =
         ShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
-                clientType,
-                retryMax,
-                retryIntervalMax,
-                heartBeatThreadNum,
-                replica,
-                replicaWrite,
-                replicaRead,
-                replicaSkipEnabled,
-                dataTransferPoolSize,
-                dataCommitPoolSize,
-                RssMRConfig.toRssConf(jobConf));
+                ShuffleClientFactory.newWriteBuilder()
+                    .clientType(clientType)
+                    .retryMax(retryMax)
+                    .retryIntervalMax(retryIntervalMax)
+                    .heartBeatThreadNum(heartBeatThreadNum)
+                    .replica(replica)
+                    .replicaWrite(replicaWrite)
+                    .replicaRead(replicaRead)
+                    .replicaSkipEnabled(replicaSkipEnabled)
+                    .dataTransferPoolSize(dataTransferPoolSize)
+                    .dataCommitPoolSize(dataCommitPoolSize)
+                    .rssConf(RssMRConfig.toRssConf(jobConf)));
     return client;
   }
 

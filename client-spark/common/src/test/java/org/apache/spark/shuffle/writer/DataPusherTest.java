@@ -30,6 +30,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -44,35 +45,20 @@ public class DataPusherTest {
     private SendShuffleDataResult fakedShuffleDataResult;
 
     FakedShuffleWriteClient() {
-      this("GRPC", 1, 1, 10, 1, 1, 1, false, 1, 1, 1, 1);
-    }
-
-    private FakedShuffleWriteClient(
-        String clientType,
-        int retryMax,
-        long retryIntervalMax,
-        int heartBeatThreadNum,
-        int replica,
-        int replicaWrite,
-        int replicaRead,
-        boolean replicaSkipEnabled,
-        int dataTransferPoolSize,
-        int dataCommitPoolSize,
-        int unregisterThreadPoolSize,
-        int unregisterRequestTimeSec) {
       super(
-          clientType,
-          retryMax,
-          retryIntervalMax,
-          heartBeatThreadNum,
-          replica,
-          replicaWrite,
-          replicaRead,
-          replicaSkipEnabled,
-          dataTransferPoolSize,
-          dataCommitPoolSize,
-          unregisterThreadPoolSize,
-          unregisterRequestTimeSec);
+          ShuffleClientFactory.newWriteBuilder()
+              .clientType("GRPC")
+              .retryMax(1)
+              .retryIntervalMax(1)
+              .heartBeatThreadNum(10)
+              .replica(1)
+              .replicaWrite(1)
+              .replicaRead(1)
+              .replicaSkipEnabled(true)
+              .dataTransferPoolSize(1)
+              .dataCommitPoolSize(1)
+              .unregisterThreadPoolSize(1)
+              .unregisterRequestTimeSec(1));
     }
 
     @Override
