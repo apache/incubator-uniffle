@@ -17,7 +17,9 @@
 
 package org.apache.uniffle.shuffle.manager;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -37,10 +39,83 @@ import org.apache.uniffle.proto.ShuffleManagerGrpc.ShuffleManagerImplBase;
 public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleManagerGrpcService.class);
   private final Map<Integer, RssShuffleStatus> shuffleStatus = JavaUtils.newConcurrentMap();
+  // The shuffleId mapping records the number of ShuffleServer write failures
+  private final Map<Integer, ShuffleServerFailureRecord> shuffleWrtieStatus =
+      JavaUtils.newConcurrentMap();
   private final RssShuffleManagerInterface shuffleManager;
 
   public ShuffleManagerGrpcService(RssShuffleManagerInterface shuffleManager) {
     this.shuffleManager = shuffleManager;
+  }
+
+  @Override
+  public void reportShuffleWriteFailure(
+      RssProtos.ReportShuffleWriteFailureRequest request,
+      StreamObserver<RssProtos.ReportShuffleWriteFailureResponse> responseObserver) {
+    String appId = request.getAppId();
+    int shuffleId = request.getShuffleId();
+    int stageAttemptNumber = request.getStageAttemptNumber();
+    List<RssProtos.ShuffleServerId> shuffleServerIdsList = request.getShuffleServerIdsList();
+    RssProtos.StatusCode code;
+    boolean reSubmitWholeStage;
+    String msg;
+    if (!appId.equals(shuffleManager.getAppId())) {
+      msg =
+          String.format(
+              "got a wrong shuffle write failure report from appId: %s, expected appId: %s",
+              appId, shuffleManager.getAppId());
+      LOG.warn(msg);
+      code = RssProtos.StatusCode.INVALID_REQUEST;
+      reSubmitWholeStage = false;
+    } else {
+      Map<String, Integer> shuffleServerInfoIntegerMap = Maps.newConcurrentMap();
+      List<ShuffleServerInfo> shuffleServerInfos =
+          ShuffleServerInfo.fromProto(shuffleServerIdsList);
+      shuffleServerInfos.forEach(
+          shuffleServerInfo -> {
+            shuffleServerInfoIntegerMap.put(shuffleServerInfo.getId(), 0);
+          });
+      ShuffleServerFailureRecord shuffleServerFailureRecord =
+          shuffleWrtieStatus.computeIfAbsent(
+              shuffleId,
+              key ->
+                  new ShuffleServerFailureRecord(shuffleServerInfoIntegerMap, stageAttemptNumber));
+      int c = shuffleServerFailureRecord.resetStageAttemptIfNecessary(stageAttemptNumber);
+      if (c < 0) {
+        msg =
+            String.format(
+                "got an old stage(%d vs %d) shuffle write failure report, which should be impossible.",
+                shuffleServerFailureRecord.getStageAttempt(), stageAttemptNumber);
+        LOG.warn(msg);
+        code = RssProtos.StatusCode.INVALID_REQUEST;
+        reSubmitWholeStage = false;
+      } else {
+        code = RssProtos.StatusCode.SUCCESS;
+        // update the stage shuffleServer write failed count
+        boolean fetchFailureflag =
+            shuffleServerFailureRecord.incPartitionWriteFailure(
+                stageAttemptNumber, shuffleServerInfos, shuffleManager);
+        if (fetchFailureflag) {
+          reSubmitWholeStage = true;
+          msg =
+              String.format(
+                  "report shuffle write failure as maximum number(%d) of shuffle write is occurred",
+                  shuffleManager.getMaxFetchFailures());
+        } else {
+          reSubmitWholeStage = false;
+          msg = "don't report shuffle write failure";
+        }
+      }
+    }
+
+    RssProtos.ReportShuffleWriteFailureResponse reply =
+        RssProtos.ReportShuffleWriteFailureResponse.newBuilder()
+            .setStatus(code)
+            .setReSubmitWholeStage(reSubmitWholeStage)
+            .setMsg(msg)
+            .build();
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
   }
 
   @Override
@@ -155,6 +230,89 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
    */
   public void unregisterShuffle(int shuffleId) {
     shuffleStatus.remove(shuffleId);
+  }
+
+  private static class ShuffleServerFailureRecord {
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
+    private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
+    private final Map<String, Integer> shuffleServerFailureRecordCount;
+    private int stageAttemptNumber;
+
+    private ShuffleServerFailureRecord(
+        Map<String, Integer> shuffleServerFailureRecordCount, int stageAttemptNumber) {
+      this.shuffleServerFailureRecordCount = shuffleServerFailureRecordCount;
+      this.stageAttemptNumber = stageAttemptNumber;
+    }
+
+    private <T> T withReadLock(Supplier<T> fn) {
+      readLock.lock();
+      try {
+        return fn.get();
+      } finally {
+        readLock.unlock();
+      }
+    }
+
+    private <T> T withWriteLock(Supplier<T> fn) {
+      writeLock.lock();
+      try {
+        return fn.get();
+      } finally {
+        writeLock.unlock();
+      }
+    }
+
+    public int getStageAttempt() {
+      return withReadLock(() -> this.stageAttemptNumber);
+    }
+
+    public int resetStageAttemptIfNecessary(int stageAttemptNumber) {
+      return withWriteLock(
+          () -> {
+            if (this.stageAttemptNumber < stageAttemptNumber) {
+              // a new stage attempt is issued. Record the shuffleServer status of the Map should be
+              // clear and reset.
+              shuffleServerFailureRecordCount.clear();
+              this.stageAttemptNumber = stageAttemptNumber;
+              return 1;
+            } else if (this.stageAttemptNumber > stageAttemptNumber) {
+              return -1;
+            }
+            return 0;
+          });
+    }
+
+    public boolean incPartitionWriteFailure(
+        int stageAttemptNumber,
+        List<ShuffleServerInfo> shuffleServerInfos,
+        RssShuffleManagerInterface shuffleManager) {
+      return withWriteLock(
+          () -> {
+            if (this.stageAttemptNumber != stageAttemptNumber) {
+              // do nothing here
+              return false;
+            } else {
+              shuffleServerInfos.forEach(
+                  shuffleServerInfo -> {
+                    Integer errCnt =
+                        shuffleServerFailureRecordCount.get(shuffleServerInfo.getId()) + 1;
+                    shuffleServerFailureRecordCount.put(shuffleServerInfo.getId(), errCnt);
+                  });
+              List<Map.Entry<String, Integer>> list =
+                  new ArrayList(shuffleServerFailureRecordCount.entrySet());
+              Collections.sort(list, (o1, o2) -> (o1.getValue() - o2.getValue()));
+              Map.Entry<String, Integer> shuffleServerInfoIntegerEntry = list.get(0);
+              if (shuffleServerInfoIntegerEntry.getValue() > shuffleManager.getMaxFetchFailures()) {
+                shuffleManager.addFailuresShuffleServerInfos(
+                    shuffleServerInfoIntegerEntry.getKey());
+                return true;
+              } else {
+                return false;
+              }
+            }
+          });
+    }
   }
 
   private static class RssShuffleStatus {

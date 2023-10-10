@@ -133,6 +133,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private Map<Integer, ShuffleHandleInfo> shuffleIdToShuffleHandleInfo;
   /** Whether to enable the dynamic shuffleServer function rewrite and reread functions */
   private boolean rssResubmitStage;
+  /** A list of shuffleServer for Write failures */
+  private Set<String> failuresShuffleServerIds;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
@@ -260,6 +262,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             poolSize,
             keepAliveTime);
     this.shuffleIdToShuffleHandleInfo = Maps.newConcurrentMap();
+    this.failuresShuffleServerIds = Sets.newHashSet();
   }
 
   public CompletableFuture<Long> sendData(AddBlockEvent event) {
@@ -1090,5 +1093,15 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             rpcPartitionToShufflerServer.getPartitionToServers(),
             rpcPartitionToShufflerServer.getRemoteStorageInfo());
     return shuffleHandleInfo;
+  }
+
+  /**
+   * Add the shuffleServer that failed to write to the failure list
+   *
+   * @param shuffleServerInfoId
+   */
+  @Override
+  public void addFailuresShuffleServerInfos(String shuffleServerInfoId) {
+    failuresShuffleServerIds.add(shuffleServerInfoId);
   }
 }
