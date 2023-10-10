@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
@@ -300,32 +301,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
   }
 
   static class MockedShuffleWriteClientImpl extends ShuffleWriteClientImpl {
-    MockedShuffleWriteClientImpl(
-        String clientType,
-        int retryMax,
-        long retryIntervalMax,
-        int heartBeatThreadNum,
-        int replica,
-        int replicaWrite,
-        int replicaRead,
-        boolean replicaSkipEnabled,
-        int dataTranferPoolSize,
-        int dataCommitPoolSize,
-        int unregisterThreadPoolSize,
-        int unregisterRequestTimeSec) {
-      super(
-          clientType,
-          retryMax,
-          retryIntervalMax,
-          heartBeatThreadNum,
-          replica,
-          replicaWrite,
-          replicaRead,
-          replicaSkipEnabled,
-          dataTranferPoolSize,
-          dataCommitPoolSize,
-          unregisterThreadPoolSize,
-          unregisterRequestTimeSec);
+    MockedShuffleWriteClientImpl(ShuffleClientFactory.WriteClientBuilder builder) {
+      super(builder);
     }
 
     public SendShuffleDataResult sendShuffleData(
@@ -339,18 +316,19 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     shuffleWriteClientImpl =
         new MockedShuffleWriteClientImpl(
-            ClientType.GRPC.name(),
-            3,
-            1000,
-            1,
-            replica,
-            replicaWrite,
-            replicaRead,
-            replicaSkip,
-            1,
-            1,
-            10,
-            10);
+            ShuffleClientFactory.newWriteBuilder()
+                .clientType(ClientType.GRPC.name())
+                .retryMax(3)
+                .retryIntervalMax(1000)
+                .heartBeatThreadNum(1)
+                .replica(replica)
+                .replicaWrite(replicaWrite)
+                .replicaRead(replicaRead)
+                .replicaSkipEnabled(replicaSkip)
+                .dataTransferPoolSize(1)
+                .dataCommitPoolSize(1)
+                .unregisterThreadPoolSize(10)
+                .unregisterRequestTimeSec(10));
 
     List<ShuffleServerInfo> allServers =
         Lists.newArrayList(

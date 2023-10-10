@@ -36,6 +36,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
@@ -105,7 +106,20 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
   @Test
   public void testSilentPeriod() throws Exception {
     ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1, 1, 1, 1, true, 1, 1, 10, 10);
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(1000)
+            .heartBeatThreadNum(1)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterRequestTimeSec(10)
+            .build();
     shuffleWriteClient.registerCoordinators(QUORUM);
 
     // Case1: Disable silent period
@@ -132,7 +146,20 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
   @Test
   public void testAssignmentServerNodesNumber() throws Exception {
     ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1, 1, 1, 1, true, 1, 1, 10, 10);
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(1000)
+            .heartBeatThreadNum(1)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterRequestTimeSec(10)
+            .build();
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
 
     /**
@@ -174,7 +201,20 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
             .getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, "");
     new File(fileName).createNewFile();
     ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1, 1, 1, 1, true, 1, 1, 10, 10);
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(1000)
+            .heartBeatThreadNum(1)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterRequestTimeSec(10)
+            .build();
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
     ShuffleAssignmentsInfo info =
         shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
@@ -195,7 +235,20 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
   @Test
   public void testGetReShuffleAssignments() {
     ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1, 1, 1, 1, true, 1, 1, 10, 10);
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(1000)
+            .heartBeatThreadNum(1)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterRequestTimeSec(10)
+            .build();
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
     Set<String> excludeServer = Sets.newConcurrentHashSet();
     List<ShuffleServer> excludeShuffleServer =
