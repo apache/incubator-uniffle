@@ -32,6 +32,7 @@ import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssSparkConfig;
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -113,22 +114,20 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
       Roaring64NavigableMap taskIdBitmap,
       List<ShuffleServerInfo> serverInfos,
       boolean compress) {
-    ShuffleReadClientImpl readClient =
-        new ShuffleReadClientImpl(
-            StorageType.HDFS.name(),
-            "appId",
-            0,
-            1,
-            100,
-            2,
-            10,
-            10000,
-            basePath,
-            blockIdBitmap,
-            taskIdBitmap,
-            Lists.newArrayList(serverInfos),
-            new Configuration(),
-            new DefaultIdHelper());
+    ShuffleReadClientImpl readClient = ShuffleClientFactory.newReadBuilder()
+            .storageType(StorageType.HDFS.name())
+            .appId("appId")
+            .shuffleId(0)
+            .partitionId(1)
+            .indexReadLimit(100)
+            .partitionNumPerRange(2)
+            .partitionNum(10)
+            .readBufferSize(10000)
+            .basePath(basePath)
+            .blockIdBitmap(blockIdBitmap)
+            .taskIdBitmap(taskIdBitmap)
+            .shuffleServerInfoList(Lists.newArrayList(serverInfos))
+            .build()
     RssConf rc;
     if (!compress) {
       SparkConf sc = new SparkConf();

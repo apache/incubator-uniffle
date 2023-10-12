@@ -25,6 +25,7 @@ import java.util.Set;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -121,22 +122,21 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
       Roaring64NavigableMap blockBitmap,
       Roaring64NavigableMap taskBitmap,
       Map<Long, byte[]> expectedData) {
-    ShuffleReadClientImpl readClient =
-        new ShuffleReadClientImpl(
-            StorageType.LOCALFILE_HDFS.name(),
-            appId,
-            shuffleId,
-            partitionId,
-            100,
-            1,
-            10,
-            1000,
-            REMOTE_STORAGE,
-            blockBitmap,
-            taskBitmap,
-            Lists.newArrayList(new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT)),
-            conf,
-            new DefaultIdHelper());
+    ShuffleReadClientImpl readClient = ShuffleClientFactory.newReadBuilder()
+            .storageType(StorageType.LOCALFILE_HDFS.name())
+            .appId(appId)
+            .shuffleId(shuffleId)
+            .partitionId(partitionId)
+            .indexReadLimit(100)
+            .partitionNumPerRange(1)
+            .partitionNum(10)
+            .readBufferSize(1000)
+            .basePath(REMOTE_STORAGE)
+            .blockIdBitmap(blockBitmap)
+            .taskIdBitmap(taskBitmap)
+            .shuffleServerInfoList(Lists.newArrayList(new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT)))
+            .hadoopConf(conf)
+            .build();
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
     Roaring64NavigableMap matched = Roaring64NavigableMap.bitmapOf();
     while (csb != null && csb.getByteBuffer() != null) {

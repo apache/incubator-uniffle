@@ -45,7 +45,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
-import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
@@ -108,23 +107,20 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   @Override
   public Iterator<Product2<K, C>> read() {
     LOG.info("Shuffle read started:" + getReadInfo());
-
-    CreateShuffleReadClientRequest request =
-        new CreateShuffleReadClientRequest(
-            appId,
-            shuffleId,
-            startPartition,
-            basePath,
-            partitionNumPerRange,
-            partitionNum,
-            blockIdBitmap,
-            taskIdBitmap,
-            shuffleServerInfoList,
-            hadoopConf,
-            expectedTaskIdsBitmapFilterEnable,
-            rssConf);
     ShuffleReadClient shuffleReadClient =
-        ShuffleClientFactory.getInstance().createShuffleReadClient(request);
+        ShuffleClientFactory.getInstance().createShuffleReadClient(ShuffleClientFactory.newReadBuilder()
+                .appId(appId)
+                .shuffleId(shuffleId)
+                .partitionId(startPartition)
+                .basePath(basePath)
+                .partitionNumPerRange(partitionNumPerRange)
+                .partitionNum(partitionNum)
+                .blockIdBitmap(blockIdBitmap)
+                .taskIdBitmap(taskIdBitmap)
+                .shuffleServerInfoList(shuffleServerInfoList)
+                .hadoopConf(hadoopConf)
+                .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                .rssConf(rssConf));
     RssShuffleDataIterator rssShuffleDataIterator =
         new RssShuffleDataIterator<K, C>(
             shuffleDependency.serializer(),

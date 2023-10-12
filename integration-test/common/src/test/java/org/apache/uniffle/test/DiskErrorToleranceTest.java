@@ -29,6 +29,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.commons.io.FileUtils;
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -111,22 +112,20 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     shuffleServerClient.sendCommit(rc1);
     RssFinishShuffleRequest rf1 = new RssFinishShuffleRequest(appId, 0);
     shuffleServerClient.finishShuffle(rf1);
-    ShuffleReadClientImpl readClient =
-        new ShuffleReadClientImpl(
-            StorageType.LOCALFILE.name(),
-            appId,
-            0,
-            0,
-            100,
-            1,
-            10,
-            1000,
-            null,
-            blockIdBitmap1,
-            Roaring64NavigableMap.bitmapOf(1),
-            shuffleServerInfo,
-            conf,
-            new DefaultIdHelper());
+    ShuffleReadClientImpl readClient = ShuffleClientFactory.newReadBuilder()
+              .storageType(StorageType.HDFS.name())
+              .appId(appId)
+              .shuffleId(0)
+              .partitionId(0)
+              .indexReadLimit(100)
+              .partitionNumPerRange(1)
+              .partitionNum(10)
+              .readBufferSize(1000)
+              .basePath(null)
+              .blockIdBitmap(blockIdBitmap1)
+              .taskIdBitmap(Roaring64NavigableMap.bitmapOf(1))
+              .shuffleServerInfoList(shuffleServerInfo)
+              .build();
     validateResult(readClient, expectedData);
 
     File shuffleData = new File(data2, appId);
@@ -152,22 +151,21 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     shuffleServerClient.sendCommit(rc1);
     shuffleServerClient.finishShuffle(rf1);
 
-    readClient =
-        new ShuffleReadClientImpl(
-            StorageType.LOCALFILE.name(),
-            appId,
-            0,
-            0,
-            100,
-            1,
-            10,
-            1000,
-            null,
-            blockIdBitmap2,
-            Roaring64NavigableMap.bitmapOf(2),
-            shuffleServerInfo,
-            conf,
-            new DefaultIdHelper());
+    readClient = ShuffleClientFactory.newReadBuilder()
+            .storageType(StorageType.LOCALFILE.name())
+            .appId(appId)
+            .shuffleId(0)
+            .partitionId(0)
+            .indexReadLimit(100)
+            .partitionNumPerRange(1)
+            .partitionNum(10)
+            .readBufferSize(1000)
+            .basePath(null)
+            .blockIdBitmap(blockIdBitmap2)
+            .taskIdBitmap(Roaring64NavigableMap.bitmapOf(2))
+            .shuffleServerInfoList(shuffleServerInfo)
+            .hadoopConf(conf)
+            .build();
     validateResult(readClient, expectedData);
     shuffleData = new File(data1, appId);
     assertTrue(shuffleData.exists());

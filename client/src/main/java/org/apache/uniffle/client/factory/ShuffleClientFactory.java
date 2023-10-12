@@ -17,12 +17,18 @@
 
 package org.apache.uniffle.client.factory;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
-import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.IdHelper;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
+
+import java.util.List;
 
 public class ShuffleClientFactory {
 
@@ -41,22 +47,8 @@ public class ShuffleClientFactory {
     return builder.build();
   }
 
-  public ShuffleReadClient createShuffleReadClient(CreateShuffleReadClientRequest request) {
-    return new ShuffleReadClientImpl(
-        request.getAppId(),
-        request.getShuffleId(),
-        request.getPartitionId(),
-        request.getPartitionNumPerRange(),
-        request.getPartitionNum(),
-        request.getBasePath(),
-        request.getBlockIdBitmap(),
-        request.getTaskIdBitmap(),
-        request.getShuffleServerInfoList(),
-        request.getHadoopConf(),
-        request.getIdHelper(),
-        request.getShuffleDataDistributionType(),
-        request.isExpectedTaskIdsBitmapFilterEnable(),
-        request.getRssConf());
+  public ShuffleReadClient createShuffleReadClient(ReadClientBuilder builder) {
+      return builder.build();
   }
 
   public static class WriteClientBuilder {
@@ -198,7 +190,201 @@ public class ShuffleClientFactory {
     }
   }
 
+  public static class ReadClientBuilder {
+    private String appId;
+    private int shuffleId;
+    private int partitionId;
+    private String basePath;
+    private int partitionNumPerRange;
+    private int partitionNum;
+    private Roaring64NavigableMap blockIdBitmap;
+    private Roaring64NavigableMap taskIdBitmap;
+    private List<ShuffleServerInfo> shuffleServerInfoList;
+    private Configuration hadoopConf;
+    private IdHelper idHelper;
+    private ShuffleDataDistributionType shuffleDataDistributionType;
+    private boolean expectedTaskIdsBitmapFilterEnable;
+    private RssConf rssConf;
+    private boolean offHeapEnable;
+    private String storageType;
+    private int indexReadLimit;
+    private long readBufferSize;
+
+    public ReadClientBuilder appId(String appId) {
+        this.appId = appId;
+        return this;
+    }
+
+    public ReadClientBuilder shuffleId(int shuffleId) {
+        this.shuffleId = shuffleId;
+        return this;
+    }
+
+    public ReadClientBuilder partitionId(int partitionId) {
+        this.partitionId = partitionId;
+        return this;
+    }
+
+    public ReadClientBuilder basePath(String basePath) {
+        this.basePath = basePath;
+        return this;
+    }
+
+    public ReadClientBuilder partitionNumPerRange(int partitionNumPerRange) {
+        this.partitionNumPerRange = partitionNumPerRange;
+        return this;
+    }
+
+    public ReadClientBuilder partitionNum(int partitionNum) {
+        this.partitionNum = partitionNum;
+        return this;
+    }
+
+    public ReadClientBuilder blockIdBitmap(Roaring64NavigableMap blockIdBitmap) {
+        this.blockIdBitmap = blockIdBitmap;
+        return this;
+    }
+
+    public ReadClientBuilder taskIdBitmap(Roaring64NavigableMap taskIdBitmap) {
+        this.taskIdBitmap = taskIdBitmap;
+        return this;
+    }
+
+    public ReadClientBuilder shuffleServerInfoList(List<ShuffleServerInfo> shuffleServerInfoList) {
+        this.shuffleServerInfoList = shuffleServerInfoList;
+        return this;
+    }
+
+    public ReadClientBuilder hadoopConf(Configuration hadoopConf) {
+        this.hadoopConf = hadoopConf;
+        return this;
+    }
+
+    public ReadClientBuilder idHelper(IdHelper idHelper) {
+        this.idHelper = idHelper;
+        return this;
+    }
+
+    public ReadClientBuilder shuffleDataDistributionType(ShuffleDataDistributionType shuffleDataDistributionType) {
+        this.shuffleDataDistributionType = shuffleDataDistributionType;
+        return this;
+    }
+
+    public ReadClientBuilder expectedTaskIdsBitmapFilterEnable(boolean expectedTaskIdsBitmapFilterEnable) {
+        this.expectedTaskIdsBitmapFilterEnable = expectedTaskIdsBitmapFilterEnable;
+        return this;
+    }
+
+    public ReadClientBuilder rssConf(RssConf rssConf) {
+        this.rssConf = rssConf;
+        return this;
+    }
+
+    public ReadClientBuilder offHeapEnable(boolean offHeapEnable) {
+        this.offHeapEnable = offHeapEnable;
+        return this;
+    }
+
+    public ReadClientBuilder storageType(String storageType) {
+        this.storageType = storageType;
+        return this;
+    }
+
+    public ReadClientBuilder indexReadLimit(int indexReadLimit) {
+        this.indexReadLimit = indexReadLimit;
+        return this;
+    }
+
+    public ReadClientBuilder readBufferSize(long readBufferSize) {
+        this.readBufferSize = readBufferSize;
+        return this;
+    }
+
+    public ReadClientBuilder() {
+    }
+
+    public String getAppId() {
+        return appId;
+    }
+
+    public int getShuffleId() {
+        return shuffleId;
+    }
+
+    public int getPartitionId() {
+        return partitionId;
+    }
+
+    public int getPartitionNumPerRange() {
+        return partitionNumPerRange;
+    }
+
+    public int getPartitionNum() {
+        return partitionNum;
+    }
+
+    public String getBasePath() {
+        return basePath;
+    }
+
+    public Roaring64NavigableMap getBlockIdBitmap() {
+        return blockIdBitmap;
+    }
+
+    public Roaring64NavigableMap getTaskIdBitmap() {
+        return taskIdBitmap;
+    }
+
+    public List<ShuffleServerInfo> getShuffleServerInfoList() {
+        return shuffleServerInfoList;
+    }
+
+    public Configuration getHadoopConf() {
+        return hadoopConf;
+    }
+
+    public IdHelper getIdHelper() {
+        return idHelper;
+    }
+
+    public ShuffleDataDistributionType getShuffleDataDistributionType() {
+        return shuffleDataDistributionType;
+    }
+
+    public boolean isExpectedTaskIdsBitmapFilterEnable() {
+        return expectedTaskIdsBitmapFilterEnable;
+    }
+
+    public RssConf getRssConf() {
+        return rssConf;
+    }
+
+      public boolean isOffHeapEnable() {
+          return offHeapEnable;
+      }
+
+      public String getStorageType() {
+          return storageType;
+      }
+
+      public int getIndexReadLimit() {
+          return indexReadLimit;
+      }
+
+      public long getReadBufferSize() {
+          return readBufferSize;
+      }
+
+      public ShuffleReadClientImpl build() {
+        return new ShuffleReadClientImpl(this);
+    }
+}
+
   public static WriteClientBuilder newWriteBuilder() {
     return new WriteClientBuilder();
+  }
+
+  public static ReadClientBuilder newReadBuilder() {
+      return new ReadClientBuilder();
   }
 }

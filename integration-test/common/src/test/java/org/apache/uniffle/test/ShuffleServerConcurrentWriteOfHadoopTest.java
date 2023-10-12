@@ -33,6 +33,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -144,23 +145,20 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
                 blocksBitmap.add(iterator.next());
               }
             });
-
-    ShuffleReadClientImpl readClient =
-        new ShuffleReadClientImpl(
-            StorageType.HDFS.name(),
-            appId,
-            0,
-            0,
-            100,
-            2,
-            10,
-            1000,
-            dataBasePath,
-            blocksBitmap,
-            Roaring64NavigableMap.bitmapOf(0),
-            Lists.newArrayList(ssi),
-            new Configuration(),
-            new DefaultIdHelper());
+    ShuffleReadClientImpl readClient = ShuffleClientFactory.newReadBuilder()
+            .storageType(StorageType.HDFS.name())
+            .appId(appId)
+            .shuffleId(0)
+            .partitionId(0)
+            .indexReadLimit(100)
+            .partitionNumPerRange(2)
+            .partitionNum(10)
+            .readBufferSize(1000)
+            .basePath(dataBasePath)
+            .blockIdBitmap(blocksBitmap)
+            .taskIdBitmap(Roaring64NavigableMap.bitmapOf(0))
+            .shuffleServerInfoList(Lists.newArrayList(ssi))
+            .build();
 
     validateResult(readClient, expectedDataList, blocksBitmap);
   }

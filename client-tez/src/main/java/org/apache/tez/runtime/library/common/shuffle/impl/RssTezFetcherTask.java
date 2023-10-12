@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
-import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.UnitConverter;
@@ -179,23 +178,22 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
       Configuration hadoopConf = getRemoteConf();
       LOG.info("RssTezFetcherTask storageType:{}", storageType);
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoSet.size() > 1;
-      CreateShuffleReadClientRequest request =
-          new CreateShuffleReadClientRequest(
-              applicationAttemptId.toString(),
-              shuffleId,
-              partition,
-              basePath,
-              partitionNumPerRange,
-              partitionNum,
-              blockIdBitmap,
-              taskIdBitmap,
-              new ArrayList<>(serverInfoSet),
-              hadoopConf,
-              new TezIdHelper(),
-              expectedTaskIdsBitmapFilterEnable,
-              RssTezConfig.toRssConf(this.conf));
+
       ShuffleReadClient shuffleReadClient =
-          ShuffleClientFactory.getInstance().createShuffleReadClient(request);
+          ShuffleClientFactory.getInstance().createShuffleReadClient(ShuffleClientFactory.newReadBuilder()
+                  .appId(applicationAttemptId.toString())
+                  .shuffleId(shuffleId)
+                  .partitionId(partition)
+                  .basePath(basePath)
+                  .partitionNumPerRange(partitionNumPerRange)
+                  .partitionNum(partitionNum)
+                  .blockIdBitmap(blockIdBitmap)
+                  .taskIdBitmap(taskIdBitmap)
+                  .shuffleServerInfoList(new ArrayList<>(serverInfoSet))
+                  .hadoopConf(hadoopConf)
+                  .idHelper(new TezIdHelper())
+                  .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                  .rssConf(RssTezConfig.toRssConf(this.conf)));
       RssTezFetcher fetcher =
           new RssTezFetcher(
               fetcherCallback,
