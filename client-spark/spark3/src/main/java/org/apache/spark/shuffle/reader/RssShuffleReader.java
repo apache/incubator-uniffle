@@ -246,20 +246,22 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
             !(mapStartIndex == 0 && mapEndIndex == Integer.MAX_VALUE)
                 || shuffleServerInfoList.size() > 1;
         ShuffleReadClient shuffleReadClient =
-            ShuffleClientFactory.getInstance().createShuffleReadClient(ShuffleClientFactory.newReadBuilder()
-                    .appId(appId)
-                    .shuffleId(shuffleId)
-                    .partitionId(partition)
-                    .basePath(basePath)
-                    .partitionNumPerRange(1)
-                    .partitionNum(partitionNum)
-                    .blockIdBitmap(partitionToExpectBlocks.get(partition))
-                    .taskIdBitmap(taskIdBitmap)
-                    .shuffleServerInfoList(shuffleServerInfoList)
-                    .hadoopConf(hadoopConf)
-                    .shuffleDataDistributionType(dataDistributionType)
-                    .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
-                    .rssConf(rssConf));
+            ShuffleClientFactory.getInstance()
+                .createShuffleReadClient(
+                    ShuffleClientFactory.newReadBuilder()
+                        .appId(appId)
+                        .shuffleId(shuffleId)
+                        .partitionId(partition)
+                        .basePath(basePath)
+                        .partitionNumPerRange(1)
+                        .partitionNum(partitionNum)
+                        .blockIdBitmap(partitionToExpectBlocks.get(partition))
+                        .taskIdBitmap(taskIdBitmap)
+                        .shuffleServerInfoList(shuffleServerInfoList)
+                        .hadoopConf(hadoopConf)
+                        .shuffleDataDistributionType(dataDistributionType)
+                        .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                        .rssConf(rssConf));
         RssShuffleDataIterator<K, C> iterator =
             new RssShuffleDataIterator<>(
                 shuffleDependency.serializer(), shuffleReadClient, readMetrics, rssConf);

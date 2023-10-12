@@ -24,7 +24,6 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
@@ -32,7 +31,6 @@ import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssSparkConfig;
-import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -40,9 +38,9 @@ import org.mockito.Mockito;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.ChecksumUtils;
@@ -114,7 +112,8 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
       Roaring64NavigableMap taskIdBitmap,
       List<ShuffleServerInfo> serverInfos,
       boolean compress) {
-    ShuffleReadClientImpl readClient = ShuffleClientFactory.newReadBuilder()
+    ShuffleReadClientImpl readClient =
+        ShuffleClientFactory.newReadBuilder()
             .storageType(StorageType.HDFS.name())
             .appId("appId")
             .shuffleId(0)
@@ -127,7 +126,7 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
             .shuffleServerInfoList(Lists.newArrayList(serverInfos))
-            .build()
+            .build();
     RssConf rc;
     if (!compress) {
       SparkConf sc = new SparkConf();

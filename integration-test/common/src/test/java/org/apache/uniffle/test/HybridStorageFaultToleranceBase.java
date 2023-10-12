@@ -25,12 +25,12 @@ import java.util.Set;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
@@ -40,7 +40,6 @@ import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -122,7 +121,8 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
       Roaring64NavigableMap blockBitmap,
       Roaring64NavigableMap taskBitmap,
       Map<Long, byte[]> expectedData) {
-    ShuffleReadClientImpl readClient = ShuffleClientFactory.newReadBuilder()
+    ShuffleReadClientImpl readClient =
+        ShuffleClientFactory.newReadBuilder()
             .storageType(StorageType.LOCALFILE_HDFS.name())
             .appId(appId)
             .shuffleId(shuffleId)
@@ -134,7 +134,8 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
             .basePath(REMOTE_STORAGE)
             .blockIdBitmap(blockBitmap)
             .taskIdBitmap(taskBitmap)
-            .shuffleServerInfoList(Lists.newArrayList(new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT)))
+            .shuffleServerInfoList(
+                Lists.newArrayList(new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT)))
             .hadoopConf(conf)
             .build();
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();

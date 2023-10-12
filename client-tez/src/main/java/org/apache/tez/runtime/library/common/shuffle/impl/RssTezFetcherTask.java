@@ -180,20 +180,22 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoSet.size() > 1;
 
       ShuffleReadClient shuffleReadClient =
-          ShuffleClientFactory.getInstance().createShuffleReadClient(ShuffleClientFactory.newReadBuilder()
-                  .appId(applicationAttemptId.toString())
-                  .shuffleId(shuffleId)
-                  .partitionId(partition)
-                  .basePath(basePath)
-                  .partitionNumPerRange(partitionNumPerRange)
-                  .partitionNum(partitionNum)
-                  .blockIdBitmap(blockIdBitmap)
-                  .taskIdBitmap(taskIdBitmap)
-                  .shuffleServerInfoList(new ArrayList<>(serverInfoSet))
-                  .hadoopConf(hadoopConf)
-                  .idHelper(new TezIdHelper())
-                  .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
-                  .rssConf(RssTezConfig.toRssConf(this.conf)));
+          ShuffleClientFactory.getInstance()
+              .createShuffleReadClient(
+                  ShuffleClientFactory.newReadBuilder()
+                      .appId(applicationAttemptId.toString())
+                      .shuffleId(shuffleId)
+                      .partitionId(partition)
+                      .basePath(basePath)
+                      .partitionNumPerRange(partitionNumPerRange)
+                      .partitionNum(partitionNum)
+                      .blockIdBitmap(blockIdBitmap)
+                      .taskIdBitmap(taskIdBitmap)
+                      .shuffleServerInfoList(new ArrayList<>(serverInfoSet))
+                      .hadoopConf(hadoopConf)
+                      .idHelper(new TezIdHelper())
+                      .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                      .rssConf(RssTezConfig.toRssConf(this.conf)));
       RssTezFetcher fetcher =
           new RssTezFetcher(
               fetcherCallback,

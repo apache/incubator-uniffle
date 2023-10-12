@@ -1851,20 +1851,22 @@ class RssShuffleScheduler extends ShuffleScheduler {
       boolean expectedTaskIdsBitmapFilterEnable = shuffleServerInfoSet.size() > 1;
 
       ShuffleReadClient shuffleReadClient =
-          ShuffleClientFactory.getInstance().createShuffleReadClient(ShuffleClientFactory.newReadBuilder()
-                  .appId(applicationAttemptId.toString())
-                  .shuffleId(shuffleId)
-                  .partitionId(mapHost.getPartitionId())
-                  .basePath(basePath)
-                  .partitionNumPerRange(partitionNumPerRange)
-                  .partitionNum(partitionNum)
-                  .blockIdBitmap(blockIdBitmap)
-                  .taskIdBitmap(taskIdBitmap)
-                  .shuffleServerInfoList(shuffleServerInfoList)
-                  .hadoopConf(hadoopConf)
-                  .idHelper(new TezIdHelper())
-                  .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
-                  .rssConf(RssTezConfig.toRssConf(conf)));
+          ShuffleClientFactory.getInstance()
+              .createShuffleReadClient(
+                  ShuffleClientFactory.newReadBuilder()
+                      .appId(applicationAttemptId.toString())
+                      .shuffleId(shuffleId)
+                      .partitionId(mapHost.getPartitionId())
+                      .basePath(basePath)
+                      .partitionNumPerRange(partitionNumPerRange)
+                      .partitionNum(partitionNum)
+                      .blockIdBitmap(blockIdBitmap)
+                      .taskIdBitmap(taskIdBitmap)
+                      .shuffleServerInfoList(shuffleServerInfoList)
+                      .hadoopConf(hadoopConf)
+                      .idHelper(new TezIdHelper())
+                      .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                      .rssConf(RssTezConfig.toRssConf(conf)));
       RssTezShuffleDataFetcher fetcher =
           new RssTezShuffleDataFetcher(
               partitionIdToSuccessMapTaskAttempts.get(mapHost.getPartitionId()).iterator().next(),

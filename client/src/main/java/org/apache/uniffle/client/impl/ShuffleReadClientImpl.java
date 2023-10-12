@@ -26,14 +26,14 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.uniffle.client.factory.ShuffleClientFactory;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
+import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
@@ -67,46 +67,49 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private IdHelper idHelper;
 
   public ShuffleReadClientImpl(ShuffleClientFactory.ReadClientBuilder builder) {
-      // add default value
-      if (idHelper == null) {
-          this.idHelper = new DefaultIdHelper();
+    // add default value
+    if (idHelper == null) {
+      this.idHelper = new DefaultIdHelper();
+    }
+    if (builder.getShuffleDataDistributionType() == null) {
+      builder.shuffleDataDistributionType(ShuffleDataDistributionType.NORMAL);
+    }
+    if (builder.getHadoopConf() == null) {
+      builder.hadoopConf(new Configuration());
+    }
+    if (builder.getRssConf() != null) {
+      final int indexReadLimit = builder.getRssConf().get(RssClientConf.RSS_INDEX_READ_LIMIT);
+      final String storageType = builder.getRssConf().get(RssClientConf.RSS_STORAGE_TYPE);
+      long readBufferSize =
+          builder
+              .getRssConf()
+              .getSizeAsBytes(
+                  RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key(),
+                  RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue());
+      if (readBufferSize > Integer.MAX_VALUE) {
+        LOG.warn(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key() + " can support 2g as max");
+        readBufferSize = Integer.MAX_VALUE;
       }
-      if (builder.getShuffleDataDistributionType() == null) {
-          builder.shuffleDataDistributionType(ShuffleDataDistributionType.NORMAL);
-      }
-      if (builder.getHadoopConf() == null) {
-          builder.hadoopConf(new Configuration());
-      }
-      if (builder.getRssConf() != null) {
-          final int indexReadLimit = builder.getRssConf().get(RssClientConf.RSS_INDEX_READ_LIMIT);
-          final String storageType = builder.getRssConf().get(RssClientConf.RSS_STORAGE_TYPE);
-          long readBufferSize =
-                  builder.getRssConf().getSizeAsBytes(
-                          RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key(),
-                          RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue());
-          if (readBufferSize > Integer.MAX_VALUE) {
-              LOG.warn(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key() + " can support 2g as max");
-              readBufferSize = Integer.MAX_VALUE;
-          }
-          boolean offHeapEnabled = builder.getRssConf().get(RssClientConf.OFF_HEAP_MEMORY_ENABLE);
+      boolean offHeapEnabled = builder.getRssConf().get(RssClientConf.OFF_HEAP_MEMORY_ENABLE);
 
-          builder.indexReadLimit(indexReadLimit);
-          builder.storageType(storageType);
-          builder.readBufferSize(readBufferSize);
-          builder.offHeapEnable(offHeapEnabled);
-      } else {
-          // most for test
-          RssConf rssConf = new RssConf();
-          rssConf.set(RssClientConf.RSS_STORAGE_TYPE, builder.getStorageType());
-          rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, builder.getIndexReadLimit());
-          rssConf.set(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, String.valueOf(builder.getReadBufferSize()));
+      builder.indexReadLimit(indexReadLimit);
+      builder.storageType(storageType);
+      builder.readBufferSize(readBufferSize);
+      builder.offHeapEnable(offHeapEnabled);
+    } else {
+      // most for test
+      RssConf rssConf = new RssConf();
+      rssConf.set(RssClientConf.RSS_STORAGE_TYPE, builder.getStorageType());
+      rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, builder.getIndexReadLimit());
+      rssConf.set(
+          RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, String.valueOf(builder.getReadBufferSize()));
 
-          builder.rssConf(rssConf);
-          builder.offHeapEnable(false);
-          builder.expectedTaskIdsBitmapFilterEnable(false);
-      }
+      builder.rssConf(rssConf);
+      builder.offHeapEnable(false);
+      builder.expectedTaskIdsBitmapFilterEnable(false);
+    }
 
-      init(builder);
+    init(builder);
   }
 
   private void init(ShuffleClientFactory.ReadClientBuilder builder) {

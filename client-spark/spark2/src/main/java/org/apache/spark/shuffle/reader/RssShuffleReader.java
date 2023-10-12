@@ -108,19 +108,21 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   public Iterator<Product2<K, C>> read() {
     LOG.info("Shuffle read started:" + getReadInfo());
     ShuffleReadClient shuffleReadClient =
-        ShuffleClientFactory.getInstance().createShuffleReadClient(ShuffleClientFactory.newReadBuilder()
-                .appId(appId)
-                .shuffleId(shuffleId)
-                .partitionId(startPartition)
-                .basePath(basePath)
-                .partitionNumPerRange(partitionNumPerRange)
-                .partitionNum(partitionNum)
-                .blockIdBitmap(blockIdBitmap)
-                .taskIdBitmap(taskIdBitmap)
-                .shuffleServerInfoList(shuffleServerInfoList)
-                .hadoopConf(hadoopConf)
-                .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
-                .rssConf(rssConf));
+        ShuffleClientFactory.getInstance()
+            .createShuffleReadClient(
+                ShuffleClientFactory.newReadBuilder()
+                    .appId(appId)
+                    .shuffleId(shuffleId)
+                    .partitionId(startPartition)
+                    .basePath(basePath)
+                    .partitionNumPerRange(partitionNumPerRange)
+                    .partitionNum(partitionNum)
+                    .blockIdBitmap(blockIdBitmap)
+                    .taskIdBitmap(taskIdBitmap)
+                    .shuffleServerInfoList(shuffleServerInfoList)
+                    .hadoopConf(hadoopConf)
+                    .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                    .rssConf(rssConf));
     RssShuffleDataIterator rssShuffleDataIterator =
         new RssShuffleDataIterator<K, C>(
             shuffleDependency.serializer(),

@@ -37,7 +37,6 @@ import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -72,17 +71,17 @@ public class QuorumTest extends ShuffleReadWriteBase {
   private static ShuffleServerInfo fakedShuffleServerInfo4;
   private MockedShuffleWriteClientImpl shuffleWriteClientImpl;
 
-    private ShuffleClientFactory.ReadClientBuilder baseReadBuilder() {
-        return ShuffleClientFactory.newReadBuilder()
-                .storageType(StorageType.MEMORY_LOCALFILE.name())
-                .shuffleId(0)
-                .partitionId(0)
-                .indexReadLimit(100)
-                .partitionNumPerRange(1)
-                .partitionNum(10)
-                .readBufferSize(1000)
-                .storageType("");
-    }
+  private ShuffleClientFactory.ReadClientBuilder baseReadBuilder() {
+    return ShuffleClientFactory.newReadBuilder()
+        .storageType(StorageType.MEMORY_LOCALFILE.name())
+        .shuffleId(0)
+        .partitionId(0)
+        .indexReadLimit(100)
+        .partitionNumPerRange(1)
+        .partitionNum(10)
+        .readBufferSize(1000)
+        .storageType("");
+  }
 
   public static MockedShuffleServer createServer(int id, File tmpDir) throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -257,11 +256,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
 
-    ShuffleReadClientImpl readClient = baseReadBuilder()
+    ShuffleReadClientImpl readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
-            .shuffleServerInfoList(Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, fakedShuffleServerInfo2))
+            .shuffleServerInfoList(
+                Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, fakedShuffleServerInfo2))
             .build();
     // The data should be read
     validateResult(readClient, expectedData);
@@ -400,11 +401,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertEquals(blockIdBitmap, succBlockIdBitmap);
 
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    ShuffleReadClientImpl readClient = baseReadBuilder()
+    ShuffleReadClientImpl readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
-            .shuffleServerInfoList(Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2))
+            .shuffleServerInfoList(
+                Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2))
             .build();
     validateResult(readClient, expectedData);
   }
@@ -570,11 +573,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
       assertTrue(result.getFailedBlockIds().size() == 0);
     }
 
-    ShuffleReadClientImpl readClient = baseReadBuilder()
+    ShuffleReadClientImpl readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
-            .shuffleServerInfoList(Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2))
+            .shuffleServerInfoList(
+                Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2))
             .build();
     validateResult(readClient, expectedData);
   }
@@ -749,7 +754,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
     }
 
     // we cannot read any blocks from server 2
-    ShuffleReadClientImpl readClient = baseReadBuilder()
+    ShuffleReadClientImpl readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -758,7 +764,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertTrue(readClient.readShuffleBlockData() == null);
 
     // we can read blocks from server 0,1
-    readClient = baseReadBuilder()
+    readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -767,11 +774,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
     validateResult(readClient, expectedData);
 
     // we can also read blocks from server 0,1,2
-    readClient =baseReadBuilder()
+    readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
-            .shuffleServerInfoList(Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2))
+            .shuffleServerInfoList(
+                Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2))
             .build();
     validateResult(readClient, expectedData);
   }
@@ -805,7 +814,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
     }
 
     // we cannot read any blocks from server 1
-    ShuffleReadClientImpl readClient = baseReadBuilder()
+    ShuffleReadClientImpl readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -814,7 +824,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertTrue(readClient.readShuffleBlockData() == null);
 
     // we can read blocks from server 2, which is sent in to secondary round
-    readClient = baseReadBuilder()
+    readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -823,11 +834,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
     validateResult(readClient, expectedData);
 
     // we can read blocks from server 0,1,2
-    readClient = baseReadBuilder()
+    readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
-            .shuffleServerInfoList(Lists.newArrayList(shuffleServerInfo0, fakedShuffleServerInfo1, shuffleServerInfo2))
+            .shuffleServerInfoList(
+                Lists.newArrayList(shuffleServerInfo0, fakedShuffleServerInfo1, shuffleServerInfo2))
             .build();
     validateResult(readClient, expectedData);
   }
@@ -865,7 +878,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
     }
 
     // we cannot read any blocks from server 3, 4
-    ShuffleReadClientImpl readClient = baseReadBuilder()
+    ShuffleReadClientImpl readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -874,11 +888,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertTrue(readClient.readShuffleBlockData() == null);
 
     // we can also read blocks from server 0,1,2
-    readClient = baseReadBuilder()
+    readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
-            .shuffleServerInfoList(Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2))
+            .shuffleServerInfoList(
+                Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2))
             .build();
     validateResult(readClient, expectedData);
   }
@@ -917,7 +933,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
     }
 
     // we cannot read any blocks from server 1 due to failures
-    ShuffleReadClientImpl readClient = baseReadBuilder()
+    ShuffleReadClientImpl readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -926,11 +943,12 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertTrue(readClient.readShuffleBlockData() == null);
 
     // we can also read blocks from server 3,4
-    readClient = baseReadBuilder()
+    readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
-            .shuffleServerInfoList( Lists.newArrayList(shuffleServerInfo3, shuffleServerInfo4))
+            .shuffleServerInfoList(Lists.newArrayList(shuffleServerInfo3, shuffleServerInfo4))
             .build();
     validateResult(readClient, expectedData);
   }
@@ -968,7 +986,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
     }
 
     // we cannot read any blocks from server 4 because the secondary round is skipped
-    ShuffleReadClientImpl readClient = baseReadBuilder()
+    ShuffleReadClientImpl readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -977,11 +996,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertTrue(readClient.readShuffleBlockData() == null);
 
     // we can read blocks from server 0,1,2,3
-    readClient = baseReadBuilder()
+    readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
-            .shuffleServerInfoList(Lists.newArrayList(
+            .shuffleServerInfoList(
+                Lists.newArrayList(
                     shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2, shuffleServerInfo3))
             .build();
     validateResult(readClient, expectedData);
@@ -1014,16 +1035,18 @@ public class QuorumTest extends ShuffleReadWriteBase {
     }
 
     // we can read blocks from server 0
-    ShuffleReadClientImpl readClient = baseReadBuilder()
-              .appId(testAppId)
-              .blockIdBitmap(blockIdBitmap)
-              .taskIdBitmap(taskIdBitmap)
-              .shuffleServerInfoList(Lists.newArrayList(shuffleServerInfo0))
-              .build();
+    ShuffleReadClientImpl readClient =
+        baseReadBuilder()
+            .appId(testAppId)
+            .blockIdBitmap(blockIdBitmap)
+            .taskIdBitmap(taskIdBitmap)
+            .shuffleServerInfoList(Lists.newArrayList(shuffleServerInfo0))
+            .build();
     validateResult(readClient, expectedData);
 
     // we can also read blocks from server 1
-    readClient = baseReadBuilder()
+    readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -1032,7 +1055,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
     validateResult(readClient, expectedData);
 
     // we can also read blocks from server 2
-    readClient = baseReadBuilder()
+    readClient =
+        baseReadBuilder()
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)

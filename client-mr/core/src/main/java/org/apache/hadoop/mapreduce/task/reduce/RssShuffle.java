@@ -217,20 +217,22 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
       JobConf readerJobConf = getRemoteConf();
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoList.size() > 1;
       ShuffleReadClient shuffleReadClient =
-          ShuffleClientFactory.getInstance().createShuffleReadClient(ShuffleClientFactory.newReadBuilder()
-                  .appId(appId)
-                  .shuffleId(0)
-                  .partitionId(reduceId.getTaskID().getId())
-                  .basePath(basePath)
-                  .partitionNumPerRange(partitionNumPerRange)
-                  .partitionNum(partitionNum)
-                  .blockIdBitmap(blockIdBitmap)
-                  .taskIdBitmap(taskIdBitmap)
-                  .shuffleServerInfoList(serverInfoList)
-                  .hadoopConf(readerJobConf)
-                  .idHelper(new MRIdHelper())
-                  .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
-                  .rssConf(RssMRConfig.toRssConf(rssJobConf)));
+          ShuffleClientFactory.getInstance()
+              .createShuffleReadClient(
+                  ShuffleClientFactory.newReadBuilder()
+                      .appId(appId)
+                      .shuffleId(0)
+                      .partitionId(reduceId.getTaskID().getId())
+                      .basePath(basePath)
+                      .partitionNumPerRange(partitionNumPerRange)
+                      .partitionNum(partitionNum)
+                      .blockIdBitmap(blockIdBitmap)
+                      .taskIdBitmap(taskIdBitmap)
+                      .shuffleServerInfoList(serverInfoList)
+                      .hadoopConf(readerJobConf)
+                      .idHelper(new MRIdHelper())
+                      .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                      .rssConf(RssMRConfig.toRssConf(rssJobConf)));
       RssFetcher fetcher =
           new RssFetcher(
               mrJobConf,

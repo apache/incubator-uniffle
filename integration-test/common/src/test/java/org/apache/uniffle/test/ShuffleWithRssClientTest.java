@@ -37,7 +37,6 @@ import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -343,7 +342,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
             Sets.newHashSet(shuffleServerInfo1, shuffleServerInfo2), testAppId, 0, 2);
     assertTrue(commitResult);
 
-    ShuffleReadClientImpl readClient = ShuffleClientFactory.newReadBuilder()
+    ShuffleReadClientImpl readClient =
+        ShuffleClientFactory.newReadBuilder()
             .storageType(StorageType.LOCALFILE.name())
             .appId(testAppId)
             .shuffleId(0)
@@ -365,7 +365,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         shuffleWriteClientImpl.sendCommit(
             Sets.newHashSet(shuffleServerInfo1, shuffleServerInfo2), testAppId, 0, 2);
     assertTrue(commitResult);
-    readClient = ShuffleClientFactory.newReadBuilder()
+    readClient =
+        ShuffleClientFactory.newReadBuilder()
             .storageType(StorageType.LOCALFILE.name())
             .appId(testAppId)
             .shuffleId(0)

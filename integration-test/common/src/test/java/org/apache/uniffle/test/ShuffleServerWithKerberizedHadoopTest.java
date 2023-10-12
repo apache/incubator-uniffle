@@ -25,7 +25,6 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,6 +34,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.TestUtils;
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
@@ -42,7 +42,6 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.KerberizedHadoopBase;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -178,16 +177,16 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     return partitionToBlocks;
   }
 
-    private ShuffleClientFactory.ReadClientBuilder baseReadBuilder() {
-        return ShuffleClientFactory.newReadBuilder()
-                .storageType(StorageType.HDFS.name())
-                .shuffleId(0)
-                .partitionId(0)
-                .indexReadLimit(100)
-                .partitionNumPerRange(2)
-                .partitionNum(10)
-                .readBufferSize(1000);
-    }
+  private ShuffleClientFactory.ReadClientBuilder baseReadBuilder() {
+    return ShuffleClientFactory.newReadBuilder()
+        .storageType(StorageType.HDFS.name())
+        .shuffleId(0)
+        .partitionId(0)
+        .indexReadLimit(100)
+        .partitionNumPerRange(2)
+        .partitionNum(10)
+        .readBufferSize(1000);
+  }
 
   @Test
   public void hadoopWriteReadTest() throws Exception {
@@ -240,7 +239,8 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     RssFinishShuffleRequest rfsr = new RssFinishShuffleRequest(appId, 0);
 
     ShuffleServerInfo ssi = new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT);
-    ShuffleReadClientImpl readClient = baseReadBuilder()
+    ShuffleReadClientImpl readClient =
+        baseReadBuilder()
             .appId(appId)
             .basePath(dataBasePath)
             .blockIdBitmap(bitmaps[0])
@@ -273,7 +273,8 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     rfsr = new RssFinishShuffleRequest(appId, 0);
     shuffleServerClient.finishShuffle(rfsr);
 
-    readClient = baseReadBuilder()
+    readClient =
+        baseReadBuilder()
             .appId(appId)
             .basePath(dataBasePath)
             .blockIdBitmap(bitmaps[0])
@@ -282,7 +283,8 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
             .build();
     validateResult(readClient, expectedData, bitmaps[0]);
 
-    readClient = baseReadBuilder()
+    readClient =
+        baseReadBuilder()
             .appId(appId)
             .partitionId(1)
             .basePath(dataBasePath)
@@ -292,7 +294,8 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
             .build();
     validateResult(readClient, expectedData, bitmaps[1]);
 
-    readClient = baseReadBuilder()
+    readClient =
+        baseReadBuilder()
             .appId(appId)
             .partitionId(2)
             .basePath(dataBasePath)
@@ -302,7 +305,8 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
             .build();
     validateResult(readClient, expectedData, bitmaps[2]);
 
-    readClient = baseReadBuilder()
+    readClient =
+        baseReadBuilder()
             .appId(appId)
             .partitionId(3)
             .basePath(dataBasePath)
