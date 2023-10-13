@@ -50,6 +50,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::runtime::manager::RuntimeManager;
 use tokio::sync::RwLock;
 
 #[derive(Debug, Clone)]
@@ -356,10 +357,10 @@ pub struct AppManager {
 }
 
 impl AppManager {
-    fn new(config: Config) -> Self {
+    fn new(runtime_manager: RuntimeManager, config: Config) -> Self {
         let (sender, receiver) = async_channel::unbounded();
         let app_heartbeat_timeout_min = config.app_heartbeat_timeout_min.unwrap_or(10);
-        let store = Arc::new(StoreProvider::get(config.clone()));
+        let store = Arc::new(StoreProvider::get(runtime_manager.clone(), config.clone()));
         store.clone().start();
         let manager = AppManager {
             apps: DashMap::new(),
@@ -374,11 +375,11 @@ impl AppManager {
 }
 
 impl AppManager {
-    pub fn get_ref(config: Config) -> AppManagerRef {
-        let app_ref = Arc::new(AppManager::new(config));
+    pub fn get_ref(runtime_manager: RuntimeManager, config: Config) -> AppManagerRef {
+        let app_ref = Arc::new(AppManager::new(runtime_manager.clone(), config));
         let app_manager_ref_cloned = app_ref.clone();
 
-        tokio::spawn(async move {
+        runtime_manager.default_runtime.spawn(async move {
             info!("Starting app heartbeat checker...");
             loop {
                 // task1: find out heartbeat timeout apps
@@ -409,7 +410,7 @@ impl AppManager {
         });
 
         let app_manager_cloned = app_ref.clone();
-        tokio::spawn(async move {
+        runtime_manager.default_runtime.spawn(async move {
             info!("Starting purge event handler...");
             while let Ok(event) = app_manager_cloned.receiver.recv().await {
                 GAUGE_APP_NUMBER.dec();
@@ -587,7 +588,7 @@ mod test {
     async fn app_put_get_purge_test() {
         let app_id = "app_put_get_purge_test-----id";
 
-        let app_manager_ref = AppManager::get_ref(mock_config()).clone();
+        let app_manager_ref = AppManager::get_ref(Default::default(), mock_config()).clone();
         app_manager_ref.register(app_id.clone().into(), 1).unwrap();
 
         if let Some(app) = app_manager_ref.get_app("app_id".into()) {
@@ -653,7 +654,7 @@ mod test {
 
     #[tokio::test]
     async fn app_manager_test() {
-        let app_manager_ref = AppManager::get_ref(mock_config()).clone();
+        let app_manager_ref = AppManager::get_ref(Default::default(), mock_config()).clone();
         app_manager_ref.register("app_id".into(), 1).unwrap();
         if let Some(app) = app_manager_ref.get_app("app_id".into()) {
             assert_eq!("app_id", app.app_id);
@@ -664,7 +665,7 @@ mod test {
     async fn test_get_or_put_block_ids() {
         let app_id = "test_get_or_put_block_ids-----id".to_string();
 
-        let app_manager_ref = AppManager::get_ref(mock_config()).clone();
+        let app_manager_ref = AppManager::get_ref(Default::default(), mock_config()).clone();
         app_manager_ref.register(app_id.clone().into(), 1).unwrap();
 
         let app = app_manager_ref.get_app(app_id.as_ref()).unwrap();

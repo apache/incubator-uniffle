@@ -16,9 +16,13 @@
 // under the License.
 
 use crate::config::MetricsConfig;
+use crate::runtime::manager::RuntimeManager;
 use log::{error, info};
 use once_cell::sync::Lazy;
-use prometheus::{labels, Histogram, HistogramOpts, IntCounter, IntGauge, Registry};
+use prometheus::{
+    labels, register_int_gauge_vec, Histogram, HistogramOpts, IntCounter, IntGauge, IntGaugeVec,
+    Registry,
+};
 use std::time::Duration;
 
 const DEFAULT_BUCKETS: &[f64; 16] = &[
@@ -157,7 +161,33 @@ pub static TOTAL_HUGE_PARTITION_REQUIRE_BUFFER_FAILED: Lazy<IntCounter> = Lazy::
     .expect("metrics should be created")
 });
 
+pub static GAUGE_RUNTIME_ALIVE_THREAD_NUM: Lazy<IntGaugeVec> = Lazy::new(|| {
+    register_int_gauge_vec!(
+        "runtime_thread_alive_gauge",
+        "alive thread number for runtime",
+        &["name"]
+    )
+    .unwrap()
+});
+
+pub static GAUGE_RUNTIME_IDLE_THREAD_NUM: Lazy<IntGaugeVec> = Lazy::new(|| {
+    register_int_gauge_vec!(
+        "runtime_thread_idle_gauge",
+        "idle thread number for runtime",
+        &["name"]
+    )
+    .unwrap()
+});
+
 fn register_custom_metrics() {
+    REGISTRY
+        .register(Box::new(GAUGE_RUNTIME_ALIVE_THREAD_NUM.clone()))
+        .expect("");
+
+    REGISTRY
+        .register(Box::new(GAUGE_RUNTIME_IDLE_THREAD_NUM.clone()))
+        .expect("");
+
     REGISTRY
         .register(Box::new(TOTAL_RECEIVED_DATA.clone()))
         .expect("total_received_data must be registered");
@@ -243,7 +273,11 @@ fn register_custom_metrics() {
         .expect("grpc_get_memory_data_transport_time must be registered");
 }
 
-pub fn configure_metric_service(metric_config: &Option<MetricsConfig>, worker_uid: String) -> bool {
+pub fn init_metric_service(
+    runtime_manager: RuntimeManager,
+    metric_config: &Option<MetricsConfig>,
+    worker_uid: String,
+) -> bool {
     if metric_config.is_none() {
         return false;
     }
@@ -258,7 +292,7 @@ pub fn configure_metric_service(metric_config: &Option<MetricsConfig>, worker_ui
 
     if let Some(ref _endpoint) = push_gateway_endpoint {
         let push_interval_sec = cfg.push_interval_sec.unwrap_or(60);
-        tokio::spawn(async move {
+        runtime_manager.default_runtime.spawn(async move {
             info!("Starting prometheus metrics exporter...");
             loop {
                 tokio::time::sleep(Duration::from_secs(push_interval_sec as u64)).await;

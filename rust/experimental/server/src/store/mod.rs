@@ -35,6 +35,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use bytes::Bytes;
 
+use crate::runtime::manager::RuntimeManager;
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -178,7 +179,7 @@ pub trait Persistent {}
 pub struct StoreProvider {}
 
 impl StoreProvider {
-    pub fn get(config: Config) -> HybridStore {
-        HybridStore::from(config)
+    pub fn get(runtime_manager: RuntimeManager, config: Config) -> HybridStore {
+        HybridStore::from(config, runtime_manager)
     }
 }

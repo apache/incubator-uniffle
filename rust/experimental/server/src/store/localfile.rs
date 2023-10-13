@@ -37,6 +37,7 @@ use dashmap::DashMap;
 
 use log::{debug, error, info, warn};
 
+use crate::runtime::manager::RuntimeManager;
 use std::io::SeekFrom;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -57,6 +58,8 @@ pub struct LocalFileStore {
     partition_written_disk_map: DashMap<String, DashMap<i32, DashMap<i32, Arc<LocalDisk>>>>,
     partition_file_locks: DashMap<String, Arc<RwLock<()>>>,
     healthy_check_min_disks: i32,
+
+    runtime_manager: RuntimeManager,
 }
 
 impl Persistent for LocalFileStore {}
@@ -65,20 +68,27 @@ unsafe impl Send for LocalFileStore {}
 unsafe impl Sync for LocalFileStore {}
 
 impl LocalFileStore {
+    // only for test cases
     pub fn new(local_disks: Vec<String>) -> Self {
         let mut local_disk_instances = vec![];
+        let runtime_manager: RuntimeManager = Default::default();
         for path in local_disks {
-            local_disk_instances.push(LocalDisk::new(path, LocalDiskConfig::default()));
+            local_disk_instances.push(LocalDisk::new(
+                path,
+                LocalDiskConfig::default(),
+                runtime_manager.clone(),
+            ));
         }
         LocalFileStore {
             local_disks: local_disk_instances,
             partition_written_disk_map: DashMap::new(),
             partition_file_locks: DashMap::new(),
             healthy_check_min_disks: 1,
+            runtime_manager,
         }
     }
 
-    pub fn from(localfile_config: LocalfileStoreConfig) -> Self {
+    pub fn from(localfile_config: LocalfileStoreConfig, runtime_manager: RuntimeManager) -> Self {
         let mut local_disk_instances = vec![];
         for path in localfile_config.data_paths {
             let config = LocalDiskConfig {
@@ -87,13 +97,14 @@ impl LocalFileStore {
                 max_concurrency: localfile_config.disk_max_concurrency.unwrap_or(40),
             };
 
-            local_disk_instances.push(LocalDisk::new(path, config));
+            local_disk_instances.push(LocalDisk::new(path, config, runtime_manager.clone()));
         }
         LocalFileStore {
             local_disks: local_disk_instances,
             partition_written_disk_map: DashMap::new(),
             partition_file_locks: DashMap::new(),
             healthy_check_min_disks: localfile_config.healthy_check_min_disks.unwrap_or(1),
+            runtime_manager,
         }
     }
 
@@ -485,7 +496,7 @@ struct LocalDisk {
 }
 
 impl LocalDisk {
-    fn new(path: String, config: LocalDiskConfig) -> Arc<Self> {
+    fn new(path: String, config: LocalDiskConfig, runtime_manager: RuntimeManager) -> Arc<Self> {
         create_directory_if_not_exists(&path);
         let instance = LocalDisk {
             base_path: path,
@@ -496,8 +507,9 @@ impl LocalDisk {
         };
         let instance = Arc::new(instance);
 
+        let runtime = runtime_manager.default_runtime.clone();
         let cloned = instance.clone();
-        tokio::spawn(async {
+        runtime.spawn(async {
             info!(
                 "Starting the disk healthy checking, base path: {}",
                 &cloned.base_path
@@ -736,15 +748,19 @@ mod test {
     use bytes::{Buf, Bytes, BytesMut};
     use log::info;
 
+    use crate::runtime::manager::RuntimeManager;
     use std::io::Read;
+    use std::thread;
     use std::time::Duration;
 
-    #[tokio::test]
-    async fn purge_test() -> anyhow::Result<()> {
+    #[test]
+    fn purge_test() -> anyhow::Result<()> {
         let temp_dir = tempdir::TempDir::new("test_local_store").unwrap();
         let temp_path = temp_dir.path().to_str().unwrap().to_string();
         println!("init local file path: {}", &temp_path);
         let local_store = LocalFileStore::new(vec![temp_path.clone()]);
+
+        let runtime = local_store.runtime_manager.clone();
 
         let app_id = "purge_test-app-id".to_string();
         let uid = PartitionedUId {
@@ -777,34 +793,35 @@ mod test {
             ],
         };
 
-        let insert_result = local_store.insert(writing_ctx).await;
+        let insert_result = runtime.wait(local_store.insert(writing_ctx));
         if insert_result.is_err() {
             println!("{:?}", insert_result.err());
             panic!()
         }
         assert_eq!(
             true,
-            tokio::fs::try_exists(format!(
+            runtime.wait(tokio::fs::try_exists(format!(
                 "{}/{}/{}/partition-{}.data",
                 &temp_path, &app_id, "0", "0"
-            ))
-            .await?
+            )))?
         );
-        local_store.purge(app_id.clone()).await?;
+        runtime.wait(local_store.purge(app_id.clone()))?;
         assert_eq!(
             false,
-            tokio::fs::try_exists(format!("{}/{}", &temp_path, &app_id)).await?
+            runtime.wait(tokio::fs::try_exists(format!("{}/{}", &temp_path, &app_id)))?
         );
 
         Ok(())
     }
 
-    #[tokio::test]
-    async fn local_store_test() {
+    #[test]
+    fn local_store_test() {
         let temp_dir = tempdir::TempDir::new("test_local_store").unwrap();
         let temp_path = temp_dir.path().to_str().unwrap().to_string();
         info!("init local file path: {}", temp_path);
         let mut local_store = LocalFileStore::new(vec![temp_path]);
+
+        let runtime = local_store.runtime_manager.clone();
 
         let uid = PartitionedUId {
             app_id: "100".to_string(),
@@ -836,7 +853,7 @@ mod test {
             ],
         };
 
-        let insert_result = local_store.insert(writing_ctx).await;
+        let insert_result = runtime.wait(local_store.insert(writing_ctx));
         if insert_result.is_err() {
             println!("{:?}", insert_result.err());
             panic!()
@@ -867,25 +884,29 @@ mod test {
         }
 
         // case1: read the one partition block data
-        get_and_check_partitial_data(&mut local_store, uid.clone(), size as i64, data).await;
+        runtime.wait(get_and_check_partitial_data(
+            &mut local_store,
+            uid.clone(),
+            size as i64,
+            data,
+        ));
 
         // case2: read the complete block data
         let mut expected = BytesMut::with_capacity(size * 2);
         expected.extend_from_slice(data);
         expected.extend_from_slice(data);
-        get_and_check_partitial_data(
+        runtime.wait(get_and_check_partitial_data(
             &mut local_store,
             uid.clone(),
             size as i64 * 2,
             expected.freeze().as_ref(),
-        )
-        .await;
+        ));
 
         // case3: get the index data
         let reading_index_view_ctx = ReadingIndexViewContext {
             partition_id: uid.clone(),
         };
-        let result = local_store.get_index(reading_index_view_ctx).await;
+        let result = runtime.wait(local_store.get_index(reading_index_view_ctx));
         if result.is_err() {
             panic!()
         }
@@ -913,65 +934,84 @@ mod test {
         temp_dir.close().unwrap();
     }
 
-    #[tokio::test]
-    async fn test_local_disk_delete_operation() {
+    #[test]
+    fn test_local_disk_delete_operation() {
         let temp_dir = tempdir::TempDir::new("test_local_disk_delete_operation-dir").unwrap();
         let temp_path = temp_dir.path().to_str().unwrap().to_string();
 
         println!("init the path: {}", &temp_path);
 
-        let local_disk = LocalDisk::new(temp_path.clone(), LocalDiskConfig::default());
+        let runtime: RuntimeManager = Default::default();
+        let local_disk = LocalDisk::new(
+            temp_path.clone(),
+            LocalDiskConfig::default(),
+            runtime.clone(),
+        );
 
         let data = b"hello!";
-        local_disk
-            .write(Bytes::copy_from_slice(data), "a/b".to_string())
-            .await
+        runtime
+            .wait(local_disk.write(Bytes::copy_from_slice(data), "a/b".to_string()))
             .unwrap();
 
         assert_eq!(
             true,
-            tokio::fs::try_exists(format!("{}/{}", &temp_path, "a/b".to_string()))
-                .await
+            runtime
+                .wait(tokio::fs::try_exists(format!(
+                    "{}/{}",
+                    &temp_path,
+                    "a/b".to_string()
+                )))
                 .unwrap()
         );
 
-        local_disk
-            .delete("a/".to_string())
-            .await
+        runtime
+            .wait(local_disk.delete("a/".to_string()))
             .expect("TODO: panic message");
         assert_eq!(
             false,
-            tokio::fs::try_exists(format!("{}/{}", &temp_path, "a/b".to_string()))
-                .await
+            runtime
+                .wait(tokio::fs::try_exists(format!(
+                    "{}/{}",
+                    &temp_path,
+                    "a/b".to_string()
+                )))
                 .unwrap()
         );
     }
 
-    #[tokio::test]
-    async fn local_disk_corruption_healthy_check() {
+    #[test]
+    fn local_disk_corruption_healthy_check() {
         let temp_dir = tempdir::TempDir::new("test_directory").unwrap();
         let temp_path = temp_dir.path().to_str().unwrap().to_string();
 
-        let local_disk = LocalDisk::new(temp_path.clone(), LocalDiskConfig::create_mocked_config());
+        let local_disk = LocalDisk::new(
+            temp_path.clone(),
+            LocalDiskConfig::create_mocked_config(),
+            Default::default(),
+        );
 
-        tokio::time::sleep(Duration::from_secs(12)).await;
+        thread::sleep(Duration::from_secs(12));
         assert_eq!(true, local_disk.is_healthy().unwrap());
         assert_eq!(false, local_disk.is_corrupted().unwrap());
     }
 
-    #[tokio::test]
-    async fn local_disk_test() {
+    #[test]
+    fn local_disk_test() {
         let temp_dir = tempdir::TempDir::new("test_directory").unwrap();
         let temp_path = temp_dir.path().to_str().unwrap().to_string();
 
-        let local_disk = LocalDisk::new(temp_path.clone(), LocalDiskConfig::default());
+        let runtime: RuntimeManager = Default::default();
+        let local_disk = LocalDisk::new(
+            temp_path.clone(),
+            LocalDiskConfig::default(),
+            runtime.clone(),
+        );
 
         let data = b"Hello, World!";
 
         let relative_path = "app-id/test_file.txt";
-        let write_result = local_disk
-            .write(Bytes::copy_from_slice(data), relative_path.to_string())
-            .await;
+        let write_result =
+            runtime.wait(local_disk.write(Bytes::copy_from_slice(data), relative_path.to_string()));
         assert!(write_result.is_ok());
 
         // test whether the content is written
@@ -982,14 +1022,15 @@ mod test {
         assert_eq!(file_content, data);
 
         // if the file has been created, append some content
-        let write_result = local_disk
-            .write(Bytes::copy_from_slice(data), relative_path.to_string())
-            .await;
+        let write_result =
+            runtime.wait(local_disk.write(Bytes::copy_from_slice(data), relative_path.to_string()));
         assert!(write_result.is_ok());
 
-        let read_result = local_disk
-            .read(relative_path.to_string(), 0, Some(data.len() as i64 * 2))
-            .await;
+        let read_result = runtime.wait(local_disk.read(
+            relative_path.to_string(),
+            0,
+            Some(data.len() as i64 * 2),
+        ));
         assert!(read_result.is_ok());
         let read_data = read_result.unwrap();
         let expected = b"Hello, World!Hello, World!";

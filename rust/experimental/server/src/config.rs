@@ -75,6 +75,30 @@ impl LocalfileStoreConfig {
 // =========================================================
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
+pub struct RuntimeConfig {
+    pub read_thread_num: usize,
+    pub write_thread_num: usize,
+    pub grpc_thread_num: usize,
+    pub http_thread_num: usize,
+    pub default_thread_num: usize,
+}
+
+impl Default for RuntimeConfig {
+    fn default() -> Self {
+        RuntimeConfig {
+            read_thread_num: 10,
+            write_thread_num: 10,
+            grpc_thread_num: 20,
+            http_thread_num: 5,
+            default_thread_num: 5,
+        }
+    }
+}
+
+// =========================================================
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct HybridStoreConfig {
     pub memory_spill_high_watermark: f32,
     pub memory_spill_low_watermark: f32,
@@ -112,6 +136,10 @@ impl Default for HybridStoreConfig {
     }
 }
 
+fn as_default_runtime_config() -> RuntimeConfig {
+    RuntimeConfig::default()
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
 pub struct Config {
     pub memory_store: Option<MemoryStoreConfig>,
@@ -120,6 +148,9 @@ pub struct Config {
     pub hdfs_store: Option<HdfsStoreConfig>,
 
     pub store_type: Option<StorageType>,
+
+    #[serde(default = "as_default_runtime_config")]
+    pub runtime_config: RuntimeConfig,
 
     pub metrics: Option<MetricsConfig>,
 
@@ -221,7 +252,7 @@ impl Config {
 
 #[cfg(test)]
 mod test {
-    use crate::config::{Config, StorageType};
+    use crate::config::{Config, RuntimeConfig, StorageType};
     use crate::readable_size::ReadableSize;
     use std::str::FromStr;
 
@@ -261,5 +292,10 @@ mod test {
 
         let capacity = ReadableSize::from_str(&decoded.memory_store.unwrap().capacity).unwrap();
         assert_eq!(1024 * 1024 * 1024, capacity.as_bytes());
+
+        assert_eq!(
+            decoded.runtime_config.read_thread_num,
+            RuntimeConfig::default().read_thread_num
+        );
     }
 }

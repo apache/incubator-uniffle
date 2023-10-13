@@ -41,6 +41,7 @@ mod tests {
             hybrid_store: Some(HybridStoreConfig::new(0.9, 0.5, None)),
             hdfs_store: None,
             store_type: Some(StorageType::MEMORY_LOCALFILE),
+            runtime_config: Default::default(),
             metrics: Some(MetricsConfig {
                 push_gateway_endpoint: None,
                 push_interval_sec: None,

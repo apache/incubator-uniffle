@@ -27,13 +27,15 @@ mod mem_allocator;
 pub mod metric;
 pub mod proto;
 pub mod readable_size;
+pub mod runtime;
+pub mod signal;
 pub mod store;
 pub mod util;
 
 use crate::app::AppManager;
 use crate::grpc::DefaultShuffleServer;
 use crate::http::{HTTPServer, HTTP_SERVICE};
-use crate::metric::configure_metric_service;
+use crate::metric::init_metric_service;
 use crate::proto::uniffle::shuffle_server_client::ShuffleServerClient;
 use crate::proto::uniffle::shuffle_server_server::ShuffleServerServer;
 use crate::proto::uniffle::{
@@ -41,6 +43,7 @@ use crate::proto::uniffle::{
     RequireBufferRequest, SendShuffleDataRequest, ShuffleBlock, ShuffleData,
     ShuffleRegisterRequest,
 };
+use crate::runtime::manager::RuntimeManager;
 use crate::util::gen_worker_uid;
 use anyhow::Result;
 use bytes::{Buf, Bytes, BytesMut};
@@ -53,13 +56,18 @@ pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
     let rpc_port = config.grpc_port.unwrap_or(19999);
     let worker_uid = gen_worker_uid(rpc_port);
     let metric_config = config.metrics.clone();
-    configure_metric_service(&metric_config, worker_uid.clone());
+
+    let runtime_manager = RuntimeManager::from(config.runtime_config.clone());
+
+    init_metric_service(runtime_manager.clone(), &metric_config, worker_uid.clone());
     // start the http monitor service
     let http_port = config.http_monitor_service_port.unwrap_or(20010);
-    HTTP_SERVICE.start(http_port);
+    HTTP_SERVICE.start(runtime_manager.clone(), http_port);
+
     // implement server startup
-    tokio::spawn(async move {
-        let app_manager_ref = AppManager::get_ref(config.clone());
+    let cloned_runtime_manager = runtime_manager.clone();
+    runtime_manager.grpc_runtime.spawn(async move {
+        let app_manager_ref = AppManager::get_ref(cloned_runtime_manager, config.clone());
         let rpc_port = config.grpc_port.unwrap_or(19999);
         info!("Starting GRpc server with port:[{}] ......", rpc_port);
         let shuffle_server = DefaultShuffleServer::from(app_manager_ref);

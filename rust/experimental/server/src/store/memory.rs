@@ -58,12 +58,14 @@ pub struct MemoryStore {
     buffer_ticket_timeout_sec: i64,
     buffer_ticket_check_interval_sec: i64,
     in_flush_buffer_size: AtomicU64,
+    runtime_manager: RuntimeManager,
 }
 
 unsafe impl Send for MemoryStore {}
 unsafe impl Sync for MemoryStore {}
 
 impl MemoryStore {
+    // only for test cases
     pub fn new(max_memory_size: i64) -> Self {
         MemoryStore {
             state: DashMap::new(),
@@ -73,10 +75,11 @@ impl MemoryStore {
             buffer_ticket_timeout_sec: 5 * 60,
             buffer_ticket_check_interval_sec: 10,
             in_flush_buffer_size: Default::default(),
+            runtime_manager: Default::default(),
         }
     }
 
-    pub fn from(conf: MemoryStoreConfig) -> Self {
+    pub fn from(conf: MemoryStoreConfig, runtime_manager: RuntimeManager) -> Self {
         let capacity = ReadableSize::from_str(&conf.capacity).unwrap();
         MemoryStore {
             state: DashMap::new(),
@@ -86,6 +89,7 @@ impl MemoryStore {
             buffer_ticket_timeout_sec: conf.buffer_ticket_timeout_sec.unwrap_or(5 * 60),
             buffer_ticket_check_interval_sec: 10,
             in_flush_buffer_size: Default::default(),
+            runtime_manager,
         }
     }
 
@@ -298,7 +302,7 @@ impl Store for MemoryStore {
     fn start(self: Arc<Self>) {
         // schedule check to find out the timeout allocated buffer ticket
         let mem_store = self.clone();
-        tokio::spawn(async move {
+        self.runtime_manager.default_runtime.spawn(async move {
             loop {
                 mem_store.check_allocated_tickets().await;
                 delay_for(Duration::from_secs(
@@ -718,17 +722,19 @@ mod test {
     use bytes::BytesMut;
     use core::panic;
     use std::sync::Arc;
+    use std::thread;
     use std::time::Duration;
 
     use crate::config::MemoryStoreConfig;
+    use crate::runtime::manager::RuntimeManager;
     use anyhow::Result;
-    use tokio::time::sleep as delay_for;
 
-    #[tokio::test]
-    async fn test_ticket_timeout() -> Result<()> {
+    #[test]
+    fn test_ticket_timeout() -> Result<()> {
         let cfg = MemoryStoreConfig::from("2M".to_string(), 1);
+        let runtime_manager: RuntimeManager = Default::default();
+        let mut store = MemoryStore::from(cfg, runtime_manager.clone());
 
-        let mut store = MemoryStore::from(cfg);
         store.refresh_buffer_ticket_check_interval_sec(1);
 
         let store = Arc::new(store);
@@ -736,69 +742,76 @@ mod test {
 
         let app_id = "mocked-app-id";
         let ctx = RequireBufferContext::new(PartitionedUId::from(app_id.to_string(), 1, 1), 1000);
-        let resp = store.require_buffer(ctx.clone()).await?;
+        let resp = runtime_manager.wait(store.require_buffer(ctx.clone()))?;
         assert!(store.is_ticket_exist(app_id, resp.ticket_id));
 
-        let snapshot = store.budget.snapshot().await;
+        let snapshot = runtime_manager.wait(store.budget.snapshot());
         assert_eq!(snapshot.allocated, 1000);
         assert_eq!(snapshot.used, 0);
 
-        delay_for(Duration::from_secs(5)).await;
+        thread::sleep(Duration::from_secs(5));
 
         assert!(!store.is_ticket_exist(app_id, resp.ticket_id));
 
-        let snapshot = store.budget.snapshot().await;
+        let snapshot = runtime_manager.wait(store.budget.snapshot());
         assert_eq!(snapshot.allocated, 0);
         assert_eq!(snapshot.used, 0);
 
         Ok(())
     }
 
-    #[tokio::test]
-    async fn test_memory_buffer_ticket() -> Result<()> {
+    #[test]
+    fn test_memory_buffer_ticket() -> Result<()> {
         let store = MemoryStore::new(1024 * 1000);
+        let runtime = store.runtime_manager.clone();
 
         let app_id = "mocked-app-id";
         let ctx = RequireBufferContext::new(PartitionedUId::from(app_id.to_string(), 1, 1), 1000);
-        let resp = store.require_buffer(ctx.clone()).await?;
+        let resp = runtime.wait(store.require_buffer(ctx.clone()))?;
         let ticket_id_1 = resp.ticket_id;
 
-        let resp = store.require_buffer(ctx.clone()).await?;
+        let resp = runtime.wait(store.require_buffer(ctx.clone()))?;
         let ticket_id_2 = resp.ticket_id;
 
         assert!(store.is_ticket_exist(app_id, ticket_id_1));
         assert!(store.is_ticket_exist(app_id, ticket_id_2));
         assert!(!store.is_ticket_exist(app_id, 100239));
 
-        let snapshot = store.budget.snapshot().await;
+        let snapshot = runtime.wait(store.budget.snapshot());
         assert_eq!(snapshot.allocated, 1000 * 2);
         assert_eq!(snapshot.used, 0);
 
-        store.purge(app_id.to_string()).await?;
+        runtime.wait(store.purge(app_id.to_string()))?;
 
-        let snapshot = store.budget.snapshot().await;
+        let snapshot = runtime.wait(store.budget.snapshot());
         assert_eq!(snapshot.allocated, 0);
         assert_eq!(snapshot.used, 0);
 
         Ok(())
     }
 
-    #[tokio::test]
-    async fn test_read_buffer_in_flight() {
+    #[test]
+    fn test_read_buffer_in_flight() {
         let store = MemoryStore::new(1024);
+        let runtime = store.runtime_manager.clone();
+
         let uid = PartitionedUId {
             app_id: "100".to_string(),
             shuffle_id: 0,
             partition_id: 0,
         };
         let writing_view_ctx = create_writing_ctx_with_blocks(10, 10, uid.clone());
-        let _ = store.insert(writing_view_ctx).await;
+        let _ = runtime.wait(store.insert(writing_view_ctx));
 
         let default_single_read_size = 20;
 
         // case1: read from -1
-        let mem_data =
-            get_data_with_last_block_id(default_single_read_size, -1, &store, uid.clone()).await;
+        let mem_data = runtime.wait(get_data_with_last_block_id(
+            default_single_read_size,
+            -1,
+            &store,
+            uid.clone(),
+        ));
         assert_eq!(2, mem_data.shuffle_data_block_segments.len());
         assert_eq!(
             0,
@@ -818,8 +831,12 @@ mod test {
         );
 
         // case2: when the last_block_id doesn't exist, it should return the data like when last_block_id=-1
-        let mem_data =
-            get_data_with_last_block_id(default_single_read_size, 100, &store, uid.clone()).await;
+        let mem_data = runtime.wait(get_data_with_last_block_id(
+            default_single_read_size,
+            100,
+            &store,
+            uid.clone(),
+        ));
         assert_eq!(2, mem_data.shuffle_data_block_segments.len());
         assert_eq!(
             0,
@@ -839,8 +856,12 @@ mod test {
         );
 
         // case3: read from 3
-        let mem_data =
-            get_data_with_last_block_id(default_single_read_size, 3, &store, uid.clone()).await;
+        let mem_data = runtime.wait(get_data_with_last_block_id(
+            default_single_read_size,
+            3,
+            &store,
+            uid.clone(),
+        ));
         assert_eq!(2, mem_data.shuffle_data_block_segments.len());
         assert_eq!(
             4,
@@ -861,7 +882,7 @@ mod test {
 
         // case4: some data are in inflight blocks
         let buffer = store.get_or_create_underlying_staging_buffer(uid.clone());
-        let mut buffer = buffer.lock().await;
+        let mut buffer = runtime.wait(buffer.lock());
         let owned = buffer.staging.to_owned();
         buffer.staging.clear();
         let mut idx = 0;
@@ -872,8 +893,12 @@ mod test {
         drop(buffer);
 
         // all data will be fetched from in_flight data
-        let mem_data =
-            get_data_with_last_block_id(default_single_read_size, 3, &store, uid.clone()).await;
+        let mem_data = runtime.wait(get_data_with_last_block_id(
+            default_single_read_size,
+            3,
+            &store,
+            uid.clone(),
+        ));
         assert_eq!(2, mem_data.shuffle_data_block_segments.len());
         assert_eq!(
             4,
@@ -895,7 +920,7 @@ mod test {
         // case5: old data in in_flight and latest data in staging.
         // read it from the block id 9, and read size of 30
         let buffer = store.get_or_create_underlying_staging_buffer(uid.clone());
-        let mut buffer = buffer.lock().await;
+        let mut buffer = runtime.wait(buffer.lock());
         buffer.staging.push(PartitionedDataBlock {
             block_id: 20,
             length: 10,
@@ -906,7 +931,7 @@ mod test {
         });
         drop(buffer);
 
-        let mem_data = get_data_with_last_block_id(30, 7, &store, uid.clone()).await;
+        let mem_data = runtime.wait(get_data_with_last_block_id(30, 7, &store, uid.clone()));
         assert_eq!(3, mem_data.shuffle_data_block_segments.len());
         assert_eq!(
             8,
@@ -934,7 +959,7 @@ mod test {
         );
 
         // case6: read the end to return empty result
-        let mem_data = get_data_with_last_block_id(30, 20, &store, uid.clone()).await;
+        let mem_data = runtime.wait(get_data_with_last_block_id(30, 20, &store, uid.clone()));
         assert_eq!(0, mem_data.shuffle_data_block_segments.len());
     }
 
@@ -980,9 +1005,11 @@ mod test {
         WritingViewContext { uid, data_blocks }
     }
 
-    #[tokio::test]
-    async fn test_allocated_and_purge_for_memory() {
+    #[test]
+    fn test_allocated_and_purge_for_memory() {
         let store = MemoryStore::new(1024 * 1024 * 1024);
+        let runtime = store.runtime_manager.clone();
+
         let ctx = RequireBufferContext {
             uid: PartitionedUId {
                 app_id: "100".to_string(),
@@ -991,9 +1018,11 @@ mod test {
             },
             size: 10000,
         };
-        match store.require_buffer(ctx).await {
+        match runtime.default_runtime.block_on(store.require_buffer(ctx)) {
             Ok(_) => {
-                let _ = store.purge("100".to_string()).await;
+                let _ = runtime
+                    .default_runtime
+                    .block_on(store.purge("100".to_string()));
             }
             _ => panic!(),
         }
@@ -1004,9 +1033,11 @@ mod test {
         assert_eq!(1024 * 1024 * 1024, budget.capacity);
     }
 
-    #[tokio::test]
-    async fn test_purge() -> Result<()> {
+    #[test]
+    fn test_purge() -> Result<()> {
         let store = MemoryStore::new(1024);
+        let runtime = store.runtime_manager.clone();
+
         let app_id = "purge_app";
         let shuffle_id = 1;
         let partition = 1;
@@ -1014,9 +1045,9 @@ mod test {
         let uid = PartitionedUId::from(app_id.to_string(), shuffle_id, partition);
 
         // the buffer requested
-        let _buffer = store
-            .require_buffer(RequireBufferContext::new(uid.clone(), 40))
-            .await
+
+        let _buffer = runtime
+            .wait(store.require_buffer(RequireBufferContext::new(uid.clone(), 40)))
             .expect("");
 
         let writing_ctx = WritingViewContext {
@@ -1030,31 +1061,33 @@ mod test {
                 task_attempt_id: 0,
             }],
         };
-        store.insert(writing_ctx).await.expect("");
+        runtime.wait(store.insert(writing_ctx)).expect("");
 
         let reading_ctx = ReadingViewContext {
             uid: uid.clone(),
             reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
         };
-        let data = store.get(reading_ctx.clone()).await.expect("");
+        let data = runtime.wait(store.get(reading_ctx.clone())).expect("");
         assert_eq!(1, data.from_memory().shuffle_data_block_segments.len());
 
         // purge
-        store.purge(app_id.to_string()).await.expect("");
-        let snapshot = store.budget.snapshot().await;
+        runtime.wait(store.purge(app_id.to_string())).expect("");
+        let snapshot = runtime.wait(store.budget.snapshot());
         assert_eq!(snapshot.used, 0);
         // the remaining allocated will be removed.
         assert_eq!(snapshot.allocated, 0);
         assert_eq!(snapshot.capacity, 1024);
-        let data = store.get(reading_ctx.clone()).await.expect("");
+        let data = runtime.wait(store.get(reading_ctx.clone())).expect("");
         assert_eq!(0, data.from_memory().shuffle_data_block_segments.len());
 
         Ok(())
     }
 
-    #[tokio::test]
-    async fn test_put_and_get_for_memory() {
+    #[test]
+    fn test_put_and_get_for_memory() {
         let store = MemoryStore::new(1024 * 1024 * 1024);
+        let runtime = store.runtime_manager.clone();
+
         let writing_ctx = WritingViewContext {
             uid: Default::default(),
             data_blocks: vec![
@@ -1076,14 +1109,14 @@ mod test {
                 },
             ],
         };
-        store.insert(writing_ctx).await.unwrap();
+        runtime.wait(store.insert(writing_ctx)).unwrap();
 
         let reading_ctx = ReadingViewContext {
             uid: Default::default(),
             reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
         };
 
-        match store.get(reading_ctx).await.unwrap() {
+        match runtime.wait(store.get(reading_ctx)).unwrap() {
             ResponseData::Mem(data) => {
                 assert_eq!(data.shuffle_data_block_segments.len(), 2);
                 assert_eq!(data.shuffle_data_block_segments.get(0).unwrap().offset, 0);

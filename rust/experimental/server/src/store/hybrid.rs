@@ -50,6 +50,7 @@ use await_tree::InstrumentAwait;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::runtime::manager::RuntimeManager;
 use tokio::sync::{Mutex, Semaphore};
 
 trait PersistentStore: Store + Persistent + Send + Sync {}
@@ -79,6 +80,8 @@ pub struct HybridStore {
 
     memory_watermark_flush_trigger_sender: async_channel::Sender<()>,
     memory_watermark_flush_trigger_recv: async_channel::Receiver<()>,
+
+    runtime_manager: RuntimeManager,
 }
 
 struct SpillMessage {
@@ -90,7 +93,7 @@ unsafe impl Send for HybridStore {}
 unsafe impl Sync for HybridStore {}
 
 impl HybridStore {
-    pub fn from(config: Config) -> Self {
+    pub fn from(config: Config, runtime_manager: RuntimeManager) -> Self {
         let store_type = &config.store_type.unwrap_or(StorageType::MEMORY);
         if !StorageType::contains_memory(&store_type) {
             panic!("Storage type must contains memory.");
@@ -98,7 +101,8 @@ impl HybridStore {
 
         let mut persistent_stores: VecDeque<Box<dyn PersistentStore>> = VecDeque::with_capacity(2);
         if StorageType::contains_localfile(&store_type) {
-            let localfile_store = LocalFileStore::from(config.localfile_store.unwrap());
+            let localfile_store =
+                LocalFileStore::from(config.localfile_store.unwrap(), runtime_manager.clone());
             persistent_stores.push_back(Box::new(localfile_store));
         }
 
@@ -126,7 +130,10 @@ impl HybridStore {
         let (watermark_flush_send, watermark_flush_recv) = async_channel::unbounded();
 
         let store = HybridStore {
-            hot_store: Box::new(MemoryStore::from(config.memory_store.unwrap())),
+            hot_store: Box::new(MemoryStore::from(
+                config.memory_store.unwrap(),
+                runtime_manager.clone(),
+            )),
             warm_store: persistent_stores.pop_front(),
             cold_store: persistent_stores.pop_front(),
             config: hybrid_conf,
@@ -138,6 +145,7 @@ impl HybridStore {
             memory_spill_max_concurrency,
             memory_watermark_flush_trigger_sender: watermark_flush_send,
             memory_watermark_flush_trigger_recv: watermark_flush_recv,
+            runtime_manager,
         };
         store
     }
@@ -318,7 +326,7 @@ impl Store for HybridStore {
 
         // the handler to accept watermark flush trigger
         let hybrid_store = self.clone();
-        tokio::spawn(async move {
+        self.runtime_manager.default_runtime.spawn(async move {
             let store = hybrid_store.clone();
             while let Ok(_) = &store.memory_watermark_flush_trigger_recv.recv().await {
                 if let Err(e) = watermark_flush(store.clone()).await {
@@ -331,7 +339,7 @@ impl Store for HybridStore {
         let store = self.clone();
         let concurrency_limiter =
             Arc::new(Semaphore::new(store.memory_spill_max_concurrency as usize));
-        tokio::spawn(async move {
+        self.runtime_manager.default_runtime.spawn(async move {
             while let Ok(message) = store.memory_spill_recv.recv().await {
                 let await_root = await_tree_registry
                     .register(format!("hot->warm flush."))
@@ -344,33 +352,36 @@ impl Store for HybridStore {
                 TOTAL_MEMORY_SPILL_OPERATION.inc();
                 GAUGE_MEMORY_SPILL_OPERATION.inc();
                 let store_cloned = store.clone();
-                tokio::spawn(await_root.instrument(async move {
-                    let mut size = 0u64;
-                    for block in &message.ctx.data_blocks {
-                        size += block.length as u64;
-                    }
-                    match store_cloned
-                        .memory_spill_to_persistent_store(message.ctx.clone(), message.id)
-                        .await
-                    {
-                        Ok(msg) => {
-                            store_cloned.hot_store.desc_to_in_flight_buffer_size(size);
-                            debug!("{}", msg)
+                store
+                    .runtime_manager
+                    .write_runtime
+                    .spawn(await_root.instrument(async move {
+                        let mut size = 0u64;
+                        for block in &message.ctx.data_blocks {
+                            size += block.length as u64;
                         }
-                        Err(error) => {
-                            TOTAL_MEMORY_SPILL_OPERATION_FAILED.inc();
-                            error!(
+                        match store_cloned
+                            .memory_spill_to_persistent_store(message.ctx.clone(), message.id)
+                            .await
+                        {
+                            Ok(msg) => {
+                                store_cloned.hot_store.desc_to_in_flight_buffer_size(size);
+                                debug!("{}", msg)
+                            }
+                            Err(error) => {
+                                TOTAL_MEMORY_SPILL_OPERATION_FAILED.inc();
+                                error!(
                                 "Errors on spill memory data to persistent storage. error: {:#?}",
                                 error
                             );
-                            // re-push to the queue to execute
-                            let _ = store_cloned.memory_spill_send.send(message).await;
+                                // re-push to the queue to execute
+                                let _ = store_cloned.memory_spill_send.send(message).await;
+                            }
                         }
-                    }
-                    store_cloned.memory_spill_event_num.dec_by(1);
-                    GAUGE_MEMORY_SPILL_OPERATION.dec();
-                    drop(concurrency_guarder);
-                }));
+                        store_cloned.memory_spill_event_num.dec_by(1);
+                        GAUGE_MEMORY_SPILL_OPERATION.dec();
+                        drop(concurrency_guarder);
+                    }));
             }
         });
     }
@@ -535,6 +546,7 @@ mod tests {
     use std::collections::VecDeque;
 
     use std::sync::Arc;
+    use std::thread;
 
     use std::time::Duration;
 
@@ -556,14 +568,16 @@ mod tests {
         assert_eq!(false, is_apple(&Banana {}));
     }
 
-    #[tokio::test]
-    async fn test_only_memory() {
+    #[test]
+    fn test_only_memory() {
         let mut config = Config::default();
         config.memory_store = Some(MemoryStoreConfig::new("20M".to_string()));
         config.hybrid_store = Some(HybridStoreConfig::new(0.8, 0.2, None));
         config.store_type = Some(StorageType::MEMORY);
-        let store = HybridStore::from(config);
-        assert_eq!(true, store.is_healthy().await.unwrap());
+        let store = HybridStore::from(config, Default::default());
+
+        let runtime = store.runtime_manager.clone();
+        assert_eq!(true, runtime.wait(store.is_healthy()).unwrap());
     }
 
     #[test]
@@ -599,7 +613,7 @@ mod tests {
 
         // The hybrid store will flush the memory data to file when
         // the data reaches the number of 4
-        let store = Arc::new(HybridStore::from(config));
+        let store = Arc::new(HybridStore::from(config, Default::default()));
         store
     }
 
@@ -630,8 +644,8 @@ mod tests {
         block_ids
     }
 
-    #[tokio::test]
-    async fn single_buffer_spill_test() -> anyhow::Result<()> {
+    #[test]
+    fn single_buffer_spill_test() -> anyhow::Result<()> {
         let data = b"hello world!";
         let data_len = data.len();
 
@@ -641,33 +655,37 @@ mod tests {
         );
         store.clone().start();
 
+        let runtime = store.runtime_manager.clone();
+
         let uid = PartitionedUId {
             app_id: "1000".to_string(),
             shuffle_id: 0,
             partition_id: 0,
         };
-        let expected_block_ids =
-            write_some_data(store.clone(), uid.clone(), data_len as i32, data, 100).await;
-        tokio::time::sleep(Duration::from_secs(1)).await;
+        let expected_block_ids = runtime.wait(write_some_data(
+            store.clone(),
+            uid.clone(),
+            data_len as i32,
+            data,
+            100,
+        ));
+
+        thread::sleep(Duration::from_secs(1));
 
         // read from memory and then from localfile
-        let response_data = store
-            .get(ReadingViewContext {
-                uid: uid.clone(),
-                reading_options: MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1024 * 1024 * 1024),
-            })
-            .await?;
+        let response_data = runtime.wait(store.get(ReadingViewContext {
+            uid: uid.clone(),
+            reading_options: MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1024 * 1024 * 1024),
+        }))?;
 
         let mut accepted_block_ids = vec![];
         for segment in response_data.from_memory().shuffle_data_block_segments {
             accepted_block_ids.push(segment.block_id);
         }
 
-        let local_index_data = store
-            .get_index(ReadingIndexViewContext {
-                partition_id: uid.clone(),
-            })
-            .await?;
+        let local_index_data = runtime.wait(store.get_index(ReadingIndexViewContext {
+            partition_id: uid.clone(),
+        }))?;
 
         match local_index_data {
             ResponseDataIndex::Local(index) => {
@@ -691,6 +709,7 @@ mod tests {
             }
         }
 
+        accepted_block_ids.sort();
         assert_eq!(accepted_block_ids, expected_block_ids);
 
         Ok(())
@@ -781,19 +800,26 @@ mod tests {
         // then again.
     }
 
-    #[tokio::test]
-    async fn test_insert_and_get_from_memory() {
+    #[test]
+    fn test_insert_and_get_from_memory() {
         let data = b"hello world!";
         let data_len = data.len();
 
         let store = start_store(None, ((data_len * 1) as i64).to_string());
+        let runtime = store.runtime_manager.clone();
 
         let uid = PartitionedUId {
             app_id: "1000".to_string(),
             shuffle_id: 0,
             partition_id: 0,
         };
-        write_some_data(store.clone(), uid.clone(), data_len as i32, data, 4).await;
+        runtime.wait(write_some_data(
+            store.clone(),
+            uid.clone(),
+            data_len as i32,
+            data,
+            4,
+        ));
         let mut last_block_id = -1;
         // read data one by one
         for idx in 0..=10 {
@@ -805,7 +831,7 @@ mod tests {
                 ),
             };
 
-            let read_data = store.get(reading_view_ctx).await;
+            let read_data = runtime.wait(store.get(reading_view_ctx));
             if read_data.is_err() {
                 panic!();
             }
