@@ -94,7 +94,6 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
         .partitionNumPerRange(1)
         .partitionNum(10)
         .readBufferSize(1000)
-        .storageType("")
         .shuffleServerInfoList(shuffleServerInfo);
   }
 
