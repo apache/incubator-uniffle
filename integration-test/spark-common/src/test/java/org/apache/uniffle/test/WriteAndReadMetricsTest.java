@@ -60,6 +60,8 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
     Map<String, Long> result = new HashMap<>();
     result.put("size", (long) list.size());
 
+    // take a rest to make sure all task metrics are updated before read stageData
+    Thread.sleep(100);
     for (int stageId : spark.sparkContext().statusTracker().getJobInfo(0).get().stageIds()) {
       long writeRecords = getFirstStageData(spark, stageId).shuffleWriteRecords();
       long readRecords = getFirstStageData(spark, stageId).shuffleReadRecords();
