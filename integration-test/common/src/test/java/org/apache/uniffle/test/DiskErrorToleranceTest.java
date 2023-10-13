@@ -113,7 +113,7 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     shuffleServerClient.finishShuffle(rf1);
     ShuffleReadClientImpl readClient =
         ShuffleClientFactory.newReadBuilder()
-            .storageType(StorageType.HDFS.name())
+            .storageType(StorageType.LOCALFILE.name())
             .appId(appId)
             .shuffleId(0)
             .partitionId(0)
@@ -125,6 +125,7 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
             .blockIdBitmap(blockIdBitmap1)
             .taskIdBitmap(Roaring64NavigableMap.bitmapOf(1))
             .shuffleServerInfoList(shuffleServerInfo)
+            .hadoopConf(conf)
             .build();
     validateResult(readClient, expectedData);
 
