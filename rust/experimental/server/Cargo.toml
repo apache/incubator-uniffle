@@ -93,6 +93,7 @@ tokio-console = "0.1.8"
 console-subscriber = "0.1.9"
 pin-project-lite = "0.2.8"
 signal-hook = "0.3.17"
+clap = "3.0.14"
 
 [dependencies.hdrs]
 version = "0.3.0"

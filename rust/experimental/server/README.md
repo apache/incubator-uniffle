@@ -141,7 +141,7 @@ cargo build --features hdfs --release
     ```
 2. worker run with tokio-console. the log level of `trace` must be enabled
     ```shell
-    WORKER_IP={ip} RUST_LOG=trace WORKER_CONFIG_PATH=./config.toml ./uniffle-worker
+    WORKER_IP={ip} RUST_LOG=trace ./uniffle-worker -c ./config.toml 
     ```
 3. tokio-console client side connect
     ```shell

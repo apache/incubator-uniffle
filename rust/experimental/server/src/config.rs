@@ -232,6 +232,15 @@ impl StorageType {
 const CONFIG_FILE_PATH_KEY: &str = "WORKER_CONFIG_PATH";
 
 impl Config {
+    pub fn from(cfg_path: &str) -> Self {
+        let path = Path::new(cfg_path);
+
+        // Read the file content as a string
+        let file_content = fs::read_to_string(path).expect("Failed to read file");
+
+        toml::from_str(&file_content).unwrap()
+    }
+
     pub fn create_from_env() -> Config {
         let path = match std::env::var(CONFIG_FILE_PATH_KEY) {
             Ok(val) => val,
@@ -241,12 +250,7 @@ impl Config {
             ),
         };
 
-        let path = Path::new(&path);
-
-        // Read the file content as a string
-        let file_content = fs::read_to_string(path).expect("Failed to read file");
-
-        toml::from_str(&file_content).unwrap()
+        Config::from(&path)
     }
 }
 

@@ -3175,6 +3175,7 @@ dependencies = [
  "async-trait",
  "await-tree",
  "bytes 1.5.0",
+ "clap",
  "console-subscriber",
  "crc32fast",
  "croaring",
