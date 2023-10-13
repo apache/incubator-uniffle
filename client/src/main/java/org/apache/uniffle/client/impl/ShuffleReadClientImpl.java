@@ -68,8 +68,8 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   public ShuffleReadClientImpl(ShuffleClientFactory.ReadClientBuilder builder) {
     // add default value
-    if (idHelper == null) {
-      this.idHelper = new DefaultIdHelper();
+    if (builder.getIdHelper() == null) {
+      builder.idHelper(new DefaultIdHelper());
     }
     if (builder.getShuffleDataDistributionType() == null) {
       builder.shuffleDataDistributionType(ShuffleDataDistributionType.NORMAL);
