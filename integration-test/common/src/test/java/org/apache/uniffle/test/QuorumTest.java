@@ -79,8 +79,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
         .indexReadLimit(100)
         .partitionNumPerRange(1)
         .partitionNum(10)
-        .readBufferSize(1000)
-        .storageType("");
+        .readBufferSize(1000);
   }
 
   public static MockedShuffleServer createServer(int id, File tmpDir) throws Exception {
