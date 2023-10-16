@@ -69,7 +69,7 @@ function uniffle_cmd_case
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
       JAVA11_EXTRA_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
-          -Xlog:gc:tags,time,uptime,level"
+          -Xlog:gc*,gc+ergo*=trace:${RSS_LOG_DIR}/gc-%t.log:tags,time,uptime,level"
       UNIFFLE_OPTS="$UNIFFLE_OPTS $JVM_ARGS $JAVA11_EXTRA_ARGS"
 
       UNIFFLE_SUBCMD_SUPPORT_DAEMONIZATION="true"
@@ -94,7 +94,7 @@ function uniffle_cmd_case
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
       JAVA11_EXTRA_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
-          -Xlog:gc:tags,time,uptime,level"
+          -Xlog:gc*,gc+ergo*=trace:${RSS_LOG_DIR}/gc-%t.log:tags,time,uptime,level"
       UNIFFLE_OPTS="$UNIFFLE_OPTS $JVM_ARGS $JAVA11_EXTRA_ARGS"
 
       UNIFFLE_SUBCMD_SUPPORT_DAEMONIZATION="true"
