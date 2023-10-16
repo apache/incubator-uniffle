@@ -168,7 +168,7 @@ fn init_log(log: &LogConfig) -> WorkerGuard {
 
 fn main() -> Result<()> {
     let args_match = App::new("Uniffle Worker")
-        .version("1.0")
+        .version("0.9.0-SNAPSHOT")
         .about("Rust based shuffle server for Apache Uniffle")
         .arg(
             Arg::with_name("config")
