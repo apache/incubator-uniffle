@@ -42,7 +42,6 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
-import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.hadoop.shim.HadoopShimImpl;
@@ -217,23 +216,23 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
       LOG.info("In reduce: " + reduceId + ", Rss MR client starts to fetch blocks from RSS server");
       JobConf readerJobConf = getRemoteConf();
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoList.size() > 1;
-      CreateShuffleReadClientRequest request =
-          new CreateShuffleReadClientRequest(
-              appId,
-              0,
-              reduceId.getTaskID().getId(),
-              basePath,
-              partitionNumPerRange,
-              partitionNum,
-              blockIdBitmap,
-              taskIdBitmap,
-              serverInfoList,
-              readerJobConf,
-              new MRIdHelper(),
-              expectedTaskIdsBitmapFilterEnable,
-              RssMRConfig.toRssConf(rssJobConf));
       ShuffleReadClient shuffleReadClient =
-          ShuffleClientFactory.getInstance().createShuffleReadClient(request);
+          ShuffleClientFactory.getInstance()
+              .createShuffleReadClient(
+                  ShuffleClientFactory.newReadBuilder()
+                      .appId(appId)
+                      .shuffleId(0)
+                      .partitionId(reduceId.getTaskID().getId())
+                      .basePath(basePath)
+                      .partitionNumPerRange(partitionNumPerRange)
+                      .partitionNum(partitionNum)
+                      .blockIdBitmap(blockIdBitmap)
+                      .taskIdBitmap(taskIdBitmap)
+                      .shuffleServerInfoList(serverInfoList)
+                      .hadoopConf(readerJobConf)
+                      .idHelper(new MRIdHelper())
+                      .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                      .rssConf(RssMRConfig.toRssConf(rssJobConf)));
       RssFetcher fetcher =
           new RssFetcher(
               mrJobConf,

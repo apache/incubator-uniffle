@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
-import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -246,23 +245,23 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         boolean expectedTaskIdsBitmapFilterEnable =
             !(mapStartIndex == 0 && mapEndIndex == Integer.MAX_VALUE)
                 || shuffleServerInfoList.size() > 1;
-        CreateShuffleReadClientRequest request =
-            new CreateShuffleReadClientRequest(
-                appId,
-                shuffleId,
-                partition,
-                basePath,
-                1,
-                partitionNum,
-                partitionToExpectBlocks.get(partition),
-                taskIdBitmap,
-                shuffleServerInfoList,
-                hadoopConf,
-                dataDistributionType,
-                expectedTaskIdsBitmapFilterEnable,
-                rssConf);
         ShuffleReadClient shuffleReadClient =
-            ShuffleClientFactory.getInstance().createShuffleReadClient(request);
+            ShuffleClientFactory.getInstance()
+                .createShuffleReadClient(
+                    ShuffleClientFactory.newReadBuilder()
+                        .appId(appId)
+                        .shuffleId(shuffleId)
+                        .partitionId(partition)
+                        .basePath(basePath)
+                        .partitionNumPerRange(1)
+                        .partitionNum(partitionNum)
+                        .blockIdBitmap(partitionToExpectBlocks.get(partition))
+                        .taskIdBitmap(taskIdBitmap)
+                        .shuffleServerInfoList(shuffleServerInfoList)
+                        .hadoopConf(hadoopConf)
+                        .shuffleDataDistributionType(dataDistributionType)
+                        .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                        .rssConf(rssConf));
         RssShuffleDataIterator<K, C> iterator =
             new RssShuffleDataIterator<>(
                 shuffleDependency.serializer(), shuffleReadClient, readMetrics, rssConf);

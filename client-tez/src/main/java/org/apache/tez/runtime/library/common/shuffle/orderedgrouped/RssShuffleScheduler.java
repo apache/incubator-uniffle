@@ -95,7 +95,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
-import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
@@ -1851,24 +1850,23 @@ class RssShuffleScheduler extends ShuffleScheduler {
       int partitionNum = partitionToServers.size();
       boolean expectedTaskIdsBitmapFilterEnable = shuffleServerInfoSet.size() > 1;
 
-      CreateShuffleReadClientRequest request =
-          new CreateShuffleReadClientRequest(
-              applicationAttemptId.toString(),
-              shuffleId,
-              mapHost.getPartitionId(),
-              basePath,
-              partitionNumPerRange,
-              partitionNum,
-              blockIdBitmap,
-              taskIdBitmap,
-              shuffleServerInfoList,
-              hadoopConf,
-              new TezIdHelper(),
-              expectedTaskIdsBitmapFilterEnable,
-              RssTezConfig.toRssConf(conf));
-
       ShuffleReadClient shuffleReadClient =
-          ShuffleClientFactory.getInstance().createShuffleReadClient(request);
+          ShuffleClientFactory.getInstance()
+              .createShuffleReadClient(
+                  ShuffleClientFactory.newReadBuilder()
+                      .appId(applicationAttemptId.toString())
+                      .shuffleId(shuffleId)
+                      .partitionId(mapHost.getPartitionId())
+                      .basePath(basePath)
+                      .partitionNumPerRange(partitionNumPerRange)
+                      .partitionNum(partitionNum)
+                      .blockIdBitmap(blockIdBitmap)
+                      .taskIdBitmap(taskIdBitmap)
+                      .shuffleServerInfoList(shuffleServerInfoList)
+                      .hadoopConf(hadoopConf)
+                      .idHelper(new TezIdHelper())
+                      .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                      .rssConf(RssTezConfig.toRssConf(conf)));
       RssTezShuffleDataFetcher fetcher =
           new RssTezShuffleDataFetcher(
               partitionIdToSuccessMapTaskAttempts.get(mapHost.getPartitionId()).iterator().next(),

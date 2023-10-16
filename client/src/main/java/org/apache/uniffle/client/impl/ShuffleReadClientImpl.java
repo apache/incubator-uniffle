@@ -31,7 +31,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
+import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
@@ -64,131 +66,82 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private ClientReadHandler clientReadHandler;
   private IdHelper idHelper;
 
-  public ShuffleReadClientImpl(
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int partitionNumPerRange,
-      int partitionNum,
-      String storageBasePath,
-      Roaring64NavigableMap blockIdBitmap,
-      Roaring64NavigableMap taskIdBitmap,
-      List<ShuffleServerInfo> shuffleServerInfoList,
-      Configuration hadoopConf,
-      IdHelper idHelper,
-      ShuffleDataDistributionType dataDistributionType,
-      boolean expectedTaskIdsBitmapFilterEnable,
-      RssConf rssConf) {
-    final int indexReadLimit = rssConf.get(RssClientConf.RSS_INDEX_READ_LIMIT);
-    final String storageType = rssConf.get(RssClientConf.RSS_STORAGE_TYPE);
-    long readBufferSize =
-        rssConf.getSizeAsBytes(
-            RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key(),
-            RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue());
-    if (readBufferSize > Integer.MAX_VALUE) {
-      LOG.warn(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key() + " can support 2g as max");
-      readBufferSize = Integer.MAX_VALUE;
+  public ShuffleReadClientImpl(ShuffleClientFactory.ReadClientBuilder builder) {
+    // add default value
+    if (builder.getIdHelper() == null) {
+      builder.idHelper(new DefaultIdHelper());
     }
-    boolean offHeapEnabled = rssConf.get(RssClientConf.OFF_HEAP_MEMORY_ENABLE);
-    init(
-        storageType,
-        appId,
-        shuffleId,
-        partitionId,
-        indexReadLimit,
-        partitionNumPerRange,
-        partitionNum,
-        (int) readBufferSize,
-        storageBasePath,
-        blockIdBitmap,
-        taskIdBitmap,
-        shuffleServerInfoList,
-        hadoopConf,
-        idHelper,
-        dataDistributionType,
-        expectedTaskIdsBitmapFilterEnable,
-        offHeapEnabled,
-        rssConf);
+    if (builder.getShuffleDataDistributionType() == null) {
+      builder.shuffleDataDistributionType(ShuffleDataDistributionType.NORMAL);
+    }
+    if (builder.getHadoopConf() == null) {
+      builder.hadoopConf(new Configuration());
+    }
+    if (builder.getRssConf() != null) {
+      final int indexReadLimit = builder.getRssConf().get(RssClientConf.RSS_INDEX_READ_LIMIT);
+      final String storageType = builder.getRssConf().get(RssClientConf.RSS_STORAGE_TYPE);
+      long readBufferSize =
+          builder
+              .getRssConf()
+              .getSizeAsBytes(
+                  RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key(),
+                  RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue());
+      if (readBufferSize > Integer.MAX_VALUE) {
+        LOG.warn(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key() + " can support 2g as max");
+        readBufferSize = Integer.MAX_VALUE;
+      }
+      boolean offHeapEnabled = builder.getRssConf().get(RssClientConf.OFF_HEAP_MEMORY_ENABLE);
+
+      builder.indexReadLimit(indexReadLimit);
+      builder.storageType(storageType);
+      builder.readBufferSize(readBufferSize);
+      builder.offHeapEnable(offHeapEnabled);
+    } else {
+      // most for test
+      RssConf rssConf = new RssConf();
+      rssConf.set(RssClientConf.RSS_STORAGE_TYPE, builder.getStorageType());
+      rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, builder.getIndexReadLimit());
+      rssConf.set(
+          RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, String.valueOf(builder.getReadBufferSize()));
+
+      builder.rssConf(rssConf);
+      builder.offHeapEnable(false);
+      builder.expectedTaskIdsBitmapFilterEnable(false);
+    }
+
+    init(builder);
   }
 
-  public ShuffleReadClientImpl(
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int partitionNumPerRange,
-      int partitionNum,
-      String storageBasePath,
-      Roaring64NavigableMap blockIdBitmap,
-      Roaring64NavigableMap taskIdBitmap,
-      List<ShuffleServerInfo> shuffleServerInfoList,
-      Configuration hadoopConf,
-      IdHelper idHelper,
-      RssConf rssConf) {
-    this(
-        appId,
-        shuffleId,
-        partitionId,
-        partitionNumPerRange,
-        partitionNum,
-        storageBasePath,
-        blockIdBitmap,
-        taskIdBitmap,
-        shuffleServerInfoList,
-        hadoopConf,
-        idHelper,
-        ShuffleDataDistributionType.NORMAL,
-        false,
-        rssConf);
-  }
-
-  private void init(
-      String storageType,
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int indexReadLimit,
-      int partitionNumPerRange,
-      int partitionNum,
-      int readBufferSize,
-      String storageBasePath,
-      Roaring64NavigableMap blockIdBitmap,
-      Roaring64NavigableMap taskIdBitmap,
-      List<ShuffleServerInfo> shuffleServerInfoList,
-      Configuration hadoopConf,
-      IdHelper idHelper,
-      ShuffleDataDistributionType dataDistributionType,
-      boolean expectedTaskIdsBitmapFilterEnable,
-      boolean offHeapEnabled,
-      RssConf rssConf) {
-    this.shuffleId = shuffleId;
-    this.partitionId = partitionId;
-    this.blockIdBitmap = blockIdBitmap;
-    this.taskIdBitmap = taskIdBitmap;
-    this.idHelper = idHelper;
-    this.shuffleServerInfoList = shuffleServerInfoList;
+  private void init(ShuffleClientFactory.ReadClientBuilder builder) {
+    this.shuffleId = builder.getShuffleId();
+    this.partitionId = builder.getPartitionId();
+    this.blockIdBitmap = builder.getBlockIdBitmap();
+    this.taskIdBitmap = builder.getTaskIdBitmap();
+    this.idHelper = builder.getIdHelper();
+    this.shuffleServerInfoList = builder.getShuffleServerInfoList();
 
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
-    request.setStorageType(storageType);
-    request.setAppId(appId);
+    request.setStorageType(builder.getStorageType());
+    request.setAppId(builder.getAppId());
     request.setShuffleId(shuffleId);
     request.setPartitionId(partitionId);
-    request.setIndexReadLimit(indexReadLimit);
-    request.setPartitionNumPerRange(partitionNumPerRange);
-    request.setPartitionNum(partitionNum);
-    request.setReadBufferSize((int) readBufferSize);
-    request.setStorageBasePath(storageBasePath);
+    request.setIndexReadLimit(builder.getIndexReadLimit());
+    request.setPartitionNumPerRange(builder.getPartitionNumPerRange());
+    request.setPartitionNum(builder.getPartitionNum());
+    request.setReadBufferSize((int) builder.getReadBufferSize());
+    request.setStorageBasePath(builder.getBasePath());
     request.setShuffleServerInfoList(shuffleServerInfoList);
-    request.setHadoopConf(hadoopConf);
+    request.setHadoopConf(builder.getHadoopConf());
     request.setExpectBlockIds(blockIdBitmap);
     request.setProcessBlockIds(processedBlockIds);
-    request.setDistributionType(dataDistributionType);
+    request.setDistributionType(builder.getShuffleDataDistributionType());
     request.setIdHelper(idHelper);
     request.setExpectTaskIds(taskIdBitmap);
-    request.setClientConf(rssConf);
-    if (expectedTaskIdsBitmapFilterEnable) {
+    request.setClientConf(builder.getRssConf());
+    if (builder.isExpectedTaskIdsBitmapFilterEnable()) {
       request.useExpectedTaskIdsBitmapFilter();
     }
-    if (offHeapEnabled) {
+    if (builder.isOffHeapEnable()) {
       request.enableOffHeap();
     }
 
@@ -208,46 +161,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     pendingBlockIds = RssUtils.cloneBitMap(blockIdBitmap);
 
     clientReadHandler = ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
-  }
-
-  public ShuffleReadClientImpl(
-      String storageType,
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int indexReadLimit,
-      int partitionNumPerRange,
-      int partitionNum,
-      int readBufferSize,
-      String storageBasePath,
-      Roaring64NavigableMap blockIdBitmap,
-      Roaring64NavigableMap taskIdBitmap,
-      List<ShuffleServerInfo> shuffleServerInfoList,
-      Configuration hadoopConf,
-      IdHelper idHelper) {
-    RssConf rssConf = new RssConf();
-    rssConf.set(RssClientConf.RSS_STORAGE_TYPE, storageType);
-    rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, indexReadLimit);
-    rssConf.set(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, String.valueOf(readBufferSize));
-    init(
-        storageType,
-        appId,
-        shuffleId,
-        partitionId,
-        indexReadLimit,
-        partitionNumPerRange,
-        partitionNum,
-        readBufferSize,
-        storageBasePath,
-        blockIdBitmap,
-        taskIdBitmap,
-        shuffleServerInfoList,
-        hadoopConf,
-        idHelper,
-        ShuffleDataDistributionType.NORMAL,
-        false,
-        false,
-        rssConf);
   }
 
   @Override

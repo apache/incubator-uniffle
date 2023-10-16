@@ -36,13 +36,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -112,21 +112,21 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     RssFinishShuffleRequest rf1 = new RssFinishShuffleRequest(appId, 0);
     shuffleServerClient.finishShuffle(rf1);
     ShuffleReadClientImpl readClient =
-        new ShuffleReadClientImpl(
-            StorageType.LOCALFILE.name(),
-            appId,
-            0,
-            0,
-            100,
-            1,
-            10,
-            1000,
-            null,
-            blockIdBitmap1,
-            Roaring64NavigableMap.bitmapOf(1),
-            shuffleServerInfo,
-            conf,
-            new DefaultIdHelper());
+        ShuffleClientFactory.newReadBuilder()
+            .storageType(StorageType.LOCALFILE.name())
+            .appId(appId)
+            .shuffleId(0)
+            .partitionId(0)
+            .indexReadLimit(100)
+            .partitionNumPerRange(1)
+            .partitionNum(10)
+            .readBufferSize(1000)
+            .basePath(null)
+            .blockIdBitmap(blockIdBitmap1)
+            .taskIdBitmap(Roaring64NavigableMap.bitmapOf(1))
+            .shuffleServerInfoList(shuffleServerInfo)
+            .hadoopConf(conf)
+            .build();
     validateResult(readClient, expectedData);
 
     File shuffleData = new File(data2, appId);
@@ -153,21 +153,21 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     shuffleServerClient.finishShuffle(rf1);
 
     readClient =
-        new ShuffleReadClientImpl(
-            StorageType.LOCALFILE.name(),
-            appId,
-            0,
-            0,
-            100,
-            1,
-            10,
-            1000,
-            null,
-            blockIdBitmap2,
-            Roaring64NavigableMap.bitmapOf(2),
-            shuffleServerInfo,
-            conf,
-            new DefaultIdHelper());
+        ShuffleClientFactory.newReadBuilder()
+            .storageType(StorageType.LOCALFILE.name())
+            .appId(appId)
+            .shuffleId(0)
+            .partitionId(0)
+            .indexReadLimit(100)
+            .partitionNumPerRange(1)
+            .partitionNum(10)
+            .readBufferSize(1000)
+            .basePath(null)
+            .blockIdBitmap(blockIdBitmap2)
+            .taskIdBitmap(Roaring64NavigableMap.bitmapOf(2))
+            .shuffleServerInfoList(shuffleServerInfo)
+            .hadoopConf(conf)
+            .build();
     validateResult(readClient, expectedData);
     shuffleData = new File(data1, appId);
     assertTrue(shuffleData.exists());

@@ -37,7 +37,6 @@ import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -344,21 +343,20 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     assertTrue(commitResult);
 
     ShuffleReadClientImpl readClient =
-        new ShuffleReadClientImpl(
-            StorageType.LOCALFILE.name(),
-            testAppId,
-            0,
-            0,
-            100,
-            1,
-            10,
-            1000,
-            "",
-            blockIdBitmap,
-            taskIdBitmap,
-            Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2),
-            null,
-            new DefaultIdHelper());
+        ShuffleClientFactory.newReadBuilder()
+            .storageType(StorageType.LOCALFILE.name())
+            .appId(testAppId)
+            .shuffleId(0)
+            .partitionId(0)
+            .indexReadLimit(100)
+            .partitionNumPerRange(1)
+            .partitionNum(10)
+            .readBufferSize(1000)
+            .basePath("")
+            .blockIdBitmap(blockIdBitmap)
+            .taskIdBitmap(taskIdBitmap)
+            .shuffleServerInfoList(Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2))
+            .build();
     assertNull(readClient.readShuffleBlockData());
     readClient.close();
 
@@ -368,21 +366,20 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
             Sets.newHashSet(shuffleServerInfo1, shuffleServerInfo2), testAppId, 0, 2);
     assertTrue(commitResult);
     readClient =
-        new ShuffleReadClientImpl(
-            StorageType.LOCALFILE.name(),
-            testAppId,
-            0,
-            0,
-            100,
-            1,
-            10,
-            1000,
-            "",
-            blockIdBitmap,
-            taskIdBitmap,
-            Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2),
-            null,
-            new DefaultIdHelper());
+        ShuffleClientFactory.newReadBuilder()
+            .storageType(StorageType.LOCALFILE.name())
+            .appId(testAppId)
+            .shuffleId(0)
+            .partitionId(0)
+            .indexReadLimit(100)
+            .partitionNumPerRange(1)
+            .partitionNum(10)
+            .readBufferSize(1000)
+            .basePath("")
+            .blockIdBitmap(blockIdBitmap)
+            .taskIdBitmap(taskIdBitmap)
+            .shuffleServerInfoList(Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2))
+            .build();
     validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
     readClient.close();
