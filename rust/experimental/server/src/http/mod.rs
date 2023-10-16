@@ -26,9 +26,9 @@ use crate::http::http_service::PoemHTTPServer;
 use crate::http::jeprof::JeProfHandler;
 use crate::http::metrics::MetricsHTTPHandler;
 use crate::http::pprof::PProfHandler;
+use crate::runtime::manager::RuntimeManager;
 use once_cell::sync::Lazy;
 use poem::RouteMethod;
-
 pub static HTTP_SERVICE: Lazy<Box<PoemHTTPServer>> = Lazy::new(|| new_server());
 
 /// Implement the own handlers for concrete components
@@ -38,7 +38,7 @@ pub trait Handler {
 }
 
 pub trait HTTPServer: Send + Sync {
-    fn start(&self, port: u16);
+    fn start(&self, runtime_manager: RuntimeManager, port: u16);
     fn register_handler(&self, handler: impl Handler + 'static);
 }
 

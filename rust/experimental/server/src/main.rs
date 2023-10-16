@@ -18,19 +18,21 @@
 #![feature(impl_trait_in_assoc_type)]
 
 use crate::app::{AppManager, AppManagerRef};
+use crate::await_tree::AWAIT_TREE_REGISTRY;
 use crate::config::{Config, LogConfig, RotationConfig};
 use crate::grpc::grpc_middleware::AwaitTreeMiddlewareLayer;
 use crate::grpc::{DefaultShuffleServer, MAX_CONNECTION_WINDOW_SIZE, STREAM_WINDOW_SIZE};
 use crate::http::{HTTPServer, HTTP_SERVICE};
-use crate::metric::configure_metric_service;
+use crate::metric::init_metric_service;
 use crate::proto::uniffle::coordinator_server_client::CoordinatorServerClient;
 use crate::proto::uniffle::shuffle_server_server::ShuffleServerServer;
 use crate::proto::uniffle::{ShuffleServerHeartBeatRequest, ShuffleServerId};
+use crate::runtime::manager::RuntimeManager;
+use crate::signal::details::wait_for_signal;
 use crate::util::{gen_worker_uid, get_local_ip};
+
 use anyhow::Result;
 use log::info;
-
-use crate::await_tree::AWAIT_TREE_REGISTRY;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
 use tonic::transport::{Channel, Server};
@@ -49,19 +51,22 @@ mod mem_allocator;
 mod metric;
 pub mod proto;
 mod readable_size;
+pub mod runtime;
+pub mod signal;
 pub mod store;
 mod util;
 
 const DEFAULT_SHUFFLE_SERVER_TAG: &str = "ss_v4";
 
-async fn schedule_coordinator_report(
+fn start_coordinator_report(
+    runtime_manager: RuntimeManager,
     app_manager: AppManagerRef,
     coordinator_quorum: Vec<String>,
     grpc_port: i32,
     tags: Vec<String>,
     worker_uid: String,
 ) -> anyhow::Result<()> {
-    tokio::spawn(async move {
+    runtime_manager.default_runtime.spawn(async move {
         let ip = get_local_ip().unwrap().to_string();
 
         info!("machine ip: {}", ip.clone());
@@ -160,9 +165,10 @@ fn init_log(log: &LogConfig) -> WorkerGuard {
     _guard
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     let config = Config::create_from_env();
+
+    let runtime_manager = RuntimeManager::from(config.runtime_config.clone());
 
     // init log
     let log_config = &config.log.clone().unwrap_or(Default::default());
@@ -172,26 +178,26 @@ async fn main() -> Result<()> {
     let worker_uid = gen_worker_uid(rpc_port);
 
     let metric_config = config.metrics.clone();
-    configure_metric_service(&metric_config, worker_uid.clone());
+    init_metric_service(runtime_manager.clone(), &metric_config, worker_uid.clone());
 
     let coordinator_quorum = config.coordinator_quorum.clone();
     let tags = config.tags.clone().unwrap_or(vec![]);
-    let app_manager_ref = AppManager::get_ref(config.clone());
-    let _ = schedule_coordinator_report(
+    let app_manager_ref = AppManager::get_ref(runtime_manager.clone(), config.clone());
+    let _ = start_coordinator_report(
+        runtime_manager.clone(),
         app_manager_ref.clone(),
         coordinator_quorum,
         rpc_port,
         tags,
         worker_uid,
-    )
-    .await;
+    );
 
     let http_port = config.http_monitor_service_port.unwrap_or(20010);
     info!(
         "Starting http monitor service with port:[{}] ......",
         http_port
     );
-    HTTP_SERVICE.start(http_port);
+    HTTP_SERVICE.start(runtime_manager.clone(), http_port);
 
     info!("Starting GRpc server with port:[{}] ......", rpc_port);
     let shuffle_server = DefaultShuffleServer::from(app_manager_ref);
@@ -199,16 +205,21 @@ async fn main() -> Result<()> {
     let service = ShuffleServerServer::new(shuffle_server)
         .max_decoding_message_size(usize::MAX)
         .max_encoding_message_size(usize::MAX);
-    Server::builder()
-        .initial_connection_window_size(MAX_CONNECTION_WINDOW_SIZE)
-        .initial_stream_window_size(STREAM_WINDOW_SIZE)
-        .tcp_nodelay(true)
-        .layer(AwaitTreeMiddlewareLayer::new_optional(Some(
-            AWAIT_TREE_REGISTRY.clone(),
-        )))
-        .add_service(service)
-        .serve(addr)
-        .await?;
+
+    let _grpc_service_handle = runtime_manager.grpc_runtime.spawn(async move {
+        Server::builder()
+            .initial_connection_window_size(MAX_CONNECTION_WINDOW_SIZE)
+            .initial_stream_window_size(STREAM_WINDOW_SIZE)
+            .tcp_nodelay(true)
+            .layer(AwaitTreeMiddlewareLayer::new_optional(Some(
+                AWAIT_TREE_REGISTRY.clone(),
+            )))
+            .add_service(service)
+            .serve(addr)
+            .await
+    });
+
+    wait_for_signal();
 
     Ok(())
 }

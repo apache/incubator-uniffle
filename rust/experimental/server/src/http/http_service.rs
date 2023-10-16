@@ -26,7 +26,7 @@ use poem::{get, Route, RouteMethod, Server};
 use std::sync::Mutex;
 
 use crate::http::{HTTPServer, Handler};
-
+use crate::runtime::manager::RuntimeManager;
 impl ResponseError for WorkerError {
     fn status(&self) -> StatusCode {
         StatusCode::BAD_REQUEST
@@ -61,13 +61,13 @@ impl PoemHTTPServer {
 }
 
 impl HTTPServer for PoemHTTPServer {
-    fn start(&self, port: u16) {
+    fn start(&self, runtime_manager: RuntimeManager, port: u16) {
         let mut app = Route::new();
         let handlers = self.handlers.lock().unwrap();
         for handler in handlers.iter() {
             app = app.at(handler.get_route_path(), handler.get_route_method());
         }
-        tokio::spawn(async move {
+        runtime_manager.http_runtime.spawn(async move {
             let _ = Server::new(TcpListener::bind(format!("0.0.0.0:{}", port)))
                 .name("uniffle-server-http-service")
                 .run(app)
