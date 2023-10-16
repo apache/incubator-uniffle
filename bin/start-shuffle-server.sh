@@ -88,15 +88,16 @@ JVM_ARGS=" -server \
           -XX:InitiatingHeapOccupancyPercent=20 \
           -XX:G1HeapRegionSize=32m \
           -XX:+UnlockExperimentalVMOptions \
-          -XX:G1NewSizePercent=10 \
-          -XX:+PrintGC \
+          -XX:G1NewSizePercent=10"
+
+JAVA8_GC_ARGS= " -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
           -XX:+PrintGCDetails \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
-JAVA11_EXTRA_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
+JAVA11_GC_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
           -Xlog:gc*,gc+ergo*=trace:${RSS_LOG_DIR}/gc-%t.log:tags,time,uptime,level"
 
 ARGS=""
@@ -108,7 +109,17 @@ else
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS $JAVA11_EXTRA_ARGS $JAVA_LIB_PATH -cp $CLASSPATH $MAIN_CLASS --conf "$SHUFFLE_SERVER_CONF_FILE" $@ &> $OUT_PATH &
+version=$($RUNNER -version 2>&1 | awk -F '"' '/version/ {print $2}')
+if [[ $version == "1.8"* ]]; then
+    GC_ARGS=$JAVA8_GC_ARGS
+elif [[ $version == "11"* ]]; then
+    GC_ARGS=$JAVA11_GC_ARGS
+else
+  echo "Exit with error: unknown java version ${version} ."
+  exit 1
+fi
+
+$RUNNER $ARGS $JVM_ARGS $GC_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &> $OUT_PATH &
 
 get_pid_file_name shuffle-server
 echo $! >${RSS_PID_DIR}/${pid_file}
