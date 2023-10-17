@@ -30,15 +30,12 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class SparkSQLTest extends SparkIntegrationTestBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(SparkSQLTest.class);
-
-  static @TempDir File tempDir;
 
   @Test
   public void resultCompareTest() throws Exception {
