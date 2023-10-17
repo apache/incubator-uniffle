@@ -32,6 +32,7 @@ use crate::signal::details::wait_for_signal;
 use crate::util::{gen_worker_uid, get_local_ip};
 
 use anyhow::Result;
+use clap::{App, Arg};
 use log::info;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
@@ -166,7 +167,22 @@ fn init_log(log: &LogConfig) -> WorkerGuard {
 }
 
 fn main() -> Result<()> {
-    let config = Config::create_from_env();
+    let args_match = App::new("Uniffle Worker")
+        .version("0.9.0-SNAPSHOT")
+        .about("Rust based shuffle server for Apache Uniffle")
+        .arg(
+            Arg::with_name("config")
+                .short('c')
+                .long("config")
+                .value_name("FILE")
+                .default_value("./config.toml")
+                .help("Sets a custom config file")
+                .takes_value(true),
+        )
+        .get_matches();
+
+    let config_path = args_match.value_of("config").unwrap_or("./config.toml");
+    let config = Config::from(config_path);
 
     let runtime_manager = RuntimeManager::from(config.runtime_config.clone());
 
