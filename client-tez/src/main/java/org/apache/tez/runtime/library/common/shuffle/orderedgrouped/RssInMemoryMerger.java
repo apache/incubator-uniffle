@@ -176,6 +176,9 @@ public class RssInMemoryMerger extends MergeThread<MapOutput> {
       } else {
         runCombineProcessor(rIter, writer);
       }
+      // The compressed length of writer is calculated when called Writer::close, we must
+      // update the counter after Writer::close. Counter should be updated in normal
+      // execution flow, so do not update counter in finally block.
       writer.close();
       additionalBytesWritten.increment(writer.getCompressedLength());
       writer = null;
