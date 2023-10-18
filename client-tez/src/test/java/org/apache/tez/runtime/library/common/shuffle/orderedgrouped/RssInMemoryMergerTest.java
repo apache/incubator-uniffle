@@ -47,7 +47,6 @@ import org.apache.tez.runtime.api.impl.TezInputContextImpl;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
 import org.apache.tez.runtime.library.common.shuffle.ShuffleUtils;
 import org.apache.tez.runtime.library.common.sort.impl.IFile;
-import org.junit.Assert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -61,6 +60,7 @@ import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUN
 import static org.apache.tez.runtime.library.common.Constants.TEZ_RUNTIME_TASK_MEMORY;
 import static org.apache.tez.runtime.library.common.shuffle.orderedgrouped.RssInMemoryMerger.Counter.NUM_MEM_TO_REMOTE_MERGES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -185,19 +185,19 @@ public class RssInMemoryMergerTest {
 
     // 3 Verify result
     // 3.1 Verify counters
-    Assert.assertEquals(1, tezCounters.findCounter(NUM_MEM_TO_REMOTE_MERGES).getValue());
+    assertEquals(1, tezCounters.findCounter(NUM_MEM_TO_REMOTE_MERGES).getValue());
 
     // 3.2 Verify only one remote file contains
     String parentPath = String.format("%s/%s", BASE_SPILL_PATH, APP_ATTEMPT_ID);
     FileStatus[] files = remoteFS.listStatus(new Path(parentPath));
-    Assert.assertEquals(1, files.length);
+    assertEquals(1, files.length);
     String filePathPattern =
         String.format(
             "%s/%s/%s_src_(\\d)_spill_%d.out", BASE_SPILL_PATH, APP_ATTEMPT_ID, UNIQUE_ID, -1);
     Pattern pattern = Pattern.compile(filePathPattern);
     Matcher matcher = pattern.matcher(files[0].getPath().toString());
-    Assert.assertTrue(matcher.find());
-    Assert.assertTrue(
+    assertTrue(matcher.find());
+    assertTrue(
         matcher.group(1).equals(String.valueOf(mapId1.getInputIdentifier()))
             || matcher.group(1).equals(String.valueOf(mapId2.getInputIdentifier())));
     Path mergePath = files[0].getPath();

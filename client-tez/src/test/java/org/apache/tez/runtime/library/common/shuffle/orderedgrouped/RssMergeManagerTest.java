@@ -42,7 +42,6 @@ import org.apache.tez.runtime.api.impl.TezInputContextImpl;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
 import org.apache.tez.runtime.library.common.shuffle.ShuffleUtils;
 import org.apache.tez.runtime.library.common.sort.impl.TezRawKeyValueIterator;
-import org.junit.Assert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -58,6 +57,7 @@ import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUN
 import static org.apache.tez.runtime.library.common.Constants.TEZ_RUNTIME_TASK_MEMORY;
 import static org.apache.tez.runtime.library.common.shuffle.orderedgrouped.RssInMemoryMerger.Counter.NUM_MEM_TO_REMOTE_MERGES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -188,19 +188,19 @@ public class RssMergeManagerTest {
 
     // 2.3 Verify result
     // 2.3.1 Verify counters
-    Assert.assertEquals(1, tezCounters.findCounter(NUM_MEM_TO_REMOTE_MERGES).getValue());
+    assertEquals(1, tezCounters.findCounter(NUM_MEM_TO_REMOTE_MERGES).getValue());
 
     // 2.3.2 Verify only one merged file is located in remote fs
     String parentPath = String.format("%s/%s", BASE_SPILL_PATH, APP_ATTEMPT_ID.toString());
     FileStatus[] files = remoteFS.listStatus(new Path(parentPath));
-    Assert.assertEquals(1, files.length);
+    assertEquals(1, files.length);
     String filePathPattern =
         String.format(
             "%s/%s/%s_src_(\\d)_spill_%d.out", BASE_SPILL_PATH, APP_ATTEMPT_ID, UNIQUE_ID, -1);
     Pattern pattern = Pattern.compile(filePathPattern);
     Matcher matcher = pattern.matcher(files[0].getPath().toString());
-    Assert.assertTrue(matcher.find());
-    Assert.assertTrue(
+    assertTrue(matcher.find());
+    assertTrue(
         matcher.group(1).equals(String.valueOf(mapId1.getInputIdentifier()))
             || matcher.group(1).equals(String.valueOf(mapId2.getInputIdentifier())));
 
@@ -244,23 +244,23 @@ public class RssMergeManagerTest {
     // 3.2 Verfiy merge is not trigger, only one remote file exists.
     manager.waitForInMemoryMerge();
     files = remoteFS.listStatus(new Path(parentPath));
-    Assert.assertEquals(1, files.length);
+    assertEquals(1, files.length);
 
     // 3.3 Call close, then trigger to mege
     TezRawKeyValueIterator iterator = manager.close(true);
 
     // 3.4 Verify result
     // 3.4.1 Verify counters
-    Assert.assertEquals(2, tezCounters.findCounter(NUM_MEM_TO_REMOTE_MERGES).getValue());
+    assertEquals(2, tezCounters.findCounter(NUM_MEM_TO_REMOTE_MERGES).getValue());
 
     // 3.4.2 Verify two merged file is located in remote fs
     files = remoteFS.listStatus(new Path(parentPath));
-    Assert.assertEquals(2, files.length);
+    assertEquals(2, files.length);
     String filePath3 =
         String.format(
             "%s/%s/%s_src_%s_spill_%d.out",
             BASE_SPILL_PATH, APP_ATTEMPT_ID, UNIQUE_ID, mapId3.getInputIdentifier(), -1);
-    Assert.assertTrue(remoteFS.exists(new Path(filePath3)));
+    assertTrue(remoteFS.exists(new Path(filePath3)));
 
     // 3.4.3 Verify the content from remote fs
     mergePath = new Path(filePath3);
