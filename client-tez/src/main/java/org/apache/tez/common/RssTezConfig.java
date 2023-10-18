@@ -211,6 +211,18 @@ public class RssTezConfig {
       TEZ_RSS_CONFIG_PREFIX + "rss.avoid.recompute.succeeded.task";
   public static final boolean RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK_DEFAULT = false;
 
+  public static final String RSS_REDUCE_REMOTE_SPILL_ENABLED =
+      TEZ_RSS_CONFIG_PREFIX + "rss.reduce.remote.spill.enable";
+  public static final boolean RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT = false;
+  public static final String RSS_REDUCE_REMOTE_SPILL_REPLICATION =
+      TEZ_RSS_CONFIG_PREFIX + "rss.reduce.remote.spill.replication";
+  public static final int RSS_REDUCE_REMOTE_SPILL_REPLICATION_DEFAULT = 1;
+  public static final String RSS_REDUCE_REMOTE_SPILL_RETRIES =
+      TEZ_RSS_CONFIG_PREFIX + "rss.reduce.remote.spill.retries";
+  public static final int RSS_REDUCE_REMOTE_SPILL_RETRIES_DEFAULT = 5;
+  public static final String RSS_REMOTE_SPILL_STORAGE_PATH =
+      TEZ_RSS_CONFIG_PREFIX + "rss.remote.spill.storage.path";
+
   public static RssConf toRssConf(Configuration jobConf) {
     RssConf rssConf = new RssConf();
     for (Map.Entry<String, String> entry : jobConf) {
