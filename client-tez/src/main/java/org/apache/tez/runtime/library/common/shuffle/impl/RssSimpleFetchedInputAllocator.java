@@ -52,6 +52,9 @@ import static org.apache.tez.common.RssTezConfig.RSS_REMOTE_SPILL_STORAGE_PATH;
 public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssSimpleFetchedInputAllocator.class);
+  // In order to be compatible with the Tez IFile file format, the decoded data needs to be added
+  // with the corresponding HEADER and CHECKSUM, which occupy 8 bytes.
+  private static final int IFILE_HEAD_CHECKSUM_LEN = 8;
 
   private final Configuration conf;
 
@@ -205,7 +208,7 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
       if (remoteSpillEnable) {
         LOG.info("Allocate RemoteFetchedInput, length:{}", actualSize);
         return new RemoteFetchedInput(
-            actualSize + 8,
+            actualSize + IFILE_HEAD_CHECKSUM_LEN,
             inputAttemptIdentifier,
             this,
             remoteFS,
@@ -215,7 +218,7 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
       } else {
         LOG.info("Allocate DiskFetchedInput, length:{}", actualSize);
         return new DiskFetchedInput(
-            actualSize + 8,
+            actualSize + IFILE_HEAD_CHECKSUM_LEN,
             inputAttemptIdentifier,
             this,
             conf,
@@ -251,7 +254,7 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
         if (remoteSpillEnable) {
           LOG.info("AllocateType RemoteFetchedInput, compressedSize:{}", compressedSize);
           return new RemoteFetchedInput(
-              actualSize + 8,
+              actualSize + IFILE_HEAD_CHECKSUM_LEN,
               inputAttemptIdentifier,
               this,
               remoteFS,
@@ -261,7 +264,7 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
         } else {
           LOG.info("AllocateType DiskFetchedInput, compressedSize:{}", compressedSize);
           return new DiskFetchedInput(
-              compressedSize + 8,
+              actualSize + IFILE_HEAD_CHECKSUM_LEN,
               inputAttemptIdentifier,
               this,
               conf,
