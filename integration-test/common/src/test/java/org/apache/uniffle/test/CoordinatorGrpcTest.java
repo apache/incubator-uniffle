@@ -326,9 +326,8 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
 
   @Test
   public void rpcMetricsTest() throws Exception {
-    double oldValue, newValue;
     CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
-    newValue =
+    double newValue =
         coordinators
             .get(0)
             .getGrpcMetrics()
@@ -341,7 +340,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     RssGetShuffleAssignmentsRequest request =
         new RssGetShuffleAssignmentsRequest(
             appId, 1, 10, 4, 1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
-    oldValue =
+    double oldValue =
         coordinators
             .get(0)
             .getGrpcMetrics()
