@@ -59,7 +59,8 @@ public class RssSimpleFetchedInputAllocatorTest {
             123,
             conf,
             Runtime.getRuntime().maxMemory(),
-            inMemThreshold);
+            inMemThreshold,
+            "");
 
     long requestSize = (long) (0.4f * inMemThreshold);
     long compressedSize = 1L;
