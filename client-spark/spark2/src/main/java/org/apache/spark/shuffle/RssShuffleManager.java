@@ -86,6 +86,9 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private ShuffleWriteClient shuffleWriteClient;
   private Map<String, Set<Long>> taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
   private Map<String, Set<Long>> taskToFailedBlockIds = JavaUtils.newConcurrentMap();
+  // Record both the block that failed to be sent and the ShuffleServer
+  private final Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer =
+      JavaUtils.newConcurrentMap();
   private final int dataReplica;
   private final int dataReplicaWrite;
   private final int dataReplicaRead;
@@ -212,6 +215,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               shuffleWriteClient,
               taskToSuccessBlockIds,
               taskToFailedBlockIds,
+              taskToFailedBlockIdsAndServer,
               failedTaskIds,
               poolSize,
               keepAliveTime);
@@ -691,5 +695,19 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       throw RssSparkShuffleUtils.reportRssFetchFailedException(
           e, sparkConf, appId, shuffleId, stageAttemptId, Sets.newHashSet(partitionId));
     }
+  }
+
+  /**
+   * The ShuffleServer list of block sending failures is returned using the shuffle task ID
+   *
+   * @param taskId Shuffle taskId
+   * @return List of failed ShuffleServer blocks
+   */
+  public Map<Long, List<ShuffleServerInfo>> getFailedBlockIdsWithShuffleServer(String taskId) {
+    Map<Long, List<ShuffleServerInfo>> result = taskToFailedBlockIdsAndServer.get(taskId);
+    if (result == null) {
+      result = JavaUtils.newConcurrentMap();
+    }
+    return result;
   }
 }

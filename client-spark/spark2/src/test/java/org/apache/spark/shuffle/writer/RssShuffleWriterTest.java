@@ -155,13 +155,14 @@ public class RssShuffleWriterTest {
     private final Function<AddBlockEvent, CompletableFuture<Long>> sendFunc;
 
     FakedDataPusher(Function<AddBlockEvent, CompletableFuture<Long>> sendFunc) {
-      this(null, null, null, null, 1, 1, sendFunc);
+      this(null, null, null, null, null, 1, 1, sendFunc);
     }
 
     private FakedDataPusher(
         ShuffleWriteClient shuffleWriteClient,
         Map<String, Set<Long>> taskToSuccessBlockIds,
         Map<String, Set<Long>> taskToFailedBlockIds,
+        Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
         Set<String> failedTaskIds,
         int threadPoolSize,
         int threadKeepAliveTime,
@@ -170,6 +171,7 @@ public class RssShuffleWriterTest {
           shuffleWriteClient,
           taskToSuccessBlockIds,
           taskToFailedBlockIds,
+          taskToFailedBlockIdsAndServer,
           failedTaskIds,
           threadPoolSize,
           threadKeepAliveTime);
