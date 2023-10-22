@@ -101,22 +101,23 @@ public class ShuffleFlushManager {
     }
   }
 
+  private void recordSuccess(ShuffleDataFlushEvent event, long start) {
+    updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
+    ShuffleServerMetrics.incStorageSuccessCounter(event.getUnderStorage().getStorageHost());
+    event.doCleanup();
+    if (shuffleServer != null) {
+      if (LOG.isDebugEnabled()) {
+        long duration = System.currentTimeMillis() - start;
+        LOG.debug("Flush to file success in {} ms and release {} bytes", duration, event.getSize());
+      }
+    }
+  }
+
   public void processEvent(ShuffleDataFlushEvent event) {
     try {
       ShuffleServerMetrics.gaugeWriteHandler.inc();
-      long start = System.currentTimeMillis();
-      boolean writeSuccess = flushToFile(event, start);
+      flushToFile(event);
       // for thread safety we should not use or change any event info when write to file is failed
-      if (writeSuccess) {
-        event.doCleanup();
-        if (shuffleServer != null) {
-          if (LOG.isDebugEnabled()) {
-            long duration = System.currentTimeMillis() - start;
-            LOG.debug(
-                "Flush to file success in {} ms and release {} bytes", duration, event.getSize());
-          }
-        }
-      }
     } catch (Exception e) {
       LOG.error("Exception happened when flush data for " + event, e);
     } finally {
@@ -129,7 +130,8 @@ public class ShuffleFlushManager {
     return event.getRetryTimes() > retryMax;
   }
 
-  private boolean flushToFile(ShuffleDataFlushEvent event, long start) {
+  private boolean flushToFile(ShuffleDataFlushEvent event) {
+    long start = System.currentTimeMillis();
     boolean writeSuccess = false;
 
     try {
@@ -207,8 +209,7 @@ public class ShuffleFlushManager {
       ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
       writeSuccess = storageManager.write(storage, handler, event);
       if (writeSuccess) {
-        updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), blocks);
-        ShuffleServerMetrics.incStorageSuccessCounter(storage.getStorageHost());
+        recordSuccess(event, start);
       } else if (!reachRetryMax(event)) {
         if (event.isPended()) {
           LOG.error(
