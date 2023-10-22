@@ -106,7 +106,7 @@ public class ShuffleFlushManager {
       ShuffleServerMetrics.gaugeWriteHandler.inc();
       long start = System.currentTimeMillis();
       boolean writeSuccess = flushToFile(event, start);
-      // we should not call any
+      // for thread safety we should not use or change any event info when write to file is failed
       if (writeSuccess) {
         event.doCleanup();
         if (shuffleServer != null) {
