@@ -83,36 +83,37 @@ public class ShuffleFlushManager {
     eventHandler.handle(event);
   }
 
+  private void recordFinalFail(ShuffleDataFlushEvent event, long start) {
+    LOG.error(
+        "Failed to write data for {} in {} times, shuffle data will be lost", event, retryMax);
+    if (event.getUnderStorage() != null) {
+      ShuffleServerMetrics.incStorageFailedCounter(event.getUnderStorage().getStorageHost());
+    }
+    event.doCleanup();
+    if (shuffleServer != null) {
+      long duration = System.currentTimeMillis() - start;
+      ShuffleServerMetrics.counterTotalFailedWrittenEventNum.inc();
+      LOG.error(
+          "Flush to file for {} failed in {} ms and release {} bytes",
+          event,
+          duration,
+          event.getSize());
+    }
+  }
+
   public void processEvent(ShuffleDataFlushEvent event) {
     try {
       ShuffleServerMetrics.gaugeWriteHandler.inc();
       long start = System.currentTimeMillis();
-      boolean writeSuccess = flushToFile(event);
-      if (writeSuccess || event.getRetryTimes() > retryMax) {
-        if (event.getRetryTimes() > retryMax) {
-          LOG.error(
-              "Failed to write data for {} in {} times, shuffle data will be lost",
-              event,
-              retryMax);
-          if (event.getUnderStorage() != null) {
-            ShuffleServerMetrics.incStorageFailedCounter(event.getUnderStorage().getStorageHost());
-          }
-        }
+      boolean writeSuccess = flushToFile(event, start);
+      // we should not call any
+      if (writeSuccess) {
         event.doCleanup();
         if (shuffleServer != null) {
-          long duration = System.currentTimeMillis() - start;
-          if (writeSuccess) {
-            if (LOG.isDebugEnabled()) {
-              LOG.debug(
-                  "Flush to file success in {} ms and release {} bytes", duration, event.getSize());
-            }
-          } else {
-            ShuffleServerMetrics.counterTotalFailedWrittenEventNum.inc();
-            LOG.error(
-                "Flush to file for {} failed in {} ms and release {} bytes",
-                event,
-                duration,
-                event.getSize());
+          if (LOG.isDebugEnabled()) {
+            long duration = System.currentTimeMillis() - start;
+            LOG.debug(
+                "Flush to file success in {} ms and release {} bytes", duration, event.getSize());
           }
         }
       }
@@ -124,7 +125,11 @@ public class ShuffleFlushManager {
     }
   }
 
-  private boolean flushToFile(ShuffleDataFlushEvent event) {
+  private boolean reachRetryMax(ShuffleDataFlushEvent event) {
+    return event.getRetryTimes() > retryMax;
+  }
+
+  private boolean flushToFile(ShuffleDataFlushEvent event, long start) {
     boolean writeSuccess = false;
 
     try {
@@ -160,7 +165,7 @@ public class ShuffleFlushManager {
       if (!storage.canWrite()) {
         // todo: Could we add an interface supportPending for storageManager
         //       to unify following logic of multiple different storage managers
-        if (event.getRetryTimes() <= retryMax) {
+        if (!reachRetryMax(event)) {
           if (event.isPended()) {
             LOG.error(
                 "Drop this event directly due to already having entered pending queue. event: {}",
@@ -168,9 +173,15 @@ public class ShuffleFlushManager {
             return true;
           }
           event.increaseRetryTimes();
-          ShuffleServerMetrics.incStorageRetryCounter(storage.getStorageHost());
           event.markPended();
-          eventHandler.handle(event);
+          if (!reachRetryMax(event)) {
+            ShuffleServerMetrics.incStorageRetryCounter(storage.getStorageHost());
+            eventHandler.handle(event);
+          } else {
+            recordFinalFail(event, start);
+          }
+        } else {
+          recordFinalFail(event, start);
         }
         return false;
       }
@@ -198,21 +209,28 @@ public class ShuffleFlushManager {
       if (writeSuccess) {
         updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), blocks);
         ShuffleServerMetrics.incStorageSuccessCounter(storage.getStorageHost());
-      } else if (event.getRetryTimes() <= retryMax) {
+      } else if (!reachRetryMax(event)) {
         if (event.isPended()) {
           LOG.error(
               "Drop this event directly due to already having entered pending queue. event: {}",
               event);
         }
         event.increaseRetryTimes();
-        ShuffleServerMetrics.incStorageRetryCounter(storage.getStorageHost());
         event.markPended();
-        eventHandler.handle(event);
+        if (!reachRetryMax(event)) {
+          ShuffleServerMetrics.incStorageRetryCounter(storage.getStorageHost());
+          eventHandler.handle(event);
+        } else {
+          recordFinalFail(event, start);
+        }
       }
     } catch (Throwable throwable) {
       // just log the error, don't throw the exception and stop the flush thread
       LOG.error("Exception happened when process flush shuffle data for {}", event, throwable);
       event.increaseRetryTimes();
+      if (reachRetryMax(event)) {
+        recordFinalFail(event, start);
+      }
     }
     return writeSuccess;
   }
