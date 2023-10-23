@@ -17,10 +17,10 @@
 
 package org.apache.uniffle.client.request;
 
+import java.util.Collections;
 import java.util.Set;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Sets;
 
 public class RssGetShuffleAssignmentsRequest {
 
@@ -51,7 +51,7 @@ public class RssGetShuffleAssignmentsRequest {
         requiredTags,
         -1,
         -1,
-        Sets.newHashSet());
+        Collections.emptySet());
   }
 
   public RssGetShuffleAssignmentsRequest(

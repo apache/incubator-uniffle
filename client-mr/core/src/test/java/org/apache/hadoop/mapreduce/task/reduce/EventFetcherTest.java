@@ -19,6 +19,7 @@ package org.apache.hadoop.mapreduce.task.reduce;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
@@ -78,7 +79,11 @@ public class EventFetcherTest {
             any(JobID.class), eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
         .thenReturn(
             getMockedCompletionEventsUpdate(
-                0, mapTaskNum, Sets.newHashSet(70, 80, 90), Sets.newHashSet(), Sets.newHashSet()));
+                0,
+                mapTaskNum,
+                Sets.newHashSet(70, 80, 90),
+                Collections.EMPTY_SET,
+                Collections.EMPTY_SET));
 
     RssEventFetcher ef = new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();
@@ -135,7 +140,7 @@ public class EventFetcherTest {
             any(JobID.class), eq(0), eq(MAX_EVENTS_TO_FETCH), eq(tid)))
         .thenReturn(
             getInconsistentCompletionEventsUpdate(
-                0, mapTaskNum, Sets.newHashSet(45, 67), Sets.newHashSet()));
+                0, mapTaskNum, Sets.newHashSet(45, 67), Collections.EMPTY_SET));
 
     RssEventFetcher ef = new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();

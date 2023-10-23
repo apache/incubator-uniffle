@@ -19,6 +19,7 @@ package org.apache.uniffle.server;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -576,7 +577,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     shuffleTaskManager.checkResourceStatus();
     // wait resource delete
     Thread.sleep(3000);
-    assertEquals(Sets.newHashSet(), shuffleTaskManager.getAppIds());
+    assertEquals(Collections.EMPTY_SET, shuffleTaskManager.getAppIds());
     assertTrue(shuffleTaskManager.getCachedBlockIds("clearTest1", shuffleId).isEmpty());
   }
 
@@ -627,7 +628,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
           .start();
     }
     countDownLatch.await();
-    assertEquals(Sets.newHashSet(), shuffleTaskManager.getAppIds());
+    assertEquals(Collections.EMPTY_SET, shuffleTaskManager.getAppIds());
     assertTrue(shuffleTaskManager.getCachedBlockIds(appId, shuffleId).isEmpty());
   }
 

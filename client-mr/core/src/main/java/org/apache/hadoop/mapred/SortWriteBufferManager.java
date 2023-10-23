@@ -18,6 +18,7 @@
 package org.apache.hadoop.mapred;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -201,7 +202,7 @@ public class SortWriteBufferManager<K, V> {
   }
 
   private void sendBufferToServers(SortWriteBuffer<K, V> buffer) {
-    List<ShuffleBlockInfo> shuffleBlocks = Lists.newArrayList();
+    List<ShuffleBlockInfo> shuffleBlocks = new ArrayList<>(1);
     prepareBufferForSend(shuffleBlocks, buffer);
     sendShuffleBlocks(shuffleBlocks);
   }
