@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -84,8 +85,8 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     for (ShuffleServer shuffleServer : shuffleServers) {
       shuffleServer.stopServer();
     }
-    shuffleServers = Lists.newArrayList();
-    coordinators = Lists.newArrayList();
+    shuffleServers = Collections.emptyList();
+    coordinators = Collections.emptyList();
     ShuffleServerMetrics.clear();
     CoordinatorMetrics.clear();
   }

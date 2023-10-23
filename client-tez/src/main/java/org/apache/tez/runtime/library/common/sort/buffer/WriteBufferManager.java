@@ -18,11 +18,7 @@
 package org.apache.tez.runtime.library.common.sort.buffer;
 
 import java.io.IOException;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -208,7 +204,7 @@ public class WriteBufferManager<K, V> {
   }
 
   private void sendBufferToServers(WriteBuffer<K, V> buffer) {
-    List<ShuffleBlockInfo> shuffleBlocks = Lists.newArrayList();
+    List<ShuffleBlockInfo> shuffleBlocks = new ArrayList<>(1);
     prepareBufferForSend(shuffleBlocks, buffer);
     sendShuffleBlocks(shuffleBlocks);
   }

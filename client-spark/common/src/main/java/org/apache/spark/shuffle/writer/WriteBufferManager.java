@@ -17,10 +17,7 @@
 
 package org.apache.spark.shuffle.writer;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -169,15 +166,18 @@ public class WriteBufferManager extends MemoryConsumer {
 
   public List<ShuffleBlockInfo> addPartitionData(
       int partitionId, byte[] serializedData, int serializedDataLength, long start) {
-    List<ShuffleBlockInfo> candidateSendingBlocks =
+    List<ShuffleBlockInfo> singleOrEmptySendingBlocks =
         insertIntoBuffer(partitionId, serializedData, serializedDataLength);
 
     // check buffer size > spill threshold
     if (usedBytes.get() - inSendListBytes.get() > spillSize) {
-      candidateSendingBlocks.addAll(clear());
+      List<ShuffleBlockInfo> multiSendingBlocks = clear();
+      multiSendingBlocks.addAll(singleOrEmptySendingBlocks);
+      writeTime += System.currentTimeMillis() - start;
+      return multiSendingBlocks;
     }
     writeTime += System.currentTimeMillis() - start;
-    return candidateSendingBlocks;
+    return singleOrEmptySendingBlocks;
   }
 
   /**
@@ -192,7 +192,6 @@ public class WriteBufferManager extends MemoryConsumer {
    */
   private List<ShuffleBlockInfo> insertIntoBuffer(
       int partitionId, byte[] serializedData, int serializedDataLength) {
-    List<ShuffleBlockInfo> sentBlocks = new ArrayList<>();
     long required = Math.max(bufferSegmentSize, serializedDataLength);
     // Asking memory from task memory manager for the existing writer buffer,
     // this may trigger current WriteBufferManager spill method, which will
@@ -213,6 +212,7 @@ public class WriteBufferManager extends MemoryConsumer {
       WriterBuffer wb = buffers.get(partitionId);
       wb.addRecord(serializedData, serializedDataLength);
       if (wb.getMemoryUsed() > bufferSize) {
+        List<ShuffleBlockInfo> sentBlocks = new ArrayList<>(1);
         sentBlocks.add(createShuffleBlock(partitionId, wb));
         copyTime += wb.getCopyTime();
         buffers.remove(partitionId);
@@ -228,6 +228,7 @@ public class WriteBufferManager extends MemoryConsumer {
                   + wb.getDataLength()
                   + "]");
         }
+        return sentBlocks;
       }
     } else {
       // The true of hasRequested means the former partitioned buffer has been flushed, that is
@@ -242,7 +243,7 @@ public class WriteBufferManager extends MemoryConsumer {
       wb.addRecord(serializedData, serializedDataLength);
       buffers.put(partitionId, wb);
     }
-    return sentBlocks;
+    return Collections.emptyList();
   }
 
   public List<ShuffleBlockInfo> addRecord(int partitionId, Object key, Object value) {

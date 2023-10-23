@@ -585,7 +585,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   public Set<Long> getFailedBlockIds(String taskId) {
     Set<Long> result = taskToFailedBlockIds.get(taskId);
     if (result == null) {
-      result = Sets.newHashSet();
+      result = Collections.emptySet();
     }
     return result;
   }
@@ -593,7 +593,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   public Set<Long> getSuccessBlockIds(String taskId) {
     Set<Long> result = taskToSuccessBlockIds.get(taskId);
     if (result == null) {
-      result = Sets.newHashSet();
+      result = Collections.emptySet();
     }
     return result;
   }

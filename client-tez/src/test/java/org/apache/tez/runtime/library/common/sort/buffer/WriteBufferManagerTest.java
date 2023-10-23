@@ -19,12 +19,7 @@ package org.apache.tez.runtime.library.common.sort.buffer;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -556,7 +551,7 @@ public class WriteBufferManagerTest {
         for (ShuffleBlockInfo blockInfo : shuffleBlockInfoList) {
           successBlockIds.add(blockInfo.getBlockId());
         }
-        return new SendShuffleDataResult(successBlockIds, Sets.newHashSet());
+        return new SendShuffleDataResult(successBlockIds, Collections.EMPTY_SET);
       }
     }
 
