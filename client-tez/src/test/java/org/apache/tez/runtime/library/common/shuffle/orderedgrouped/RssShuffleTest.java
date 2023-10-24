@@ -87,11 +87,11 @@ public class RssShuffleTest {
       conf.setLong(Constants.TEZ_RUNTIME_TASK_MEMORY, 300000L);
       RssShuffle shuffle = new RssShuffle(inputContext, conf, 1, 3000000L, 0, APPATTEMPT_ID);
       try {
-        shuffle.run();
         ShuffleScheduler scheduler = shuffle.rssScheduler;
         MergeManager mergeManager = shuffle.merger;
         assertFalse(scheduler.isShutdown());
         assertFalse(mergeManager.isShutdown());
+        shuffle.run();
 
         String exceptionMessage = "Simulating fetch failure";
         shuffle.reportException(new IOException(exceptionMessage));
