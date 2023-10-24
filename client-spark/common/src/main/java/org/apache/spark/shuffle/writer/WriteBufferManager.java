@@ -372,7 +372,7 @@ public class WriteBufferManager extends MemoryConsumer {
       try {
         Thread.sleep(requireMemoryInterval);
       } catch (InterruptedException ie) {
-        LOG.warn("Exception happened when waiting for memory.", ie);
+        throw new RssException("Interrupted when waiting for memory.", ie);
       }
       gotMem = acquireMemory(askExecutorMemory);
       allocatedBytes.addAndGet(gotMem);
