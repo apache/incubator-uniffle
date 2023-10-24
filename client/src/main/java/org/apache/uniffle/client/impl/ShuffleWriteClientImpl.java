@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
@@ -197,7 +198,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                         .forEach(
                             blockId ->
                                 blockIdsSendSuccessTracker
-                                    .computeIfAbsent(blockId, id -> Lists.newArrayList())
+                                    .computeIfAbsent(blockId, id -> new CopyOnWriteArrayList())
                                     .add(ssi));
                     if (defectiveServers != null) {
                       defectiveServers.remove(ssi);
@@ -211,7 +212,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                         .forEach(
                             blockId ->
                                 blockIdsSendFailTracker
-                                    .computeIfAbsent(blockId, id -> Lists.newArrayList())
+                                    .computeIfAbsent(blockId, id -> new CopyOnWriteArrayList())
                                     .add(ssi));
                     if (defectiveServers != null) {
                       defectiveServers.add(ssi);
@@ -355,7 +356,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     }
     /** Records the ShuffleServer that successfully or failed to send blocks */
-    Map<Long, List<ShuffleServerInfo>> blockIdSendSuccessTracker = JavaUtils.newConcurrentMap();
+    Map<Long, List<ShuffleServerInfo>> blockIdsSendSuccessTracker = JavaUtils.newConcurrentMap();
     Map<Long, List<ShuffleServerInfo>> blockIdsSendFailTracker = JavaUtils.newConcurrentMap();
 
     // sent the primary round of blocks.
@@ -364,7 +365,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             appId,
             primaryServerToBlocks,
             primaryServerToBlockIds,
-            blockIdSendSuccessTracker,
+            blockIdsSendSuccessTracker,
             blockIdsSendFailTracker,
             secondaryServerToBlocks.isEmpty(),
             needCancelRequest);
@@ -380,19 +381,19 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           appId,
           secondaryServerToBlocks,
           secondaryServerToBlockIds,
-          blockIdSendSuccessTracker,
+          blockIdsSendSuccessTracker,
           blockIdsSendFailTracker,
           true,
           needCancelRequest);
     }
 
-    blockIdSendSuccessTracker
+    blockIdsSendSuccessTracker
         .entrySet()
         .forEach(
             successBlockId -> {
               if (successBlockId.getValue().size() < replicaWrite) {
                 // Removes blocks that do not reach replicaWrite from the success queue
-                blockIdSendSuccessTracker.remove(successBlockId.getKey());
+                blockIdsSendSuccessTracker.remove(successBlockId.getKey());
               } else {
                 // If the replicaWrite to be sent is reached,
                 // no matter whether the block fails to be sent or not,
@@ -402,7 +403,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               }
             });
     return new SendShuffleDataResult(
-        blockIdSendSuccessTracker.keySet(),
+        blockIdsSendSuccessTracker.keySet(),
         blockIdsSendFailTracker.keySet(),
         blockIdsSendFailTracker);
   }
