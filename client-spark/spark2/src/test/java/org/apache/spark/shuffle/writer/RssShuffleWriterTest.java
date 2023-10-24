@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -162,7 +163,7 @@ public class RssShuffleWriterTest {
         ShuffleWriteClient shuffleWriteClient,
         Map<String, Set<Long>> taskToSuccessBlockIds,
         Map<String, Set<Long>> taskToFailedBlockIds,
-        Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
+        Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
         Set<String> failedTaskIds,
         int threadPoolSize,
         int threadKeepAliveTime,

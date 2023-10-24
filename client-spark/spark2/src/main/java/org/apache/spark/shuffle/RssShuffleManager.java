@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -87,8 +88,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private Map<String, Set<Long>> taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
   private Map<String, Set<Long>> taskToFailedBlockIds = JavaUtils.newConcurrentMap();
   // Record both the block that failed to be sent and the ShuffleServer
-  private final Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer =
-      JavaUtils.newConcurrentMap();
+  private final Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>>
+      taskToFailedBlockIdsAndServer = JavaUtils.newConcurrentMap();
   private final int dataReplica;
   private final int dataReplicaWrite;
   private final int dataReplicaRead;
@@ -703,10 +704,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * @param taskId Shuffle taskId
    * @return List of failed ShuffleServer blocks
    */
-  public Map<Long, List<ShuffleServerInfo>> getFailedBlockIdsWithShuffleServer(String taskId) {
-    Map<Long, List<ShuffleServerInfo>> result = taskToFailedBlockIdsAndServer.get(taskId);
+  public Map<Long, BlockingQueue<ShuffleServerInfo>> getFailedBlockIdsWithShuffleServer(
+      String taskId) {
+    Map<Long, BlockingQueue<ShuffleServerInfo>> result = taskToFailedBlockIdsAndServer.get(taskId);
     if (result == null) {
-      result = JavaUtils.newConcurrentMap();
+      result = Collections.emptyMap();
     }
     return result;
   }
