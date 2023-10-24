@@ -244,7 +244,8 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
               metrics,
               shuffleReadClient,
               blockIdBitmap.getLongCardinality(),
-              RssMRConfig.toRssConf(rssJobConf));
+              RssMRConfig.toRssConf(rssJobConf),
+              context.getCodec());
       fetcher.fetchAllRssBlocks();
       LOG.info(
           "In reduce: " + reduceId + ", Rss MR client fetches blocks from RSS server successfully");

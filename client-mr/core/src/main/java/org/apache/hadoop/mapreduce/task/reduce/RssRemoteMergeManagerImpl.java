@@ -47,6 +47,7 @@ import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
 
   private static final Log LOG = LogFactory.getLog(RssRemoteMergeManagerImpl.class);
+  private static final String SPILL_FILE_PATTERN = "%s/%s/spill/%s/%s";
 
   private final String appId;
   private final TaskAttemptID reduceId;
@@ -205,7 +206,18 @@ public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
   @Override
   public synchronized MapOutput<K, V> reserve(TaskAttemptID mapId, long requestedSize, int fetcher)
       throws IOException {
-    // we disable OnDisk MapOutput to avoid merging disk immediate data
+    if (requestedSize > maxSingleShuffleLimit) {
+      String filePath = String.format(SPILL_FILE_PATTERN, basePath, appId, reduceId, mapId);
+      LOG.info(
+          mapId
+              + ": Shuffling to remote disk since "
+              + requestedSize
+              + " is greater than maxSingleShuffleLimit ("
+              + maxSingleShuffleLimit
+              + ")");
+      return new OnDiskMapOutput<K, V>(
+          mapId, this, requestedSize, jobConf, fetcher, true, remoteFS, new Path(filePath));
+    }
     if (usedMemory > memoryLimit) {
       if (LOG.isDebugEnabled()) {
         LOG.debug(
@@ -287,7 +299,7 @@ public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
 
   @Override
   public synchronized void closeOnDiskFile(CompressAwarePath file) {
-    throw new IllegalStateException("closeOnDiskFile is unsupported for rss merger");
+    closeOnHDFSFile(file);
   }
 
   @Override

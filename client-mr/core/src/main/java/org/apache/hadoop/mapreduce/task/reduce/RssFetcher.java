@@ -24,6 +24,7 @@ import java.text.DecimalFormat;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Reporter;
@@ -91,6 +92,7 @@ public class RssFetcher<K, V> {
   private byte[] uncompressedData = null;
   private RssConf rssConf;
   private Codec codec;
+  private CompressionCodec hadoopCodec;
 
   RssFetcher(
       JobConf job,
@@ -102,7 +104,8 @@ public class RssFetcher<K, V> {
       ShuffleClientMetrics metrics,
       ShuffleReadClient shuffleReadClient,
       long totalBlockCount,
-      RssConf rssConf) {
+      RssConf rssConf,
+      CompressionCodec hadoopCodec) {
     this.jobConf = job;
     this.reporter = reporter;
     this.status = status;
@@ -128,6 +131,7 @@ public class RssFetcher<K, V> {
 
     this.rssConf = rssConf;
     this.codec = Codec.newInstance(rssConf);
+    this.hadoopCodec = hadoopCodec;
   }
 
   public void fetchAllRssBlocks() throws IOException, InterruptedException {
@@ -245,7 +249,7 @@ public class RssFetcher<K, V> {
 
     // write data to mapOutput
     try {
-      RssBypassWriter.write(mapOutput, uncompressedData);
+      RssBypassWriter.write(mapOutput, uncompressedData, hadoopCodec);
       // let the merger knows this block is ready for merging
       mapOutput.commit();
       if (mapOutput instanceof OnDiskMapOutput) {

@@ -127,7 +127,8 @@ public class FetcherTest {
             metrics,
             shuffleReadClient,
             3,
-            new RssConf());
+            new RssConf(),
+            null);
     fetcher.fetchAllRssBlocks();
 
     RawKeyValueIterator iterator = merger.close();
@@ -182,7 +183,8 @@ public class FetcherTest {
             metrics,
             shuffleReadClient,
             3,
-            new RssConf());
+            new RssConf(),
+            null);
     fetcher.fetchAllRssBlocks();
 
     RawKeyValueIterator iterator = merger.close();
@@ -240,7 +242,8 @@ public class FetcherTest {
             metrics,
             shuffleReadClient,
             3,
-            new RssConf());
+            new RssConf(),
+            null);
     fetcher.fetchAllRssBlocks();
 
     RawKeyValueIterator iterator = merger.close();
@@ -290,9 +293,9 @@ public class FetcherTest {
     TaskAttemptID taskAttemptID = RssMRUtils.createMRTaskAttemptId(new JobID(), TaskType.MAP, 1, 1);
     byte[] buffer = new byte[10];
     MapOutput mapOutput1 = merger.reserve(taskAttemptID, 10, 1);
-    RssBypassWriter.write(mapOutput1, buffer);
+    RssBypassWriter.write(mapOutput1, buffer, null);
     MapOutput mapOutput2 = merger.reserve(taskAttemptID, 10, 1);
-    RssBypassWriter.write(mapOutput2, buffer);
+    RssBypassWriter.write(mapOutput2, buffer, null);
     assertEquals(
         RssBypassWriter.getDecompressor((InMemoryMapOutput) mapOutput1),
         RssBypassWriter.getDecompressor((InMemoryMapOutput) mapOutput2));

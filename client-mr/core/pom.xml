@@ -115,6 +115,11 @@
             <groupId>org.apache.uniffle</groupId>
             <artifactId>hadoop${hadoop.short.version}-shim</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-minicluster</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

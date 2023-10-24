@@ -28,9 +28,11 @@ import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.IFile;
@@ -45,10 +47,13 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.util.Progress;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RssRemoteMergeManagerTest {
   String appId = "app1";
@@ -58,22 +63,37 @@ public class RssRemoteMergeManagerTest {
   TaskAttemptID mapId2 = new TaskAttemptID(new TaskID(jobId, TaskType.MAP, 2), 0);
   TaskAttemptID reduceId1 = new TaskAttemptID(new TaskID(jobId, TaskType.REDUCE, 0), 0);
 
+  private static FileSystem remoteFS;
+  private static MiniDFSCluster cluster;
+
+  @BeforeAll
+  public static void setUpHdfs(@TempDir File tempDir) throws Exception {
+    Configuration conf = new Configuration();
+    File baseDir = tempDir;
+    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
+    cluster = (new MiniDFSCluster.Builder(conf)).build();
+    String hdfsUri = cluster.getURI().toString() + "/";
+    remoteFS = (new Path(hdfsUri)).getFileSystem(conf);
+  }
+
+  @AfterAll
+  public static void tearDownHdfs() throws Exception {
+    remoteFS.close();
+    cluster.shutdown();
+  }
+
   @Test
-  public void mergerTest(@TempDir File tmpDir) throws Throwable {
+  public void mergerTest() throws Throwable {
     JobConf jobConf = new JobConf();
     final FileSystem fs = FileSystem.getLocal(jobConf);
     final LocalDirAllocator lda = new LocalDirAllocator(MRConfig.LOCAL_DIR);
-
-    jobConf.set("mapreduce.reduce.memory.totalbytes", "1024");
-    jobConf.set("mapreduce.reduce.shuffle.memory.limit.percent", "0.01");
-    jobConf.set("mapreduce.reduce.shuffle.merge.percent", "0.1");
 
     final RssRemoteMergeManagerImpl<Text, Text> mergeManager =
         new RssRemoteMergeManagerImpl<Text, Text>(
             appId,
             reduceId1,
             jobConf,
-            tmpDir.toString(),
+            "/tmp",
             1,
             5,
             fs,
@@ -88,7 +108,7 @@ public class RssRemoteMergeManagerTest {
             null,
             new Progress(),
             new MROutputFiles(),
-            new JobConf());
+            new JobConf(remoteFS.getConf()));
 
     // write map outputs
     Map<String, String> map1 = new TreeMap<String, String>();
@@ -109,22 +129,21 @@ public class RssRemoteMergeManagerTest {
 
     RawKeyValueIterator iterator = mergeManager.close();
 
-    File[] mergedFiles =
-        new File(
-                tmpDir
+    FileStatus[] fileStatuses =
+        remoteFS.listStatus(
+            new Path(
+                "/tmp"
                     + Path.SEPARATOR
                     + appId
                     + Path.SEPARATOR
                     + "spill"
                     + Path.SEPARATOR
-                    + "attempt_app1_0000_r_000000_0")
-            .listFiles();
-
-    assertEquals(mergedFiles.length, 1);
+                    + "attempt_app1_0000_r_000000_0"));
+    assertEquals(fileStatuses.length, 1);
 
     List<String> keys = Lists.newArrayList();
     List<String> values = Lists.newArrayList();
-    readOnDiskMapOutput(jobConf, fs, new Path(mergedFiles[0].toString()), keys, values);
+    readOnDiskMapOutput(jobConf, remoteFS, fileStatuses[0].getPath(), keys, values);
     List<String> actualKeys = Lists.newArrayList("apple", "banana", "carrot");
     List<String> actualValues = Lists.newArrayList("disgusting", "pretty good", "delicious");
     for (int i = 0; i < 3; i++) {
@@ -140,6 +159,106 @@ public class RssRemoteMergeManagerTest {
       assertEquals(new Text(key).toString().trim(), actualKeys.get(i));
       assertEquals(new Text(value).toString().trim(), actualValues.get(i));
     }
+    iterator.close();
+  }
+
+  @Test
+  public void mergerTestWhenOverSingleShuffleLimit() throws Throwable {
+    JobConf jobConf = new JobConf();
+    final FileSystem fs = FileSystem.getLocal(jobConf);
+    final LocalDirAllocator lda = new LocalDirAllocator(MRConfig.LOCAL_DIR);
+
+    jobConf.set("mapreduce.reduce.memory.totalbytes", "1024");
+    jobConf.set("mapreduce.reduce.shuffle.memory.limit.percent", "0.01");
+    jobConf.set("mapreduce.reduce.shuffle.merge.percent", "0.1");
+
+    final RssRemoteMergeManagerImpl<Text, Text> mergeManager =
+        new RssRemoteMergeManagerImpl<Text, Text>(
+            appId,
+            reduceId1,
+            jobConf,
+            "/tmp",
+            1,
+            5,
+            fs,
+            lda,
+            Reporter.NULL,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            new Progress(),
+            new MROutputFiles(),
+            new JobConf(remoteFS.getConf()));
+
+    // write map outputs
+    Map<String, String> map1 = new TreeMap<String, String>();
+    map1.put("apple", "disgusting");
+    map1.put("carrot", "delicious");
+    Map<String, String> map2 = new TreeMap<String, String>();
+    map2.put("banana", "pretty good");
+
+    byte[] mapOutputBytes1 = writeMapOutput(jobConf, map1);
+    byte[] mapOutputBytes2 = writeMapOutput(jobConf, map2);
+    MapOutput mapOutput1 = mergeManager.reserve(mapId1, mapOutputBytes1.length, 0);
+    assertTrue(mapOutput1 instanceof OnDiskMapOutput);
+    MapOutput mapOutput2 = mergeManager.reserve(mapId2, mapOutputBytes2.length, 0);
+    assertTrue(mapOutput2 instanceof OnDiskMapOutput);
+    RssBypassWriter.write(mapOutput1, mapOutputBytes1, null);
+    RssBypassWriter.write(mapOutput2, mapOutputBytes2, null);
+    mapOutput1.commit();
+    mapOutput2.commit();
+
+    RawKeyValueIterator iterator = mergeManager.close();
+
+    String spillDir =
+        "/tmp"
+            + Path.SEPARATOR
+            + appId
+            + Path.SEPARATOR
+            + "spill"
+            + Path.SEPARATOR
+            + "attempt_app1_0000_r_000000_0";
+    FileStatus[] fileStatuses = remoteFS.listStatus(new Path(spillDir));
+    assertEquals(fileStatuses.length, 2);
+
+    // Verify the first spill file
+    List<String> keys = Lists.newArrayList();
+    List<String> values = Lists.newArrayList();
+    List<String> actualKeys = Lists.newArrayList("apple", "carrot");
+    List<String> actualValues = Lists.newArrayList("disgusting", "delicious");
+    readOnDiskMapOutput(jobConf, remoteFS, new Path(spillDir, mapId1.toString()), keys, values);
+    for (int i = 0; i < 2; i++) {
+      assertEquals(keys.get(i), actualKeys.get(i));
+      assertEquals(values.get(i), actualValues.get(i));
+    }
+
+    // Verify the second spill file
+    keys.clear();
+    values.clear();
+    readOnDiskMapOutput(jobConf, remoteFS, new Path(spillDir, mapId2.toString()), keys, values);
+    assertEquals(keys.get(0), "banana");
+    assertEquals(values.get(0), "pretty good");
+
+    // Verify the result by iterator
+    keys.clear();
+    values.clear();
+    actualKeys = Lists.newArrayList("apple", "banana", "carrot");
+    actualValues = Lists.newArrayList("disgusting", "pretty good", "delicious");
+    for (int i = 0; i < 3; i++) {
+      // test final returned values
+      iterator.next();
+      byte[] key = new byte[iterator.getKey().getLength()];
+      byte[] value = new byte[iterator.getValue().getLength()];
+      System.arraycopy(iterator.getKey().getData(), 0, key, 0, key.length);
+      System.arraycopy(iterator.getValue().getData(), 0, value, 0, value.length);
+      assertEquals(new Text(key).toString().trim(), actualKeys.get(i));
+      assertEquals(new Text(value).toString().trim(), actualValues.get(i));
+    }
+    iterator.close();
   }
 
   private byte[] writeMapOutput(Configuration conf, Map<String, String> keysToValues)
