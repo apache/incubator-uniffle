@@ -363,13 +363,17 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         .forEach(
             blockList ->
                 blockList.forEach(
-                    block -> blockIdsSendSuccessTracker.put(block, new AtomicInteger(0))));
+                    block ->
+                        blockIdsSendSuccessTracker.computeIfAbsent(
+                            block, id -> new AtomicInteger(0))));
     secondaryServerToBlockIds
         .values()
         .forEach(
             blockList ->
                 blockList.forEach(
-                    block -> blockIdsSendSuccessTracker.put(block, new AtomicInteger(0))));
+                    block ->
+                        blockIdsSendSuccessTracker.computeIfAbsent(
+                            block, id -> new AtomicInteger(0))));
     Map<Long, BlockingQueue<ShuffleServerInfo>> blockIdsSendFailTracker =
         JavaUtils.newConcurrentMap();
 
