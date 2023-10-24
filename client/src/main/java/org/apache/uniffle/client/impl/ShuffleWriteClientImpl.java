@@ -401,14 +401,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           needCancelRequest);
     }
 
+    Set<Long> blockIdsSendSuccessSet = Sets.newHashSet();
     blockIdsSendSuccessTracker
         .entrySet()
         .forEach(
             successBlockId -> {
-              if (successBlockId.getValue().get() < replicaWrite) {
-                // Removes blocks that do not reach replicaWrite from the success queue
-                blockIdsSendSuccessTracker.remove(successBlockId.getKey());
-              } else {
+              if (successBlockId.getValue().get() >= replicaWrite) {
+                blockIdsSendSuccessSet.add(successBlockId.getKey());
                 // If the replicaWrite to be sent is reached,
                 // no matter whether the block fails to be sent or not,
                 // the block is considered to have been sent successfully and is removed from the
@@ -417,9 +416,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               }
             });
     return new SendShuffleDataResult(
-        blockIdsSendSuccessTracker.keySet(),
-        blockIdsSendFailTracker.keySet(),
-        blockIdsSendFailTracker);
+        blockIdsSendSuccessSet, blockIdsSendFailTracker.keySet(), blockIdsSendFailTracker);
   }
 
   /**
