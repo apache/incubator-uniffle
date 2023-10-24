@@ -23,13 +23,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -152,8 +153,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       String appId,
       Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
       Map<ShuffleServerInfo, List<Long>> serverToBlockIds,
-      Map<Long, List<ShuffleServerInfo>> blockIdsSendSuccessTracker,
-      Map<Long, List<ShuffleServerInfo>> blockIdsSendFailTracker,
+      Map<Long, AtomicInteger> blockIdsSendSuccessTracker,
+      Map<Long, BlockingQueue<ShuffleServerInfo>> blockIdsSendFailTracker,
       boolean allowFastFail,
       Supplier<Boolean> needCancelRequest) {
 
@@ -196,10 +197,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                     serverToBlockIds
                         .get(ssi)
                         .forEach(
-                            blockId ->
-                                blockIdsSendSuccessTracker
-                                    .computeIfAbsent(blockId, id -> new CopyOnWriteArrayList())
-                                    .add(ssi));
+                            blockId -> blockIdsSendSuccessTracker.get(blockId).incrementAndGet());
                     if (defectiveServers != null) {
                       defectiveServers.remove(ssi);
                     }
@@ -212,7 +210,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                         .forEach(
                             blockId ->
                                 blockIdsSendFailTracker
-                                    .computeIfAbsent(blockId, id -> new CopyOnWriteArrayList())
+                                    .computeIfAbsent(blockId, id -> new LinkedBlockingQueue<>())
                                     .add(ssi));
                     if (defectiveServers != null) {
                       defectiveServers.add(ssi);
@@ -226,7 +224,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                       .forEach(
                           blockId ->
                               blockIdsSendFailTracker
-                                  .computeIfAbsent(blockId, id -> Lists.newArrayList())
+                                  .computeIfAbsent(blockId, id -> new LinkedBlockingQueue<>())
                                   .add(ssi));
                   if (defectiveServers != null) {
                     defectiveServers.add(ssi);
@@ -356,8 +354,24 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     }
     /** Records the ShuffleServer that successfully or failed to send blocks */
-    Map<Long, List<ShuffleServerInfo>> blockIdsSendSuccessTracker = JavaUtils.newConcurrentMap();
-    Map<Long, List<ShuffleServerInfo>> blockIdsSendFailTracker = JavaUtils.newConcurrentMap();
+    // we assume that most of the blocks can be sent successfully
+    // so initialize the map at first without concurrency insurance
+    // AtomicInteger is enough to reflect value changes in other threads
+    Map<Long, AtomicInteger> blockIdsSendSuccessTracker = Maps.newHashMap();
+    primaryServerToBlockIds
+        .values()
+        .forEach(
+            blockList ->
+                blockList.forEach(
+                    block -> blockIdsSendSuccessTracker.put(block, new AtomicInteger(0))));
+    secondaryServerToBlockIds
+        .values()
+        .forEach(
+            blockList ->
+                blockList.forEach(
+                    block -> blockIdsSendSuccessTracker.put(block, new AtomicInteger(0))));
+    Map<Long, BlockingQueue<ShuffleServerInfo>> blockIdsSendFailTracker =
+        JavaUtils.newConcurrentMap();
 
     // sent the primary round of blocks.
     boolean isAllSuccess =
@@ -391,7 +405,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         .entrySet()
         .forEach(
             successBlockId -> {
-              if (successBlockId.getValue().size() < replicaWrite) {
+              if (successBlockId.getValue().get() < replicaWrite) {
                 // Removes blocks that do not reach replicaWrite from the success queue
                 blockIdsSendSuccessTracker.remove(successBlockId.getKey());
               } else {

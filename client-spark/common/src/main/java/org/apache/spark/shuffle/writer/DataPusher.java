@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -56,7 +57,8 @@ public class DataPusher implements Closeable {
   private final Map<String, Set<Long>> taskToSuccessBlockIds;
   // Must be thread safe
   private final Map<String, Set<Long>> taskToFailedBlockIds;
-  private final Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer;
+  private final Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>>
+      taskToFailedBlockIdsAndServer;
   private String rssAppId;
   // Must be thread safe
   private final Set<String> failedTaskIds;
@@ -65,7 +67,7 @@ public class DataPusher implements Closeable {
       ShuffleWriteClient shuffleWriteClient,
       Map<String, Set<Long>> taskToSuccessBlockIds,
       Map<String, Set<Long>> taskToFailedBlockIds,
-      Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
+      Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
       Set<String> failedTaskIds,
       int threadPoolSize,
       int threadKeepAliveTime) {
@@ -126,9 +128,9 @@ public class DataPusher implements Closeable {
   }
 
   private synchronized void putSendFailedBlockIdAndShuffleServer(
-      Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
+      Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
       String taskAttemptId,
-      Map<Long, List<ShuffleServerInfo>> blockIdsAndServer) {
+      Map<Long, BlockingQueue<ShuffleServerInfo>> blockIdsAndServer) {
     if (blockIdsAndServer == null || blockIdsAndServer.isEmpty()) {
       return;
     }

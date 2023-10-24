@@ -17,9 +17,9 @@
 
 package org.apache.uniffle.client.response;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.JavaUtils;
@@ -28,7 +28,7 @@ public class SendShuffleDataResult {
 
   private Set<Long> successBlockIds;
   private Set<Long> failedBlockIds;
-  private Map<Long, List<ShuffleServerInfo>> sendFailedBlockIds;
+  private Map<Long, BlockingQueue<ShuffleServerInfo>> sendFailedBlockIds;
 
   public SendShuffleDataResult(Set<Long> successBlockIds, Set<Long> failedBlockIds) {
     this.successBlockIds = successBlockIds;
@@ -39,7 +39,7 @@ public class SendShuffleDataResult {
   public SendShuffleDataResult(
       Set<Long> successBlockIds,
       Set<Long> failedBlockIds,
-      Map<Long, List<ShuffleServerInfo>> sendFailedBlockIds) {
+      Map<Long, BlockingQueue<ShuffleServerInfo>> sendFailedBlockIds) {
     this.successBlockIds = successBlockIds;
     this.failedBlockIds = failedBlockIds;
     this.sendFailedBlockIds = sendFailedBlockIds;
@@ -53,7 +53,7 @@ public class SendShuffleDataResult {
     return failedBlockIds;
   }
 
-  public Map<Long, List<ShuffleServerInfo>> getSendFailedBlockIds() {
+  public Map<Long, BlockingQueue<ShuffleServerInfo>> getSendFailedBlockIds() {
     return sendFailedBlockIds;
   }
 }
