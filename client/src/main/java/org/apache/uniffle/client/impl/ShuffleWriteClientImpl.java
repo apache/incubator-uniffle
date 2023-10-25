@@ -243,11 +243,12 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               dataTransferPool);
       futures.add(future);
     }
-
     boolean result = ClientUtils.waitUntilDoneOrFail(futures, allowFastFail);
-    if (!result) {
+    if (!result && Thread.currentThread().isInterrupted()) {
+      LOG.warn("task is interrupt, cancelled rpc size: {}", futures.size());
+    } else if (!result) {
       LOG.error(
-          "Some shuffle data can't be sent to shuffle-server, is fast fail: {}, cancelled task size: {}",
+          "Some shuffle data can't be sent to shuffle-server, is fast fail: {}, cancelled rpc size: {}",
           allowFastFail,
           futures.size());
     }

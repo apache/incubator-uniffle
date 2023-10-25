@@ -18,6 +18,7 @@
 package org.apache.spark.shuffle.writer;
 
 import java.io.IOException;
+import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import scala.Function1;
@@ -89,6 +91,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final boolean isMemoryShuffleEnabled;
   private final Function<String, Boolean> taskFailureCallback;
   private final Set<Long> blockIds = Sets.newConcurrentHashSet();
+  private final Set<CompletableFuture> sendingSet = Sets.newConcurrentHashSet();
 
   /** used by columnar rss shuffle writer implementation */
   protected final long taskAttemptId;
@@ -97,7 +100,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private final BlockingQueue<Object> finishEventQueue = new LinkedBlockingQueue<>();
 
-  // Only for tests
   @VisibleForTesting
   public RssShuffleWriter(
       String appId,
@@ -243,7 +245,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       processShuffleBlockInfos(shuffleBlockInfos);
     }
     long checkStartTs = System.currentTimeMillis();
-    checkBlockSendResult(blockIds);
+    if (!checkBlockSendResult(blockIds)) {
+        return;
+    }
     long commitStartTs = System.currentTimeMillis();
     long checkDuration = commitStartTs - checkStartTs;
     if (!isMemoryShuffleEnabled) {
@@ -304,21 +308,23 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               LOG.error("Add event " + event + " to finishEventQueue fail");
             }
           });
-      futures.add(shuffleManager.sendData(event));
+        CompletableFuture<Long> longCompletableFuture = shuffleManager.sendData(event);
+        sendingSet.add(longCompletableFuture);
+        longCompletableFuture.thenApply(f -> sendingSet.remove(longCompletableFuture));
+        futures.add(longCompletableFuture);
     }
     return futures;
   }
 
+    /**
+     * @return false if interrupted, true if all blocks are sent, throw exception if timeout
+     */
   @VisibleForTesting
-  protected void checkBlockSendResult(Set<Long> blockIds) {
-    boolean interrupted = false;
-
-    try {
+  protected boolean checkBlockSendResult(Set<Long> blockIds) {
       long remainingMs = sendCheckTimeout;
       long end = System.currentTimeMillis() + remainingMs;
 
       while (true) {
-        try {
           finishEventQueue.clear();
           checkIfBlocksFailed();
           Set<Long> successBlockIds = shuffleManager.getSuccessBlockIds(taskId);
@@ -328,14 +334,16 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
           }
           if (finishEventQueue.isEmpty()) {
             remainingMs = Math.max(end - System.currentTimeMillis(), 0);
-            Object event = finishEventQueue.poll(remainingMs, TimeUnit.MILLISECONDS);
-            if (event == null) {
+              Object event = null;
+              try {
+                  event = finishEventQueue.poll(remainingMs, TimeUnit.MILLISECONDS);
+              } catch (InterruptedException e) {
+                  return false;
+              }
+              if (event == null) {
               break;
             }
           }
-        } catch (InterruptedException e) {
-          interrupted = true;
-        }
       }
       if (!blockIds.isEmpty()) {
         String errorMsg =
@@ -349,11 +357,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         LOG.error(errorMsg);
         throw new RssException(errorMsg);
       }
-    } finally {
-      if (interrupted) {
-        Thread.currentThread().interrupt();
-      }
-    }
+      return true;
   }
 
   private void checkIfBlocksFailed() {
@@ -442,6 +446,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         return Option.empty();
       }
     } finally {
+        sendingSet.stream().forEach(eventTask -> eventTask.cancel(true));
       // free all memory & metadata, or memory leak happen in executor
       if (bufferManager != null) {
         bufferManager.freeAllMemory();
@@ -449,6 +454,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       if (shuffleManager != null) {
         shuffleManager.clearTaskMeta(taskId);
       }
+      // TODO free flying rpc
     }
   }
 
