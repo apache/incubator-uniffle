@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -82,12 +83,10 @@ public class RssShuffleWriterTest {
         .set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "127.0.0.1:12345,127.0.0.1:12346");
     Map<String, Set<Long>> failBlocks = JavaUtils.newConcurrentMap();
     Map<String, Set<Long>> successBlocks = JavaUtils.newConcurrentMap();
-    Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer =
-        JavaUtils.newConcurrentMap();
     Serializer kryoSerializer = new KryoSerializer(conf);
     RssShuffleManager manager =
         TestUtils.createShuffleManager(
-            conf, false, null, successBlocks, failBlocks, taskToFailedBlockIdsAndServer);
+            conf, false, null, successBlocks, failBlocks, JavaUtils.newConcurrentMap());
 
     ShuffleWriteClient mockShuffleWriteClient = mock(ShuffleWriteClient.class);
     Partitioner mockPartitioner = mock(Partitioner.class);
@@ -164,7 +163,7 @@ public class RssShuffleWriterTest {
         ShuffleWriteClient shuffleWriteClient,
         Map<String, Set<Long>> taskToSuccessBlockIds,
         Map<String, Set<Long>> taskToFailedBlockIds,
-        Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
+        Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
         Set<String> failedTaskIds,
         int threadPoolSize,
         int threadKeepAliveTime,

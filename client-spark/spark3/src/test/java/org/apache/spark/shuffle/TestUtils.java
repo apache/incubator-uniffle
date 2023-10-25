@@ -17,9 +17,9 @@
 
 package org.apache.spark.shuffle;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.spark.SparkConf;
@@ -37,7 +37,7 @@ public class TestUtils {
       DataPusher dataPusher,
       Map<String, Set<Long>> successBlockIds,
       Map<String, Set<Long>> failBlockIds,
-      Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer) {
+      Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer) {
     return new RssShuffleManager(
         conf, isDriver, dataPusher, successBlockIds, failBlockIds, taskToFailedBlockIdsAndServer);
   }

@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
@@ -81,7 +82,7 @@ public class DataPusherTest {
 
     Map<String, Set<Long>> taskToSuccessBlockIds = Maps.newConcurrentMap();
     Map<String, Set<Long>> taskToFailedBlockIds = Maps.newConcurrentMap();
-    Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer =
+    Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer =
         JavaUtils.newConcurrentMap();
     Set<String> failedTaskIds = new HashSet<>();
 

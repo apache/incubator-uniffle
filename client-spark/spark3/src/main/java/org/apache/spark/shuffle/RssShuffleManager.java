@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -98,7 +99,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final Map<String, Set<Long>> taskToSuccessBlockIds;
   private final Map<String, Set<Long>> taskToFailedBlockIds;
   // Record both the block that failed to be sent and the ShuffleServer
-  private final Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer;
+  private final Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>>
+      taskToFailedBlockIdsAndServer;
   private ScheduledExecutorService heartBeatScheduledExecutorService;
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
@@ -270,7 +272,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       DataPusher dataPusher,
       Map<String, Set<Long>> taskToSuccessBlockIds,
       Map<String, Set<Long>> taskToFailedBlockIds,
-      Map<String, Map<Long, List<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer) {
+      Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer) {
     this.sparkConf = conf;
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     this.dataDistributionType =
@@ -999,12 +1001,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * The ShuffleServer list of block sending failures is returned using the shuffle task ID
    *
    * @param taskId Shuffle taskId
-   * @return List of failed ShuffleServer blocks
+   * @return failed ShuffleServer blocks
    */
-  public Map<Long, List<ShuffleServerInfo>> getFailedBlockIdsWithShuffleServer(String taskId) {
-    Map<Long, List<ShuffleServerInfo>> result = taskToFailedBlockIdsAndServer.get(taskId);
+  public Map<Long, BlockingQueue<ShuffleServerInfo>> getFailedBlockIdsWithShuffleServer(
+      String taskId) {
+    Map<Long, BlockingQueue<ShuffleServerInfo>> result = taskToFailedBlockIdsAndServer.get(taskId);
     if (result == null) {
-      result = JavaUtils.newConcurrentMap();
+      result = Collections.emptyMap();
     }
     return result;
   }
