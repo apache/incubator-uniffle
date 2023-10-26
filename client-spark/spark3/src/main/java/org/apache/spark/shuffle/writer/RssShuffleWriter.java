@@ -18,7 +18,6 @@
 package org.apache.spark.shuffle.writer;
 
 import java.io.IOException;
-import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,7 +31,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import scala.Function1;
@@ -246,7 +244,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
     long checkStartTs = System.currentTimeMillis();
     if (!checkBlockSendResult(blockIds)) {
-        return;
+      return;
     }
     long commitStartTs = System.currentTimeMillis();
     long checkDuration = commitStartTs - checkStartTs;
@@ -308,56 +306,54 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               LOG.error("Add event " + event + " to finishEventQueue fail");
             }
           });
-        CompletableFuture<Long> longCompletableFuture = shuffleManager.sendData(event);
-        sendingSet.add(longCompletableFuture);
-        longCompletableFuture.thenApply(f -> sendingSet.remove(longCompletableFuture));
-        futures.add(longCompletableFuture);
+      CompletableFuture<Long> longCompletableFuture = shuffleManager.sendData(event);
+      sendingSet.add(longCompletableFuture);
+      longCompletableFuture.thenApply(f -> sendingSet.remove(longCompletableFuture));
+      futures.add(longCompletableFuture);
     }
     return futures;
   }
 
-    /**
-     * @return false if interrupted, true if all blocks are sent, throw exception if timeout
-     */
+  /** @return false if interrupted, true if all blocks are sent, throw exception if timeout */
   @VisibleForTesting
   protected boolean checkBlockSendResult(Set<Long> blockIds) {
-      long remainingMs = sendCheckTimeout;
-      long end = System.currentTimeMillis() + remainingMs;
+    long remainingMs = sendCheckTimeout;
+    long end = System.currentTimeMillis() + remainingMs;
 
-      while (true) {
-          finishEventQueue.clear();
-          checkIfBlocksFailed();
-          Set<Long> successBlockIds = shuffleManager.getSuccessBlockIds(taskId);
-          blockIds.removeAll(successBlockIds);
-          if (blockIds.isEmpty()) {
-            break;
-          }
-          if (finishEventQueue.isEmpty()) {
-            remainingMs = Math.max(end - System.currentTimeMillis(), 0);
-              Object event = null;
-              try {
-                  event = finishEventQueue.poll(remainingMs, TimeUnit.MILLISECONDS);
-              } catch (InterruptedException e) {
-                  return false;
-              }
-              if (event == null) {
-              break;
-            }
-          }
+    while (true) {
+      finishEventQueue.clear();
+      checkIfBlocksFailed();
+      Set<Long> successBlockIds = shuffleManager.getSuccessBlockIds(taskId);
+      blockIds.removeAll(successBlockIds);
+      if (blockIds.isEmpty()) {
+        break;
       }
-      if (!blockIds.isEmpty()) {
-        String errorMsg =
-            "Timeout: Task["
-                + taskId
-                + "] failed because "
-                + blockIds.size()
-                + " blocks can't be sent to shuffle server in "
-                + sendCheckTimeout
-                + " ms.";
-        LOG.error(errorMsg);
-        throw new RssException(errorMsg);
+      if (finishEventQueue.isEmpty()) {
+        remainingMs = Math.max(end - System.currentTimeMillis(), 0);
+        Object event = null;
+        try {
+          event = finishEventQueue.poll(remainingMs, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+          return false;
+        }
+        if (event == null) {
+          break;
+        }
       }
-      return true;
+    }
+    if (!blockIds.isEmpty()) {
+      String errorMsg =
+          "Timeout: Task["
+              + taskId
+              + "] failed because "
+              + blockIds.size()
+              + " blocks can't be sent to shuffle server in "
+              + sendCheckTimeout
+              + " ms.";
+      LOG.error(errorMsg);
+      throw new RssException(errorMsg);
+    }
+    return true;
   }
 
   private void checkIfBlocksFailed() {
@@ -446,7 +442,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         return Option.empty();
       }
     } finally {
-        sendingSet.stream().forEach(eventTask -> eventTask.cancel(true));
+      sendingSet.stream().forEach(eventTask -> eventTask.cancel(true));
       // free all memory & metadata, or memory leak happen in executor
       if (bufferManager != null) {
         bufferManager.freeAllMemory();
