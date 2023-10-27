@@ -22,9 +22,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.common.ClientType;
@@ -33,6 +38,7 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.util.StorageType;
 
 public class ClientUtils {
+  private static final Logger LOG = LoggerFactory.getLogger(ClientUtils.class);
 
   // BlockId is long and composed of partitionId, executorId and AtomicInteger.
   // AtomicInteger is first 19 bit, max value is 2^19 - 1
@@ -120,8 +126,17 @@ public class ClientUtils {
 
       try {
         allFutures.get(10, TimeUnit.MILLISECONDS);
+      } catch (TimeoutException e) {
+        // ignore since we are waiting for all futures
+      } catch (ExecutionException e) {
+        // ignore since we are waiting for all futures
+      } catch (InterruptedException e) {
+        // upper caller calls interrupt, so we cancel all unfinished futures
+        futures.stream().filter(x -> !x.isDone()).forEach(x -> x.cancel(true));
+        return false;
       } catch (Exception e) {
-        // ignore
+        LOG.error("unexpect exception happens:", e);
+        return false;
       }
     }
   }

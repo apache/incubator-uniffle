@@ -977,10 +977,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     return true;
   }
 
-  public boolean isValidTask(String taskId) {
-    return !failedTaskIds.contains(taskId);
-  }
-
   private Roaring64NavigableMap getShuffleResultForMultiPart(
       String clientType,
       Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
