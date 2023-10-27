@@ -442,6 +442,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         return Option.empty();
       }
     } finally {
+      // cancel all async thread task related
       sendingSet.stream().forEach(eventTask -> eventTask.cancel(true));
       // free all memory & metadata, or memory leak happen in executor
       if (bufferManager != null) {
@@ -450,7 +451,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       if (shuffleManager != null) {
         shuffleManager.clearTaskMeta(taskId);
       }
-      // TODO free flying rpc
     }
   }
 
