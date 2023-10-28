@@ -18,8 +18,13 @@
 package org.apache.uniffle.common.metrics;
 
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Queues;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
@@ -27,6 +32,7 @@ import io.prometheus.client.Summary;
 
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 
 public abstract class RPCMetrics {
   protected boolean isRegistered = false;
@@ -34,11 +40,16 @@ public abstract class RPCMetrics {
   protected Map<String, Gauge.Child> gaugeMap = JavaUtils.newConcurrentMap();
   protected Map<String, Summary.Child> transportTimeSummaryMap = JavaUtils.newConcurrentMap();
   protected Map<String, Summary.Child> processTimeSummaryMap = JavaUtils.newConcurrentMap();
+  private final ExecutorService summaryObservePool;
   protected MetricsManager metricsManager;
   protected String tags;
 
   public RPCMetrics(String tags) {
     this.tags = tags;
+    BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(1000);
+    this.summaryObservePool = new ThreadPoolExecutor(2, 10, 60,
+      TimeUnit.SECONDS, waitQueue,
+      ThreadUtils.getThreadFactory("SummaryObserveThreadPool-%d"), new ThreadPoolExecutor.DiscardPolicy());
   }
 
   public abstract void registerMetrics();
@@ -123,6 +134,8 @@ public abstract class RPCMetrics {
   public void recordProcessTime(String methodName, long processTimeInMillionSecond) {
     Summary.Child summary = processTimeSummaryMap.get(methodName);
     if (summary != null) {
+      summaryObservePool.execute(
+        () -> summary.observe(processTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND));
       summary.observe(processTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND);
     }
   }

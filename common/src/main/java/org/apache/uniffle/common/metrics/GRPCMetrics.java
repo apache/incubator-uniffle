@@ -44,6 +44,7 @@ public abstract class GRPCMetrics extends RPCMetrics {
     super(tags);
   }
 
+  @Override
   public abstract void registerMetrics();
 
   @Override
@@ -61,6 +62,7 @@ public abstract class GRPCMetrics extends RPCMetrics {
         metricsManager.addLabeledGauge(GRPC_SERVER_CONNECTION_NUMBER));
   }
 
+  @Override
   public void incCounter(String methodName) {
     if (isRegistered) {
       super.incCounter(methodName);
@@ -69,6 +71,7 @@ public abstract class GRPCMetrics extends RPCMetrics {
     }
   }
 
+  @Override
   public void decCounter(String methodName) {
     if (isRegistered) {
       super.decCounter(methodName);
