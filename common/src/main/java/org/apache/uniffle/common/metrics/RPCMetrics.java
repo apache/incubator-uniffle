@@ -47,9 +47,15 @@ public abstract class RPCMetrics {
   public RPCMetrics(String tags) {
     this.tags = tags;
     BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(1000);
-    this.summaryObservePool = new ThreadPoolExecutor(2, 10, 60,
-      TimeUnit.SECONDS, waitQueue,
-      ThreadUtils.getThreadFactory("SummaryObserveThreadPool-%d"), new ThreadPoolExecutor.DiscardPolicy());
+    this.summaryObservePool =
+        new ThreadPoolExecutor(
+            2,
+            10,
+            60,
+            TimeUnit.SECONDS,
+            waitQueue,
+            ThreadUtils.getThreadFactory("SummaryObserveThreadPool-%d"),
+            new ThreadPoolExecutor.DiscardPolicy());
   }
 
   public abstract void registerMetrics();
@@ -128,7 +134,8 @@ public abstract class RPCMetrics {
     Summary.Child summary = transportTimeSummaryMap.get(methodName);
     if (summary != null) {
       summaryObservePool.execute(
-        () -> summary.observe(transportTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND));
+          () ->
+              summary.observe(transportTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND));
     }
   }
 
@@ -136,7 +143,7 @@ public abstract class RPCMetrics {
     Summary.Child summary = processTimeSummaryMap.get(methodName);
     if (summary != null) {
       summaryObservePool.execute(
-        () -> summary.observe(processTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND));
+          () -> summary.observe(processTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND));
     }
   }
 
