@@ -127,7 +127,8 @@ public abstract class RPCMetrics {
   public void recordTransportTime(String methodName, long transportTimeInMillionSecond) {
     Summary.Child summary = transportTimeSummaryMap.get(methodName);
     if (summary != null) {
-      summary.observe(transportTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND);
+      summaryObservePool.execute(
+        () -> summary.observe(transportTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND));
     }
   }
 
@@ -136,7 +137,6 @@ public abstract class RPCMetrics {
     if (summary != null) {
       summaryObservePool.execute(
         () -> summary.observe(processTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND));
-      summary.observe(processTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND);
     }
   }
 
