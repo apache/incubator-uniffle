@@ -54,7 +54,7 @@ public abstract class RPCMetrics {
             60,
             TimeUnit.SECONDS,
             waitQueue,
-            ThreadUtils.getThreadFactory("SummaryObserveThreadPool-%d"),
+            ThreadUtils.getThreadFactory("SummaryObserveThreadPool"),
             new ThreadPoolExecutor.DiscardPolicy());
   }
 
