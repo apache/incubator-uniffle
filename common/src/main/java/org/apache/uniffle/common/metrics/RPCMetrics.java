@@ -40,13 +40,14 @@ public abstract class RPCMetrics {
   protected Map<String, Gauge.Child> gaugeMap = JavaUtils.newConcurrentMap();
   protected Map<String, Summary.Child> transportTimeSummaryMap = JavaUtils.newConcurrentMap();
   protected Map<String, Summary.Child> processTimeSummaryMap = JavaUtils.newConcurrentMap();
+  private static final int WAIT_QUEUE_SIZE = 1000;
   private final ExecutorService summaryObservePool;
   protected MetricsManager metricsManager;
   protected String tags;
 
   public RPCMetrics(String tags) {
     this.tags = tags;
-    BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(1000);
+    BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(WAIT_QUEUE_SIZE);
     this.summaryObservePool =
         new ThreadPoolExecutor(
             2,
