@@ -202,7 +202,7 @@ echo -e "\$ ${BUILD_COMMAND_SPARK3[@]}\n"
 
 SPARK_CLIENT3_JAR_DIR="${CLIENT_JAR_DIR}/spark3"
 mkdir -p $SPARK_CLIENT3_JAR_DIR
-SPARK_CLIENT3_JAR="${RSS_HOME}/client-spark/spark3/target/shaded/rss-client-spark3-${VERSION}-shaded.jar"
+SPARK_CLIENT3_JAR="${RSS_HOME}/client-spark/spark3-shaded/target/rss-client-spark3-shaded-${VERSION}.jar"
 echo "copy $SPARK_CLIENT3_JAR to ${SPARK_CLIENT3_JAR_DIR}"
 cp $SPARK_CLIENT3_JAR $SPARK_CLIENT3_JAR_DIR
 
