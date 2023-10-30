@@ -18,14 +18,18 @@
 package org.apache.uniffle.shuffle.manager;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
 import io.grpc.stub.StreamObserver;
+import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleManagerGrpc.ShuffleManagerImplBase;
@@ -97,6 +101,54 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
             .setReSubmitWholeStage(reSubmitWholeStage)
             .setMsg(msg)
             .build();
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void getPartitionToShufflerServer(
+      RssProtos.PartitionToShuffleServerRequest request,
+      StreamObserver<RssProtos.PartitionToShuffleServerResponse> responseObserver) {
+    RssProtos.PartitionToShuffleServerResponse reply;
+    RssProtos.StatusCode code;
+    int shuffleId = request.getShuffleId();
+    ShuffleHandleInfo shuffleHandleInfoByShuffleId =
+        shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
+    if (shuffleHandleInfoByShuffleId != null) {
+      code = RssProtos.StatusCode.SUCCESS;
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers =
+          shuffleHandleInfoByShuffleId.getPartitionToServers();
+      Map<Integer, RssProtos.GetShuffleServerListResponse> protopartitionToServers =
+          JavaUtils.newConcurrentMap();
+      for (Map.Entry<Integer, List<ShuffleServerInfo>> integerListEntry :
+          partitionToServers.entrySet()) {
+        List<RssProtos.ShuffleServerId> shuffleServerIds =
+            ShuffleServerInfo.toProto(integerListEntry.getValue());
+        RssProtos.GetShuffleServerListResponse getShuffleServerListResponse =
+            RssProtos.GetShuffleServerListResponse.newBuilder()
+                .addAllServers(shuffleServerIds)
+                .build();
+        protopartitionToServers.put(integerListEntry.getKey(), getShuffleServerListResponse);
+      }
+      RemoteStorageInfo remoteStorage = shuffleHandleInfoByShuffleId.getRemoteStorage();
+      RssProtos.RemoteStorageInfo.Builder protosRemoteStage =
+          RssProtos.RemoteStorageInfo.newBuilder()
+              .setPath(remoteStorage.getPath())
+              .putAllConfItems(remoteStorage.getConfItems());
+      reply =
+          RssProtos.PartitionToShuffleServerResponse.newBuilder()
+              .setStatus(code)
+              .putAllPartitionToShuffleServer(protopartitionToServers)
+              .setRemoteStorageInfo(protosRemoteStage)
+              .build();
+    } else {
+      code = RssProtos.StatusCode.INVALID_REQUEST;
+      reply =
+          RssProtos.PartitionToShuffleServerResponse.newBuilder()
+              .setStatus(code)
+              .putAllPartitionToShuffleServer(null)
+              .build();
+    }
     responseObserver.onNext(reply);
     responseObserver.onCompleted();
   }

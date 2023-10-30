@@ -15,43 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.shuffle.manager;
+package org.apache.uniffle.client.request;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import org.apache.uniffle.proto.RssProtos;
 
-import org.apache.spark.shuffle.ShuffleHandleInfo;
+public class RssPartitionToShuffleServerRequest {
+  private int shuffleId;
 
-public class DummyRssShuffleManager implements RssShuffleManagerInterface {
-  public Set<Integer> unregisteredShuffleIds = new LinkedHashSet<>();
-
-  @Override
-  public String getAppId() {
-    return "testAppId";
+  public RssPartitionToShuffleServerRequest(int shuffleId) {
+    this.shuffleId = shuffleId;
   }
 
-  @Override
-  public int getMaxFetchFailures() {
-    return 2;
+  public int getShuffleId() {
+    return shuffleId;
   }
 
-  @Override
-  public int getPartitionNum(int shuffleId) {
-    return 16;
-  }
-
-  @Override
-  public int getNumMaps(int shuffleId) {
-    return 8;
-  }
-
-  @Override
-  public void unregisterAllMapOutput(int shuffleId) {
-    unregisteredShuffleIds.add(shuffleId);
-  }
-
-  @Override
-  public ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId) {
-    return null;
+  public RssProtos.PartitionToShuffleServerRequest toProto() {
+    RssProtos.PartitionToShuffleServerRequest.Builder builder =
+        RssProtos.PartitionToShuffleServerRequest.newBuilder();
+    builder.setShuffleId(shuffleId);
+    return builder.build();
   }
 }

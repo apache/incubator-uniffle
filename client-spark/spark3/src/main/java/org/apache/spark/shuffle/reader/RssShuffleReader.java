@@ -95,7 +95,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       Roaring64NavigableMap taskIdBitmap,
       ShuffleReadMetrics readMetrics,
       RssConf rssConf,
-      ShuffleDataDistributionType dataDistributionType) {
+      ShuffleDataDistributionType dataDistributionType,
+      Map<Integer, List<ShuffleServerInfo>> allPartitionToServers) {
     this.appId = rssShuffleHandle.getAppId();
     this.startPartition = startPartition;
     this.endPartition = endPartition;
@@ -113,7 +114,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.taskIdBitmap = taskIdBitmap;
     this.hadoopConf = hadoopConf;
     this.readMetrics = readMetrics;
-    this.partitionToShuffleServers = rssShuffleHandle.getPartitionToServers();
+    this.partitionToShuffleServers = allPartitionToServers;
     this.rssConf = rssConf;
     this.dataDistributionType = dataDistributionType;
   }
