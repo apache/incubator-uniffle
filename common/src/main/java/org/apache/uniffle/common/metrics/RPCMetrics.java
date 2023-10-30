@@ -41,6 +41,9 @@ public abstract class RPCMetrics {
   protected Map<String, Summary.Child> transportTimeSummaryMap = JavaUtils.newConcurrentMap();
   protected Map<String, Summary.Child> processTimeSummaryMap = JavaUtils.newConcurrentMap();
   private static final int WAIT_QUEUE_SIZE = 1000;
+  private static final int THREAD_POOL_CORE_SIZE = 2;
+  private static final int THREAD_POOL_MAX_POOL_SIZE = 20;
+  private static final int THREAD_POOL_KEEP_ALIVE_TIME = 60;
   private final ExecutorService summaryObservePool;
   protected MetricsManager metricsManager;
   protected String tags;
@@ -50,9 +53,9 @@ public abstract class RPCMetrics {
     BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(WAIT_QUEUE_SIZE);
     this.summaryObservePool =
         new ThreadPoolExecutor(
-            2,
-            10,
-            60,
+            THREAD_POOL_CORE_SIZE,
+            THREAD_POOL_MAX_POOL_SIZE,
+            THREAD_POOL_KEEP_ALIVE_TIME,
             TimeUnit.SECONDS,
             waitQueue,
             ThreadUtils.getThreadFactory("SummaryObserveThreadPool"),
