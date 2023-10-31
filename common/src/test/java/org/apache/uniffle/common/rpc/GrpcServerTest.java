@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Queues;
 import io.prometheus.client.CollectorRegistry;
+import org.apache.uniffle.common.config.RssConf;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,8 +44,9 @@ public class GrpcServerTest {
   @Test
   public void testGrpcExecutorPool() throws Exception {
     // Explicitly setting the synchronizing variable as false at the beginning of test run
+    RssConf rssConf = new RssConf();
     GrpcServer.reset();
-    GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics();
+    GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics(rssConf);
     grpcMetrics.register(new CollectorRegistry(true));
     GrpcServer.GrpcThreadPoolExecutor executor =
         new GrpcServer.GrpcThreadPoolExecutor(
@@ -96,7 +98,8 @@ public class GrpcServerTest {
 
   @Test
   public void testRandomPort() throws Exception {
-    GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics();
+    RssConf rssConf = new RssConf();
+    GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics(rssConf);
     grpcMetrics.register(new CollectorRegistry(true));
     RssBaseConf conf = new RssBaseConf();
     conf.set(RPC_SERVER_PORT, 0);
