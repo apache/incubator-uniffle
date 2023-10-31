@@ -56,7 +56,7 @@ public class RssTezFetcher {
   private long waitTime = 0;
   private long copyTime = 0; // the sum of readTime + decompressTime + serializeTime + waitTime
   private long unCompressionLength = 0;
-  private int uniqueMapId = 0;
+  private static int uniqueMapId = 0;
 
   private boolean hasPendingData = false;
   private long startWait;
