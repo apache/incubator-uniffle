@@ -121,7 +121,6 @@
     <module>client</module>
     <module>integration-test/common</module>
     <module>cli</module>
-    <module>client-spark/spark3-shaded</module>
   </modules>
 
   <dependencies>
@@ -1203,6 +1202,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark2</module>
+        <module>client-spark/spark2-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark2</module>
       </modules>
@@ -1262,6 +1262,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark2</module>
+        <module>client-spark/spark2-shaded</module>
         <module>integration-test/spark-common</module>
       </modules>
       <dependencyManagement>
