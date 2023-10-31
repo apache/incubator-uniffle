@@ -22,12 +22,12 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Queues;
 import io.prometheus.client.CollectorRegistry;
-import org.apache.uniffle.common.config.RssConf;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.proto.ShuffleManagerGrpc;
