@@ -179,7 +179,7 @@ cp "${RSS_HOME}"/cli/target/jars/* ${CLI_JAR_DIR}
 CLIENT_JAR_DIR="${DISTDIR}/jars/client"
 mkdir -p $CLIENT_JAR_DIR
 
-BUILD_COMMAND_SPARK2=("$MVN" clean package -P$SPARK2_PROFILE_ID -pl client-spark/spark2 -DskipTests -am $@ $SPARK2_MVN_OPTS)
+BUILD_COMMAND_SPARK2=("$MVN" clean package -P$SPARK2_PROFILE_ID -pl client-spark/spark2-shaded -DskipTests -am $@ $SPARK2_MVN_OPTS)
 
 # Actually build the jar
 echo -e "\nBuilding with..."
@@ -194,7 +194,7 @@ SPARK_CLIENT2_JAR="${RSS_HOME}/client-spark/spark2-shaded/target/rss-client-spar
 echo "copy $SPARK_CLIENT2_JAR to ${SPARK_CLIENT2_JAR_DIR}"
 cp $SPARK_CLIENT2_JAR ${SPARK_CLIENT2_JAR_DIR}
 
-BUILD_COMMAND_SPARK3=("$MVN" clean package -P$SPARK3_PROFILE_ID -pl client-spark/spark3 -DskipTests -am $@ $SPARK3_MVN_OPTS)
+BUILD_COMMAND_SPARK3=("$MVN" clean package -P$SPARK3_PROFILE_ID -pl client-spark/spark3-shaded -DskipTests -am $@ $SPARK3_MVN_OPTS)
 
 echo -e "\nBuilding with..."
 echo -e "\$ ${BUILD_COMMAND_SPARK3[@]}\n"
