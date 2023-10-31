@@ -18,7 +18,6 @@
 package org.apache.uniffle.common.metrics;
 
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -34,33 +33,42 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class RPCMetrics {
+  private static final Logger LOG = LoggerFactory.getLogger(RPCMetrics.class);
+
   protected boolean isRegistered = false;
   protected Map<String, Counter.Child> counterMap = JavaUtils.newConcurrentMap();
   protected Map<String, Gauge.Child> gaugeMap = JavaUtils.newConcurrentMap();
   protected Map<String, Summary.Child> transportTimeSummaryMap = JavaUtils.newConcurrentMap();
   protected Map<String, Summary.Child> processTimeSummaryMap = JavaUtils.newConcurrentMap();
-  private static final int WAIT_QUEUE_SIZE = 1000;
-  private static final int THREAD_POOL_CORE_SIZE = 2;
-  private static final int THREAD_POOL_MAX_POOL_SIZE = 20;
-  private static final int THREAD_POOL_KEEP_ALIVE_TIME = 60;
+  private static final String THREAD_POOL_CORE_SIZE = "rss.server.summary.metric.thread.pool.core.size";
+  private static final int THREAD_POOL_CORE_SIZE_DEFAULT_VALUE = 2;
+  private static final String THREAD_POOL_MAX_SIZE = "rss.server.summary.metric.thread.pool.max.size";
+  private static final int THREAD_POOL_MAX_SIZE_DEFAULT_VALUE = 20;
+  private static final String KEEP_ALIVE_TIME = "rss.server.summary.metric.thread.pool.keep.alive.time";
+  private static final int KEEP_ALIVE_TIME_DEFAULT_VALUE = 60;
   private final ExecutorService summaryObservePool;
   protected MetricsManager metricsManager;
   protected String tags;
 
   public RPCMetrics(RssConf rssConf, String tags) {
     this.tags = tags;
-    BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(WAIT_QUEUE_SIZE);
+    int coreSize = rssConf.getInteger(THREAD_POOL_CORE_SIZE, THREAD_POOL_CORE_SIZE_DEFAULT_VALUE);
+    int maxSize = rssConf.getInteger(THREAD_POOL_MAX_SIZE, THREAD_POOL_MAX_SIZE_DEFAULT_VALUE);
+    int keepAliveTime = rssConf.getInteger(KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_DEFAULT_VALUE);
     this.summaryObservePool =
         new ThreadPoolExecutor(
-            THREAD_POOL_CORE_SIZE,
-            THREAD_POOL_MAX_POOL_SIZE,
-            THREAD_POOL_KEEP_ALIVE_TIME,
+            coreSize,
+            maxSize,
+            keepAliveTime,
             TimeUnit.SECONDS,
-            waitQueue,
-            ThreadUtils.getThreadFactory("SummaryObserveThreadPool"),
-            new ThreadPoolExecutor.DiscardPolicy());
+            Queues.newLinkedBlockingQueue(),
+            ThreadUtils.getThreadFactory("SummaryObserveThreadPool"));
+    LOG.info("Init summary observe thread pool, core size:{}, max size:{}, keep alive time:{}",
+        coreSize, maxSize, keepAliveTime);
   }
 
   public abstract void registerMetrics();
