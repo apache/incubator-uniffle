@@ -134,6 +134,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private Map<Integer, ShuffleHandleInfo> shuffleIdToShuffleHandleInfo;
   /** Whether to enable the dynamic shuffleServer function rewrite and reread functions */
   private boolean rssResubmitStage;
+  /** A list of shuffleServer for Write failures */
+  private Set<String> failuresShuffleServerIds;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
@@ -1091,5 +1093,15 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             rpcPartitionToShufflerServer.getPartitionToServers(),
             rpcPartitionToShufflerServer.getRemoteStorageInfo());
     return shuffleHandleInfo;
+  }
+
+  /**
+   * Add the shuffleServer that failed to write to the failure list
+   *
+   * @param shuffleServerId
+   */
+  @Override
+  public void addFailuresShuffleServerInfos(String shuffleServerId) {
+    failuresShuffleServerIds.add(shuffleServerId);
   }
 }

@@ -25,8 +25,10 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.request.RssPartitionToShuffleServerRequest;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
+import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
 import org.apache.uniffle.client.response.RssPartitionToShuffleServerResponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
+import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.proto.RssProtos;
@@ -87,5 +89,20 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
     RssPartitionToShuffleServerResponse rssPartitionToShuffleServerResponse =
         RssPartitionToShuffleServerResponse.fromProto(partitionToShufflerServer);
     return rssPartitionToShuffleServerResponse;
+  }
+
+  @Override
+  public RssReportShuffleWriteFailureResponse reportShuffleWriteFailure(
+      RssReportShuffleWriteFailureRequest request) {
+    RssProtos.ReportShuffleWriteFailureRequest protoRequest = request.toProto();
+    try {
+      RssProtos.ReportShuffleWriteFailureResponse response =
+          getBlockingStub().reportShuffleWriteFailure(protoRequest);
+      return RssReportShuffleWriteFailureResponse.fromProto(response);
+    } catch (Exception e) {
+      String msg = "Report shuffle fetch failure to host:port[" + host + ":" + port + "] failed";
+      LOG.warn(msg, e);
+      throw new RssException(msg, e);
+    }
   }
 }

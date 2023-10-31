@@ -499,6 +499,8 @@ service ShuffleManager {
   rpc reportShuffleFetchFailure (ReportShuffleFetchFailureRequest) returns (ReportShuffleFetchFailureResponse);
   // Gets the mapping between partitions and ShuffleServer from the ShuffleManager server
   rpc getPartitionToShufflerServer(PartitionToShuffleServerRequest) returns (PartitionToShuffleServerResponse);
+  // Report write failures to ShuffleManager
+  rpc reportShuffleWriteFailure (ReportShuffleWriteFailureRequest) returns (ReportShuffleWriteFailureResponse);
 }
 
 message ReportShuffleFetchFailureRequest {
@@ -533,4 +535,18 @@ message PartitionToShuffleServerResponse {
 message RemoteStorageInfo{
   string path = 1;
   map<string, string> confItems = 2;
+}
+
+message ReportShuffleWriteFailureRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+  int32 stageAttemptNumber = 3;
+  repeated ShuffleServerId shuffleServerIds= 5;
+  string exception = 6;
+}
+
+message ReportShuffleWriteFailureResponse {
+  StatusCode status = 1;
+  bool reSubmitWholeStage = 2;
+  string msg = 3;
 }

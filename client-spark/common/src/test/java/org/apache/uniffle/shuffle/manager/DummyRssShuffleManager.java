@@ -54,4 +54,7 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   public ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId) {
     return null;
   }
+
+  @Override
+  public void addFailuresShuffleServerInfos(String shuffleServerId) {}
 }
