@@ -19,6 +19,7 @@ package org.apache.uniffle.common.metrics;
 
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
+import org.apache.uniffle.common.config.RssConf;
 
 public abstract class NettyMetrics extends RPCMetrics {
 
@@ -28,8 +29,8 @@ public abstract class NettyMetrics extends RPCMetrics {
   protected Gauge.Child gaugeNettyActiveConn;
   protected Counter.Child counterNettyException;
 
-  public NettyMetrics(String tags) {
-    super(tags);
+  public NettyMetrics(RssConf rssConf, String tags) {
+    super(rssConf, tags);
   }
 
   @Override

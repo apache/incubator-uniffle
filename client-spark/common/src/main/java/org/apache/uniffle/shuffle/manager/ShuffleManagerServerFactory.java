@@ -49,7 +49,7 @@ public class ShuffleManagerServerFactory {
       }
       return GrpcServer.Builder.newBuilder()
           .conf(conf)
-          .grpcMetrics(GRPCMetrics.getEmptyGRPCMetrics())
+          .grpcMetrics(GRPCMetrics.getEmptyGRPCMetrics(conf))
           .addService(service)
           .build();
     } else {

@@ -296,7 +296,7 @@ public class ShuffleServer {
     CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
     String tags = coverToString();
     ShuffleServerMetrics.register(shuffleServerCollectorRegistry, tags);
-    grpcMetrics = new ShuffleServerGrpcMetrics(tags);
+    grpcMetrics = new ShuffleServerGrpcMetrics(this.shuffleServerConf, tags);
     grpcMetrics.register(new CollectorRegistry(true));
     nettyMetrics = new ShuffleServerNettyMetrics(tags);
     nettyMetrics.register(new CollectorRegistry(true));

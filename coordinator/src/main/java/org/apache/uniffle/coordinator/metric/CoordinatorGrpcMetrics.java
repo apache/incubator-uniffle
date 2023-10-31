@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.coordinator.metric;
 
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.util.Constants;
 
@@ -31,8 +32,8 @@ public class CoordinatorGrpcMetrics extends GRPCMetrics {
       "grpc_get_shuffle_assignments_total";
   private static final String GRPC_HEARTBEAT_TOTAL = "grpc_heartbeat_total";
 
-  public CoordinatorGrpcMetrics() {
-    super(Constants.COORDINATOR_TAG);
+  public CoordinatorGrpcMetrics(RssConf rssConf) {
+    super(rssConf, Constants.COORDINATOR_TAG);
   }
 
   @Override

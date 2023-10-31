@@ -30,6 +30,7 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Summary;
 
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
@@ -48,7 +49,7 @@ public abstract class RPCMetrics {
   protected MetricsManager metricsManager;
   protected String tags;
 
-  public RPCMetrics(String tags) {
+  public RPCMetrics(RssConf rssConf, String tags) {
     this.tags = tags;
     BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(WAIT_QUEUE_SIZE);
     this.summaryObservePool =
