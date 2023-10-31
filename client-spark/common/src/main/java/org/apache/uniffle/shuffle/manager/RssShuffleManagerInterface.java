@@ -63,4 +63,11 @@ public interface RssShuffleManagerInterface {
    * @return ShuffleHandleInfo
    */
   ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId);
+
+  /**
+   * Add the shuffleServer that failed to write to the failure list
+   *
+   * @param shuffleServerId
+   */
+  void addFailuresShuffleServerInfos(String shuffleServerId);
 }
