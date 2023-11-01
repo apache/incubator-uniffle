@@ -514,6 +514,32 @@ public class ShuffleServerConf extends RssBaseConf {
                   + "network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB."
                   + "Default is 0, OS will dynamically adjust the buf size.");
 
+  public static final ConfigOption<Integer> SUMMARY_METRIC_WAIT_QUEUE_SIZE =
+      ConfigOptions.key("rss.server.summary.metric.wait.queue.size")
+          .intType()
+          .defaultValue(1000)
+          .withDescription(
+              "size of waiting queue for thread pool that used for calc summary metric.");
+
+  public static final ConfigOption<Integer> SUMMARY_METRIC_THREAD_POOL_CORE_SIZE =
+      ConfigOptions.key("rss.server.summary.metric.thread.pool.core.size")
+          .intType()
+          .defaultValue(2)
+          .withDescription("core thread number of thread pool that used for calc summary metric.");
+
+  public static final ConfigOption<Integer> SUMMARY_METRIC_THREAD_POOL_MAX_SIZE =
+      ConfigOptions.key("rss.server.summary.metric.thread.pool.max.size")
+          .intType()
+          .defaultValue(20)
+          .withDescription("max thread number of thread pool that used for calc summary metric.");
+
+  public static final ConfigOption<Integer> SUMMARY_METRIC_THREAD_POOL_KEEP_ALIVE_TIME =
+      ConfigOptions.key("rss.server.summary.metric.thread.pool.keep.alive.time")
+          .intType()
+          .defaultValue(60)
+          .withDescription(
+              "keep alive time of thread pool that used for calc summary metric, in SECONDS.");
+
   public ShuffleServerConf() {}
 
   public ShuffleServerConf(String fileName) {
