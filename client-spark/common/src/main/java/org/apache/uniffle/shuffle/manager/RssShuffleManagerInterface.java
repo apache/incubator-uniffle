@@ -70,4 +70,6 @@ public interface RssShuffleManagerInterface {
    * @param shuffleServerId
    */
   void addFailuresShuffleServerInfos(String shuffleServerId);
+
+  boolean reassignShuffleServers(int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
 }
