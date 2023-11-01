@@ -39,6 +39,7 @@ import com.google.common.collect.Sets;
 import org.apache.spark.Partitioner;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
+import org.apache.spark.TaskContext;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.executor.TaskMetrics;
 import org.apache.spark.memory.TaskMemoryManager;
@@ -47,6 +48,7 @@ import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
+import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.apache.spark.shuffle.TestUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -111,6 +113,8 @@ public class RssShuffleWriterTest {
             RssSparkConfig.toRssConf(conf));
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
 
+    TaskContext contextMock = mock(TaskContext.class);
+    ShuffleHandleInfo mockShuffleHandleInfo = mock(ShuffleHandleInfo.class);
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
             "appId",
@@ -122,7 +126,9 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            mockHandle);
+            mockHandle,
+            mockShuffleHandleInfo,
+            contextMock);
     doReturn(1000000L).when(bufferManagerSpy).acquireMemory(anyLong());
 
     // case 1: all blocks are sent successfully
@@ -253,6 +259,8 @@ public class RssShuffleWriterTest {
     when(mockDependency.serializer()).thenReturn(kryoSerializer);
     when(mockDependency.partitioner()).thenReturn(mockPartitioner);
     when(mockPartitioner.numPartitions()).thenReturn(1);
+    TaskContext contextMock = mock(TaskContext.class);
+    ShuffleHandleInfo mockShuffleHandleInfo = mock(ShuffleHandleInfo.class);
 
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
@@ -265,7 +273,9 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            mockHandle);
+            mockHandle,
+            mockShuffleHandleInfo,
+            contextMock);
     rssShuffleWriter.getBufferManager().setSpillFunc(rssShuffleWriter::processShuffleBlockInfos);
 
     MutableList<Product2<String, String>> data = new MutableList<>();
@@ -377,6 +387,8 @@ public class RssShuffleWriterTest {
     bufferManager.setTaskId("taskId");
 
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
+    TaskContext contextMock = mock(TaskContext.class);
+    ShuffleHandleInfo mockShuffleHandleInfo = mock(ShuffleHandleInfo.class);
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
             "appId",
@@ -388,7 +400,9 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            mockHandle);
+            mockHandle,
+            mockShuffleHandleInfo,
+            contextMock);
     doReturn(1000000L).when(bufferManagerSpy).acquireMemory(anyLong());
 
     RssShuffleWriter<String, String, String> rssShuffleWriterSpy = spy(rssShuffleWriter);
@@ -484,6 +498,8 @@ public class RssShuffleWriterTest {
 
     RssShuffleHandle<String, String, String> mockHandle = mock(RssShuffleHandle.class);
     when(mockHandle.getDependency()).thenReturn(mockDependency);
+    TaskContext contextMock = mock(TaskContext.class);
+    ShuffleHandleInfo mockShuffleHandleInfo = mock(ShuffleHandleInfo.class);
     ShuffleWriteClient mockWriteClient = mock(ShuffleWriteClient.class);
 
     List<ShuffleBlockInfo> shuffleBlockInfoList = createShuffleBlockList(1, 31);
@@ -498,7 +514,9 @@ public class RssShuffleWriterTest {
             mockShuffleManager,
             conf,
             mockWriteClient,
-            mockHandle);
+            mockHandle,
+            mockShuffleHandleInfo,
+            contextMock);
     writer.postBlockEvent(shuffleBlockInfoList);
     Awaitility.await().timeout(Duration.ofSeconds(1)).until(() -> events.size() == 1);
     assertEquals(1, events.get(0).getShuffleDataInfoList().size());

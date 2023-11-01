@@ -18,6 +18,10 @@
 package org.apache.uniffle.common;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.uniffle.proto.RssProtos;
 
 public class ShuffleServerInfo implements Serializable {
 
@@ -107,5 +111,38 @@ public class ShuffleServerInfo implements Serializable {
           + grpcPort
           + "]}";
     }
+  }
+
+  private static ShuffleServerInfo convertToShuffleServerId(
+      RssProtos.ShuffleServerId shuffleServerId) {
+    ShuffleServerInfo shuffleServerInfo =
+        new ShuffleServerInfo(
+            shuffleServerId.getId(), shuffleServerId.getIp(), shuffleServerId.getPort(), 0);
+    return shuffleServerInfo;
+  }
+
+  private static RssProtos.ShuffleServerId convertToShuffleServerId(
+      ShuffleServerInfo shuffleServerInfo) {
+    RssProtos.ShuffleServerId shuffleServerId =
+        RssProtos.ShuffleServerId.newBuilder()
+            .setId(shuffleServerInfo.getId())
+            .setIp(shuffleServerInfo.getHost())
+            .setPort(shuffleServerInfo.grpcPort)
+            .setNettyPort(shuffleServerInfo.nettyPort)
+            .build();
+    return shuffleServerId;
+  }
+
+  public static List<ShuffleServerInfo> fromProto(List<RssProtos.ShuffleServerId> servers) {
+    return servers.stream()
+        .map(server -> convertToShuffleServerId(server))
+        .collect(Collectors.toList());
+  }
+
+  public static List<RssProtos.ShuffleServerId> toProto(
+      List<ShuffleServerInfo> shuffleServerInfos) {
+    return shuffleServerInfos.stream()
+        .map(server -> convertToShuffleServerId(server))
+        .collect(Collectors.toList());
   }
 }

@@ -34,7 +34,26 @@
     <version>18</version>
   </parent>
 
+  <distributionManagement>
+    <repository>
+      <id>apache.releases.https</id>
+      <name>${distMgmtReleasesName}</name>
+      <url>${distMgmtReleasesUrl}</url>
+    </repository>
+    <snapshotRepository>
+      <id>apache.snapshots.https</id>
+      <name>${distMgmtSnapshotsName}</name>
+      <url>${distMgmtSnapshotsUrl}</url>
+    </snapshotRepository>
+  </distributionManagement>
+
   <properties>
+    <distMgmtReleasesName>Apache Release Distribution Repository</distMgmtReleasesName>
+    <distMgmtReleasesUrl>https://repository.apache.org/service/local/staging/deploy/maven2</distMgmtReleasesUrl>
+    <distMgmtSnapshotsName>Apache Development Snapshot Repository</distMgmtSnapshotsName>
+    <distMgmtSnapshotsUrl>https://repository.apache.org/content/repositories/snapshots</distMgmtSnapshotsUrl>
+    <version.apache-resource-bundles>1.5</version.apache-resource-bundles>
+    <version.checksum-maven-plugin>1.11</version.checksum-maven-plugin>
     <awaitility.version>4.2.0</awaitility.version>
     <checkstyle.version>9.3</checkstyle.version>
     <commons-logging.version>1.2</commons-logging.version>
@@ -780,6 +799,30 @@
           </executions>
         </plugin>
         <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>flatten-maven-plugin</artifactId>
+          <version>1.3.0</version>
+          <configuration>
+            <flattenMode>oss</flattenMode>
+          </configuration>
+          <executions>
+            <execution>
+              <id>flatten</id>
+              <goals>
+                <goal>flatten</goal>
+              </goals>
+              <phase>process-resources</phase>
+            </execution>
+            <execution>
+              <id>flatten.clean</id>
+              <goals>
+                <goal>clean</goal>
+              </goals>
+              <phase>clean</phase>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
           <version>3.4.1</version>
@@ -1062,6 +1105,10 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
@@ -1176,6 +1223,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark2</module>
+        <module>client-spark/spark2-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark2</module>
       </modules>
@@ -1235,6 +1283,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark2</module>
+        <module>client-spark/spark2-shaded</module>
         <module>integration-test/spark-common</module>
       </modules>
       <dependencyManagement>
@@ -1291,6 +1340,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark3</module>
       </modules>
@@ -1371,6 +1421,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark3</module>
       </modules>
@@ -1460,6 +1511,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark3</module>
       </modules>
@@ -1550,6 +1602,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark3</module>
       </modules>
@@ -1640,6 +1693,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark3</module>
       </modules>
@@ -1729,6 +1783,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark3</module>
       </modules>
@@ -1818,6 +1873,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark3</module>
       </modules>
@@ -2135,6 +2191,108 @@
           <scope>test</scope>
         </dependency>
       </dependencies>
+    </profile>
+    <profile>
+      <id>apache-release</id>
+      <build>
+        <plugins>
+          <!-- Create a source-release artifact that contains the fully buildable
+               project directory source structure. This is the artifact which is
+               the official subject of any release vote. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.apache.resources</groupId>
+                <artifactId>apache-source-release-assembly-descriptor</artifactId>
+                <version>${version.apache-resource-bundles}</version>
+              </dependency>
+            </dependencies>
+            <executions>
+              <execution>
+                <id>source-release-assembly</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                  <descriptorRefs>
+                    <descriptorRef>${sourceReleaseAssemblyDescriptor}</descriptorRef>
+                  </descriptorRefs>
+                  <tarLongFileMode>${assembly.tarLongFileMode}</tarLongFileMode>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- calculate checksums of source release for Apache dist area -->
+          <plugin>
+            <groupId>net.nicoulaj.maven.plugins</groupId>
+            <artifactId>checksum-maven-plugin</artifactId>
+            <version>${version.checksum-maven-plugin}</version>
+            <executions>
+              <execution>
+                <id>source-release-checksum</id>
+                <goals>
+                  <goal>artifacts</goal>
+                </goals>
+                <!-- execute prior to maven-gpg-plugin:sign due to https://github.com/nicoulaj/checksum-maven-plugin/issues/112 -->
+                <phase>post-integration-test</phase>
+                <configuration>
+                  <algorithms>
+                    <algorithm>SHA-512</algorithm>
+                  </algorithms>
+                  <!-- https://maven.apache.org/apache-resource-bundles/#source-release-assembly-descriptor -->
+                  <includeClassifiers>source-release</includeClassifiers>
+                  <excludeMainArtifact>true</excludeMainArtifact>
+                  <csvSummary>false</csvSummary>
+                  <!-- attach SHA-512 checksum as well to upload to Maven Staging Repo,
+                       as this eases uploading from stage to dist and doesn't do harm in Maven Central -->
+                  <attachChecksums>true</attachChecksums>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- We want to sign the artifact, the POM, and all attached artifacts (except for SHA-512 checksum) -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sign-release-artifacts</id>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>

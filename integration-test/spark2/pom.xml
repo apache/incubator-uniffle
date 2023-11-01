@@ -27,9 +27,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.apache.uniffle</groupId>
   <artifactId>rss-integration-spark2-test</artifactId>
-  <version>0.9.0-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Apache Uniffle Integration Test (Spark 2)</name>
 
@@ -38,17 +36,20 @@
     <dependency>
       <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-integration-spark-common-test</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
       <type>test-jar</type>
     </dependency>
     <dependency>
       <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-client-spark2</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-client-spark-common</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -89,22 +90,6 @@
       <artifactId>rss-integration-common-test</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_${scala.binary.version}</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>com.fasterxml.jackson.module</groupId>
-          <artifactId>jackson-module-scala_${scala.binary.version}</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-sql_${scala.binary.version}</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
