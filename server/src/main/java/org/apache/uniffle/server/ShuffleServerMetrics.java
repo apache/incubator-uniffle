@@ -107,7 +107,8 @@ public class ShuffleServerMetrics {
   private static final String HADOOP_EVENT_FLUSH_NUM = "hadoop_event_flush_num";
 
   private static final String TOTAL_REMOVE_RESOURCE_TIME = "total_remove_resource_time";
-  private static final String TOTAL_REMOVE_RESOURCE_BY_SHUFFLE_IDS_TIME = "total_remove_resource_by_shuffle_ids_time";
+  private static final String TOTAL_REMOVE_RESOURCE_BY_SHUFFLE_IDS_TIME =
+      "total_remove_resource_by_shuffle_ids_time";
 
   public static Counter.Child counterTotalAppNum;
   public static Counter.Child counterTotalAppWithHugePartitionNum;
@@ -339,6 +340,7 @@ public class ShuffleServerMetrics {
     counterHadoopEventFlush = metricsManager.addCounter(HADOOP_EVENT_FLUSH_NUM);
 
     summaryTotalRemoveResourceTime = metricsManager.addSummary(TOTAL_REMOVE_RESOURCE_TIME);
-    summaryTotalRemoveResourceByShuffleIdsTime = metricsManager.addSummary(TOTAL_REMOVE_RESOURCE_BY_SHUFFLE_IDS_TIME);
+    summaryTotalRemoveResourceByShuffleIdsTime =
+        metricsManager.addSummary(TOTAL_REMOVE_RESOURCE_BY_SHUFFLE_IDS_TIME);
   }
 }
