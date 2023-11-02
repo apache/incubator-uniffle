@@ -19,10 +19,26 @@ package org.apache.uniffle.client.api;
 
 import java.io.Closeable;
 
+import org.apache.uniffle.client.request.RssPartitionToShuffleServerRequest;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
+import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
+import org.apache.uniffle.client.response.RssPartitionToShuffleServerResponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
+import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
 
 public interface ShuffleManagerClient extends Closeable {
   RssReportShuffleFetchFailureResponse reportShuffleFetchFailure(
       RssReportShuffleFetchFailureRequest request);
+
+  /**
+   * Gets the mapping between partitions and ShuffleServer from the ShuffleManager server
+   *
+   * @param req request
+   * @return RssPartitionToShuffleServerResponse
+   */
+  RssPartitionToShuffleServerResponse getPartitionToShufflerServer(
+      RssPartitionToShuffleServerRequest req);
+
+  RssReportShuffleWriteFailureResponse reportShuffleWriteFailure(
+      RssReportShuffleWriteFailureRequest req);
 }

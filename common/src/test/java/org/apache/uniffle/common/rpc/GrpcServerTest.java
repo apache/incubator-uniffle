@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.proto.ShuffleManagerGrpc;
@@ -43,8 +44,9 @@ public class GrpcServerTest {
   @Test
   public void testGrpcExecutorPool() throws Exception {
     // Explicitly setting the synchronizing variable as false at the beginning of test run
+    RssConf rssConf = new RssConf();
     GrpcServer.reset();
-    GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics();
+    GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics(rssConf);
     grpcMetrics.register(new CollectorRegistry(true));
     GrpcServer.GrpcThreadPoolExecutor executor =
         new GrpcServer.GrpcThreadPoolExecutor(
@@ -96,7 +98,8 @@ public class GrpcServerTest {
 
   @Test
   public void testRandomPort() throws Exception {
-    GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics();
+    RssConf rssConf = new RssConf();
+    GRPCMetrics grpcMetrics = GRPCMetrics.getEmptyGRPCMetrics(rssConf);
     grpcMetrics.register(new CollectorRegistry(true));
     RssBaseConf conf = new RssBaseConf();
     conf.set(RPC_SERVER_PORT, 0);

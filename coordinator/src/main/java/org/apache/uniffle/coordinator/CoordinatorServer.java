@@ -212,7 +212,7 @@ public class CoordinatorServer extends ReconfigurableBase {
     LOG.info("Register metrics");
     CollectorRegistry coordinatorCollectorRegistry = new CollectorRegistry(true);
     CoordinatorMetrics.register(coordinatorCollectorRegistry);
-    grpcMetrics = new CoordinatorGrpcMetrics();
+    grpcMetrics = new CoordinatorGrpcMetrics(coordinatorConf);
     grpcMetrics.register(new CollectorRegistry(true));
     boolean verbose = coordinatorConf.getBoolean(CoordinatorConf.RSS_JVM_METRICS_VERBOSE_ENABLE);
     CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);

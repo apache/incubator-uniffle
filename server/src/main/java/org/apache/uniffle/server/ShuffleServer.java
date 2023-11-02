@@ -296,9 +296,9 @@ public class ShuffleServer {
     CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
     String tags = coverToString();
     ShuffleServerMetrics.register(shuffleServerCollectorRegistry, tags);
-    grpcMetrics = new ShuffleServerGrpcMetrics(tags);
+    grpcMetrics = new ShuffleServerGrpcMetrics(this.shuffleServerConf, tags);
     grpcMetrics.register(new CollectorRegistry(true));
-    nettyMetrics = new ShuffleServerNettyMetrics(tags);
+    nettyMetrics = new ShuffleServerNettyMetrics(shuffleServerConf, tags);
     nettyMetrics.register(new CollectorRegistry(true));
     CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
     boolean verbose =

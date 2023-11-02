@@ -171,11 +171,18 @@ public class ShuffleTaskManager {
           while (true) {
             try {
               PurgeEvent event = expiredAppIdQueue.take();
+              long startTime = System.currentTimeMillis();
               if (event instanceof AppPurgeEvent) {
                 removeResources(event.getAppId(), true);
+                double usedTime =
+                    (System.currentTimeMillis() - startTime) / Constants.MILLION_SECONDS_PER_SECOND;
+                ShuffleServerMetrics.summaryTotalRemoveResourceTime.observe(usedTime);
               }
               if (event instanceof ShufflePurgeEvent) {
                 removeResourcesByShuffleIds(event.getAppId(), event.getShuffleIds());
+                double usedTime =
+                    (System.currentTimeMillis() - startTime) / Constants.MILLION_SECONDS_PER_SECOND;
+                ShuffleServerMetrics.summaryTotalRemoveResourceByShuffleIdsTime.observe(usedTime);
               }
             } catch (Exception e) {
               LOG.error("Exception happened when clear resource for expired application", e);
