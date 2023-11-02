@@ -31,9 +31,9 @@ This document will introduce how to deploy Uniffle client plugins with Spark and
 
 1. Add client jar to Spark classpath, eg, SPARK_HOME/jars/
 
-   The jar for Spark2 is located in <RSS_HOME>/jars/client/spark2/rss-client-XXXXX-shaded.jar
+   The jar for Spark2 is located in <RSS_HOME>/jars/client/spark2/rss-client-spark2-shaded-${version}.jar
 
-   The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-XXXXX-shaded.jar
+   The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-spark3-shaded-${version}.jar
 
 2. Update Spark conf to enable Uniffle, eg,
 
