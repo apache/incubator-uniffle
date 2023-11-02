@@ -20,6 +20,7 @@ package org.apache.uniffle.common.metrics;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 
 public abstract class GRPCMetrics extends RPCMetrics {
@@ -40,10 +41,11 @@ public abstract class GRPCMetrics extends RPCMetrics {
   protected Gauge.Child gaugeGrpcOpen;
   protected Counter.Child counterGrpcTotal;
 
-  public GRPCMetrics(String tags) {
-    super(tags);
+  public GRPCMetrics(RssConf rssConf, String tags) {
+    super(rssConf, tags);
   }
 
+  @Override
   public abstract void registerMetrics();
 
   @Override
@@ -61,6 +63,7 @@ public abstract class GRPCMetrics extends RPCMetrics {
         metricsManager.addLabeledGauge(GRPC_SERVER_CONNECTION_NUMBER));
   }
 
+  @Override
   public void incCounter(String methodName) {
     if (isRegistered) {
       super.incCounter(methodName);
@@ -69,6 +72,7 @@ public abstract class GRPCMetrics extends RPCMetrics {
     }
   }
 
+  @Override
   public void decCounter(String methodName) {
     if (isRegistered) {
       super.decCounter(methodName);
@@ -84,7 +88,7 @@ public abstract class GRPCMetrics extends RPCMetrics {
     return counterGrpcTotal;
   }
 
-  public static GRPCMetrics getEmptyGRPCMetrics() {
-    return new EmptyGRPCMetrics(Constants.SHUFFLE_SERVER_VERSION);
+  public static GRPCMetrics getEmptyGRPCMetrics(RssConf rssConf) {
+    return new EmptyGRPCMetrics(rssConf, Constants.SHUFFLE_SERVER_VERSION);
   }
 }

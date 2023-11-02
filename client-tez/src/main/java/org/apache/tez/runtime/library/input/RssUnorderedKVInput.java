@@ -185,7 +185,8 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
               getContext().getDagIdentifier(),
               conf,
               getContext().getTotalMemoryAvailableToTask(),
-              memoryUpdateCallbackHandler.getMemoryAssigned());
+              memoryUpdateCallbackHandler.getMemoryAssigned(),
+              applicationAttemptId.toString());
 
       this.rssShuffleManager =
           new RssShuffleManager(

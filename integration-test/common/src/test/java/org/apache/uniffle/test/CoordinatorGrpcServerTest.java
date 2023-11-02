@@ -61,7 +61,7 @@ public class CoordinatorGrpcServerTest {
     baseConf.set(RssBaseConf.RPC_SERVER_PORT, 20001);
     baseConf.set(RssBaseConf.RPC_EXECUTOR_SIZE, 2);
 
-    GRPCMetrics grpcMetrics = new CoordinatorGrpcMetrics();
+    GRPCMetrics grpcMetrics = new CoordinatorGrpcMetrics(baseConf);
     grpcMetrics.register(new CollectorRegistry(true));
     GrpcServer grpcServer =
         GrpcServer.Builder.newBuilder()

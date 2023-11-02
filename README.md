@@ -232,9 +232,9 @@ Deploy Steps:
 ### Deploy Spark Client
 1. Add client jar to Spark classpath, e.g., SPARK_HOME/jars/
 
-   The jar for Spark2 is located in <RSS_HOME>/jars/client/spark2/rss-client-XXXXX-shaded.jar
+   The jar for Spark2 is located in <RSS_HOME>/jars/client/spark2/rss-client-spark2-shaded-${version}.jar
 
-   The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-XXXXX-shaded.jar
+   The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-spark3-shaded-${version}.jar
 
 2. Update Spark conf to enable Uniffle, e.g.,
 

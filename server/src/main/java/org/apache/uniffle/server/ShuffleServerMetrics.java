@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
+import io.prometheus.client.Summary;
 import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.common.metrics.MetricsManager;
@@ -105,6 +106,10 @@ public class ShuffleServerMetrics {
   private static final String LOCAL_FILE_EVENT_FLUSH_NUM = "local_file_event_flush_num";
   private static final String HADOOP_EVENT_FLUSH_NUM = "hadoop_event_flush_num";
 
+  private static final String TOTAL_REMOVE_RESOURCE_TIME = "total_remove_resource_time";
+  private static final String TOTAL_REMOVE_RESOURCE_BY_SHUFFLE_IDS_TIME =
+      "total_remove_resource_by_shuffle_ids_time";
+
   public static Counter.Child counterTotalAppNum;
   public static Counter.Child counterTotalAppWithHugePartitionNum;
   public static Counter.Child counterTotalPartitionNum;
@@ -139,6 +144,9 @@ public class ShuffleServerMetrics {
   public static Counter.Child counterTotalRequireReadMemoryNum;
   public static Counter.Child counterTotalRequireReadMemoryRetryNum;
   public static Counter.Child counterTotalRequireReadMemoryFailedNum;
+
+  public static Summary summaryTotalRemoveResourceTime;
+  public static Summary summaryTotalRemoveResourceByShuffleIdsTime;
 
   public static Gauge.Child gaugeHugePartitionNum;
   public static Gauge.Child gaugeAppWithHugePartitionNum;
@@ -330,5 +338,9 @@ public class ShuffleServerMetrics {
 
     counterLocalFileEventFlush = metricsManager.addCounter(LOCAL_FILE_EVENT_FLUSH_NUM);
     counterHadoopEventFlush = metricsManager.addCounter(HADOOP_EVENT_FLUSH_NUM);
+
+    summaryTotalRemoveResourceTime = metricsManager.addSummary(TOTAL_REMOVE_RESOURCE_TIME);
+    summaryTotalRemoveResourceByShuffleIdsTime =
+        metricsManager.addSummary(TOTAL_REMOVE_RESOURCE_BY_SHUFFLE_IDS_TIME);
   }
 }
