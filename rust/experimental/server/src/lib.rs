@@ -47,10 +47,12 @@ use crate::runtime::manager::RuntimeManager;
 use crate::util::gen_worker_uid;
 use anyhow::Result;
 use bytes::{Buf, Bytes, BytesMut};
-use log::info;
+use log::{info};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
+use tokio::sync::oneshot;
 use tonic::transport::{Channel, Server};
+use crate::signal::details::graceful_wait_for_signal;
 
 pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
     let rpc_port = config.grpc_port.unwrap_or(19999);
@@ -64,6 +66,8 @@ pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
     let http_port = config.http_monitor_service_port.unwrap_or(20010);
     HTTP_SERVICE.start(runtime_manager.clone(), http_port);
 
+    let (tx, rx) = oneshot::channel::<()>();
+
     // implement server startup
     let cloned_runtime_manager = runtime_manager.clone();
     runtime_manager.grpc_runtime.spawn(async move {
@@ -75,8 +79,13 @@ pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
         let service = ShuffleServerServer::new(shuffle_server)
             .max_decoding_message_size(usize::MAX)
             .max_encoding_message_size(usize::MAX);
-        let _ = Server::builder().add_service(service).serve(addr).await;
+        let _ = Server::builder().add_service(service).serve_with_shutdown(addr, async {
+            rx.await.expect("graceful_shutdown fail");
+        }).await;
     });
+
+    graceful_wait_for_signal(tx);
+
     Ok(())
 }
 
