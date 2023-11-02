@@ -19,6 +19,7 @@
 pub mod details {
     use log::info;
     use signal_hook::{consts::TERM_SIGNALS, iterator::Signals};
+    use tokio::sync::oneshot::Sender;
 
     pub fn wait_for_signal() {
         let mut sigs = Signals::new(TERM_SIGNALS).expect("Failed to register signal handlers");
@@ -26,6 +27,18 @@ pub mod details {
         for signal in &mut sigs {
             if TERM_SIGNALS.contains(&signal) {
                 info!("Received signal {}, stopping server...", signal);
+                break;
+            }
+        }
+    }
+
+    pub fn graceful_wait_for_signal(tx: Sender<()>) {
+        let mut sigs = Signals::new(TERM_SIGNALS).expect("Failed to register signal handlers");
+
+        for signal in &mut sigs {
+            if TERM_SIGNALS.contains(&signal) {
+                info!("Received signal {}, stopping server...", signal);
+                tx.send(()).expect("Failed to send shutdown signal");
                 break;
             }
         }

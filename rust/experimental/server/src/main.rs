@@ -17,30 +17,32 @@
 
 #![feature(impl_trait_in_assoc_type)]
 
-use crate::app::{AppManager, AppManagerRef};
-use crate::await_tree::AWAIT_TREE_REGISTRY;
-use crate::config::{Config, LogConfig, RotationConfig};
-use crate::grpc::grpc_middleware::AwaitTreeMiddlewareLayer;
-use crate::grpc::{DefaultShuffleServer, MAX_CONNECTION_WINDOW_SIZE, STREAM_WINDOW_SIZE};
-use crate::http::{HTTPServer, HTTP_SERVICE};
-use crate::metric::init_metric_service;
-use crate::proto::uniffle::coordinator_server_client::CoordinatorServerClient;
-use crate::proto::uniffle::shuffle_server_server::ShuffleServerServer;
-use crate::proto::uniffle::{ShuffleServerHeartBeatRequest, ShuffleServerId};
-use crate::runtime::manager::RuntimeManager;
-use crate::signal::details::wait_for_signal;
-use crate::util::{gen_worker_uid, get_local_ip};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::time::Duration;
 
 use anyhow::Result;
 use clap::{App, Arg};
-use log::info;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::time::Duration;
+use log::{error, info};
+use tokio::sync::oneshot;
 use tonic::transport::{Channel, Server};
 use tracing_appender::non_blocking::WorkerGuard;
+use tracing_subscriber::{EnvFilter, fmt, Registry};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{fmt, EnvFilter, Registry};
+
+use crate::app::{AppManager, AppManagerRef};
+use crate::await_tree::AWAIT_TREE_REGISTRY;
+use crate::config::{Config, LogConfig, RotationConfig};
+use crate::grpc::{DefaultShuffleServer, MAX_CONNECTION_WINDOW_SIZE, STREAM_WINDOW_SIZE};
+use crate::grpc::grpc_middleware::AwaitTreeMiddlewareLayer;
+use crate::http::{HTTP_SERVICE, HTTPServer};
+use crate::metric::init_metric_service;
+use crate::proto::uniffle::{ShuffleServerHeartBeatRequest, ShuffleServerId};
+use crate::proto::uniffle::coordinator_server_client::CoordinatorServerClient;
+use crate::proto::uniffle::shuffle_server_server::ShuffleServerServer;
+use crate::runtime::manager::RuntimeManager;
+use crate::signal::details::graceful_wait_for_signal;
+use crate::util::{gen_worker_uid, get_local_ip};
 
 pub mod app;
 mod await_tree;
@@ -215,6 +217,8 @@ fn main() -> Result<()> {
     );
     HTTP_SERVICE.start(runtime_manager.clone(), http_port);
 
+    let (tx, rx) = oneshot::channel::<()>();
+
     info!("Starting GRpc server with port:[{}] ......", rpc_port);
     let shuffle_server = DefaultShuffleServer::from(app_manager_ref);
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), rpc_port as u16);
@@ -231,11 +235,17 @@ fn main() -> Result<()> {
                 AWAIT_TREE_REGISTRY.clone(),
             )))
             .add_service(service)
-            .serve(addr)
+            .serve_with_shutdown(addr, async {
+                if let Err(err) = rx.await {
+                    error!("Worker stopping error: {:?}.", err);
+                } else {
+                    info!("Worker stopped.");
+                }
+            })
             .await
     });
 
-    wait_for_signal();
+    graceful_wait_for_signal(tx);
 
     Ok(())
 }
