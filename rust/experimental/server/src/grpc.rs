@@ -428,7 +428,7 @@ impl ShuffleServer for DefaultShuffleServer {
                 },
                 blocks: partition_to_block_id.block_ids,
             };
-            let _ = app.report_block_ids(ctx).await;
+            let _ = app.report_block_ids(ctx);
         }
 
         Ok(Response::new(ReportShuffleResultResponse {
@@ -460,16 +460,9 @@ impl ShuffleServer for DefaultShuffleServer {
             shuffle_id,
             partition_id,
         };
-        let block_ids_result = app
-            .unwrap()
-            .get_block_ids(GetBlocksContext {
-                uid: partition_id.clone(),
-            })
-            .instrument_await(format!(
-                "getting shuffle blocks ids. uid: {:?}",
-                &partition_id
-            ))
-            .await;
+        let block_ids_result = app.unwrap().get_block_ids(GetBlocksContext {
+            uid: partition_id.clone(),
+        });
 
         if block_ids_result.is_err() {
             let err_msg = block_ids_result.err();
@@ -511,15 +504,13 @@ impl ShuffleServer for DefaultShuffleServer {
 
         let mut bytes_mut = BytesMut::new();
         for partition_id in req.partitions {
-            let block_ids_result = app
-                .get_block_ids(GetBlocksContext {
-                    uid: PartitionedUId {
-                        app_id: app_id.clone(),
-                        shuffle_id,
-                        partition_id,
-                    },
-                })
-                .await;
+            let block_ids_result = app.get_block_ids(GetBlocksContext {
+                uid: PartitionedUId {
+                    app_id: app_id.clone(),
+                    shuffle_id,
+                    partition_id,
+                },
+            });
             if block_ids_result.is_err() {
                 let err_msg = block_ids_result.err();
                 error!(

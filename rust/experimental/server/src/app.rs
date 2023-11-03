@@ -23,7 +23,7 @@ use crate::metric::{
 };
 
 use crate::readable_size::ReadableSize;
-
+use crate::runtime::manager::RuntimeManager;
 use crate::store::hybrid::HybridStore;
 use crate::store::memory::MemorySnapshot;
 use crate::store::{
@@ -48,10 +48,8 @@ use std::str::FromStr;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::RwLock;
 use std::time::Duration;
-
-use crate::runtime::manager::RuntimeManager;
-use tokio::sync::RwLock;
 
 #[derive(Debug, Clone)]
 enum DataDistribution {
@@ -86,7 +84,8 @@ pub struct App {
     app_config_options: Option<AppConfigOptions>,
     latest_heartbeat_time: AtomicU64,
     store: Arc<HybridStore>,
-    bitmap_of_blocks: DashMap<i32, DashMap<i32, PartitionedMeta>>,
+    // key: (shuffle_id, partition_id)
+    bitmap_of_blocks: DashMap<(i32, i32), PartitionedMeta>,
     huge_partition_marked_threshold: Option<u64>,
     huge_partition_memory_max_available_size: Option<u64>,
 }
@@ -111,25 +110,25 @@ impl PartitionedMeta {
         }
     }
 
-    async fn get_data_size(&self) -> Result<u64> {
-        let meta = self.inner.read().await;
+    fn get_data_size(&self) -> Result<u64> {
+        let meta = self.inner.read().unwrap();
         Ok(meta.total_size)
     }
 
-    async fn incr_data_size(&mut self, data_size: i32) -> Result<()> {
-        let mut meta = self.inner.write().await;
+    fn incr_data_size(&mut self, data_size: i32) -> Result<()> {
+        let mut meta = self.inner.write().unwrap();
         meta.total_size += data_size as u64;
         Ok(())
     }
 
-    async fn get_block_ids_bytes(&self) -> Result<Bytes> {
-        let meta = self.inner.read().await;
+    fn get_block_ids_bytes(&self) -> Result<Bytes> {
+        let meta = self.inner.read().unwrap();
         let serialized_data = meta.blocks_bitmap.serialize()?;
         Ok(Bytes::from(serialized_data))
     }
 
-    async fn report_block_ids(&mut self, ids: Vec<i64>) -> Result<()> {
-        let mut meta = self.inner.write().await;
+    fn report_block_ids(&mut self, ids: Vec<i64>) -> Result<()> {
+        let mut meta = self.inner.write().unwrap();
         for id in ids {
             meta.blocks_bitmap.add(id as u64);
         }
@@ -177,8 +176,7 @@ impl App {
     pub async fn insert(&self, ctx: WritingViewContext) -> Result<(), WorkerError> {
         let len: i32 = ctx.data_blocks.iter().map(|block| block.length).sum();
         self.get_underlying_partition_bitmap(ctx.uid.clone())
-            .incr_data_size(len)
-            .await?;
+            .incr_data_size(len)?;
         TOTAL_RECEIVED_DATA.inc_by(len as u64);
 
         self.store.insert(ctx).await
@@ -205,7 +203,7 @@ impl App {
         let huge_partition_memory = &huge_partition_memory_used.unwrap();
 
         let meta = self.get_underlying_partition_bitmap(uid.clone());
-        let data_size = meta.get_data_size().await?;
+        let data_size = meta.get_data_size()?;
         if data_size > *huge_partition_size
             && self
                 .store
@@ -248,27 +246,23 @@ impl App {
     fn get_underlying_partition_bitmap(&self, uid: PartitionedUId) -> PartitionedMeta {
         let shuffle_id = uid.shuffle_id;
         let partition_id = uid.partition_id;
-        let shuffle_entry = self
+        let partitioned_meta = self
             .bitmap_of_blocks
-            .entry(shuffle_id)
-            .or_insert_with(|| DashMap::new());
-        let partitioned_meta = shuffle_entry
-            .entry(partition_id)
+            .entry((shuffle_id, partition_id))
             .or_insert_with(|| PartitionedMeta::new());
-
         partitioned_meta.clone()
     }
 
-    pub async fn get_block_ids(&self, ctx: GetBlocksContext) -> Result<Bytes> {
+    pub fn get_block_ids(&self, ctx: GetBlocksContext) -> Result<Bytes> {
         debug!("get blocks: {:?}", ctx.clone());
         let partitioned_meta = self.get_underlying_partition_bitmap(ctx.uid);
-        partitioned_meta.get_block_ids_bytes().await
+        partitioned_meta.get_block_ids_bytes()
     }
 
     pub async fn report_block_ids(&self, ctx: ReportBlocksContext) -> Result<()> {
         debug!("Report blocks: {:?}", ctx.clone());
         let mut partitioned_meta = self.get_underlying_partition_bitmap(ctx.uid);
-        partitioned_meta.report_block_ids(ctx.blocks).await?;
+        partitioned_meta.report_block_ids(ctx.blocks)?;
 
         Ok(())
     }
@@ -277,7 +271,7 @@ impl App {
         if shuffle_id.is_some() {
             error!("Partial purge is not supported.");
         } else {
-            self.store.purge(app_id).await?;
+            self.store.purge(app_id).await?
         }
 
         Ok(())
@@ -688,7 +682,6 @@ mod test {
                     partition_id: 0,
                 },
             })
-            .await
             .expect("TODO: panic message");
 
         let deserialized = Treemap::deserialize(&data).unwrap();
