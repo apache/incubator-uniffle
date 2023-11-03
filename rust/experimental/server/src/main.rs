@@ -20,10 +20,11 @@
 use crate::app::{AppManager, AppManagerRef};
 use crate::await_tree::AWAIT_TREE_REGISTRY;
 use crate::config::{Config, LogConfig, RotationConfig};
-use crate::grpc::grpc_middleware::AwaitTreeMiddlewareLayer;
+use crate::grpc::await_tree_middleware::AwaitTreeMiddlewareLayer;
+use crate::grpc::metrics_middleware::MetricsMiddlewareLayer;
 use crate::grpc::{DefaultShuffleServer, MAX_CONNECTION_WINDOW_SIZE, STREAM_WINDOW_SIZE};
 use crate::http::{HTTPServer, HTTP_SERVICE};
-use crate::metric::init_metric_service;
+use crate::metric::{init_metric_service, GRPC_LATENCY_TIME_SEC};
 use crate::proto::uniffle::coordinator_server_client::CoordinatorServerClient;
 use crate::proto::uniffle::shuffle_server_server::ShuffleServerServer;
 use crate::proto::uniffle::{ShuffleServerHeartBeatRequest, ShuffleServerId};
@@ -227,6 +228,7 @@ fn main() -> Result<()> {
             .initial_connection_window_size(MAX_CONNECTION_WINDOW_SIZE)
             .initial_stream_window_size(STREAM_WINDOW_SIZE)
             .tcp_nodelay(true)
+            .layer(MetricsMiddlewareLayer::new(GRPC_LATENCY_TIME_SEC.clone()))
             .layer(AwaitTreeMiddlewareLayer::new_optional(Some(
                 AWAIT_TREE_REGISTRY.clone(),
             )))
