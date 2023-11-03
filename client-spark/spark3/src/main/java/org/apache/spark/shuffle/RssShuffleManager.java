@@ -43,6 +43,7 @@ import org.apache.spark.MapOutputTracker;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
+import org.apache.spark.SparkException;
 import org.apache.spark.TaskContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.executor.ShuffleReadMetrics;
@@ -136,6 +137,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private boolean rssResubmitStage;
   /** A list of shuffleServer for Write failures */
   private Set<String> failuresShuffleServerIds;
+  /**
+   * Prevent multiple tasks from reporting FetchFailed, resulting in multiple ShuffleServer
+   * assignments, stageID, Attemptnumber Whether to reassign the combination flag;
+   */
+  private Map<String, Boolean> serverAssignedInfos;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
@@ -263,6 +269,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             poolSize,
             keepAliveTime);
     this.shuffleIdToShuffleHandleInfo = JavaUtils.newConcurrentMap();
+    this.failuresShuffleServerIds = Sets.newHashSet();
+    this.serverAssignedInfos = JavaUtils.newConcurrentMap();
   }
 
   public CompletableFuture<Long> sendData(AddBlockEvent event) {
@@ -1103,5 +1111,80 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   @Override
   public void addFailuresShuffleServerInfos(String shuffleServerId) {
     failuresShuffleServerIds.add(shuffleServerId);
+  }
+
+  /**
+   * Reassign the ShuffleServer list for ShuffleId
+   *
+   * @param shuffleId
+   * @param numPartitions
+   */
+  @Override
+  public synchronized boolean reassignShuffleServers(
+      int stageId, int stageAttemptNumber, int shuffleId, int numPartitions) {
+    String stageIdAndAttempt = stageId + "_" + stageAttemptNumber;
+    Boolean needReassgin = serverAssignedInfos.computeIfAbsent(stageIdAndAttempt, id -> false);
+    if (!needReassgin) {
+      String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
+      RemoteStorageInfo defaultRemoteStorage =
+          new RemoteStorageInfo(sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""));
+      RemoteStorageInfo remoteStorage =
+          ClientUtils.fetchRemoteStorage(
+              id.get(), defaultRemoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
+      Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
+      int requiredShuffleServerNumber =
+          RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
+      long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
+      int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
+      int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
+      /** Before reassigning ShuffleServer, clear the ShuffleServer list in ShuffleWriteClient. */
+      shuffleWriteClient.unregisterShuffle(id.get(), shuffleId);
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+      try {
+        partitionToServers =
+            RetryUtils.retry(
+                () -> {
+                  ShuffleAssignmentsInfo response =
+                      shuffleWriteClient.getShuffleAssignments(
+                          id.get(),
+                          shuffleId,
+                          numPartitions,
+                          1,
+                          assignmentTags,
+                          requiredShuffleServerNumber,
+                          estimateTaskConcurrency,
+                          failuresShuffleServerIds);
+                  registerShuffleServers(
+                      id.get(), shuffleId, response.getServerToPartitionRanges(), remoteStorage);
+                  return response.getPartitionToServers();
+                },
+                retryInterval,
+                retryTimes);
+
+      } catch (Throwable throwable) {
+        throw new RssException("registerShuffle failed!", throwable);
+      }
+      /**
+       * we need to clear the metadata of the completed task, otherwise some of the stage's data
+       * will be lost
+       */
+      try {
+        unregisterAllMapOutput(shuffleId);
+      } catch (SparkException e) {
+        LOG.error("Clear MapoutTracker Meta failed!");
+        throw new RssException("Clear MapoutTracker Meta failed!", e);
+      }
+      ShuffleHandleInfo handleInfo =
+          new ShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
+      shuffleIdToShuffleHandleInfo.put(shuffleId, handleInfo);
+      serverAssignedInfos.put(stageIdAndAttempt, true);
+      return true;
+    } else {
+      LOG.info(
+          "The Stage:{} has been reassigned in an Attempt{},Return without performing any operation",
+          stageId,
+          stageAttemptNumber);
+      return false;
+    }
   }
 }

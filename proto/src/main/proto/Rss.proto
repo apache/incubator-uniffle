@@ -501,6 +501,8 @@ service ShuffleManager {
   rpc getPartitionToShufflerServer(PartitionToShuffleServerRequest) returns (PartitionToShuffleServerResponse);
   // Report write failures to ShuffleManager
   rpc reportShuffleWriteFailure (ReportShuffleWriteFailureRequest) returns (ReportShuffleWriteFailureResponse);
+  // Reassign the RPC interface of the ShuffleServer list
+  rpc reassignShuffleServers(ReassignServersRequest) returns (ReassignServersReponse);
 }
 
 message ReportShuffleFetchFailureRequest {
@@ -548,5 +550,18 @@ message ReportShuffleWriteFailureRequest {
 message ReportShuffleWriteFailureResponse {
   StatusCode status = 1;
   bool reSubmitWholeStage = 2;
+  string msg = 3;
+}
+
+message ReassignServersRequest{
+  int32 stageId = 1;
+  int32 stageAttemptNumber = 2;
+  int32 shuffleId = 3;
+  int32 numPartitions = 4;
+}
+
+message ReassignServersReponse{
+  StatusCode status = 1;
+  bool needReassign = 2;
   string msg = 3;
 }

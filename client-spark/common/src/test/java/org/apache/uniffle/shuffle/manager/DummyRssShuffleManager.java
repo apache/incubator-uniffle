@@ -57,4 +57,10 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
 
   @Override
   public void addFailuresShuffleServerInfos(String shuffleServerId) {}
+
+  @Override
+  public boolean reassignShuffleServers(
+      int stageId, int stageAttemptNumber, int shuffleId, int numMaps) {
+    return false;
+  }
 }

@@ -230,6 +230,27 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     responseObserver.onCompleted();
   }
 
+  @Override
+  public void reassignShuffleServers(
+      RssProtos.ReassignServersRequest request,
+      StreamObserver<RssProtos.ReassignServersReponse> responseObserver) {
+    int stageId = request.getStageId();
+    int stageAttemptNumber = request.getStageAttemptNumber();
+    int shuffleId = request.getShuffleId();
+    int numPartitions = request.getNumPartitions();
+    boolean needReassign =
+        shuffleManager.reassignShuffleServers(
+            stageId, stageAttemptNumber, shuffleId, numPartitions);
+    RssProtos.StatusCode code = RssProtos.StatusCode.SUCCESS;
+    RssProtos.ReassignServersReponse reply =
+        RssProtos.ReassignServersReponse.newBuilder()
+            .setStatus(code)
+            .setNeedReassign(needReassign)
+            .build();
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
+  }
+
   /**
    * Remove the no longer used shuffle id's rss shuffle status. This is called when ShuffleManager
    * unregisters the corresponding shuffle id.
