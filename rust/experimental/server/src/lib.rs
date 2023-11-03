@@ -17,6 +17,30 @@
 
 #![feature(impl_trait_in_assoc_type)]
 
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::time::Duration;
+
+use anyhow::Result;
+use bytes::{Buf, Bytes, BytesMut};
+use log::info;
+use tokio::signal::unix::{signal, SignalKind};
+use tokio::sync::oneshot;
+use tonic::transport::{Channel, Server};
+
+use crate::app::AppManager;
+use crate::grpc::DefaultShuffleServer;
+use crate::http::{HTTP_SERVICE, HTTPServer};
+use crate::metric::init_metric_service;
+use crate::proto::uniffle::{
+    GetLocalShuffleDataRequest, GetLocalShuffleIndexRequest, GetMemoryShuffleDataRequest,
+    RequireBufferRequest, SendShuffleDataRequest, ShuffleBlock, ShuffleData,
+    ShuffleRegisterRequest,
+};
+use crate::proto::uniffle::shuffle_server_client::ShuffleServerClient;
+use crate::proto::uniffle::shuffle_server_server::ShuffleServerServer;
+use crate::runtime::manager::RuntimeManager;
+use crate::util::gen_worker_uid;
+
 pub mod app;
 pub mod await_tree;
 pub mod config;
@@ -31,28 +55,6 @@ pub mod runtime;
 pub mod signal;
 pub mod store;
 pub mod util;
-
-use crate::app::AppManager;
-use crate::grpc::DefaultShuffleServer;
-use crate::http::{HTTPServer, HTTP_SERVICE};
-use crate::metric::init_metric_service;
-use crate::proto::uniffle::shuffle_server_client::ShuffleServerClient;
-use crate::proto::uniffle::shuffle_server_server::ShuffleServerServer;
-use crate::proto::uniffle::{
-    GetLocalShuffleDataRequest, GetLocalShuffleIndexRequest, GetMemoryShuffleDataRequest,
-    RequireBufferRequest, SendShuffleDataRequest, ShuffleBlock, ShuffleData,
-    ShuffleRegisterRequest,
-};
-use crate::runtime::manager::RuntimeManager;
-use crate::util::gen_worker_uid;
-use anyhow::Result;
-use bytes::{Buf, Bytes, BytesMut};
-use log::{info};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::time::Duration;
-use tokio::sync::oneshot;
-use tonic::transport::{Channel, Server};
-use crate::signal::details::graceful_wait_for_signal;
 
 pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
     let rpc_port = config.grpc_port.unwrap_or(19999);
@@ -85,7 +87,14 @@ pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
         }).await;
     });
 
-    tokio::spawn(graceful_wait_for_signal(tx));
+    tokio::spawn(async move {
+        let _ = signal(SignalKind::terminate())
+            .expect("Failed to register signal handlers")
+            .recv()
+            .await;
+
+        let _ = tx.send(());
+    });
 
     Ok(())
 }
