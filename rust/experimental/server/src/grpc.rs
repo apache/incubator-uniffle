@@ -630,22 +630,20 @@ impl ShuffleServer for DefaultShuffleServer {
 }
 
 pub mod metrics_middleware {
-    use std::task::{Context, Poll};
-    use hyper::Body;
     use hyper::service::Service;
+    use hyper::Body;
     use prometheus::HistogramVec;
+    use std::task::{Context, Poll};
     use tower::Layer;
 
     #[derive(Clone)]
     pub struct MetricsMiddlewareLayer {
-        metric: HistogramVec
+        metric: HistogramVec,
     }
 
     impl MetricsMiddlewareLayer {
         pub fn new(metric: HistogramVec) -> Self {
-            Self {
-                metric
-            }
+            Self { metric }
         }
     }
 
@@ -663,13 +661,13 @@ pub mod metrics_middleware {
     #[derive(Clone)]
     pub struct MetricsMiddleware<S> {
         inner: S,
-        metric: HistogramVec
+        metric: HistogramVec,
     }
 
     impl<S> Service<hyper::Request<Body>> for MetricsMiddleware<S>
-        where
-            S: Service<hyper::Request<Body>> + Clone + Send + 'static,
-            S::Future: Send + 'static,
+    where
+        S: Service<hyper::Request<Body>> + Clone + Send + 'static,
+        S::Future: Send + 'static,
     {
         type Response = S::Response;
         type Error = S::Error;
@@ -690,9 +688,7 @@ pub mod metrics_middleware {
 
             Box::pin(async move {
                 let path = req.uri().path();
-                let timer = metrics
-                    .with_label_values(&[path])
-                    .start_timer();
+                let timer = metrics.with_label_values(&[path]).start_timer();
 
                 let response = inner.call(req).await?;
 

@@ -19,7 +19,10 @@ use crate::config::MetricsConfig;
 use crate::runtime::manager::RuntimeManager;
 use log::{error, info};
 use once_cell::sync::Lazy;
-use prometheus::{labels, register_int_gauge_vec, Histogram, HistogramOpts, IntCounter, IntGauge, IntGaugeVec, Registry, HistogramVec, histogram_opts, register_histogram_vec_with_registry};
+use prometheus::{
+    histogram_opts, labels, register_histogram_vec_with_registry, register_int_gauge_vec,
+    Histogram, HistogramOpts, HistogramVec, IntCounter, IntGauge, IntGaugeVec, Registry,
+};
 use std::time::Duration;
 
 const DEFAULT_BUCKETS: &[f64; 16] = &[
@@ -89,10 +92,10 @@ pub static GRPC_BUFFER_REQUIRE_PROCESS_TIME: Lazy<Histogram> = Lazy::new(|| {
 
 pub static GRPC_LATENCY_TIME_SEC: Lazy<HistogramVec> = Lazy::new(|| {
     let opts = histogram_opts!(
-            "grpc_duration_seconds",
-            "gRPC latency",
-            Vec::from(DEFAULT_BUCKETS as &'static [f64])
-        );
+        "grpc_duration_seconds",
+        "gRPC latency",
+        Vec::from(DEFAULT_BUCKETS as &'static [f64])
+    );
     let grpc_latency = register_histogram_vec_with_registry!(opts, &["path"], REGISTRY).unwrap();
     grpc_latency
 });
