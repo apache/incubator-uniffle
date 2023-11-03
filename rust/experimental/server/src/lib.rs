@@ -81,10 +81,11 @@ pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
             .max_encoding_message_size(usize::MAX);
         let _ = Server::builder().add_service(service).serve_with_shutdown(addr, async {
             rx.await.expect("graceful_shutdown fail");
+            println!("Successfully received the shutdown signal.");
         }).await;
     });
 
-    graceful_wait_for_signal(tx);
+    tokio::spawn(graceful_wait_for_signal(tx));
 
     Ok(())
 }

@@ -245,7 +245,7 @@ fn main() -> Result<()> {
             .await
     });
 
-    graceful_wait_for_signal(tx);
+    tokio::spawn(graceful_wait_for_signal(tx));
 
     Ok(())
 }
