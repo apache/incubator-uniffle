@@ -17,19 +17,6 @@
 
 #![feature(impl_trait_in_assoc_type)]
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::time::Duration;
-
-use anyhow::Result;
-use clap::{App, Arg};
-use log::{error, info};
-use tokio::sync::oneshot;
-use tonic::transport::{Channel, Server};
-use tracing_appender::non_blocking::WorkerGuard;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{fmt, EnvFilter, Registry};
-
 use crate::app::{AppManager, AppManagerRef};
 use crate::await_tree::AWAIT_TREE_REGISTRY;
 use crate::config::{Config, LogConfig, RotationConfig};
@@ -43,6 +30,17 @@ use crate::proto::uniffle::{ShuffleServerHeartBeatRequest, ShuffleServerId};
 use crate::runtime::manager::RuntimeManager;
 use crate::signal::details::graceful_wait_for_signal;
 use crate::util::{gen_worker_uid, get_local_ip};
+
+use anyhow::Result;
+use clap::{App, Arg};
+use log::info;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::time::Duration;
+use tonic::transport::{Channel, Server};
+use tracing_appender::non_blocking::WorkerGuard;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{fmt, EnvFilter, Registry};
 
 pub mod app;
 mod await_tree;
