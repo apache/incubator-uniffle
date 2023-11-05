@@ -33,29 +33,9 @@ Refer to the following documents on how to deploy Uniffle client plugins with Sp
 |Tez|[Deploy Tez Client Plugin & Configurations](tez_client_guide.md)|
 
 
-### Deploy Tez Client Plugin
+## Common Configuration
 
-1. Append client jar to pacakge which is set by 'tez.lib.uris'.
-
-In production mode, you can append client jar (rss-client-tez-XXXXX-shaded.jar) to package which is set by 'tez.lib.uris'.
-
-In development mode, you can append client jar (rss-client-tez-XXXXX-shaded.jar) to HADOOP_CLASSPATH.
-
-2. Update tez-site.xml to enable Uniffle.
-
-| Property Name              |Default| Description                  |
-|----------------------------|---|------------------------------|
-| tez.am.launch.cmd-opts     |-XX:+PrintGCDetails -verbose:gc -XX:+PrintGCTimeStamps -XX:+UseNUMA -XX:+UseParallelGC org.apache.tez.dag.app.RssDAGAppMaster| enable remote shuffle service |
-| tez.rss.coordinator.quorum |coordinatorIp1:19999,coordinatorIp2:19999|coordinator address|
-
-Note that the RssDAGAppMaster will automatically disable slow start (i.e., `tez.shuffle-vertex-manager.min-src-fraction=1`, `tez.shuffle-vertex-manager.max-src-fraction=1`).
-
-## Configuration
-
-The important configuration of client is listed as following.
-
-### Common Setting
-These configurations are shared by all types of clients.
+The important configuration of client is listed as following. These configurations are shared by all types of clients.
 
 |Property Name|Default| Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 |---|---|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -150,14 +130,7 @@ This experimental feature allows reduce tasks to spill data to remote storage (e
 Notice: this feature requires the MEMORY_LOCAL_HADOOP mode.
 
 
-### Tez Specialized Setting
 
-| Property Name                  | Default | Description                                                             |
-|--------------------------------|---------|-------------------------------------------------------------------------|
-| tez.rss.avoid.recompute.succeeded.task | false   | Whether to avoid recompute succeeded task when node is unhealthy or black-listed |
-| tez.rss.client.max.buffer.size | 3k | The max buffer size in map side. Control the size of each segment(WrappedBuffer) in the buffer. |
-| tez.rss.client.batch.trigger.num | 50 | The max batch of buffers to send data in map side. Affect the number of blocks sent to the server in each batch, and may affect rss_worker_used_buffer_size |
-| tez.rss.client.send.thread.num | 5 | The thread pool size for the client to send data to the server. |
 
 ### Netty Setting
 | Property Name                                       | Default | Description                                                                                                                                                                                                                                                                                                                         |
