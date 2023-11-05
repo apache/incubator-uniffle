@@ -23,11 +23,7 @@ use crate::await_tree::AWAIT_TREE_REGISTRY;
 
 use crate::config::{Config, HybridStoreConfig, StorageType};
 use crate::error::WorkerError;
-use crate::metric::{
-    GAUGE_MEMORY_SPILL_OPERATION, GAUGE_MEMORY_SPILL_TO_HDFS, GAUGE_MEMORY_SPILL_TO_LOCALFILE,
-    TOTAL_MEMORY_SPILL_OPERATION, TOTAL_MEMORY_SPILL_OPERATION_FAILED, TOTAL_MEMORY_SPILL_TO_HDFS,
-    TOTAL_MEMORY_SPILL_TO_LOCALFILE,
-};
+use crate::metric::{GAUGE_MEMORY_SPILL_OPERATION, GAUGE_MEMORY_SPILL_TO_HDFS, GAUGE_MEMORY_SPILL_TO_LOCALFILE, TOTAL_MEMORY_SPILL_OPERATION, TOTAL_MEMORY_SPILL_OPERATION_FAILED, TOTAL_MEMORY_SPILL_TO_HDFS, TOTAL_MEMORY_SPILL_TO_LOCALFILE, TOTAL_READ_DATA};
 use crate::readable_size::ReadableSize;
 #[cfg(feature = "hdfs")]
 use crate::store::hdfs::HdfsStore;
@@ -432,10 +428,14 @@ impl Store for HybridStore {
 
     async fn get(&self, ctx: ReadingViewContext) -> Result<ResponseData, WorkerError> {
         match ctx.reading_options {
-            ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(_, _) => {
+            ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(_, length) => {
+                TOTAL_READ_DATA.inc_by(length as u64);
                 self.hot_store.get(ctx).await
             }
-            _ => self.warm_store.as_ref().unwrap().get(ctx).await,
+            ReadingOptions::FILE_OFFSET_AND_LEN(_, length) => {
+                TOTAL_READ_DATA.inc_by(length as u64);
+                self.warm_store.as_ref().unwrap().get(ctx).await
+            },
         }
     }
 
