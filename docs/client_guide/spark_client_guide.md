@@ -1,13 +1,13 @@
 # Deploy Spark Client Plugin & Configurations
 ## Deploy Spark Client Plugin
 
-1. Add client jar to Spark classpath, eg, SPARK_HOME/jars/
+1. Add client jar to Spark classpath, e.g. SPARK_HOME/jars/
 
    The jar for Spark2 is located in <RSS_HOME>/jars/client/spark2/rss-client-spark2-shaded-${version}.jar
 
    The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-spark3-shaded-${version}.jar
 
-2. Update Spark conf to enable Uniffle, eg,
+2. Update Spark conf to enable Uniffle, e.g.
 
    ```
    # Uniffle transmits serialized shuffle data over network, therefore a serializer that supports relocation of
@@ -53,7 +53,7 @@ Since v0.8.0, `RssShuffleManager` would disable local shuffle reader(`set spark.
 Local shuffle reader as its name indicates is suitable and optimized for spark's external shuffle service, and shall not be used for remote shuffle service. It would cause many random small IOs and network connections with Uniffle's shuffle server
 
 
-## Spark Specialized Configurations
+## Spark Specific Configurations
 
 The important configuration is listed as following.
 
@@ -64,3 +64,23 @@ The important configuration is listed as following.
 |spark.rss.client.unregister.thread.pool.size|10|The max size of thread pool of unregistering|
 |spark.rss.client.unregister.request.timeout.sec|10|The max timeout sec when doing unregister to remote shuffle-servers|
 |spark.rss.client.off.heap.memory.enable|false|The client use off heap memory to process data|
+
+### Adaptive Remote Shuffle Enabling 
+Currently, this feature only supports Spark. 
+
+To select build-in shuffle or remote shuffle in a smart manner, Uniffle support adaptive enabling. 
+The client should use `DelegationRssShuffleManager` and provide its unique <access_id> so that the coordinator could distinguish whether it should enable remote shuffle.
+
+```
+spark.shuffle.manager org.apache.spark.shuffle.DelegationRssShuffleManager
+spark.rss.access.id=<access_id> 
+```
+
+
+Other configuration:
+
+|Property Name|Default|Description|
+|---|---|---|
+|spark.rss.access.timeout.ms|10000|The timeout to access Uniffle coordinator|
+|spark.rss.client.access.retry.interval.ms|20000|The interval between retries fallback to SortShuffleManager|
+|spark.rss.client.access.retry.times|0|The number of retries fallback to SortShuffleManager|

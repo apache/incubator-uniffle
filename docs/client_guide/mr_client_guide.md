@@ -5,7 +5,7 @@
 
 The jar for MapReduce is located in <RSS_HOME>/jars/client/mr/rss-client-mr-XXXXX-shaded.jar
 
-2. Update MapReduce conf to enable Uniffle, eg,
+2. Update MapReduce conf to enable Uniffle, e.g.
 
    ```
    -Dmapreduce.rss.coordinator.quorum=<coordinatorIp1>:19999,<coordinatorIp2>:19999
@@ -16,9 +16,24 @@ The jar for MapReduce is located in <RSS_HOME>/jars/client/mr/rss-client-mr-XXXX
 Note that the RssMRAppMaster will automatically disable slow start (i.e., `mapreduce.job.reduce.slowstart.completedmaps=1`)
 and job recovery (i.e., `yarn.app.mapreduce.am.job.recovery.enable=false`)
 
-## MapReduce Specialized Configurations
+## MapReduce Specific Configurations
 
 |Property Name|Default|Description|
 |---|---|---|
 |mapreduce.rss.client.max.buffer.size|3k|The max buffer size in map side|
 |mapreduce.rss.client.batch.trigger.num|50|The max batch of buffers to send data in map side|
+
+
+### Remote Spill (Experimental)
+
+In cloud environment, VM may have very limited disk space and performance.
+This experimental feature allows reduce tasks to spill data to remote storage (e.g., hdfs)
+
+|Property Name|Default| Description                                                            |
+|---|---|------------------------------------------------------------------------|
+|mapreduce.rss.reduce.remote.spill.enable|false| Whether to use remote spill                                            |
+|mapreduce.rss.reduce.remote.spill.attempt.inc|1| Increase reduce attempts as Hadoop FS may be easier to crash than disk |
+|mapreduce.rss.reduce.remote.spill.replication|1| The replication number to spill data to Hadoop FS                      |
+|mapreduce.rss.reduce.remote.spill.retries|5| The retry number to spill data to Hadoop FS                            |
+
+Notice: this feature requires the MEMORY_LOCAL_HADOOP mode.

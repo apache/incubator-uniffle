@@ -60,27 +60,6 @@ Notice:
 
 2. `<client_type>.rss.coordinator.quorum` is compulsory, and other configurations are optional when coordinator dynamic configuration is enabled.
 
-### Adaptive Remote Shuffle Enabling 
-
-To select build-in shuffle or remote shuffle in a smart manner, Uniffle support adaptive enabling. 
-The client should use `DelegationRssShuffleManager` and provide its unique <access_id> so that the coordinator could distinguish whether it should enable remote shuffle.
-
-```
-spark.shuffle.manager org.apache.spark.shuffle.DelegationRssShuffleManager
-spark.rss.access.id=<access_id> 
-```
-
-Notice:
-Currently, this feature only supports Spark. 
-
-Other configuration:
-
-|Property Name|Default|Description|
-|---|---|---|
-|spark.rss.access.timeout.ms|10000|The timeout to access Uniffle coordinator|
-|spark.rss.client.access.retry.interval.ms|20000|The interval between retries fallback to SortShuffleManager|
-|spark.rss.client.access.retry.times|0|The number of retries fallback to SortShuffleManager|
-
 
 ### Client Quorum Setting 
 
@@ -114,32 +93,14 @@ spark.rss.data.replica.write 2
 spark.rss.data.replica.read 2
 ```
 
-
-### Remote Spill (Experimental)
-
-In cloud environment, VM may have very limited disk space and performance.
-This experimental feature allows reduce tasks to spill data to remote storage (e.g., hdfs)
-
-|Property Name|Default| Description                                                            |
-|---|---|------------------------------------------------------------------------|
-|mapreduce.rss.reduce.remote.spill.enable|false| Whether to use remote spill                                            |
-|mapreduce.rss.reduce.remote.spill.attempt.inc|1| Increase reduce attempts as Hadoop FS may be easier to crash than disk |
-|mapreduce.rss.reduce.remote.spill.replication|1| The replication number to spill data to Hadoop FS                      |
-|mapreduce.rss.reduce.remote.spill.retries|5| The retry number to spill data to Hadoop FS                            |
-
-Notice: this feature requires the MEMORY_LOCAL_HADOOP mode.
-
-
-
-
 ### Netty Setting
 | Property Name                                       | Default | Description                                                                                                                                                                                                                                                                                                                         |
 |-----------------------------------------------------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| spark.rss.client.type                               | GRPC    | The default is GRPC, we can set it to GRPC_NETTY to enable the netty on the client                                                                                                                                                                                                                                                  |
-| spark.rss.client.netty.io.mode                      | NIO     | Netty EventLoopGroup backend, available options: NIO, EPOLL.                                                                                                                                                                                                                                                                        |
-| spark.rss.client.netty.client.connection.timeout.ms | 600000  | Connection active timeout.                                                                                                                                                                                                                                                                                                          |
-| spark.rss.client.netty.client.threads               | 0       | Number of threads used in the client thread pool. Default is 0, netty will use the number of (available logical cores * 2) as the number of threads.                                                                                                                                                                                |
-| spark.rss.client.netty.client.prefer.direct.bufs    | true    | If true, we will prefer allocating off-heap byte buffers within Netty.                                                                                                                                                                                                                                                              |
-| spark.rss.client.netty.client.connections.per.peer  | 2       | Suppose there are 100 executors, spark.rss.client.netty.client.connections.per.peer = 2, then each ShuffleServer will establish a total of (100 * 2) connections with multiple clients.                                                                                                                                             |
-| spark.rss.client.netty.client.receive.buffer        | 0       | Receive buffer size (SO_RCVBUF). Note: the optimal size for receive buffer and send buffer should be latency * network_bandwidth. Assuming latency = 1ms, network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB. Default is 0, the operating system automatically estimates the receive buffer size based on default settings. |
-| spark.rss.client.netty.client.send.buffer           | 0       | Send buffer size (SO_SNDBUF).                                                                                                                                                                                                                                                                                                       |
+| <client_type>.rss.client.type                               | GRPC    | The default is GRPC, we can set it to GRPC_NETTY to enable the netty on the client                                                                                                                                                                                                                                                  |
+| <client_type>.rss.client.netty.io.mode                      | NIO     | Netty EventLoopGroup backend, available options: NIO, EPOLL.                                                                                                                                                                                                                                                                        |
+| <client_type>.rss.client.netty.client.connection.timeout.ms | 600000  | Connection active timeout.                                                                                                                                                                                                                                                                                                          |
+| <client_type>.rss.client.netty.client.threads               | 0       | Number of threads used in the client thread pool. Default is 0, netty will use the number of (available logical cores * 2) as the number of threads.                                                                                                                                                                                |
+| <client_type>.rss.client.netty.client.prefer.direct.bufs    | true    | If true, we will prefer allocating off-heap byte buffers within Netty.                                                                                                                                                                                                                                                              |
+| <client_type>.rss.client.netty.client.connections.per.peer  | 2       | Suppose there are 100 executors, spark.rss.client.netty.client.connections.per.peer = 2, then each ShuffleServer will establish a total of (100 * 2) connections with multiple clients.                                                                                                                                             |
+| <client_type>.rss.client.netty.client.receive.buffer        | 0       | Receive buffer size (SO_RCVBUF). Note: the optimal size for receive buffer and send buffer should be latency * network_bandwidth. Assuming latency = 1ms, network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB. Default is 0, the operating system automatically estimates the receive buffer size based on default settings. |
+| <client_type>.rss.client.netty.client.send.buffer           | 0       | Send buffer size (SO_SNDBUF).                                                                                                                                                                                                                                                                                                       |

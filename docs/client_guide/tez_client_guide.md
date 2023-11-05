@@ -1,7 +1,7 @@
 # Deploy Tez Client Plugin & Configurations
 ## Deploy Tez Client Plugin
 
-1. Append client jar to pacakge which is set by 'tez.lib.uris'.
+1. Append client jar to package which is set by 'tez.lib.uris'.
 
 In production mode, you can append client jar (rss-client-tez-XXXXX-shaded.jar) to package which is set by 'tez.lib.uris'.
 
@@ -16,7 +16,7 @@ In development mode, you can append client jar (rss-client-tez-XXXXX-shaded.jar)
 
 Note that the RssDAGAppMaster will automatically disable slow start (i.e., `tez.shuffle-vertex-manager.min-src-fraction=1`, `tez.shuffle-vertex-manager.max-src-fraction=1`).
 
-## Tez Specialized Configurations
+## Tez Specific Configurations
 
 | Property Name                  | Default | Description                                                             |
 |--------------------------------|---------|-------------------------------------------------------------------------|
@@ -24,3 +24,18 @@ Note that the RssDAGAppMaster will automatically disable slow start (i.e., `tez.
 | tez.rss.client.max.buffer.size | 3k | The max buffer size in map side. Control the size of each segment(WrappedBuffer) in the buffer. |
 | tez.rss.client.batch.trigger.num | 50 | The max batch of buffers to send data in map side. Affect the number of blocks sent to the server in each batch, and may affect rss_worker_used_buffer_size |
 | tez.rss.client.send.thread.num | 5 | The thread pool size for the client to send data to the server. |
+
+
+### Remote Spill (Experimental)
+
+In cloud environment, VM may have very limited disk space and performance.
+This experimental feature allows reduce tasks to spill data to remote storage (e.g., hdfs)
+
+|Property Name|Default| Description                                                            |
+|---|---|------------------------------------------------------------------------|
+|tez.rss.reduce.remote.spill.enable|false| Whether to use remote spill                                            |
+|tez.rss.remote.spill.storage.path |     | The remote spill path                                                |
+|tez.rss.reduce.remote.spill.replication|1| The replication number to spill data to Hadoop FS                      |
+|tez.rss.reduce.remote.spill.retries|5| The retry number to spill data to Hadoop FS                            |
+
+Notice: this feature requires the MEMORY_LOCAL_HADOOP mode.
