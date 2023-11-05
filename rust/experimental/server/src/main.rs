@@ -33,9 +33,10 @@ use crate::util::{gen_worker_uid, get_local_ip};
 
 use anyhow::Result;
 use clap::{App, Arg};
-use log::info;
+use log::{error, info};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
+use tokio::sync::oneshot;
 use tonic::transport::{Channel, Server};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::layer::SubscriberExt;
@@ -237,7 +238,7 @@ fn main() -> Result<()> {
                 if let Err(err) = rx.await {
                     error!("Errors on stopping the GRPC service, err: {:?}.", err);
                 } else {
-                    info!("How about GRPC service has been graceful stopped.");
+                    info!("GRPC service has been graceful stopped.");
                 }
             })
             .await
