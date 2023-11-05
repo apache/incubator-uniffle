@@ -26,20 +26,20 @@ use log::{error, info};
 use tokio::sync::oneshot;
 use tonic::transport::{Channel, Server};
 use tracing_appender::non_blocking::WorkerGuard;
-use tracing_subscriber::{EnvFilter, fmt, Registry};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{fmt, EnvFilter, Registry};
 
 use crate::app::{AppManager, AppManagerRef};
 use crate::await_tree::AWAIT_TREE_REGISTRY;
 use crate::config::{Config, LogConfig, RotationConfig};
-use crate::grpc::{DefaultShuffleServer, MAX_CONNECTION_WINDOW_SIZE, STREAM_WINDOW_SIZE};
 use crate::grpc::grpc_middleware::AwaitTreeMiddlewareLayer;
-use crate::http::{HTTP_SERVICE, HTTPServer};
+use crate::grpc::{DefaultShuffleServer, MAX_CONNECTION_WINDOW_SIZE, STREAM_WINDOW_SIZE};
+use crate::http::{HTTPServer, HTTP_SERVICE};
 use crate::metric::init_metric_service;
-use crate::proto::uniffle::{ShuffleServerHeartBeatRequest, ShuffleServerId};
 use crate::proto::uniffle::coordinator_server_client::CoordinatorServerClient;
 use crate::proto::uniffle::shuffle_server_server::ShuffleServerServer;
+use crate::proto::uniffle::{ShuffleServerHeartBeatRequest, ShuffleServerId};
 use crate::runtime::manager::RuntimeManager;
 use crate::signal::details::graceful_wait_for_signal;
 use crate::util::{gen_worker_uid, get_local_ip};
@@ -237,9 +237,9 @@ fn main() -> Result<()> {
             .add_service(service)
             .serve_with_shutdown(addr, async {
                 if let Err(err) = rx.await {
-                    error!("Worker stopping error: {:?}.", err);
+                    error!("Errors on stopping the GRPC service, err: {:?}.", err);
                 } else {
-                    info!("Worker stopped.");
+                    info!("How about GRPC service has been graceful stopped.");
                 }
             })
             .await

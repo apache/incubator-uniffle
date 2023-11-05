@@ -23,12 +23,12 @@ mod test {
     use signal_hook::low_level::raise;
     use tonic::transport::Channel;
 
-    use uniffle_worker::{start_uniffle_worker, write_read_for_one_time};
     use uniffle_worker::config::{
         Config, HybridStoreConfig, LocalfileStoreConfig, MemoryStoreConfig, MetricsConfig,
         StorageType,
-        };
+    };
     use uniffle_worker::proto::uniffle::shuffle_server_client::ShuffleServerClient;
+    use uniffle_worker::{start_uniffle_worker, write_read_for_one_time};
 
     fn create_mocked_config(grpc_port: i32, capacity: String, local_data_path: String) -> Config {
         Config {
@@ -64,7 +64,8 @@ mod test {
         _app_id: &str,
         _shuffle_id: i32,
         _partitions: Vec<i32>,
-    ) {}
+    ) {
+    }
 
     async fn start_embedded_worker(path: String, port: i32) {
         let config = create_mocked_config(port, "1G".to_string(), path);
@@ -81,17 +82,16 @@ mod test {
         let port = 21101;
         let _ = start_embedded_worker(temp_path, port).await;
 
-        let client = match ShuffleServerClient::connect(format!("http://{}:{}", "0.0.0.0", port)).await {
-            Ok(client) => client,
-            Err(e) => {
-                // Handle the error, e.g., by panicking or logging it.
-                panic!("Failed to connect: {}", e);
-            }
-        };
+        let client =
+            match ShuffleServerClient::connect(format!("http://{}:{}", "0.0.0.0", port)).await {
+                Ok(client) => client,
+                Err(e) => {
+                    // Handle the error, e.g., by panicking or logging it.
+                    panic!("Failed to connect: {}", e);
+                }
+            };
 
-        let jh = tokio::spawn(async move {
-            write_read_for_one_time(client).await
-        });
+        let jh = tokio::spawn(async move { write_read_for_one_time(client).await });
 
         // raise shutdown signal
         tokio::spawn(async {

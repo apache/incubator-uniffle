@@ -29,15 +29,15 @@ use tonic::transport::{Channel, Server};
 
 use crate::app::AppManager;
 use crate::grpc::DefaultShuffleServer;
-use crate::http::{HTTP_SERVICE, HTTPServer};
+use crate::http::{HTTPServer, HTTP_SERVICE};
 use crate::metric::init_metric_service;
+use crate::proto::uniffle::shuffle_server_client::ShuffleServerClient;
+use crate::proto::uniffle::shuffle_server_server::ShuffleServerServer;
 use crate::proto::uniffle::{
     GetLocalShuffleDataRequest, GetLocalShuffleIndexRequest, GetMemoryShuffleDataRequest,
     RequireBufferRequest, SendShuffleDataRequest, ShuffleBlock, ShuffleData,
     ShuffleRegisterRequest,
 };
-use crate::proto::uniffle::shuffle_server_client::ShuffleServerClient;
-use crate::proto::uniffle::shuffle_server_server::ShuffleServerServer;
 use crate::runtime::manager::RuntimeManager;
 use crate::util::gen_worker_uid;
 
@@ -81,13 +81,16 @@ pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
         let service = ShuffleServerServer::new(shuffle_server)
             .max_decoding_message_size(usize::MAX)
             .max_encoding_message_size(usize::MAX);
-        let _ = Server::builder().add_service(service).serve_with_shutdown(addr, async {
-            rx.await.expect("graceful_shutdown fail");
-            println!("Successfully received the shutdown signal.");
-        }).await;
+        let _ = Server::builder()
+            .add_service(service)
+            .serve_with_shutdown(addr, async {
+                rx.await.expect("graceful_shutdown fail");
+                println!("Successfully received the shutdown signal.");
+            })
+            .await;
     });
 
-    tokio::spawn(async move {
+    runtime_manager.default_runtime.spawn(async move {
         let _ = signal(SignalKind::terminate())
             .expect("Failed to register signal handlers")
             .recv()
