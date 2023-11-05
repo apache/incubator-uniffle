@@ -312,7 +312,7 @@ The important configuration is listed as follows.
 |---|---|
 |coordinator|[Uniffle Coordinator Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/coordinator_guide.md)|
 |shuffle server|[Uniffle Shuffle Server Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/server_guide.md)|
-|client|[Uniffle Shuffle Client Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/client_guide.md)|
+|client|[Uniffle Shuffle Client Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/client_guide/client_guide.md)|
 
 ## Security: Hadoop kerberos authentication
 The primary goals of the Uniffle Kerberos security are:
