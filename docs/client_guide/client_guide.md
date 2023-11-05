@@ -21,64 +21,16 @@ license: |
 ---
 # Uniffle Shuffle Client Guide
 
-Uniffle is designed as a unified shuffle engine for multiple computing frameworks, including Apache Spark and Apache Hadoop.
-Uniffle has provided pluggable client plugins to enable remote shuffle in Spark and MapReduce.
+Uniffle is designed as a unified shuffle engine for multiple computing frameworks, including Apache Spark, Apache Hadoop, and Apache Tez.
+Uniffle has provided pluggable client plugins to enable remote shuffle in Spark, MapReduce, and Tez.
 
-## Deploy
-This document will introduce how to deploy Uniffle client plugins with Spark and MapReduce.
-
-### Deploy Spark Client Plugin
-
-1. Add client jar to Spark classpath, eg, SPARK_HOME/jars/
-
-   The jar for Spark2 is located in <RSS_HOME>/jars/client/spark2/rss-client-spark2-shaded-${version}.jar
-
-   The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-spark3-shaded-${version}.jar
-
-2. Update Spark conf to enable Uniffle, eg,
-
-   ```
-   # Uniffle transmits serialized shuffle data over network, therefore a serializer that supports relocation of
-   # serialized object should be used. 
-   spark.serializer org.apache.spark.serializer.KryoSerializer # this could also be in the spark-defaults.conf
-   spark.shuffle.manager org.apache.spark.shuffle.RssShuffleManager
-   spark.rss.coordinator.quorum <coordinatorIp1>:19999,<coordinatorIp2>:19999
-   # Note: For Spark2, spark.sql.adaptive.enabled should be false because Spark2 doesn't support AQE.
-   ```
-
-### Support Spark Dynamic Allocation
-
-To support spark dynamic allocation with Uniffle, spark code should be updated.
-There are 2 patches for spark-2.4.6 and spark-3.1.2 in spark-patches folder for reference.
-
-After apply the patch and rebuild spark, add following configuration in spark conf to enable dynamic allocation:
-  ```
-  spark.shuffle.service.enabled false
-  spark.dynamicAllocation.enabled true
-  ```
-
-### Support Spark AQE
-
-To improve performance of AQE skew optimization, uniffle introduces the LOCAL_ORDER shuffle-data distribution mechanism 
-and Continuous partition assignment mechanism.
-
-1. LOCAL_ORDER shuffle-data distribution mechanism filter the lots of data to reduce network bandwidth and shuffle-server local-disk pressure. 
-   It will be enabled by default when AQE is enabled.
-
-2. Continuous partition assignment mechanism assign consecutive partitions to the same ShuffleServer to reduce the frequency of getShuffleResult.
-
-    It can be enabled by the following config
-      ```bash
-        # Default value is ROUND, it will poll to allocate partitions to ShuffleServer
-        rss.coordinator.select.partition.strategy CONTINUOUS
-        
-        # Default value is 1.0, used to estimate task concurrency, how likely is this part of the resource between spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors to be allocated
-        --conf spark.rss.estimate.task.concurrency.dynamic.factor=1.0
-      ```
-
-Since v0.8.0, `RssShuffleManager` would disable local shuffle reader(`set spark.sql.adaptive.localShuffleReader.enabled=false`) optimization by default.
-
-Local shuffle reader as its name indicates is suitable and optimized for spark's external shuffle service, and shall not be used for remote shuffle service. It would cause many random small IOs and network connections with Uniffle's shuffle server
+## Deploy & client specific configuration
+Refer to the following documents on how to deploy Uniffle client plugins with Spark, MapReduce, and Tez. Client specific configurations are also listed in each documents.
+|Client|Link|
+|---|---|
+|Spark|[Deploy Spark Client Plugin & Configurations](spark_client_guide.md)|
+|MapReduce|[Deploy MapReduce Client Plugin & Configurations](mr_client_guide.md)|
+|Tez|[Deploy Tez Client Plugin & Configurations](tez_client_guide.md)|
 
 ### Deploy MapReduce Client Plugin
 
@@ -197,18 +149,6 @@ spark.rss.data.replica 3
 spark.rss.data.replica.write 2
 spark.rss.data.replica.read 2
 ```
-
-### Spark Specialized Setting
-
-The important configuration is listed as following.
-
-|Property Name|Default|Description|
-|---|---|---|
-|spark.rss.writer.buffer.spill.size|128m|Buffer size for total partition data|
-|spark.rss.client.send.size.limit|16m|The max data size sent to shuffle server|
-|spark.rss.client.unregister.thread.pool.size|10|The max size of thread pool of unregistering|
-|spark.rss.client.unregister.request.timeout.sec|10|The max timeout sec when doing unregister to remote shuffle-servers|
-|spark.rss.client.off.heap.memory.enable|false|The client use off heap memory to process data|
 
 
 ### MapReduce Specialized Setting
