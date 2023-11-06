@@ -33,7 +33,7 @@ More advanced details for Uniffle users are available in the following:
 
 - [Uniffle Shuffle Server Guide](server_guide.md)
 
-- [Uniffle Shuffle Client Guide](client_guide.md)
+- [Uniffle Shuffle Client Guide](client_guide/client_guide.md)
 
 - [Metrics Guide](metrics_guide.md)
 - 
