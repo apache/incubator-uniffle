@@ -17,10 +17,7 @@
 
 use crate::config::Config;
 use crate::error::WorkerError;
-use crate::metric::{
-    GAUGE_APP_NUMBER, TOTAL_APP_NUMBER, TOTAL_HUGE_PARTITION_REQUIRE_BUFFER_FAILED,
-    TOTAL_RECEIVED_DATA, TOTAL_REQUIRE_BUFFER_FAILED,
-};
+use crate::metric::{GAUGE_APP_NUMBER, TOTAL_APP_NUMBER, TOTAL_HUGE_PARTITION_REQUIRE_BUFFER_FAILED, TOTAL_READ_DATA, TOTAL_RECEIVED_DATA, TOTAL_REQUIRE_BUFFER_FAILED};
 
 use crate::readable_size::ReadableSize;
 use crate::runtime::manager::RuntimeManager;
@@ -183,6 +180,13 @@ impl App {
     }
 
     pub async fn select(&self, ctx: ReadingViewContext) -> Result<ResponseData, WorkerError> {
+        match ctx.reading_options {
+            ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(_, length)
+            | ReadingOptions::FILE_OFFSET_AND_LEN(_, length) => {
+                TOTAL_READ_DATA.inc_by(length as u64);
+            }
+        }
+
         self.store.get(ctx).await
     }
 

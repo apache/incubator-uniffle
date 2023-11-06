@@ -23,7 +23,11 @@ use crate::await_tree::AWAIT_TREE_REGISTRY;
 
 use crate::config::{Config, HybridStoreConfig, StorageType};
 use crate::error::WorkerError;
-use crate::metric::{GAUGE_MEMORY_SPILL_OPERATION, GAUGE_MEMORY_SPILL_TO_HDFS, GAUGE_MEMORY_SPILL_TO_LOCALFILE, TOTAL_MEMORY_SPILL_OPERATION, TOTAL_MEMORY_SPILL_OPERATION_FAILED, TOTAL_MEMORY_SPILL_TO_HDFS, TOTAL_MEMORY_SPILL_TO_LOCALFILE, TOTAL_READ_DATA};
+use crate::metric::{
+    GAUGE_MEMORY_SPILL_OPERATION, GAUGE_MEMORY_SPILL_TO_HDFS, GAUGE_MEMORY_SPILL_TO_LOCALFILE,
+    TOTAL_MEMORY_SPILL_OPERATION, TOTAL_MEMORY_SPILL_OPERATION_FAILED, TOTAL_MEMORY_SPILL_TO_HDFS,
+    TOTAL_MEMORY_SPILL_TO_LOCALFILE,
+};
 use crate::readable_size::ReadableSize;
 #[cfg(feature = "hdfs")]
 use crate::store::hdfs::HdfsStore;
@@ -107,7 +111,7 @@ impl HybridStore {
             panic!("The binary is not compiled with feature of hdfs! So the storage type can't involve hdfs.");
 
             #[cfg(feature = "hdfs")]
-            let hdfs_store = HdfsStore::from(config.hdfs_store.unwrap());
+                let hdfs_store = HdfsStore::from(config.hdfs_store.unwrap());
             #[cfg(feature = "hdfs")]
             persistent_stores.push_back(Box::new(hdfs_store));
         }
@@ -428,14 +432,10 @@ impl Store for HybridStore {
 
     async fn get(&self, ctx: ReadingViewContext) -> Result<ResponseData, WorkerError> {
         match ctx.reading_options {
-            ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(_, length) => {
-                TOTAL_READ_DATA.inc_by(length as u64);
+            ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(_, _) => {
                 self.hot_store.get(ctx).await
             }
-            ReadingOptions::FILE_OFFSET_AND_LEN(_, length) => {
-                TOTAL_READ_DATA.inc_by(length as u64);
-                self.warm_store.as_ref().unwrap().get(ctx).await
-            },
+            _ => self.warm_store.as_ref().unwrap().get(ctx).await,
         }
     }
 
