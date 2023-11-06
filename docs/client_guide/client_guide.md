@@ -21,11 +21,11 @@ license: |
 ---
 # Uniffle Shuffle Client Guide
 
-Uniffle is designed as a unified shuffle engine for multiple computing frameworks, including Apache Spark, Apache Hadoop, and Apache Tez.
-Uniffle has provided pluggable client plugins to enable remote shuffle in Spark, MapReduce, and Tez.
+Uniffle is designed as a unified shuffle engine for multiple computing frameworks, including Apache Spark, Apache Hadoop and Apache Tez.
+Uniffle has provided pluggable client plugins to enable remote shuffle in Spark, MapReduce and Tez.
 
 ## Deploy & client specific configuration
-Refer to the following documents on how to deploy Uniffle client plugins with Spark, MapReduce, and Tez. Client specific configurations are also listed in each documents.
+Refer to the following documents on how to deploy Uniffle client plugins with Spark, MapReduce and Tez. Client specific configurations are also listed in each documents.
 |Client|Link|
 |---|---|
 |Spark|[Deploy Spark Client Plugin & Configurations](spark_client_guide.md)|
