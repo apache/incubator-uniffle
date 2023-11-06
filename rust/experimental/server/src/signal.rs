@@ -30,6 +30,18 @@ pub mod details {
             }
         }
     }
+
+    pub fn graceful_wait_for_signal(tx: tokio::sync::oneshot::Sender<()>) {
+        let mut sigs = Signals::new(TERM_SIGNALS).expect("Failed to register signal handlers");
+
+        for signal in &mut sigs {
+            if TERM_SIGNALS.contains(&signal) {
+                info!("Received signal {}, stopping server...", signal);
+                let _ = tx.send(());
+                break;
+            }
+        }
+    }
 }
 
 #[cfg(not(unix))]
