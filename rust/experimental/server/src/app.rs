@@ -17,7 +17,10 @@
 
 use crate::config::Config;
 use crate::error::WorkerError;
-use crate::metric::{GAUGE_APP_NUMBER, TOTAL_APP_NUMBER, TOTAL_HUGE_PARTITION_REQUIRE_BUFFER_FAILED, TOTAL_READ_DATA, TOTAL_RECEIVED_DATA, TOTAL_REQUIRE_BUFFER_FAILED};
+use crate::metric::{
+    GAUGE_APP_NUMBER, TOTAL_APP_NUMBER, TOTAL_HUGE_PARTITION_REQUIRE_BUFFER_FAILED,
+    TOTAL_READ_DATA, TOTAL_RECEIVED_DATA, TOTAL_REQUIRE_BUFFER_FAILED,
+};
 
 use crate::readable_size::ReadableSize;
 use crate::runtime::manager::RuntimeManager;
