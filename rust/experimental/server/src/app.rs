@@ -187,7 +187,7 @@ impl App {
         response.map(|data| {
             let length = match &data {
                 ResponseData::Local(local_data) => local_data.data.len() as u64,
-                ResponseData::Mem(mem_data) => mem_data.data.len() as u64
+                ResponseData::Mem(mem_data) => mem_data.data.len() as u64,
             };
             TOTAL_READ_DATA.inc_by(length);
 
