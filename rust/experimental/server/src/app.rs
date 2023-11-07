@@ -183,14 +183,16 @@ impl App {
     }
 
     pub async fn select(&self, ctx: ReadingViewContext) -> Result<ResponseData, WorkerError> {
-        match ctx.reading_options {
-            ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(_, length)
-            | ReadingOptions::FILE_OFFSET_AND_LEN(_, length) => {
-                TOTAL_READ_DATA.inc_by(length as u64);
-            }
-        }
+        let response = self.store.get(ctx).await;
+        response.map(|data| {
+            let length = match &data {
+                ResponseData::Local(local_data) => local_data.data.len() as u64,
+                ResponseData::Mem(mem_data) => mem_data.data.len() as u64
+            };
+            TOTAL_READ_DATA.inc_by(length);
 
-        self.store.get(ctx).await
+            data
+        })
     }
 
     pub async fn list_index(
