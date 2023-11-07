@@ -190,6 +190,7 @@ public class CoordinatorServer extends ReconfigurableBase {
     // register packages and instances for jersey
     jettyServer.addResourcePackages(
         "org.apache.uniffle.coordinator.web.resource", "org.apache.uniffle.common.web.resource");
+    jettyServer.registerInstance(CoordinatorServer.class, this);
     jettyServer.registerInstance(ClusterManager.class, clusterManager);
     jettyServer.registerInstance(AccessManager.class, accessManager);
     jettyServer.registerInstance(ApplicationManager.class, applicationManager);
