@@ -35,6 +35,10 @@ pub static TOTAL_RECEIVED_DATA: Lazy<IntCounter> = Lazy::new(|| {
     IntCounter::new("total_received_data", "Incoming Requests").expect("metric should be created")
 });
 
+pub static TOTAL_READ_DATA: Lazy<IntCounter> = Lazy::new(|| {
+    IntCounter::new("total_read_data", "Reading Data").expect("metric should be created")
+});
+
 pub static GRPC_GET_MEMORY_DATA_TRANSPORT_TIME: Lazy<Histogram> = Lazy::new(|| {
     let opts = HistogramOpts::new("grpc_get_memory_data_transport_time", "none")
         .buckets(Vec::from(DEFAULT_BUCKETS as &'static [f64]));
@@ -201,6 +205,9 @@ fn register_custom_metrics() {
     REGISTRY
         .register(Box::new(TOTAL_RECEIVED_DATA.clone()))
         .expect("total_received_data must be registered");
+    REGISTRY
+        .register(Box::new(TOTAL_READ_DATA.clone()))
+        .expect("total_read_data must be registered");
     REGISTRY
         .register(Box::new(TOTAL_MEMORY_USED.clone()))
         .expect("total_memory_used must be registered");

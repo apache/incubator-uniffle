@@ -19,7 +19,7 @@ use crate::config::Config;
 use crate::error::WorkerError;
 use crate::metric::{
     GAUGE_APP_NUMBER, TOTAL_APP_NUMBER, TOTAL_HUGE_PARTITION_REQUIRE_BUFFER_FAILED,
-    TOTAL_RECEIVED_DATA, TOTAL_REQUIRE_BUFFER_FAILED,
+    TOTAL_READ_DATA, TOTAL_RECEIVED_DATA, TOTAL_REQUIRE_BUFFER_FAILED,
 };
 
 use crate::readable_size::ReadableSize;
@@ -183,7 +183,16 @@ impl App {
     }
 
     pub async fn select(&self, ctx: ReadingViewContext) -> Result<ResponseData, WorkerError> {
-        self.store.get(ctx).await
+        let response = self.store.get(ctx).await;
+        response.map(|data| {
+            let length = match &data {
+                ResponseData::Local(local_data) => local_data.data.len() as u64,
+                ResponseData::Mem(mem_data) => mem_data.data.len() as u64,
+            };
+            TOTAL_READ_DATA.inc_by(length);
+
+            data
+        })
     }
 
     pub async fn list_index(
