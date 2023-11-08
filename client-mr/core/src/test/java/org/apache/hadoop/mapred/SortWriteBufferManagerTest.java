@@ -89,7 +89,8 @@ public class SortWriteBufferManagerTest {
             5,
             0.2f,
             1024000L,
-            new RssConf());
+            new RssConf(),
+            null);
 
     // case 1
     Random random = new Random();
@@ -151,7 +152,8 @@ public class SortWriteBufferManagerTest {
             5,
             0.2f,
             1024000L,
-            new RssConf());
+            new RssConf(),
+            null);
     byte[] key = new byte[20];
     byte[] value = new byte[1024];
     random.nextBytes(key);
@@ -202,7 +204,8 @@ public class SortWriteBufferManagerTest {
             5,
             0.2f,
             100L,
-            new RssConf());
+            new RssConf(),
+            null);
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -252,7 +255,8 @@ public class SortWriteBufferManagerTest {
             5,
             0.2f,
             1024000L,
-            new RssConf());
+            new RssConf(),
+            null);
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -317,7 +321,8 @@ public class SortWriteBufferManagerTest {
             5,
             0.2f,
             1024000L,
-            new RssConf());
+            new RssConf(),
+            null);
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
