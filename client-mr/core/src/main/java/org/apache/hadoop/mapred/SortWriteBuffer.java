@@ -118,7 +118,7 @@ public class SortWriteBuffer<K, V> extends OutputStream {
     byte[] data = new byte[dataLength + extraSize];
     int offset = 0;
     sort();
-    long startCopy = System.currentTimeMillis();
+    final long startCopy = System.currentTimeMillis();
 
     for (Record<K> record : records) {
       offset = writeDataInt(data, offset, record.getKeyLength());
