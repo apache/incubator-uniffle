@@ -783,7 +783,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * @param shuffleId shuffleId
    * @return ShuffleHandleInfo
    */
-  private ShuffleHandleInfo getRemoteShuffleHandleInfo(int shuffleId) {
+  private synchronized ShuffleHandleInfo getRemoteShuffleHandleInfo(int shuffleId) {
     ShuffleHandleInfo shuffleHandleInfo;
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     String driver = rssConf.getString("driver.host", "");
@@ -887,5 +887,9 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           stageAttemptNumber);
       return false;
     }
+  }
+
+  public boolean isRssResubmitStage() {
+    return rssResubmitStage;
   }
 }
