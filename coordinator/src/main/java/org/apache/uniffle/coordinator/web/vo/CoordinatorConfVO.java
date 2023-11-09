@@ -15,32 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.web.resource;
+package org.apache.uniffle.coordinator.web.vo;
 
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
+public class CoordinatorConfVO {
+  private String argumentKey;
+  private String argumentValue;
 
-@Path("api")
-@Produces({MediaType.APPLICATION_JSON})
-public class APIResource {
-  @Path("server")
-  public Class<ServerResource> getServerResource() {
-    return ServerResource.class;
+  public CoordinatorConfVO(String argumentKey, String argumentValue) {
+    this.argumentKey = argumentKey;
+    this.argumentValue = argumentValue;
   }
 
-  @Path("admin")
-  public Class<AdminResource> getAdminResource() {
-    return AdminResource.class;
+  public String getArgumentKey() {
+    return argumentKey;
   }
 
-  @Path("coordinator")
-  public Class<CoordinatorServerResource> getCoordinatorServerResource() {
-    return CoordinatorServerResource.class;
+  public void setArgumentKey(String argumentKey) {
+    this.argumentKey = argumentKey;
   }
 
-  @Path("app")
-  public Class<ApplicationResource> getApplicationResource() {
-    return ApplicationResource.class;
+  public String getArgumentValue() {
+    return argumentValue;
+  }
+
+  public void setArgumentValue(String argumentValue) {
+    this.argumentValue = argumentValue;
   }
 }

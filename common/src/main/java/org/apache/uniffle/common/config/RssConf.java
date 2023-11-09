@@ -663,6 +663,10 @@ public class RssConf implements Cloneable {
     return this.settings.toString();
   }
 
+  public Set<Map.Entry<String, Object>> getAll() {
+    return this.settings.entrySet();
+  }
+
   public String getEnv(String key) {
     return System.getenv(key);
   }

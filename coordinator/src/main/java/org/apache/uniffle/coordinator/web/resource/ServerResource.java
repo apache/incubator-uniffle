@@ -17,11 +17,14 @@
 
 package org.apache.uniffle.coordinator.web.resource;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.servlet.ServletContext;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -160,6 +163,23 @@ public class ServerResource extends BaseResource {
     } catch (Exception e) {
       return Response.fail(e.getMessage());
     }
+  }
+
+  @GET
+  @Path("/nodes/summary")
+  public Response<Map<String, Integer>> getNodeStatusTotal() {
+    return execute(
+        () -> {
+          ClusterManager clusterManager = getClusterManager();
+          Map<String, Integer> stringIntegerHash =
+              Stream.concat(
+                      clusterManager.getServerList(Collections.emptySet()).stream(),
+                      clusterManager.getLostServerList().stream())
+                  .collect(
+                      Collectors.groupingBy(
+                          n -> n.getStatus().name(), Collectors.reducing(0, n -> 1, Integer::sum)));
+          return stringIntegerHash;
+        });
   }
 
   private ClusterManager getClusterManager() {
