@@ -47,7 +47,6 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     implements MapOutputCollector<K, V> {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssMapOutputCollector.class);
-  private JobConf job;
   private Task.TaskReporter reporter;
   private Class<K> keyClass;
   private Class<V> valClass;
@@ -57,12 +56,9 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
   private SortWriteBufferManager bufferManager;
   private ShuffleWriteClient shuffleClient;
   private Task.CombinerRunner<K, V> combinerRunner;
-  private Task.CombineOutputCollector<K, V> combineCollector;
-  private int minSpillsForCombine;
 
   @Override
   public void init(Context context) throws IOException, ClassNotFoundException {
-    job = context.getJobConf();
     JobConf mrJobConf = context.getJobConf();
     reporter = context.getReporter();
     keyClass = (Class<K>) mrJobConf.getMapOutputKeyClass();
@@ -87,15 +83,8 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     final Counters.Counter combineInputCounter =
         reporter.getCounter(TaskCounter.COMBINE_INPUT_RECORDS);
     combinerRunner =
-        Task.CombinerRunner.create(job, mapTask.getTaskID(), combineInputCounter, reporter, null);
-    if (combinerRunner != null) {
-      final Counters.Counter combineOutputCounter =
-          reporter.getCounter(TaskCounter.COMBINE_OUTPUT_RECORDS);
-      combineCollector = new Task.CombineOutputCollector<K, V>(combineOutputCounter, reporter, job);
-    } else {
-      combineCollector = null;
-    }
-    minSpillsForCombine = job.getInt(JobContext.MAP_COMBINE_MIN_SPILLS, 3);
+        Task.CombinerRunner.create(
+            mrJobConf, mapTask.getTaskID(), combineInputCounter, reporter, null);
 
     int batch =
         RssMRUtils.getInt(

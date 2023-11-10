@@ -17,7 +17,9 @@
 
 package org.apache.hadoop.mapred;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -25,11 +27,15 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.serializer.SerializationFactory;
+import org.apache.hadoop.io.serializer.Serializer;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -49,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class SortWriteBufferManagerTest {
 
@@ -340,6 +347,85 @@ public class SortWriteBufferManagerTest {
         client.mockedShuffleServer.getFlushBlockSize());
   }
 
+  @Test
+  public void testCombineBuffer() throws Exception {
+    JobConf jobConf = new JobConf(new Configuration());
+    jobConf.setOutputKeyClass(Text.class);
+    jobConf.setOutputValueClass(IntWritable.class);
+    jobConf.setCombinerClass(Reduce.class);
+    SerializationFactory serializationFactory = new SerializationFactory(jobConf);
+    Serializer<Text> keySerializer = serializationFactory.getSerializer(Text.class);
+    Serializer<IntWritable> valueSerializer = serializationFactory.getSerializer(IntWritable.class);
+    WritableComparator comparator = WritableComparator.get(Text.class);
+
+    Task.TaskReporter reporter = mock(Task.TaskReporter.class);
+
+    final Counters.Counter combineInputCounter = new Counters.Counter();
+
+    Task.CombinerRunner<Text, IntWritable> combinerRunner =
+        Task.CombinerRunner.create(
+            jobConf, new TaskAttemptID(), combineInputCounter, reporter, null);
+
+    SortWriteBufferManager<Text, IntWritable> manager =
+        new SortWriteBufferManager<Text, IntWritable>(
+            10240,
+            1L,
+            10,
+            keySerializer,
+            valueSerializer,
+            comparator,
+            0.9,
+            "test",
+            null,
+            500,
+            5 * 1000,
+            null,
+            null,
+            null,
+            null,
+            null,
+            1,
+            100,
+            1,
+            true,
+            5,
+            0.2f,
+            1024000L,
+            new RssConf(),
+            combinerRunner);
+
+    SortWriteBuffer<Text, IntWritable> buffer =
+        new SortWriteBuffer<Text, IntWritable>(
+            1, comparator, 10000, keySerializer, valueSerializer);
+
+    List<String> wordTable =
+        Lists.newArrayList(
+            "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
+    Random random = new Random();
+    for (int i = 0; i < 8; i++) {
+      buffer.addRecord(new Text(wordTable.get(i)), new IntWritable(1));
+    }
+    for (int i = 0; i < 100; i++) {
+      int index = random.nextInt(wordTable.size());
+      buffer.addRecord(new Text(wordTable.get(index)), new IntWritable(1));
+    }
+
+    SortWriteBuffer<Text, IntWritable> newBuffer = manager.combineBuffer(buffer);
+
+    RawKeyValueIterator kvIterator1 = new SortWriteBuffer.SortBufferIterator<>(buffer);
+    RawKeyValueIterator kvIterator2 = new SortWriteBuffer.SortBufferIterator<>(newBuffer);
+    int count1 = 0;
+    while (kvIterator1.next()) {
+      count1++;
+    }
+    int count2 = 0;
+    while (kvIterator2.next()) {
+      count2++;
+    }
+    assertEquals(108, count1);
+    assertEquals(8, count2);
+  }
+
   class MockShuffleServer {
 
     // All methods of MockShuffle are thread safe, because send-thread may do something in
@@ -504,5 +590,24 @@ public class SortWriteBufferManagerTest {
 
     @Override
     public void unregisterShuffle(String appId) {}
+  }
+
+  static class Reduce extends MapReduceBase
+      implements Reducer<Text, IntWritable, Text, IntWritable> {
+
+    Reduce() {}
+
+    public void reduce(
+        Text key,
+        Iterator<IntWritable> values,
+        OutputCollector<Text, IntWritable> output,
+        Reporter reporter)
+        throws IOException {
+      int sum = 0;
+      while (values.hasNext()) {
+        sum += values.next().get();
+      }
+      output.collect(key, new IntWritable(sum));
+    }
   }
 }

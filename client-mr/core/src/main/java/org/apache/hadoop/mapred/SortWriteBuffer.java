@@ -19,7 +19,6 @@ package org.apache.hadoop.mapred;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -90,18 +89,14 @@ public class SortWriteBuffer<K, V> extends OutputStream {
   public synchronized void sort() {
     long startSort = System.currentTimeMillis();
     records.sort(
-        new Comparator<Record<K>>() {
-          @Override
-          public int compare(Record<K> o1, Record<K> o2) {
-            return comparator.compare(
+        (o1, o2) ->
+            comparator.compare(
                 buffers.get(o1.getKeyIndex()).getBuffer(),
                 o1.getKeyOffSet(),
                 o1.getKeyLength(),
                 buffers.get(o2.getKeyIndex()).getBuffer(),
                 o2.getKeyOffSet(),
-                o2.getKeyLength());
-          }
-        });
+                o2.getKeyLength()));
     long finishSort = System.currentTimeMillis();
     sortTime += finishSort - startSort;
   }
@@ -117,7 +112,7 @@ public class SortWriteBuffer<K, V> extends OutputStream {
     extraSize += WritableUtils.getVIntSize(-1);
     byte[] data = new byte[dataLength + extraSize];
     int offset = 0;
-    sort();
+
     final long startCopy = System.currentTimeMillis();
 
     for (Record<K> record : records) {

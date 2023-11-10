@@ -234,17 +234,17 @@ public class SortWriteBufferManager<K, V> {
 
   private void prepareBufferForSend(List<ShuffleBlockInfo> shuffleBlocks, SortWriteBuffer buffer) {
     buffers.remove(buffer.getPartitionId());
-    ShuffleBlockInfo block = null;
+    buffer.sort();
+    ShuffleBlockInfo block;
     if (combinerRunner != null) {
       try {
-        block = combineAndCreateShuffleBlock(buffer);
+        buffer = combineBuffer(buffer);
+        LOG.debug("Successfully finished combining.");
       } catch (Exception e) {
-        LOG.error("Map combiner error:", e);
-        block = createShuffleBlock(buffer);
+        LOG.error("Error occurred while combining in Map:", e);
       }
-    } else {
-      block = createShuffleBlock(buffer);
     }
+    block = createShuffleBlock(buffer);
     buffer.clear();
     shuffleBlocks.add(block);
     allBlockIds.add(block.getBlockId());
@@ -252,7 +252,7 @@ public class SortWriteBufferManager<K, V> {
     partitionToBlocks.get(block.getPartitionId()).add(block.getBlockId());
   }
 
-  private ShuffleBlockInfo combineAndCreateShuffleBlock(SortWriteBuffer buffer)
+  public SortWriteBuffer<K, V> combineBuffer(SortWriteBuffer<K, V> buffer)
       throws IOException, InterruptedException, ClassNotFoundException {
     synchronized (buffer) {
       buffer.sort();
@@ -267,10 +267,7 @@ public class SortWriteBufferManager<K, V> {
 
     combineCollector.setWriter(newBuffer);
     combinerRunner.combine(kvIterator, combineCollector);
-
-    ShuffleBlockInfo block = createShuffleBlock(newBuffer);
-    LOG.debug("Successfully finished combining and creating shuffle block.");
-    return block;
+    return newBuffer;
   }
 
   private void sendShuffleBlocks(List<ShuffleBlockInfo> shuffleBlocks) {

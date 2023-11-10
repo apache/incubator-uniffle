@@ -56,6 +56,7 @@ public class SortWriteBufferTest {
             1, WritableComparator.get(BytesWritable.class), 1024L, keySerializer, valSerializer);
 
     long recordLength = buffer.addRecord(key, value);
+    buffer.sort();
     assertEquals(20, buffer.getData().length);
     assertEquals(16, recordLength);
     assertEquals(1, buffer.getPartitionId());
@@ -124,6 +125,7 @@ public class SortWriteBufferTest {
     recordLength = buffer.addRecord(key, value);
     recordLenMap.putIfAbsent(keyStr, recordLength);
 
+    buffer.sort();
     result = buffer.getData();
     byteArrayInputStream = new ByteArrayInputStream(result);
     keyDeserializer.open(byteArrayInputStream);
