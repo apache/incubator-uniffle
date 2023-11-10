@@ -31,7 +31,7 @@ pub mod details {
         }
     }
 
-    pub fn graceful_wait_for_signal(tx: tokio::sync::oneshot::Sender<()>) {
+    pub fn graceful_wait_for_signal(tx: tokio::sync::broadcast::Sender<()>) {
         let mut sigs = Signals::new(TERM_SIGNALS).expect("Failed to register signal handlers");
 
         for signal in &mut sigs {
