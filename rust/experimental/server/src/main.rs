@@ -38,7 +38,7 @@ use log::{debug, error, info};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
 use tokio::net::TcpListener;
-use tokio::sync::{broadcast};
+use tokio::sync::broadcast;
 use tonic::transport::{Channel, Server};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::layer::SubscriberExt;
@@ -246,7 +246,11 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-async fn grpc_serve(service: ShuffleServerServer<DefaultShuffleServer>, addr: SocketAddr, mut rx: broadcast::Receiver<()>) {
+async fn grpc_serve(
+    service: ShuffleServerServer<DefaultShuffleServer>,
+    addr: SocketAddr,
+    mut rx: broadcast::Receiver<()>,
+) {
     let sock = socket2::Socket::new(
         match addr {
             SocketAddr::V4(_) => socket2::Domain::IPV4,
@@ -255,7 +259,7 @@ async fn grpc_serve(service: ShuffleServerServer<DefaultShuffleServer>, addr: So
         socket2::Type::STREAM,
         None,
     )
-        .unwrap();
+    .unwrap();
 
     sock.set_reuse_address(true).unwrap();
     sock.set_reuse_port(true).unwrap();
