@@ -3197,6 +3197,7 @@ dependencies = [
  "prost-build",
  "serde",
  "signal-hook",
+ "socket2 0.4.9",
  "tempdir",
  "tempfile",
  "thiserror",

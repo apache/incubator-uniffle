@@ -34,10 +34,11 @@ use crate::util::{gen_worker_uid, get_local_ip};
 
 use anyhow::Result;
 use clap::{App, Arg};
-use log::{error, info};
+use log::{debug, error, info};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
-use tokio::sync::oneshot;
+use tokio::net::TcpListener;
+use tokio::sync::{broadcast};
 use tonic::transport::{Channel, Server};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::layer::SubscriberExt;
@@ -217,38 +218,72 @@ fn main() -> Result<()> {
     );
     HTTP_SERVICE.start(runtime_manager.clone(), http_port);
 
-    let (tx, rx) = oneshot::channel::<()>();
+    let (tx, _) = broadcast::channel(1);
 
     info!("Starting GRpc server with port:[{}] ......", rpc_port);
-    let shuffle_server = DefaultShuffleServer::from(app_manager_ref);
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), rpc_port as u16);
-    let service = ShuffleServerServer::new(shuffle_server)
-        .max_decoding_message_size(usize::MAX)
-        .max_encoding_message_size(usize::MAX);
 
-    let _grpc_service_handle = runtime_manager.grpc_runtime.spawn(async move {
-        Server::builder()
-            .initial_connection_window_size(MAX_CONNECTION_WINDOW_SIZE)
-            .initial_stream_window_size(STREAM_WINDOW_SIZE)
-            .tcp_nodelay(true)
-            .layer(MetricsMiddlewareLayer::new(GRPC_LATENCY_TIME_SEC.clone()))
-            .layer(AwaitTreeMiddlewareLayer::new_optional(Some(
-                AWAIT_TREE_REGISTRY.clone(),
-            )))
-            .add_service(service)
-            .serve_with_shutdown(addr, async {
-                if let Err(err) = rx.await {
-                    error!("Errors on stopping the GRPC service, err: {:?}.", err);
-                } else {
-                    info!("GRPC service has been graceful stopped.");
-                }
-            })
-            .await
-    });
+    let available_cores = std::thread::available_parallelism()?;
+    debug!("GRpc service with parallelism: [{}]", &available_cores);
+
+    for _ in 0..available_cores.into() {
+        let shuffle_server = DefaultShuffleServer::from(app_manager_ref.clone());
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), rpc_port as u16);
+        let service = ShuffleServerServer::new(shuffle_server)
+            .max_decoding_message_size(usize::MAX)
+            .max_encoding_message_size(usize::MAX);
+        let service_tx = tx.subscribe();
+        std::thread::spawn(move || {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(grpc_serve(service, addr, service_tx));
+        });
+    }
 
     graceful_wait_for_signal(tx);
 
     Ok(())
+}
+
+async fn grpc_serve(service: ShuffleServerServer<DefaultShuffleServer>, addr: SocketAddr, mut rx: broadcast::Receiver<()>) {
+    let sock = socket2::Socket::new(
+        match addr {
+            SocketAddr::V4(_) => socket2::Domain::IPV4,
+            SocketAddr::V6(_) => socket2::Domain::IPV6,
+        },
+        socket2::Type::STREAM,
+        None,
+    )
+        .unwrap();
+
+    sock.set_reuse_address(true).unwrap();
+    sock.set_reuse_port(true).unwrap();
+    sock.set_nonblocking(true).unwrap();
+    sock.bind(&addr.into()).unwrap();
+    sock.listen(8192).unwrap();
+
+    let incoming =
+        tokio_stream::wrappers::TcpListenerStream::new(TcpListener::from_std(sock.into()).unwrap());
+
+    Server::builder()
+        .initial_connection_window_size(MAX_CONNECTION_WINDOW_SIZE)
+        .initial_stream_window_size(STREAM_WINDOW_SIZE)
+        .tcp_nodelay(true)
+        .layer(MetricsMiddlewareLayer::new(GRPC_LATENCY_TIME_SEC.clone()))
+        .layer(AwaitTreeMiddlewareLayer::new_optional(Some(
+            AWAIT_TREE_REGISTRY.clone(),
+        )))
+        .add_service(service)
+        .serve_with_incoming_shutdown(incoming, async {
+            if let Err(err) = rx.recv().await {
+                error!("Errors on stopping the GRPC service, err: {:?}.", err);
+            } else {
+                info!("GRPC service has been graceful stopped.");
+            }
+        })
+        .await
+        .unwrap();
 }
 
 #[cfg(test)]
