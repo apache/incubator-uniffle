@@ -366,6 +366,22 @@ public class SortWriteBufferManagerTest {
         Task.CombinerRunner.create(
             jobConf, new TaskAttemptID(), combineInputCounter, reporter, null);
 
+    SortWriteBuffer<Text, IntWritable> buffer =
+        new SortWriteBuffer<Text, IntWritable>(
+            1, comparator, 10000, keySerializer, valueSerializer);
+
+    List<String> wordTable =
+        Lists.newArrayList(
+            "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
+    Random random = new Random();
+    for (int i = 0; i < 8; i++) {
+      buffer.addRecord(new Text(wordTable.get(i)), new IntWritable(1));
+    }
+    for (int i = 0; i < 100; i++) {
+      int index = random.nextInt(wordTable.size());
+      buffer.addRecord(new Text(wordTable.get(index)), new IntWritable(1));
+    }
+
     SortWriteBufferManager<Text, IntWritable> manager =
         new SortWriteBufferManager<Text, IntWritable>(
             10240,
@@ -393,22 +409,6 @@ public class SortWriteBufferManagerTest {
             1024000L,
             new RssConf(),
             combinerRunner);
-
-    SortWriteBuffer<Text, IntWritable> buffer =
-        new SortWriteBuffer<Text, IntWritable>(
-            1, comparator, 10000, keySerializer, valueSerializer);
-
-    List<String> wordTable =
-        Lists.newArrayList(
-            "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
-    Random random = new Random();
-    for (int i = 0; i < 8; i++) {
-      buffer.addRecord(new Text(wordTable.get(i)), new IntWritable(1));
-    }
-    for (int i = 0; i < 100; i++) {
-      int index = random.nextInt(wordTable.size());
-      buffer.addRecord(new Text(wordTable.get(index)), new IntWritable(1));
-    }
 
     buffer.sort();
     SortWriteBuffer<Text, IntWritable> newBuffer = manager.combineBuffer(buffer);

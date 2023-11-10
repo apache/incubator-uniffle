@@ -239,7 +239,9 @@ public class SortWriteBufferManager<K, V> {
     if (combinerRunner != null) {
       try {
         buffer = combineBuffer(buffer);
-        LOG.debug("Successfully finished combining.");
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Successfully finished combining.");
+        }
       } catch (Exception e) {
         LOG.error("Error occurred while combining in Map:", e);
       }
