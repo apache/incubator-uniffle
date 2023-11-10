@@ -410,6 +410,7 @@ public class SortWriteBufferManagerTest {
       buffer.addRecord(new Text(wordTable.get(index)), new IntWritable(1));
     }
 
+    buffer.sort();
     SortWriteBuffer<Text, IntWritable> newBuffer = manager.combineBuffer(buffer);
 
     RawKeyValueIterator kvIterator1 = new SortWriteBuffer.SortBufferIterator<>(buffer);

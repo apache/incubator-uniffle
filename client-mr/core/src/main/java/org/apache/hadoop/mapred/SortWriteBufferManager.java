@@ -254,9 +254,6 @@ public class SortWriteBufferManager<K, V> {
 
   public SortWriteBuffer<K, V> combineBuffer(SortWriteBuffer<K, V> buffer)
       throws IOException, InterruptedException, ClassNotFoundException {
-    synchronized (buffer) {
-      buffer.sort();
-    }
     RawKeyValueIterator kvIterator = new SortWriteBuffer.SortBufferIterator<>(buffer);
 
     RssCombineOutputCollector<K, V> combineCollector = new RssCombineOutputCollector<>();
