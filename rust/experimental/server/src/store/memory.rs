@@ -347,7 +347,7 @@ impl Store for MemoryStore {
 
         // get block_ids filter
         // In AQE, after executing the sub-QueryStages, collect the shuffle data size
-        // So when we filter block, it will improve the performance of AQE.
+        // So if we can filter block, it will improve the performance of AQE.
         let block_ids_filter = Treemap::deserialize(&ctx.block_ids_filter)
             .unwrap_or_else(|_| Default::default());
 
