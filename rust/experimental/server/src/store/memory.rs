@@ -343,6 +343,12 @@ impl Store for MemoryStore {
             .instrument_await("getting partitioned buffer lock")
             .await;
 
+        // get block_ids filter
+        // In AQE, after executing the sub-QueryStages, collect the shuffle data size
+        // So when we filter block, it will improve the performance of AQE.
+        let filter_block_ids = ctx.block_ids_filter;
+        let apply_filter = filter_block_ids.as_ref().map_or(false, |ids| !ids.is_empty());
+
         let options = ctx.reading_options;
         let (fetched_blocks, length) = match options {
             MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(last_block_id, max_size) => {
@@ -350,14 +356,22 @@ impl Store for MemoryStore {
                 let mut in_flight_flatten_blocks = vec![];
                 for (_, blocks) in buffer.in_flight.iter() {
                     for in_flight_block in blocks {
-                        in_flight_flatten_blocks.push(in_flight_block);
+                        if apply_filter && !filter_block_ids.as_ref().unwrap().contains(&in_flight_block.block_id) {
+                            in_flight_flatten_blocks.push(in_flight_block);
+                        } else if !apply_filter {
+                            in_flight_flatten_blocks.push(in_flight_block);
+                        }
                     }
                 }
                 let in_flight_flatten_blocks = Arc::new(in_flight_flatten_blocks);
 
                 let mut staging_blocks = vec![];
                 for block in &buffer.staging {
-                    staging_blocks.push(block);
+                    if apply_filter && !filter_block_ids.as_ref().unwrap().contains(&block.block_id) {
+                        staging_blocks.push(block);
+                    } else if !apply_filter {
+                        staging_blocks.push(block);
+                    }
                 }
                 let staging_blocks = Arc::new(staging_blocks);
 
@@ -975,6 +989,7 @@ mod test {
                 last_block_id,
                 default_single_read_size,
             ),
+            block_ids_filter: None,
         };
         if let Ok(data) = store.get(ctx).await {
             match data {
@@ -1066,6 +1081,7 @@ mod test {
         let reading_ctx = ReadingViewContext {
             uid: uid.clone(),
             reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
+            block_ids_filter: None,
         };
         let data = runtime.wait(store.get(reading_ctx.clone())).expect("");
         assert_eq!(1, data.from_memory().shuffle_data_block_segments.len());
@@ -1114,6 +1130,7 @@ mod test {
         let reading_ctx = ReadingViewContext {
             uid: Default::default(),
             reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
+            block_ids_filter: None,
         };
 
         match runtime.wait(store.get(reading_ctx)).unwrap() {
