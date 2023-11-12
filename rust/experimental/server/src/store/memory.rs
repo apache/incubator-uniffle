@@ -45,6 +45,8 @@ use log::error;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
+use croaring::Treemap;
+use croaring::treemap::JvmSerializer;
 use tokio::sync::Mutex;
 use tokio::time::sleep as delay_for;
 
@@ -346,8 +348,8 @@ impl Store for MemoryStore {
         // get block_ids filter
         // In AQE, after executing the sub-QueryStages, collect the shuffle data size
         // So when we filter block, it will improve the performance of AQE.
-        let filter_block_ids = ctx.block_ids_filter;
-        let apply_filter = filter_block_ids.as_ref().map_or(false, |ids| !ids.is_empty());
+        let block_ids_filter = Treemap::deserialize(&ctx.block_ids_filter)
+            .unwrap_or_else(|_| Default::default());
 
         let options = ctx.reading_options;
         let (fetched_blocks, length) = match options {
@@ -356,9 +358,7 @@ impl Store for MemoryStore {
                 let mut in_flight_flatten_blocks = vec![];
                 for (_, blocks) in buffer.in_flight.iter() {
                     for in_flight_block in blocks {
-                        if apply_filter && !filter_block_ids.as_ref().unwrap().contains(&in_flight_block.block_id) {
-                            in_flight_flatten_blocks.push(in_flight_block);
-                        } else if !apply_filter {
+                        if !block_ids_filter.contains(in_flight_block.block_id as u64) {
                             in_flight_flatten_blocks.push(in_flight_block);
                         }
                     }
@@ -367,9 +367,7 @@ impl Store for MemoryStore {
 
                 let mut staging_blocks = vec![];
                 for block in &buffer.staging {
-                    if apply_filter && !filter_block_ids.as_ref().unwrap().contains(&block.block_id) {
-                        staging_blocks.push(block);
-                    } else if !apply_filter {
+                    if !block_ids_filter.contains(block.block_id as u64) {
                         staging_blocks.push(block);
                     }
                 }
@@ -989,7 +987,7 @@ mod test {
                 last_block_id,
                 default_single_read_size,
             ),
-            block_ids_filter: None,
+            block_ids_filter: Default::default(),
         };
         if let Ok(data) = store.get(ctx).await {
             match data {
@@ -1081,7 +1079,7 @@ mod test {
         let reading_ctx = ReadingViewContext {
             uid: uid.clone(),
             reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
-            block_ids_filter: None,
+            block_ids_filter: Default::default(),
         };
         let data = runtime.wait(store.get(reading_ctx.clone())).expect("");
         assert_eq!(1, data.from_memory().shuffle_data_block_segments.len());
@@ -1130,7 +1128,7 @@ mod test {
         let reading_ctx = ReadingViewContext {
             uid: Default::default(),
             reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
-            block_ids_filter: None,
+            block_ids_filter: Default::default(),
         };
 
         match runtime.wait(store.get(reading_ctx)).unwrap() {

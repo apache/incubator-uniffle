@@ -308,7 +308,7 @@ pub struct WritingViewContext {
 pub struct ReadingViewContext {
     pub uid: PartitionedUId,
     pub reading_options: ReadingOptions,
-    pub block_ids_filter: Option<Vec<i64>>,
+    pub block_ids_filter: Bytes,
 }
 
 pub struct ReadingIndexViewContext {
@@ -631,6 +631,7 @@ mod test {
             let reading_ctx = ReadingViewContext {
                 uid: Default::default(),
                 reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
+                block_ids_filter: Default::default(),
             };
 
             // case2: get
