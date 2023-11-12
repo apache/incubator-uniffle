@@ -41,12 +41,12 @@ use std::str::FromStr;
 
 use crate::store::mem::InstrumentAwait;
 use crate::store::mem::MemoryBufferTicket;
+use croaring::treemap::JvmSerializer;
+use croaring::Treemap;
 use log::error;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use croaring::Treemap;
-use croaring::treemap::JvmSerializer;
 use tokio::sync::Mutex;
 use tokio::time::sleep as delay_for;
 
@@ -348,8 +348,8 @@ impl Store for MemoryStore {
         // get block_ids filter
         // In AQE, after executing the sub-QueryStages, collect the shuffle data size
         // So if we can filter block, it will improve the performance of AQE.
-        let block_ids_filter = Treemap::deserialize(&ctx.block_ids_filter)
-            .unwrap_or_else(|_| Default::default());
+        let block_ids_filter =
+            Treemap::deserialize(&ctx.block_ids_filter).unwrap_or_else(|_| Default::default());
 
         let options = ctx.reading_options;
         let (fetched_blocks, length) = match options {
