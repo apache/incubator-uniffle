@@ -40,6 +40,8 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 
   private long mockedTimeout = -1L;
 
+  private boolean mockSendDataFailed = false;
+
   private boolean recordGetShuffleResult = false;
 
   private long numOfFailedReadRequest = 0;
@@ -47,6 +49,10 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 
   public void enableMockedTimeout(long timeout) {
     mockedTimeout = timeout;
+  }
+
+  public void enableMockSendDataFailed(boolean mockSendDataFailed) {
+    this.mockSendDataFailed = mockSendDataFailed;
   }
 
   public void enableRecordGetShuffleResult() {
@@ -74,6 +80,10 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
   public void sendShuffleData(
       RssProtos.SendShuffleDataRequest request,
       StreamObserver<RssProtos.SendShuffleDataResponse> responseObserver) {
+    if (mockSendDataFailed) {
+      LOG.info("Add a mocked sendData failed on sendShuffleData");
+      throw new RuntimeException("This write request is failed as mocked failure！");
+    }
     if (mockedTimeout > 0) {
       LOG.info("Add a mocked timeout on sendShuffleData");
       Uninterruptibles.sleepUninterruptibly(mockedTimeout, TimeUnit.MILLISECONDS);
