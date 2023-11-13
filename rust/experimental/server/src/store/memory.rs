@@ -41,8 +41,6 @@ use std::str::FromStr;
 
 use crate::store::mem::InstrumentAwait;
 use crate::store::mem::MemoryBufferTicket;
-use croaring::treemap::JvmSerializer;
-use croaring::Treemap;
 use log::error;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -348,8 +346,7 @@ impl Store for MemoryStore {
         // get block_ids filter
         // In AQE, after executing the sub-QueryStages, collect the shuffle data size
         // So if we can filter block, it will improve the performance of AQE.
-        let block_ids_filter =
-            Treemap::deserialize(&ctx.block_ids_filter).unwrap_or_else(|_| Default::default());
+        let block_ids_filter = ctx.block_ids_filter;
 
         let options = ctx.reading_options;
         let (fetched_blocks, length) = match options {
@@ -358,7 +355,7 @@ impl Store for MemoryStore {
                 let mut in_flight_flatten_blocks = vec![];
                 for (_, blocks) in buffer.in_flight.iter() {
                     for in_flight_block in blocks {
-                        if !block_ids_filter.contains(in_flight_block.block_id as u64) {
+                        if !block_ids_filter.contains(&in_flight_block.block_id) {
                             in_flight_flatten_blocks.push(in_flight_block);
                         }
                     }
@@ -367,7 +364,7 @@ impl Store for MemoryStore {
 
                 let mut staging_blocks = vec![];
                 for block in &buffer.staging {
-                    if !block_ids_filter.contains(block.block_id as u64) {
+                    if !block_ids_filter.contains(&block.block_id) {
                         staging_blocks.push(block);
                     }
                 }
@@ -1136,6 +1133,69 @@ mod test {
                 assert_eq!(data.shuffle_data_block_segments.len(), 2);
                 assert_eq!(data.shuffle_data_block_segments.get(0).unwrap().offset, 0);
                 assert_eq!(data.shuffle_data_block_segments.get(1).unwrap().offset, 10);
+            }
+            _ => panic!("should not"),
+        }
+    }
+
+    #[test]
+    fn test_block_id_filter_for_memory() {
+        let store = MemoryStore::new(1024 * 1024 * 1024);
+        let runtime = store.runtime_manager.clone();
+
+        // 1. insert 2 block
+        let writing_ctx = WritingViewContext {
+            uid: Default::default(),
+            data_blocks: vec![
+                PartitionedDataBlock {
+                    block_id: 0,
+                    length: 10,
+                    uncompress_length: 100,
+                    crc: 99,
+                    data: Default::default(),
+                    task_attempt_id: 0,
+                },
+                PartitionedDataBlock {
+                    block_id: 1,
+                    length: 20,
+                    uncompress_length: 200,
+                    crc: 99,
+                    data: Default::default(),
+                    task_attempt_id: 1,
+                },
+            ],
+        };
+        runtime.wait(store.insert(writing_ctx)).unwrap();
+
+        // 2. block_ids_filter is empty, should return 2 blocks
+        let mut reading_ctx = ReadingViewContext {
+            uid: Default::default(),
+            reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
+            block_ids_filter: Vec::default(),
+        };
+
+        match runtime.wait(store.get(reading_ctx)).unwrap() {
+            Mem(data) => {
+                assert_eq!(data.shuffle_data_block_segments.len(), 2);
+                assert_eq!(data.shuffle_data_block_segments.get(0).unwrap().offset, 0);
+                assert_eq!(data.shuffle_data_block_segments.get(1).unwrap().offset, 10);
+            }
+            _ => panic!("should not"),
+        }
+
+        // 3. set block_id_filter, should return 1 block
+        let mut block_ids_filter = Vec::new();
+        block_ids_filter.push(0);
+        reading_ctx = ReadingViewContext {
+            uid: Default::default(),
+            reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
+            block_ids_filter,
+        };
+
+        match runtime.wait(store.get(reading_ctx)).unwrap() {
+            Mem(data) => {
+                assert_eq!(data.shuffle_data_block_segments.len(), 1);
+                assert_eq!(data.shuffle_data_block_segments.get(0).unwrap().offset, 0);
             }
             _ => panic!("should not"),
         }

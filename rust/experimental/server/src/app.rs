@@ -308,7 +308,7 @@ pub struct WritingViewContext {
 pub struct ReadingViewContext {
     pub uid: PartitionedUId,
     pub reading_options: ReadingOptions,
-    pub block_ids_filter: Bytes,
+    pub block_ids_filter: Vec<i64>,
 }
 
 pub struct ReadingIndexViewContext {
