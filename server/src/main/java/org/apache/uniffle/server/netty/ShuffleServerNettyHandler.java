@@ -251,7 +251,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                     blockId,
                     readBufferSize,
                     req.getExpectedTaskIdsBitmap());
-        ManagedBuffer data = NettyManagedBuffer.EmptyBuffer;
+        ManagedBuffer data = NettyManagedBuffer.EMPTY_BUFFER;
         List<BufferSegment> bufferSegments = Lists.newArrayList();
         if (shuffleDataResult != null) {
           data = shuffleDataResult.getManagedBuffer();

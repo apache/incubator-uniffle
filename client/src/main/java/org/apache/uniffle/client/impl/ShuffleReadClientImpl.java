@@ -109,6 +109,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       builder.rssConf(rssConf);
       builder.offHeapEnable(false);
       builder.expectedTaskIdsBitmapFilterEnable(false);
+      builder.clientType(rssConf.get(RssClientConf.RSS_CLIENT_TYPE));
     }
 
     init(builder);

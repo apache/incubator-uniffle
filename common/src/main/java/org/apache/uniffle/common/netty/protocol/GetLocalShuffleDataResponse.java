@@ -40,7 +40,7 @@ public class GetLocalShuffleDataResponse extends RpcResponse {
       return new GetLocalShuffleDataResponse(requestId, statusCode, retMessage, nettyManagedBuffer);
     } else {
       return new GetLocalShuffleDataResponse(
-          requestId, statusCode, retMessage, NettyManagedBuffer.EmptyBuffer);
+          requestId, statusCode, retMessage, NettyManagedBuffer.EMPTY_BUFFER);
     }
   }
 

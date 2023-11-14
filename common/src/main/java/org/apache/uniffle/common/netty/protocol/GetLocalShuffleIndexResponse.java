@@ -80,7 +80,7 @@ public class GetLocalShuffleIndexResponse extends RpcResponse {
           requestId, statusCode, retMessage, nettyManagedBuffer, fileLength);
     } else {
       return new GetLocalShuffleIndexResponse(
-          requestId, statusCode, retMessage, NettyManagedBuffer.EmptyBuffer, fileLength);
+          requestId, statusCode, retMessage, NettyManagedBuffer.EMPTY_BUFFER, fileLength);
     }
   }
 

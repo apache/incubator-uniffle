@@ -86,7 +86,7 @@ public class GetMemoryShuffleDataResponse extends RpcResponse {
           requestId, statusCode, retMessage, bufferSegments, nettyManagedBuffer);
     } else {
       return new GetMemoryShuffleDataResponse(
-          requestId, statusCode, retMessage, bufferSegments, NettyManagedBuffer.EmptyBuffer);
+          requestId, statusCode, retMessage, bufferSegments, NettyManagedBuffer.EMPTY_BUFFER);
     }
   }
 

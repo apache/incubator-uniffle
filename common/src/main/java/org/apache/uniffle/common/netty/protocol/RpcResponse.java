@@ -86,7 +86,7 @@ public class RpcResponse extends ResponseMessage {
       NettyManagedBuffer nettyManagedBuffer = new NettyManagedBuffer(byteBuf);
       return new RpcResponse(requestId, statusCode, retMessage, nettyManagedBuffer);
     } else {
-      return new RpcResponse(requestId, statusCode, retMessage, NettyManagedBuffer.EmptyBuffer);
+      return new RpcResponse(requestId, statusCode, retMessage, NettyManagedBuffer.EMPTY_BUFFER);
     }
   }
 

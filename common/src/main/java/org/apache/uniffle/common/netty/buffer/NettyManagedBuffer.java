@@ -24,7 +24,7 @@ import io.netty.buffer.Unpooled;
 
 public class NettyManagedBuffer extends ManagedBuffer {
 
-  public static NettyManagedBuffer EmptyBuffer = new NettyManagedBuffer(Unpooled.buffer(0, 0));
+  public static NettyManagedBuffer EMPTY_BUFFER = new NettyManagedBuffer(Unpooled.buffer(0, 0));
 
   private ByteBuf buf;
 
