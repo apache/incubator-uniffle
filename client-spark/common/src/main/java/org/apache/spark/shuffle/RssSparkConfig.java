@@ -72,29 +72,37 @@ public class RssSparkConfig {
                   SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_PARTITION_NUM_PER_RANGE))
           .createWithDefault(RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
 
-  public static final ConfigEntry<String> RSS_WRITER_BUFFER_SIZE =
-      createStringBuilder(
-              new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_WRITER_BUFFER_SIZE)
-                  .doc("Buffer size for single partition data"))
-          .createWithDefault("3m");
+  public static final ConfigOption<String> RSS_WRITER_BUFFER_SIZE =
+      ConfigOptions.key("spark.rss.writer.buffer.size")
+          .stringType()
+          .defaultValue("3m")
+          .withDescription("Buffer size for single partition data");
 
-  public static final ConfigEntry<String> RSS_WRITER_SERIALIZER_BUFFER_SIZE =
-      createStringBuilder(new ConfigBuilder("spark.rss.writer.serializer.buffer.size"))
-          .createWithDefault("3k");
 
-  public static final ConfigEntry<String> RSS_WRITER_BUFFER_SEGMENT_SIZE =
-      createStringBuilder(new ConfigBuilder("spark.rss.writer.buffer.segment.size"))
-          .createWithDefault("3k");
+  public static final ConfigOption<String> RSS_WRITER_SERIALIZER_BUFFER_SIZE =
+      ConfigOptions.key("spark.rss.writer.serializer.buffer.size")
+          .stringType()
+          .defaultValue("3k")
+          .withDescription("");
 
-  public static final ConfigEntry<String> RSS_WRITER_BUFFER_SPILL_SIZE =
-      createStringBuilder(
-              new ConfigBuilder("spark.rss.writer.buffer.spill.size")
-                  .doc("Buffer size for total partition data"))
-          .createWithDefault("128m");
+  public static final ConfigOption<String> RSS_WRITER_BUFFER_SEGMENT_SIZE =
+      ConfigOptions.key("spark.rss.writer.buffer.segment.size")
+          .stringType()
+          .defaultValue("3k")
+          .withDescription("");
 
-  public static final ConfigEntry<String> RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE =
-      createStringBuilder(new ConfigBuilder("spark.rss.writer.pre.allocated.buffer.size"))
-          .createWithDefault("16m");
+  public static final ConfigOption<String> RSS_WRITER_BUFFER_SPILL_SIZE =
+      ConfigOptions.key("spark.rss.writer.buffer.spill.size")
+          .stringType()
+          .defaultValue("128m")
+          .withDescription("Buffer size for total partition data");
+
+
+  public static final ConfigOption<String> RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE =
+      ConfigOptions.key("spark.rss.writer.pre.allocated.buffer.size")
+          .stringType()
+          .defaultValue("16m")
+          .withDescription("");
 
   public static final ConfigEntry<Integer> RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX =
       createIntegerBuilder(new ConfigBuilder("spark.rss.writer.require.memory.retryMax"))
@@ -116,8 +124,8 @@ public class RssSparkConfig {
                   SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS))
           .createWithDefault(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE);
 
-  public static final ConfigEntry<Boolean> RSS_TEST_FLAG =
-      createBooleanBuilder(new ConfigBuilder("spark.rss.test")).createWithDefault(false);
+  public static final ConfigOption<Boolean> RSS_TEST_FLAG =
+      ConfigOptions.key("spark.rss.test").booleanType().defaultValue(false).withDescription("");
 
   public static final ConfigEntry<Boolean> RSS_TEST_MODE_ENABLE =
       createBooleanBuilder(
@@ -130,10 +138,11 @@ public class RssSparkConfig {
               new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_STORAGE_PATH))
           .createWithDefault("");
 
-  public static final ConfigEntry<Integer> RSS_INDEX_READ_LIMIT =
-      createIntegerBuilder(
-              new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_INDEX_READ_LIMIT))
-          .createWithDefault(RssClientConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE);
+  public static final ConfigOption<Integer> RSS_INDEX_READ_LIMIT =
+      ConfigOptions.key("spark.rss.index.read.limit")
+          .intType()
+          .defaultValue(500)
+          .withDescription("");
 
   public static final ConfigEntry<String> RSS_CLIENT_TYPE =
       createStringBuilder(
@@ -171,22 +180,24 @@ public class RssSparkConfig {
 
   // When the size of read buffer reaches the half of JVM region (i.e., 32m),
   // it will incur humongous allocation, so we set it to 14m.
-  public static final ConfigEntry<String> RSS_CLIENT_READ_BUFFER_SIZE =
-      createStringBuilder(
-              new ConfigBuilder(
-                      SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE)
-                  .doc("The max data size read from storage"))
-          .createWithDefault(RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE);
+  public static final ConfigOption<String> RSS_CLIENT_READ_BUFFER_SIZE =
+      ConfigOptions.key("spark.rss.client.read.buffer.size")
+          .stringType()
+          .defaultValue("14m")
+          .withDescription("The max data size read from storage");
+
 
   public static final ConfigEntry<Long> RSS_HEARTBEAT_INTERVAL =
       createLongBuilder(
               new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_INTERVAL))
           .createWithDefault(RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
 
-  public static final ConfigEntry<Long> RSS_HEARTBEAT_TIMEOUT =
-      createLongBuilder(
-              new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_TIMEOUT))
-          .createWithDefault(5 * 1000L);
+  public static final ConfigOption<Long> RSS_HEARTBEAT_TIMEOUT =
+      ConfigOptions.key("spark.rss.heartbeat.timeout")
+          .longType()
+          .defaultValue(5 * 1000L)
+          .withDescription("");
+
 
   public static final ConfigEntry<Integer> RSS_CLIENT_SEND_THREAD_POOL_SIZE =
       createIntegerBuilder(
@@ -253,8 +264,9 @@ public class RssSparkConfig {
       createIntegerBuilder(new ConfigBuilder("spark.rss.client.bitmap.splitNum"))
           .createWithDefault(1);
 
-  public static final ConfigEntry<String> RSS_ACCESS_ID =
-      createStringBuilder(new ConfigBuilder("spark.rss.access.id")).createWithDefault("");
+  public static final ConfigOption<String> RSS_ACCESS_ID =
+      ConfigOptions.key("spark.rss.access.id").stringType().defaultValue("").withDescription("");
+
 
   public static final ConfigEntry<Integer> RSS_ACCESS_TIMEOUT_MS =
       createIntegerBuilder(
@@ -270,22 +282,21 @@ public class RssSparkConfig {
                   SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED))
           .createWithDefault(RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
 
-  public static final ConfigEntry<String> RSS_CLIENT_ASSIGNMENT_TAGS =
-      createStringBuilder(
-              new ConfigBuilder(
-                      SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_TAGS)
-                  .doc(
-                      "The comma-separated list of tags for deciding assignment shuffle servers. "
-                          + "Notice that the SHUFFLE_SERVER_VERSION will always as the assignment tag "
-                          + "whether this conf is set or not"))
-          .createWithDefault("");
+  public static final ConfigOption<String> RSS_CLIENT_ASSIGNMENT_TAGS =
+      ConfigOptions.key("spark.rss.client.assignment.tags")
+          .stringType()
+          .defaultValue("")
+          .withDescription(
+              "The comma-separated list of tags for deciding assignment shuffle servers. "
+                  + "Notice that the SHUFFLE_SERVER_VERSION will always as the assignment tag "
+                  + "whether this conf is set or not");
 
-  public static final ConfigEntry<Boolean> RSS_CLIENT_OFF_HEAP_MEMORY_ENABLE =
-      createBooleanBuilder(
-              new ConfigBuilder(
-                      SPARK_RSS_CONFIG_PREFIX + RssClientConf.OFF_HEAP_MEMORY_ENABLE.key())
-                  .doc(RssClientConf.OFF_HEAP_MEMORY_ENABLE.description()))
-          .createWithDefault(RssClientConf.OFF_HEAP_MEMORY_ENABLE.defaultValue());
+
+  public static final ConfigOption<Boolean> RSS_CLIENT_OFF_HEAP_MEMORY_ENABLE =
+      ConfigOptions.key("spark.rss.client.off.heap.memory.enable")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Client can use off heap memory");
 
   public static final ConfigEntry<Integer> RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER =
       createIntegerBuilder(
@@ -366,12 +377,11 @@ public class RssSparkConfig {
                   .doc(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT.description()))
           .createWithDefault(-1);
 
-  public static final ConfigEntry<Boolean> RSS_RESUBMIT_STAGE =
-      createBooleanBuilder(
-              new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_RESUBMIT_STAGE)
-                  .internal()
-                  .doc("Whether to enable the resubmit stage."))
-          .createWithDefault(false);
+  public static final ConfigOption<Boolean> RSS_RESUBMIT_STAGE =
+      ConfigOptions.key("spark.rss.resubmit.stage")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Whether to enable the resubmit stage.");
 
   // spark2 doesn't have this key defined
   public static final String SPARK_SHUFFLE_COMPRESS_KEY = "spark.shuffle.compress";

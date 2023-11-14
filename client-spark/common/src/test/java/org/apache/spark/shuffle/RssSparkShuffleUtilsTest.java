@@ -150,7 +150,7 @@ public class RssSparkShuffleUtilsTest {
         conf.get(RssSparkConfig.RSS_DATA_REPLICA.key()));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE),
-        conf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE.key()));
+        conf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE),
         conf.get(RssSparkConfig.RSS_DATA_REPLICA_READ.key()));
