@@ -17,9 +17,18 @@
 
 package org.apache.uniffle.common.netty.protocol;
 
-import io.netty.channel.Channel;
+import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 
-public interface Transferable {
+public abstract class ResponseMessage extends Message {
+  public ResponseMessage() {
+    super();
+  }
 
-  void transferTo(Channel channel);
+  public ResponseMessage(ManagedBuffer buffer) {
+    super(buffer);
+  }
+
+  public ResponseMessage createFailureResponse(String error) {
+    throw new UnsupportedOperationException();
+  }
 }

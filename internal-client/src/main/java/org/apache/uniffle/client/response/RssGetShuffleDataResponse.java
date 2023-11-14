@@ -19,18 +19,26 @@ package org.apache.uniffle.client.response;
 
 import java.nio.ByteBuffer;
 
+import io.netty.buffer.Unpooled;
+
+import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
+import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
 
 public class RssGetShuffleDataResponse extends ClientResponse {
 
-  private final ByteBuffer shuffleData;
+  private final ManagedBuffer shuffleData;
 
   public RssGetShuffleDataResponse(StatusCode statusCode, ByteBuffer data) {
+    this(statusCode, new NettyManagedBuffer(Unpooled.wrappedBuffer(data)));
+  }
+
+  public RssGetShuffleDataResponse(StatusCode statusCode, ManagedBuffer data) {
     super(statusCode);
     this.shuffleData = data;
   }
 
-  public ByteBuffer getShuffleData() {
+  public ManagedBuffer getShuffleData() {
     return shuffleData;
   }
 }

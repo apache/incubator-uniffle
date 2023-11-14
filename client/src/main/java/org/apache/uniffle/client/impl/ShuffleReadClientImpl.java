@@ -55,6 +55,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private int shuffleId;
   private int partitionId;
   private ByteBuffer readBuffer;
+  private ShuffleDataResult sdr;
   private Roaring64NavigableMap blockIdBitmap;
   private Roaring64NavigableMap taskIdBitmap;
   private Roaring64NavigableMap pendingBlockIds;
@@ -96,6 +97,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       builder.storageType(storageType);
       builder.readBufferSize(readBufferSize);
       builder.offHeapEnable(offHeapEnabled);
+      builder.clientType(builder.getRssConf().get(RssClientConf.RSS_CLIENT_TYPE));
     } else {
       // most for test
       RssConf rssConf = new RssConf();
@@ -138,6 +140,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setIdHelper(idHelper);
     request.setExpectTaskIds(taskIdBitmap);
     request.setClientConf(builder.getRssConf());
+    request.setClientType(builder.getClientType());
     if (builder.isExpectedTaskIdsBitmapFilterEnable()) {
       request.useExpectedTaskIdsBitmapFilter();
     }
@@ -258,7 +261,10 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   private int read() {
     long start = System.currentTimeMillis();
-    ShuffleDataResult sdr = clientReadHandler.readShuffleData();
+    if (sdr != null) {
+      sdr.release();
+    }
+    sdr = clientReadHandler.readShuffleData();
     readDataTime.addAndGet(System.currentTimeMillis() - start);
     if (sdr == null) {
       return 0;

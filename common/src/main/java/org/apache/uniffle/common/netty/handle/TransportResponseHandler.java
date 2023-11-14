@@ -61,9 +61,11 @@ public class TransportResponseHandler extends MessageHandler<RpcResponse> {
   public void handle(RpcResponse message) throws Exception {
     RpcResponseCallback listener = outstandingRpcRequests.get(message.getRequestId());
     if (listener == null) {
-      logger.warn(
-          "Ignoring response from {} since it is not outstanding",
-          NettyUtils.getRemoteAddress(channel));
+      logger.error(
+          "Ignoring response from {} since it is not outstanding, {} {}",
+          NettyUtils.getRemoteAddress(channel),
+          message.type(),
+          message.getRequestId());
     } else {
       listener.onSuccess(message);
     }

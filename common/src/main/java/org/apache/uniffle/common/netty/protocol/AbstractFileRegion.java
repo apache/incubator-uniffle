@@ -15,21 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.response;
+package org.apache.uniffle.common.netty.protocol;
 
-import org.apache.uniffle.common.ShuffleIndexResult;
-import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
-import org.apache.uniffle.common.rpc.StatusCode;
+import io.netty.channel.FileRegion;
+import io.netty.util.AbstractReferenceCounted;
 
-public class RssGetShuffleIndexResponse extends ClientResponse {
-  private final ShuffleIndexResult shuffleIndexResult;
+public abstract class AbstractFileRegion extends AbstractReferenceCounted implements FileRegion {
 
-  public RssGetShuffleIndexResponse(StatusCode statusCode, ManagedBuffer data, long dataFileLen) {
-    super(statusCode);
-    this.shuffleIndexResult = new ShuffleIndexResult(data, dataFileLen);
+  @Override
+  @SuppressWarnings("deprecation")
+  public final long transfered() {
+    return transferred();
   }
 
-  public ShuffleIndexResult getShuffleIndexResult() {
-    return shuffleIndexResult;
+  @Override
+  public AbstractFileRegion retain() {
+    super.retain();
+    return this;
+  }
+
+  @Override
+  public AbstractFileRegion retain(int increment) {
+    super.retain(increment);
+    return this;
+  }
+
+  @Override
+  public AbstractFileRegion touch() {
+    super.touch();
+    return this;
+  }
+
+  @Override
+  public AbstractFileRegion touch(Object o) {
+    return this;
   }
 }

@@ -29,6 +29,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +65,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
+import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -810,7 +812,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         response =
             new RssGetShuffleIndexResponse(
                 StatusCode.SUCCESS,
-                ByteBuffer.wrap(rpcResponse.getIndexData().toByteArray()),
+                new NettyManagedBuffer(
+                    Unpooled.wrappedBuffer(rpcResponse.getIndexData().toByteArray())),
                 rpcResponse.getDataFileLen());
 
         break;
