@@ -95,6 +95,7 @@ public class SortWriteBufferManager<K, V> {
   private final ExecutorService sendExecutorService;
   private final RssConf rssConf;
   private final Codec codec;
+  private final Task.CombinerRunner<K, V> combinerRunner;
 
   public SortWriteBufferManager(
       long maxMemSize,
@@ -120,7 +121,8 @@ public class SortWriteBufferManager<K, V> {
       int sendThreadNum,
       double sendThreshold,
       long maxBufferSize,
-      RssConf rssConf) {
+      RssConf rssConf,
+      Task.CombinerRunner<K, V> combinerRunner) {
     this.maxMemSize = maxMemSize;
     this.taskAttemptId = taskAttemptId;
     this.batch = batch;
@@ -146,6 +148,7 @@ public class SortWriteBufferManager<K, V> {
     this.sendExecutorService = ThreadUtils.getDaemonFixedThreadPool(sendThreadNum, "send-thread");
     this.rssConf = rssConf;
     this.codec = Codec.newInstance(rssConf);
+    this.combinerRunner = combinerRunner;
   }
 
   // todo: Single Buffer should also have its size limit
@@ -231,12 +234,39 @@ public class SortWriteBufferManager<K, V> {
 
   private void prepareBufferForSend(List<ShuffleBlockInfo> shuffleBlocks, SortWriteBuffer buffer) {
     buffers.remove(buffer.getPartitionId());
-    ShuffleBlockInfo block = createShuffleBlock(buffer);
+    buffer.sort();
+    ShuffleBlockInfo block;
+    if (combinerRunner != null) {
+      try {
+        buffer = combineBuffer(buffer);
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Successfully finished combining.");
+        }
+      } catch (Exception e) {
+        LOG.error("Error occurred while combining in Map:", e);
+      }
+    }
+    block = createShuffleBlock(buffer);
     buffer.clear();
     shuffleBlocks.add(block);
     allBlockIds.add(block.getBlockId());
     partitionToBlocks.computeIfAbsent(block.getPartitionId(), key -> Lists.newArrayList());
     partitionToBlocks.get(block.getPartitionId()).add(block.getBlockId());
+  }
+
+  public SortWriteBuffer<K, V> combineBuffer(SortWriteBuffer<K, V> buffer)
+      throws IOException, InterruptedException, ClassNotFoundException {
+    RawKeyValueIterator kvIterator = new SortWriteBuffer.SortBufferIterator<>(buffer);
+
+    RssCombineOutputCollector<K, V> combineCollector = new RssCombineOutputCollector<>();
+
+    SortWriteBuffer<K, V> newBuffer =
+        new SortWriteBuffer<>(
+            buffer.getPartitionId(), comparator, maxSegmentSize, keySerializer, valSerializer);
+
+    combineCollector.setWriter(newBuffer);
+    combinerRunner.combine(kvIterator, combineCollector);
+    return newBuffer;
   }
 
   private void sendShuffleBlocks(List<ShuffleBlockInfo> shuffleBlocks) {

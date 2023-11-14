@@ -19,13 +19,15 @@ package org.apache.hadoop.mapred;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.io.serializer.Serializer;
+import org.apache.hadoop.util.Progress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +86,21 @@ public class SortWriteBuffer<K, V> extends OutputStream {
     records.clear();
   }
 
+  public synchronized void sort() {
+    long startSort = System.currentTimeMillis();
+    records.sort(
+        (o1, o2) ->
+            comparator.compare(
+                buffers.get(o1.getKeyIndex()).getBuffer(),
+                o1.getKeyOffSet(),
+                o1.getKeyLength(),
+                buffers.get(o2.getKeyIndex()).getBuffer(),
+                o2.getKeyOffSet(),
+                o2.getKeyLength()));
+    long finishSort = System.currentTimeMillis();
+    sortTime += finishSort - startSort;
+  }
+
   public synchronized byte[] getData() {
     int extraSize = 0;
     for (Record<K> record : records) {
@@ -95,22 +112,8 @@ public class SortWriteBuffer<K, V> extends OutputStream {
     extraSize += WritableUtils.getVIntSize(-1);
     byte[] data = new byte[dataLength + extraSize];
     int offset = 0;
-    long startSort = System.currentTimeMillis();
-    records.sort(
-        new Comparator<Record<K>>() {
-          @Override
-          public int compare(Record<K> o1, Record<K> o2) {
-            return comparator.compare(
-                buffers.get(o1.getKeyIndex()).getBuffer(),
-                o1.getKeyOffSet(),
-                o1.getKeyLength(),
-                buffers.get(o2.getKeyIndex()).getBuffer(),
-                o2.getKeyOffSet(),
-                o2.getKeyLength());
-          }
-        });
-    long startCopy = System.currentTimeMillis();
-    sortTime += startCopy - startSort;
+
+    final long startCopy = System.currentTimeMillis();
 
     for (Record<K> record : records) {
       offset = writeDataInt(data, offset, record.getKeyLength());
@@ -323,6 +326,55 @@ public class SortWriteBuffer<K, V> extends OutputStream {
 
     public int getSize() {
       return size;
+    }
+  }
+
+  public static class SortBufferIterator<K, V> implements RawKeyValueIterator {
+    private final SortWriteBuffer<K, V> sortWriteBuffer;
+    private final Iterator<Record<K>> iterator;
+    private final DataInputBuffer keyBuffer = new DataInputBuffer();
+    private final DataInputBuffer valueBuffer = new DataInputBuffer();
+    private SortWriteBuffer.Record<K> currentRecord;
+
+    public SortBufferIterator(SortWriteBuffer<K, V> sortWriteBuffer) {
+      this.sortWriteBuffer = sortWriteBuffer;
+      this.iterator = sortWriteBuffer.records.iterator();
+    }
+
+    @Override
+    public DataInputBuffer getKey() {
+      SortWriteBuffer.WrappedBuffer keyWrappedBuffer =
+          sortWriteBuffer.buffers.get(currentRecord.getKeyIndex());
+      byte[] rawData = keyWrappedBuffer.getBuffer();
+      keyBuffer.reset(rawData, currentRecord.getKeyOffSet(), currentRecord.getKeyLength());
+      return keyBuffer;
+    }
+
+    @Override
+    public DataInputBuffer getValue() {
+      SortWriteBuffer.WrappedBuffer valueWrappedBuffer =
+          sortWriteBuffer.buffers.get(currentRecord.getKeyIndex());
+      byte[] rawData = valueWrappedBuffer.getBuffer();
+      int valueOffset = currentRecord.getKeyOffSet() + currentRecord.getKeyLength();
+      valueBuffer.reset(rawData, valueOffset, currentRecord.getValueLength());
+      return valueBuffer;
+    }
+
+    @Override
+    public boolean next() {
+      if (iterator.hasNext()) {
+        currentRecord = iterator.next();
+        return true;
+      }
+      return false;
+    }
+
+    @Override
+    public void close() throws IOException {}
+
+    @Override
+    public Progress getProgress() {
+      return new Progress();
     }
   }
 }
