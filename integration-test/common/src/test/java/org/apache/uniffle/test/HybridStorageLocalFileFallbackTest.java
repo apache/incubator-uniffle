@@ -65,7 +65,7 @@ public class HybridStorageLocalFileFallbackTest extends HybridStorageFaultTolera
                 .getWarmStorageManager();
     for (Storage storage : warmStorageManager.getStorages()) {
       LocalStorage localStorage = (LocalStorage) storage;
-      localStorage.markSpaceFull();
+      localStorage.setWatermarkLimitTriggered(true);
     }
   }
 }

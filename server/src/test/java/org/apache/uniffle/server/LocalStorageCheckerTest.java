@@ -20,12 +20,82 @@ package org.apache.uniffle.server;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import org.apache.uniffle.common.StorageType;
+import org.apache.uniffle.storage.common.LocalStorage;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
+
 public class LocalStorageCheckerTest {
+
+  @BeforeEach
+  public void beforeEach() {
+    ShuffleServerMetrics.clear();
+    ShuffleServerMetrics.register();
+  }
+
+  @Test
+  public void testWatermarkLimit(@TempDir File tempDir) throws Exception {
+    LocalStorage storage = LocalStorage.newBuilder()
+        .basePath(tempDir.getAbsolutePath())
+        .build();
+
+    ShuffleServerConf conf = new ShuffleServerConf();
+    conf.setDouble(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE, 80.0);
+    conf.setDouble(ShuffleServerConf.LOW_WATER_MARK_OF_WRITE, 60.0);
+    conf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH.key(), tempDir.getAbsolutePath());
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
+
+    LocalStorageChecker checker = new LocalStorageChecker(
+        conf,
+        Arrays.asList(storage)
+    );
+
+    checker = spy(checker);
+    checker.resetStorages(storage);
+
+    doReturn(1000L).when(checker).getTotalSpace(any());
+    doReturn(600L).when(checker).getWholeDiskUsedSpace(any());
+
+    // case1
+    checker.checkIsHealthy();
+    assertFalse(storage.isWatermarkLimitTriggered());
+    assertTrue(storage.canWrite());
+
+    // case2
+    doReturn(850L).when(checker).getWholeDiskUsedSpace(any());
+    checker.checkIsHealthy();
+    assertTrue(storage.isWatermarkLimitTriggered());
+    assertFalse(storage.canWrite());
+
+    // case3. re-check
+    checker.checkIsHealthy();
+    assertTrue(storage.isWatermarkLimitTriggered());
+    assertFalse(storage.canWrite());
+
+    // case4.
+    doReturn(645L).when(checker).getWholeDiskUsedSpace(any());
+    checker.checkIsHealthy();
+    assertTrue(storage.isWatermarkLimitTriggered());
+    assertFalse(storage.canWrite());
+
+    // case5. recover
+    doReturn(545L).when(checker).getWholeDiskUsedSpace(any());
+    checker.checkIsHealthy();
+    assertFalse(storage.isWatermarkLimitTriggered());
+    assertTrue(storage.canWrite());
+  }
 
   @Test
   public void testGetUniffleUsedSpace(@TempDir File tempDir) throws IOException {

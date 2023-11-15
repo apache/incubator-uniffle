@@ -21,10 +21,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -48,7 +50,11 @@ public class LocalStorageChecker extends Checker {
   private final double diskMaxUsagePercentage;
   private final double diskRecoveryUsagePercentage;
   private final double minStorageHealthyPercentage;
-  private final List<StorageInfo> storageInfos = Lists.newArrayList();
+
+  private final double highWaterMarkOfWrite;
+  private final double lowWaterMarkOfWrite;
+
+  private List<StorageInfo> storageInfos = Lists.newArrayList();
   private boolean isHealthy = true;
 
   public LocalStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages) {
@@ -72,6 +78,9 @@ public class LocalStorageChecker extends Checker {
         conf.getDouble(ShuffleServerConf.HEALTH_STORAGE_RECOVERY_USAGE_PERCENTAGE);
     this.minStorageHealthyPercentage =
         conf.getDouble(ShuffleServerConf.HEALTH_MIN_STORAGE_PERCENTAGE);
+
+    this.highWaterMarkOfWrite = conf.getDouble(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE);
+    this.lowWaterMarkOfWrite = conf.getDouble(ShuffleServerConf.LOW_WATER_MARK_OF_WRITE);
   }
 
   @Override
@@ -97,7 +106,9 @@ public class LocalStorageChecker extends Checker {
               wholeDiskUsedSpace.addAndGet(getWholeDiskUsedSpace(storageInfo.storageDir));
               serviceUsedSpace.addAndGet(getServiceUsedSpace(storageInfo.storageDir));
 
-              if (storageInfo.checkIsSpaceEnough()) {
+              storageInfo.checkWatermarkLimit();
+
+              if (storageInfo.checkIsHealthy()) {
                 num.incrementAndGet();
               }
               cdl.countDown();
@@ -176,6 +187,12 @@ public class LocalStorageChecker extends Checker {
     return totalUsage;
   }
 
+  // only for tests
+  @VisibleForTesting
+  public void resetStorages(LocalStorage... storages) {
+    this.storageInfos = Arrays.stream(storages).map(x -> new StorageInfo(x)).collect(Collectors.toList());
+  }
+
   // todo: This function will be integrated to MultiStorageManager, currently we only support disk
   // check.
   class StorageInfo {
@@ -183,15 +200,16 @@ public class LocalStorageChecker extends Checker {
     private final File storageDir;
     private final LocalStorage storage;
     private boolean isHealthy;
+    private boolean isWatermarkLimitTriggered;
 
     StorageInfo(LocalStorage storage) {
       this.storageDir = new File(storage.getBasePath());
       this.isHealthy = true;
       this.storage = storage;
+      this.isWatermarkLimitTriggered = false;
     }
 
-    boolean checkIsSpaceEnough() {
-
+    boolean checkIsHealthy() {
       if (Double.compare(0.0, getTotalSpace(storageDir)) == 0) {
         this.isHealthy = false;
         return false;
@@ -209,6 +227,25 @@ public class LocalStorageChecker extends Checker {
         }
       }
       return isHealthy;
+    }
+
+    boolean checkWatermarkLimit() {
+      double usagePercent = getWholeDiskUsedSpace(storageDir) * 100.0 / getTotalSpace(storageDir);
+      if (isWatermarkLimitTriggered) {
+        if (Double.compare(usagePercent, lowWaterMarkOfWrite) <= 0) {
+          isWatermarkLimitTriggered = false;
+          LOG.info("storage {} has recovered to write, its usage has been below than the low watermark.",
+              storageDir.getAbsolutePath());
+        }
+      } else {
+        if (Double.compare(usagePercent, highWaterMarkOfWrite) >= 0) {
+          isWatermarkLimitTriggered = true;
+          LOG.info("storage {} has reached the high watermark. It will be limited to write!",
+              storageDir.getAbsolutePath());
+        }
+      }
+      storage.setWatermarkLimitTriggered(isWatermarkLimitTriggered);
+      return isWatermarkLimitTriggered;
     }
 
     boolean checkStorageReadAndWrite() {

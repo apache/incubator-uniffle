@@ -52,8 +52,8 @@ public class LocalStorage extends AbstractStorage {
   private final double lowWaterMarkOfWrite;
   private final LocalStorageMeta metaData = new LocalStorageMeta();
   private final StorageMedia media;
-  private boolean isSpaceEnough = true;
   private volatile boolean isCorrupted = false;
+  private volatile boolean isWatermarkLimitTriggered = false;
 
   private LocalStorage(Builder builder) {
     this.basePath = builder.basePath;
@@ -144,12 +144,7 @@ public class LocalStorage extends AbstractStorage {
 
   @Override
   public boolean canWrite() {
-    if (isSpaceEnough) {
-      isSpaceEnough = metaData.getDiskSize().doubleValue() * 100 / capacity < highWaterMarkOfWrite;
-    } else {
-      isSpaceEnough = metaData.getDiskSize().doubleValue() * 100 / capacity < lowWaterMarkOfWrite;
-    }
-    return isSpaceEnough && !isCorrupted;
+    return !isWatermarkLimitTriggered && !isCorrupted;
   }
 
   public String getBasePath() {
@@ -237,10 +232,12 @@ public class LocalStorage extends AbstractStorage {
     return appIds;
   }
 
-  // Only for test
-  @VisibleForTesting
-  public void markSpaceFull() {
-    isSpaceEnough = false;
+  public void setWatermarkLimitTriggered(boolean watermarkLimitTriggered) {
+    isWatermarkLimitTriggered = watermarkLimitTriggered;
+  }
+
+  public boolean isWatermarkLimitTriggered() {
+    return isWatermarkLimitTriggered;
   }
 
   public static class Builder {
