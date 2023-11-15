@@ -182,7 +182,6 @@ pub async fn write_read_for_one_time(mut client: ShuffleServerClient<Channel>) -
                 read_buffer_size: 10000000,
                 timestamp: 0,
                 serialized_expected_task_ids_bitmap: Default::default(),
-                block_ids_filter: Default::default(),
             })
             .await?;
         let response = response_data.into_inner();
