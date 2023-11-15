@@ -22,6 +22,7 @@ import org.apache.spark.util.VersionUtils;
 
 public class SparkVersionUtils {
   public static final String SPARK_VERSION = package$.MODULE$.SPARK_VERSION();
+  public static final String SPARK_VERSION_SHORT = package$.MODULE$.SPARK_VERSION_SHORT();
   public static final int MAJOR_VERSION;
   public static final int MINOR_VERSION;
 
@@ -46,5 +47,9 @@ public class SparkVersionUtils {
 
   public static boolean isSpark3() {
     return MAJOR_VERSION == 3;
+  }
+
+  public static boolean isSpark320() {
+    return SPARK_VERSION_SHORT == "3.2.0";
   }
 }
