@@ -276,7 +276,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       // removed, then after
       // cacheShuffleData finishes, the preAllocatedSize should be updated accordingly.
       if (info.getRequireSize() > alreadyReleasedSize) {
-        manager.releasePreAllocatedSize(info.getRequireSize() - alreadyReleasedSize);
+        manager.releasePreAllocatedAndUsedMemory(info.getRequireSize() - alreadyReleasedSize);
       }
       reply =
           SendShuffleDataResponse.newBuilder()

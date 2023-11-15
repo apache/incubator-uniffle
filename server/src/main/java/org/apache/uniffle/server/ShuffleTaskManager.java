@@ -283,6 +283,10 @@ public class ShuffleTaskManager {
     shuffleBufferManager.releasePreAllocatedSize(requireSize);
   }
 
+  public void releasePreAllocatedAndUsedMemory(long requireSize) {
+    shuffleBufferManager.releaseMemory(requireSize, false, true);
+  }
+
   @VisibleForTesting
   void removeAndReleasePreAllocatedBuffer(long requireBufferId) {
     PreAllocatedBufferInfo info = getAndRemovePreAllocatedBuffer(requireBufferId);
