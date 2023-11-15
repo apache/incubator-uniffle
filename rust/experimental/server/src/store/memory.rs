@@ -1187,24 +1187,24 @@ mod test {
         runtime.wait(store.insert(writing_ctx)).unwrap();
 
         // 2. block_ids_filter is empty, should return 2 blocks
-        // let mut reading_ctx = ReadingViewContext {
-        //     uid: Default::default(),
-        //     reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
-        //     serialized_expected_task_ids_bitmap: Default::default(),
-        // };
+        let mut reading_ctx = ReadingViewContext {
+            uid: Default::default(),
+            reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
+            serialized_expected_task_ids_bitmap: Default::default(),
+        };
 
-        // match runtime.wait(store.get(reading_ctx)).unwrap() {
-        //     Mem(data) => {
-        //         assert_eq!(data.shuffle_data_block_segments.len(), 2);
-        //     }
-        //     _ => panic!("should not"),
-        // }
+        match runtime.wait(store.get(reading_ctx)).unwrap() {
+            Mem(data) => {
+                assert_eq!(data.shuffle_data_block_segments.len(), 2);
+            }
+            _ => panic!("should not"),
+        }
 
         // 3. set serialized_expected_task_ids_bitmap, should return 1 block
         let mut bitmap = Treemap::default();
         bitmap.add(0);
         let serialized_expected_task_ids_bitmap = Bytes::from(bitmap.serialize().unwrap());
-        let reading_ctx = ReadingViewContext {
+        reading_ctx = ReadingViewContext {
             uid: Default::default(),
             reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
             serialized_expected_task_ids_bitmap,
