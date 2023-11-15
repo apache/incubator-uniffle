@@ -30,7 +30,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.apache.uniffle.common.StorageType;
 import org.apache.uniffle.storage.common.LocalStorage;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,9 +46,7 @@ public class LocalStorageCheckerTest {
 
   @Test
   public void testWatermarkLimit(@TempDir File tempDir) throws Exception {
-    LocalStorage storage = LocalStorage.newBuilder()
-        .basePath(tempDir.getAbsolutePath())
-        .build();
+    LocalStorage storage = LocalStorage.newBuilder().basePath(tempDir.getAbsolutePath()).build();
 
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.setDouble(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE, 80.0);
@@ -57,10 +54,7 @@ public class LocalStorageCheckerTest {
     conf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH.key(), tempDir.getAbsolutePath());
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
 
-    LocalStorageChecker checker = new LocalStorageChecker(
-        conf,
-        Arrays.asList(storage)
-    );
+    LocalStorageChecker checker = new LocalStorageChecker(conf, Arrays.asList(storage));
 
     checker = spy(checker);
     checker.resetStorages(storage);

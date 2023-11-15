@@ -190,7 +190,8 @@ public class LocalStorageChecker extends Checker {
   // only for tests
   @VisibleForTesting
   public void resetStorages(LocalStorage... storages) {
-    this.storageInfos = Arrays.stream(storages).map(x -> new StorageInfo(x)).collect(Collectors.toList());
+    this.storageInfos =
+        Arrays.stream(storages).map(x -> new StorageInfo(x)).collect(Collectors.toList());
   }
 
   // todo: This function will be integrated to MultiStorageManager, currently we only support disk
@@ -234,13 +235,15 @@ public class LocalStorageChecker extends Checker {
       if (isWatermarkLimitTriggered) {
         if (Double.compare(usagePercent, lowWaterMarkOfWrite) <= 0) {
           isWatermarkLimitTriggered = false;
-          LOG.info("storage {} has recovered to write, its usage has been below than the low watermark.",
+          LOG.info(
+              "storage {} has recovered to write, its usage has been below than the low watermark.",
               storageDir.getAbsolutePath());
         }
       } else {
         if (Double.compare(usagePercent, highWaterMarkOfWrite) >= 0) {
           isWatermarkLimitTriggered = true;
-          LOG.info("storage {} has reached the high watermark. It will be limited to write!",
+          LOG.info(
+              "storage {} has reached the high watermark. It will be limited to write!",
               storageDir.getAbsolutePath());
         }
       }
