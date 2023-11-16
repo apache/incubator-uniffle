@@ -34,6 +34,8 @@ use crate::proto::uniffle::{
 use crate::store::{PartitionedData, ResponseDataIndex};
 use await_tree::InstrumentAwait;
 use bytes::{BufMut, BytesMut};
+use croaring::treemap::JvmSerializer;
+use croaring::Treemap;
 use std::collections::HashMap;
 
 use log::{debug, error, info, warn};
@@ -342,6 +344,20 @@ impl ShuffleServer for DefaultShuffleServer {
             shuffle_id,
             partition_id,
         };
+
+        let serialized_expected_task_ids_bitmap =
+            if !req.serialized_expected_task_ids_bitmap.is_empty() {
+                match Treemap::deserialize(&req.serialized_expected_task_ids_bitmap) {
+                    Ok(filter) => Some(filter),
+                    Err(e) => {
+                        error!("Failed to deserialize: {}", e);
+                        None
+                    }
+                }
+            } else {
+                None
+            };
+
         let data_fetched_result = app
             .unwrap()
             .select(ReadingViewContext {
@@ -350,7 +366,7 @@ impl ShuffleServer for DefaultShuffleServer {
                     req.last_block_id,
                     req.read_buffer_size as i64,
                 ),
-                serialized_expected_task_ids_bitmap: req.serialized_expected_task_ids_bitmap,
+                serialized_expected_task_ids_bitmap: serialized_expected_task_ids_bitmap.clone(),
             })
             .instrument_await(format!("select data from memory. uid: {:?}", &partition_id))
             .await;

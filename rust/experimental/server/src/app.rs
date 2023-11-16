@@ -308,7 +308,7 @@ pub struct WritingViewContext {
 pub struct ReadingViewContext {
     pub uid: PartitionedUId,
     pub reading_options: ReadingOptions,
-    pub serialized_expected_task_ids_bitmap: Bytes,
+    pub serialized_expected_task_ids_bitmap: Option<Treemap>,
 }
 
 pub struct ReadingIndexViewContext {

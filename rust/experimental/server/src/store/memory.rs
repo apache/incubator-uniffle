@@ -41,8 +41,6 @@ use std::str::FromStr;
 
 use crate::store::mem::InstrumentAwait;
 use crate::store::mem::MemoryBufferTicket;
-use croaring::treemap::JvmSerializer;
-use croaring::Treemap;
 use log::error;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -348,17 +346,7 @@ impl Store for MemoryStore {
         // get block_ids filter
         // In AQE, after executing the sub-QueryStages, collect the shuffle data size
         // So if we can filter block, it will improve the performance of AQE.
-        let block_ids_filter = if !ctx.serialized_expected_task_ids_bitmap.is_empty() {
-            match Treemap::deserialize(&ctx.serialized_expected_task_ids_bitmap) {
-                Ok(filter) => Some(filter),
-                Err(e) => {
-                    error!("Failed to deserialize: {}", e);
-                    None
-                }
-            }
-        } else {
-            None
-        };
+        let block_ids_filter = ctx.serialized_expected_task_ids_bitmap;
 
         let options = ctx.reading_options;
         let (fetched_blocks, length) = match options {
@@ -367,23 +355,14 @@ impl Store for MemoryStore {
                 let mut in_flight_flatten_blocks = vec![];
                 for (_, blocks) in buffer.in_flight.iter() {
                     for in_flight_block in blocks {
-                        if block_ids_filter.as_ref().map_or(true, |filter| {
-                            filter.contains(in_flight_block.block_id as u64)
-                        }) {
-                            in_flight_flatten_blocks.push(in_flight_block);
-                        }
+                        in_flight_flatten_blocks.push(in_flight_block);
                     }
                 }
                 let in_flight_flatten_blocks = Arc::new(in_flight_flatten_blocks);
 
                 let mut staging_blocks = vec![];
                 for block in &buffer.staging {
-                    if block_ids_filter
-                        .as_ref()
-                        .map_or(true, |filter| filter.contains(block.block_id as u64))
-                    {
-                        staging_blocks.push(block);
-                    }
+                    staging_blocks.push(block);
                 }
                 let staging_blocks = Arc::new(staging_blocks);
 
@@ -439,6 +418,14 @@ impl Store for MemoryStore {
                                 last_block_id = -1;
                             }
                         }
+                        candidate_blocks = candidate_blocks
+                            .into_iter()
+                            .filter(|block| {
+                                block_ids_filter
+                                    .as_ref()
+                                    .map_or(true, |filter| filter.contains(block.block_id as u64))
+                            })
+                            .collect();
                     }
                 }
 
@@ -745,7 +732,7 @@ mod test {
 
     use crate::store::{PartitionedDataBlock, PartitionedMemoryData, ResponseData, Store};
 
-    use bytes::{Bytes, BytesMut};
+    use bytes::BytesMut;
     use core::panic;
     use std::sync::Arc;
     use std::thread;
@@ -754,7 +741,6 @@ mod test {
     use crate::config::MemoryStoreConfig;
     use crate::runtime::manager::RuntimeManager;
     use anyhow::Result;
-    use croaring::treemap::JvmSerializer;
     use croaring::Treemap;
 
     #[test]
@@ -1144,7 +1130,7 @@ mod test {
         let reading_ctx = ReadingViewContext {
             uid: Default::default(),
             reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
-            serialized_expected_task_ids_bitmap: Bytes::default(),
+            serialized_expected_task_ids_bitmap: Default::default(),
         };
 
         match runtime.wait(store.get(reading_ctx)).unwrap() {
@@ -1200,14 +1186,13 @@ mod test {
             _ => panic!("should not"),
         }
 
-        // 3. set serialized_expected_task_ids_bitmap, should return 1 block
+        // 3. set serialized_expected_task_ids_bitmap, and set last_block_id equals 1, should return 1 block
         let mut bitmap = Treemap::default();
-        bitmap.add(0);
-        let serialized_expected_task_ids_bitmap = Bytes::from(bitmap.serialize().unwrap());
+        bitmap.add(1);
         reading_ctx = ReadingViewContext {
             uid: Default::default(),
-            reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
-            serialized_expected_task_ids_bitmap,
+            reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(0, 1000000),
+            serialized_expected_task_ids_bitmap: Option::from(bitmap),
         };
 
         match runtime.wait(store.get(reading_ctx)).unwrap() {
@@ -1219,7 +1204,7 @@ mod test {
                         .get(0)
                         .unwrap()
                         .uncompress_length,
-                    100
+                    200
                 );
             }
             _ => panic!("should not"),
