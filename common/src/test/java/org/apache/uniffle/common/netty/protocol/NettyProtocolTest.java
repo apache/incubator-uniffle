@@ -185,8 +185,6 @@ public class NettyProtocolTest {
         getLocalShuffleDataResponse.getRetMessage(), getLocalShuffleDataResponse1.getRetMessage());
     assertEquals(
         getLocalShuffleDataResponse.getStatusCode(), getLocalShuffleDataResponse1.getStatusCode());
-    //    assertEquals(getLocalShuffleDataResponse.body().byteBuf(),
-    // getLocalShuffleDataResponse1.body().byteBuf());
   }
 
   @Test
@@ -235,9 +233,6 @@ public class NettyProtocolTest {
     assertEquals(
         getLocalShuffleIndexResponse.getRetMessage(),
         getLocalShuffleIndexResponse1.getRetMessage());
-    //    assertEquals(
-    //        getLocalShuffleIndexResponse.body().byteBuf(),
-    // getLocalShuffleIndexResponse1.body().byteBuf());
   }
 
   @Test
@@ -293,9 +288,6 @@ public class NettyProtocolTest {
     assertEquals(
         getMemoryShuffleDataResponse.getStatusCode(),
         getMemoryShuffleDataResponse1.getStatusCode());
-    //    assertTrue(
-    //
-    // getMemoryShuffleDataResponse.body().byteBuf().equals(getMemoryShuffleDataResponse1.body().byteBuf()));
 
     for (int i = 0; i < 2; i++) {
       assertEquals(

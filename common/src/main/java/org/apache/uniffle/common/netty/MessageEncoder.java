@@ -78,7 +78,7 @@ public final class MessageEncoder extends MessageToMessageEncoder<Message> {
 
     Message.Type msgType = in.type();
     // message size, message type size, body size, message encoded length
-    int headerLength = 4 + msgType.encodedLength() + 4 + in.encodedLength();
+    int headerLength = Integer.BYTES + msgType.encodedLength() + Integer.BYTES + in.encodedLength();
     ByteBuf header = ctx.alloc().heapBuffer(headerLength);
     header.writeInt(in.encodedLength());
     msgType.encode(header);
