@@ -48,7 +48,6 @@ import org.apache.spark.TaskContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.executor.ShuffleWriteMetrics;
-import org.apache.spark.shuffle.SparkVersionUtils;
 import org.apache.spark.shuffle.reader.RssShuffleReader;
 import org.apache.spark.shuffle.writer.AddBlockEvent;
 import org.apache.spark.shuffle.writer.DataPusher;
@@ -702,10 +701,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     try {
       // Since Spark 3.1 refactors the interface of getMapSizesByExecutorId,
       // we use reflection and catch for the compatibility with 3.0 & 3.1 & 3.2
-      if (SparkVersionUtils.MAJOR_VERSION > 3 ||
-              SparkVersionUtils.MINOR_VERSION > 2 ||
-              SparkVersionUtils.MINOR_VERSION == 2 && !SparkVersionUtils.isSpark320() ||
-              SparkVersionUtils.MINOR_VERSION == 1) {
+      if (SparkVersionUtils.MAJOR_VERSION > 3
+          || SparkVersionUtils.MINOR_VERSION > 2
+          || SparkVersionUtils.MINOR_VERSION == 2 && !SparkVersionUtils.isSpark320()
+          || SparkVersionUtils.MINOR_VERSION == 1) {
         // use Spark 3.1's API
         mapStatusIter =
             (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
@@ -752,14 +751,14 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                         endPartition);
       } else {
         // use Spark 3.0's API
-          mapStatusIter =
-              (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
-                  SparkEnv.get()
-                      .mapOutputTracker()
-                      .getClass()
-                      .getDeclaredMethod("getMapSizesByExecutorId", int.class, int.class, int.class)
-                      .invoke(
-                          SparkEnv.get().mapOutputTracker(), shuffleId, startPartition, endPartition);
+        mapStatusIter =
+            (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
+                SparkEnv.get()
+                    .mapOutputTracker()
+                    .getClass()
+                    .getDeclaredMethod("getMapSizesByExecutorId", int.class, int.class, int.class)
+                    .invoke(
+                        SparkEnv.get().mapOutputTracker(), shuffleId, startPartition, endPartition);
       }
     } catch (Exception e) {
       throw new RssException(e);
