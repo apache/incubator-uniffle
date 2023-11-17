@@ -41,6 +41,7 @@ use std::str::FromStr;
 
 use crate::store::mem::InstrumentAwait;
 use crate::store::mem::MemoryBufferTicket;
+use croaring::Treemap;
 use log::error;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -209,15 +210,21 @@ impl MemoryStore {
         buffer.clone()
     }
 
-    pub(crate) fn read_partial_data_with_max_size_limit<'a>(
+    pub(crate) fn read_partial_data_with_max_size_limit_and_filter<'a>(
         &'a self,
         blocks: Vec<&'a PartitionedDataBlock>,
         fetched_size_limit: i64,
+        serialized_expected_task_ids_bitmap: Option<Treemap>,
     ) -> (Vec<&PartitionedDataBlock>, i64) {
         let mut fetched = vec![];
         let mut fetched_size = 0;
 
         for block in blocks {
+            if let Some(ref filter) = serialized_expected_task_ids_bitmap {
+                if !filter.contains(block.task_attempt_id as u64) {
+                    continue;
+                }
+            }
             if fetched_size >= fetched_size_limit {
                 break;
             }
@@ -413,22 +420,18 @@ impl Store for MemoryStore {
                                 last_block_id = -1;
                             }
                         }
-
-                        // get block_ids filter
-                        // In AQE, after executing the sub-QueryStages, collect the shuffle data size
-                        // So if we can filter block, it will improve the performance of AQE.
-                        candidate_blocks = candidate_blocks
-                            .into_iter()
-                            .filter(|block| {
-                                ctx.serialized_expected_task_ids_bitmap
-                                    .as_ref()
-                                    .map_or(true, |filter| filter.contains(block.block_id as u64))
-                            })
-                            .collect();
                     }
                 }
 
-                self.read_partial_data_with_max_size_limit(candidate_blocks, max_size)
+                self.read_partial_data_with_max_size_limit_and_filter(
+                    candidate_blocks,
+                    max_size,
+                    if last_block_id == -1 {
+                        None
+                    } else {
+                        ctx.serialized_expected_task_ids_bitmap
+                    },
+                )
             }
             _ => (vec![], 0),
         };
