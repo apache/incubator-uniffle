@@ -417,12 +417,10 @@ impl Store for MemoryStore {
                         // get block_ids filter
                         // In AQE, after executing the sub-QueryStages, collect the shuffle data size
                         // So if we can filter block, it will improve the performance of AQE.
-                        let block_ids_filter = ctx.serialized_expected_task_ids_bitmap.clone();
-
                         candidate_blocks = candidate_blocks
                             .into_iter()
                             .filter(|block| {
-                                block_ids_filter
+                                ctx.serialized_expected_task_ids_bitmap
                                     .as_ref()
                                     .map_or(true, |filter| filter.contains(block.block_id as u64))
                             })
