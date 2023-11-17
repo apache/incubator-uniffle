@@ -937,8 +937,9 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     File hiddenFile = new File(storageDir + "/" + LocalStorageChecker.CHECKER_DIR_NAME);
     hiddenFile.mkdir();
 
-    appIdsOnDisk = getAppIdsOnDisk(localStorageManager);
-    assertFalse(appIdsOnDisk.contains(appId));
+    Awaitility.await()
+        .timeout(10, TimeUnit.SECONDS)
+        .until(() -> !getAppIdsOnDisk(localStorageManager).contains(appId));
     assertFalse(appIdsOnDisk.contains(LocalStorageChecker.CHECKER_DIR_NAME));
 
     // mock leak shuffle data
