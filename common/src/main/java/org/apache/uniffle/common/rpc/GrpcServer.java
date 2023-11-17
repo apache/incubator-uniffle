@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import io.grpc.BindableService;
@@ -180,7 +181,8 @@ public class GrpcServer implements ServerInterface {
       super.afterExecute(r, t);
     }
 
-    protected void correctMetrics() {
+    @VisibleForTesting
+    void correctMetrics() {
       grpcMetrics.setGauge(
           GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY, getQueue().size());
     }
