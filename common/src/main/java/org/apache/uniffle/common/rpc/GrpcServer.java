@@ -179,6 +179,11 @@ public class GrpcServer implements ServerInterface {
           GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY, getQueue().size());
       super.afterExecute(r, t);
     }
+
+    protected void correctMetrics() {
+      grpcMetrics.setGauge(
+          GRPCMetrics.GRPC_SERVER_EXECUTOR_BLOCKING_QUEUE_SIZE_KEY, getQueue().size());
+    }
   }
 
   @Override

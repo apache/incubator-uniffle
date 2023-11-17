@@ -77,6 +77,7 @@ public class GrpcServerTest {
       Thread.yield();
     }
     Thread.sleep(120);
+    executor.correctMetrics();
     double activeThreads =
         grpcMetrics.getGaugeMap().get(GRPC_SERVER_EXECUTOR_ACTIVE_THREADS_KEY).get();
     assertEquals(2, activeThreads);
