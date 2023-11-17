@@ -50,6 +50,6 @@ public class SparkVersionUtils {
   }
 
   public static boolean isSpark320() {
-    return SPARK_VERSION_SHORT == "3.2.0";
+    return SPARK_VERSION_SHORT.equals("3.2.0");
   }
 }
