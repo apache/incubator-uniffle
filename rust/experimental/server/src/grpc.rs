@@ -366,7 +366,7 @@ impl ShuffleServer for DefaultShuffleServer {
                     req.last_block_id,
                     req.read_buffer_size as i64,
                 ),
-                serialized_expected_task_ids_bitmap: serialized_expected_task_ids_bitmap.clone(),
+                serialized_expected_task_ids_bitmap,
             })
             .instrument_await(format!("select data from memory. uid: {:?}", &partition_id))
             .await;

@@ -343,11 +343,6 @@ impl Store for MemoryStore {
             .instrument_await("getting partitioned buffer lock")
             .await;
 
-        // get block_ids filter
-        // In AQE, after executing the sub-QueryStages, collect the shuffle data size
-        // So if we can filter block, it will improve the performance of AQE.
-        let block_ids_filter = ctx.serialized_expected_task_ids_bitmap;
-
         let options = ctx.reading_options;
         let (fetched_blocks, length) = match options {
             MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(last_block_id, max_size) => {
@@ -418,6 +413,12 @@ impl Store for MemoryStore {
                                 last_block_id = -1;
                             }
                         }
+
+                        // get block_ids filter
+                        // In AQE, after executing the sub-QueryStages, collect the shuffle data size
+                        // So if we can filter block, it will improve the performance of AQE.
+                        let block_ids_filter = ctx.serialized_expected_task_ids_bitmap.clone();
+
                         candidate_blocks = candidate_blocks
                             .into_iter()
                             .filter(|block| {
@@ -1192,7 +1193,7 @@ mod test {
         reading_ctx = ReadingViewContext {
             uid: Default::default(),
             reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(0, 1000000),
-            serialized_expected_task_ids_bitmap: Option::from(bitmap),
+            serialized_expected_task_ids_bitmap: Option::from(bitmap.clone()),
         };
 
         match runtime.wait(store.get(reading_ctx)).unwrap() {
@@ -1206,6 +1207,22 @@ mod test {
                         .uncompress_length,
                     200
                 );
+            }
+            _ => panic!("should not"),
+        }
+
+        // 4. set last_block_id equals -1, the filter is invalid
+        reading_ctx = ReadingViewContext {
+            uid: Default::default(),
+            reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
+            serialized_expected_task_ids_bitmap: Option::from(bitmap.clone()),
+        };
+
+        match runtime.wait(store.get(reading_ctx)).unwrap() {
+            Mem(data) => {
+                assert_eq!(data.shuffle_data_block_segments.len(), 2);
+                assert_eq!(data.shuffle_data_block_segments.get(0).unwrap().offset, 0);
+                assert_eq!(data.shuffle_data_block_segments.get(1).unwrap().offset, 10);
             }
             _ => panic!("should not"),
         }
