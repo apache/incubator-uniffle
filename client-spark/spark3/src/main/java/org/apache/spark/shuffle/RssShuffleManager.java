@@ -701,10 +701,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     try {
       // Since Spark 3.1 refactors the interface of getMapSizesByExecutorId,
       // we use reflection and catch for the compatibility with 3.0 & 3.1 & 3.2
-      if (SparkVersionUtils.MAJOR_VERSION > 3
-          || SparkVersionUtils.MINOR_VERSION > 2
-          || SparkVersionUtils.MINOR_VERSION == 2 && !SparkVersionUtils.isSpark320()
-          || SparkVersionUtils.MINOR_VERSION == 1) {
+      if (Spark3VersionUtils.MAJOR_VERSION > 3
+          || Spark3VersionUtils.MINOR_VERSION > 2
+          || Spark3VersionUtils.MINOR_VERSION == 2 && !Spark3VersionUtils.isSpark320()
+          || Spark3VersionUtils.MINOR_VERSION == 1) {
         // use Spark 3.1's API
         mapStatusIter =
             (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
@@ -725,7 +725,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                         endMapIndex,
                         startPartition,
                         endPartition);
-      } else if (SparkVersionUtils.isSpark320()) {
+      } else if (Spark3VersionUtils.isSpark320()) {
         // use Spark 3.2.0's API
         // Each Spark release will be versioned: [MAJOR].[FEATURE].[MAINTENANCE].
         // Usually we only need to adapt [MAJOR].[FEATURE] . Unfortunately,

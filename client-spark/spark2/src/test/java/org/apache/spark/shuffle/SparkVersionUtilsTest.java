@@ -27,6 +27,5 @@ public class SparkVersionUtilsTest {
   public void testSparkVersion() {
     assertTrue(SparkVersionUtils.isSpark2());
     assertFalse(SparkVersionUtils.isSpark3());
-    assertFalse(SparkVersionUtils.isSpark320());
   }
 }
