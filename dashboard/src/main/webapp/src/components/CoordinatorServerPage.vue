@@ -73,7 +73,7 @@
         </div>
       </el-collapse-item>
       <el-collapse-item title="Coordinator Properties" name="2">
-        <el-table :data="pageData.tableData" style="width: 100%">
+        <el-table :data="pageData.tableData" stripe style="width: 100%">
           <el-table-column prop="argumentKey" label="Name" min-width="380"/>
           <el-table-column prop="argumentValue" label="Value" min-width="380"/>
         </el-table>
@@ -96,11 +96,11 @@ export default {
     );
     async function getCoordinatorServerConfPage() {
       const res = await getCoordinatorConf();
-      pageData.serverInfo = res.data.data
+      pageData.tableData = res.data.data
     }
     async function getCoorServerInfo() {
       const res = await getCoordinatorServerInfo();
-      pageData.tableData = res.data.data
+      pageData.serverInfo = res.data.data
     }
     onMounted(() => {
       getCoordinatorServerConfPage();

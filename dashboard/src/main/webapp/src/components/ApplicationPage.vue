@@ -73,7 +73,6 @@ export default {
 
     async function getTotalForUserPage() {
       const res = await getTotalForUser();
-      console.log(res)
       pageData.userAppCount = res.data.data
     }
 

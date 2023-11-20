@@ -30,6 +30,12 @@ public class DashboardConf extends RssBaseConf {
           .defaultValue(19988)
           .withDescription("http server http port");
 
+  public static final ConfigOption<String> COORDINATOR_WEB_ADDRESS =
+      ConfigOptions.key("coordinator.web.address")
+          .stringType()
+          .noDefaultValue()
+          .withDescription("Coordinator jetty port request address");
+
   public static final ConfigOption<Long> DASHBOARD_STOP_TIMEOUT =
       ConfigOptions.key("rss.dashboard.stop.timeout")
           .longType()
