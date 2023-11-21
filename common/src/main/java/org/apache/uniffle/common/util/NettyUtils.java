@@ -112,4 +112,24 @@ public class NettyUtils {
   public static String getServerConnectionInfo(Channel channel) {
     return String.format("[%s -> %s]", channel.localAddress(), channel.remoteAddress());
   }
+
+  private static class AllocatorHolder {
+    private static final PooledByteBufAllocator INSTANCE = createAllocator();
+  }
+
+  public static PooledByteBufAllocator getNettyBufferAllocator() {
+    return AllocatorHolder.INSTANCE;
+  }
+
+  private static PooledByteBufAllocator createAllocator() {
+    return new PooledByteBufAllocator(
+        true,
+        PooledByteBufAllocator.defaultNumHeapArena(),
+        PooledByteBufAllocator.defaultNumDirectArena(),
+        PooledByteBufAllocator.defaultPageSize(),
+        PooledByteBufAllocator.defaultMaxOrder(),
+        0,
+        0,
+        PooledByteBufAllocator.defaultUseCacheForAllThreads());
+  }
 }
