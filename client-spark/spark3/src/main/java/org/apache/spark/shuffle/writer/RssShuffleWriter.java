@@ -310,7 +310,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   protected void internalCheckBlockSendResult() {
-      checkBlockSendResult(blockIds);
+    checkBlockSendResult(blockIds);
   }
 
   @VisibleForTesting
