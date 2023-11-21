@@ -86,7 +86,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final Map<Integer, List<ShuffleServerInfo>> partitionToServers;
   private final Set<ShuffleServerInfo> shuffleServersForData;
   private final long[] partitionLengths;
-  private final boolean isMemoryShuffleEnabled;
+  protected final boolean isMemoryShuffleEnabled;
   private final Function<String, Boolean> taskFailureCallback;
   private final Set<Long> blockIds = Sets.newConcurrentHashSet();
 
@@ -213,7 +213,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
   }
 
-  private void writeImpl(Iterator<Product2<K, V>> records) {
+  protected void writeImpl(Iterator<Product2<K, V>> records) throws IOException {
     List<ShuffleBlockInfo> shuffleBlockInfos;
     boolean isCombine = shuffleDependency.mapSideCombine();
     Function1<V, C> createCombiner = null;
@@ -243,7 +243,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       processShuffleBlockInfos(shuffleBlockInfos);
     }
     long checkStartTs = System.currentTimeMillis();
-    checkBlockSendResult(blockIds);
+    internalCheckBlockSendResult();
     long commitStartTs = System.currentTimeMillis();
     long checkDuration = commitStartTs - checkStartTs;
     if (!isMemoryShuffleEnabled) {
@@ -307,6 +307,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       futures.add(shuffleManager.sendData(event));
     }
     return futures;
+  }
+
+  protected void internalCheckBlockSendResult() {
+      checkBlockSendResult(blockIds);
   }
 
   @VisibleForTesting
