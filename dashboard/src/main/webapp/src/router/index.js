@@ -24,7 +24,7 @@ import DecommissioningNodeListPage from '@/components/shufflecomponent/Decommiss
 import DecommissionednodeListPage from '@/components/shufflecomponent/DecommissionednodeListPage'
 import LostNodeList from '@/components/shufflecomponent/LostNodeList'
 import UnhealthyNodeListPage from '@/components/shufflecomponent/UnhealthyNodeListPage'
-import ExcludeNodeList from '@/components/shufflecomponent/ExcludeNodeList'
+import UnknownNodeList from '@/components/shufflecomponent/UnknownNodeList'
 
 const routes = [
     {
@@ -51,7 +51,7 @@ const routes = [
             },
             {path: '/shuffleserverpage/lostNodeList', name: "lostNodeList", component: LostNodeList},
             {path: '/shuffleserverpage/unhealthyNodeList', name: "unhealthyNodeList", component: UnhealthyNodeListPage},
-            {path: '/shuffleserverpage/excludeNodeList', name: "excludeNodeList", component: ExcludeNodeList},
+            {path: '/shuffleserverpage/unknownNodeList', name: "unknownNodeList", component: UnknownNodeList},
         ]
     },
     {

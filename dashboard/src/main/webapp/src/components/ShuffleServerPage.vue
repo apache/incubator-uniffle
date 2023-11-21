@@ -79,14 +79,14 @@
         </router-link>
       </el-col>
       <el-col :span="4">
-        <router-link to="/shuffleserverpage/excludeNodeList">
+        <router-link to="/shuffleserverpage/unknownNodeList">
           <el-card class="box-card" shadow="hover">
             <template #header>
               <div class="card-header">
-                <span class="cardtile">Excludes</span>
+                <span class="cardtile">Unknown</span>
               </div>
             </template>
-            <div class="excludesnode">{{ dataList.allshuffleServerSize.excludesNode }}</div>
+            <div class="unknownNode">{{ dataList.allshuffleServerSize.unknownNode }}</div>
           </el-card>
         </router-link>
       </el-col>
@@ -111,15 +111,28 @@ export default {
         activeNode: 0,
         decommissionedNode: 0,
         decommissioningNode: 0,
-        excludesNode: 0,
+        unknownNode: 0,
         lostNode: 0,
         unhealthyNode: 0
       }
     })
 
+    const dic = {
+      "ACTIVE":"activeNode",
+      "DECOMMISSIONED":"decommissionedNode",
+      "DECOMMISSIONING":"decommissioningNode",
+      "UNKNOWN":"unknownNode",
+      "LOST":"lostNode",
+      "UNHEALTHY":"unhealthyNode"
+    }
+
     async function getShufflegetStatusTotalPage() {
       const res = await getShufflegetStatusTotal();
-      dataList.allshuffleServerSize = res.data.data
+      for (const k in res.data.data) {
+        if (dic[k] in dataList.allshuffleServerSize) {
+          dataList.allshuffleServerSize[dic[k]] = res.data.data[k];
+        }
+      }
     }
 
     onMounted(() => {
@@ -175,7 +188,7 @@ export default {
   color: #ff8800;
 }
 
-.excludesnode {
+.unknownNode {
   font-family: "Lantinghei SC";
   font-style: normal;
   font-weight: bolder;

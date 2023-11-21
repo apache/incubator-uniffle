@@ -34,32 +34,32 @@ export function getShufflegetStatusTotal(params){
 
 // Create an interface for activeNodes
 export function getShuffleActiveNodes(params){
-    return http.get('/server/nodes?status=active', params,{})
+    return http.get('/server/nodes?status=ACTIVE', params,{})
 }
 
 // Create an interface for lostNodes
 export function getShuffleLostList(params){
-    return http.get('/server/nodes?status=lost', params,{})
+    return http.get('/server/nodes?status=LOST', params,{})
 }
 
 // Create an interface for unhealthyNodes
 export function getShuffleUnhealthyList(params){
-    return http.get('/server/nodes?status=unhealthy', params,{})
+    return http.get('/server/nodes?status=UNHEALTHY', params,{})
 }
 
 // Create an interface for decommissioningNodes
 export function getShuffleDecommissioningList(params){
-    return http.get('/server/nodes?status=decommissioning', params,{})
+    return http.get('/server/nodes?status=DECOMMISSIONING', params,{})
 }
 
 // Create an interface for decommissionedNodes
 export function getShuffleDecommissionedList(params){
-    return http.get('/server/nodes?status=decommissioned', params,{})
+    return http.get('/server/nodes?status=DECOMMISSIONED', params,{})
 }
 
-// Create an interface for excludeNodes
-export function getShuffleExcludeNodes(params){
-    return http.get('/server/nodes?status=excluded', params,{})
+// Create an interface for unknownNodes
+export function getShuffleUnknownNodes(params){
+    return http.get('/server/nodes?status=UNKNOWN', params,{})
 }
 
 // Total number of interfaces for new App
@@ -69,10 +69,10 @@ export function getAppTotal(params){
 
 // Create an interface for the app basic information list
 export function getApplicationInfoList(params){
-    return http.get('/app/appinfos', params,{})
+    return http.get('/app/appInfos', params,{})
 }
 
 // Create an interface for the number of apps for a user
 export function getTotalForUser(params){
-    return http.get('/app/usertotal', params,{})
+    return http.get('/app/userTotal', params,{})
 }

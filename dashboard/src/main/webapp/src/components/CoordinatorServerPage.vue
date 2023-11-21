@@ -96,11 +96,11 @@ export default {
     );
     async function getCoordinatorServerConfPage() {
       const res = await getCoordinatorConf();
-      pageData.serverInfo = res.data.data
+      pageData.tableData = res.data.data
     }
     async function getCoorServerInfo() {
       const res = await getCoordinatorServerInfo();
-      pageData.tableData = res.data.data
+      pageData.serverInfo = res.data.data
     }
     onMounted(() => {
       getCoordinatorServerConfPage();
