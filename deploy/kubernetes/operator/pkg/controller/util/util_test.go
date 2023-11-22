@@ -19,6 +19,7 @@ package util
 
 import (
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -175,6 +176,56 @@ func TestAddOwnerReference(t *testing.T) {
 					Controller:         pointer.Bool(true),
 				},
 			})
+		})
+	}
+}
+
+func TestAddVolumeMountsOfMainContainer(t *testing.T) {
+	for _, tt := range []struct {
+		name            string
+		mainContainer   *corev1.Container
+		hostPathMounts  map[string]string
+		volumeMounts    []corev1.VolumeMount
+		expectedCommand string
+	}{
+		{
+			name:          "check add volume mount 1",
+			mainContainer: &corev1.Container{},
+			hostPathMounts: map[string]string{
+				"/rssdata1/data1": "/data1",
+				"/rssdata2/data2": "/data2",
+				"/rssdata3/data2": "/data3",
+			},
+			volumeMounts:    []corev1.VolumeMount{},
+			expectedCommand: "rm -rf /data1/rssdata/*;rm -rf /data2/rssdata/*;rm -rf /data3/rssdata/*",
+		},
+		{
+			name:          "check add volume mount 2",
+			mainContainer: &corev1.Container{},
+			hostPathMounts: map[string]string{
+				"/rssdata4/data4": "/data4",
+				"/rssdata5/data5": "/data5",
+				"/rssdata6/data6": "/data6",
+			},
+			volumeMounts: []corev1.VolumeMount{
+				{
+					Name:      "/rsslog",
+					MountPath: "/rsslog",
+				},
+			},
+			expectedCommand: "rm -rf /data4/rssdata/*;rm -rf /data5/rssdata/*;rm -rf /data6/rssdata/*",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assertion := assert.New(t)
+			expectedVolumeMountCount := len(tt.hostPathMounts) + len(tt.volumeMounts)
+			assertion.Equal(0, len(tt.mainContainer.VolumeMounts))
+			addVolumeMountsOfMainContainer(tt.mainContainer, tt.hostPathMounts, tt.volumeMounts)
+			assertion.Equal(expectedVolumeMountCount, len(tt.mainContainer.VolumeMounts))
+			strSlice := strings.Split(tt.mainContainer.Lifecycle.PreStop.Exec.Command[2], ";")
+			sort.Strings(strSlice)
+			sortedString := strings.Join(strSlice, ";")
+			assertion.Equal(tt.expectedCommand, sortedString)
 		})
 	}
 }
