@@ -219,6 +219,15 @@ public class WriteBufferManagerTest {
     assertEquals(1, shuffleBlockInfos.size());
     assertEquals(128, shuffleBlockInfos.get(0).getUncompressLength());
     assertEquals(0, spyManager.getShuffleWriteMetrics().recordsWritten());
+
+    shuffleBlockInfos = spyManager.addPartitionData(0, new byte[128], 64);
+    assertEquals(1, spyManager.getBuffers().size());
+    assertEquals(0, shuffleBlockInfos.size());
+    shuffleBlockInfos = spyManager.addPartitionData(0, new byte[128], 64);
+    assertEquals(0, spyManager.getBuffers().size());
+    assertEquals(1, shuffleBlockInfos.size());
+    assertEquals(128, shuffleBlockInfos.get(0).getUncompressLength());
+    assertEquals(0, spyManager.getShuffleWriteMetrics().recordsWritten());
   }
 
   @Test
