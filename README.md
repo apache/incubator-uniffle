@@ -258,6 +258,16 @@ After apply the patch and rebuild spark, add following configuration in spark co
   spark.dynamicAllocation.enabled true
   ```
 
+### Support Spark Columnar Shuffle with Gluten
+To support spark columnar shuffle with Uniffle, use Gluten client
+refer to [Gluten Project](https://github.com/oap-project/gluten)
+
+Update Spark conf to enable integration of Uniffle with Gluten:
+  ```
+  spark.plugins io.glutenproject.GlutenPlugin
+  spark.shuffle.manager org.apache.spark.shuffle.gluten.uniffle.GlutenRssShuffleManager
+  ```
+
 ### Deploy MapReduce Client
 
 1. Add client jar to the classpath of each NodeManager, e.g., <HADOOP>/share/hadoop/mapreduce/
