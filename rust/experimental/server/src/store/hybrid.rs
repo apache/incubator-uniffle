@@ -676,6 +676,7 @@ mod tests {
         let response_data = runtime.wait(store.get(ReadingViewContext {
             uid: uid.clone(),
             reading_options: MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1024 * 1024 * 1024),
+            serialized_expected_task_ids_bitmap: Default::default(),
         }))?;
 
         let mut accepted_block_ids = vec![];
@@ -739,6 +740,7 @@ mod tests {
                 last_block_id,
                 data_len as i64,
             ),
+            serialized_expected_task_ids_bitmap: Default::default(),
         };
 
         let read_data = store.get(reading_view_ctx).await;
@@ -773,6 +775,7 @@ mod tests {
                     let reading_view_ctx = ReadingViewContext {
                         uid: uid.clone(),
                         reading_options: ReadingOptions::FILE_OFFSET_AND_LEN(offset, length as i64),
+                        serialized_expected_task_ids_bitmap: Default::default(),
                     };
                     let read_data = store.get(reading_view_ctx).await.unwrap();
                     match read_data {
@@ -829,6 +832,7 @@ mod tests {
                     last_block_id,
                     data_len as i64,
                 ),
+                serialized_expected_task_ids_bitmap: Default::default(),
             };
 
             let read_data = runtime.wait(store.get(reading_view_ctx));

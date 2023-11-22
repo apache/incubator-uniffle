@@ -41,6 +41,7 @@ use std::str::FromStr;
 
 use crate::store::mem::InstrumentAwait;
 use crate::store::mem::MemoryBufferTicket;
+use croaring::Treemap;
 use log::error;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -209,15 +210,21 @@ impl MemoryStore {
         buffer.clone()
     }
 
-    pub(crate) fn read_partial_data_with_max_size_limit<'a>(
+    pub(crate) fn read_partial_data_with_max_size_limit_and_filter<'a>(
         &'a self,
         blocks: Vec<&'a PartitionedDataBlock>,
         fetched_size_limit: i64,
+        serialized_expected_task_ids_bitmap: Option<Treemap>,
     ) -> (Vec<&PartitionedDataBlock>, i64) {
         let mut fetched = vec![];
         let mut fetched_size = 0;
 
         for block in blocks {
+            if let Some(ref filter) = serialized_expected_task_ids_bitmap {
+                if !filter.contains(block.task_attempt_id as u64) {
+                    continue;
+                }
+            }
             if fetched_size >= fetched_size_limit {
                 break;
             }
@@ -416,7 +423,11 @@ impl Store for MemoryStore {
                     }
                 }
 
-                self.read_partial_data_with_max_size_limit(candidate_blocks, max_size)
+                self.read_partial_data_with_max_size_limit_and_filter(
+                    candidate_blocks,
+                    max_size,
+                    ctx.serialized_expected_task_ids_bitmap,
+                )
             }
             _ => (vec![], 0),
         };
@@ -728,6 +739,7 @@ mod test {
     use crate::config::MemoryStoreConfig;
     use crate::runtime::manager::RuntimeManager;
     use anyhow::Result;
+    use croaring::Treemap;
 
     #[test]
     fn test_ticket_timeout() -> Result<()> {
@@ -975,6 +987,7 @@ mod test {
                 last_block_id,
                 default_single_read_size,
             ),
+            serialized_expected_task_ids_bitmap: Default::default(),
         };
         if let Ok(data) = store.get(ctx).await {
             match data {
@@ -1066,6 +1079,7 @@ mod test {
         let reading_ctx = ReadingViewContext {
             uid: uid.clone(),
             reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
+            serialized_expected_task_ids_bitmap: Default::default(),
         };
         let data = runtime.wait(store.get(reading_ctx.clone())).expect("");
         assert_eq!(1, data.from_memory().shuffle_data_block_segments.len());
@@ -1114,6 +1128,7 @@ mod test {
         let reading_ctx = ReadingViewContext {
             uid: Default::default(),
             reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
+            serialized_expected_task_ids_bitmap: Default::default(),
         };
 
         match runtime.wait(store.get(reading_ctx)).unwrap() {
@@ -1121,6 +1136,74 @@ mod test {
                 assert_eq!(data.shuffle_data_block_segments.len(), 2);
                 assert_eq!(data.shuffle_data_block_segments.get(0).unwrap().offset, 0);
                 assert_eq!(data.shuffle_data_block_segments.get(1).unwrap().offset, 10);
+            }
+            _ => panic!("should not"),
+        }
+    }
+
+    #[test]
+    fn test_block_id_filter_for_memory() {
+        let store = MemoryStore::new(1024 * 1024 * 1024);
+        let runtime = store.runtime_manager.clone();
+
+        // 1. insert 2 block
+        let writing_ctx = WritingViewContext {
+            uid: Default::default(),
+            data_blocks: vec![
+                PartitionedDataBlock {
+                    block_id: 0,
+                    length: 10,
+                    uncompress_length: 100,
+                    crc: 99,
+                    data: Default::default(),
+                    task_attempt_id: 0,
+                },
+                PartitionedDataBlock {
+                    block_id: 1,
+                    length: 20,
+                    uncompress_length: 200,
+                    crc: 99,
+                    data: Default::default(),
+                    task_attempt_id: 1,
+                },
+            ],
+        };
+        runtime.wait(store.insert(writing_ctx)).unwrap();
+
+        // 2. block_ids_filter is empty, should return 2 blocks
+        let mut reading_ctx = ReadingViewContext {
+            uid: Default::default(),
+            reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1000000),
+            serialized_expected_task_ids_bitmap: Default::default(),
+        };
+
+        match runtime.wait(store.get(reading_ctx)).unwrap() {
+            Mem(data) => {
+                assert_eq!(data.shuffle_data_block_segments.len(), 2);
+            }
+            _ => panic!("should not"),
+        }
+
+        // 3. set serialized_expected_task_ids_bitmap, and set last_block_id equals 1, should return 1 block
+        let mut bitmap = Treemap::default();
+        bitmap.add(1);
+        reading_ctx = ReadingViewContext {
+            uid: Default::default(),
+            reading_options: ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(0, 1000000),
+            serialized_expected_task_ids_bitmap: Option::from(bitmap.clone()),
+        };
+
+        match runtime.wait(store.get(reading_ctx)).unwrap() {
+            Mem(data) => {
+                assert_eq!(data.shuffle_data_block_segments.len(), 1);
+                assert_eq!(data.shuffle_data_block_segments.get(0).unwrap().offset, 0);
+                assert_eq!(
+                    data.shuffle_data_block_segments
+                        .get(0)
+                        .unwrap()
+                        .uncompress_length,
+                    200
+                );
             }
             _ => panic!("should not"),
         }
