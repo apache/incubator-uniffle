@@ -1084,8 +1084,22 @@ mod test {
         let data = runtime.wait(store.get(reading_ctx.clone())).expect("");
         assert_eq!(1, data.from_memory().shuffle_data_block_segments.len());
 
+        // get weak reference to ensure purge can successfully free memory
+        let weak_ref_before = store
+            .state
+            .get(&uid)
+            .map(|entry| Arc::downgrade(&entry.value()));
+        assert!(
+            weak_ref_before.is_some(),
+            "Failed to obtain weak reference before purge"
+        );
+
         // purge
         runtime.wait(store.purge(app_id.to_string())).expect("");
+        assert!(
+            weak_ref_before.clone().unwrap().upgrade().is_none(),
+            "Arc should not exist after purge"
+        );
         let snapshot = runtime.wait(store.budget.snapshot());
         assert_eq!(snapshot.used, 0);
         // the remaining allocated will be removed.
