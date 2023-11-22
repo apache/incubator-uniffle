@@ -18,6 +18,11 @@
 name: build
 
 on: [push, pull_request]
+env:
+  cache-key: ''
+  jdk-distro: 'temurin'
+  java-version: '8'
+  go-version: '1.17'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -91,3 +96,34 @@ jobs:
       maven-args: package -Pkubernetes -DskipUTs -DskipITs -DskipBuildImage=${{ needs.changes.outputs.rss_server_docker == 'false' }}
       cache-key: package
       go-version: '1.17'
+
+  kubernetes-integration:
+    needs: [kubernetes]
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout project
+      uses: actions/checkout@v3
+    - name: Set up JDK ${{ env.java-version }}
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ env.java-version }}
+        distribution: ${{ env.jdk-distro }}
+    - name: Cache local Maven repository
+      if: ${{ env.cache-key != '' }}
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: mvn-${{ env.java-version }}-${{ env.cache-key }}-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          mvn-${{ env.java-version }}-${{ env.cache-key }}-
+    - name: Set up Go ${{ env.go-version }}
+      if: ${{ env.go-version != '' }}
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ env.go-version }}
+    - name: Compile kubernetes operator
+      run: |
+        mvn package -Pkubernetes -DskipTests
+    - name:  Run local Integration Tests
+      run: |
+        cd deploy/kubernetes/integration-test/e2e && ./start-e2e.sh 

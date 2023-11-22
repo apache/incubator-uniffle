@@ -79,7 +79,7 @@ jobs:
         go-version: ${{ inputs.go-version }}
     - name: Execute `mvn ${{ inputs.maven-args }}`
       run: mvn -B -fae ${{ inputs.maven-args }} | tee /tmp/maven.log
-      shell: bash
+      shell: bash    
     - name: Summary of failures
       if: ${{ failure() && inputs.summary != '' }}
       run: ${{ inputs.summary }}
