@@ -426,7 +426,7 @@ impl Store for MemoryStore {
                 self.read_partial_data_with_max_size_limit_and_filter(
                     candidate_blocks,
                     max_size,
-                    ctx.serialized_expected_task_ids_bitmap
+                    ctx.serialized_expected_task_ids_bitmap,
                 )
             }
             _ => (vec![], 0),
