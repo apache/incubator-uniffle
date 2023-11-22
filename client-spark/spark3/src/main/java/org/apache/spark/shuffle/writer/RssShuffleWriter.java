@@ -86,7 +86,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final Map<Integer, List<ShuffleServerInfo>> partitionToServers;
   private final Set<ShuffleServerInfo> shuffleServersForData;
   private final long[] partitionLengths;
-  protected final boolean isMemoryShuffleEnabled;
   private final Function<String, Boolean> taskFailureCallback;
   private final Set<Long> blockIds = Sets.newConcurrentHashSet();
 
@@ -94,6 +93,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   protected final long taskAttemptId;
 
   protected final ShuffleWriteMetrics shuffleWriteMetrics;
+  protected final boolean isMemoryShuffleEnabled;
 
   private final BlockingQueue<Object> finishEventQueue = new LinkedBlockingQueue<>();
 
