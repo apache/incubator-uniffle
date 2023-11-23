@@ -43,6 +43,8 @@ import org.apache.tez.common.counters.TezCounter;
 import org.apache.tez.dag.records.TezDAGID;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.dag.records.TezVertexID;
+import org.apache.tez.runtime.library.common.combine.Combiner;
+import org.apache.tez.runtime.library.common.sort.impl.TezRawKeyValueIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,6 +102,8 @@ public class WriteBufferManager<K, V> {
   private final TezCounter mapOutputByteCounter;
   private final TezCounter mapOutputRecordCounter;
 
+  protected final Combiner combiner;
+
   /** WriteBufferManager */
   public WriteBufferManager(
       TezTaskAttemptID tezTaskAttemptID,
@@ -128,7 +132,8 @@ public class WriteBufferManager<K, V> {
       int shuffleId,
       boolean isNeedSorted,
       TezCounter mapOutputByteCounter,
-      TezCounter mapOutputRecordCounter) {
+      TezCounter mapOutputRecordCounter,
+      Combiner combiner) {
     this.tezTaskAttemptID = tezTaskAttemptID;
     this.maxMemSize = maxMemSize;
     this.appId = appId;
@@ -158,6 +163,8 @@ public class WriteBufferManager<K, V> {
     this.mapOutputRecordCounter = mapOutputRecordCounter;
     this.sendExecutorService =
         Executors.newFixedThreadPool(sendThreadNum, ThreadUtils.getThreadFactory("send-thread"));
+
+    this.combiner = combiner;
   }
 
   /** add record */
@@ -240,9 +247,23 @@ public class WriteBufferManager<K, V> {
     sendShuffleBlocks(shuffleBlocks);
   }
 
-  private void prepareBufferForSend(List<ShuffleBlockInfo> shuffleBlocks, WriteBuffer buffer) {
+  private void prepareBufferForSend(
+      List<ShuffleBlockInfo> shuffleBlocks, WriteBuffer<K, V> buffer) {
     buffers.remove(buffer.getPartitionId());
-    ShuffleBlockInfo block = createShuffleBlock(buffer);
+    buffer.sort();
+    ShuffleBlockInfo block;
+    if (combiner != null) {
+      try {
+        buffer = combineBuffer(buffer);
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Successfully finished combining.");
+        }
+      } catch (Exception e) {
+        Thread.currentThread().interrupt();
+        LOG.error("Error occurred while combining in Sort:", e);
+      }
+    }
+    block = createShuffleBlock(buffer);
     buffer.clear();
     shuffleBlocks.add(block);
     allBlockIds.add(block.getBlockId());
@@ -250,6 +271,27 @@ public class WriteBufferManager<K, V> {
       partitionToBlocks.putIfAbsent(block.getPartitionId(), Lists.newArrayList());
     }
     partitionToBlocks.get(block.getPartitionId()).add(block.getBlockId());
+  }
+
+  public WriteBuffer<K, V> combineBuffer(WriteBuffer<K, V> buffer)
+      throws IOException, InterruptedException {
+    TezRawKeyValueIterator kvIterator = new WriteBuffer.BufferIterator<>(buffer);
+
+    TezRssCombineOutputCollector<K, V> combineCollector =
+        new TezRssCombineOutputCollector<>(new byte[] {});
+
+    WriteBuffer<K, V> newBuffer =
+        new WriteBuffer<>(
+            false,
+            buffer.getPartitionId(),
+            comparator,
+            maxSegmentSize,
+            keySerializer,
+            valSerializer);
+
+    combineCollector.setWriter(newBuffer);
+    combiner.combine(kvIterator, combineCollector);
+    return newBuffer;
   }
 
   private void sendShuffleBlocks(List<ShuffleBlockInfo> shuffleBlocks) {

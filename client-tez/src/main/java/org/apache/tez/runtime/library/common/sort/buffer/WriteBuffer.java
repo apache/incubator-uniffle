@@ -19,13 +19,17 @@ package org.apache.tez.runtime.library.common.sort.buffer;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Comparator;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.io.serializer.Serializer;
+import org.apache.hadoop.util.Progress;
+import org.apache.tez.runtime.library.common.sort.impl.TezRawKeyValueIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +93,23 @@ public class WriteBuffer<K, V> extends OutputStream {
     records.clear();
   }
 
+  public synchronized void sort() {
+    long startSort = System.currentTimeMillis();
+    if (this.isNeedSorted) {
+      records.sort(
+          (o1, o2) ->
+              comparator.compare(
+                  buffers.get(o1.getKeyIndex()).getBuffer(),
+                  o1.getKeyOffSet(),
+                  o1.getKeyLength(),
+                  buffers.get(o2.getKeyIndex()).getBuffer(),
+                  o2.getKeyOffSet(),
+                  o2.getKeyLength()));
+    }
+    long startCopy = System.currentTimeMillis();
+    sortTime += startCopy - startSort;
+  }
+
   /** get data */
   public synchronized byte[] getData() {
     int extraSize = 0;
@@ -100,25 +121,8 @@ public class WriteBuffer<K, V> extends OutputStream {
     extraSize += WritableUtils.getVIntSize(-1);
     byte[] data = new byte[dataLength + extraSize];
     int offset = 0;
-    long startSort = System.currentTimeMillis();
-    if (this.isNeedSorted) {
-      records.sort(
-          new Comparator<Record<K>>() {
-            @Override
-            public int compare(Record<K> o1, Record<K> o2) {
-              return comparator.compare(
-                  buffers.get(o1.getKeyIndex()).getBuffer(),
-                  o1.getKeyOffSet(),
-                  o1.getKeyLength(),
-                  buffers.get(o2.getKeyIndex()).getBuffer(),
-                  o2.getKeyOffSet(),
-                  o2.getKeyLength());
-            }
-          });
-    }
-    long startCopy = System.currentTimeMillis();
-    sortTime += startCopy - startSort;
 
+    final long startCopy = System.currentTimeMillis();
     for (Record<K> record : records) {
       offset = writeDataInt(data, offset, record.getKeyLength());
       offset = writeDataInt(data, offset, record.getValueLength());
@@ -326,6 +330,98 @@ public class WriteBuffer<K, V> extends OutputStream {
 
     public int getSize() {
       return size;
+    }
+  }
+
+  public static class BufferIterator<K, V> implements TezRawKeyValueIterator {
+    private final WriteBuffer<K, V> writeBuffer;
+    private final Iterator<Record<K>> iterator;
+
+    private final DataInputBuffer previousKeyBuffer = new DataInputBuffer();
+    private boolean hasPrevious = false;
+    private final DataInputBuffer keyBuffer = new DataInputBuffer();
+    private final DataInputBuffer valueBuffer = new DataInputBuffer();
+    private WriteBuffer.Record<K> currentRecord;
+
+    public BufferIterator(WriteBuffer<K, V> writeBuffer) {
+      this.writeBuffer = writeBuffer;
+      this.iterator = writeBuffer.records.iterator();
+    }
+
+    @Override
+    public DataInputBuffer getKey() {
+      WriteBuffer.WrappedBuffer keyWrappedBuffer =
+          writeBuffer.buffers.get(currentRecord.getKeyIndex());
+      byte[] rawData = keyWrappedBuffer.getBuffer();
+      keyBuffer.reset(rawData, currentRecord.getKeyOffSet(), currentRecord.getKeyLength());
+      return keyBuffer;
+    }
+
+    @Override
+    public DataInputBuffer getValue() {
+      WriteBuffer.WrappedBuffer valueWrappedBuffer =
+          writeBuffer.buffers.get(currentRecord.getKeyIndex());
+      byte[] rawData = valueWrappedBuffer.getBuffer();
+      int valueOffset = currentRecord.getKeyOffSet() + currentRecord.getKeyLength();
+      valueBuffer.reset(rawData, valueOffset, currentRecord.getValueLength());
+      return valueBuffer;
+    }
+
+    @Override
+    public boolean next() {
+      if (hasPrevious) {
+        int length =
+            Math.min(currentRecord.getKeyLength(), keyBuffer.getLength() - keyBuffer.getPosition());
+        if (length > 0) {
+          byte[] prevKeyData = new byte[length];
+          System.arraycopy(keyBuffer.getData(), keyBuffer.getPosition(), prevKeyData, 0, length);
+          previousKeyBuffer.reset(prevKeyData, 0, length);
+        }
+      }
+
+      if (iterator.hasNext()) {
+        currentRecord = iterator.next();
+        hasPrevious = true;
+        return true;
+      }
+      return false;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return iterator.hasNext();
+    }
+
+    @Override
+    public void close() throws IOException {}
+
+    @Override
+    public Progress getProgress() {
+      return new Progress();
+    }
+
+    @Override
+    public boolean isSameKey() {
+      if (!hasPrevious) {
+        return false;
+      }
+
+      if (previousKeyBuffer.getLength() != keyBuffer.getLength()) {
+        return false;
+      }
+
+      byte[] prevKey = new byte[previousKeyBuffer.getLength()];
+      byte[] currKey = new byte[keyBuffer.getLength()];
+      System.arraycopy(
+          previousKeyBuffer.getData(),
+          previousKeyBuffer.getPosition(),
+          prevKey,
+          0,
+          previousKeyBuffer.getLength());
+      System.arraycopy(
+          keyBuffer.getData(), keyBuffer.getPosition(), currKey, 0, keyBuffer.getLength());
+
+      return Arrays.equals(prevKey, currKey);
     }
   }
 }

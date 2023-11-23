@@ -129,6 +129,12 @@
           <artifactId>hadoop-minicluster</artifactId>
           <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tez</groupId>
+            <artifactId>tez-mapreduce</artifactId>
+            <version>${tez.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -29,24 +30,32 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.MapReduceBase;
+import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.Reducer;
+import org.apache.hadoop.mapred.Reporter;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.counters.TaskCounter;
 import org.apache.tez.common.counters.TezCounter;
 import org.apache.tez.dag.records.TezTaskAttemptID;
+import org.apache.tez.mapreduce.combine.MRCombiner;
 import org.apache.tez.runtime.api.OutputContext;
 import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
+import org.apache.tez.runtime.library.common.TezRuntimeUtils;
 import org.apache.tez.runtime.library.output.OutputTestHelpers;
 import org.apache.tez.runtime.library.output.RssOrderedPartitionedKVOutputTest;
 import org.apache.tez.runtime.library.partitioner.HashPartitioner;
@@ -151,7 +160,8 @@ public class WriteBufferManagerTest {
             shuffleId,
             true,
             mapOutputByteCounter,
-            mapOutputRecordCounter);
+            mapOutputRecordCounter,
+            null);
 
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
@@ -255,7 +265,8 @@ public class WriteBufferManagerTest {
             shuffleId,
             true,
             mapOutputByteCounter,
-            mapOutputRecordCounter);
+            mapOutputRecordCounter,
+            null);
 
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
@@ -369,7 +380,8 @@ public class WriteBufferManagerTest {
             shuffleId,
             true,
             mapOutputByteCounter,
-            mapOutputRecordCounter);
+            mapOutputRecordCounter,
+            null);
 
     Random random = new Random();
     for (int i = 0; i < 10000; i++) {
@@ -472,7 +484,8 @@ public class WriteBufferManagerTest {
             shuffleId,
             true,
             mapOutputByteCounter,
-            mapOutputRecordCounter);
+            mapOutputRecordCounter,
+            null);
 
     Random random = new Random();
     RssException rssException =
@@ -496,6 +509,110 @@ public class WriteBufferManagerTest {
 
     assertTrue(mapOutputRecordCounter.getValue() < 10000);
     assertTrue(mapOutputByteCounter.getValue() < 10520000);
+  }
+
+  @Test
+  public void testCombineBuffer(@TempDir File tmpDir) throws Exception {
+    final long maxMemSize = 10240;
+    final long taskAttemptId = 0;
+    MockShuffleWriteClient writeClient = new MockShuffleWriteClient();
+    writeClient.setMode(2);
+    WritableComparator comparator = WritableComparator.get(Text.class);
+    long maxSegmentSize = 3 * 1024;
+    SerializationFactory serializationFactory = new SerializationFactory(new JobConf());
+    Serializer<Text> keySerializer = serializationFactory.getSerializer(Text.class);
+    Serializer<IntWritable> valueSerializer = serializationFactory.getSerializer(IntWritable.class);
+
+    long maxBufferSize = 14 * 1024 * 1024;
+    double memoryThreshold = 0.8f;
+    int sendThreadNum = 1;
+    double sendThreshold = 0.2f;
+    int batch = 50;
+    int numMaps = 1;
+    String storageType = "MEMORY";
+    RssConf rssConf = new RssConf();
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
+    long sendCheckInterval = 500L;
+    long sendCheckTimeout = 60 * 1000 * 10L;
+
+    Configuration conf = new Configuration();
+    FileSystem localFs = FileSystem.getLocal(conf);
+    Path workingDir =
+        new Path(
+                System.getProperty(
+                    "test.build.data", System.getProperty("java.io.tmpdir", tmpDir.toString())),
+                RssOrderedPartitionedKVOutputTest.class.getName())
+            .makeQualified(localFs.getUri(), localFs.getWorkingDirectory());
+    conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS, Text.class.getName());
+    conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_VALUE_CLASS, IntWritable.class.getName());
+    conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_COMBINER_CLASS, MRCombiner.class.getName());
+    conf.set("mapred.combiner.class", Reduce.class.getName());
+    OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
+
+    WriteBufferManager bufferManager =
+        new WriteBufferManager<>(
+            null,
+            maxMemSize,
+            null,
+            taskAttemptId,
+            null,
+            null,
+            null,
+            comparator,
+            maxSegmentSize,
+            keySerializer,
+            valueSerializer,
+            maxBufferSize,
+            memoryThreshold,
+            sendThreadNum,
+            sendThreshold,
+            batch,
+            rssConf,
+            partitionToServers,
+            numMaps,
+            StorageType.withMemory(StorageType.valueOf(storageType)),
+            sendCheckInterval,
+            sendCheckTimeout,
+            1,
+            1,
+            true,
+            null,
+            null,
+            TezRuntimeUtils.instantiateCombiner(conf, outputContext));
+
+    WriteBuffer<Text, IntWritable> buffer =
+        new WriteBuffer<Text, IntWritable>(
+            true, 1, comparator, 10000, keySerializer, valueSerializer);
+
+    List<String> wordTable =
+        Lists.newArrayList(
+            "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
+    Random random = new Random();
+    for (int i = 0; i < 8; i++) {
+      buffer.addRecord(new Text(wordTable.get(i)), new IntWritable(1));
+    }
+    for (int i = 0; i < 100; i++) {
+      int index = random.nextInt(wordTable.size());
+      buffer.addRecord(new Text(wordTable.get(index)), new IntWritable(1));
+    }
+
+    buffer.sort();
+    WriteBuffer<Text, IntWritable> newBuffer = bufferManager.combineBuffer(buffer);
+
+    WriteBuffer.BufferIterator<Text, IntWritable> kvIterator1 =
+        new WriteBuffer.BufferIterator<>(buffer);
+    WriteBuffer.BufferIterator<Text, IntWritable> kvIterator2 =
+        new WriteBuffer.BufferIterator<>(newBuffer);
+    int count1 = 0;
+    while (kvIterator1.next()) {
+      count1++;
+    }
+    int count2 = 0;
+    while (kvIterator2.next()) {
+      count2++;
+    }
+    assertEquals(108, count1);
+    assertEquals(8, count2);
   }
 
   class MockShuffleServer {
@@ -659,5 +776,22 @@ public class WriteBufferManagerTest {
 
     @Override
     public void unregisterShuffle(String appId) {}
+  }
+
+  public static class Reduce extends MapReduceBase
+      implements Reducer<Text, IntWritable, Text, IntWritable> {
+
+    public void reduce(
+        Text key,
+        Iterator<IntWritable> values,
+        OutputCollector<Text, IntWritable> output,
+        Reporter reporter)
+        throws IOException {
+      int sum = 0;
+      while (values.hasNext()) {
+        sum += values.next().get();
+      }
+      output.collect(key, new IntWritable(sum));
+    }
   }
 }

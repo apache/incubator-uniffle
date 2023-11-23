@@ -30,6 +30,8 @@ import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.runtime.api.OutputContext;
+import org.apache.tez.runtime.library.common.TezRuntimeUtils;
+import org.apache.tez.runtime.library.common.combine.Combiner;
 import org.apache.tez.runtime.library.common.sort.buffer.WriteBufferManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +50,8 @@ public class RssSorter extends ExternalSorter {
   private Set<Long> successBlockIds = Sets.newConcurrentHashSet();
   private Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+
+  protected final Combiner combiner;
 
   private int[] numRecordsPerPartition;
 
@@ -137,6 +141,8 @@ public class RssSorter extends ExternalSorter {
       LOG.info("bitmapSplitNum is {}", bitmapSplitNum);
     }
 
+    this.combiner = TezRuntimeUtils.instantiateCombiner(this.conf, outputContext);
+
     LOG.info("applicationAttemptId is {}", applicationAttemptId.toString());
 
     bufferManager =
@@ -167,7 +173,8 @@ public class RssSorter extends ExternalSorter {
             shuffleId,
             true,
             mapOutputByteCounter,
-            mapOutputRecordCounter);
+            mapOutputRecordCounter,
+            combiner);
     LOG.info("Initialized WriteBufferManager.");
   }
 
