@@ -22,12 +22,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.proxy.ProxyServlet;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -40,6 +44,7 @@ import org.apache.uniffle.common.config.ReconfigurableBase;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.dashboard.web.config.DashboardConf;
+import org.apache.uniffle.dashboard.web.proxy.WebProxyServlet;
 
 public class JettyServerFront {
 
@@ -83,14 +88,29 @@ public class JettyServerFront {
   }
 
   private void setRootServletHandler() {
-    final ContextHandler contextHandler = new ContextHandler("/");
+    HandlerList handlers = new HandlerList();
+    ResourceHandler resourceHandler = addResourceHandler();
+    String coordinatorWebAddress = conf.getString(DashboardConf.COORDINATOR_WEB_ADDRESS);
+    ServletContextHandler servletContextHandler = addProxyHandler(coordinatorWebAddress);
+    handlers.setHandlers(new Handler[] {resourceHandler, servletContextHandler});
+    server.setHandler(handlers);
+  }
+
+  private static ResourceHandler addResourceHandler() {
     ResourceHandler resourceHandler = new ResourceHandler();
     resourceHandler.setDirectoriesListed(true);
     resourceHandler.setBaseResource(
         Resource.newResource(JettyServerFront.class.getClassLoader().getResource("static")));
     resourceHandler.setWelcomeFiles(new String[] {"index.html"});
-    contextHandler.setHandler(resourceHandler);
-    server.setHandler(contextHandler);
+    return resourceHandler;
+  }
+
+  private static ServletContextHandler addProxyHandler(String coordinatorWebAddress) {
+    ProxyServlet proxyServlet = new WebProxyServlet(coordinatorWebAddress);
+    ServletHolder holder = new ServletHolder(proxyServlet);
+    ServletContextHandler contextHandler = new ServletContextHandler();
+    contextHandler.addServlet(holder, "/api/*");
+    return contextHandler;
   }
 
   private void addHttpConnector(int port, HttpConfiguration httpConfig, long idleTimeout) {

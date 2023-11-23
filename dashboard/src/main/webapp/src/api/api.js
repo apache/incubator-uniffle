@@ -69,10 +69,10 @@ export function getAppTotal(params){
 
 // Create an interface for the app basic information list
 export function getApplicationInfoList(params){
-    return http.get('/app/appinfos', params,{})
+    return http.get('/app/appInfos', params,{})
 }
 
 // Create an interface for the number of apps for a user
 export function getTotalForUser(params){
-    return http.get('/app/usertotal', params,{})
+    return http.get('/app/userTotal', params,{})
 }
