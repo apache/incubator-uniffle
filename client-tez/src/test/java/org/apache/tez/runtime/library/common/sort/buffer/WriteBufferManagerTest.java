@@ -549,6 +549,24 @@ public class WriteBufferManagerTest {
     conf.set("mapred.combiner.class", Reduce.class.getName());
     OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
 
+    WriteBuffer<Text, IntWritable> buffer =
+        new WriteBuffer<Text, IntWritable>(
+            true, 1, comparator, 10000, keySerializer, valueSerializer);
+
+    List<String> wordTable =
+        Lists.newArrayList(
+            "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
+    Random random = new Random();
+    for (int i = 0; i < 8; i++) {
+      buffer.addRecord(new Text(wordTable.get(i)), new IntWritable(1));
+    }
+    for (int i = 0; i < 100; i++) {
+      int index = random.nextInt(wordTable.size());
+      buffer.addRecord(new Text(wordTable.get(index)), new IntWritable(1));
+    }
+
+    buffer.sort();
+
     WriteBufferManager bufferManager =
         new WriteBufferManager<>(
             null,
@@ -579,24 +597,7 @@ public class WriteBufferManagerTest {
             null,
             null,
             TezRuntimeUtils.instantiateCombiner(conf, outputContext));
-
-    WriteBuffer<Text, IntWritable> buffer =
-        new WriteBuffer<Text, IntWritable>(
-            true, 1, comparator, 10000, keySerializer, valueSerializer);
-
-    List<String> wordTable =
-        Lists.newArrayList(
-            "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
-    Random random = new Random();
-    for (int i = 0; i < 8; i++) {
-      buffer.addRecord(new Text(wordTable.get(i)), new IntWritable(1));
-    }
-    for (int i = 0; i < 100; i++) {
-      int index = random.nextInt(wordTable.size());
-      buffer.addRecord(new Text(wordTable.get(index)), new IntWritable(1));
-    }
-
-    buffer.sort();
+    
     WriteBuffer<Text, IntWritable> newBuffer = bufferManager.combineBuffer(buffer);
 
     WriteBuffer.BufferIterator<Text, IntWritable> kvIterator1 =
