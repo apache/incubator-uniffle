@@ -513,41 +513,18 @@ public class WriteBufferManagerTest {
 
   @Test
   public void testCombineBuffer(@TempDir File tmpDir) throws Exception {
-    final long maxMemSize = 10240;
-    final long taskAttemptId = 0;
     MockShuffleWriteClient writeClient = new MockShuffleWriteClient();
     writeClient.setMode(2);
     WritableComparator comparator = WritableComparator.get(Text.class);
-    long maxSegmentSize = 3 * 1024;
     SerializationFactory serializationFactory = new SerializationFactory(new JobConf());
     Serializer<Text> keySerializer = serializationFactory.getSerializer(Text.class);
     Serializer<IntWritable> valueSerializer = serializationFactory.getSerializer(IntWritable.class);
 
-    long maxBufferSize = 14 * 1024 * 1024;
-    double memoryThreshold = 0.8f;
-    int sendThreadNum = 1;
-    double sendThreshold = 0.2f;
-    int batch = 50;
-    int numMaps = 1;
-    String storageType = "MEMORY";
-    RssConf rssConf = new RssConf();
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
-    long sendCheckInterval = 500L;
-    long sendCheckTimeout = 60 * 1000 * 10L;
-
     Configuration conf = new Configuration();
-    FileSystem localFs = FileSystem.getLocal(conf);
-    Path workingDir =
-        new Path(
-                System.getProperty(
-                    "test.build.data", System.getProperty("java.io.tmpdir", tmpDir.toString())),
-                RssOrderedPartitionedKVOutputTest.class.getName())
-            .makeQualified(localFs.getUri(), localFs.getWorkingDirectory());
     conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS, Text.class.getName());
     conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_VALUE_CLASS, IntWritable.class.getName());
     conf.set(TezRuntimeConfiguration.TEZ_RUNTIME_COMBINER_CLASS, MRCombiner.class.getName());
     conf.set("mapred.combiner.class", Reduce.class.getName());
-    OutputContext outputContext = OutputTestHelpers.createOutputContext(conf, workingDir);
 
     WriteBuffer<Text, IntWritable> buffer =
         new WriteBuffer<Text, IntWritable>(
@@ -567,37 +544,46 @@ public class WriteBufferManagerTest {
 
     buffer.sort();
 
+    FileSystem localFs = FileSystem.getLocal(conf);
+    Path workingDir =
+        new Path(
+                System.getProperty(
+                    "test.build.data", System.getProperty("java.io.tmpdir", tmpDir.toString())),
+                RssOrderedPartitionedKVOutputTest.class.getName())
+            .makeQualified(localFs.getUri(), localFs.getWorkingDirectory());
+
     WriteBufferManager bufferManager =
         new WriteBufferManager<>(
             null,
-            maxMemSize,
+            10240,
             null,
-            taskAttemptId,
+            0,
             null,
             null,
             null,
             comparator,
-            maxSegmentSize,
+            3 * 1024,
             keySerializer,
             valueSerializer,
-            maxBufferSize,
-            memoryThreshold,
-            sendThreadNum,
-            sendThreshold,
-            batch,
-            rssConf,
-            partitionToServers,
-            numMaps,
-            StorageType.withMemory(StorageType.valueOf(storageType)),
-            sendCheckInterval,
-            sendCheckTimeout,
+            14 * 1024 * 1024,
+            0.8f,
+            1,
+            0.2f,
+            50,
+            new RssConf(),
+            new HashMap<>(),
+            1,
+            StorageType.withMemory(StorageType.valueOf("MEMORY")),
+            500L,
+            60 * 1000 * 10L,
             1,
             1,
             true,
             null,
             null,
-            TezRuntimeUtils.instantiateCombiner(conf, outputContext));
-    
+            TezRuntimeUtils.instantiateCombiner(
+                conf, OutputTestHelpers.createOutputContext(conf, workingDir)));
+
     WriteBuffer<Text, IntWritable> newBuffer = bufferManager.combineBuffer(buffer);
 
     WriteBuffer.BufferIterator<Text, IntWritable> kvIterator1 =
