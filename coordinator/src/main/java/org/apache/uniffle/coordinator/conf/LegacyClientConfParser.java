@@ -24,12 +24,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,9 +89,7 @@ public class LegacyClientConfParser implements ClientConfParser {
           String host = uri.getHost();
           Map<String, String> kvs = confKVs.get(host);
           remoteStorageInfoMap.put(
-              path,
-              kvs == null ? new RemoteStorageInfo(path) : new RemoteStorageInfo(path, kvs)
-          );
+              path, kvs == null ? new RemoteStorageInfo(path) : new RemoteStorageInfo(path, kvs));
         } catch (URISyntaxException e) {
           LOG.warn("The remote storage path: {} is illegal. Ignore this storage", path);
         }
