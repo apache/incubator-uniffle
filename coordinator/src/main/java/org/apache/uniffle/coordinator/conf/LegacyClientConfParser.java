@@ -79,30 +79,27 @@ public class LegacyClientConfParser implements ClientConfParser {
       String remoteStoragePath, String remoteStorageConf) {
     if (StringUtils.isNotEmpty(remoteStoragePath)) {
       LOG.info("Parsing remote storage with {} {}", remoteStoragePath, remoteStorageConf);
+
       Set<String> paths = Sets.newHashSet(remoteStoragePath.split(Constants.COMMA_SPLIT_CHAR));
-      // host -> path
-      Map<String, String> legalHost2Paths = new HashMap<>();
+      Map<String, Map<String, String>> confKVs =
+          CoordinatorUtils.extractRemoteStorageConf(remoteStorageConf);
+
+      Map<String, RemoteStorageInfo> remoteStorageInfoMap = new HashMap<>();
       for (String path : paths) {
         try {
           URI uri = new URI(path);
-          legalHost2Paths.put(uri.getHost(), path);
+          String host = uri.getHost();
+          Map<String, String> kvs = confKVs.get(host);
+          remoteStorageInfoMap.put(
+              path,
+              kvs == null ? new RemoteStorageInfo(path) : new RemoteStorageInfo(path, kvs)
+          );
         } catch (URISyntaxException e) {
           LOG.warn("The remote storage path: {} is illegal. Ignore this storage", path);
         }
       }
 
-      Map<String, Map<String, String>> confKVs =
-          CoordinatorUtils.extractRemoteStorageConf(remoteStorageConf);
-
-      return confKVs.entrySet().stream()
-          .filter(x -> legalHost2Paths.containsKey(x.getKey()))
-          .map(
-              x -> {
-                String path = legalHost2Paths.get(x.getKey());
-                RemoteStorageInfo info = new RemoteStorageInfo(path, x.getValue());
-                return Pair.of(path, info);
-              })
-          .collect(Collectors.toMap(x -> x.getLeft(), x -> x.getRight()));
+      return remoteStorageInfoMap;
     }
 
     return Collections.EMPTY_MAP;
