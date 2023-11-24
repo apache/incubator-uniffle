@@ -102,23 +102,23 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     this.replicaWrite =
         RssMRUtils.getInt(
             rssJobConf,
-            RssMRConfig.RSS_DATA_REPLICA_WRITE,
-            RssMRConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
+            RssMRConfig.RSS_DATA_REPLICA_WRITE.key(),
+            RssMRConfig.RSS_DATA_REPLICA_WRITE.defaultValue());
     this.replicaRead =
         RssMRUtils.getInt(
             rssJobConf,
-            RssMRConfig.RSS_DATA_REPLICA_READ,
-            RssMRConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
+            RssMRConfig.RSS_DATA_REPLICA_READ.key(),
+            RssMRConfig.RSS_DATA_REPLICA_READ.defaultValue());
     this.replica =
         RssMRUtils.getInt(
-            rssJobConf, RssMRConfig.RSS_DATA_REPLICA, RssMRConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
+            rssJobConf, RssMRConfig.RSS_DATA_REPLICA.key(), RssMRConfig.RSS_DATA_REPLICA.defaultValue());
 
     this.partitionNum = mrJobConf.getNumReduceTasks();
     this.partitionNumPerRange =
         RssMRUtils.getInt(
             rssJobConf,
-            RssMRConfig.RSS_PARTITION_NUM_PER_RANGE,
-            RssMRConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
+            RssMRConfig.RSS_PARTITION_NUM_PER_RANGE.key(),
+            RssMRConfig.RSS_PARTITION_NUM_PER_RANGE.defaultValue());
     this.basePath = RssMRUtils.getString(rssJobConf, RssMRConfig.RSS_REMOTE_STORAGE_PATH);
     String remoteStorageConf =
         RssMRUtils.getString(rssJobConf, RssMRConfig.RSS_REMOTE_STORAGE_CONF, "");
@@ -130,21 +130,21 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
     boolean useRemoteSpill =
         RssMRUtils.getBoolean(
             rssJobConf,
-            RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
-            RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT);
+            RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED.key(),
+            RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED.defaultValue());
     if (useRemoteSpill) {
       // Use minimized replica, because spilled data can be recomputed by reduce task.
       // Instead, we use more retries on HDFS client.
       int replication =
           RssMRUtils.getInt(
               rssJobConf,
-              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION,
-              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION_DEFAULT);
+              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION.key(),
+              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION.defaultValue());
       int retries =
           RssMRUtils.getInt(
               rssJobConf,
-              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES,
-              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES_DEFAULT);
+              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES.key(),
+              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES.defaultValue());
       return new RssRemoteMergeManagerImpl(
           appId,
           reduceId,

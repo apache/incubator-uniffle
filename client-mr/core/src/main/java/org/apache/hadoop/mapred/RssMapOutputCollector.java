@@ -72,8 +72,8 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     double sortThreshold =
         RssMRUtils.getDouble(
             rssJobConf,
-            RssMRConfig.RSS_CLIENT_SORT_MEMORY_USE_THRESHOLD,
-            RssMRConfig.RSS_CLIENT_DEFAULT_SORT_MEMORY_USE_THRESHOLD);
+            RssMRConfig.RSS_CLIENT_SORT_MEMORY_USE_THRESHOLD.key(),
+            RssMRConfig.RSS_CLIENT_SORT_MEMORY_USE_THRESHOLD.defaultValue());
     if (sortThreshold <= 0 || Double.compare(sortThreshold, 1.0) > 0) {
       throw new IOException("Invalid  sort memory use threshold : " + sortThreshold);
     }
@@ -81,14 +81,14 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     int batch =
         RssMRUtils.getInt(
             rssJobConf,
-            RssMRConfig.RSS_CLIENT_BATCH_TRIGGER_NUM,
-            RssMRConfig.RSS_CLIENT_DEFAULT_BATCH_TRIGGER_NUM);
+            RssMRConfig.RSS_CLIENT_BATCH_TRIGGER_NUM.key(),
+            RssMRConfig.RSS_CLIENT_BATCH_TRIGGER_NUM.defaultValue());
     RawComparator<K> comparator = mrJobConf.getOutputKeyComparator();
     double memoryThreshold =
         RssMRUtils.getDouble(
             rssJobConf,
-            RssMRConfig.RSS_CLIENT_MEMORY_THRESHOLD,
-            RssMRConfig.RSS_CLIENT_DEFAULT_MEMORY_THRESHOLD);
+            RssMRConfig.RSS_CLIENT_MEMORY_THRESHOLD.key(),
+            RssMRConfig.RSS_CLIENT_MEMORY_THRESHOLD.defaultValue());
     ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
     String appId = applicationAttemptId.toString();
     long taskAttemptId =
@@ -97,24 +97,24 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     double sendThreshold =
         RssMRUtils.getDouble(
             rssJobConf,
-            RssMRConfig.RSS_CLIENT_SEND_THRESHOLD,
-            RssMRConfig.RSS_CLIENT_DEFAULT_SEND_THRESHOLD);
+            RssMRConfig.RSS_CLIENT_SEND_THRESHOLD.key(),
+            RssMRConfig.RSS_CLIENT_SEND_THRESHOLD.defaultValue());
 
     long sendCheckInterval =
         RssMRUtils.getLong(
             rssJobConf,
-            RssMRConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS,
-            RssMRConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE);
+            RssMRConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(),
+            RssMRConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.defaultValue());
     long sendCheckTimeout =
         RssMRUtils.getLong(
             rssJobConf,
-            RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
-            RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE);
+            RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(),
+            RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.defaultValue());
     int bitmapSplitNum =
         RssMRUtils.getInt(
             rssJobConf,
-            RssMRConfig.RSS_CLIENT_BITMAP_NUM,
-            RssMRConfig.RSS_CLIENT_DEFAULT_BITMAP_NUM);
+            RssMRConfig.RSS_CLIENT_BITMAP_NUM.key(),
+            RssMRConfig.RSS_CLIENT_BITMAP_NUM.defaultValue());
     int numMaps = mrJobConf.getNumMapTasks();
     String storageType = RssMRUtils.getString(rssJobConf, RssMRConfig.RSS_STORAGE_TYPE);
     if (StringUtils.isEmpty(storageType)) {
@@ -127,18 +127,18 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     long maxSegmentSize =
         RssMRUtils.getLong(
             rssJobConf,
-            RssMRConfig.RSS_CLIENT_MAX_SEGMENT_SIZE,
-            RssMRConfig.RSS_CLIENT_DEFAULT_MAX_SEGMENT_SIZE);
+            RssMRConfig.RSS_CLIENT_MAX_SEGMENT_SIZE.key(),
+            RssMRConfig.RSS_CLIENT_MAX_SEGMENT_SIZE.defaultValue());
     int sendThreadNum =
         RssMRUtils.getInt(
             rssJobConf,
-            RssMRConfig.RSS_CLIENT_SEND_THREAD_NUM,
-            RssMRConfig.RSS_CLIENT_DEFAULT_SEND_THREAD_NUM);
+            RssMRConfig.RSS_CLIENT_SEND_THREAD_NUM.key(),
+            RssMRConfig.RSS_CLIENT_SEND_THREAD_NUM.defaultValue());
     long maxBufferSize =
         RssMRUtils.getLong(
             rssJobConf,
-            RssMRConfig.RSS_WRITER_BUFFER_SIZE,
-            RssMRConfig.RSS_WRITER_BUFFER_SIZE_DEFAULT_VALUE);
+            RssMRConfig.RSS_WRITER_BUFFER_SIZE.key(),
+            RssMRConfig.RSS_WRITER_BUFFER_SIZE.defaultValue());
     shuffleClient = RssMRUtils.createShuffleClient(mrJobConf);
     bufferManager =
         new SortWriteBufferManager(

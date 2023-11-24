@@ -83,37 +83,37 @@ public class RssMRUtils {
   public static ShuffleWriteClient createShuffleClient(JobConf jobConf) {
     int heartBeatThreadNum =
         jobConf.getInt(
-            RssMRConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM,
-            RssMRConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE);
+            RssMRConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM.key(),
+            RssMRConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM.defaultValue());
     int retryMax =
         jobConf.getInt(
-            RssMRConfig.RSS_CLIENT_RETRY_MAX, RssMRConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
+            RssMRConfig.RSS_CLIENT_RETRY_MAX.key(), RssMRConfig.RSS_CLIENT_RETRY_MAX.defaultValue());
     long retryIntervalMax =
         jobConf.getLong(
-            RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
-            RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
+            RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key(),
+            RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.defaultValue());
     String clientType =
-        jobConf.get(RssMRConfig.RSS_CLIENT_TYPE, RssMRConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
+        jobConf.get(RssMRConfig.RSS_CLIENT_TYPE.key(), RssMRConfig.RSS_CLIENT_TYPE.defaultValue());
     int replicaWrite =
         jobConf.getInt(
-            RssMRConfig.RSS_DATA_REPLICA_WRITE, RssMRConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
+            RssMRConfig.RSS_DATA_REPLICA_WRITE.key(), RssMRConfig.RSS_DATA_REPLICA_WRITE.defaultValue());
     int replicaRead =
         jobConf.getInt(
-            RssMRConfig.RSS_DATA_REPLICA_READ, RssMRConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
+            RssMRConfig.RSS_DATA_REPLICA_READ.key(), RssMRConfig.RSS_DATA_REPLICA_READ.defaultValue());
     int replica =
-        jobConf.getInt(RssMRConfig.RSS_DATA_REPLICA, RssMRConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
+        jobConf.getInt(RssMRConfig.RSS_DATA_REPLICA.key(), RssMRConfig.RSS_DATA_REPLICA.defaultValue());
     boolean replicaSkipEnabled =
         jobConf.getBoolean(
-            RssMRConfig.RSS_DATA_REPLICA_SKIP_ENABLED,
-            RssMRConfig.RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE);
+            RssMRConfig.RSS_DATA_REPLICA_SKIP_ENABLED.key(),
+            RssMRConfig.RSS_DATA_REPLICA_SKIP_ENABLED.defaultValue());
     int dataTransferPoolSize =
         jobConf.getInt(
-            RssMRConfig.RSS_DATA_TRANSFER_POOL_SIZE,
-            RssMRConfig.RSS_DATA_TRANSFER_POOL_SIZE_DEFAULT_VALUE);
+            RssMRConfig.RSS_DATA_TRANSFER_POOL_SIZE.key(),
+            RssMRConfig.RSS_DATA_TRANSFER_POOL_SIZE.defaultValue());
     int dataCommitPoolSize =
         jobConf.getInt(
-            RssMRConfig.RSS_DATA_COMMIT_POOL_SIZE,
-            RssMRConfig.RSS_DATA_COMMIT_POOL_SIZE_DEFAULT_VALUE);
+            RssMRConfig.RSS_DATA_COMMIT_POOL_SIZE.key(),
+            RssMRConfig.RSS_DATA_COMMIT_POOL_SIZE.defaultValue());
     ShuffleWriteClient client =
         ShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
@@ -279,8 +279,8 @@ public class RssMRUtils {
   public static int estimateTaskConcurrency(JobConf jobConf) {
     double dynamicFactor =
         jobConf.getDouble(
-            RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR,
-            RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR_DEFAULT_VALUE);
+            RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR.key(),
+            RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR.defaultValue());
     double slowStart =
         jobConf.getDouble(Constants.MR_SLOW_START, Constants.MR_SLOW_START_DEFAULT_VALUE);
     int mapNum = jobConf.getNumMapTasks();
@@ -301,20 +301,20 @@ public class RssMRUtils {
   public static int getRequiredShuffleServerNumber(JobConf jobConf) {
     int requiredShuffleServerNumber =
         jobConf.getInt(
-            RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER,
-            RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE);
+            RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER.key(),
+            RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER.defaultValue());
     boolean enabledEstimateServer =
         jobConf.getBoolean(
-            RssMRConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED,
-            RssMRConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE);
+            RssMRConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED.key(),
+            RssMRConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED.defaultValue());
     if (!enabledEstimateServer || requiredShuffleServerNumber > 0) {
       return requiredShuffleServerNumber;
     }
     int taskConcurrency = estimateTaskConcurrency(jobConf);
     int taskConcurrencyPerServer =
         jobConf.getInt(
-            RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER,
-            RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE);
+            RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER.key(),
+            RssMRConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER.defaultValue());
     return (int) Math.ceil(taskConcurrency * 1.0 / taskConcurrencyPerServer);
   }
 
@@ -322,27 +322,27 @@ public class RssMRUtils {
     int retryMax =
         getInt(
             rssJobConf,
-            RssMRConfig.RSS_CLIENT_RETRY_MAX,
-            RssMRConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
+            RssMRConfig.RSS_CLIENT_RETRY_MAX.key(),
+            RssMRConfig.RSS_CLIENT_RETRY_MAX.defaultValue());
     long retryIntervalMax =
         getLong(
             rssJobConf,
-            RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
-            RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
+            RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key(),
+            RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.defaultValue());
     long sendCheckTimeout =
         getLong(
             rssJobConf,
-            RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
-            RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE);
+            RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(),
+            RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.defaultValue());
     if (retryIntervalMax * retryMax > sendCheckTimeout) {
       throw new IllegalArgumentException(
           String.format(
               "%s(%s) * %s(%s) should not bigger than %s(%s)",
-              RssMRConfig.RSS_CLIENT_RETRY_MAX,
+              RssMRConfig.RSS_CLIENT_RETRY_MAX.key(),
               retryMax,
-              RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
+              RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key(),
               retryIntervalMax,
-              RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
+              RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(),
               sendCheckTimeout));
     }
   }
