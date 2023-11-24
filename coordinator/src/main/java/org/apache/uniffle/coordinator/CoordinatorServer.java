@@ -185,9 +185,7 @@ public class CoordinatorServer extends ReconfigurableBase {
         new DynamicClientConfService(
             coordinatorConf,
             hadoopConf,
-            new Consumer[] {
-                (Consumer<ClientConf>) applicationManager::refreshRemoteStorages
-            });
+            new Consumer[] {(Consumer<ClientConf>) applicationManager::refreshRemoteStorages});
     AssignmentStrategyFactory assignmentStrategyFactory =
         new AssignmentStrategyFactory(coordinatorConf, clusterManager);
     this.assignmentStrategy = assignmentStrategyFactory.getAssignmentStrategy();

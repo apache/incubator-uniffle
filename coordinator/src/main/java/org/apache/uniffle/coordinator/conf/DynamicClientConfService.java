@@ -56,14 +56,14 @@ public class DynamicClientConfService implements Closeable {
 
   private Consumer<ClientConf>[] callbacks;
 
-  public DynamicClientConfService(CoordinatorConf coordinatorConf, Configuration hadoopConf) throws Exception {
-    this(coordinatorConf,
-        hadoopConf,
-        new Consumer[0]);
+  public DynamicClientConfService(CoordinatorConf coordinatorConf, Configuration hadoopConf)
+      throws Exception {
+    this(coordinatorConf, hadoopConf, new Consumer[0]);
   }
 
-  public DynamicClientConfService(CoordinatorConf coordinatorConf, Configuration hadoopConf,
-      Consumer<ClientConf>[] callbacks) throws Exception {
+  public DynamicClientConfService(
+      CoordinatorConf coordinatorConf, Configuration hadoopConf, Consumer<ClientConf>[] callbacks)
+      throws Exception {
     if (!coordinatorConf.getBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED)) {
       return;
     }
@@ -87,7 +87,8 @@ public class DynamicClientConfService implements Closeable {
         break;
       case MIXED:
       default:
-        confParsers = new ClientConfParser[] {new LegacyClientConfParser(), new YamlClientConfParser()};
+        confParsers =
+            new ClientConfParser[] {new LegacyClientConfParser(), new YamlClientConfParser()};
         break;
     }
     this.parsers = confParsers;
@@ -101,11 +102,12 @@ public class DynamicClientConfService implements Closeable {
     LOGGER.info("Load client conf from {} successfully", confStoredPath);
 
     int updateIntervalSec =
-        coordinatorConf.getInteger(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC);
-    updateClientConfExecutor = ThreadUtils.getDaemonSingleThreadScheduledExecutor(this.getClass().getSimpleName());
+        coordinatorConf.getInteger(
+            CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC);
+    updateClientConfExecutor =
+        ThreadUtils.getDaemonSingleThreadScheduledExecutor(this.getClass().getSimpleName());
     updateClientConfExecutor.scheduleAtFixedRate(
-        this::refreshClientConf, 0, updateIntervalSec, TimeUnit.SECONDS
-    );
+        this::refreshClientConf, 0, updateIntervalSec, TimeUnit.SECONDS);
   }
 
   private void refreshClientConf() {

@@ -28,9 +28,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 
-/**
- * The conf will be stored in the yaml format file.
- */
+/** The conf will be stored in the yaml format file. */
 public class YamlClientConfParser implements ClientConfParser {
   private static final String RSS_CLIENT_CONF_KEY = "rssClientConf";
   private static final String REMOTE_STORAGE_INFOS_KEY = "remoteStorageInfos";
@@ -51,10 +49,7 @@ public class YamlClientConfParser implements ClientConfParser {
     for (Map.Entry<String, Object> entry : remoteStorageInfosRaw.entrySet()) {
       String remotePath = entry.getKey();
       Map<String, String> kvs = parseKVItems(entry.getValue());
-      remoteStorageInfoMap.put(
-          remotePath,
-          new RemoteStorageInfo(remotePath, kvs)
-      );
+      remoteStorageInfoMap.put(remotePath, new RemoteStorageInfo(remotePath, kvs));
     }
 
     return new ClientConf(rssConfKVs, remoteStorageInfoMap);

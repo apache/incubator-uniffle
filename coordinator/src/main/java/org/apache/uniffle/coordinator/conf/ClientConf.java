@@ -22,8 +22,8 @@ import java.util.Map;
 import org.apache.uniffle.common.RemoteStorageInfo;
 
 /**
- * This class is to hold the dynamic conf,
- * which includes the rss conf for the client and the remote storage hadoop configs.
+ * This class is to hold the dynamic conf, which includes the rss conf for the client and the remote
+ * storage hadoop configs.
  */
 public class ClientConf {
   private Map<String, String> rssClientConf;
@@ -35,8 +35,8 @@ public class ClientConf {
     this.rssClientConf = rssClientConf;
   }
 
-  public ClientConf(Map<String, String> rssClientConf,
-      Map<String, RemoteStorageInfo> remoteStorageInfos) {
+  public ClientConf(
+      Map<String, String> rssClientConf, Map<String, RemoteStorageInfo> remoteStorageInfos) {
     this.rssClientConf = rssClientConf;
     this.remoteStorageInfos = remoteStorageInfos;
   }
@@ -53,8 +53,7 @@ public class ClientConf {
     return remoteStorageInfos;
   }
 
-  public void setRemoteStorageInfos(
-      Map<String, RemoteStorageInfo> remoteStorageInfos) {
+  public void setRemoteStorageInfos(Map<String, RemoteStorageInfo> remoteStorageInfos) {
     this.remoteStorageInfos = remoteStorageInfos;
   }
 }

@@ -81,11 +81,14 @@ public class LegacyClientConfParser implements ClientConfParser {
       Map<String, Map<String, String>> confKVs =
           CoordinatorUtils.extractRemoteStorageConf(remoteStorageConf);
 
-      return confKVs.entrySet().stream().map(x -> {
-        String path = x.getKey();
-        RemoteStorageInfo info = new RemoteStorageInfo(path, x.getValue());
-        return Pair.of(path, info);
-      }).collect(Collectors.toMap(x -> x.getLeft(), x -> x.getRight()));
+      return confKVs.entrySet().stream()
+          .map(
+              x -> {
+                String path = x.getKey();
+                RemoteStorageInfo info = new RemoteStorageInfo(path, x.getValue());
+                return Pair.of(path, info);
+              })
+          .collect(Collectors.toMap(x -> x.getLeft(), x -> x.getRight()));
     }
 
     return Collections.EMPTY_MAP;

@@ -308,7 +308,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
             .getCoordinatorConf()
             .getBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED);
     if (dynamicConfEnabled) {
-      DynamicClientConfService dynamicClientConfService = coordinatorServer.getDynamicClientConfService();
+      DynamicClientConfService dynamicClientConfService =
+          coordinatorServer.getDynamicClientConfService();
       for (Map.Entry<String, String> kv : dynamicClientConfService.getRssClientConf().entrySet()) {
         builder.addClientConf(
             ClientConfItem.newBuilder().setKey(kv.getKey()).setValue(kv.getValue()).build());
