@@ -18,6 +18,8 @@
 package org.apache.uniffle.coordinator.conf;
 
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -78,13 +80,25 @@ public class LegacyClientConfParser implements ClientConfParser {
     if (StringUtils.isNotEmpty(remoteStoragePath)) {
       LOG.info("Parsing remote storage with {} {}", remoteStoragePath, remoteStorageConf);
       Set<String> paths = Sets.newHashSet(remoteStoragePath.split(Constants.COMMA_SPLIT_CHAR));
+      // host -> path
+      Map<String, String> legalHost2Paths = new HashMap<>();
+      for (String path : paths) {
+        try {
+          URI uri = new URI(path);
+          legalHost2Paths.put(uri.getHost(), path);
+        } catch (URISyntaxException e) {
+          LOG.warn("The remote storage path: {} is illegal. Ignore this storage", path);
+        }
+      }
+
       Map<String, Map<String, String>> confKVs =
           CoordinatorUtils.extractRemoteStorageConf(remoteStorageConf);
 
       return confKVs.entrySet().stream()
+          .filter(x -> legalHost2Paths.containsKey(x.getKey()))
           .map(
               x -> {
-                String path = x.getKey();
+                String path = legalHost2Paths.get(x.getKey());
                 RemoteStorageInfo info = new RemoteStorageInfo(path, x.getValue());
                 return Pair.of(path, info);
               })
