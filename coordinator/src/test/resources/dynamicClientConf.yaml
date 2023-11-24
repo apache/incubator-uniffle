@@ -1,0 +1,22 @@
+rssClientConf:
+  k1: v1
+  k2: v2
+
+remoteStorageInfos:
+  hdfs://a-ns01: |+
+    <configuration>
+        <property>
+          <name>k1</name>
+          <value>v1</value>
+        </property>
+
+        <property>
+          <name>k2</name>
+          <value>v2</value>
+        </property>
+    </configuration>
+
+  hdfs://x-ns01:
+    k1: v1
+    k2: v2
+

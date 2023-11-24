@@ -38,6 +38,7 @@ import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.storage.StorageInfoUtils;
 import org.apache.uniffle.coordinator.access.AccessCheckResult;
 import org.apache.uniffle.coordinator.access.AccessInfo;
+import org.apache.uniffle.coordinator.conf.DynamicClientConfService;
 import org.apache.uniffle.coordinator.strategy.assignment.PartitionRangeAssignment;
 import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
@@ -307,8 +308,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
             .getCoordinatorConf()
             .getBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED);
     if (dynamicConfEnabled) {
-      ClientConfManager clientConfManager = coordinatorServer.getClientConfManager();
-      for (Map.Entry<String, String> kv : clientConfManager.getClientConf().entrySet()) {
+      DynamicClientConfService dynamicClientConfService = coordinatorServer.getDynamicClientConfService();
+      for (Map.Entry<String, String> kv : dynamicClientConfService.getRssClientConf().entrySet()) {
         builder.addClientConf(
             ClientConfItem.newBuilder().setKey(kv.getKey()).setValue(kv.getValue()).build());
       }

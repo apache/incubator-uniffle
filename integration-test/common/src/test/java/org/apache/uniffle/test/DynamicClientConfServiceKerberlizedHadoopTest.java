@@ -22,18 +22,18 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.KerberizedHadoopBase;
 
-public class ClientConfManagerKerberlizedHadoopTest extends KerberizedHadoopBase {
+public class DynamicClientConfServiceKerberlizedHadoopTest extends KerberizedHadoopBase {
 
   @BeforeAll
   public static void beforeAll() throws Exception {
-    testRunner = ClientConfManagerKerberlizedHadoopTest.class;
+    testRunner = DynamicClientConfServiceKerberlizedHadoopTest.class;
     KerberizedHadoopBase.init();
   }
 
   @Test
   public void testConfInHadoop() throws Exception {
     String cfgFile = kerberizedHadoop.getSchemeAndAuthorityPrefix() + "/test/client_conf";
-    ClientConfManagerHadoopTest.createAndRunClientConfManagerCases(
+    DynamicClientConfServiceHadoopTest.createAndRunCases(
         kerberizedHadoop.getSchemeAndAuthorityPrefix(),
         cfgFile,
         kerberizedHadoop.getFileSystem(),

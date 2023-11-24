@@ -27,9 +27,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.coordinator.ApplicationManager;
-import org.apache.uniffle.coordinator.ClientConfManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.coordinator.conf.DynamicClientConfService;
 import org.apache.uniffle.storage.HadoopTestBase;
 
 import static java.lang.Thread.sleep;
@@ -38,15 +37,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ClientConfManagerHadoopTest extends HadoopTestBase {
+public class DynamicClientConfServiceHadoopTest extends HadoopTestBase {
 
   @Test
   public void test() throws Exception {
     String cfgFile = HDFS_URI + "/test/client_conf";
-    createAndRunClientConfManagerCases(HDFS_URI, cfgFile, fs, HadoopTestBase.conf);
+    createAndRunCases(HDFS_URI, cfgFile, fs, HadoopTestBase.conf);
   }
 
-  public static void createAndRunClientConfManagerCases(
+  public static void createAndRunCases(
       String clusterPathPrefix, String cfgFile, FileSystem fileSystem, Configuration hadoopConf)
       throws Exception {
 
@@ -58,7 +57,7 @@ public class ClientConfManagerHadoopTest extends HadoopTestBase {
     // file load checking at startup
     Exception expectedException = null;
     try {
-      new ClientConfManager(conf, new Configuration(), new ApplicationManager(conf));
+      new DynamicClientConfService(conf, new Configuration());
     } catch (RuntimeException e) {
       expectedException = e;
     }
@@ -68,9 +67,9 @@ public class ClientConfManagerHadoopTest extends HadoopTestBase {
     Path path = new Path(cfgFile);
     FSDataOutputStream out = fileSystem.create(path);
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile);
-    ClientConfManager clientConfManager =
-        new ClientConfManager(conf, new Configuration(), new ApplicationManager(conf));
-    assertEquals(0, clientConfManager.getClientConf().size());
+    DynamicClientConfService clientConfManager =
+        new DynamicClientConfService(conf, new Configuration());
+    assertEquals(0, clientConfManager.getRssClientConf().size());
 
     PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(out));
     printWriter.println("spark.mock.1 abc");
@@ -78,9 +77,9 @@ public class ClientConfManagerHadoopTest extends HadoopTestBase {
     printWriter.println("spark.mock.3 true  ");
     printWriter.flush();
     printWriter.close();
-    clientConfManager = new ClientConfManager(conf, hadoopConf, new ApplicationManager(conf));
+    clientConfManager = new DynamicClientConfService(conf, hadoopConf);
     sleep(1200);
-    Map<String, String> clientConf = clientConfManager.getClientConf();
+    Map<String, String> clientConf = clientConfManager.getRssClientConf();
     assertEquals("abc", clientConf.get("spark.mock.1"));
     assertEquals("123", clientConf.get("spark.mock.2"));
     assertEquals("true", clientConf.get("spark.mock.3"));
@@ -92,7 +91,7 @@ public class ClientConfManagerHadoopTest extends HadoopTestBase {
     printWriter.close();
     sleep(1300);
     assertTrue(fileSystem.exists(path));
-    clientConf = clientConfManager.getClientConf();
+    clientConf = clientConfManager.getRssClientConf();
     assertEquals("abc", clientConf.get("spark.mock.1"));
     assertEquals("123", clientConf.get("spark.mock.2"));
     assertEquals("true", clientConf.get("spark.mock.3"));
@@ -102,7 +101,7 @@ public class ClientConfManagerHadoopTest extends HadoopTestBase {
     fileSystem.delete(path, true);
     assertFalse(fileSystem.exists(path));
     sleep(1200);
-    clientConf = clientConfManager.getClientConf();
+    clientConf = clientConfManager.getRssClientConf();
     assertEquals("abc", clientConf.get("spark.mock.1"));
     assertEquals("123", clientConf.get("spark.mock.2"));
     assertEquals("true", clientConf.get("spark.mock.3"));
@@ -119,7 +118,7 @@ public class ClientConfManagerHadoopTest extends HadoopTestBase {
     printWriter.close();
     fileSystem.rename(tmpPath, path);
     sleep(1200);
-    clientConf = clientConfManager.getClientConf();
+    clientConf = clientConfManager.getRssClientConf();
     assertEquals("deadbeaf", clientConf.get("spark.mock.4"));
     assertEquals("9527", clientConf.get("spark.mock.5"));
     assertEquals(2, clientConf.size());

@@ -34,6 +34,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -45,6 +47,7 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker;
+import org.apache.uniffle.coordinator.conf.ClientConf;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.strategy.storage.AppBalanceSelectStorageStrategy;
 import org.apache.uniffle.coordinator.strategy.storage.LowestIOSampleCostSelectStorageStrategy;
@@ -149,6 +152,50 @@ public class ApplicationManager implements Closeable {
     } else {
       Map<String, Long> appAndTime = currentUserAndApp.get(user);
       appAndTime.put(appId, System.currentTimeMillis());
+    }
+  }
+
+  public void refreshRemoteStorages(ClientConf dynamicClientConf) {
+    if (dynamicClientConf == null || MapUtils.isEmpty(dynamicClientConf.getRemoteStorageInfos())) {
+      LOG.info("Refresh remote storage with empty config");
+      for (String path : availableRemoteStorageInfo.keySet()) {
+        removePathFromCounter(path);
+      }
+      availableRemoteStorageInfo.clear();
+      return;
+    }
+
+    Map<String, RemoteStorageInfo> remoteStorageInfoMap = dynamicClientConf.getRemoteStorageInfos();
+    LOG.info("Refresh remote storage with {}", remoteStorageInfoMap);
+
+    for (Map.Entry<String, RemoteStorageInfo> entry : remoteStorageInfoMap.entrySet()) {
+      String path = entry.getKey();
+      RemoteStorageInfo rsInfo = entry.getValue();
+
+      if (!availableRemoteStorageInfo.containsKey(path)) {
+        remoteStoragePathRankValue.computeIfAbsent(
+            path,
+            key -> {
+              // refreshRemoteStorage is designed without multiple thread problem
+              // metrics shouldn't be added duplicated
+              addRemoteStorageMetrics(path);
+              return new RankValue(0);
+            });
+      }
+      availableRemoteStorageInfo.put(path, rsInfo);
+    }
+    // remove unused remote path if exist
+    List<String> unusedPath = Lists.newArrayList();
+    for (String existPath : availableRemoteStorageInfo.keySet()) {
+      if (!remoteStorageInfoMap.keySet().contains(existPath)) {
+        unusedPath.add(existPath);
+      }
+    }
+    // remote unused path
+    for (String path : unusedPath) {
+      availableRemoteStorageInfo.remove(path);
+      // try to remove if counter = 0, or it will be removed in decRemoteStorageCounter() later
+      removePathFromCounter(path);
     }
   }
 

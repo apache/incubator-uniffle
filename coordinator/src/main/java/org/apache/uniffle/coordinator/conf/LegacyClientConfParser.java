@@ -1,0 +1,76 @@
+package org.apache.uniffle.coordinator.conf;
+
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.google.common.collect.Sets;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.coordinator.util.CoordinatorUtils;
+
+public class LegacyClientConfParser implements ClientConfParser {
+  private static final Logger LOG = LoggerFactory.getLogger(LegacyClientConfParser.class);
+  private static final String WHITESPACE_REGEX = "\\s+";
+
+  @Override
+  public ClientConf tryParse(InputStream fileInputStream) throws Exception {
+    String content = IOUtils.toString(fileInputStream);
+
+    String remoteStoragePath = "";
+    String remoteStorageConf = "";
+
+    Map<String, String> rssClientConf = new HashMap<>();
+
+    for (String item : content.split(IOUtils.LINE_SEPARATOR_UNIX)) {
+      String confItem = item.trim();
+      if (StringUtils.isNotEmpty(confItem)) {
+        String[] confKV = confItem.split(WHITESPACE_REGEX);
+        if (confKV.length == 2) {
+          if (CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key().equals(confKV[0])) {
+            remoteStoragePath = confKV[1];
+          } else if (CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF
+              .key()
+              .equals(confKV[0])) {
+            remoteStorageConf = confKV[1];
+          } else {
+            rssClientConf.put(confKV[0], confKV[1]);
+          }
+        }
+      }
+    }
+
+    Map<String, RemoteStorageInfo> storageInfoMap =
+        parseRemoteStorageInfos(remoteStoragePath, remoteStorageConf);
+
+    return new ClientConf(rssClientConf, storageInfoMap);
+  }
+
+  private Map<String, RemoteStorageInfo> parseRemoteStorageInfos(
+      String remoteStoragePath, String remoteStorageConf) {
+    if (StringUtils.isNotEmpty(remoteStoragePath)) {
+      LOG.info("Parsing remote storage with {} {}", remoteStoragePath, remoteStorageConf);
+      Set<String> paths = Sets.newHashSet(remoteStoragePath.split(Constants.COMMA_SPLIT_CHAR));
+      Map<String, Map<String, String>> confKVs =
+          CoordinatorUtils.extractRemoteStorageConf(remoteStorageConf);
+
+      return confKVs.entrySet().stream().map(x -> {
+        String path = x.getKey();
+        RemoteStorageInfo info = new RemoteStorageInfo(path, x.getValue());
+        return Pair.of(path, info);
+      }).collect(Collectors.toMap(x -> x.getLeft(), x -> x.getRight()));
+    }
+
+    return Collections.EMPTY_MAP;
+  }
+}
