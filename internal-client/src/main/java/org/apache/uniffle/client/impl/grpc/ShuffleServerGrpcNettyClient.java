@@ -200,7 +200,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
       case SUCCESS:
         return new RssGetInMemoryShuffleDataResponse(
             StatusCode.SUCCESS,
-            getMemoryShuffleDataResponse.getData().nioBuffer(),
+            getMemoryShuffleDataResponse.body(),
             getMemoryShuffleDataResponse.getBufferSegments());
       default:
         String msg =
@@ -251,7 +251,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
       case SUCCESS:
         return new RssGetShuffleIndexResponse(
             StatusCode.SUCCESS,
-            getLocalShuffleIndexResponse.getIndexData().nioBuffer(),
+            getLocalShuffleIndexResponse.body(),
             getLocalShuffleIndexResponse.getFileLength());
       default:
         String msg =
@@ -305,7 +305,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     switch (statusCode) {
       case SUCCESS:
         return new RssGetShuffleDataResponse(
-            StatusCode.SUCCESS, getLocalShuffleDataResponse.getBuffer().nioByteBuffer());
+            StatusCode.SUCCESS, getLocalShuffleDataResponse.body());
       default:
         String msg =
             "Can't get shuffle data from "

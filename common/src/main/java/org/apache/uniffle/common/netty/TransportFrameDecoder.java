@@ -45,6 +45,7 @@ import org.apache.uniffle.common.netty.protocol.Message;
  */
 public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implements FrameDecoder {
   private int msgSize = -1;
+  private int bodySize = -1;
   private Message.Type curType = Message.Type.UNKNOWN_TYPE;
   private ByteBuf headerBuf = Unpooled.buffer(HEADER_SIZE, HEADER_SIZE);
   private static final int MAX_FRAME_SIZE = Integer.MAX_VALUE;
@@ -66,10 +67,10 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
       if (frame == null) {
         break;
       }
-      // todo: An exception may be thrown during the decoding process, causing frame.release() to
-      // fail to be called
       Message msg = Message.decode(curType, frame);
-      frame.release();
+      if (msg.body() == null) {
+        frame.release();
+      }
       ctx.fireChannelRead(msg);
       clear();
     }
@@ -78,6 +79,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
   private void clear() {
     curType = Message.Type.UNKNOWN_TYPE;
     msgSize = -1;
+    bodySize = -1;
     headerBuf.clear();
   }
 
@@ -94,7 +96,8 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
     if (first.readableBytes() >= HEADER_SIZE) {
       msgSize = first.readInt();
       curType = Message.Type.decode(first);
-      nextFrameSize = msgSize;
+      bodySize = first.readInt();
+      nextFrameSize = msgSize + bodySize;
       totalSize -= HEADER_SIZE;
       if (!first.isReadable()) {
         buffers.removeFirst().release();
@@ -113,7 +116,8 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
 
     msgSize = headerBuf.readInt();
     curType = Message.Type.decode(headerBuf);
-    nextFrameSize = msgSize;
+    bodySize = headerBuf.readInt();
+    nextFrameSize = msgSize + bodySize;
     totalSize -= HEADER_SIZE;
     return nextFrameSize;
   }
@@ -126,7 +130,6 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
 
     // Reset size for next frame.
     nextFrameSize = UNKNOWN_FRAME_SIZE;
-
     Preconditions.checkArgument(frameSize < MAX_FRAME_SIZE, "Too large frame: %s", frameSize);
     Preconditions.checkArgument(frameSize > 0, "Frame length should be positive: %s", frameSize);
 

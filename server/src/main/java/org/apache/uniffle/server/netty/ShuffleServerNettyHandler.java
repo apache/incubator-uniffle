@@ -17,12 +17,10 @@
 
 package org.apache.uniffle.server.netty;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +34,7 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.netty.client.TransportClient;
 import org.apache.uniffle.common.netty.handle.BaseMessageHandler;
@@ -252,13 +251,13 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                     blockId,
                     readBufferSize,
                     req.getExpectedTaskIdsBitmap());
-        ByteBuf data = Unpooled.EMPTY_BUFFER;
+        ManagedBuffer data = NettyManagedBuffer.EMPTY_BUFFER;
         List<BufferSegment> bufferSegments = Lists.newArrayList();
         if (shuffleDataResult != null) {
-          data = Unpooled.wrappedBuffer(shuffleDataResult.getDataBuffer());
+          data = shuffleDataResult.getManagedBuffer();
           bufferSegments = shuffleDataResult.getBufferSegments();
-          ShuffleServerMetrics.counterTotalReadDataSize.inc(data.readableBytes());
-          ShuffleServerMetrics.counterTotalReadMemoryDataSize.inc(data.readableBytes());
+          ShuffleServerMetrics.counterTotalReadDataSize.inc(data.size());
+          ShuffleServerMetrics.counterTotalReadMemoryDataSize.inc(data.size());
         }
         long costTime = System.currentTimeMillis() - start;
         shuffleServer
@@ -267,7 +266,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         LOG.info(
             "Successfully getInMemoryShuffleData cost {} ms with {} bytes shuffle" + " data for {}",
             costTime,
-            data.readableBytes(),
+            data.size(),
             requestInfo);
 
         response =
@@ -334,21 +333,17 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 .getShuffleTaskManager()
                 .getShuffleIndex(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
 
-        ByteBuffer data = shuffleIndexResult.getIndexData();
-        ShuffleServerMetrics.counterTotalReadDataSize.inc(data.remaining());
-        ShuffleServerMetrics.counterTotalReadLocalIndexFileSize.inc(data.remaining());
+        ManagedBuffer data = shuffleIndexResult.getManagedBuffer();
+        ShuffleServerMetrics.counterTotalReadDataSize.inc(data.size());
+        ShuffleServerMetrics.counterTotalReadLocalIndexFileSize.inc(data.size());
         response =
             new GetLocalShuffleIndexResponse(
-                req.getRequestId(),
-                status,
-                msg,
-                Unpooled.wrappedBuffer(data),
-                shuffleIndexResult.getDataFileLen());
+                req.getRequestId(), status, msg, data, shuffleIndexResult.getDataFileLen());
         long readTime = System.currentTimeMillis() - start;
         LOG.info(
             "Successfully getShuffleIndex cost {} ms for {}" + " bytes with {}",
             readTime,
-            data.remaining(),
+            data.size(),
             requestInfo);
       } catch (FileNotFoundException indexFileNotFoundException) {
         LOG.warn(

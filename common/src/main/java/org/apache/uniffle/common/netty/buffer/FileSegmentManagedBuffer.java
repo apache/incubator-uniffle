@@ -92,6 +92,11 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
   }
 
   @Override
+  public ManagedBuffer retain() {
+    return this;
+  }
+
+  @Override
   public ManagedBuffer release() {
     return this;
   }

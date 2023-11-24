@@ -67,6 +67,9 @@ public class ByteBufUtils {
 
   public static final byte[] readByteArray(ByteBuf byteBuf) {
     int length = byteBuf.readInt();
+    if (length < 0) {
+      return null;
+    }
     byte[] data = new byte[length];
     byteBuf.readBytes(data);
     return data;

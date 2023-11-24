@@ -27,7 +27,6 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
-import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RssUtils;
@@ -121,7 +120,7 @@ public class ShuffleHandlerFactory {
       CreateShuffleReadHandlerRequest request, ShuffleServerInfo ssi) {
     ShuffleServerClient shuffleServerClient =
         ShuffleServerClientFactory.getInstance()
-            .getShuffleServerClient(ClientType.GRPC.name(), ssi, request.getClientConf());
+            .getShuffleServerClient(request.getClientType().name(), ssi, request.getClientConf());
     Roaring64NavigableMap expectTaskIds = null;
     if (request.isExpectedTaskIdsBitmapFilterEnable()) {
       Roaring64NavigableMap realExceptBlockIds = RssUtils.cloneBitMap(request.getExpectBlockIds());
@@ -143,7 +142,7 @@ public class ShuffleHandlerFactory {
       CreateShuffleReadHandlerRequest request, ShuffleServerInfo ssi) {
     ShuffleServerClient shuffleServerClient =
         ShuffleServerClientFactory.getInstance()
-            .getShuffleServerClient(ClientType.GRPC.name(), ssi, request.getClientConf());
+            .getShuffleServerClient(request.getClientType().name(), ssi, request.getClientConf());
     return new LocalFileClientReadHandler(
         request.getAppId(),
         request.getShuffleId(),
