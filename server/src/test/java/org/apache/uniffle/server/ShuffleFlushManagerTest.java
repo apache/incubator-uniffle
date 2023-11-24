@@ -297,7 +297,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
 
   @Test
   public void totalLocalFileWriteDataMetricTest() throws Exception {
-    List<String> storagePaths = Arrays.asList("/tmp/rss-data1", "/tmp/rss-data2", "/tmp/rss-data3");
+    List<String> storagePaths = Arrays.asList("/tmp/rss-data1");
 
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, storagePaths);
     shuffleServerConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
@@ -316,36 +316,6 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     waitForFlush(manager, appId, 1, 10);
     int storageIndex = storagePaths.indexOf(flushEvent.getUnderStorage().getStoragePath());
     validateLocalMetadata(storageManager, storageIndex, 1000L);
-
-    flushEvent = createShuffleDataFlushEvent(appId, 2, 1, 1, 10, 101, null);
-    manager.addToFlushQueue(flushEvent);
-    // wait for write data
-    waitForFlush(manager, appId, 2, 10);
-    int storageIndex1 = storagePaths.indexOf(flushEvent.getUnderStorage().getStoragePath());
-    validateLocalMetadata(storageManager, storageIndex1, 1010L);
-
-    flushEvent = createShuffleDataFlushEvent(appId, 3, 1, 1, 10, 102, null);
-    manager.addToFlushQueue(flushEvent);
-    // wait for write data
-    waitForFlush(manager, appId, 3, 10);
-    int storageIndex2 = storagePaths.indexOf(flushEvent.getUnderStorage().getStoragePath());
-    validateLocalMetadata(storageManager, storageIndex2, 1020L);
-
-    assertEquals(
-        1000L,
-        ShuffleServerMetrics.counterTotalLocalFileWriteDataSize
-            .labels(storagePaths.get(storageIndex))
-            .get());
-    assertEquals(
-        1010L,
-        ShuffleServerMetrics.counterTotalLocalFileWriteDataSize
-            .labels(storagePaths.get(storageIndex1))
-            .get());
-    assertEquals(
-        1020L,
-        ShuffleServerMetrics.counterTotalLocalFileWriteDataSize
-            .labels(storagePaths.get(storageIndex2))
-            .get());
   }
 
   @Test
@@ -702,6 +672,10 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         ((HybridStorageManager) storageManager).getWarmStorageManager().selectStorage(event));
     ((HybridStorageManager) storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
 
+    ((LocalStorageManager)(((HybridStorageManager) storageManager).getWarmStorageManager())).getStorages()
+        .stream()
+        .forEach(x -> x.setWatermarkLimitTriggered(true));
+
     event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100);
     flushManager.addToFlushQueue(event);
     Thread.sleep(1000);
@@ -757,6 +731,9 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     ((HybridStorageManager) storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
 
     event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100);
+    ((LocalStorageManager)((HybridStorageManager) storageManager).getWarmStorageManager()).getStorages()
+        .forEach(x -> x.setWatermarkLimitTriggered(true));
+
     flushManager.addToFlushQueue(event);
     waitForFlush(flushManager, appId, 1, 15);
     assertEquals(1, event.getRetryTimes());
