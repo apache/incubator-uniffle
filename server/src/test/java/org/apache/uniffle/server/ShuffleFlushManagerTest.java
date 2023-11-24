@@ -672,9 +672,8 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         ((HybridStorageManager) storageManager).getWarmStorageManager().selectStorage(event));
     ((HybridStorageManager) storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
 
-    ((LocalStorageManager)(((HybridStorageManager) storageManager).getWarmStorageManager())).getStorages()
-        .stream()
-        .forEach(x -> x.setWatermarkLimitTriggered(true));
+    ((LocalStorageManager) (((HybridStorageManager) storageManager).getWarmStorageManager()))
+        .getStorages().stream().forEach(x -> x.setWatermarkLimitTriggered(true));
 
     event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100);
     flushManager.addToFlushQueue(event);
@@ -731,7 +730,8 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     ((HybridStorageManager) storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
 
     event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100);
-    ((LocalStorageManager)((HybridStorageManager) storageManager).getWarmStorageManager()).getStorages()
+    ((LocalStorageManager) ((HybridStorageManager) storageManager).getWarmStorageManager())
+        .getStorages()
         .forEach(x -> x.setWatermarkLimitTriggered(true));
 
     flushManager.addToFlushQueue(event);
