@@ -67,41 +67,41 @@ public class RssSparkConfig {
 
   public static final ConfigOption<Integer> RSS_PARTITION_NUM_PER_RANGE =
       ConfigOptions.key("spark.rss.partitionNum.per.range")
-              .intType()
-              .defaultValue(1)
-              .withDescription("The partition number of one range.");
+          .intType()
+          .defaultValue(1)
+          .withDescription("The partition number of one range.");
 
   public static final ConfigOption<String> RSS_WRITER_BUFFER_SIZE =
       ConfigOptions.key("spark.rss.writer.buffer.size")
-              .stringType()
-              .defaultValue("3m")
-              .withDescription("Buffer size for single partition data");
+          .stringType()
+          .defaultValue("3m")
+          .withDescription("Buffer size for single partition data");
 
 
   public static final ConfigOption<String> RSS_WRITER_SERIALIZER_BUFFER_SIZE =
       ConfigOptions.key("spark.rss.writer.serializer.buffer.size")
-              .stringType()
-              .defaultValue("3k")
-              .withDescription("");
+          .stringType()
+          .defaultValue("3k")
+          .withDescription("");
 
   public static final ConfigOption<String> RSS_WRITER_BUFFER_SEGMENT_SIZE =
       ConfigOptions.key("spark.rss.writer.buffer.segment.size")
-              .stringType()
-              .defaultValue("3k")
-              .withDescription("");
+          .stringType()
+          .defaultValue("3k")
+          .withDescription("");
 
   public static final ConfigOption<String> RSS_WRITER_BUFFER_SPILL_SIZE =
       ConfigOptions.key("spark.rss.writer.buffer.spill.size")
-              .stringType()
-              .defaultValue("128m")
-              .withDescription("Buffer size for total partition data");
+          .stringType()
+          .defaultValue("128m")
+          .withDescription("Buffer size for total partition data");
 
 
   public static final ConfigOption<String> RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE =
       ConfigOptions.key("spark.rss.writer.pre.allocated.buffer.size")
-              .stringType()
-              .defaultValue("16m")
-              .withDescription("");
+          .stringType()
+          .defaultValue("16m")
+          .withDescription("");
 
   public static final ConfigEntry<Integer> RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX =
       createIntegerBuilder(new ConfigBuilder("spark.rss.writer.require.memory.retryMax"))
@@ -119,15 +119,15 @@ public class RssSparkConfig {
 
   public static final ConfigOption<Long> RSS_CLIENT_SEND_CHECK_INTERVAL_MS =
       ConfigOptions.key("spark.rss.client.send.check.interval.ms")
-              .longType()
-              .defaultValue(500L)
-              .withDescription("");
+          .longType()
+          .defaultValue(500L)
+          .withDescription("");
 
   public static final ConfigOption<Boolean> RSS_TEST_FLAG =
       ConfigOptions.key("spark.rss.test")
-              .booleanType()
-              .defaultValue(false)
-              .withDescription("");
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("");
 
   public static final ConfigEntry<Boolean> RSS_TEST_MODE_ENABLE =
       createBooleanBuilder(
@@ -144,9 +144,9 @@ public class RssSparkConfig {
 
   public static final ConfigOption<Integer> RSS_INDEX_READ_LIMIT =
       ConfigOptions.key("spark.rss.index.read.limit")
-              .intType()
-              .defaultValue(500)
-              .withDescription("");
+          .intType()
+          .defaultValue(500)
+          .withDescription("");
 
   public static final ConfigEntry<String> RSS_CLIENT_TYPE =
       createStringBuilder(
@@ -172,95 +172,90 @@ public class RssSparkConfig {
 
   public static final ConfigOption<Integer> RSS_CLIENT_HEARTBEAT_THREAD_NUM =
       ConfigOptions.key("spark.rss.client.heartBeat.threadNum")
-              .intType()
-              .defaultValue(4)
-              .withDescription("");
+          .intType()
+          .defaultValue(4)
+          .withDescription("");
 
   public static final ConfigOption<Integer> RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE =
       ConfigOptions.key("spark.rss.client.unregister.thread.pool.size")
-              .intType()
-              .defaultValue(10)
-              .withDescription("");
+          .intType()
+          .defaultValue(10)
+          .withDescription("");
 
   public static final ConfigOption<Integer> RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC =
       ConfigOptions.key("spark.rss.client.unregister.request.timeout.sec")
-              .intType()
-              .defaultValue(10)
-              .withDescription("");
+          .intType()
+          .defaultValue(10)
+          .withDescription("");
 
   // When the size of read buffer reaches the half of JVM region (i.e., 32m),
   // it will incur humongous allocation, so we set it to 14m.
   public static final ConfigOption<String> RSS_CLIENT_READ_BUFFER_SIZE =
       ConfigOptions.key("spark.rss.client.read.buffer.size")
-              .stringType()
-              .defaultValue("14m")
-              .withDescription("The max data size read from storage");
+          .stringType()
+          .defaultValue("14m")
+          .withDescription("The max data size read from storage");
 
 
   public static final ConfigOption<Long> RSS_HEARTBEAT_INTERVAL =
       ConfigOptions.key("spark.rss.heartbeat.interval")
-              .longType()
-              .defaultValue(10 * 1000L)
-              .withDescription("The max data size read from storage");
+          .longType()
+          .defaultValue(10 * 1000L)
+          .withDescription("The max data size read from storage");
 
   public static final ConfigOption<Long> RSS_HEARTBEAT_TIMEOUT =
       ConfigOptions.key("spark.rss.heartbeat.timeout")
-              .longType()
-              .defaultValue(5 * 1000L)
-              .withDescription("");
+          .longType()
+          .defaultValue(5 * 1000L)
+          .withDescription("");
 
 
   public static final ConfigOption<Integer> RSS_CLIENT_SEND_THREAD_POOL_SIZE =
       ConfigOptions.key("spark.rss.client.send.threadPool.size")
-              .intType()
-              .defaultValue(10)
-              .withDescription("The thread size for send shuffle data to shuffle server");
+          .intType()
+          .defaultValue(10)
+          .withDescription("The thread size for send shuffle data to shuffle server");
 
   public static final ConfigOption<Integer> RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE =
       ConfigOptions.key("spark.rss.client.send.threadPool.keepalive")
-              .intType()
-              .defaultValue(60)
-              .withDescription("");
+          .intType()
+          .defaultValue(60)
+          .withDescription("");
 
-  public static final ConfigOption<Integer> RSS_DATA_REPLICA =
-      ConfigOptions.key("spark.rss.rss.data.replica")
-              .intType()
-              .defaultValue(1)
-              .withDescription("The max server number that each block can be send by client in quorum protocol");
-
-  public static final ConfigOption<Integer> RSS_DATA_REPLICA_WRITE =
-      ConfigOptions.key("spark.rss.data.replica.write")
-              .intType()
-              .defaultValue(1)
-              .withDescription("The min server number that each block should be send by client successfully");
+  public static final ConfigEntry<Integer> RSS_DATA_REPLICA =
+      createIntegerBuilder(
+              new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA)
+                  .doc(
+                      "The max server number that each block can be send by client in quorum protocol"))
+          .createWithDefault(RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
 
 
 
   public static final ConfigOption<Integer> RSS_DATA_REPLICA_READ =
       ConfigOptions.key("spark.rss.data.replica.read")
-              .intType()
-              .defaultValue(1)
-              .withDescription("The min server number that metadata should be fetched by client successfully");
+          .intType()
+          .defaultValue(1)
+          .withDescription("The min server number that metadata should be fetched by client successfully");
 
 
   public static final ConfigOption<Boolean> RSS_DATA_REPLICA_SKIP_ENABLED =
       ConfigOptions.key("spark.rss.data.replica.skip.enabled")
-              .booleanType()
-              .defaultValue(true)
-              .withDescription("");
+          .booleanType()
+          .defaultValue(true)
+          .withDescription("");
 
 
   public static final ConfigOption<Integer> RSS_DATA_TRANSFER_POOL_SIZE =
       ConfigOptions.key("spark.rss.client.data.transfer.pool.size")
-              .intType()
-              .defaultValue(RssClientConfig.RSS_DATA_TRANFER_POOL_SIZE_DEFAULT_VALUE)
-              .withDescription("");
+          .intType()
+          .defaultValue(RssClientConfig.RSS_DATA_TRANFER_POOL_SIZE_DEFAULT_VALUE)
+          .withDescription("");
 
   public static final ConfigOption<Integer> RSS_DATA_COMMIT_POOL_SIZE =
       ConfigOptions.key("spark.rss.client.data.commit.pool.size")
-              .intType()
-              .defaultValue(-1)
-              .withDescription("The thread size for sending commit to shuffle servers");
+          .intType()
+          .defaultValue(-1)
+          .withDescription("The thread size for sending commit to shuffle servers");
 
 
   public static final ConfigEntry<Boolean> RSS_OZONE_DFS_NAMENODE_ODFS_ENABLE =
@@ -277,49 +272,49 @@ public class RssSparkConfig {
 
   public static final ConfigOption<Integer> RSS_CLIENT_BITMAP_SPLIT_NUM =
       ConfigOptions.key("spark.rss.client.bitmap.splitNum")
-              .intType()
-              .defaultValue(1)
-              .withDescription("");
+          .intType()
+          .defaultValue(1)
+          .withDescription("");
 
   public static final ConfigOption<String> RSS_ACCESS_ID =
       ConfigOptions.key("spark.rss.access.id")
-              .stringType()
-              .defaultValue("")
-              .withDescription("");
+          .stringType()
+          .defaultValue("")
+          .withDescription("");
 
 
   public static final ConfigOption<Integer> RSS_ACCESS_TIMEOUT_MS =
       ConfigOptions.key("spark.rss.access.timeout.ms")
-              .intType()
-              .defaultValue(10000)
-              .withDescription("");
+          .intType()
+          .defaultValue(10000)
+          .withDescription("");
 
   public static final ConfigOption<Boolean> RSS_ENABLED =
       ConfigOptions.key("spark.rss.enabled")
-              .booleanType()
-              .defaultValue(false)
-              .withDescription("");
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("");
 
   public static final ConfigOption<Boolean> RSS_DYNAMIC_CLIENT_CONF_ENABLED =
       ConfigOptions.key("spark.rss.dynamicClientConf.enabled")
-              .booleanType()
-              .defaultValue(true)
-              .withDescription("");
+          .booleanType()
+          .defaultValue(true)
+          .withDescription("");
 
   public static final ConfigOption<String> RSS_CLIENT_ASSIGNMENT_TAGS =
       ConfigOptions.key("spark.rss.client.assignment.tags")
-              .stringType()
-              .defaultValue("")
-              .withDescription("The comma-separated list of tags for deciding assignment shuffle servers. "
-                      + "Notice that the SHUFFLE_SERVER_VERSION will always as the assignment tag "
-                      + "whether this conf is set or not");
+          .stringType()
+          .defaultValue("")
+          .withDescription("The comma-separated list of tags for deciding assignment shuffle servers. "
+                  + "Notice that the SHUFFLE_SERVER_VERSION will always as the assignment tag "
+                  + "whether this conf is set or not");
 
 
   public static final ConfigOption<Boolean> RSS_CLIENT_OFF_HEAP_MEMORY_ENABLE =
       ConfigOptions.key("spark.rss.client.off.heap.memory.enable")
-              .booleanType()
-              .defaultValue(false)
-              .withDescription("Client can use off heap memory");
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Client can use off heap memory");
 
   public static final ConfigEntry<Integer> RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER =
       createIntegerBuilder(
@@ -332,28 +327,28 @@ public class RssSparkConfig {
 
   public static final ConfigOption<Long> RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL =
       ConfigOptions.key("spark.rss.client.assignment.retry.interval")
-              .longType()
-              .defaultValue(65000l)
-              .withDescription("");
+          .longType()
+          .defaultValue(65000l)
+          .withDescription("");
 
 
   public static final ConfigOption<Integer> RSS_CLIENT_ASSIGNMENT_RETRY_TIMES =
       ConfigOptions.key("spark.rss.client.assignment.retry.times")
-              .intType()
-              .defaultValue(3)
-              .withDescription("");
+          .intType()
+          .defaultValue(3)
+          .withDescription("");
 
   public static final ConfigOption<Long> RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS =
       ConfigOptions.key("spark.rss.client.access.retry.interval.ms")
-              .longType()
-              .defaultValue(20000L)
-              .withDescription("Interval between retries fallback to SortShuffleManager");
+          .longType()
+          .defaultValue(20000L)
+          .withDescription("Interval between retries fallback to SortShuffleManager");
 
   public static final ConfigOption<Integer> RSS_CLIENT_ACCESS_RETRY_TIMES =
       ConfigOptions.key("spark.rss.client.access.retry.times")
-              .intType()
-              .defaultValue(0)
-              .withDescription("Number of retries fallback to SortShuffleManager");
+          .intType()
+          .defaultValue(0)
+          .withDescription("Number of retries fallback to SortShuffleManager");
 
   public static final ConfigEntry<String> RSS_COORDINATOR_QUORUM =
       createStringBuilder(
@@ -396,15 +391,15 @@ public class RssSparkConfig {
 
   public static final ConfigOption<Integer> RSS_SHUFFLE_MANAGER_GRPC_PORT =
       ConfigOptions.key("spark.rss.shuffle.manager.grpc.port")
-              .intType()
-              .noDefaultValue()
-              .withDescription("internal configuration to indicate which port is actually bind for shuffle manager service.");
+          .intType()
+          .noDefaultValue()
+          .withDescription("internal configuration to indicate which port is actually bind for shuffle manager service.");
 
   public static final ConfigOption<Boolean> RSS_RESUBMIT_STAGE =
       ConfigOptions.key("spark.rss.resubmit.stage")
-              .booleanType()
-              .defaultValue(false)
-              .withDescription("Whether to enable the resubmit stage.");
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Whether to enable the resubmit stage.");
 
   // spark2 doesn't have this key defined
   public static final String SPARK_SHUFFLE_COMPRESS_KEY = "spark.shuffle.compress";
