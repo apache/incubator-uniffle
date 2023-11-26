@@ -101,15 +101,15 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
 
     this.reduceId =  this.inputContext.getTaskIndex();
     LOG.info("RssTezFetcherTask, dagIdentifier:{}, vertexIndex:{}, reduceId:{}.", dagIdentifier, vertexIndex, reduceId);
-    clientType = conf.get(RssTezConfig.RSS_CLIENT_TYPE, RssTezConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
+    clientType = conf.get(RssTezConfig.RSS_CLIENT_TYPE.key(), RssTezConfig.RSS_CLIENT_TYPE.defaultValue());
     this.storageType = conf.get(RssTezConfig.RSS_STORAGE_TYPE, RssTezConfig.RSS_STORAGE_TYPE_DEFAULT_VALUE);
     LOG.info("RssTezFetcherTask storageType:{}", storageType);
 
-    String readBufferSize = conf.get(RssTezConfig.RSS_CLIENT_READ_BUFFER_SIZE,
-        RssTezConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE);
+    String readBufferSize = conf.get(RssTezConfig.RSS_CLIENT_READ_BUFFER_SIZE.key(),
+        RssTezConfig.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue());
     this.readBufferSize = (int) UnitConverter.byteStringAsBytes(readBufferSize);
-    this.partitionNumPerRange = conf.getInt(RssTezConfig.RSS_PARTITION_NUM_PER_RANGE,
-        RssTezConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
+    this.partitionNumPerRange = conf.getInt(RssTezConfig.RSS_PARTITION_NUM_PER_RANGE.key(),
+        RssTezConfig.RSS_PARTITION_NUM_PER_RANGE.defaultValue());
     LOG.info("RssTezFetcherTask fetch partition:{}, with inputs:{}, readBufferSize:{}, partitionNumPerRange:{}.",
         this.partition, inputs, this.readBufferSize, this.partitionNumPerRange);
   }

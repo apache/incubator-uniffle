@@ -26,57 +26,107 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.config.RssConf;
 
+import org.apache.uniffle.common.config.ConfigOption;
+import org.apache.uniffle.common.config.ConfigOptions;
+
 public class RssTezConfig {
 
   public static final String TEZ_RSS_CONFIG_PREFIX = "tez.";
   public static final String RSS_CLIENT_HEARTBEAT_THREAD_NUM =
           TEZ_RSS_CONFIG_PREFIX + "rss.client.heartBeat.threadNum";
+
+
   public static final int RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE = 4;
-  public static final String RSS_CLIENT_TYPE = TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_TYPE;
-  public static final String RSS_CLIENT_TYPE_DEFAULT_VALUE = RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE;
-  public static final String RSS_CLIENT_RETRY_MAX = TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_RETRY_MAX;
-  public static final int RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE = RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE;
-  public static final String RSS_CLIENT_RETRY_INTERVAL_MAX =
-          TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX;
-  public static final long RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE =
-          RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE;
+
+
+  public static final ConfigOption<String> RSS_CLIENT_TYPE =
+     ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_TYPE)
+        .stringType()
+        .defaultValue(RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE)
+        .withDescription("");
+
+  public static final ConfigOption<Integer> RSS_CLIENT_RETRY_MAX =
+     ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_RETRY_MAX)
+        .intType()
+        .defaultValue(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE)
+        .withDescription("");
+
+
+
+  public static final ConfigOption<Long> RSS_CLIENT_RETRY_INTERVAL_MAX =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX)
+        .longType()
+        .defaultValue(RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE)
+        .withDescription("");
+
+
   public static final String RSS_COORDINATOR_QUORUM =
           TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_COORDINATOR_QUORUM;
-  public static final String RSS_DATA_REPLICA = TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA;
-  public static final int RSS_DATA_REPLICA_DEFAULT_VALUE = RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE;
-  public static final String RSS_DATA_REPLICA_WRITE =
-          TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_WRITE;
-  public static final int RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE =
-          RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE;
-  public static final String RSS_DATA_REPLICA_READ =
-          TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_READ;
-  public static final int RSS_DATA_REPLICA_READ_DEFAULT_VALUE =
-          RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE;
-  public static final String RSS_DATA_REPLICA_SKIP_ENABLED =
-          TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_SKIP_ENABLED;
-  public static final String RSS_DATA_TRANSFER_POOL_SIZE =
-          TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_TRANSFER_POOL_SIZE;
-  public static final int RSS_DATA_TRANSFER_POOL_SIZE_DEFAULT_VALUE =
-          RssClientConfig.RSS_DATA_TRANFER_POOL_SIZE_DEFAULT_VALUE;
-  public static final String RSS_DATA_COMMIT_POOL_SIZE =
-          TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_COMMIT_POOL_SIZE;
-  public static final int RSS_DATA_COMMIT_POOL_SIZE_DEFAULT_VALUE =
-          RssClientConfig.RSS_DATA_COMMIT_POOL_SIZE_DEFAULT_VALUE;
 
-  public static final boolean RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE =
-          RssClientConfig.RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE;
-  public static final String RSS_HEARTBEAT_INTERVAL =
-          TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_INTERVAL;
-  public static final long RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE =
-          RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE;
+
+  public static final ConfigOption<Integer> RSS_DATA_REPLICA =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA)
+        .intType()
+        .defaultValue(RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE)
+        .withDescription("");
+
+
+  public static final ConfigOption<Integer> RSS_DATA_REPLICA_WRITE =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_WRITE)
+        .intType()
+        .defaultValue(RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE)
+        .withDescription("");
+
+
+  public static final ConfigOption<Integer> RSS_DATA_REPLICA_READ =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_READ)
+        .intType()
+        .defaultValue(RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE)
+        .withDescription("");
+
+
+
+  public static final ConfigOption<Integer> RSS_DATA_TRANSFER_POOL_SIZE =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_TRANSFER_POOL_SIZE)
+        .intType()
+        .defaultValue(RssClientConfig.RSS_DATA_TRANFER_POOL_SIZE_DEFAULT_VALUE)
+        .withDescription("");
+
+
+  public static final ConfigOption<Integer> RSS_DATA_COMMIT_POOL_SIZE =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_COMMIT_POOL_SIZE)
+        .intType()
+        .defaultValue(RssClientConfig.RSS_DATA_COMMIT_POOL_SIZE_DEFAULT_VALUE)
+        .withDescription("");
+
+  public static final ConfigOption<Boolean> RSS_DATA_REPLICA_SKIP_ENABLED =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_REPLICA_SKIP_ENABLED)
+        .booleanType()
+        .defaultValue(RssClientConfig.RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE)
+        .withDescription("");
+
+
+  public static final ConfigOption<Long> RSS_HEARTBEAT_INTERVAL =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_INTERVAL)
+        .longType()
+        .defaultValue(RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE)
+        .withDescription("");
+
+
+
   public static final String RSS_HEARTBEAT_TIMEOUT =
           TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_TIMEOUT;
-  public static final long RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE =
-          RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE;
+
+  public static final ConfigOption<Long> RSS_CLIENT_SEND_CHECK_TIMEOUT_MS =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + "rss.client.send.check.timeout.ms")
+        .longType()
+        .defaultValue(RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE)
+        .withDescription("");
 
   // output:
   public static final String RSS_RUNTIME_IO_SORT_MB = TEZ_RSS_CONFIG_PREFIX + "rss.runtime.io.sort.mb";
   public static final int RSS_DEFAULT_RUNTIME_IO_SORT_MB = 100;
+
   public static final String RSS_CLIENT_SORT_MEMORY_USE_THRESHOLD = TEZ_RSS_CONFIG_PREFIX
           + "rss.client.sort.memory.use.threshold";
   public static final double RSS_CLIENT_DEFAULT_SORT_MEMORY_USE_THRESHOLD = 0.9f;
@@ -94,8 +144,7 @@ public class RssTezConfig {
   public static final String RSS_CLIENT_SEND_CHECK_INTERVAL_MS = TEZ_RSS_CONFIG_PREFIX
           + "rss.client.send.check.interval.ms";
   public static final long RSS_CLIENT_DEFAULT_SEND_CHECK_INTERVAL_MS = 500L;
-  public static final String RSS_CLIENT_SEND_CHECK_TIMEOUT_MS = TEZ_RSS_CONFIG_PREFIX
-          + "rss.client.send.check.timeout.ms";
+
   public static final long RSS_CLIENT_DEFAULT_SEND_CHECK_TIMEOUT_MS = 60 * 1000 * 10L;
   public static final String RSS_CLIENT_BITMAP_NUM = TEZ_RSS_CONFIG_PREFIX + "rss.client.bitmap.num";
   public static final int RSS_CLIENT_DEFAULT_BITMAP_NUM = 1;
@@ -106,54 +155,68 @@ public class RssTezConfig {
   public static final String RSS_STORAGE_TYPE = TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_STORAGE_TYPE;
   public static final String RSS_STORAGE_TYPE_DEFAULT_VALUE = "MEMORY_LOCALFILE";
 
-
-  public static final String RSS_DYNAMIC_CLIENT_CONF_ENABLED =
-          TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED;
-  public static final boolean RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE =
-          RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE;
+  public static final ConfigOption<Boolean> RSS_DYNAMIC_CLIENT_CONF_ENABLED =
+     ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED)
+        .booleanType()
+        .defaultValue(RssClientConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE)
+        .withDescription("");
 
   public static final String RSS_CLIENT_ASSIGNMENT_TAGS =
           TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_TAGS;
 
-  public static final String RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER =
-          RssClientConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER;
-  public static final int RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE =
-          RssClientConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE;
+  public static final ConfigOption<Integer> RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER =
+     ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER)
+        .intType()
+        .defaultValue(RssClientConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE)
+        .withDescription("");
 
-  public static final String RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL =
-          TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL;
-  public static final long RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE =
-          RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE;
-  public static final String RSS_CLIENT_ASSIGNMENT_RETRY_TIMES =
-          TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES;
-  public static final int RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE =
-          RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE;
+  public static final ConfigOption<Long> RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL =
+     ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL)
+        .longType()
+        .defaultValue(RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE)
+        .withDescription("");
 
-  public static final String RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED =
-          TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED;
-  public static final boolean RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE =
-          RssClientConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE;
+  public static final ConfigOption<Integer> RSS_CLIENT_ASSIGNMENT_RETRY_TIMES =
+     ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES)
+          .intType()
+        .defaultValue(RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE)
+        .withDescription("");
 
-  public static final String RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR =
-          TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR;
 
-  public static final double RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR_DEFAULT_VALUE
-          = RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR_DEFAULT_VALUE;
+  public static final ConfigOption<Boolean> RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED =
+     ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED)
+          .booleanType()
+        .defaultValue(RssClientConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE)
+        .withDescription("");
 
-  public static final String RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER =
-          TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER;
-  public static final int RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE =
-          RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE;
 
-  public static final String RSS_CLIENT_READ_BUFFER_SIZE =
-      TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE;
-  public static final String RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE =
-      RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE;
+  public static final ConfigOption<Double> RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR)
+        .doubleType()
+        .defaultValue(RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR_DEFAULT_VALUE)
+        .withDescription("");
 
-  public static final String RSS_PARTITION_NUM_PER_RANGE =
-      TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_PARTITION_NUM_PER_RANGE;
-  public static final int RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE =
-      RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE;
+
+  public static final ConfigOption<Integer> RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER)
+        .intType()
+        .defaultValue(RssClientConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE)
+        .withDescription("");
+
+
+  public static final ConfigOption<String> RSS_CLIENT_READ_BUFFER_SIZE =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE)
+        .stringType()
+        .defaultValue(RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE)
+        .withDescription("");
+
+
+  public static final ConfigOption<Integer> RSS_PARTITION_NUM_PER_RANGE =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_PARTITION_NUM_PER_RANGE)
+        .intType()
+        .defaultValue(RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE)
+        .withDescription("");
+
 
   public static final String RSS_REMOTE_STORAGE_PATH =
       TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_STORAGE_PATH;
@@ -164,13 +227,22 @@ public class RssTezConfig {
   public static final String RSS_AM_SHUFFLE_MANAGER_ADDRESS = TEZ_RSS_CONFIG_PREFIX + "rss.am.shuffle.manager.address";
   public static final String RSS_AM_SHUFFLE_MANAGER_PORT = TEZ_RSS_CONFIG_PREFIX + "rss.am.shuffle.manager.port";
   public static final String RSS_AM_SHUFFLE_MANAGER_DEBUG = TEZ_RSS_CONFIG_PREFIX + "rss.am.shuffle.manager.debug";
-  public static final String RSS_AM_SLOW_START_ENABLE = TEZ_RSS_CONFIG_PREFIX + "rss.am.slow.start.enable";
-  public static final Boolean RSS_AM_SLOW_START_ENABLE_DEFAULT = false;
+
+
+  public static final ConfigOption<Boolean> RSS_AM_SLOW_START_ENABLE =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + "rss.am.slow.start.enable")
+        .booleanType()
+        .defaultValue(false)
+        .withDescription("");
 
   public static final String RSS_REDUCE_INITIAL_MEMORY = TEZ_RSS_CONFIG_PREFIX + "rss.reduce.initial.memory";
 
-  public static final String RSS_ACCESS_TIMEOUT_MS = TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ACCESS_TIMEOUT_MS;
-  public static final int RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE = RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE;
+  public static final ConfigOption<Integer> RSS_ACCESS_TIMEOUT_MS =
+      ConfigOptions.key(TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ACCESS_TIMEOUT_MS)
+        .intType()
+        .defaultValue(RssClientConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE)
+        .withDescription("");
+
 
   public static final Set<String> RSS_MANDATORY_CLUSTER_CONF =
       ImmutableSet.of(RSS_STORAGE_TYPE, RSS_REMOTE_STORAGE_PATH);

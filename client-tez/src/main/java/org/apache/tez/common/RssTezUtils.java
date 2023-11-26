@@ -80,24 +80,24 @@ public class RssTezUtils {
   public static ShuffleWriteClient createShuffleClient(Configuration conf) {
     int heartBeatThreadNum = conf.getInt(RssTezConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM,
         RssTezConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM_DEFAULT_VALUE);
-    int retryMax = conf.getInt(RssTezConfig.RSS_CLIENT_RETRY_MAX,
-        RssTezConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
-    long retryIntervalMax = conf.getLong(RssTezConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
-        RssTezConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
-    String clientType = conf.get(RssTezConfig.RSS_CLIENT_TYPE,
-        RssTezConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
-    int replicaWrite = conf.getInt(RssTezConfig.RSS_DATA_REPLICA_WRITE,
-        RssTezConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE);
-    int replicaRead = conf.getInt(RssTezConfig.RSS_DATA_REPLICA_READ,
-        RssTezConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE);
-    int replica = conf.getInt(RssTezConfig.RSS_DATA_REPLICA,
-        RssTezConfig.RSS_DATA_REPLICA_DEFAULT_VALUE);
-    boolean replicaSkipEnabled = conf.getBoolean(RssTezConfig.RSS_DATA_REPLICA_SKIP_ENABLED,
-        RssTezConfig.RSS_DATA_REPLICA_SKIP_ENABLED_DEFAULT_VALUE);
-    int dataTransferPoolSize = conf.getInt(RssTezConfig.RSS_DATA_TRANSFER_POOL_SIZE,
-        RssTezConfig.RSS_DATA_TRANSFER_POOL_SIZE_DEFAULT_VALUE);
-    int dataCommitPoolSize = conf.getInt(RssTezConfig.RSS_DATA_COMMIT_POOL_SIZE,
-        RssTezConfig.RSS_DATA_COMMIT_POOL_SIZE_DEFAULT_VALUE);
+    int retryMax = conf.getInt(RssTezConfig.RSS_CLIENT_RETRY_MAX.key(),
+        RssTezConfig.RSS_CLIENT_RETRY_MAX.defaultValue());
+    long retryIntervalMax = conf.getLong(RssTezConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key(),
+        RssTezConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.defaultValue());
+    String clientType = conf.get(RssTezConfig.RSS_CLIENT_TYPE.key(),
+        RssTezConfig.RSS_CLIENT_TYPE.defaultValue());
+    int replicaWrite = conf.getInt(RssTezConfig.RSS_DATA_REPLICA_WRITE.key(),
+        RssTezConfig.RSS_DATA_REPLICA_WRITE.defaultValue());
+    int replicaRead = conf.getInt(RssTezConfig.RSS_DATA_REPLICA_READ.key(),
+        RssTezConfig.RSS_DATA_REPLICA_READ.defaultValue());
+    int replica = conf.getInt(RssTezConfig.RSS_DATA_REPLICA.key(),
+        RssTezConfig.RSS_DATA_REPLICA.defaultValue());
+    boolean replicaSkipEnabled = conf.getBoolean(RssTezConfig.RSS_DATA_REPLICA_SKIP_ENABLED.key(),
+        RssTezConfig.RSS_DATA_REPLICA_SKIP_ENABLED.defaultValue());
+    int dataTransferPoolSize = conf.getInt(RssTezConfig.RSS_DATA_TRANSFER_POOL_SIZE.key(),
+        RssTezConfig.RSS_DATA_TRANSFER_POOL_SIZE.defaultValue());
+    int dataCommitPoolSize = conf.getInt(RssTezConfig.RSS_DATA_COMMIT_POOL_SIZE.key(),
+        RssTezConfig.RSS_DATA_COMMIT_POOL_SIZE.defaultValue());
     ShuffleWriteClient client = ShuffleClientFactory
         .getInstance()
         .createShuffleWriteClient(clientType, retryMax, retryIntervalMax,
@@ -164,8 +164,8 @@ public class RssTezUtils {
   }
 
   public static int estimateTaskConcurrency(Configuration jobConf, int mapNum, int reduceNum) {
-    double dynamicFactor = jobConf.getDouble(RssTezConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR,
-        RssTezConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR_DEFAULT_VALUE);
+    double dynamicFactor = jobConf.getDouble(RssTezConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR.key(),
+        RssTezConfig.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR.defaultValue());
     double slowStart = jobConf.getDouble(Constants.MR_SLOW_START, Constants.MR_SLOW_START_DEFAULT_VALUE);
     int mapLimit = jobConf.getInt(Constants.MR_MAP_LIMIT, Constants.MR_MAP_LIMIT_DEFAULT_VALUE);
     int reduceLimit = jobConf.getInt(Constants.MR_REDUCE_LIMIT, Constants.MR_REDUCE_LIMIT_DEFAULT_VALUE);
@@ -181,19 +181,19 @@ public class RssTezUtils {
 
   public static int getRequiredShuffleServerNumber(Configuration jobConf, int mapNum, int reduceNum) {
     int requiredShuffleServerNumber = jobConf.getInt(
-        RssTezConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER,
-        RssTezConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER_DEFAULT_VALUE
+        RssTezConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER.key(),
+        RssTezConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER.defaultValue()
     );
     boolean enabledEstimateServer = jobConf.getBoolean(
-        RssTezConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED,
-        RssTezConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE
+        RssTezConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED.key(),
+        RssTezConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED.defaultValue()
     );
     if (!enabledEstimateServer || requiredShuffleServerNumber > 0) {
       return requiredShuffleServerNumber;
     }
     int taskConcurrency = estimateTaskConcurrency(jobConf, mapNum, reduceNum);
-    int taskConcurrencyPerServer = jobConf.getInt(RssTezConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER,
-        RssTezConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE);
+    int taskConcurrencyPerServer = jobConf.getInt(RssTezConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER.key(),
+        RssTezConfig.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER.defaultValue());
     return (int) Math.ceil(taskConcurrency * 1.0 / taskConcurrencyPerServer);
   }
 

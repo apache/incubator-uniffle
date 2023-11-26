@@ -169,10 +169,10 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
     ShuffleAssignmentsInfo shuffleAssignmentsInfo;
     int requiredAssignmentShuffleServersNum = RssTezUtils.getRequiredShuffleServerNumber(conf, 200, partitionNum);
     // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the same result
-    long retryInterval = conf.getLong(RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL,
-            RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE);
-    int retryTimes = conf.getInt(RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES,
-            RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE);
+    long retryInterval = conf.getLong(RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL.key(),
+            RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL.defaultValue());
+    int retryTimes = conf.getInt(RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES.key(),
+            RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES.defaultValue());
 
     // Get the configured server assignment tags and it will also add default shuffle version tag.
     Set<String> assignmentTags = new HashSet<>();

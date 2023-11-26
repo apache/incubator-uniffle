@@ -139,8 +139,8 @@ public class RssDAGAppMaster extends DAGAppMaster {
     client.registerCoordinators(coordinators);
 
     String strAppAttemptId = appMaster.getAttemptID().toString();
-    long heartbeatInterval = conf.getLong(RssTezConfig.RSS_HEARTBEAT_INTERVAL,
-            RssTezConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
+    long heartbeatInterval = conf.getLong(RssTezConfig.RSS_HEARTBEAT_INTERVAL.key(),
+            RssTezConfig.RSS_HEARTBEAT_INTERVAL.defaultValue());
     long heartbeatTimeout = conf.getLong(RssTezConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
     client.registerApplicationInfo(strAppAttemptId, heartbeatTimeout, "user");
 
@@ -164,11 +164,11 @@ public class RssDAGAppMaster extends DAGAppMaster {
     appMaster.getTezRemoteShuffleManager().start();
 
     // apply dynamic configuration
-    boolean dynamicConfEnabled = conf.getBoolean(RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
-        RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
+    boolean dynamicConfEnabled = conf.getBoolean(RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(),
+        RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.defaultValue());
     if (dynamicConfEnabled) {
       appMaster.clusterClientConf = client.fetchClientConf(
-          conf.getInt(RssTezConfig.RSS_ACCESS_TIMEOUT_MS, RssTezConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
+          conf.getInt(RssTezConfig.RSS_ACCESS_TIMEOUT_MS.key(), RssTezConfig.RSS_ACCESS_TIMEOUT_MS.defaultValue()));
     }
 
     mayCloseTezSlowStart(conf);
@@ -290,7 +290,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
   }
 
   static void mayCloseTezSlowStart(Configuration conf) {
-    if (!conf.getBoolean(RssTezConfig.RSS_AM_SLOW_START_ENABLE, RssTezConfig.RSS_AM_SLOW_START_ENABLE_DEFAULT)) {
+    if (!conf.getBoolean(RssTezConfig.RSS_AM_SLOW_START_ENABLE.key(), RssTezConfig.RSS_AM_SLOW_START_ENABLE.defaultValue())) {
       conf.setFloat(ShuffleVertexManager.TEZ_SHUFFLE_VERTEX_MANAGER_MIN_SRC_FRACTION, 1.0f);
       conf.setFloat(ShuffleVertexManager.TEZ_SHUFFLE_VERTEX_MANAGER_MAX_SRC_FRACTION, 1.0f);
     }
