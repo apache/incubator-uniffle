@@ -51,7 +51,7 @@ public class DynamicClientConfService implements Closeable {
   private final AtomicLong latestModificationMS = new AtomicLong(0L);
   private ScheduledExecutorService updateClientConfExecutor = null;
 
-  private Object clientConfLock = new Object();
+  private final Object clientConfLock = new Object();
   private ClientConf clientConf = null;
 
   private Consumer<ClientConf>[] callbacks;
@@ -113,7 +113,7 @@ public class DynamicClientConfService implements Closeable {
   private void refreshClientConf() {
     try {
       FileStatus[] fileStatus = fileSystem.listStatus(confStoredPath);
-      if (!ArrayUtils.isEmpty(fileStatus)) {
+      if (ArrayUtils.isNotEmpty(fileStatus)) {
         long modifiedMS = fileStatus[0].getModificationTime();
         if (latestModificationMS.get() != modifiedMS) {
           doRefreshClientConf();

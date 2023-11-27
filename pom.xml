@@ -103,7 +103,7 @@
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
     <skipBuildImage>true</skipBuildImage>
-    <snakeyaml.version>1.25</snakeyaml.version>
+    <snakeyaml.version>2.2</snakeyaml.version>
   </properties>
 
   <repositories>

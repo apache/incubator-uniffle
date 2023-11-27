@@ -23,6 +23,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -221,18 +222,15 @@ public class ApplicationManager implements Closeable {
             new RemoteStorageInfo(path, confKVs.getOrDefault(storageHost, Maps.newHashMap()));
         availableRemoteStorageInfo.put(path, rsInfo);
       }
+
       // remove unused remote path if exist
-      List<String> unusedPath = Lists.newArrayList();
-      for (String existPath : availableRemoteStorageInfo.keySet()) {
-        if (!paths.contains(existPath)) {
-          unusedPath.add(existPath);
+      Iterator<String> iterator = availableRemoteStorageInfo.keySet().iterator();
+      while (iterator.hasNext()) {
+        String path = iterator.next();
+        if (!paths.contains(path)) {
+          iterator.remove();
+          removePathFromCounter(path);
         }
-      }
-      // remote unused path
-      for (String path : unusedPath) {
-        availableRemoteStorageInfo.remove(path);
-        // try to remove if counter = 0, or it will be removed in decRemoteStorageCounter() later
-        removePathFromCounter(path);
       }
     } else {
       LOG.info("Refresh remote storage with empty value {}", remoteStoragePath);

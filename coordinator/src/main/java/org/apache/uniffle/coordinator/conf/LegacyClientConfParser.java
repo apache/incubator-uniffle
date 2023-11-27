@@ -20,6 +20,7 @@ package org.apache.uniffle.coordinator.conf;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class LegacyClientConfParser implements ClientConfParser {
 
   @Override
   public ClientConf tryParse(InputStream fileInputStream) throws Exception {
-    String content = IOUtils.toString(fileInputStream);
+    String content = IOUtils.toString(fileInputStream, StandardCharsets.UTF_8);
 
     String remoteStoragePath = "";
     String remoteStorageConf = "";
@@ -98,6 +99,6 @@ public class LegacyClientConfParser implements ClientConfParser {
       return remoteStorageInfoMap;
     }
 
-    return Collections.EMPTY_MAP;
+    return Collections.emptyMap();
   }
 }

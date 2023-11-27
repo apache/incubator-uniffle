@@ -31,10 +31,6 @@ public class ClientConf {
   // key:remote-path, val: storage-conf
   private Map<String, RemoteStorageInfo> remoteStorageInfos;
 
-  public ClientConf(Map<String, String> rssClientConf) {
-    this.rssClientConf = rssClientConf;
-  }
-
   public ClientConf(
       Map<String, String> rssClientConf, Map<String, RemoteStorageInfo> remoteStorageInfos) {
     this.rssClientConf = rssClientConf;
@@ -45,15 +41,7 @@ public class ClientConf {
     return rssClientConf;
   }
 
-  public void setRssClientConf(Map<String, String> rssClientConf) {
-    this.rssClientConf = rssClientConf;
-  }
-
   public Map<String, RemoteStorageInfo> getRemoteStorageInfos() {
     return remoteStorageInfos;
-  }
-
-  public void setRemoteStorageInfos(Map<String, RemoteStorageInfo> remoteStorageInfos) {
-    this.remoteStorageInfos = remoteStorageInfos;
   }
 }

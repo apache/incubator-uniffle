@@ -18,6 +18,7 @@
 package org.apache.uniffle.coordinator.conf;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,14 +37,14 @@ public class YamlClientConfParser implements ClientConfParser {
   @Override
   public ClientConf tryParse(InputStream fileInputStream) throws Exception {
     Yaml yaml = new Yaml();
-    Map<Object, Object> data = yaml.load(IOUtils.toString(fileInputStream));
+    Map<Object, Object> data = yaml.load(IOUtils.toString(fileInputStream, StandardCharsets.UTF_8));
 
     Object rssClientConfRaw = data.get(RSS_CLIENT_CONF_KEY);
     Map<String, String> rssConfKVs =
-        rssClientConfRaw == null ? Collections.EMPTY_MAP : parseKVItems(rssClientConfRaw);
+        rssClientConfRaw == null ? Collections.emptyMap() : parseKVItems(rssClientConfRaw);
 
     Map<String, Object> remoteStorageInfosRaw =
-        (Map<String, Object>) data.getOrDefault(REMOTE_STORAGE_INFOS_KEY, Collections.EMPTY_MAP);
+        (Map<String, Object>) data.getOrDefault(REMOTE_STORAGE_INFOS_KEY, Collections.emptyMap());
 
     Map<String, RemoteStorageInfo> remoteStorageInfoMap = new HashMap<>();
     for (Map.Entry<String, Object> entry : remoteStorageInfosRaw.entrySet()) {
