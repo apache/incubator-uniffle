@@ -141,6 +141,7 @@
     <module>integration-test/common</module>
     <module>cli</module>
     <module>dashboard</module>
+    <module>integration-test/rust</module>
   </modules>
 
   <dependencies>
@@ -2299,6 +2300,21 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>rust</id>
+      <modules>
+        <module>integration-test/rust</module>
+      </modules>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>shuffle-storage</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
     </profile>
   </profiles>
 </project>
