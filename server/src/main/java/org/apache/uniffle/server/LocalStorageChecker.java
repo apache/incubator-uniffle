@@ -93,11 +93,15 @@ public class LocalStorageChecker extends Checker {
                 return;
               }
 
-              totalSpace.addAndGet(getTotalSpace(storageInfo.storageDir));
-              wholeDiskUsedSpace.addAndGet(getWholeDiskUsedSpace(storageInfo.storageDir));
+              long total = getTotalSpace(storageInfo.storageDir);
+              long free = getFreeSpace(storageInfo.storageDir);
+
+              totalSpace.addAndGet(total);
+              wholeDiskUsedSpace.addAndGet(total - free);
               serviceUsedSpace.addAndGet(getServiceUsedSpace(storageInfo.storageDir));
 
-              if (storageInfo.checkIsSpaceEnough()) {
+              storageInfo.updateStorageFreeSpace(free);
+              if (storageInfo.checkIsSpaceEnough(total, free)) {
                 num.incrementAndGet();
               }
               cdl.countDown();
@@ -150,6 +154,10 @@ public class LocalStorageChecker extends Checker {
     return file.getTotalSpace() - file.getUsableSpace();
   }
 
+  long getFreeSpace(File file) {
+    return file.getUsableSpace();
+  }
+
   protected static long getServiceUsedSpace(File storageDir) {
     if (storageDir == null || !storageDir.exists()) {
       return 0;
@@ -190,13 +198,16 @@ public class LocalStorageChecker extends Checker {
       this.storage = storage;
     }
 
-    boolean checkIsSpaceEnough() {
+    void updateStorageFreeSpace(long free) {
+      storage.updateDiskFree(free);
+    }
 
-      if (Double.compare(0.0, getTotalSpace(storageDir)) == 0) {
+    boolean checkIsSpaceEnough(long total, long free) {
+      if (Double.compare(0.0, total) == 0) {
         this.isHealthy = false;
         return false;
       }
-      double usagePercent = getWholeDiskUsedSpace(storageDir) * 100.0 / getTotalSpace(storageDir);
+      double usagePercent = (total - free) * 100.0 / total;
       if (isHealthy) {
         if (Double.compare(usagePercent, diskMaxUsagePercentage) >= 0) {
           isHealthy = false;
