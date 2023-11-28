@@ -178,13 +178,12 @@ public class LocalStorageTest {
             .enableDiskCapacityWatermarkCheck()
             .build();
 
-    long diskCapacity = localStorage.getDiskCapacity();
-
     localStorage.getMetaData().updateDiskSize(20);
     assertTrue(localStorage.canWrite());
     localStorage.getMetaData().updateDiskSize(65);
     assertTrue(localStorage.canWrite());
 
+    final long diskCapacity = localStorage.getDiskCapacity();
     localStorage.updateDiskFree((long) (diskCapacity * (1 - 0.96)));
     assertFalse(localStorage.canWrite());
 
