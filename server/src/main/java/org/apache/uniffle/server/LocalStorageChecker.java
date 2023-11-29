@@ -148,12 +148,6 @@ public class LocalStorageChecker extends Checker {
     return file.getTotalSpace();
   }
 
-  // Only for testing
-  @VisibleForTesting
-  long getWholeDiskUsedSpace(File file) {
-    return file.getTotalSpace() - file.getUsableSpace();
-  }
-
   long getFreeSpace(File file) {
     return file.getUsableSpace();
   }
