@@ -20,6 +20,8 @@ package org.apache.uniffle.coordinator;
 import java.io.Closeable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,6 +38,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -48,6 +51,7 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker;
 import org.apache.uniffle.coordinator.conf.ClientConf;
+import org.apache.uniffle.coordinator.conf.LegacyClientConfParser;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.strategy.storage.AppBalanceSelectStorageStrategy;
 import org.apache.uniffle.coordinator.strategy.storage.LowestIOSampleCostSelectStorageStrategy;
@@ -199,45 +203,20 @@ public class ApplicationManager implements Closeable {
     }
   }
 
+  // only for test
+  @VisibleForTesting
   public void refreshRemoteStorage(String remoteStoragePath, String remoteStorageConf) {
-    if (!StringUtils.isEmpty(remoteStoragePath)) {
-      LOG.info("Refresh remote storage with {} {}", remoteStoragePath, remoteStorageConf);
-      Set<String> paths = Sets.newHashSet(remoteStoragePath.split(Constants.COMMA_SPLIT_CHAR));
-      Map<String, Map<String, String>> confKVs =
-          CoordinatorUtils.extractRemoteStorageConf(remoteStorageConf);
-      // add remote path if not exist
-      for (String path : paths) {
-        if (!availableRemoteStorageInfo.containsKey(path)) {
-          remoteStoragePathRankValue.computeIfAbsent(
-              path,
-              key -> {
-                // refreshRemoteStorage is designed without multiple thread problem
-                // metrics shouldn't be added duplicated
-                addRemoteStorageMetrics(path);
-                return new RankValue(0);
-              });
-        }
-        String storageHost = getStorageHost(path);
-        RemoteStorageInfo rsInfo =
-            new RemoteStorageInfo(path, confKVs.getOrDefault(storageHost, Maps.newHashMap()));
-        availableRemoteStorageInfo.put(path, rsInfo);
-      }
+    try {
+      LegacyClientConfParser parser = new LegacyClientConfParser();
 
-      // remove unused remote path if exist
-      Iterator<String> iterator = availableRemoteStorageInfo.keySet().iterator();
-      while (iterator.hasNext()) {
-        String path = iterator.next();
-        if (!paths.contains(path)) {
-          iterator.remove();
-          removePathFromCounter(path);
-        }
-      }
-    } else {
-      LOG.info("Refresh remote storage with empty value {}", remoteStoragePath);
-      for (String path : availableRemoteStorageInfo.keySet()) {
-        removePathFromCounter(path);
-      }
-      availableRemoteStorageInfo.clear();
+      String remoteStorageConfRaw = String.format("%s %s\n %s %s",
+          CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), remoteStoragePath,
+          CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF.key(), remoteStorageConf);
+
+      ClientConf conf = parser.tryParse(IOUtils.toInputStream(remoteStorageConfRaw, StandardCharsets.UTF_8));
+      refreshRemoteStorages(conf);
+    } catch (Exception e) {
+      LOG.error("Errors on refreshing remote storage", e);
     }
   }
 
