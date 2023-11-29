@@ -194,7 +194,7 @@ public class ShuffleServerConf extends RssBaseConf {
           .booleanType()
           .defaultValue(false)
           .withDescription(
-              "If it is co_located with other services, the high-low watermark check "
+              "If it is co-located with other services, the high-low watermark check "
                   + "based on the uniffle used is not correct. Due to this, the whole disk capacity "
                   + "watermark check is necessary, which will reuse the current watermark value. "
                   + "It will be disabled by default.");
