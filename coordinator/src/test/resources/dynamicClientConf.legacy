@@ -20,3 +20,4 @@ k2 v2
 
 rss.coordinator.remote.storage.path hdfs://x-ns01,hdfs://a-ns01
 rss.coordinator.remote.storage.cluster.conf x-ns01,k1=v1,k2=v2;a-ns01,k1=v1,k2=v2
+

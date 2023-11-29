@@ -187,7 +187,7 @@ public class ApplicationManager implements Closeable {
     // remove unused remote path if exist
     List<String> unusedPath = Lists.newArrayList();
     for (String existPath : availableRemoteStorageInfo.keySet()) {
-      if (!remoteStorageInfoMap.keySet().contains(existPath)) {
+      if (!remoteStorageInfoMap.containsKey(existPath)) {
         unusedPath.add(existPath);
       }
     }
