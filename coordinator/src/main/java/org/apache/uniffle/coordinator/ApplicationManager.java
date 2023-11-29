@@ -207,7 +207,7 @@ public class ApplicationManager implements Closeable {
 
       String remoteStorageConfRaw =
           String.format(
-              "%s %s\n %s %s",
+              "%s %s %n %s %s",
               CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(),
               remoteStoragePath,
               CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF.key(),
