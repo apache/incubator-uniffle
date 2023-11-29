@@ -168,11 +168,11 @@ public class LocalStorage extends AbstractStorage {
     if (isSpaceEnough) {
       serviceUsedCapacityCheck =
           metaData.getDiskSize().doubleValue() * 100 / capacity < highWaterMarkOfWrite;
-      diskUsedCapacityCheck = (diskCapacity - diskFree) * 100 / diskCapacity < highWaterMarkOfWrite;
+      diskUsedCapacityCheck = ((double)(diskCapacity - diskFree)) * 100 / diskCapacity < highWaterMarkOfWrite;
     } else {
       serviceUsedCapacityCheck =
           metaData.getDiskSize().doubleValue() * 100 / capacity < lowWaterMarkOfWrite;
-      diskUsedCapacityCheck = (diskCapacity - diskFree) * 100 / diskCapacity < lowWaterMarkOfWrite;
+      diskUsedCapacityCheck = ((double)(diskCapacity - diskFree)) * 100 / diskCapacity < lowWaterMarkOfWrite;
     }
     isSpaceEnough =
         serviceUsedCapacityCheck && (enableDiskCapacityCheck ? diskUsedCapacityCheck : true);
