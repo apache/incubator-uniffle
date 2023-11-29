@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,25 +42,35 @@ public class RustIntegrationTestBase extends HadoopTestBase {
 //        for (ShuffleServer shuffleServer : shuffleServers) {
 //            shuffleServer.start();
 //        }
-        Process rustServerProcess = Runtime.getRuntime().exec("rust/experimental/server/target/debug/uniffle-worker");
+        String[] command = {
+                "rust/experimental/server/target/debug/uniffle-worker",
+                "--config",
+                getConfig()
+        };
+        Process rustServerProcess = Runtime.getRuntime().exec(command);
 
         Thread.sleep(1000);
 
         if (rustServerProcess.isAlive()) {
             LOG.info("Successfully started rust server.");
+            // 创建新线程来读取输出
+            new Thread(() -> {
+                try (BufferedReader stdInput = new BufferedReader(new InputStreamReader(rustServerProcess.getInputStream()));
+                     BufferedReader stdError = new BufferedReader(new InputStreamReader(rustServerProcess.getErrorStream()))) {
+
+                    String line;
+                    while ((line = stdInput.readLine()) != null) {
+                        System.out.println(line);
+                    }
+                    while ((line = stdError.readLine()) != null) {
+                        System.err.println(line);
+                    }
+                } catch (IOException e) {
+                    LOG.error("IOException occurred", e);
+                }
+            }).start();
         } else {
             LOG.info("Rust server failed to start. Reading output for more information.");
-
-            BufferedReader stdInput = new BufferedReader(new InputStreamReader(rustServerProcess.getInputStream()));
-            BufferedReader stdError = new BufferedReader(new InputStreamReader(rustServerProcess.getErrorStream()));
-
-            String line;
-            while ((line = stdInput.readLine()) != null) {
-                System.out.println(line);
-            }
-            while ((line = stdError.readLine()) != null) {
-                System.err.println(line);
-            }
 
             int exitCode = rustServerProcess.waitFor();
             LOG.error("Process exited with error code: " + exitCode);
@@ -147,6 +158,14 @@ public class RustIntegrationTestBase extends HadoopTestBase {
         if (exitCode != 0) {
             LOG.error("Compilation error with exit code: " + exitCode);
         }
+    }
+
+    protected static String getConfig() throws FileNotFoundException {
+        URL resource = RustIntegrationTestBase.class.getClassLoader().getResource("config.toml");
+        if (resource != null) {
+            return resource.getPath();
+        }
+        throw new FileNotFoundException("Cannot found config.toml");
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {

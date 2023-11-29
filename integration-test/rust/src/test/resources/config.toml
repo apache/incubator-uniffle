@@ -1,0 +1,8 @@
+coordinator_quorum = ["127.0.0.1:19999"]
+
+[hybrid_store]
+memory_spill_high_watermark = 0.9
+memory_spill_low_watermark = 0.5
+
+[memory_store]
+capacity = "1G"
