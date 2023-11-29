@@ -20,12 +20,10 @@ package org.apache.uniffle.coordinator;
 import java.io.Closeable;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +44,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.Application;
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker;
@@ -57,7 +54,6 @@ import org.apache.uniffle.coordinator.strategy.storage.AppBalanceSelectStorageSt
 import org.apache.uniffle.coordinator.strategy.storage.LowestIOSampleCostSelectStorageStrategy;
 import org.apache.uniffle.coordinator.strategy.storage.RankValue;
 import org.apache.uniffle.coordinator.strategy.storage.SelectStorageStrategy;
-import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 
 public class ApplicationManager implements Closeable {
 
@@ -209,11 +205,16 @@ public class ApplicationManager implements Closeable {
     try {
       LegacyClientConfParser parser = new LegacyClientConfParser();
 
-      String remoteStorageConfRaw = String.format("%s %s\n %s %s",
-          CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), remoteStoragePath,
-          CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF.key(), remoteStorageConf);
+      String remoteStorageConfRaw =
+          String.format(
+              "%s %s\n %s %s",
+              CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(),
+              remoteStoragePath,
+              CoordinatorConf.COORDINATOR_REMOTE_STORAGE_CLUSTER_CONF.key(),
+              remoteStorageConf);
 
-      ClientConf conf = parser.tryParse(IOUtils.toInputStream(remoteStorageConfRaw, StandardCharsets.UTF_8));
+      ClientConf conf =
+          parser.tryParse(IOUtils.toInputStream(remoteStorageConfRaw, StandardCharsets.UTF_8));
       refreshRemoteStorages(conf);
     } catch (Exception e) {
       LOG.error("Errors on refreshing remote storage", e);
