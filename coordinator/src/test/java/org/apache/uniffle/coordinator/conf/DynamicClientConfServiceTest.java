@@ -15,72 +15,78 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.test;
+package org.apache.uniffle.coordinator.conf;
 
-import java.io.OutputStreamWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.Map;
+import java.util.Objects;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-import org.apache.uniffle.coordinator.ApplicationManager;
-import org.apache.uniffle.coordinator.ClientConfManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.storage.HadoopTestBase;
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
-import static java.lang.Thread.sleep;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ClientConfManagerHadoopTest extends HadoopTestBase {
+public class DynamicClientConfServiceTest {
 
-  @Test
-  public void test() throws Exception {
-    String cfgFile = HDFS_URI + "/test/client_conf";
-    createAndRunClientConfManagerCases(HDFS_URI, cfgFile, fs, HadoopTestBase.conf);
+  @BeforeEach
+  public void setUp() {
+    CoordinatorMetrics.register();
   }
 
-  public static void createAndRunClientConfManagerCases(
-      String clusterPathPrefix, String cfgFile, FileSystem fileSystem, Configuration hadoopConf)
-      throws Exception {
+  @AfterEach
+  public void clear() {
+    CoordinatorMetrics.clear();
+  }
 
-    CoordinatorConf conf = new CoordinatorConf();
-    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, clusterPathPrefix);
-    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 1);
+  @Test
+  public void testByLegacyParser(@TempDir File tempDir) throws Exception {
+    File cfgFile = File.createTempFile("tmp", ".conf", tempDir);
+    final String cfgFileName = cfgFile.getAbsolutePath();
+    final String filePath =
+        Objects.requireNonNull(getClass().getClassLoader().getResource("coordinator.conf"))
+            .getFile();
+    CoordinatorConf conf = new CoordinatorConf(filePath);
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, tempDir.toURI().toString());
     conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, true);
 
     // file load checking at startup
     Exception expectedException = null;
     try {
-      new ClientConfManager(conf, new Configuration(), new ApplicationManager(conf));
+      new DynamicClientConfService(conf, new Configuration());
     } catch (RuntimeException e) {
       expectedException = e;
     }
     assertNotNull(expectedException);
     assertTrue(expectedException.getMessage().endsWith("is not a file."));
 
-    Path path = new Path(cfgFile);
-    FSDataOutputStream out = fileSystem.create(path);
-    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile);
-    ClientConfManager clientConfManager =
-        new ClientConfManager(conf, new Configuration(), new ApplicationManager(conf));
-    assertEquals(0, clientConfManager.getClientConf().size());
+    conf.set(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_PATH, cfgFile.toURI().toString());
+    DynamicClientConfService clientConfManager =
+        new DynamicClientConfService(conf, new Configuration());
+    assertEquals(0, clientConfManager.getRssClientConf().size());
 
-    PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(out));
+    FileWriter fileWriter = new FileWriter(cfgFile);
+    PrintWriter printWriter = new PrintWriter(fileWriter);
     printWriter.println("spark.mock.1 abc");
     printWriter.println(" spark.mock.2   123 ");
     printWriter.println("spark.mock.3 true  ");
     printWriter.flush();
     printWriter.close();
-    clientConfManager = new ClientConfManager(conf, hadoopConf, new ApplicationManager(conf));
-    sleep(1200);
-    Map<String, String> clientConf = clientConfManager.getClientConf();
+    // load config at the beginning
+    clientConfManager = new DynamicClientConfService(conf, new Configuration());
+    Thread.sleep(1200);
+    Map<String, String> clientConf = clientConfManager.getRssClientConf();
     assertEquals("abc", clientConf.get("spark.mock.1"));
     assertEquals("123", clientConf.get("spark.mock.2"));
     assertEquals("true", clientConf.get("spark.mock.3"));
@@ -90,36 +96,36 @@ public class ClientConfManagerHadoopTest extends HadoopTestBase {
     printWriter.println("");
     printWriter.flush();
     printWriter.close();
-    sleep(1300);
-    assertTrue(fileSystem.exists(path));
-    clientConf = clientConfManager.getClientConf();
+    Thread.sleep(1300);
+    assertTrue(cfgFile.exists());
+    clientConf = clientConfManager.getRssClientConf();
     assertEquals("abc", clientConf.get("spark.mock.1"));
     assertEquals("123", clientConf.get("spark.mock.2"));
     assertEquals("true", clientConf.get("spark.mock.3"));
     assertEquals(3, clientConf.size());
 
     // the config will not be changed when the conf file is deleted
-    fileSystem.delete(path, true);
-    assertFalse(fileSystem.exists(path));
-    sleep(1200);
-    clientConf = clientConfManager.getClientConf();
+    assertTrue(cfgFile.delete());
+    Thread.sleep(1300);
+    assertFalse(cfgFile.exists());
+    clientConf = clientConfManager.getRssClientConf();
     assertEquals("abc", clientConf.get("spark.mock.1"));
     assertEquals("123", clientConf.get("spark.mock.2"));
     assertEquals("true", clientConf.get("spark.mock.3"));
     assertEquals(3, clientConf.size());
 
     // the normal update config process, move the new conf file to the old one
-    Path tmpPath = new Path(cfgFile + ".tmp");
-    out = fileSystem.create(tmpPath);
-    printWriter = new PrintWriter(new OutputStreamWriter(out));
+    File cfgFileTmp = new File(cfgFileName + ".tmp");
+    fileWriter = new FileWriter(cfgFileTmp);
+    printWriter = new PrintWriter(fileWriter);
     printWriter.println("spark.mock.4 deadbeaf");
     printWriter.println("spark.mock.5 9527");
     printWriter.println("spark.mock.6 9527 3423");
     printWriter.println("spark.mock.7");
     printWriter.close();
-    fileSystem.rename(tmpPath, path);
-    sleep(1200);
-    clientConf = clientConfManager.getClientConf();
+    FileUtils.moveFile(cfgFileTmp, cfgFile);
+    Thread.sleep(1200);
+    clientConf = clientConfManager.getRssClientConf();
     assertEquals("deadbeaf", clientConf.get("spark.mock.4"));
     assertEquals("9527", clientConf.get("spark.mock.5"));
     assertEquals(2, clientConf.size());

@@ -103,6 +103,7 @@
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
     <skipBuildImage>true</skipBuildImage>
+    <snakeyaml.version>2.2</snakeyaml.version>
   </properties>
 
   <repositories>
@@ -730,6 +731,11 @@
         <groupId>org.apache.hbase.thirdparty</groupId>
         <artifactId>hbase-shaded-jersey</artifactId>
         <version>${hbase.thirdparty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>${snakeyaml.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
