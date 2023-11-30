@@ -23,7 +23,7 @@ set -x
 set -u
 
 NAME="rss"
-MVN="mvn"
+MVN="./mvnw"
 RSS_HOME="$(
   cd "$(dirname "$0")"
   pwd

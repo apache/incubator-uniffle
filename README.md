@@ -80,43 +80,43 @@ Currently supports the MapReduce framework of Hadoop 2.8.5, Hadoop 3.2.1
 Uniffle is built using [Apache Maven](https://maven.apache.org/).
 To build it, run:
 
-    mvn -DskipTests clean package
+    ./mvnw -DskipTests clean package
 
 To fix code style issues, run:
 
-    mvn spotless:apply -Pspark3 -Pspark2 -Ptez -Pmr -Phadoop2.8
+    ./mvnw spotless:apply -Pspark3 -Pspark2 -Ptez -Pmr -Phadoop2.8
 
 Build against profile Spark 2 (2.4.6)
 
-    mvn -DskipTests clean package -Pspark2
+    ./mvnw -DskipTests clean package -Pspark2
 
 Build against profile Spark 3 (3.1.2)
 
-    mvn -DskipTests clean package -Pspark3
+    ./mvnw -DskipTests clean package -Pspark3
 
 Build against Spark 3.2.x, Except 3.2.0
 
-    mvn -DskipTests clean package -Pspark3.2
+    ./mvnw -DskipTests clean package -Pspark3.2
 
 Build against Spark 3.2.0
 
-    mvn -DskipTests clean package -Pspark3.2.0
+    ./mvnw -DskipTests clean package -Pspark3.2.0
 
 Build against Hadoop MapReduce 2.8.5
 
-    mvn -DskipTests clean package -Pmr,hadoop2.8
+    ./mvnw -DskipTests clean package -Pmr,hadoop2.8
 
 Build against Hadoop MapReduce 3.2.1
 
-    mvn -DskipTests clean package -Pmr,hadoop3.2
+    ./mvnw -DskipTests clean package -Pmr,hadoop3.2
 
 Build against Tez 0.9.1
 
-    mvn -DskipTests clean package -Ptez
+    ./mvnw -DskipTests clean package -Ptez
 
 Build against Tez 0.9.1 and Hadoop 3.2.1
 
-    mvn -DskipTests clean package -Ptez,hadoop3.2
+    ./mvnw -DskipTests clean package -Ptez,hadoop3.2
 
 To package the Uniffle, run:
 
