@@ -130,7 +130,6 @@ public class LocalStorageManager extends SingleStorageManager {
                       .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
                       .highWaterMarkOfWrite(highWaterMarkOfWrite)
                       .localStorageMedia(storageType)
-                      .enableDiskCapacityWatermarkCheck();
               if (isDiskCapacityWatermarkCheckEnabled) {
                 builder.enableDiskCapacityWatermarkCheck();
               }
