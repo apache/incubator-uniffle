@@ -187,7 +187,8 @@ public class ShuffleTaskManager {
               }
             } catch (Exception e) {
               StringBuilder diagnosticMessageBuilder =
-                  new StringBuilder("Exception happened when clearing resource for expired application");
+                  new StringBuilder(
+                      "Exception happened when clearing resource for expired application");
               if (event != null) {
                 diagnosticMessageBuilder.append(" for appId: ");
                 diagnosticMessageBuilder.append(event.getAppId());
