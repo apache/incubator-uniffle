@@ -189,6 +189,16 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(85.0)
           .withDescription("If disk usage is smaller than this value, disk can been written again");
 
+  public static final ConfigOption<Boolean> DISK_CAPACITY_WATERMARK_CHECK_ENABLED =
+      ConfigOptions.key("rss.server.disk-capacity.watermark.check.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "If it is co-located with other services, the high-low watermark check "
+                  + "based on the uniffle used is not correct. Due to this, the whole disk capacity "
+                  + "watermark check is necessary, which will reuse the current watermark value. "
+                  + "It will be disabled by default.");
+
   public static final ConfigOption<Long> PENDING_EVENT_TIMEOUT_SEC =
       ConfigOptions.key("rss.server.pending.event.timeout.sec")
           .longType()

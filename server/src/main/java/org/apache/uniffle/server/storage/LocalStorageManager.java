@@ -72,6 +72,7 @@ import org.apache.uniffle.storage.request.CreateShuffleDeleteHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.server.ShuffleServerConf.DISK_CAPACITY_WATERMARK_CHECK_ENABLED;
 import static org.apache.uniffle.server.ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER;
 
 public class LocalStorageManager extends SingleStorageManager {
@@ -113,6 +114,7 @@ public class LocalStorageManager extends SingleStorageManager {
     }
     ExecutorService executorService = ThreadUtils.getDaemonCachedThreadPool("LocalStorage-check");
     LocalStorage[] localStorageArray = new LocalStorage[storageBasePaths.size()];
+    boolean isDiskCapacityWatermarkCheckEnabled = conf.get(DISK_CAPACITY_WATERMARK_CHECK_ENABLED);
     for (int i = 0; i < storageBasePaths.size(); i++) {
       final int idx = i;
       String storagePath = storageBasePaths.get(i);
@@ -120,15 +122,18 @@ public class LocalStorageManager extends SingleStorageManager {
           () -> {
             try {
               StorageMedia storageType = getStorageTypeForBasePath(storagePath);
-              localStorageArray[idx] =
+              LocalStorage.Builder builder =
                   LocalStorage.newBuilder()
                       .basePath(storagePath)
                       .capacity(capacity)
                       .ratio(ratio)
                       .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
                       .highWaterMarkOfWrite(highWaterMarkOfWrite)
-                      .localStorageMedia(storageType)
-                      .build();
+                      .localStorageMedia(storageType);
+              if (isDiskCapacityWatermarkCheckEnabled) {
+                builder.enableDiskCapacityWatermarkCheck();
+              }
+              localStorageArray[idx] = builder.build();
               successCount.incrementAndGet();
             } catch (Exception e) {
               LOG.error("LocalStorage init failed!", e);
