@@ -310,7 +310,7 @@ public class RssUtils {
   public static void checkQuorumSetting(int replica, int replicaWrite, int replicaRead) {
     if (replica < 1 || replicaWrite > replica || replicaRead > replica) {
       throw new RssException(
-          "Replica config is invalid, recommend replica.write + replica.read > replica");
+          "Replica config is invalid, it cannot be less than 1 or less than replica.write  or less than replica.read. Please check it.");
     }
     if (replicaWrite + replicaRead <= replica) {
       throw new RssException(

@@ -22,18 +22,18 @@ public class Response<T> {
   private static final int ERROR_CODE = -1;
   private int code;
   private T data;
-  private String errMsg;
+  private String msg;
 
   public Response() {}
 
-  public Response(int code, T data, String errMsg) {
+  public Response(int code, T data, String msg) {
     this.code = code;
     this.data = data;
-    this.errMsg = errMsg;
+    this.msg = msg;
   }
 
   public static <T> Response<T> success(T data) {
-    return new Response<>(SUCCESS_CODE, data, null);
+    return new Response<>(SUCCESS_CODE, data, "success");
   }
 
   public static <T> Response<T> fail(String msg) {
@@ -61,10 +61,10 @@ public class Response<T> {
   }
 
   public String getErrMsg() {
-    return errMsg;
+    return msg;
   }
 
   public void setErrMsg(String errMsg) {
-    this.errMsg = errMsg;
+    this.msg = errMsg;
   }
 }

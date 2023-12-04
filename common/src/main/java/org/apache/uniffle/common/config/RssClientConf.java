@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.common.config;
 
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.netty.IOMode;
@@ -135,4 +136,10 @@ public class RssClientConf {
           .stringType()
           .defaultValue("14m")
           .withDescription("The max data size read from storage");
+
+  public static final ConfigOption<ClientType> RSS_CLIENT_TYPE =
+      ConfigOptions.key("rss.client.type")
+          .enumType(ClientType.class)
+          .defaultValue(ClientType.GRPC)
+          .withDescription("Supports GRPC, GRPC_NETTY");
 }

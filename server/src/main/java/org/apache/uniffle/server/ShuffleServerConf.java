@@ -189,6 +189,16 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(85.0)
           .withDescription("If disk usage is smaller than this value, disk can been written again");
 
+  public static final ConfigOption<Boolean> DISK_CAPACITY_WATERMARK_CHECK_ENABLED =
+      ConfigOptions.key("rss.server.disk-capacity.watermark.check.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "If it is co-located with other services, the high-low watermark check "
+                  + "based on the uniffle used is not correct. Due to this, the whole disk capacity "
+                  + "watermark check is necessary, which will reuse the current watermark value. "
+                  + "It will be disabled by default.");
+
   public static final ConfigOption<Long> PENDING_EVENT_TIMEOUT_SEC =
       ConfigOptions.key("rss.server.pending.event.timeout.sec")
           .longType()
@@ -513,6 +523,32 @@ public class ShuffleServerConf extends RssBaseConf {
                   + "should be latency * network_bandwidth. Assuming latency = 1ms,"
                   + "network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB."
                   + "Default is 0, OS will dynamically adjust the buf size.");
+
+  public static final ConfigOption<Integer> SUMMARY_METRIC_WAIT_QUEUE_SIZE =
+      ConfigOptions.key("rss.server.summary.metric.wait.queue.size")
+          .intType()
+          .defaultValue(1000)
+          .withDescription(
+              "size of waiting queue for thread pool that used for calc summary metric.");
+
+  public static final ConfigOption<Integer> SUMMARY_METRIC_THREAD_POOL_CORE_SIZE =
+      ConfigOptions.key("rss.server.summary.metric.thread.pool.core.size")
+          .intType()
+          .defaultValue(2)
+          .withDescription("core thread number of thread pool that used for calc summary metric.");
+
+  public static final ConfigOption<Integer> SUMMARY_METRIC_THREAD_POOL_MAX_SIZE =
+      ConfigOptions.key("rss.server.summary.metric.thread.pool.max.size")
+          .intType()
+          .defaultValue(20)
+          .withDescription("max thread number of thread pool that used for calc summary metric.");
+
+  public static final ConfigOption<Integer> SUMMARY_METRIC_THREAD_POOL_KEEP_ALIVE_TIME =
+      ConfigOptions.key("rss.server.summary.metric.thread.pool.keep.alive.time")
+          .intType()
+          .defaultValue(60)
+          .withDescription(
+              "keep alive time of thread pool that used for calc summary metric, in SECONDS.");
 
   public ShuffleServerConf() {}
 

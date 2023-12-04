@@ -21,105 +21,21 @@ license: |
 ---
 # Uniffle Shuffle Client Guide
 
-Uniffle is designed as a unified shuffle engine for multiple computing frameworks, including Apache Spark and Apache Hadoop.
-Uniffle has provided pluggable client plugins to enable remote shuffle in Spark and MapReduce.
+Uniffle is designed as a unified shuffle engine for multiple computing frameworks, including Apache Spark, Apache Hadoop and Apache Tez.
+Uniffle has provided pluggable client plugins to enable remote shuffle in Spark, MapReduce and Tez.
 
-## Deploy
-This document will introduce how to deploy Uniffle client plugins with Spark and MapReduce.
+## Deploy & client specific configuration
+Refer to the following documents on how to deploy Uniffle client plugins with Spark, MapReduce and Tez. Client specific configurations are also listed in each documents.
+|Client|Link|
+|---|---|
+|Spark|[Deploy Spark Client Plugin & Configurations](spark_client_guide.md)|
+|MapReduce|[Deploy MapReduce Client Plugin & Configurations](mr_client_guide.md)|
+|Tez|[Deploy Tez Client Plugin & Configurations](tez_client_guide.md)|
 
-### Deploy Spark Client Plugin
 
-1. Add client jar to Spark classpath, eg, SPARK_HOME/jars/
+## Common Configuration
 
-   The jar for Spark2 is located in <RSS_HOME>/jars/client/spark2/rss-client-XXXXX-shaded.jar
-
-   The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-XXXXX-shaded.jar
-
-2. Update Spark conf to enable Uniffle, eg,
-
-   ```
-   # Uniffle transmits serialized shuffle data over network, therefore a serializer that supports relocation of
-   # serialized object should be used. 
-   spark.serializer org.apache.spark.serializer.KryoSerializer # this could also be in the spark-defaults.conf
-   spark.shuffle.manager org.apache.spark.shuffle.RssShuffleManager
-   spark.rss.coordinator.quorum <coordinatorIp1>:19999,<coordinatorIp2>:19999
-   # Note: For Spark2, spark.sql.adaptive.enabled should be false because Spark2 doesn't support AQE.
-   ```
-
-### Support Spark Dynamic Allocation
-
-To support spark dynamic allocation with Uniffle, spark code should be updated.
-There are 2 patches for spark-2.4.6 and spark-3.1.2 in spark-patches folder for reference.
-
-After apply the patch and rebuild spark, add following configuration in spark conf to enable dynamic allocation:
-  ```
-  spark.shuffle.service.enabled false
-  spark.dynamicAllocation.enabled true
-  ```
-
-### Support Spark AQE
-
-To improve performance of AQE skew optimization, uniffle introduces the LOCAL_ORDER shuffle-data distribution mechanism 
-and Continuous partition assignment mechanism.
-
-1. LOCAL_ORDER shuffle-data distribution mechanism filter the lots of data to reduce network bandwidth and shuffle-server local-disk pressure. 
-   It will be enabled by default when AQE is enabled.
-
-2. Continuous partition assignment mechanism assign consecutive partitions to the same ShuffleServer to reduce the frequency of getShuffleResult.
-
-    It can be enabled by the following config
-      ```bash
-        # Default value is ROUND, it will poll to allocate partitions to ShuffleServer
-        rss.coordinator.select.partition.strategy CONTINUOUS
-        
-        # Default value is 1.0, used to estimate task concurrency, how likely is this part of the resource between spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors to be allocated
-        --conf spark.rss.estimate.task.concurrency.dynamic.factor=1.0
-      ```
-
-Since v0.8.0, `RssShuffleManager` would disable local shuffle reader(`set spark.sql.adaptive.localShuffleReader.enabled=false`) optimization by default.
-
-Local shuffle reader as its name indicates is suitable and optimized for spark's external shuffle service, and shall not be used for remote shuffle service. It would cause many random small IOs and network connections with Uniffle's shuffle server
-
-### Deploy MapReduce Client Plugin
-
-1. Add client jar to the classpath of each NodeManager, e.g., <HADOOP>/share/hadoop/mapreduce/
-
-The jar for MapReduce is located in <RSS_HOME>/jars/client/mr/rss-client-mr-XXXXX-shaded.jar
-
-2. Update MapReduce conf to enable Uniffle, eg,
-
-   ```
-   -Dmapreduce.rss.coordinator.quorum=<coordinatorIp1>:19999,<coordinatorIp2>:19999
-   -Dyarn.app.mapreduce.am.command-opts=org.apache.hadoop.mapreduce.v2.app.RssMRAppMaster
-   -Dmapreduce.job.map.output.collector.class=org.apache.hadoop.mapred.RssMapOutputCollector
-   -Dmapreduce.job.reduce.shuffle.consumer.plugin.class=org.apache.hadoop.mapreduce.task.reduce.RssShuffle
-   ```
-Note that the RssMRAppMaster will automatically disable slow start (i.e., `mapreduce.job.reduce.slowstart.completedmaps=1`)
-and job recovery (i.e., `yarn.app.mapreduce.am.job.recovery.enable=false`)
-
-### Deploy Tez Client Plugin
-
-1. Append client jar to pacakge which is set by 'tez.lib.uris'.
-
-In production mode, you can append client jar (rss-client-tez-XXXXX-shaded.jar) to package which is set by 'tez.lib.uris'.
-
-In development mode, you can append client jar (rss-client-tez-XXXXX-shaded.jar) to HADOOP_CLASSPATH.
-
-2. Update tez-site.xml to enable Uniffle.
-
-| Property Name              |Default| Description                  |
-|----------------------------|---|------------------------------|
-| tez.am.launch.cmd-opts     |-XX:+PrintGCDetails -verbose:gc -XX:+PrintGCTimeStamps -XX:+UseNUMA -XX:+UseParallelGC org.apache.tez.dag.app.RssDAGAppMaster| enable remote shuffle service |
-| tez.rss.coordinator.quorum |coordinatorIp1:19999,coordinatorIp2:19999|coordinator address|
-
-Note that the RssDAGAppMaster will automatically disable slow start (i.e., `tez.shuffle-vertex-manager.min-src-fraction=1`, `tez.shuffle-vertex-manager.max-src-fraction=1`).
-
-## Configuration
-
-The important configuration of client is listed as following.
-
-### Common Setting
-These configurations are shared by all types of clients.
+The important configuration of client is listed as following. These configurations are shared by all types of clients.
 
 |Property Name|Default| Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 |---|---|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -143,27 +59,6 @@ Notice:
 1. `<client_type>` should be `mapreduce` `tez` or `spark`
 
 2. `<client_type>.rss.coordinator.quorum` is compulsory, and other configurations are optional when coordinator dynamic configuration is enabled.
-
-### Adaptive Remote Shuffle Enabling 
-
-To select build-in shuffle or remote shuffle in a smart manner, Uniffle support adaptive enabling. 
-The client should use `DelegationRssShuffleManager` and provide its unique <access_id> so that the coordinator could distinguish whether it should enable remote shuffle.
-
-```
-spark.shuffle.manager org.apache.spark.shuffle.DelegationRssShuffleManager
-spark.rss.access.id=<access_id> 
-```
-
-Notice:
-Currently, this feature only supports Spark. 
-
-Other configuration:
-
-|Property Name|Default|Description|
-|---|---|---|
-|spark.rss.access.timeout.ms|10000|The timeout to access Uniffle coordinator|
-|spark.rss.client.access.retry.interval.ms|20000|The interval between retries fallback to SortShuffleManager|
-|spark.rss.client.access.retry.times|0|The number of retries fallback to SortShuffleManager|
 
 
 ### Client Quorum Setting 
@@ -198,61 +93,14 @@ spark.rss.data.replica.write 2
 spark.rss.data.replica.read 2
 ```
 
-### Spark Specialized Setting
-
-The important configuration is listed as following.
-
-|Property Name|Default|Description|
-|---|---|---|
-|spark.rss.writer.buffer.spill.size|128m|Buffer size for total partition data|
-|spark.rss.client.send.size.limit|16m|The max data size sent to shuffle server|
-|spark.rss.client.unregister.thread.pool.size|10|The max size of thread pool of unregistering|
-|spark.rss.client.unregister.request.timeout.sec|10|The max timeout sec when doing unregister to remote shuffle-servers|
-|spark.rss.client.off.heap.memory.enable|false|The client use off heap memory to process data|
-
-
-### MapReduce Specialized Setting
-
-|Property Name|Default|Description|
-|---|---|---|
-|mapreduce.rss.client.max.buffer.size|3k|The max buffer size in map side|
-|mapreduce.rss.client.batch.trigger.num|50|The max batch of buffers to send data in map side|
-
-
-
-
-### Remote Spill (Experimental)
-
-In cloud environment, VM may have very limited disk space and performance.
-This experimental feature allows reduce tasks to spill data to remote storage (e.g., hdfs)
-
-|Property Name|Default| Description                                                            |
-|---|---|------------------------------------------------------------------------|
-|mapreduce.rss.reduce.remote.spill.enable|false| Whether to use remote spill                                            |
-|mapreduce.rss.reduce.remote.spill.attempt.inc|1| Increase reduce attempts as Hadoop FS may be easier to crash than disk |
-|mapreduce.rss.reduce.remote.spill.replication|1| The replication number to spill data to Hadoop FS                      |
-|mapreduce.rss.reduce.remote.spill.retries|5| The retry number to spill data to Hadoop FS                            |
-
-Notice: this feature requires the MEMORY_LOCAL_HADOOP mode.
-
-
-### Tez Specialized Setting
-
-| Property Name                  | Default | Description                                                             |
-|--------------------------------|---------|-------------------------------------------------------------------------|
-| tez.rss.avoid.recompute.succeeded.task | false   | Whether to avoid recompute succeeded task when node is unhealthy or black-listed |
-| tez.rss.client.max.buffer.size | 3k | The max buffer size in map side. Control the size of each segment(WrappedBuffer) in the buffer. |
-| tez.rss.client.batch.trigger.num | 50 | The max batch of buffers to send data in map side. Affect the number of blocks sent to the server in each batch, and may affect rss_worker_used_buffer_size |
-| tez.rss.client.send.thread.num | 5 | The thread pool size for the client to send data to the server. |
-
 ### Netty Setting
 | Property Name                                       | Default | Description                                                                                                                                                                                                                                                                                                                         |
 |-----------------------------------------------------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| spark.rss.client.type                               | GRPC    | The default is GRPC, we can set it to GRPC_NETTY to enable the netty on the client                                                                                                                                                                                                                                                  |
-| spark.rss.client.netty.io.mode                      | NIO     | Netty EventLoopGroup backend, available options: NIO, EPOLL.                                                                                                                                                                                                                                                                        |
-| spark.rss.client.netty.client.connection.timeout.ms | 600000  | Connection active timeout.                                                                                                                                                                                                                                                                                                          |
-| spark.rss.client.netty.client.threads               | 0       | Number of threads used in the client thread pool. Default is 0, netty will use the number of (available logical cores * 2) as the number of threads.                                                                                                                                                                                |
-| spark.rss.client.netty.client.prefer.direct.bufs    | true    | If true, we will prefer allocating off-heap byte buffers within Netty.                                                                                                                                                                                                                                                              |
-| spark.rss.client.netty.client.connections.per.peer  | 2       | Suppose there are 100 executors, spark.rss.client.netty.client.connections.per.peer = 2, then each ShuffleServer will establish a total of (100 * 2) connections with multiple clients.                                                                                                                                             |
-| spark.rss.client.netty.client.receive.buffer        | 0       | Receive buffer size (SO_RCVBUF). Note: the optimal size for receive buffer and send buffer should be latency * network_bandwidth. Assuming latency = 1ms, network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB. Default is 0, the operating system automatically estimates the receive buffer size based on default settings. |
-| spark.rss.client.netty.client.send.buffer           | 0       | Send buffer size (SO_SNDBUF).                                                                                                                                                                                                                                                                                                       |
+| <client_type>.rss.client.type                               | GRPC    | The default is GRPC, we can set it to GRPC_NETTY to enable the netty on the client                                                                                                                                                                                                                                                  |
+| <client_type>.rss.client.netty.io.mode                      | NIO     | Netty EventLoopGroup backend, available options: NIO, EPOLL.                                                                                                                                                                                                                                                                        |
+| <client_type>.rss.client.netty.client.connection.timeout.ms | 600000  | Connection active timeout.                                                                                                                                                                                                                                                                                                          |
+| <client_type>.rss.client.netty.client.threads               | 0       | Number of threads used in the client thread pool. Default is 0, netty will use the number of (available logical cores * 2) as the number of threads.                                                                                                                                                                                |
+| <client_type>.rss.client.netty.client.prefer.direct.bufs    | true    | If true, we will prefer allocating off-heap byte buffers within Netty.                                                                                                                                                                                                                                                              |
+| <client_type>.rss.client.netty.client.connections.per.peer  | 2       | Suppose there are 100 executors, spark.rss.client.netty.client.connections.per.peer = 2, then each ShuffleServer will establish a total of (100 * 2) connections with multiple clients.                                                                                                                                             |
+| <client_type>.rss.client.netty.client.receive.buffer        | 0       | Receive buffer size (SO_RCVBUF). Note: the optimal size for receive buffer and send buffer should be latency * network_bandwidth. Assuming latency = 1ms, network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB. Default is 0, the operating system automatically estimates the receive buffer size based on default settings. |
+| <client_type>.rss.client.netty.client.send.buffer           | 0       | Send buffer size (SO_SNDBUF).                                                                                                                                                                                                                                                                                                       |

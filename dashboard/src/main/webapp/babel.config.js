@@ -15,28 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.test;
-
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
-import org.apache.uniffle.common.KerberizedHadoopBase;
-
-public class ClientConfManagerKerberlizedHadoopTest extends KerberizedHadoopBase {
-
-  @BeforeAll
-  public static void beforeAll() throws Exception {
-    testRunner = ClientConfManagerKerberlizedHadoopTest.class;
-    KerberizedHadoopBase.init();
-  }
-
-  @Test
-  public void testConfInHadoop() throws Exception {
-    String cfgFile = kerberizedHadoop.getSchemeAndAuthorityPrefix() + "/test/client_conf";
-    ClientConfManagerHadoopTest.createAndRunClientConfManagerCases(
-        kerberizedHadoop.getSchemeAndAuthorityPrefix(),
-        cfgFile,
-        kerberizedHadoop.getFileSystem(),
-        kerberizedHadoop.getConf());
-  }
+module.exports = {
+  presets: [
+    '@vue/cli-plugin-babel/preset'
+  ]
 }

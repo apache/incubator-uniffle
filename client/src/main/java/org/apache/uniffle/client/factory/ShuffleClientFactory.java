@@ -26,6 +26,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
@@ -210,6 +211,7 @@ public class ShuffleClientFactory {
     private String storageType;
     private int indexReadLimit;
     private long readBufferSize;
+    private ClientType clientType;
 
     public ReadClientBuilder appId(String appId) {
       this.appId = appId;
@@ -303,6 +305,11 @@ public class ShuffleClientFactory {
       return this;
     }
 
+    public ReadClientBuilder clientType(ClientType clientType) {
+      this.clientType = clientType;
+      return this;
+    }
+
     public ReadClientBuilder() {}
 
     public String getAppId() {
@@ -375,6 +382,10 @@ public class ShuffleClientFactory {
 
     public long getReadBufferSize() {
       return readBufferSize;
+    }
+
+    public ClientType getClientType() {
+      return clientType;
     }
 
     public ShuffleReadClientImpl build() {

@@ -17,16 +17,32 @@
 
 package org.apache.uniffle.client.response;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+
+import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.JavaUtils;
 
 public class SendShuffleDataResult {
 
   private Set<Long> successBlockIds;
   private Set<Long> failedBlockIds;
+  private Map<Long, BlockingQueue<ShuffleServerInfo>> sendFailedBlockIds;
 
   public SendShuffleDataResult(Set<Long> successBlockIds, Set<Long> failedBlockIds) {
     this.successBlockIds = successBlockIds;
     this.failedBlockIds = failedBlockIds;
+    this.sendFailedBlockIds = JavaUtils.newConcurrentMap();
+  }
+
+  public SendShuffleDataResult(
+      Set<Long> successBlockIds,
+      Set<Long> failedBlockIds,
+      Map<Long, BlockingQueue<ShuffleServerInfo>> sendFailedBlockIds) {
+    this.successBlockIds = successBlockIds;
+    this.failedBlockIds = failedBlockIds;
+    this.sendFailedBlockIds = sendFailedBlockIds;
   }
 
   public Set<Long> getSuccessBlockIds() {
@@ -35,5 +51,9 @@ public class SendShuffleDataResult {
 
   public Set<Long> getFailedBlockIds() {
     return failedBlockIds;
+  }
+
+  public Map<Long, BlockingQueue<ShuffleServerInfo>> getSendFailedBlockIds() {
+    return sendFailedBlockIds;
   }
 }

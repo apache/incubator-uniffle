@@ -23,6 +23,7 @@ import org.apache.uniffle.common.config.ConfigOption;
 import org.apache.uniffle.common.config.ConfigOptions;
 import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.coordinator.conf.ClientConfParser;
 import org.apache.uniffle.coordinator.strategy.assignment.AbstractAssignmentStrategy;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategyFactory;
 
@@ -129,6 +130,12 @@ public class CoordinatorConf extends RssBaseConf {
           .stringType()
           .noDefaultValue()
           .withDescription("dynamic client conf of this cluster");
+  public static final ConfigOption<ClientConfParser.Parser>
+      COORDINATOR_DYNAMIC_CLIENT_RAW_CONF_PARSER =
+          ConfigOptions.key("rss.coordinator.dynamicClientConf.parser")
+              .enumType(ClientConfParser.Parser.class)
+              .defaultValue(ClientConfParser.Parser.LEGACY)
+              .withDescription("dynamic client conf parser");
   public static final ConfigOption<String> COORDINATOR_REMOTE_STORAGE_PATH =
       ConfigOptions.key("rss.coordinator.remote.storage.path")
           .stringType()

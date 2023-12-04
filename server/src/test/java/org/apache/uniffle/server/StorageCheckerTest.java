@@ -130,9 +130,13 @@ public class StorageCheckerTest {
       return 1000;
     }
 
+    @Override
+    long getFreeSpace(File file) {
+      return getTotalSpace(file) - getWholeDiskUsedSpace(file);
+    }
+
     // we mock this method, and will return different values according
     // to call times.
-    @Override
     long getWholeDiskUsedSpace(File file) {
       long result = 0;
       switch (file.getName()) {

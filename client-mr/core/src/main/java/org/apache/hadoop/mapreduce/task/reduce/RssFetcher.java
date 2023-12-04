@@ -83,7 +83,7 @@ public class RssFetcher<K, V> {
   private long copyTime = 0; // the sum of readTime + decompressTime + serializeTime + waitTime
   private long unCompressionLength = 0;
   private final TaskAttemptID reduceId;
-  private int uniqueMapId = 0;
+  private static int uniqueMapId = 0;
 
   private boolean hasPendingData = false;
   private long startWait;

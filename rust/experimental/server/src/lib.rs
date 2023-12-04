@@ -50,6 +50,8 @@ use bytes::{Buf, Bytes, BytesMut};
 use log::info;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
+use tokio::signal::unix::{signal, SignalKind};
+use tokio::sync::oneshot;
 use tonic::transport::{Channel, Server};
 
 pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
@@ -64,6 +66,8 @@ pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
     let http_port = config.http_monitor_service_port.unwrap_or(20010);
     HTTP_SERVICE.start(runtime_manager.clone(), http_port);
 
+    let (tx, rx) = oneshot::channel::<()>();
+
     // implement server startup
     let cloned_runtime_manager = runtime_manager.clone();
     runtime_manager.grpc_runtime.spawn(async move {
@@ -75,8 +79,24 @@ pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
         let service = ShuffleServerServer::new(shuffle_server)
             .max_decoding_message_size(usize::MAX)
             .max_encoding_message_size(usize::MAX);
-        let _ = Server::builder().add_service(service).serve(addr).await;
+        let _ = Server::builder()
+            .add_service(service)
+            .serve_with_shutdown(addr, async {
+                rx.await.expect("graceful_shutdown fail");
+                println!("Successfully received the shutdown signal.");
+            })
+            .await;
     });
+
+    runtime_manager.default_runtime.spawn(async move {
+        let _ = signal(SignalKind::terminate())
+            .expect("Failed to register signal handlers")
+            .recv()
+            .await;
+
+        let _ = tx.send(());
+    });
+
     Ok(())
 }
 

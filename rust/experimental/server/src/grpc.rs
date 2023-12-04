@@ -34,6 +34,8 @@ use crate::proto::uniffle::{
 use crate::store::{PartitionedData, ResponseDataIndex};
 use await_tree::InstrumentAwait;
 use bytes::{BufMut, BytesMut};
+use croaring::treemap::JvmSerializer;
+use croaring::Treemap;
 use std::collections::HashMap;
 
 use log::{debug, error, info, warn};
@@ -284,6 +286,7 @@ impl ShuffleServer for DefaultShuffleServer {
             .select(ReadingViewContext {
                 uid: partition_id.clone(),
                 reading_options: ReadingOptions::FILE_OFFSET_AND_LEN(req.offset, req.length as i64),
+                serialized_expected_task_ids_bitmap: Default::default(),
             })
             .instrument_await(format!(
                 "select data from localfile. uid: {:?}",
@@ -341,6 +344,20 @@ impl ShuffleServer for DefaultShuffleServer {
             shuffle_id,
             partition_id,
         };
+
+        let serialized_expected_task_ids_bitmap =
+            if !req.serialized_expected_task_ids_bitmap.is_empty() {
+                match Treemap::deserialize(&req.serialized_expected_task_ids_bitmap) {
+                    Ok(filter) => Some(filter),
+                    Err(e) => {
+                        error!("Failed to deserialize: {}", e);
+                        None
+                    }
+                }
+            } else {
+                None
+            };
+
         let data_fetched_result = app
             .unwrap()
             .select(ReadingViewContext {
@@ -349,6 +366,7 @@ impl ShuffleServer for DefaultShuffleServer {
                     req.last_block_id,
                     req.read_buffer_size as i64,
                 ),
+                serialized_expected_task_ids_bitmap,
             })
             .instrument_await(format!("select data from memory. uid: {:?}", &partition_id))
             .await;
@@ -428,7 +446,7 @@ impl ShuffleServer for DefaultShuffleServer {
                 },
                 blocks: partition_to_block_id.block_ids,
             };
-            let _ = app.report_block_ids(ctx).await;
+            let _ = app.report_block_ids(ctx);
         }
 
         Ok(Response::new(ReportShuffleResultResponse {
@@ -460,16 +478,9 @@ impl ShuffleServer for DefaultShuffleServer {
             shuffle_id,
             partition_id,
         };
-        let block_ids_result = app
-            .unwrap()
-            .get_block_ids(GetBlocksContext {
-                uid: partition_id.clone(),
-            })
-            .instrument_await(format!(
-                "getting shuffle blocks ids. uid: {:?}",
-                &partition_id
-            ))
-            .await;
+        let block_ids_result = app.unwrap().get_block_ids(GetBlocksContext {
+            uid: partition_id.clone(),
+        });
 
         if block_ids_result.is_err() {
             let err_msg = block_ids_result.err();
@@ -511,15 +522,13 @@ impl ShuffleServer for DefaultShuffleServer {
 
         let mut bytes_mut = BytesMut::new();
         for partition_id in req.partitions {
-            let block_ids_result = app
-                .get_block_ids(GetBlocksContext {
-                    uid: PartitionedUId {
-                        app_id: app_id.clone(),
-                        shuffle_id,
-                        partition_id,
-                    },
-                })
-                .await;
+            let block_ids_result = app.get_block_ids(GetBlocksContext {
+                uid: PartitionedUId {
+                    app_id: app_id.clone(),
+                    shuffle_id,
+                    partition_id,
+                },
+            });
             if block_ids_result.is_err() {
                 let err_msg = block_ids_result.err();
                 error!(
@@ -629,7 +638,78 @@ impl ShuffleServer for DefaultShuffleServer {
     }
 }
 
-pub mod grpc_middleware {
+pub mod metrics_middleware {
+    use hyper::service::Service;
+    use hyper::Body;
+    use prometheus::HistogramVec;
+    use std::task::{Context, Poll};
+    use tower::Layer;
+
+    #[derive(Clone)]
+    pub struct MetricsMiddlewareLayer {
+        metric: HistogramVec,
+    }
+
+    impl MetricsMiddlewareLayer {
+        pub fn new(metric: HistogramVec) -> Self {
+            Self { metric }
+        }
+    }
+
+    impl<S> Layer<S> for MetricsMiddlewareLayer {
+        type Service = MetricsMiddleware<S>;
+
+        fn layer(&self, service: S) -> Self::Service {
+            MetricsMiddleware {
+                inner: service,
+                metric: self.metric.clone(),
+            }
+        }
+    }
+
+    #[derive(Clone)]
+    pub struct MetricsMiddleware<S> {
+        inner: S,
+        metric: HistogramVec,
+    }
+
+    impl<S> Service<hyper::Request<Body>> for MetricsMiddleware<S>
+    where
+        S: Service<hyper::Request<Body>> + Clone + Send + 'static,
+        S::Future: Send + 'static,
+    {
+        type Response = S::Response;
+        type Error = S::Error;
+        type Future = futures::future::BoxFuture<'static, Result<Self::Response, Self::Error>>;
+
+        fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+            self.inner.poll_ready(cx)
+        }
+
+        fn call(&mut self, req: hyper::Request<Body>) -> Self::Future {
+            // This is necessary because tonic internally uses `tower::buffer::Buffer`.
+            // See https://github.com/tower-rs/tower/issues/547#issuecomment-767629149
+            // for details on why this is necessary
+            let clone = self.inner.clone();
+            let mut inner = std::mem::replace(&mut self.inner, clone);
+
+            let metrics = self.metric.clone();
+
+            Box::pin(async move {
+                let path = req.uri().path();
+                let timer = metrics.with_label_values(&[path]).start_timer();
+
+                let response = inner.call(req).await?;
+
+                timer.observe_duration();
+
+                Ok(response)
+            })
+        }
+    }
+}
+
+pub mod await_tree_middleware {
     use std::task::{Context, Poll};
 
     use crate::await_tree::AwaitTreeInner;

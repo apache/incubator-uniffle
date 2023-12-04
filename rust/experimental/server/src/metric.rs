@@ -20,8 +20,8 @@ use crate::runtime::manager::RuntimeManager;
 use log::{error, info};
 use once_cell::sync::Lazy;
 use prometheus::{
-    labels, register_int_gauge_vec, Histogram, HistogramOpts, IntCounter, IntGauge, IntGaugeVec,
-    Registry,
+    histogram_opts, labels, register_histogram_vec_with_registry, register_int_gauge_vec,
+    Histogram, HistogramOpts, HistogramVec, IntCounter, IntGauge, IntGaugeVec, Registry,
 };
 use std::time::Duration;
 
@@ -33,6 +33,10 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(Registry::new);
 
 pub static TOTAL_RECEIVED_DATA: Lazy<IntCounter> = Lazy::new(|| {
     IntCounter::new("total_received_data", "Incoming Requests").expect("metric should be created")
+});
+
+pub static TOTAL_READ_DATA: Lazy<IntCounter> = Lazy::new(|| {
+    IntCounter::new("total_read_data", "Reading Data").expect("metric should be created")
 });
 
 pub static GRPC_GET_MEMORY_DATA_TRANSPORT_TIME: Lazy<Histogram> = Lazy::new(|| {
@@ -88,6 +92,16 @@ pub static GRPC_BUFFER_REQUIRE_PROCESS_TIME: Lazy<Histogram> = Lazy::new(|| {
 
     let histogram = Histogram::with_opts(opts).unwrap();
     histogram
+});
+
+pub static GRPC_LATENCY_TIME_SEC: Lazy<HistogramVec> = Lazy::new(|| {
+    let opts = histogram_opts!(
+        "grpc_duration_seconds",
+        "gRPC latency",
+        Vec::from(DEFAULT_BUCKETS as &'static [f64])
+    );
+    let grpc_latency = register_histogram_vec_with_registry!(opts, &["path"], REGISTRY).unwrap();
+    grpc_latency
 });
 
 pub static TOTAL_MEMORY_USED: Lazy<IntCounter> = Lazy::new(|| {
@@ -191,6 +205,9 @@ fn register_custom_metrics() {
     REGISTRY
         .register(Box::new(TOTAL_RECEIVED_DATA.clone()))
         .expect("total_received_data must be registered");
+    REGISTRY
+        .register(Box::new(TOTAL_READ_DATA.clone()))
+        .expect("total_read_data must be registered");
     REGISTRY
         .register(Box::new(TOTAL_MEMORY_USED.clone()))
         .expect("total_memory_used must be registered");

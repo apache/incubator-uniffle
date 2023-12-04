@@ -114,6 +114,7 @@
         <dependency>
             <groupId>org.apache.uniffle</groupId>
             <artifactId>hadoop${hadoop.short.version}-shim</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
@@ -215,7 +216,7 @@
                         <configuration>
                             <target>
                                 <echo message="Shade netty native libraries to ${rss.shade.packageName}" />
-                                <unzip src="${artifactId}-${version}.jar" dest="${project.build.directory}/unpacked/" />
+                                <unzip src="${project.artifactId}-${project.version}.jar" dest="${project.build.directory}/unpacked/" />
                                 <echo message="renaming native epoll library"></echo>
                                 <move includeemptydirs="false" todir="${project.build.directory}/unpacked/META-INF/native">
                                     <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
@@ -236,7 +237,7 @@
                                             type="glob"></mapper>
                                 </move>
                                 <echo message="repackaging netty jar"></echo>
-                                <jar destfile="${artifactId}-${version}.jar" basedir="${project.build.directory}/unpacked" />
+                                <jar destfile="${project.artifactId}-${project.version}.jar" basedir="${project.build.directory}/unpacked" />
                             </target>
                         </configuration>
                     </execution>

@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
+import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
@@ -36,6 +37,7 @@ import org.apache.uniffle.client.response.RssGetShuffleIndexResponse;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
@@ -86,7 +88,10 @@ public class LocalFileServerReadHandlerTest {
     int actualWriteDataBlock = expectTotalBlockNum - 1;
     int actualFileLen = blockSize * actualWriteDataBlock;
     RssGetShuffleIndexResponse response =
-        new RssGetShuffleIndexResponse(StatusCode.SUCCESS, byteBuffer, actualFileLen);
+        new RssGetShuffleIndexResponse(
+            StatusCode.SUCCESS,
+            new NettyManagedBuffer(Unpooled.wrappedBuffer(byteBuffer)),
+            actualFileLen);
     Mockito.doReturn(response).when(mockShuffleServerClient).getShuffleIndex(Mockito.any());
 
     int readBufferSize = 13;

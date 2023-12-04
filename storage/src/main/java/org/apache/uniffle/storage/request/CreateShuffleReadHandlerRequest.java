@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
@@ -51,6 +52,8 @@ public class CreateShuffleReadHandlerRequest {
   private RssConf clientConf;
 
   private IdHelper idHelper;
+
+  private ClientType clientType;
 
   public CreateShuffleReadHandlerRequest() {}
 
@@ -212,5 +215,13 @@ public class CreateShuffleReadHandlerRequest {
 
   public void setClientConf(RssConf clientConf) {
     this.clientConf = clientConf;
+  }
+
+  public ClientType getClientType() {
+    return clientType;
+  }
+
+  public void setClientType(ClientType clientType) {
+    this.clientType = clientType;
   }
 }

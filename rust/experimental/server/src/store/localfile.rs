@@ -868,6 +868,7 @@ mod test {
             let reading_ctx = ReadingViewContext {
                 uid,
                 reading_options: ReadingOptions::FILE_OFFSET_AND_LEN(0, size as i64),
+                serialized_expected_task_ids_bitmap: Default::default(),
             };
 
             let read_result = local_store.get(reading_ctx).await;

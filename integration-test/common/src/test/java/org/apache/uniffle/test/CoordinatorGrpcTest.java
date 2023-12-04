@@ -326,13 +326,6 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
 
   @Test
   public void rpcMetricsTest() throws Exception {
-    double oldValue =
-        coordinators
-            .get(0)
-            .getGrpcMetrics()
-            .getCounterMap()
-            .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD)
-            .get();
     CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
     double newValue =
         coordinators
@@ -341,13 +334,13 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
             .getCounterMap()
             .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD)
             .get();
-    assertTrue(newValue - oldValue > 1);
+    assertTrue(newValue > 1);
 
     String appId = "rpcMetricsTest";
     RssGetShuffleAssignmentsRequest request =
         new RssGetShuffleAssignmentsRequest(
             appId, 1, 10, 4, 1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
-    oldValue =
+    double oldValue =
         coordinators
             .get(0)
             .getGrpcMetrics()

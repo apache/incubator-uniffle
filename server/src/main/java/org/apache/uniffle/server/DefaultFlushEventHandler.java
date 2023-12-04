@@ -137,6 +137,11 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
         shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_THREAD_POOL_QUEUE_SIZE);
     BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(waitQueueSize);
     long keepAliveTime = shuffleServerConf.getLong(ShuffleServerConf.SERVER_FLUSH_THREAD_ALIVE);
+    LOG.info(
+        "CreateFlushPool, poolSize:{}, keepAliveTime:{}, queueSize:{}",
+        poolSize,
+        keepAliveTime,
+        waitQueueSize);
     return new ThreadPoolExecutor(
         poolSize,
         poolSize,

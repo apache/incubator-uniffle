@@ -15,11 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common.netty.protocol;
+package org.apache.uniffle.common.exception;
 
-import io.netty.channel.Channel;
+public class RssWaitFailedException extends RuntimeException {
+  public RssWaitFailedException(String message) {
+    super(message);
+  }
 
-public interface Transferable {
+  public RssWaitFailedException(Throwable e) {
+    super(e);
+  }
 
-  void transferTo(Channel channel);
+  public RssWaitFailedException(String message, Throwable e) {
+    super(message, e);
+  }
 }

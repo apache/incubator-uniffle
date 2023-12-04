@@ -58,6 +58,9 @@ const (
 
 	// ConfigurationVolumeName is the name of configMap volume records configuration of coordinators or shuffle servers.
 	ConfigurationVolumeName = "configuration"
+
+	//RssDataDir is the directory name for RSS data as the local storage.
+	RssDataDir = "rssdata"
 )
 
 // PropertyKey defines property key in configuration of coordinators or shuffle servers.

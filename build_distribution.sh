@@ -169,6 +169,13 @@ echo "copy $COORDINATOR_JAR to ${COORDINATOR_JAR_DIR}"
 cp $COORDINATOR_JAR ${COORDINATOR_JAR_DIR}
 cp "${RSS_HOME}"/coordinator/target/jars/* ${COORDINATOR_JAR_DIR}
 
+DASHBOARD_JAR_DIR="${DISTDIR}/jars/dashboard"
+mkdir -p $DASHBOARD_JAR_DIR
+DASHBOARD_JAR="${RSS_HOME}/dashboard/target/dashboard-${VERSION}.jar"
+echo "copy $DASHBOARD_JAR to ${DASHBOARD_JAR_DIR}"
+cp $DASHBOARD_JAR $DASHBOARD_JAR_DIR
+cp "${RSS_HOME}"/dashboard/target/jars/* ${DASHBOARD_JAR_DIR}
+
 CLI_JAR_DIR="${DISTDIR}/jars/cli"
 mkdir -p $CLI_JAR_DIR
 CLI_JAR="${RSS_HOME}/cli/target/cli-${VERSION}.jar"
@@ -179,7 +186,7 @@ cp "${RSS_HOME}"/cli/target/jars/* ${CLI_JAR_DIR}
 CLIENT_JAR_DIR="${DISTDIR}/jars/client"
 mkdir -p $CLIENT_JAR_DIR
 
-BUILD_COMMAND_SPARK2=("$MVN" clean package -P$SPARK2_PROFILE_ID -pl client-spark/spark2 -DskipTests -am $@ $SPARK2_MVN_OPTS)
+BUILD_COMMAND_SPARK2=("$MVN" clean package -P$SPARK2_PROFILE_ID -pl client-spark/spark2-shaded -DskipTests -am $@ $SPARK2_MVN_OPTS)
 
 # Actually build the jar
 echo -e "\nBuilding with..."
@@ -190,11 +197,11 @@ echo -e "\$ ${BUILD_COMMAND_SPARK2[@]}\n"
 SPARK_CLIENT2_JAR_DIR="${CLIENT_JAR_DIR}/spark2"
 mkdir -p $SPARK_CLIENT2_JAR_DIR
 
-SPARK_CLIENT2_JAR="${RSS_HOME}/client-spark/spark2/target/shaded/rss-client-spark2-${VERSION}-shaded.jar"
+SPARK_CLIENT2_JAR="${RSS_HOME}/client-spark/spark2-shaded/target/rss-client-spark2-shaded-${VERSION}.jar"
 echo "copy $SPARK_CLIENT2_JAR to ${SPARK_CLIENT2_JAR_DIR}"
 cp $SPARK_CLIENT2_JAR ${SPARK_CLIENT2_JAR_DIR}
 
-BUILD_COMMAND_SPARK3=("$MVN" clean package -P$SPARK3_PROFILE_ID -pl client-spark/spark3 -DskipTests -am $@ $SPARK3_MVN_OPTS)
+BUILD_COMMAND_SPARK3=("$MVN" clean package -P$SPARK3_PROFILE_ID -pl client-spark/spark3-shaded -DskipTests -am $@ $SPARK3_MVN_OPTS)
 
 echo -e "\nBuilding with..."
 echo -e "\$ ${BUILD_COMMAND_SPARK3[@]}\n"
@@ -202,7 +209,7 @@ echo -e "\$ ${BUILD_COMMAND_SPARK3[@]}\n"
 
 SPARK_CLIENT3_JAR_DIR="${CLIENT_JAR_DIR}/spark3"
 mkdir -p $SPARK_CLIENT3_JAR_DIR
-SPARK_CLIENT3_JAR="${RSS_HOME}/client-spark/spark3/target/shaded/rss-client-spark3-${VERSION}-shaded.jar"
+SPARK_CLIENT3_JAR="${RSS_HOME}/client-spark/spark3-shaded/target/rss-client-spark3-shaded-${VERSION}.jar"
 echo "copy $SPARK_CLIENT3_JAR to ${SPARK_CLIENT3_JAR_DIR}"
 cp $SPARK_CLIENT3_JAR $SPARK_CLIENT3_JAR_DIR
 

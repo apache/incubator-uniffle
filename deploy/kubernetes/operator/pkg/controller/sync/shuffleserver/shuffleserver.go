@@ -236,7 +236,7 @@ func generateStorageBasePath(rss *unifflev1alpha1.RemoteShuffleService) string {
 		if k == rss.Spec.ShuffleServer.LogHostPath {
 			continue
 		}
-		paths = append(paths, strings.TrimSuffix(v, "/")+"/rssdata")
+		paths = append(paths, strings.TrimSuffix(v, "/")+"/"+controllerconstants.RssDataDir)
 	}
 	sort.Strings(paths)
 	return strings.Join(paths, ",")

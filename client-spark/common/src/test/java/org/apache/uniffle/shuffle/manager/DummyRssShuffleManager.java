@@ -20,6 +20,8 @@ package org.apache.uniffle.shuffle.manager;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.apache.spark.shuffle.ShuffleHandleInfo;
+
 public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   public Set<Integer> unregisteredShuffleIds = new LinkedHashSet<>();
 
@@ -46,5 +48,19 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   @Override
   public void unregisterAllMapOutput(int shuffleId) {
     unregisteredShuffleIds.add(shuffleId);
+  }
+
+  @Override
+  public ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId) {
+    return null;
+  }
+
+  @Override
+  public void addFailuresShuffleServerInfos(String shuffleServerId) {}
+
+  @Override
+  public boolean reassignShuffleServers(
+      int stageId, int stageAttemptNumber, int shuffleId, int numMaps) {
+    return false;
   }
 }
