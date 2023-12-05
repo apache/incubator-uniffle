@@ -11,6 +11,7 @@
 .project
 .classpath
 .scala_dependencies
+.mvn/wrapper/maven-wrapper.jar
 docs/api/
 lib_managed/
 logs/
