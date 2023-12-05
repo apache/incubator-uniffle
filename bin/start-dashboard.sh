@@ -82,5 +82,5 @@ fi
 
 $RUNNER $ARGS $JVM_ARGS $JAVA11_EXTRA_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &> $OUT_PATH &
 
-get_pid_file_name uniffle-dashboard
+get_pid_file_name dashboard
 echo $! >${RSS_PID_DIR}/${pid_file}
