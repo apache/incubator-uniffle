@@ -63,6 +63,8 @@ public interface ClusterManager extends Closeable, Reconfigurable {
    */
   List<ServerNode> getUnhealthyServerList();
 
+  Set<String> getExcludeNodes();
+
   /** @return number of server nodes in the cluster */
   int getNodesNum();
 

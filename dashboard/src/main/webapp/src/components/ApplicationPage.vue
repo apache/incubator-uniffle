@@ -67,7 +67,6 @@ export default {
 
     async function getApplicationInfoListPage() {
       const res = await getApplicationInfoList();
-      console.log(res)
       pageData.appInfoData = res.data.data
     }
 

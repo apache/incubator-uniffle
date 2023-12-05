@@ -18,16 +18,16 @@
 <template>
   <div>
     <el-table :data="pageData.tableData" height="550" style="width: 100%">
-      <el-table-column prop="id" label="Id" min-width="180"/>
+      <el-table-column prop="id" label="Id" min-width="140"/>
       <el-table-column prop="ip" label="IP" min-width="80"/>
       <el-table-column prop="grpcPort" label="Port" min-width="80"/>
-      <el-table-column prop="usedMemory" label="UsedMem" min-width="80"/>
-      <el-table-column prop="preAllocatedMemory" label="PreAllocatedMem" min-width="80"/>
-      <el-table-column prop="availableMemory" label="AvailableMem" min-width="80"/>
-      <el-table-column prop="totalMemory" label="TotalMem" min-width="80"/>
+      <el-table-column prop="nettyPort" label="NettyPort" min-width="80"/>
+      <el-table-column prop="usedMemory" label="UsedMem" min-width="80" :formatter="memFormatter"/>
+      <el-table-column prop="preAllocatedMemory" label="PreAllocatedMem" min-width="80" :formatter="memFormatter"/>
+      <el-table-column prop="availableMemory" label="AvailableMem" min-width="80" :formatter="memFormatter"/>
       <el-table-column prop="eventNumInFlush" label="FlushNum" min-width="80"/>
       <el-table-column prop="status" label="Status" min-width="80"/>
-      <el-table-column prop="timestamp" label="ResigerTime" min-width="80"/>
+      <el-table-column prop="timestamp" label="ResigerTime" min-width="80" :formatter="dateFormatter"/>
       <el-table-column prop="tags" label="Tags" min-width="80"/>
     </el-table>
   </div>
@@ -35,6 +35,7 @@
 <script>
 import {onMounted, reactive} from 'vue'
 import { getShuffleLostList } from "@/api/api";
+import {memFormatter, dateFormatter} from "@/utils/common";
 
 export default {
   setup() {
@@ -44,10 +45,10 @@ export default {
           id: "",
           ip: "",
           grpcPort: 0,
+          nettyPort:0,
           usedMemory: 0,
           preAllocatedMemory: 0,
           availableMemory: 0,
-          totalMemory: 0,
           eventNumInFlush: 0,
           tags: "",
           status: "",
@@ -64,7 +65,8 @@ export default {
     onMounted(() => {
       getShuffleLostListPage();
     })
-    return {pageData}
+
+    return {pageData, memFormatter, dateFormatter}
   }
 }
 </script>

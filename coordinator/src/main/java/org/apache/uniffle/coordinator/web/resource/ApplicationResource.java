@@ -19,12 +19,11 @@ package org.apache.uniffle.coordinator.web.resource;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.servlet.ServletContext;
 
+import com.google.common.collect.Maps;
 import org.apache.hbase.thirdparty.javax.ws.rs.GET;
 import org.apache.hbase.thirdparty.javax.ws.rs.Path;
 import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
@@ -46,9 +45,8 @@ public class ApplicationResource extends BaseResource {
   public Response<Map<String, Integer>> getAppTotality() {
     return execute(
         () -> {
-          Set<String> appIds = getApplicationManager().getAppIds();
-          Map<String, Integer> appTotalityMap = new HashMap<>();
-          appTotalityMap.put("appTotality", appIds.size());
+          Map<String, Integer> appTotalityMap = Maps.newHashMap();
+          appTotalityMap.put("appTotality", getApplicationManager().getAppIds().size());
           return appTotalityMap;
         });
   }
@@ -59,7 +57,7 @@ public class ApplicationResource extends BaseResource {
     return execute(
         () -> {
           Map<String, Map<String, Long>> currentUserAndApp =
-              getApplicationManager().getQuotaManager().getCurrentUserAndApp();
+              getApplicationManager().getCurrentUserAndApp();
           List<UserAppNumVO> usercnt = new ArrayList<>();
           for (Map.Entry<String, Map<String, Long>> stringMapEntry : currentUserAndApp.entrySet()) {
             String userName = stringMapEntry.getKey();
@@ -77,10 +75,8 @@ public class ApplicationResource extends BaseResource {
     return execute(
         () -> {
           List<AppInfoVO> userToAppList = new ArrayList<>();
-          Map<String, Map<String, Long>> currentUserAndApp = new HashMap<>();
-          if (getApplicationManager().getQuotaManager() != null) {
-            currentUserAndApp = getApplicationManager().getQuotaManager().getCurrentUserAndApp();
-          }
+          Map<String, Map<String, Long>> currentUserAndApp =
+              getApplicationManager().getCurrentUserAndApp();
           for (Map.Entry<String, Map<String, Long>> userAppIdTimestampMap :
               currentUserAndApp.entrySet()) {
             String userName = userAppIdTimestampMap.getKey();
