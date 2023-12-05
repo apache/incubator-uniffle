@@ -59,7 +59,7 @@ function common_shutdown {
 }
 
 #---
-# args:               Process name, coordinator or shuffle-server
+# args:               Process name, coordinator, shuffle-server or dashboard
 #---
 function get_pid_file_name {
   process_name="$1"
@@ -67,6 +67,8 @@ function get_pid_file_name {
     pid_file="coordinator.pid"
   elif [[ $process_name == "shuffle-server" ]]; then
     pid_file="shuffle-server.pid"
+  elif [[ $process_name == "dashboard" ]]; then
+    pid_file="dashboard.pid"
   else
     echo "Invalid process name: $process_name"
     exit 1

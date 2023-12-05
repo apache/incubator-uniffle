@@ -25,4 +25,4 @@ set -o errexit   # exit the script if any statement returns a non-true return va
 source "$(dirname "$0")/utils.sh"
 load_rss_env
 
-common_shutdown "uniffle-dashboard" "${RSS_PID_DIR}"
+common_shutdown "dashboard" "${RSS_PID_DIR}"
