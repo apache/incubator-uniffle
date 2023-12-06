@@ -77,8 +77,8 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: ${{ inputs.go-version }}
-    - name: Execute `mvn ${{ inputs.maven-args }}`
-      run: mvn -B -fae ${{ inputs.maven-args }} | tee /tmp/maven.log
+    - name: Execute `./mvnw ${{ inputs.maven-args }}`
+      run: ./mvnw -B -fae ${{ inputs.maven-args }} | tee /tmp/maven.log
       shell: bash
     - name: Summary of failures
       if: ${{ failure() && inputs.summary != '' }}
