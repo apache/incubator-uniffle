@@ -319,14 +319,14 @@ public class ShuffleServerConf extends RssBaseConf {
               ConfigUtils.POSITIVE_LONG_VALIDATOR, "flush cold storage threshold must be positive")
           .defaultValue(64L * 1024L * 1024L)
           .withDescription(
-              "For multistorage, the event size exceed this value, flush data  to cold storage");
+              "For hybrid storage, the event size exceed this value, flush data  to cold storage");
 
   public static final ConfigOption<String> HYBRID_STORAGE_MANAGER_SELECTOR_CLASS =
       ConfigOptions.key("rss.server.hybrid.storage.manager.selector.class")
           .stringType()
           .defaultValue("org.apache.uniffle.server.storage.hybrid.DefaultStorageManagerSelector")
           .withDescription(
-              "For multistorage, the storage manager selector strategy to support "
+              "For hybrid storage, the storage manager selector strategy to support "
                   + "policies of flushing to different storages")
           .withDeprecatedKeys("rss.server.multistorage.manager.selector.class");
 
@@ -334,16 +334,17 @@ public class ShuffleServerConf extends RssBaseConf {
       ConfigOptions.key("rss.server.hybrid.storage.fallback.strategy.class")
           .stringType()
           .noDefaultValue()
-          .withDescription("For multistorage, fallback strategy class")
+          .withDescription("For hybrid storage, fallback strategy class")
           .withDeprecatedKeys("rss.server.multistorage.fallback.strategy.class");
 
   public static final ConfigOption<Long> FALLBACK_MAX_FAIL_TIMES =
-      ConfigOptions.key("rss.server.multistorage.fallback.max.fail.times")
+      ConfigOptions.key("rss.server.hybrid.storage.fallback.max.fail.times")
           .longType()
           .checkValue(
               ConfigUtils.NON_NEGATIVE_LONG_VALIDATOR, " fallback times must be non-negative")
           .defaultValue(0L)
-          .withDescription("For multistorage, fail times exceed the number, will switch storage");
+          .withDescription("For hybrid storage, fail times exceed the number, will switch storage")
+          .withDeprecatedKeys("rss.server.multistorage.fallback.max.fail.times");
 
   public static final ConfigOption<List<String>> TAGS =
       ConfigOptions.key("rss.server.tags")
@@ -375,10 +376,11 @@ public class ShuffleServerConf extends RssBaseConf {
           .withDescription("The threshold of single shuffle buffer flush");
 
   public static final ConfigOption<Long> STORAGEMANAGER_CACHE_TIMEOUT =
-      ConfigOptions.key("rss.server.multistorage.storagemanager.cache.timeout")
+      ConfigOptions.key("rss.server.hybrid.storage.storagemanager.cache.timeout")
           .longType()
           .defaultValue(60 * 1000L)
-          .withDescription("The timeout of the cache which record the mapping information");
+          .withDescription("The timeout of the cache which record the mapping information")
+          .withDeprecatedKeys("rss.server.multistorage.storagemanager.cache.timeout");
 
   public static final ConfigOption<Long> SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL =
       ConfigOptions.key("rss.server.leak.shuffledata.check.interval")
