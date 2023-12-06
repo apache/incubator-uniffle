@@ -84,11 +84,11 @@ jobs:
         restore-keys: |
           mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-
           mvn-${{ inputs.java-version }}-package-
-    - name: Execute `mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}`
+    - name: Execute `./mvnw ${{ inputs.maven-args }} -P${{ matrix.profile }}`
       run: |
         PROFILES="${{ matrix.profile }}"
         PROFILES=${PROFILES/-/,}
-        mvn -B -fae ${{ inputs.maven-args }} -P${PROFILES} | tee /tmp/maven.log
+        ./mvnw -B -fae ${{ inputs.maven-args }} -P${PROFILES} | tee /tmp/maven.log
       shell: bash
     - name: Summary of failures
       if: ${{ failure() && inputs.summary != '' }}
