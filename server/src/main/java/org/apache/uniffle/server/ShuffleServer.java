@@ -29,6 +29,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.prometheus.client.CollectorRegistry;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -208,6 +209,8 @@ public class ShuffleServer {
     grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
 
+    initServerTags();
+
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
     // register packages and instances for jersey
@@ -267,8 +270,6 @@ public class ShuffleServer {
     }
 
     setServer();
-
-    initServerTags();
   }
 
   private void initServerTags() {
@@ -294,11 +295,11 @@ public class ShuffleServer {
   private void registerMetrics() {
     LOG.info("Register metrics");
     CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
-    String tags = coverToString();
-    ShuffleServerMetrics.register(shuffleServerCollectorRegistry, tags);
-    grpcMetrics = new ShuffleServerGrpcMetrics(this.shuffleServerConf, tags);
+    String rawTags = StringUtils.join(tags, ",");
+    ShuffleServerMetrics.register(shuffleServerCollectorRegistry, rawTags);
+    grpcMetrics = new ShuffleServerGrpcMetrics(this.shuffleServerConf, rawTags);
     grpcMetrics.register(new CollectorRegistry(true));
-    nettyMetrics = new ShuffleServerNettyMetrics(shuffleServerConf, tags);
+    nettyMetrics = new ShuffleServerNettyMetrics(shuffleServerConf, rawTags);
     nettyMetrics.register(new CollectorRegistry(true));
     CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
     boolean verbose =
@@ -491,19 +492,5 @@ public class ShuffleServer {
 
   public int getNettyPort() {
     return nettyPort;
-  }
-
-  public String coverToString() {
-    List<String> tags = shuffleServerConf.get(ShuffleServerConf.TAGS);
-    StringBuilder sb = new StringBuilder();
-    sb.append(Constants.SHUFFLE_SERVER_VERSION);
-    if (tags == null || tags.size() == 0) {
-      return sb.toString();
-    }
-    for (String tag : tags) {
-      sb.append(",");
-      sb.append(tag);
-    }
-    return sb.toString();
   }
 }
