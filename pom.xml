@@ -60,6 +60,7 @@
     <commons-lang3.version>3.10</commons-lang3.version>
     <commons-codec.version>1.9</commons-codec.version>
     <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
+    <jackson-dataformat-toml.version>2.13.0</jackson-dataformat-toml.version>
     <error_prone_annotations.version>2.10.0</error_prone_annotations.version>
     <execution.root>${user.dir}</execution.root>
     <fasterxml.jackson.version>2.10.0</fasterxml.jackson.version>
@@ -2312,6 +2313,22 @@
             <groupId>org.apache.uniffle</groupId>
             <artifactId>shuffle-storage</artifactId>
             <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-integration-common-test</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-minicluster</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
           </dependency>
         </dependencies>
       </dependencyManagement>
