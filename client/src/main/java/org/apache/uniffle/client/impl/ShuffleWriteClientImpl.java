@@ -139,7 +139,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.replicaWrite = builder.getReplicaWrite();
     this.replicaRead = builder.getReplicaRead();
     this.replicaSkipEnabled = builder.isReplicaSkipEnabled();
-    this.dataTransferPool = Executors.newFixedThreadPool(builder.getDataTransferPoolSize());
+    this.dataTransferPool =
+        ThreadUtils.getDaemonFixedThreadPool(builder.getDataTransferPoolSize(), "client-data-transfer");
     this.dataCommitPoolSize = builder.getDataCommitPoolSize();
     this.unregisterThreadPoolSize = builder.getUnregisterThreadPoolSize();
     this.unregisterRequestTimeSec = builder.getUnregisterRequestTimeSec();
