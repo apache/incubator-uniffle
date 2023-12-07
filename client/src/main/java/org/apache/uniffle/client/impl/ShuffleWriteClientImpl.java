@@ -27,7 +27,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -139,7 +138,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     this.replicaWrite = builder.getReplicaWrite();
     this.replicaRead = builder.getReplicaRead();
     this.replicaSkipEnabled = builder.isReplicaSkipEnabled();
-    this.dataTransferPool = Executors.newFixedThreadPool(builder.getDataTransferPoolSize());
+    this.dataTransferPool =
+        ThreadUtils.getDaemonFixedThreadPool(
+            builder.getDataTransferPoolSize(), "client-data-transfer");
     this.dataCommitPoolSize = builder.getDataCommitPoolSize();
     this.unregisterThreadPoolSize = builder.getUnregisterThreadPoolSize();
     this.unregisterRequestTimeSec = builder.getUnregisterRequestTimeSec();
