@@ -69,12 +69,12 @@ public class RetryUtils {
   }
 
   public static <T> T retryWithCondition(
-          RetryCmd<T> cmd,
-          RetryCallBack callBack,
-          long intervalMs,
-          int retryTimes,
-          Function<Throwable, Boolean> isRetryFunc)
-          throws Throwable {
+      RetryCmd<T> cmd,
+      RetryCallBack callBack,
+      long intervalMs,
+      int retryTimes,
+      Function<Throwable, Boolean> isRetryFunc)
+      throws Throwable {
     int retry = 0;
     while (true) {
       try {
