@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.server.netty;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -121,6 +123,10 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       PreAllocatedBufferInfo info = manager.getAndRemovePreAllocatedBuffer(requireBufferId);
       boolean isPreAllocated = info != null;
       if (!isPreAllocated) {
+        req.getPartitionToBlocks().values().stream()
+            .flatMap(Collection::stream)
+            .forEach(block -> block.getData().release());
+
         String errorMsg =
             "Can't find requireBufferId["
                 + requireBufferId
@@ -139,7 +145,14 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       final long start = System.currentTimeMillis();
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
       long alreadyReleasedSize = 0;
+      boolean isFailureOccurs = false;
       for (ShufflePartitionedData spd : shufflePartitionedData) {
+        // Once the cache failure occurs, we should explicitly release data held by byteBuf
+        if (isFailureOccurs) {
+          Arrays.stream(spd.getBlockList()).forEach(block -> block.getData().release());
+          continue;
+        }
+
         String shuffleDataInfo =
             "appId["
                 + appId
@@ -158,7 +171,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                     + ret;
             LOG.error(errorMsg);
             responseMessage = errorMsg;
-            break;
+            isFailureOccurs = true;
           } else {
             long toReleasedSize = spd.getTotalBlockSize();
             // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
@@ -176,7 +189,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           ret = StatusCode.INTERNAL_ERROR;
           responseMessage = errorMsg;
           LOG.error(errorMsg);
-          break;
+          isFailureOccurs = true;
         }
       }
       // since the required buffer id is only used once, the shuffle client would try to require
