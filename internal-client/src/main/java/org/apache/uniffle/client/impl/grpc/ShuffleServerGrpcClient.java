@@ -394,7 +394,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       final int allocateSize = size;
       final int finalBlockNum = blockNum;
       try {
-        RetryUtils.retry(
+        RetryUtils.retryWithCondition(
             () -> {
               long requireId =
                   requirePreAllocation(
@@ -450,8 +450,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               }
               return response;
             },
+            null,
             request.getRetryIntervalMax(),
-            maxRetryAttempts);
+            maxRetryAttempts,
+            t -> !(t instanceof OutOfMemoryError));
       } catch (Throwable throwable) {
         LOG.warn(throwable.getMessage());
         isSuccessful = false;
