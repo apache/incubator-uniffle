@@ -90,7 +90,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
       int allocateSize = size;
       int finalBlockNum = blockNum;
       try {
-        RetryUtils.retry(
+        RetryUtils.retryWithCondition(
             () -> {
               TransportClient transportClient = getTransportClient();
               long requireId =
@@ -149,8 +149,10 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
               }
               return rpcResponse;
             },
+            null,
             request.getRetryIntervalMax(),
-            maxRetryAttempts);
+            maxRetryAttempts,
+            t -> !(t instanceof OutOfMemoryError));
       } catch (Throwable throwable) {
         LOG.warn(throwable.getMessage());
         isSuccessful = false;
