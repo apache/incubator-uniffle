@@ -30,12 +30,12 @@ import com.google.common.collect.Sets;
 import io.prometheus.client.CollectorRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
-import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.exception.RssException;
@@ -264,6 +264,7 @@ public class ShuffleServer {
     shuffleTaskManager =
         new ShuffleTaskManager(
             shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
+
     nettyServerEnabled = shuffleServerConf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
     if (nettyServerEnabled) {
       streamServer = new StreamServer(this);
@@ -275,21 +276,15 @@ public class ShuffleServer {
   private void initServerTags() {
     // it's the system tag for server's version
     tags.add(Constants.SHUFFLE_SERVER_VERSION);
+    // the rpc service type bound into tags
+    tags.add(shuffleServerConf.get(RssBaseConf.RPC_SERVER_TYPE).name());
 
     List<String> configuredTags = shuffleServerConf.get(ShuffleServerConf.TAGS);
     if (CollectionUtils.isNotEmpty(configuredTags)) {
       tags.addAll(configuredTags);
     }
-    tagServer();
-    LOG.info("Server tags: {}", tags);
-  }
 
-  private void tagServer() {
-    if (nettyServerEnabled) {
-      tags.add(ClientType.GRPC_NETTY.name());
-    } else {
-      tags.add(ClientType.GRPC.name());
-    }
+    LOG.info("Server tags: {}", tags);
   }
 
   private void registerMetrics() {
