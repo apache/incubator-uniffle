@@ -41,33 +41,6 @@ public class RetryUtils {
     return retry(cmd, null, intervalMs, retryTimes, exceptionClasses);
   }
 
-  public static <T> T retryWithCondition(
-      RetryCmd<T> cmd,
-      RetryCallBack callBack,
-      long intervalMs,
-      int retryTimes,
-      Function<Throwable, Boolean> isRetryFunc)
-      throws Throwable {
-    int retry = 0;
-    while (true) {
-      try {
-        return cmd.execute();
-      } catch (Throwable t) {
-        retry++;
-        if (isRetryFunc.apply(t) && retry < retryTimes) {
-          LOG.info("Retry due to Throwable, " + t.getClass().getName() + " " + t.getMessage());
-          LOG.info("Waiting " + intervalMs + " milliseconds before next connection attempt.");
-          Thread.sleep(intervalMs);
-          if (callBack != null) {
-            callBack.execute();
-          }
-        } else {
-          throw t;
-        }
-      }
-    }
-  }
-
   /**
    * @param cmd command to execute
    * @param callBack the callback command executed when the attempt of command fail
@@ -93,6 +66,33 @@ public class RetryUtils {
         t ->
             (exceptionClasses != null && isInstanceOf(exceptionClasses, t))
                 || !(t instanceof NotRetryException));
+  }
+
+  public static <T> T retryWithCondition(
+          RetryCmd<T> cmd,
+          RetryCallBack callBack,
+          long intervalMs,
+          int retryTimes,
+          Function<Throwable, Boolean> isRetryFunc)
+          throws Throwable {
+    int retry = 0;
+    while (true) {
+      try {
+        return cmd.execute();
+      } catch (Throwable t) {
+        retry++;
+        if (isRetryFunc.apply(t) && retry < retryTimes) {
+          LOG.info("Retry due to Throwable, " + t.getClass().getName() + " " + t.getMessage());
+          LOG.info("Waiting " + intervalMs + " milliseconds before next connection attempt.");
+          Thread.sleep(intervalMs);
+          if (callBack != null) {
+            callBack.execute();
+          }
+        } else {
+          throw t;
+        }
+      }
+    }
   }
 
   private static boolean isInstanceOf(Set<Class<? extends Throwable>> classes, Throwable t) {
