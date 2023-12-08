@@ -123,11 +123,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       PreAllocatedBufferInfo info = manager.getAndRemovePreAllocatedBuffer(requireBufferId);
       boolean isPreAllocated = info != null;
       if (!isPreAllocated) {
-        req.getPartitionToBlocks()
-                .values()
-                .stream()
-                .flatMap(Collection::stream)
-                .forEach(block -> block.getData().release());
+        req.getPartitionToBlocks().values().stream()
+            .flatMap(Collection::stream)
+            .forEach(block -> block.getData().release());
 
         String errorMsg =
             "Can't find requireBufferId["
