@@ -311,6 +311,7 @@ public class ShuffleServer {
     if (metricReporter != null) {
       metricReporter.addCollectorRegistry(ShuffleServerMetrics.getCollectorRegistry());
       metricReporter.addCollectorRegistry(grpcMetrics.getCollectorRegistry());
+      metricReporter.addCollectorRegistry(nettyMetrics.getCollectorRegistry());
       metricReporter.addCollectorRegistry(JvmMetrics.getCollectorRegistry());
       metricReporter.start();
     }
