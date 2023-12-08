@@ -150,6 +150,18 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
     return recordsIterator.hasNext();
   }
 
+  private boolean isSameMemoryType(ByteBuffer left, ByteBuffer right) {
+    if (left.isDirect() && right.isDirect()) {
+      return true;
+    }
+
+    if (!left.isDirect() && !right.isDirect()) {
+      return true;
+    }
+
+    return false;
+  }
+
   private int uncompress(CompressedShuffleBlock rawBlock, ByteBuffer rawData) {
     long rawDataLength = rawData.limit() - rawData.position();
     totalRawBytesLength += rawDataLength;
@@ -157,7 +169,9 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
 
     int uncompressedLen = rawBlock.getUncompressLength();
     if (codec != null) {
-      if (uncompressedData == null || uncompressedData.capacity() < uncompressedLen) {
+      if (uncompressedData == null
+          || uncompressedData.capacity() < uncompressedLen
+          || !isSameMemoryType(uncompressedData, rawData)) {
         if (uncompressedData != null) {
           RssUtils.releaseByteBuffer(uncompressedData);
         }
