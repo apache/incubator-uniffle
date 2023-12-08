@@ -23,10 +23,6 @@ public class NotRetryException extends RssException {
     super(message);
   }
 
-  public NotRetryException(Throwable throwable) {
-    super(throwable);
-  }
-
   public NotRetryException(String message, Throwable e) {
     super(message, e);
   }

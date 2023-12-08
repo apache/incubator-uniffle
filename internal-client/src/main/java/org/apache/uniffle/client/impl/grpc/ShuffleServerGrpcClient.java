@@ -398,70 +398,68 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       final int allocateSize = size;
       final int finalBlockNum = blockNum;
       try {
-        RetryUtils.retry(
+        RetryUtils.retryWithCondition(
             () -> {
-              try {
-                long requireId =
-                    requirePreAllocation(
-                        appId,
-                        shuffleId,
-                        partitionIds,
-                        allocateSize,
-                        request.getRetryMax() / maxRetryAttempts,
-                        request.getRetryIntervalMax());
-                if (requireId == FAILED_REQUIRE_ID) {
-                  throw new RssException(
-                      String.format(
-                          "requirePreAllocation failed! size[%s], host[%s], port[%s]",
-                          allocateSize, host, port));
-                }
-                long start = System.currentTimeMillis();
-                SendShuffleDataRequest rpcRequest =
-                    SendShuffleDataRequest.newBuilder()
-                        .setAppId(appId)
-                        .setShuffleId(stb.getKey())
-                        .setRequireBufferId(requireId)
-                        .addAllShuffleData(shuffleData)
-                        .setTimestamp(start)
-                        .build();
-                SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
-                if (LOG.isDebugEnabled()) {
-                  LOG.debug(
-                      "Do sendShuffleData to {}:{} rpc cost:"
-                          + (System.currentTimeMillis() - start)
-                          + " ms for "
-                          + allocateSize
-                          + " bytes with "
-                          + finalBlockNum
-                          + " blocks",
-                      host,
-                      port);
-                }
-                if (response.getStatus() != RssProtos.StatusCode.SUCCESS) {
-                  String msg =
-                      "Can't send shuffle data with "
-                          + finalBlockNum
-                          + " blocks to "
-                          + host
-                          + ":"
-                          + port
-                          + ", statusCode="
-                          + response.getStatus()
-                          + ", errorMsg:"
-                          + response.getRetMsg();
-                  if (response.getStatus() == RssProtos.StatusCode.NO_REGISTER) {
-                    throw new NotRetryException(msg);
-                  } else {
-                    throw new RssException(msg);
-                  }
-                }
-                return response;
-              } catch (OutOfMemoryError outOfMemoryError) {
-                throw new NotRetryException(outOfMemoryError);
+              long requireId =
+                  requirePreAllocation(
+                      appId,
+                      shuffleId,
+                      partitionIds,
+                      allocateSize,
+                      request.getRetryMax() / maxRetryAttempts,
+                      request.getRetryIntervalMax());
+              if (requireId == FAILED_REQUIRE_ID) {
+                throw new RssException(
+                    String.format(
+                        "requirePreAllocation failed! size[%s], host[%s], port[%s]",
+                        allocateSize, host, port));
               }
+              long start = System.currentTimeMillis();
+              SendShuffleDataRequest rpcRequest =
+                  SendShuffleDataRequest.newBuilder()
+                      .setAppId(appId)
+                      .setShuffleId(stb.getKey())
+                      .setRequireBufferId(requireId)
+                      .addAllShuffleData(shuffleData)
+                      .setTimestamp(start)
+                      .build();
+              SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
+              if (LOG.isDebugEnabled()) {
+                LOG.debug(
+                    "Do sendShuffleData to {}:{} rpc cost:"
+                        + (System.currentTimeMillis() - start)
+                        + " ms for "
+                        + allocateSize
+                        + " bytes with "
+                        + finalBlockNum
+                        + " blocks",
+                    host,
+                    port);
+              }
+              if (response.getStatus() != RssProtos.StatusCode.SUCCESS) {
+                String msg =
+                    "Can't send shuffle data with "
+                        + finalBlockNum
+                        + " blocks to "
+                        + host
+                        + ":"
+                        + port
+                        + ", statusCode="
+                        + response.getStatus()
+                        + ", errorMsg:"
+                        + response.getRetMsg();
+                if (response.getStatus() == RssProtos.StatusCode.NO_REGISTER) {
+                  throw new NotRetryException(msg);
+                } else {
+                  throw new RssException(msg);
+                }
+              }
+              return response;
             },
+            null,
             request.getRetryIntervalMax(),
-            maxRetryAttempts);
+            maxRetryAttempts,
+            t -> !(t instanceof OutOfMemoryError));
       } catch (Throwable throwable) {
         LOG.warn(throwable.getMessage());
         isSuccessful = false;
