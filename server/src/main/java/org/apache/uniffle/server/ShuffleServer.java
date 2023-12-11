@@ -290,7 +290,7 @@ public class ShuffleServer {
   private void registerMetrics() {
     LOG.info("Register metrics");
     CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
-    String rawTags = StringUtils.join(tags, ",");
+    String rawTags = getEncodedTags();
     ShuffleServerMetrics.register(shuffleServerCollectorRegistry, rawTags);
     grpcMetrics = new ShuffleServerGrpcMetrics(this.shuffleServerConf, rawTags);
     grpcMetrics.register(new CollectorRegistry(true));
@@ -487,5 +487,9 @@ public class ShuffleServer {
 
   public int getNettyPort() {
     return nettyPort;
+  }
+
+  public String getEncodedTags() {
+    return StringUtils.join(tags, ",");
   }
 }
