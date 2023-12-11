@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -153,6 +154,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     ((ConcurrentHashMap<Object, Object>) field.get(shuffleServerConf))
         .remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
     String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
+
     withEnvironmentVariables("RSS_ENV_KEY", storageTypeJsonSource)
         .execute(
             () -> {
@@ -162,6 +164,9 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
               shuffleServers.set(0, ss);
             });
     Thread.sleep(5000);
+    CoordinatorServer coordinatorServer = coordinators.get(0);
+    ((SimpleClusterManager)(coordinatorServer.getClusterManager())).nodesCheckTest();
+
     // add tag when ClientType is `GRPC`
     RssGetShuffleAssignmentsRequest request =
         new RssGetShuffleAssignmentsRequest(
