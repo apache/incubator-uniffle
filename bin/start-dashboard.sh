@@ -22,19 +22,17 @@ set -o nounset   # exit the script if you try to use an uninitialised variable
 set -o errexit   # exit the script if any statement returns a non-true return value
 
 source "$(dirname "$0")/utils.sh"
-load_rss_env
+load_rss_env 0
 
 cd "$RSS_HOME"
 
-COORDINATOR_CONF_FILE="${RSS_CONF_DIR}/coordinator.conf"
+DASHBOARD_CONF_FILE="${RSS_CONF_DIR}/dashboard.conf"
 JAR_DIR="${RSS_HOME}/jars"
 LOG_CONF_FILE="${RSS_CONF_DIR}/log4j.properties"
 LOG_PATH="${RSS_LOG_DIR}/dashboard.log"
 OUT_PATH="${RSS_LOG_DIR}/dashboard.out"
 
 MAIN_CLASS="org.apache.uniffle.dashboard.web.JettyServerFront"
-
-HADOOP_DEPENDENCY="$("$HADOOP_HOME/bin/hadoop" classpath --glob)"
 
 echo "Check process existence"
 is_jvm_process_running "$JPS" $MAIN_CLASS
@@ -47,9 +45,6 @@ done
 
 mkdir -p "${RSS_LOG_DIR}"
 mkdir -p "${RSS_PID_DIR}"
-
-CLASSPATH=$CLASSPATH:$HADOOP_CONF_DIR:$HADOOP_DEPENDENCY
-JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native"
 
 echo "class path is $CLASSPATH"
 
@@ -80,7 +75,7 @@ else
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS $JAVA11_EXTRA_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &> $OUT_PATH &
+$RUNNER $ARGS $JVM_ARGS $JAVA11_EXTRA_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$DASHBOARD_CONF_FILE" $@ &> $OUT_PATH &
 
 get_pid_file_name dashboard
 echo $! >${RSS_PID_DIR}/${pid_file}

@@ -30,7 +30,7 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.uniffle</groupId>
-            <artifactId>coordinator</artifactId>
+            <artifactId>rss-common</artifactId>
         </dependency>
     </dependencies>
 
