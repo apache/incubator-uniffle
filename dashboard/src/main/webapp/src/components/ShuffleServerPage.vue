@@ -26,7 +26,7 @@
                 <span class="cardtile">Active</span>
               </div>
             </template>
-            <div class="activenode">{{ dataList.allshuffleServerSize.activeNode }}</div>
+            <div class="activenode">{{ dataList.allshuffleServerSize.ACTIVE ?? 0 }}</div>
           </el-card>
         </router-link>
       </el-col>
@@ -38,7 +38,7 @@
                 <span class="cardtile">Decommissioning</span>
               </div>
             </template>
-            <div class="decommissioningnode">{{ dataList.allshuffleServerSize.decommissioningNode }}</div>
+            <div class="decommissioningnode">{{ dataList.allshuffleServerSize.DECOMMISSIONING ?? 0 }}</div>
           </el-card>
         </router-link>
       </el-col>
@@ -50,7 +50,7 @@
                 <span class="cardtile">Decommissioned</span>
               </div>
             </template>
-            <div class="decommissionednode">{{ dataList.allshuffleServerSize.decommissionedNode }}</div>
+            <div class="decommissionednode">{{ dataList.allshuffleServerSize.DECOMMISSIONED ?? 0 }}</div>
           </el-card>
         </router-link>
       </el-col>
@@ -62,7 +62,7 @@
                 <span class="cardtile">Lost</span>
               </div>
             </template>
-            <div class="lostnode">{{ dataList.allshuffleServerSize.lostNode }}</div>
+            <div class="lostnode">{{ dataList.allshuffleServerSize.LOST ?? 0 }}</div>
           </el-card>
         </router-link>
       </el-col>
@@ -74,7 +74,7 @@
                 <span class="cardtile">Unhealthy</span>
               </div>
             </template>
-            <div class="unhealthynode">{{ dataList.allshuffleServerSize.unhealthyNode }}</div>
+            <div class="unhealthynode">{{ dataList.allshuffleServerSize.UNHEALTHY ?? 0 }}</div>
           </el-card>
         </router-link>
       </el-col>
@@ -86,7 +86,7 @@
                 <span class="cardtile">Excludes</span>
               </div>
             </template>
-            <div class="excludesnode">{{ dataList.allshuffleServerSize.excludesNode }}</div>
+            <div class="excludesnode">{{ dataList.allshuffleServerSize.EXCLUDED ?? 0 }}</div>
           </el-card>
         </router-link>
       </el-col>
@@ -108,12 +108,12 @@ export default {
   setup() {
     const dataList = reactive({
       allshuffleServerSize: {
-        activeNode: 0,
-        decommissionedNode: 0,
-        decommissioningNode: 0,
-        excludesNode: 0,
-        lostNode: 0,
-        unhealthyNode: 0
+        ACTIVE: 0,
+        DECOMMISSIONED: 0,
+        DECOMMISSIONING: 0,
+        EXCLUDED: 0,
+        LOST: 0,
+        UNHEALTHY: 0
       }
     })
 

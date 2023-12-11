@@ -18,7 +18,7 @@
 <template>
   <div>
     <el-table :data="pageData.tableData" height="550" style="width: 100%">
-      <el-table-column prop="excludeNodeId" label="ExcludeNodeId" min-width="180"/>
+      <el-table-column prop="id" label="ExcludeNodeId" min-width="180"/>
     </el-table>
   </div>
 </template>
@@ -31,7 +31,7 @@ export default {
     const pageData = reactive({
       tableData: [
         {
-          excludeNodeId:""
+          id:""
         }
       ]
     })

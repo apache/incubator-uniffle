@@ -527,6 +527,10 @@ public class ApplicationManager implements Closeable {
     return REMOTE_PATH_SCHEMA;
   }
 
+  public Map<String, Map<String, Long>> getCurrentUserAndApp() {
+    return currentUserAndApp;
+  }
+
   public void close() {
     if (detectStorageScheduler != null) {
       detectStorageScheduler.shutdownNow();

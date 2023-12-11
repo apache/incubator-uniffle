@@ -241,6 +241,7 @@ enum ServerStatus {
   DECOMMISSIONED = 2;
   LOST = 3;
   UNHEALTHY = 4;
+  EXCLUDED = 5;
   // todo: more status, such as UPGRADING
 }
 

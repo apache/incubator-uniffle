@@ -285,6 +285,7 @@ public class SimpleClusterManager implements ClusterManager {
     return Lists.newArrayList(unhealthyNodes);
   }
 
+  @Override
   public Set<String> getExcludeNodes() {
     return excludeNodes;
   }

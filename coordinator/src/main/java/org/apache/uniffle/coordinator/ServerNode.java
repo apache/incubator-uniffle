@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.storage.StorageInfo;
@@ -40,6 +41,10 @@ public class ServerNode implements Comparable<ServerNode> {
   private ServerStatus status;
   private Map<String, StorageInfo> storageInfo;
   private int nettyPort = -1;
+
+  public ServerNode(String id) {
+    this(id, "", 0, 0, 0, 0, 0, Sets.newHashSet(), ServerStatus.EXCLUDED);
+  }
 
   // Only for test
   public ServerNode(
