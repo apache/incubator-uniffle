@@ -74,6 +74,7 @@ public class ShuffleServer {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServer.class);
   private RegisterHeartBeat registerHeartBeat;
+  private DirectMemoryUsageReporter directMemoryUsageReporter;
   private String id;
   private String ip;
   private int grpcPort;
@@ -167,6 +168,10 @@ public class ShuffleServer {
       registerHeartBeat.shutdown();
       LOG.info("HeartBeat Stopped!");
     }
+    if (directMemoryUsageReporter != null) {
+      directMemoryUsageReporter.stop();
+      LOG.info("Direct memory usage reporter Stopped!");
+    }
     if (storageManager != null) {
       storageManager.stop();
       LOG.info("MultiStorage Stopped!");
@@ -256,6 +261,7 @@ public class ShuffleServer {
     }
 
     registerHeartBeat = new RegisterHeartBeat(this);
+    directMemoryUsageReporter = new DirectMemoryUsageReporter(getShuffleServerConf());
     shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, this, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
     shuffleTaskManager =
