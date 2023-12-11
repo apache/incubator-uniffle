@@ -458,18 +458,25 @@ public class ShuffleTaskManager {
       String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
     if (null == shuffleTaskInfo) {
-      return RequireBufferStatusCode.NO_REGISTER.statusCode();
+      throw new BufferLimitOfHugePartitionException("Buffer limit reached for huge partition");
+
     }
     for (int partitionId : partitionIds) {
       long partitionUsedDataSize = getPartitionDataSize(appId, shuffleId, partitionId);
       if (shuffleBufferManager.limitHugePartition(
           appId, shuffleId, partitionId, partitionUsedDataSize)) {
         ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.inc();
-        return RequireBufferStatusCode.NO_BUFFER.statusCode();
+        throw new BufferLimitOfHugePartitionException("Buffer limit reached for huge partition");
+
       }
     }
     return requireBuffer(requireSize);
   }
+public class BufferLimitOfHugePartitionException extends RuntimeException {
+    public BufferLimitOfHugePartitionException(String message) {
+        super(message);
+    }
+}
 
   public long requireBuffer(int requireSize) {
     long requireId = -1;
