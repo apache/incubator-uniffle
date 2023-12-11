@@ -17,14 +17,15 @@
 
 package org.apache.uniffle.server;
 
-import io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent;
-import org.apache.uniffle.common.util.ThreadUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.util.ThreadUtils;
 
 public class DirectMemoryUsageReporter {
 
@@ -32,33 +33,38 @@ public class DirectMemoryUsageReporter {
 
   private final long reportInitialDelay;
   private final long reportInterval;
-  private final ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(
-    ThreadUtils.getThreadFactory("DirectMemoryReporter-%d"));
+  private final ScheduledExecutorService service =
+      Executors.newSingleThreadScheduledExecutor(
+          ThreadUtils.getThreadFactory("DirectMemoryReporter-%d"));
 
   public DirectMemoryUsageReporter(ShuffleServerConf conf) {
-    this.reportInitialDelay = conf.getLong(ShuffleServerConf.SERVER_DIRECT_MEMORY_USAGE_REPORT_DELAY);
-    this.reportInterval = conf.getLong(ShuffleServerConf.SERVER_DIRECT_MEMORY_USAGE_REPORT_INTERVAL);
+    this.reportInitialDelay =
+        conf.getLong(ShuffleServerConf.SERVER_DIRECT_MEMORY_USAGE_REPORT_DELAY);
+    this.reportInterval =
+        conf.getLong(ShuffleServerConf.SERVER_DIRECT_MEMORY_USAGE_REPORT_INTERVAL);
   }
 
   public void start() {
-    LOG.info("Start report direct memory usage to MetricSystem after {}ms and interval is {}ms",
-      reportInitialDelay, reportInterval);
+    LOG.info(
+        "Start report direct memory usage to MetricSystem after {}ms and interval is {}ms",
+        reportInitialDelay,
+        reportInterval);
 
-    service.scheduleAtFixedRate(() -> {
-        try {
-          long usedDirectMemory = PlatformDependent.usedDirectMemory();
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("Current direct memory usage: {}", usedDirectMemory);
+    service.scheduleAtFixedRate(
+        () -> {
+          try {
+            long usedDirectMemory = PlatformDependent.usedDirectMemory();
+            if (LOG.isDebugEnabled()) {
+              LOG.debug("Current direct memory usage: {}", usedDirectMemory);
+            }
+            ShuffleServerMetrics.gaugeUsedDirectMemorySize.set(usedDirectMemory);
+          } catch (Throwable t) {
+            LOG.error("Failed to report direct memory.", t);
           }
-          ShuffleServerMetrics.gaugeUsedDirectMemorySize.set(usedDirectMemory);
-        } catch (Throwable t) {
-          LOG.error("Failed to report direct memory.", t);
-        }
-      },
-      reportInitialDelay,
-      reportInterval,
-      TimeUnit.MILLISECONDS
-    );
+        },
+        reportInitialDelay,
+        reportInterval,
+        TimeUnit.MILLISECONDS);
   }
 
   public void stop() {
