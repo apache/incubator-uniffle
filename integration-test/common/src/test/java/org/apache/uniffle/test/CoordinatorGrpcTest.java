@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -46,6 +45,7 @@ import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.storage.StorageStatus;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.SimpleClusterManager;
 import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
@@ -165,7 +165,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
             });
     Thread.sleep(5000);
     CoordinatorServer coordinatorServer = coordinators.get(0);
-    ((SimpleClusterManager)(coordinatorServer.getClusterManager())).nodesCheckTest();
+    ((SimpleClusterManager) (coordinatorServer.getClusterManager())).nodesCheckTest();
 
     // add tag when ClientType is `GRPC`
     RssGetShuffleAssignmentsRequest request =
