@@ -78,7 +78,6 @@ public class RssSparkConfig {
           .defaultValue("3m")
           .withDescription("Buffer size for single partition data");
 
-
   public static final ConfigOption<String> RSS_WRITER_SERIALIZER_BUFFER_SIZE =
       ConfigOptions.key("spark.rss.writer.serializer.buffer.size")
           .stringType()
@@ -96,7 +95,6 @@ public class RssSparkConfig {
           .stringType()
           .defaultValue("128m")
           .withDescription("Buffer size for total partition data");
-
 
   public static final ConfigOption<String> RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE =
       ConfigOptions.key("spark.rss.writer.pre.allocated.buffer.size")
@@ -186,7 +184,6 @@ public class RssSparkConfig {
           .defaultValue("14m")
           .withDescription("The max data size read from storage");
 
-
   public static final ConfigEntry<Long> RSS_HEARTBEAT_INTERVAL =
       createLongBuilder(
               new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_HEARTBEAT_INTERVAL))
@@ -197,7 +194,6 @@ public class RssSparkConfig {
           .longType()
           .defaultValue(5 * 1000L)
           .withDescription("");
-
 
   public static final ConfigEntry<Integer> RSS_CLIENT_SEND_THREAD_POOL_SIZE =
       createIntegerBuilder(
@@ -267,7 +263,6 @@ public class RssSparkConfig {
   public static final ConfigOption<String> RSS_ACCESS_ID =
       ConfigOptions.key("spark.rss.access.id").stringType().defaultValue("").withDescription("");
 
-
   public static final ConfigEntry<Integer> RSS_ACCESS_TIMEOUT_MS =
       createIntegerBuilder(
               new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_ACCESS_TIMEOUT_MS))
@@ -290,7 +285,6 @@ public class RssSparkConfig {
               "The comma-separated list of tags for deciding assignment shuffle servers. "
                   + "Notice that the SHUFFLE_SERVER_VERSION will always as the assignment tag "
                   + "whether this conf is set or not");
-
 
   public static final ConfigOption<Boolean> RSS_CLIENT_OFF_HEAP_MEMORY_ENABLE =
       ConfigOptions.key("spark.rss.client.off.heap.memory.enable")
