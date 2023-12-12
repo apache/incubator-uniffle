@@ -35,7 +35,7 @@ public class DirectMemoryUsageReporter {
   private final long reportInterval;
   private final ScheduledExecutorService service =
       Executors.newSingleThreadScheduledExecutor(
-          ThreadUtils.getThreadFactory("DirectMemoryReporter-%d"));
+          ThreadUtils.getThreadFactory("DirectMemoryReporter"));
 
   public DirectMemoryUsageReporter(ShuffleServerConf conf) {
     this.reportInitialDelay =
