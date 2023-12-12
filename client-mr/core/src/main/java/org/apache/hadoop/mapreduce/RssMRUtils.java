@@ -87,7 +87,8 @@ public class RssMRUtils {
             RssMRConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM.defaultValue());
     int retryMax =
         jobConf.getInt(
-            RssMRConfig.RSS_CLIENT_RETRY_MAX.key(), RssMRConfig.RSS_CLIENT_RETRY_MAX.defaultValue());
+            RssMRConfig.RSS_CLIENT_RETRY_MAX.key(),
+            RssMRConfig.RSS_CLIENT_RETRY_MAX.defaultValue());
     long retryIntervalMax =
         jobConf.getLong(
             RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX.key(),
@@ -96,12 +97,15 @@ public class RssMRUtils {
         jobConf.get(RssMRConfig.RSS_CLIENT_TYPE.key(), RssMRConfig.RSS_CLIENT_TYPE.defaultValue());
     int replicaWrite =
         jobConf.getInt(
-            RssMRConfig.RSS_DATA_REPLICA_WRITE.key(), RssMRConfig.RSS_DATA_REPLICA_WRITE.defaultValue());
+            RssMRConfig.RSS_DATA_REPLICA_WRITE.key(),
+            RssMRConfig.RSS_DATA_REPLICA_WRITE.defaultValue());
     int replicaRead =
         jobConf.getInt(
-            RssMRConfig.RSS_DATA_REPLICA_READ.key(), RssMRConfig.RSS_DATA_REPLICA_READ.defaultValue());
+            RssMRConfig.RSS_DATA_REPLICA_READ.key(),
+            RssMRConfig.RSS_DATA_REPLICA_READ.defaultValue());
     int replica =
-        jobConf.getInt(RssMRConfig.RSS_DATA_REPLICA.key(), RssMRConfig.RSS_DATA_REPLICA.defaultValue());
+        jobConf.getInt(
+            RssMRConfig.RSS_DATA_REPLICA.key(), RssMRConfig.RSS_DATA_REPLICA.defaultValue());
     boolean replicaSkipEnabled =
         jobConf.getBoolean(
             RssMRConfig.RSS_DATA_REPLICA_SKIP_ENABLED.key(),

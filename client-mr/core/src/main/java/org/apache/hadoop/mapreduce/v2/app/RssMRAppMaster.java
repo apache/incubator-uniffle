@@ -187,7 +187,8 @@ public class RssMRAppMaster extends MRAppMaster {
       }
       assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
       String clientType =
-          extraConf.get(RssMRConfig.RSS_CLIENT_TYPE.key(), RssMRConfig.RSS_CLIENT_TYPE.defaultValue());
+          extraConf.get(
+              RssMRConfig.RSS_CLIENT_TYPE.key(), RssMRConfig.RSS_CLIENT_TYPE.defaultValue());
       ClientUtils.validateClientType(clientType);
       assignmentTags.add(clientType);
 
@@ -296,7 +297,8 @@ public class RssMRAppMaster extends MRAppMaster {
       }
       long heartbeatInterval =
           conf.getLong(
-              RssMRConfig.RSS_HEARTBEAT_INTERVAL.key(), RssMRConfig.RSS_HEARTBEAT_INTERVAL.defaultValue());
+              RssMRConfig.RSS_HEARTBEAT_INTERVAL.key(),
+              RssMRConfig.RSS_HEARTBEAT_INTERVAL.defaultValue());
       long heartbeatTimeout =
           conf.getLong(RssMRConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
       client.registerApplicationInfo(appId, heartbeatTimeout, "user");
