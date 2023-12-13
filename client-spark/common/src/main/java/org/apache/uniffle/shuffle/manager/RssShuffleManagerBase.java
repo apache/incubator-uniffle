@@ -19,9 +19,11 @@ package org.apache.uniffle.shuffle.manager;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.*;
 import org.apache.spark.shuffle.RssSparkConfig;
@@ -155,13 +157,22 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     return tracker instanceof MapOutputTrackerMaster ? (MapOutputTrackerMaster) tracker : null;
   }
 
+  private Map<String, String> parseRemoteStorageConf(Configuration conf) {
+    Map<String, String> confItems = Maps.newHashMap();
+    for (Map.Entry<String, String> entry : conf) {
+      confItems.put(entry.getKey(), entry.getValue());
+    }
+    return confItems;
+  }
+
   protected RemoteStorageInfo getRemoteStorageInfo(SparkConf sparkConf) {
+    Map<String, String> confItems = Maps.newHashMap();
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     if (rssConf.getBoolean(RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED)) {
-      return new RemoteStorageInfo(
-          sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""), new Configuration(true));
+      confItems = parseRemoteStorageConf(new Configuration(true));
     }
 
-    return new RemoteStorageInfo(sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""));
+    return new RemoteStorageInfo(
+        sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""), confItems);
   }
 }

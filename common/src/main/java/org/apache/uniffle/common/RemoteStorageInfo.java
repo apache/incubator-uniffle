@@ -26,7 +26,6 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
 
 import org.apache.uniffle.common.util.Constants;
 
@@ -51,19 +50,6 @@ public class RemoteStorageInfo implements Serializable {
   public RemoteStorageInfo(String path, String confString) {
     this.path = path;
     this.confItems = parseRemoteStorageConf(confString);
-  }
-
-  public RemoteStorageInfo(String path, Configuration conf) {
-    this.path = path;
-    this.confItems = parseRemoteStorageConf(conf);
-  }
-
-  private Map<String, String> parseRemoteStorageConf(Configuration conf) {
-    Map<String, String> confItems = Maps.newHashMap();
-    for (Map.Entry<String, String> entry : conf) {
-      confItems.put(entry.getKey(), entry.getValue());
-    }
-    return confItems;
   }
 
   public static Map<String, String> parseRemoteStorageConf(String confString) {
