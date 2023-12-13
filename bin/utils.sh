@@ -152,6 +152,11 @@ function is_port_in_use {
 function load_rss_env {
   set -o allexport
 
+  is_dashboard=0
+  if [ $# -eq 1 ]; then
+    is_dashboard=1
+  fi
+
   # find rss-env.sh
   set +o nounset
   if [ -f "${RSS_CONF_DIR}/rss-env.sh" ]; then
@@ -172,9 +177,13 @@ function load_rss_env {
     echo "No env JAVA_HOME."
     exit 1
   fi
-  if [ -z "$HADOOP_HOME" ]; then
-    echo "No env HADOOP_HOME."
-    exit 1
+  if [[ -z "$HADOOP_HOME" ]]; then
+    if [[ $is_dashboard -eq 1 ]]; then
+      echo "Dashboard need not HADOOP_HOME."
+    else
+      echo "No env HADOOP_HOME."
+      exit 1
+    fi
   fi
 
   # export default value
@@ -214,4 +223,3 @@ function load_rss_env {
 
   set +o allexport
 }
-
