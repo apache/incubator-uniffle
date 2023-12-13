@@ -35,7 +35,7 @@ public class NettyDirectMemoryTracker {
   private final long reportInterval;
   private final ScheduledExecutorService service =
       Executors.newSingleThreadScheduledExecutor(
-          ThreadUtils.getThreadFactory("DirectMemoryReporter"));
+          ThreadUtils.getThreadFactory("NettyDirectMemoryTracker"));
 
   public NettyDirectMemoryTracker(ShuffleServerConf conf) {
     this.reportInitialDelay =
