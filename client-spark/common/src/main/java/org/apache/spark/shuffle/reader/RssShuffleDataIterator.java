@@ -172,6 +172,17 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
       if (uncompressedData == null
           || uncompressedData.capacity() < uncompressedLen
           || !isSameMemoryType(uncompressedData, rawData)) {
+
+        if (LOG.isDebugEnabled()) {
+          if (!isSameMemoryType(uncompressedData, rawData)) {
+            LOG.debug(
+                "This should not happen that the temporary uncompressed data's memory type(isDirect:{}) "
+                    + "is not same with fetched data buffer(isDirect:{})",
+                uncompressedData.isDirect(),
+                rawData.isDirect());
+          }
+        }
+
         if (uncompressedData != null) {
           RssUtils.releaseByteBuffer(uncompressedData);
         }
