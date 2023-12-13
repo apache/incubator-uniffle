@@ -997,6 +997,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public void unregisterShuffle(String appId) {
+    if (appId == null) {
+      return;
+    }
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
     if (appServerMap == null) {
       return;
