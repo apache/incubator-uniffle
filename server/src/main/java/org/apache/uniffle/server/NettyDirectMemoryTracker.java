@@ -27,9 +27,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.util.ThreadUtils;
 
-public class DirectMemoryUsageReporter {
+public class NettyDirectMemoryTracker {
 
-  private static final Logger LOG = LoggerFactory.getLogger(DirectMemoryUsageReporter.class);
+  private static final Logger LOG = LoggerFactory.getLogger(NettyDirectMemoryTracker.class);
 
   private final long reportInitialDelay;
   private final long reportInterval;
@@ -37,11 +37,11 @@ public class DirectMemoryUsageReporter {
       Executors.newSingleThreadScheduledExecutor(
           ThreadUtils.getThreadFactory("DirectMemoryReporter"));
 
-  public DirectMemoryUsageReporter(ShuffleServerConf conf) {
+  public NettyDirectMemoryTracker(ShuffleServerConf conf) {
     this.reportInitialDelay =
-        conf.getLong(ShuffleServerConf.SERVER_DIRECT_MEMORY_USAGE_REPORT_DELAY);
+        conf.getLong(ShuffleServerConf.SERVER_NETTY_DIRECT_MEMORY_USAGE_TRACKER_DELAY);
     this.reportInterval =
-        conf.getLong(ShuffleServerConf.SERVER_DIRECT_MEMORY_USAGE_REPORT_INTERVAL);
+        conf.getLong(ShuffleServerConf.SERVER_NETTY_DIRECT_MEMORY_USAGE_TRACKER_INTERVAL);
   }
 
   public void start() {

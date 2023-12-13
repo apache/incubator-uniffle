@@ -74,7 +74,7 @@ public class ShuffleServer {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServer.class);
   private RegisterHeartBeat registerHeartBeat;
-  private DirectMemoryUsageReporter directMemoryUsageReporter;
+  private NettyDirectMemoryTracker directMemoryUsageReporter;
   private String id;
   private String ip;
   private int grpcPort;
@@ -261,7 +261,7 @@ public class ShuffleServer {
     }
 
     registerHeartBeat = new RegisterHeartBeat(this);
-    directMemoryUsageReporter = new DirectMemoryUsageReporter(getShuffleServerConf());
+    directMemoryUsageReporter = new NettyDirectMemoryTracker(getShuffleServerConf());
     shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, this, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
     shuffleTaskManager =
