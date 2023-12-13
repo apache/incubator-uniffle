@@ -25,7 +25,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.spark.*;
+import org.apache.spark.MapOutputTracker;
+import org.apache.spark.MapOutputTrackerMaster;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkEnv;
+import org.apache.spark.SparkException;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.RssSparkShuffleUtils;
 import org.apache.spark.shuffle.ShuffleManager;
