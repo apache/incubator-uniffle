@@ -72,10 +72,10 @@ public class RssSparkConfig {
                   SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_PARTITION_NUM_PER_RANGE))
           .createWithDefault(RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
 
-  public static final ConfigOption<String> RSS_WRITER_BUFFER_SIZE =
+  public static final ConfigOption<Long> RSS_WRITER_BUFFER_SIZE =
       ConfigOptions.key("spark.rss.writer.buffer.size")
-          .stringType()
-          .defaultValue("3m")
+          .longType()
+          .defaultValue(1024 * 1024 * 3L)
           .withDescription("Buffer size for single partition data");
 
   public static final ConfigOption<String> RSS_WRITER_SERIALIZER_BUFFER_SIZE =
@@ -90,16 +90,16 @@ public class RssSparkConfig {
           .defaultValue("3k")
           .withDescription("");
 
-  public static final ConfigOption<String> RSS_WRITER_BUFFER_SPILL_SIZE =
+  public static final ConfigOption<Long> RSS_WRITER_BUFFER_SPILL_SIZE =
       ConfigOptions.key("spark.rss.writer.buffer.spill.size")
-          .stringType()
-          .defaultValue("128m")
+          .longType()
+          .defaultValue(1024 * 1024 * 128L)
           .withDescription("Buffer size for total partition data");
 
-  public static final ConfigOption<String> RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE =
+  public static final ConfigOption<Long> RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE =
       ConfigOptions.key("spark.rss.writer.pre.allocated.buffer.size")
-          .stringType()
-          .defaultValue("16m")
+          .longType()
+          .defaultValue(1024 * 1024 * 16L)
           .withDescription("");
 
   public static final ConfigEntry<Integer> RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX =
@@ -178,10 +178,10 @@ public class RssSparkConfig {
 
   // When the size of read buffer reaches the half of JVM region (i.e., 32m),
   // it will incur humongous allocation, so we set it to 14m.
-  public static final ConfigOption<String> RSS_CLIENT_READ_BUFFER_SIZE =
+  public static final ConfigOption<Long> RSS_CLIENT_READ_BUFFER_SIZE =
       ConfigOptions.key("spark.rss.client.read.buffer.size")
-          .stringType()
-          .defaultValue("14m")
+          .longType()
+          .defaultValue(1024 * 1024 * 14L)
           .withDescription("The max data size read from storage");
 
   public static final ConfigEntry<Long> RSS_HEARTBEAT_INTERVAL =
