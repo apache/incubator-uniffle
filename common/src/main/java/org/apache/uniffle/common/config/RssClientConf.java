@@ -144,7 +144,7 @@ public class RssClientConf {
           .withDescription("Supports GRPC, GRPC_NETTY");
 
   public static final ConfigOption<Boolean> RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED =
-      ConfigOptions.key("rss.client.remote.storage.use-local-conf.enabled")
+      ConfigOptions.key("rss.client.remote.storage.useLocalConfAsDefault")
           .booleanType()
           .defaultValue(false)
           .withDescription(
