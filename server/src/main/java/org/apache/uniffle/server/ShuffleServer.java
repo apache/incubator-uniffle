@@ -170,7 +170,7 @@ public class ShuffleServer {
     }
     if (directMemoryUsageReporter != null) {
       directMemoryUsageReporter.stop();
-      LOG.info("Direct memory usage reporter Stopped!");
+      LOG.info("Direct memory usage tracker Stopped!");
     }
     if (storageManager != null) {
       storageManager.stop();
