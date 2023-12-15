@@ -21,7 +21,7 @@ package org.apache.uniffle.common.rpc;
 public enum ServerType {
   GRPC(1),
   NETTY(2),
-  GRPC_NETTY(4);
+  GRPC_NETTY(3);
 
   private int val;
 
@@ -34,6 +34,7 @@ public enum ServerType {
   }
 
   public boolean withGrpc() {
+    int val = this.getVal();
     return (this.getVal() & GRPC.getVal()) != 0;
   }
 

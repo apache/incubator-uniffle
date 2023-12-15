@@ -37,6 +37,9 @@ public class HybridRpcServer implements ServerInterface {
   private int nettyPort;
 
   public HybridRpcServer(GrpcServer grpcServer, StreamServer nettyServer) {
+    if (grpcServer == null || nettyServer == null) {
+      throw new IllegalArgumentException("The rpc server should not be null.");
+    }
     this.grpcServer = grpcServer;
     this.nettyServer = nettyServer;
   }

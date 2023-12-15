@@ -30,10 +30,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.ExitUtils.ExitException;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_TYPE;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_CHECK_INTERVAL;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_SHUTDOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -137,10 +139,13 @@ public class ShuffleServerTest {
   @Test
   public void nettyServerTest() throws Exception {
     ShuffleServerConf serverConf = createShuffleServerConf();
+    serverConf.set(RPC_SERVER_TYPE, ServerType.GRPC_NETTY);
     serverConf.set(ShuffleServerConf.NETTY_SERVER_PORT, 29999);
+
     ShuffleServer ss1 = new ShuffleServer(serverConf);
     ss1.start();
     ExitUtils.disableSystemExit();
+
     serverConf.set(ShuffleServerConf.RPC_SERVER_PORT, 19997);
     serverConf.set(ShuffleServerConf.JETTY_HTTP_PORT, 19996);
     serverConf.set(ShuffleServerConf.SERVER_PORT_MAX_RETRIES, 1);
