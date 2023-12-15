@@ -39,6 +39,7 @@ import org.apache.uniffle.common.ShuffleRegisterInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
@@ -56,6 +57,7 @@ import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 
+import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_TYPE;
 import static org.apache.uniffle.common.metrics.GRPCMetrics.GRPC_SERVER_CONNECTION_NUMBER_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -304,6 +306,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     ShuffleServerConf shuffleServerConf = shuffleServers.get(0).getShuffleServerConf();
     shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 2);
     shuffleServerConf.setInteger("rss.jetty.http.port", 18082);
+    shuffleServerConf.set(RPC_SERVER_TYPE, ServerType.GRPC_NETTY);
     shuffleServerConf.setInteger(ShuffleServerConf.NETTY_SERVER_PORT, SHUFFLE_SERVER_PORT + 5);
     shuffleServerConf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "RSS_ENV_KEY");
     String baseDir = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0);

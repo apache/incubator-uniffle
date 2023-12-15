@@ -29,6 +29,7 @@ import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.io.TempDir;
 
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -39,6 +40,8 @@ import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.util.StorageType;
+
+import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_TYPE;
 
 public abstract class IntegrationTestBase extends HadoopTestBase {
 
@@ -128,6 +131,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     serverConf.setBoolean("rss.server.health.check.enable", false);
     serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     serverConf.set(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL, 500L);
+    serverConf.set(RPC_SERVER_TYPE, ServerType.GRPC_NETTY);
     serverConf.setInteger(
         ShuffleServerConf.NETTY_SERVER_PORT, NETTY_PORT + nettyPortCounter.getAndIncrement());
     serverConf.setString("rss.server.tags", "GRPC,GRPC_NETTY");
