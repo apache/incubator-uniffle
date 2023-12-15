@@ -58,7 +58,9 @@ public class RSSStageResubmitTest extends SparkIntegrationTestBase {
 
   private static void enableFirstReadRequest(int failCount) {
     for (ShuffleServer server : shuffleServers) {
-      ((MockedGrpcServer) server.getServer()).getService().enableFirstNReadRequestToFail(failCount);
+      ((MockedGrpcServer) server.getRpcServer())
+          .getService()
+          .enableFirstNReadRequestToFail(failCount);
     }
   }
 

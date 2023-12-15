@@ -75,7 +75,7 @@ public class RSSStageDynamicServerReWriteTest extends SparkIntegrationTestBase {
       for (ShuffleServer shuffleServer : shuffleServers) {
         // Set the sending block data timeout for the first shuffleServer
         if (shuffleServer.getGrpcPort() == SHUFFLE_SERVER_PORT) {
-          ((MockedGrpcServer) shuffleServer.getServer())
+          ((MockedGrpcServer) shuffleServer.getRpcServer())
               .getService()
               .enableMockSendDataFailed(true);
         }

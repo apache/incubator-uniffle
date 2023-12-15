@@ -103,7 +103,7 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
 
   private static void enableRecordGetShuffleResult() {
     for (ShuffleServer shuffleServer : shuffleServers) {
-      ((MockedGrpcServer) shuffleServer.getServer()).getService().enableRecordGetShuffleResult();
+      ((MockedGrpcServer) shuffleServer.getRpcServer()).getService().enableRecordGetShuffleResult();
     }
   }
 
@@ -221,7 +221,7 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
   public void validateRequestCount(String appId, int expectRequestNum) {
     for (ShuffleServer shuffleServer : shuffleServers) {
       MockedShuffleServerGrpcService service =
-          ((MockedGrpcServer) shuffleServer.getServer()).getService();
+          ((MockedGrpcServer) shuffleServer.getRpcServer()).getService();
       Map<String, Map<Integer, AtomicInteger>> serviceRequestCount =
           service.getShuffleIdToPartitionRequest();
       int requestNum =

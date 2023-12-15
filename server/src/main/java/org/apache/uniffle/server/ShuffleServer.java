@@ -54,7 +54,7 @@ import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
-import org.apache.uniffle.server.netty.StreamServer;
+import org.apache.uniffle.server.rpc.HybridRpcServer;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
 import org.apache.uniffle.storage.util.StorageType;
@@ -82,7 +82,7 @@ public class ShuffleServer {
   private ShuffleServerConf shuffleServerConf;
   private JettyServer jettyServer;
   private ShuffleTaskManager shuffleTaskManager;
-  private ServerInterface server;
+  private ServerInterface rpcServer;
   private ShuffleFlushManager shuffleFlushManager;
   private ShuffleBufferManager shuffleBufferManager;
   private StorageManager storageManager;
@@ -96,8 +96,6 @@ public class ShuffleServer {
   private volatile boolean running;
   private ExecutorService executorService;
   private Future<?> decommissionFuture;
-  private boolean nettyServerEnabled;
-  private StreamServer streamServer;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -126,16 +124,17 @@ public class ShuffleServer {
 
   public void start() throws Exception {
     jettyServer.start();
-    grpcPort = server.start();
-    if (nettyServerEnabled) {
-      nettyPort = streamServer.start();
+
+    // this is only valid for the GRPC rpc type.
+    grpcPort = rpcServer.start();
+    id = ip + "-" + grpcPort;
+
+    if (rpcServer instanceof HybridRpcServer) {
+      grpcPort = ((HybridRpcServer) rpcServer).getGrpcPort();
+      nettyPort = ((HybridRpcServer) rpcServer).getNettyPort();
+      id = ip + "-" + grpcPort + "-" + nettyPort;
     }
 
-    if (nettyServerEnabled) {
-      id = ip + "-" + grpcPort + "-" + nettyPort;
-    } else {
-      id = ip + "-" + grpcPort;
-    }
     shuffleServerConf.setString(ShuffleServerConf.SHUFFLE_SERVER_ID, id);
     LOG.info("Start to shuffle server with id {}", id);
     initMetricsReporter();
@@ -181,10 +180,7 @@ public class ShuffleServer {
       LOG.info("Metric Reporter Stopped!");
     }
     SecurityContextFactory.get().getSecurityContext().close();
-    server.stop();
-    if (nettyServerEnabled && streamServer != null) {
-      streamServer.stop();
-    }
+    rpcServer.stop();
     if (executorService != null) {
       executorService.shutdownNow();
     }
@@ -206,8 +202,6 @@ public class ShuffleServer {
     if (ip == null) {
       throw new RssException("Couldn't acquire host Ip");
     }
-    grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
-    nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
 
     initServerTags();
 
@@ -264,12 +258,6 @@ public class ShuffleServer {
     shuffleTaskManager =
         new ShuffleTaskManager(
             shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
-
-    nettyServerEnabled = shuffleServerConf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
-    if (nettyServerEnabled) {
-      streamServer = new StreamServer(this);
-    }
-
     setServer();
   }
 
@@ -315,7 +303,7 @@ public class ShuffleServer {
 
   /** Await termination on the main thread since the grpc library uses daemon threads. */
   private void blockUntilShutdown() throws InterruptedException {
-    server.blockUntilShutdown();
+    rpcServer.blockUntilShutdown();
   }
 
   public ServerStatus getServerStatus() {
@@ -413,18 +401,18 @@ public class ShuffleServer {
     return this.shuffleServerConf;
   }
 
-  public ServerInterface getServer() {
-    return server;
+  public ServerInterface getRpcServer() {
+    return rpcServer;
   }
 
   @VisibleForTesting
   public void setServer() {
     ShuffleServerFactory shuffleServerFactory = new ShuffleServerFactory(this);
-    server = shuffleServerFactory.getServer();
+    rpcServer = shuffleServerFactory.getServer();
   }
 
-  public void setServer(ServerInterface server) {
-    this.server = server;
+  public void setRpcServer(ServerInterface rpcServer) {
+    this.rpcServer = rpcServer;
   }
 
   public ShuffleTaskManager getShuffleTaskManager() {

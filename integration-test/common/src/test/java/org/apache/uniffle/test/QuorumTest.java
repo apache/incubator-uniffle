@@ -296,11 +296,11 @@ public class QuorumTest extends ShuffleReadWriteBase {
   }
 
   private void enableTimeout(MockedShuffleServer server, long timeout) {
-    ((MockedGrpcServer) server.getServer()).getService().enableMockedTimeout(timeout);
+    ((MockedGrpcServer) server.getRpcServer()).getService().enableMockedTimeout(timeout);
   }
 
   private void disableTimeout(MockedShuffleServer server) {
-    ((MockedGrpcServer) server.getServer()).getService().disableMockedTimeout();
+    ((MockedGrpcServer) server.getRpcServer()).getService().disableMockedTimeout();
   }
 
   static class MockedShuffleWriteClientImpl extends ShuffleWriteClientImpl {

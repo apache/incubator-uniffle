@@ -20,6 +20,8 @@ package org.apache.uniffle.server;
 import org.apache.uniffle.common.rpc.GrpcServer;
 import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.server.netty.StreamServer;
+import org.apache.uniffle.server.rpc.HybridRpcServer;
 
 public class ShuffleServerFactory {
 
@@ -33,19 +35,34 @@ public class ShuffleServerFactory {
 
   public ServerInterface getServer() {
     ServerType type = conf.get(ShuffleServerConf.RPC_SERVER_TYPE);
-    // supports both grpc and grpc_netty, so coordinator and shuffle server could have unified
-    // configuration
-    if (type == ServerType.GRPC || type == ServerType.GRPC_NETTY) {
-      return GrpcServer.Builder.newBuilder()
-          .conf(conf)
-          .grpcMetrics(shuffleServer.getGrpcMetrics())
-          .addService(new ShuffleServerGrpcService(shuffleServer))
-          // todo: Add ServerInterceptor for authentication
-          .addService(new ShuffleServerInternalGrpcService(shuffleServer))
-          .build();
-    } else {
+    if (type == ServerType.NETTY) {
       throw new UnsupportedOperationException("Unsupported server type " + type);
     }
+
+    GrpcServer grpcServer = null;
+    StreamServer nettyServer = null;
+    if (type.withGrpc()) {
+      grpcServer =
+          GrpcServer.Builder.newBuilder()
+              .conf(conf)
+              .grpcMetrics(shuffleServer.getGrpcMetrics())
+              .addService(new ShuffleServerGrpcService(shuffleServer))
+              // todo: Add ServerInterceptor for authentication
+              .addService(new ShuffleServerInternalGrpcService(shuffleServer))
+              .build();
+      if (type == ServerType.GRPC) {
+        return grpcServer;
+      }
+    }
+
+    if (type.withNetty()) {
+      nettyServer = new StreamServer(shuffleServer);
+      if (type == ServerType.NETTY) {
+        return nettyServer;
+      }
+    }
+
+    return new HybridRpcServer(grpcServer, nettyServer);
   }
 
   public ShuffleServer getShuffleServer() {

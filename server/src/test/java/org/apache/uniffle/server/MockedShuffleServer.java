@@ -24,6 +24,6 @@ public class MockedShuffleServer extends ShuffleServer {
 
   @Override
   public void setServer() {
-    setServer(new MockedShuffleServerFactory(this).getServer());
+    setRpcServer(new MockedShuffleServerFactory(this).getServer());
   }
 }

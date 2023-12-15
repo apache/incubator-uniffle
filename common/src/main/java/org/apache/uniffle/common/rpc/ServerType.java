@@ -19,6 +19,25 @@ package org.apache.uniffle.common.rpc;
 
 /** This should sync/match with how ClientType changes */
 public enum ServerType {
-  GRPC,
-  GRPC_NETTY,
+  GRPC(1),
+  NETTY(2),
+  GRPC_NETTY(4);
+
+  private int val;
+
+  ServerType(int val) {
+    this.val = val;
+  }
+
+  private int getVal() {
+    return val;
+  }
+
+  public boolean withGrpc() {
+    return (this.getVal() & GRPC.getVal()) != 0;
+  }
+
+  public boolean withNetty() {
+    return (this.getVal() & NETTY.getVal()) != 0;
+  }
 }
