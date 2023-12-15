@@ -34,7 +34,6 @@ public enum ServerType {
   }
 
   public boolean withGrpc() {
-    int val = this.getVal();
     return (this.getVal() & GRPC.getVal()) != 0;
   }
 
