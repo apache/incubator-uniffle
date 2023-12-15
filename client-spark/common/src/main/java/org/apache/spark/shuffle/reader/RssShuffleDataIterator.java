@@ -151,15 +151,7 @@ public class RssShuffleDataIterator<K, C> extends AbstractIterator<Product2<K, C
   }
 
   private boolean isSameMemoryType(ByteBuffer left, ByteBuffer right) {
-    if (left.isDirect() && right.isDirect()) {
-      return true;
-    }
-
-    if (!left.isDirect() && !right.isDirect()) {
-      return true;
-    }
-
-    return false;
+    return left.isDirect() == right.isDirect();
   }
 
   private int uncompress(CompressedShuffleBlock rawBlock, ByteBuffer rawData) {
