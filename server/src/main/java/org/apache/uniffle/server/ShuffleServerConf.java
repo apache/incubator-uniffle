@@ -77,6 +77,18 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(10 * 1000L)
           .withDescription("Heartbeat interval to Coordinator (ms)");
 
+  public static final ConfigOption<Long> SERVER_NETTY_DIRECT_MEMORY_USAGE_TRACKER_DELAY =
+      ConfigOptions.key("rss.server.netty.directMemoryTracker.memoryUsage.initialFetchDelayMs")
+          .longType()
+          .defaultValue(10 * 1000L)
+          .withDescription("Direct memory usage tracker initial delay (ms)");
+
+  public static final ConfigOption<Long> SERVER_NETTY_DIRECT_MEMORY_USAGE_TRACKER_INTERVAL =
+      ConfigOptions.key("rss.server.netty.directMemoryTracker.memoryUsage.updateMetricsIntervalMs")
+          .longType()
+          .defaultValue(10 * 1000L)
+          .withDescription("Direct memory usage tracker interval to MetricSystem (ms)");
+
   public static final ConfigOption<Integer> SERVER_FLUSH_LOCALFILE_THREAD_POOL_SIZE =
       ConfigOptions.key("rss.server.flush.localfile.threadPool.size")
           .intType()
