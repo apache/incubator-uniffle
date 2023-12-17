@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.shuffle.exception.BiConsumerWithException;
 
-import static org.apache.uniffle.shuffle.buffer.WriteBuffer.HEADER_LENGTH;
+import static org.apache.uniffle.shuffle.buffer.WriterBuffer.HEADER_LENGTH;
 import static org.apache.uniffle.shuffle.utils.CommonUtils.checkState;
 
 public class WriteBufferPacker {
@@ -98,7 +98,7 @@ public class WriteBufferPacker {
       int position = 0;
       int totalBytes = buffer.readableBytes();
       while (position < totalBytes) {
-        WriteBufferHeader bufferHeader = WriteBuffer.getWriteBufferHeader(buffer, position);
+        WriteBufferHeader bufferHeader = WriterBuffer.getWriteBufferHeader(buffer, position);
         position += HEADER_LENGTH;
 
         Buffer slice = buffer.readOnlySlice(position, bufferHeader.getSize());

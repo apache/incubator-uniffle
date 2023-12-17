@@ -45,24 +45,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.shuffle.buffer.BufferWithChannel;
-import org.apache.uniffle.shuffle.buffer.SortBasedWriteBuffer;
-import org.apache.uniffle.shuffle.buffer.WriteBuffer;
+import org.apache.uniffle.shuffle.buffer.SortBasedWriterBuffer;
+import org.apache.uniffle.shuffle.buffer.WriterBuffer;
 import org.apache.uniffle.shuffle.exception.ShuffleException;
 import org.apache.uniffle.shuffle.utils.ExceptionUtils;
 import org.apache.uniffle.shuffle.writer.RssShuffleOutputGate;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
-import static org.apache.uniffle.shuffle.buffer.WriteBuffer.HEADER_LENGTH;
+import static org.apache.uniffle.shuffle.buffer.WriterBuffer.HEADER_LENGTH;
 
 /**
  * In the process of implementing {@link RssShuffleResultPartition}, we referenced {@link
  * SortMergeResultPartition}, and we defined a WriteBuffer similar to {@link SortBuffer}.
  *
- * <p>{@link RssShuffleResultPartition} appends records and events to {@link WriteBuffer}.
+ * <p>{@link RssShuffleResultPartition} appends records and events to {@link WriterBuffer}.
  *
- * <p>{@link WriteBuffer} is full, all data in the {@link WriteBuffer} will write out to shuffle
+ * <p>{@link WriterBuffer} is full, all data in the {@link WriterBuffer} will write out to shuffle
  * server in subpartition index order sequentially. Large records that can not be appended to an
- * empty {@link WriteBuffer} will be spilled directly.
+ * empty {@link WriterBuffer} will be spilled directly.
  */
 public class RssShuffleResultPartition extends ResultPartition {
 
@@ -75,16 +75,16 @@ public class RssShuffleResultPartition extends ResultPartition {
   private final int networkBufferSize;
 
   /**
-   * {@link WriteBuffer} for records sent by {@link #broadcastRecord(ByteBuffer)}. Like {@link
+   * {@link WriterBuffer} for records sent by {@link #broadcastRecord(ByteBuffer)}. Like {@link
    * SortMergeResultPartition}#broadcastSortBuffer
    */
-  private WriteBuffer broadcastWriteBuffer;
+  private WriterBuffer broadcastWriteBuffer;
 
   /**
-   * {@link WriteBuffer} for records sent by {@link #emitRecord(ByteBuffer, int)}. Like {@link
+   * {@link WriterBuffer} for records sent by {@link #emitRecord(ByteBuffer, int)}. Like {@link
    * SortMergeResultPartition}#unicastSortBuffer
    */
-  private WriteBuffer unicastWriteBuffer;
+  private WriterBuffer unicastWriteBuffer;
 
   /** All available network buffers can be used by this result partition for a data region. */
   private final LinkedList<MemorySegment> freeSegments = new LinkedList<>();
@@ -176,7 +176,7 @@ public class RssShuffleResultPartition extends ResultPartition {
       throws IOException {
 
     checkInProduceState();
-    WriteBuffer writeBuffer = isBroadcast ? getBroadcastWriteBuffer() : getUnicastWriteBuffer();
+    WriterBuffer writeBuffer = isBroadcast ? getBroadcastWriteBuffer() : getUnicastWriteBuffer();
     if (!writeBuffer.append(record, targetSubpartition, dataType)) {
       return;
     }
@@ -184,7 +184,6 @@ public class RssShuffleResultPartition extends ResultPartition {
     try {
       if (!writeBuffer.hasRemaining()) {
         // the record can not be appended to the free sort buffer because it is too large
-        writeBuffer.finish();
         writeBuffer.release();
         writeLargeRecord(record, targetSubpartition, dataType, isBroadcast);
         return;
@@ -271,7 +270,7 @@ public class RssShuffleResultPartition extends ResultPartition {
     flushAll();
   }
 
-  private WriteBuffer getUnicastWriteBuffer() throws IOException {
+  private WriterBuffer getUnicastWriteBuffer() throws IOException {
     flushBroadcastWriteBuffer();
 
     if (unicastWriteBuffer != null && !unicastWriteBuffer.isFinished()) {
@@ -279,7 +278,7 @@ public class RssShuffleResultPartition extends ResultPartition {
     }
 
     unicastWriteBuffer =
-        new SortBasedWriteBuffer(
+        new SortBasedWriterBuffer(
             bufferPool, numSubpartitions, networkBufferSize, NUM_REQUIRED_BUFFER);
     return unicastWriteBuffer;
   }
@@ -288,7 +287,7 @@ public class RssShuffleResultPartition extends ResultPartition {
     flushWriteBuffer(broadcastWriteBuffer, true);
   }
 
-  private WriteBuffer getBroadcastWriteBuffer() throws IOException {
+  private WriterBuffer getBroadcastWriteBuffer() throws IOException {
     flushUnicastWriteBuffer();
 
     if (broadcastWriteBuffer != null && !broadcastWriteBuffer.isFinished()) {
@@ -296,7 +295,7 @@ public class RssShuffleResultPartition extends ResultPartition {
     }
 
     broadcastWriteBuffer =
-        new SortBasedWriteBuffer(
+        new SortBasedWriterBuffer(
             bufferPool, numSubpartitions, networkBufferSize, NUM_REQUIRED_BUFFER);
     return broadcastWriteBuffer;
   }
@@ -305,7 +304,7 @@ public class RssShuffleResultPartition extends ResultPartition {
     flushWriteBuffer(unicastWriteBuffer, false);
   }
 
-  private void flushWriteBuffer(WriteBuffer writeBuffer, boolean isBroadcast) throws IOException {
+  private void flushWriteBuffer(WriterBuffer writeBuffer, boolean isBroadcast) throws IOException {
     if (writeBuffer == null || writeBuffer.isReleased()) {
       return;
     }
@@ -353,7 +352,7 @@ public class RssShuffleResultPartition extends ResultPartition {
       int dataLength =
           isCompressed ? compressedBuffer.readableBytes() : buffer.readableBytes() - HEADER_LENGTH;
       ByteBuf byteBuf = buffer.asByteBuf();
-      WriteBuffer.setWriterBufferHeader(byteBuf, buffer.getDataType(), isCompressed, dataLength);
+      WriterBuffer.setWriterBufferHeader(byteBuf, buffer.getDataType(), isCompressed, dataLength);
       if (isCompressed) {
         byteBuf.writeBytes(compressedBuffer.asByteBuf());
       }
@@ -377,7 +376,7 @@ public class RssShuffleResultPartition extends ResultPartition {
     }
   }
 
-  private void releaseWriteBuffer(WriteBuffer writeBuffer) {
+  private void releaseWriteBuffer(WriterBuffer writeBuffer) {
     if (writeBuffer != null) {
       writeBuffer.release();
     }
@@ -406,7 +405,7 @@ public class RssShuffleResultPartition extends ResultPartition {
   @Override
   public void finish() throws IOException {
 
-    if (!this.isReleased()) {
+    if (this.isReleased()) {
       throw new IllegalStateException("Result Partition is already released!");
     }
 

@@ -39,6 +39,7 @@ import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
+import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -51,15 +52,13 @@ import org.apache.uniffle.shuffle.resource.RssShuffleResourceDescriptor;
 import org.apache.uniffle.shuffle.writer.RssShuffleOutputGate;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RssShuffleResultPartitionTest {
 
-  private RssFlinkApplication rssFlinkApplication;
-
   private NetworkBufferPool globalPool;
-
-  private JobID jobID = new JobID(10, 1);
 
   private static final int TOTAL_BUFFERS = 1000;
 
@@ -67,25 +66,72 @@ public class RssShuffleResultPartitionTest {
 
   private static final int BUFFER_SIZE = 1024;
 
-  private static final int numSubs = 1;
-
   private static final int EMPTY_BUFFER_SIZE = Integer.MAX_VALUE;
 
   @BeforeEach
   public void setUp() {
     globalPool = new NetworkBufferPool(TOTAL_BUFFERS, TOTAL_BUFFER_SIZE);
-    rssFlinkApplication = new RssFlinkApplication();
+  }
+
+  @Test
+  public void testWriteRecordWithUnicast() throws Exception {
+    int numSubpartitions = 4;
+    int numRecords = 100;
+    Random random = new Random();
+
+    JobID jobId = new JobID(10, 2);
+    BufferPool bufferPool = globalPool.createBufferPool(1, 10);
+    RssShuffleResultPartition partition =
+        genRssShuffleResultPartition(jobId, numSubpartitions, bufferPool);
+
+    for (int i = 0; i < numRecords; i++) {
+      byte[] data = new byte[random.nextInt(2 * BUFFER_SIZE) + 1];
+      random.nextBytes(data);
+      ByteBuffer record = ByteBuffer.wrap(data);
+      int subpartition = random.nextInt(numSubpartitions);
+      partition.emitRecord(record, subpartition);
+    }
+
+    partition.finish();
+    partition.close();
+  }
+
+  @Test
+  public void testWriteRecordWithBroadcast() throws Exception {
+    int numSubpartitions = 4;
+    int numRecords = 100;
+    Random random = new Random();
+
+    JobID jobId = new JobID(10, 2);
+    BufferPool bufferPool = globalPool.createBufferPool(1, 10);
+    RssShuffleResultPartition partition =
+        genRssShuffleResultPartition(jobId, numSubpartitions, bufferPool);
+
+    for (int i = 0; i < numRecords; i++) {
+      byte[] data = new byte[random.nextInt(2 * BUFFER_SIZE) + 1];
+      random.nextBytes(data);
+      ByteBuffer record = ByteBuffer.wrap(data);
+      boolean isBroadCast = random.nextBoolean();
+      if (isBroadCast) {
+        partition.broadcastRecord(record);
+      } else {
+        int subpartition = random.nextInt(numSubpartitions);
+        partition.emitRecord(record, subpartition);
+      }
+    }
+
+    partition.finish();
+    partition.close();
   }
 
   @Test
   public void testWriteLargeRecord() throws Exception {
     int numBuffers = 10;
-    int numSubpartitions = 1;
-
+    int numSubpartitions = 2;
+    JobID jobId = new JobID(10, 1);
     BufferPool bufferPool = globalPool.createBufferPool(numBuffers, numBuffers);
     RssShuffleResultPartition partition =
-        genRssShuffleResultPartition(numSubpartitions, bufferPool);
-    partition.setup();
+        genRssShuffleResultPartition(jobId, numSubpartitions, bufferPool);
 
     ByteBuffer recordWritten = generateRandomData(BUFFER_SIZE * numBuffers, new Random());
     partition.emitRecord(recordWritten, 0);
@@ -97,43 +143,54 @@ public class RssShuffleResultPartitionTest {
     return ByteBuffer.wrap(dataWritten);
   }
 
+  // ---------------------------------------------------------------------------------------------
+  // Statistics and states
+  // ---------------------------------------------------------------------------------------------
+
   private RssShuffleResultPartition genRssShuffleResultPartition(
-      int numSubpartitions, BufferPool bufferPool) throws Exception {
-    BufferPool bufferPool2 = globalPool.createBufferPool(10, 200);
-    RssShuffleOutputGate outputGate = createOutputGate(bufferPool2);
-    return new RssShuffleResultPartition(
-        "RssShuffleResultPartitionTest",
-        0,
-        new ResultPartitionID(),
-        ResultPartitionType.BLOCKING,
-        numSubpartitions,
-        numSubpartitions,
-        BUFFER_SIZE,
-        new ResultPartitionManager(),
-        null,
-        () -> bufferPool,
-        outputGate);
+      JobID jobId, int numSubpartitions, BufferPool bufferPool) throws Exception {
+    BufferPool outPutBufferPool = globalPool.createBufferPool(10, 200);
+    RssShuffleOutputGate outputGate =
+        genRssShuffleOutputGate(jobId, numSubpartitions, outPutBufferPool);
+    RssShuffleResultPartition rssShuffleResultPartition =
+        new RssShuffleResultPartition(
+            "RssShuffleResultPartitionTest",
+            0,
+            new ResultPartitionID(),
+            ResultPartitionType.BLOCKING,
+            numSubpartitions,
+            numSubpartitions,
+            BUFFER_SIZE,
+            new ResultPartitionManager(),
+            null,
+            () -> bufferPool,
+            outputGate);
+    rssShuffleResultPartition.setup();
+    return rssShuffleResultPartition;
   }
 
-  private RssShuffleOutputGate createOutputGate(BufferPool bufferPool) throws Exception {
-    ResultPartitionID resultPartitionID = new ResultPartitionID();
+  private RssShuffleOutputGate genRssShuffleOutputGate(
+      JobID jobId, int numSubpartitions, BufferPool bufferPool) {
+    ResultPartitionID resultPartitionId = new ResultPartitionID();
 
-    RssShuffleResourceDescriptor resourceDescriptor = genRssShuffleResourceDescriptor();
+    RssShuffleResourceDescriptor resourceDescriptor = genRssShuffleResourceDescriptor(jobId);
 
     ShuffleServerInfo ssi = new ShuffleServerInfo("127.0.0.1", 0);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
-    partitionToServers.put(0, Lists.newArrayList(ssi));
+    for (int i = 0; i < numSubpartitions; i++) {
+      partitionToServers.put(i, Lists.newArrayList(ssi));
+    }
 
     RssShuffleResource shuffleResource =
         new DefaultRssShuffleResource(partitionToServers, resourceDescriptor);
 
     RssShuffleDescriptor shuffleDescriptor =
-        new RssShuffleDescriptor(resultPartitionID, jobID, shuffleResource);
+        new RssShuffleDescriptor(jobId, resultPartitionId, shuffleResource);
 
     RssShuffleOutputGate outputGate =
         new RssShuffleOutputGate(
             shuffleDescriptor,
-            numSubs,
+            1,
             EMPTY_BUFFER_SIZE,
             () -> bufferPool,
             new Configuration(),
@@ -142,8 +199,9 @@ public class RssShuffleResultPartitionTest {
     return outputGate;
   }
 
-  private RssShuffleResourceDescriptor genRssShuffleResourceDescriptor() {
-    int uniffleShuffleId = rssFlinkApplication.getUniffleShuffleId(jobID.toString());
+  private RssShuffleResourceDescriptor genRssShuffleResourceDescriptor(JobID jobId) {
+    RssFlinkApplication rssFlinkApplication = new RssFlinkApplication();
+    int uniffleShuffleId = rssFlinkApplication.getUniffleShuffleId(jobId.toString());
     RssShuffleResourceDescriptor descriptor =
         new RssShuffleResourceDescriptor(uniffleShuffleId, 0, 0, 0);
     return descriptor;
@@ -173,7 +231,8 @@ public class RssShuffleResultPartitionTest {
         .thenReturn(new RssSendShuffleDataResponse(StatusCode.SUCCESS));
     when(mockShuffleServerClient.reportShuffleResult(any()))
         .thenReturn(new RssReportShuffleResultResponse(StatusCode.SUCCESS));
-
+    when(mockShuffleServerClient.sendCommit(any()))
+        .thenReturn(new RssSendCommitResponse(StatusCode.SUCCESS));
     return spyClient;
   }
 }

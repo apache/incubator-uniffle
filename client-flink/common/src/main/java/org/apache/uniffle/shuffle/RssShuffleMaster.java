@@ -138,7 +138,7 @@ public class RssShuffleMaster implements ShuffleMaster<RssShuffleDescriptor> {
    * internally within the shuffle service. The descriptor should provide enough information to read
    * from or write data to the partition.
    *
-   * @param jobID job ID of the corresponding job which registered the partition
+   * @param jobId job ID of the corresponding job which registered the partition
    * @param partitionDescriptor general job graph information about the partition
    * @param producerDescriptor general producer information (location, execution id, connection
    *     info)
@@ -148,7 +148,7 @@ public class RssShuffleMaster implements ShuffleMaster<RssShuffleDescriptor> {
    */
   @Override
   public CompletableFuture<RssShuffleDescriptor> registerPartitionWithProducer(
-      JobID jobID, PartitionDescriptor partitionDescriptor, ProducerDescriptor producerDescriptor) {
+      JobID jobId, PartitionDescriptor partitionDescriptor, ProducerDescriptor producerDescriptor) {
 
     CompletableFuture<RssShuffleDescriptor> future = new CompletableFuture<>();
 
@@ -156,7 +156,7 @@ public class RssShuffleMaster implements ShuffleMaster<RssShuffleDescriptor> {
         () -> {
           // Step1. genShuffleResourceDescriptor
           RssShuffleResourceDescriptor rssShuffleResourceDescriptor =
-              rssFlinkApplication.genShuffleResourceDescriptor(jobID, partitionDescriptor);
+              rssFlinkApplication.genShuffleResourceDescriptor(jobId, partitionDescriptor);
           int shuffleId = rssShuffleResourceDescriptor.getShuffleId();
 
           // Step2. get basic parameters
@@ -213,7 +213,7 @@ public class RssShuffleMaster implements ShuffleMaster<RssShuffleDescriptor> {
               new DefaultRssShuffleResource(partitionToServers, rssShuffleResourceDescriptor);
           ResultPartitionID resultPartitionId =
               rssFlinkApplication.genResultPartitionId(partitionDescriptor, producerDescriptor);
-          RssShuffleDescriptor rsd = new RssShuffleDescriptor(resultPartitionId, jobID, resource);
+          RssShuffleDescriptor rsd = new RssShuffleDescriptor(jobId, resultPartitionId, resource);
           future.complete(rsd);
 
           // Step5. startHeartbeat

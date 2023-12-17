@@ -34,7 +34,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
 
 /** */
-public class SortBasedWriteBuffer extends WriteBuffer {
+public class SortBasedWriterBuffer implements WriterBuffer {
 
   /**
    * Size of an index entry: 4 bytes for record length, 4 bytes for data type and 8 bytes for
@@ -73,9 +73,6 @@ public class SortBasedWriteBuffer extends WriteBuffer {
   /** Total number of bytes already read from this sort buffer. */
   private long numTotalBytesRead;
 
-  /** Whether this sort buffer is full and ready to read data from. */
-  private boolean isFull;
-
   /** Whether this sort buffer is finished. One can only read a finished sort buffer. */
   private boolean isFinished;
 
@@ -108,7 +105,7 @@ public class SortBasedWriteBuffer extends WriteBuffer {
   /** Used to index the current available channel to read data from. */
   private int readOrderIndex = -1;
 
-  public SortBasedWriteBuffer(
+  public SortBasedWriterBuffer(
       BufferPool bufferPool, int numSubpartitions, int bufferSize, int numGuaranteedBuffers) {
     checkArgument(bufferSize > INDEX_ENTRY_SIZE, "Buffer size is too small.");
     checkArgument(numGuaranteedBuffers > 0, "No guaranteed buffers for sort.");
@@ -130,25 +127,20 @@ public class SortBasedWriteBuffer extends WriteBuffer {
   }
 
   /**
-   * No partial record will be written to this {@link SortBasedWriteBuffer}, which means that either
-   * all data of target record will be written or nothing will be written.
+   * No partial record will be written to this {@link SortBasedWriterBuffer}, which means that
+   * either all data of target record will be written or nothing will be written.
    */
   @Override
   public boolean append(ByteBuffer source, int targetChannel, Buffer.DataType dataType)
       throws IOException {
     checkArgument(source.hasRemaining(), "Cannot append empty data.");
-    checkState(!isFull, "Sort buffer is already full.");
-    checkState(!isFinished, "Sort buffer is already finished.");
-    checkState(!isReleased, "Sort buffer is already released.");
+    checkState(!isFinished, "Sort data buffer is already finished.");
+    checkState(!isReleased, "Sort data buffer is already released.");
 
     int totalBytes = source.remaining();
+
     // return true directly if it can not allocate enough buffers for the given record
     if (!allocateBuffersForRecord(totalBytes)) {
-      isFull = true;
-      if (hasRemaining()) {
-        // prepare for reading
-        updateReadChannelAndIndexEntryAddress();
-      }
       return true;
     }
 
@@ -221,7 +213,7 @@ public class SortBasedWriteBuffer extends WriteBuffer {
 
   @Override
   public BufferWithChannel getNextBuffer(@Nullable MemorySegment transitBuffer) {
-    // checkState(isFull, "Sort buffer is not ready to be read.");
+    checkState(isFinished, "Sort buffer is not ready to be read.");
     checkState(!isReleased, "Sort buffer is already released.");
 
     if (!hasRemaining()) {
@@ -324,37 +316,12 @@ public class SortBasedWriteBuffer extends WriteBuffer {
     return numTotalBytes;
   }
 
-  public void reset() {
-    checkState(!isFinished, "Sort buffer has been finished.");
-    checkState(!isReleased, "Sort buffer has been released.");
-    checkState(!hasRemaining(), "Still has remaining data.");
-
-    for (MemorySegment segment : segments) {
-      bufferPool.recycle(segment);
-    }
-    segments.clear();
-
-    // initialized with -1 means the corresponding channel has no data
-    Arrays.fill(firstIndexEntryAddresses, -1L);
-    Arrays.fill(lastIndexEntryAddresses, -1L);
-
-    isFull = false;
-    writeSegmentIndex = 0;
-    writeSegmentOffset = 0;
-    readIndexEntryAddress = 0;
-    recordRemainingBytes = 0;
-    readOrderIndex = -1;
-  }
-
   @Override
   public void finish() {
-    // checkState(!isFull, "DataBuffer must not be full.");
     checkState(!isFinished, "DataBuffer is already finished.");
 
     isFinished = true;
 
-    // prepare for reading
-    // isFull = true;
     updateReadChannelAndIndexEntryAddress();
   }
 
@@ -374,6 +341,9 @@ public class SortBasedWriteBuffer extends WriteBuffer {
       bufferPool.recycle(segment);
     }
     segments.clear();
+
+    numTotalBytes = 0;
+    numTotalRecords = 0;
   }
 
   @Override
@@ -383,15 +353,13 @@ public class SortBasedWriteBuffer extends WriteBuffer {
 
   private void addBuffer(MemorySegment segment) {
     if (segment.size() != bufferSize) {
-      System.out.println("segment:" + segment.size());
-      System.out.println("bufferSize:" + bufferSize);
       bufferPool.recycle(segment);
       throw new IllegalStateException("Illegal memory segment size.");
     }
 
     if (isReleased) {
       bufferPool.recycle(segment);
-      throw new IllegalStateException("Sort buffer is already released.");
+      throw new IllegalStateException("Sort data buffer is already released.");
     }
     segments.add(segment);
   }

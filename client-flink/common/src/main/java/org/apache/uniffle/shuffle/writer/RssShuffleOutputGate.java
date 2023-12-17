@@ -150,7 +150,7 @@ public class RssShuffleOutputGate {
     writeBufferPacker.process(buffer, subIdx);
   }
 
-  public void write(ByteBuf byteBuf, int subIdx) throws InterruptedException {
+  public void write(ByteBuf byteBuf, int subIdx) {
     synchronized (lock) {
       List<ShuffleBlockInfo> sentBlocks = new ArrayList<>();
       ShuffleBlockInfo shuffleBlock = createShuffleBlock(byteBuf, subIdx);

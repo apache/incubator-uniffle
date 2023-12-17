@@ -41,7 +41,7 @@ public class RssShuffleDescriptor implements ShuffleDescriptor {
   private final RssShuffleResource shuffleResource;
 
   public RssShuffleDescriptor(
-      ResultPartitionID resultPartitionID, JobID jobId, RssShuffleResource shuffleResource) {
+      JobID jobId, ResultPartitionID resultPartitionID, RssShuffleResource shuffleResource) {
     this.resultPartitionID = resultPartitionID;
     this.jobId = jobId;
     this.shuffleResource = shuffleResource;
