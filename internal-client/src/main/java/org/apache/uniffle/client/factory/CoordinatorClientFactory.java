@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +30,7 @@ import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.JavaUtils;
 
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
@@ -57,7 +57,8 @@ public class CoordinatorClientFactory {
     }
   }
 
-  private CoordinatorClient createOrGetCoordinatorClient(ClientType clientType, String host, int port) {
+  private CoordinatorClient createOrGetCoordinatorClient(
+      ClientType clientType, String host, int port) {
     String hostPort = host + ":" + port;
     clients.putIfAbsent(clientType.toString(), JavaUtils.newConcurrentMap());
     Map<String, CoordinatorClient> hostToClients = clients.get(clientType.toString());
@@ -67,8 +68,8 @@ public class CoordinatorClientFactory {
     return hostToClients.get(hostPort);
   }
 
-
-  public List<CoordinatorClient> createCoordinatorClient(ClientType clientType, String coordinators) {
+  public List<CoordinatorClient> createCoordinatorClient(
+      ClientType clientType, String coordinators) {
     LOG.info("Start to create coordinator clients from {}", coordinators);
 
     String[] coordinatorList = coordinators.trim().split(",");
