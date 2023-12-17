@@ -562,7 +562,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   @Override
   public void registerCoordinators(String coordinators) {
     List<CoordinatorClient> clients =
-        coordinatorClientFactory.createCoordinatorClient(ClientType.valueOf(this.clientType), coordinators);
+        coordinatorClientFactory.createCoordinatorClient(
+            ClientType.valueOf(this.clientType), coordinators);
     coordinatorClients.addAll(clients);
   }
 
