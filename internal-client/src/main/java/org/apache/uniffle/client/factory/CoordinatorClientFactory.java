@@ -19,9 +19,11 @@ package org.apache.uniffle.client.factory;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,13 +35,21 @@ import org.apache.uniffle.common.exception.RssException;
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
 
-  private ClientType clientType;
+  private Map<String, Map<String, CoordinatorClient>> clients;
 
-  public CoordinatorClientFactory(ClientType clientType) {
-    this.clientType = clientType;
+  private CoordinatorClientFactory() {
+    clients = JavaUtils.newConcurrentMap();
   }
 
-  public CoordinatorClient createCoordinatorClient(String host, int port) {
+  private static class LazyHolder {
+    static final CoordinatorClientFactory INSTANCE = new CoordinatorClientFactory();
+  }
+
+  public static CoordinatorClientFactory getInstance() {
+    return CoordinatorClientFactory.LazyHolder.INSTANCE;
+  }
+
+  public CoordinatorClient createCoordinatorClient(ClientType clientType, String host, int port) {
     if (clientType.equals(ClientType.GRPC) || clientType.equals(ClientType.GRPC_NETTY)) {
       return new CoordinatorGrpcClient(host, port);
     } else {
@@ -47,9 +57,20 @@ public class CoordinatorClientFactory {
     }
   }
 
-  public List<CoordinatorClient> createCoordinatorClient(String coordinators) {
+  private CoordinatorClient createOrGetCoordinatorClient(ClientType clientType, String host, int port) {
+    String hostPort = host + ":" + port;
+    clients.putIfAbsent(clientType.toString(), JavaUtils.newConcurrentMap());
+    Map<String, CoordinatorClient> hostToClients = clients.get(clientType.toString());
+    if (hostToClients.get(hostPort) == null) {
+      hostToClients.put(hostPort, createCoordinatorClient(clientType, host, port));
+    }
+    return hostToClients.get(hostPort);
+  }
+
+
+  public List<CoordinatorClient> createCoordinatorClient(ClientType clientType, String coordinators) {
     LOG.info("Start to create coordinator clients from {}", coordinators);
-    List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
+
     String[] coordinatorList = coordinators.trim().split(",");
     if (coordinatorList.length == 0) {
       String msg = "Invalid " + coordinators;
@@ -57,6 +78,7 @@ public class CoordinatorClientFactory {
       throw new RssException(msg);
     }
 
+    List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
     for (String coordinator : coordinatorList) {
       String[] ipPort = coordinator.trim().split(":");
       if (ipPort.length != 2) {
@@ -67,7 +89,7 @@ public class CoordinatorClientFactory {
 
       String host = ipPort[0];
       int port = Integer.parseInt(ipPort[1]);
-      CoordinatorClient coordinatorClient = createCoordinatorClient(host, port);
+      CoordinatorClient coordinatorClient = createOrGetCoordinatorClient(clientType, host, port);
       coordinatorClients.add(coordinatorClient);
       LOG.info("Add coordinator client {}", coordinatorClient.getDesc());
     }
