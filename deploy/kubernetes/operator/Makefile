@@ -121,7 +121,7 @@ envtest: ## Download envtest-setup locally if necessary.
 GOIMPORTS = $(LOCAL_DIR)/goimports
 .PHONY: goimports
 goimports: ## Download goimports locally if necessary.
-	$(call go-get-tool,$(GOIMPORTS),golang.org/x/tools/cmd/goimports@latest)
+	$(call go-get-tool,$(GOIMPORTS),golang.org/x/tools/cmd/goimports@v0.15.0)
 	$(GOIMPORTS) -local github.com/apache/incubator-uniffle/deploy/kubernetes/operator -w .
 
 REVIVE = $(LOCAL_DIR)/revive
