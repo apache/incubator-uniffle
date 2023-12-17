@@ -49,7 +49,6 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
-import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
@@ -59,6 +58,7 @@ import org.apache.uniffle.shuffle.resource.RssShuffleResourceDescriptor;
 import org.apache.uniffle.shuffle.utils.FlinkShuffleUtils;
 
 import static org.apache.uniffle.shuffle.RssFlinkConfig.*;
+import static org.apache.uniffle.shuffle.utils.FlinkShuffleUtils.getShuffleDataDistributionType;
 
 public class RssShuffleMaster implements ShuffleMaster<RssShuffleDescriptor> {
 
@@ -348,10 +348,5 @@ public class RssShuffleMaster implements ShuffleMaster<RssShuffleDescriptor> {
     long numBytesForInput = numBytesPerGate * numInputGates;
 
     return new MemorySize(numBytesForInput + numBytesForOutput);
-  }
-
-  protected static ShuffleDataDistributionType getShuffleDataDistributionType(Configuration conf) {
-    RssConf rssConf = RssFlinkConfig.toRssConf(conf);
-    return rssConf.get(RssClientConf.DATA_DISTRIBUTION_TYPE);
   }
 }

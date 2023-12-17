@@ -46,6 +46,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
@@ -55,6 +56,8 @@ import org.apache.uniffle.shuffle.RssShuffleDescriptor;
 import org.apache.uniffle.shuffle.buffer.WriteBufferPacker;
 import org.apache.uniffle.shuffle.utils.CommonUtils;
 import org.apache.uniffle.shuffle.utils.FlinkShuffleUtils;
+
+import static org.apache.uniffle.shuffle.utils.FlinkShuffleUtils.getShuffleDataDistributionType;
 
 /** */
 public class RssShuffleOutputGate {
@@ -85,8 +88,8 @@ public class RssShuffleOutputGate {
   private final Set<Long> failedBlockIds;
   private final Map<Integer, List<Long>> partitionToBlocks = JavaUtils.newConcurrentMap();
   Map<Integer, List<ShuffleServerInfo>> partitionToServers;
-
   private final int numMappers;
+  private final ShuffleDataDistributionType dataDistributionType;
 
   public RssShuffleOutputGate(
       RssShuffleDescriptor pShuffleDesc,
@@ -118,6 +121,7 @@ public class RssShuffleOutputGate {
 
     this.shuffleServerInfos = new HashSet<>();
     this.shuffleServerInfos.addAll(shuffleDesc.getShuffleResource().getMapPartitionLocation());
+    this.dataDistributionType = getShuffleDataDistributionType(pConfig);
   }
 
   @VisibleForTesting
@@ -174,7 +178,7 @@ public class RssShuffleOutputGate {
     List<ShuffleServerInfo> shuffleServerInfos = partitionToServers.get(subIdx);
     return new ShuffleBlockInfo(
         shuffleId,
-        partitionId,
+        subIdx,
         blockId,
         compressed.length,
         crc32,
@@ -274,11 +278,5 @@ public class RssShuffleOutputGate {
     } finally {
       executor.shutdown();
     }
-  }
-
-  /** * */
-  @VisibleForTesting
-  public void setShuffleWriteClient(ShuffleWriteClient shuffleWriteClient) {
-    this.shuffleWriteClient = shuffleWriteClient;
   }
 }

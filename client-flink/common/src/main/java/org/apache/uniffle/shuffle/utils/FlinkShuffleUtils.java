@@ -26,6 +26,9 @@ import org.apache.flink.configuration.Configuration;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
+import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.shuffle.RssFlinkConfig;
 
@@ -73,5 +76,10 @@ public class FlinkShuffleUtils {
 
   public static int getRequiredShuffleServerNumber(Configuration conf) {
     return conf.getInteger(RssFlinkConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
+  }
+
+  public static ShuffleDataDistributionType getShuffleDataDistributionType(Configuration conf) {
+    RssConf rssConf = RssFlinkConfig.toRssConf(conf);
+    return rssConf.get(RssClientConf.DATA_DISTRIBUTION_TYPE);
   }
 }
