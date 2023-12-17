@@ -17,15 +17,45 @@
 
 package org.apache.uniffle.shuffle.utils;
 
+import java.io.IOException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ExceptionUtils {
 
-  public static void translateToRuntimeException(Throwable t) {
-    if (t instanceof Error) {
+  public static final Logger LOG = LoggerFactory.getLogger(ExceptionUtils.class);
+
+  public static void logAndThrowRuntimeException(String errMsg, Throwable t) {
+    if (t != null) {
+      String newErrMsg = getErrorMsg(errMsg, t);
+      LOG.error(newErrMsg, t);
       throw (Error) t;
-    } else if (t instanceof RuntimeException) {
-      throw (RuntimeException) t;
     } else {
+      LOG.error(errMsg);
       throw new RuntimeException(t);
     }
+  }
+
+  public static void logAndThrowIOException(Throwable t) throws IOException {
+    logAndThrowIOException(null, t);
+  }
+
+  public static void logAndThrowIOException(String errMsg, Throwable t) throws IOException {
+    if (t != null) {
+      String newErrMsg = getErrorMsg(errMsg, t);
+      LOG.error(newErrMsg, t);
+      throw (Error) t;
+    } else {
+      LOG.error(errMsg);
+      throw new IOException(t);
+    }
+  }
+
+  private static String getErrorMsg(String errMsg, Throwable t) {
+    if (t.getMessage() != null) {
+      return errMsg + "" + t.getMessage();
+    }
+    return errMsg;
   }
 }

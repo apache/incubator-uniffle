@@ -34,7 +34,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
 
 /** */
-public class SortBasedWriteBuffer implements WriteBuffer {
+public class SortBasedWriteBuffer extends WriteBuffer {
 
   /**
    * Size of an index entry: 4 bytes for record length, 4 bytes for data type and 8 bytes for
@@ -109,11 +109,7 @@ public class SortBasedWriteBuffer implements WriteBuffer {
   private int readOrderIndex = -1;
 
   public SortBasedWriteBuffer(
-      BufferPool bufferPool,
-      int numSubpartitions,
-      int bufferSize,
-      int numGuaranteedBuffers,
-      @Nullable int[] customReadOrder) {
+      BufferPool bufferPool, int numSubpartitions, int bufferSize, int numGuaranteedBuffers) {
     checkArgument(bufferSize > INDEX_ENTRY_SIZE, "Buffer size is too small.");
     checkArgument(numGuaranteedBuffers > 0, "No guaranteed buffers for sort.");
 
@@ -128,13 +124,8 @@ public class SortBasedWriteBuffer implements WriteBuffer {
     Arrays.fill(lastIndexEntryAddresses, -1L);
 
     this.subpartitionReadOrder = new int[numSubpartitions];
-    if (customReadOrder != null) {
-      checkArgument(customReadOrder.length == numSubpartitions, "Illegal data read order.");
-      System.arraycopy(customReadOrder, 0, this.subpartitionReadOrder, 0, numSubpartitions);
-    } else {
-      for (int channel = 0; channel < numSubpartitions; ++channel) {
-        this.subpartitionReadOrder[channel] = channel;
-      }
+    for (int channel = 0; channel < numSubpartitions; ++channel) {
+      this.subpartitionReadOrder[channel] = channel;
     }
   }
 
@@ -357,13 +348,13 @@ public class SortBasedWriteBuffer implements WriteBuffer {
 
   @Override
   public void finish() {
-    checkState(!isFull, "DataBuffer must not be full.");
+    // checkState(!isFull, "DataBuffer must not be full.");
     checkState(!isFinished, "DataBuffer is already finished.");
 
     isFinished = true;
 
     // prepare for reading
-    isFull = true;
+    // isFull = true;
     updateReadChannelAndIndexEntryAddress();
   }
 
@@ -392,6 +383,8 @@ public class SortBasedWriteBuffer implements WriteBuffer {
 
   private void addBuffer(MemorySegment segment) {
     if (segment.size() != bufferSize) {
+      System.out.println("segment:" + segment.size());
+      System.out.println("bufferSize:" + bufferSize);
       bufferPool.recycle(segment);
       throw new IllegalStateException("Illegal memory segment size.");
     }

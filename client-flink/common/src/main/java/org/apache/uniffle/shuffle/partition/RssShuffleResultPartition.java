@@ -19,7 +19,7 @@ package org.apache.uniffle.shuffle.partition;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import javax.annotation.Nullable;
+import java.util.LinkedList;
 
 import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.runtime.event.AbstractEvent;
@@ -35,8 +35,11 @@ import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionManager;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartitionView;
+import org.apache.flink.runtime.io.network.partition.SortBuffer;
+import org.apache.flink.runtime.io.network.partition.SortMergeResultPartition;
+import org.apache.flink.runtime.taskexecutor.TaskExecutor;
+import org.apache.flink.shaded.netty4.io.netty.buffer.ByteBuf;
 import org.apache.flink.util.FlinkRuntimeException;
-import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.function.SupplierWithException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,32 +48,58 @@ import org.apache.uniffle.shuffle.buffer.BufferWithChannel;
 import org.apache.uniffle.shuffle.buffer.SortBasedWriteBuffer;
 import org.apache.uniffle.shuffle.buffer.WriteBuffer;
 import org.apache.uniffle.shuffle.exception.ShuffleException;
-import org.apache.uniffle.shuffle.utils.BufferUtils;
 import org.apache.uniffle.shuffle.utils.ExceptionUtils;
 import org.apache.uniffle.shuffle.writer.RssShuffleOutputGate;
 
-import static org.apache.uniffle.shuffle.utils.CommonUtils.checkNotNull;
-import static org.apache.uniffle.shuffle.utils.CommonUtils.checkState;
-import static org.apache.uniffle.shuffle.utils.ExceptionUtils.translateToRuntimeException;
+import static org.apache.flink.util.Preconditions.checkNotNull;
+import static org.apache.uniffle.shuffle.buffer.WriteBuffer.HEADER_LENGTH;
 
+/**
+ * In the process of implementing {@link RssShuffleResultPartition}, we referenced {@link
+ * SortMergeResultPartition}, and we defined a WriteBuffer similar to {@link SortBuffer}.
+ *
+ * <p>{@link RssShuffleResultPartition} appends records and events to {@link WriteBuffer}.
+ *
+ * <p>{@link WriteBuffer} is full, all data in the {@link WriteBuffer} will write out to shuffle
+ * server in subpartition index order sequentially. Large records that can not be appended to an
+ * empty {@link WriteBuffer} will be spilled directly.
+ */
 public class RssShuffleResultPartition extends ResultPartition {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleResultPartition.class);
 
-  /** Size of network buffer and write buffer. */
+  /**
+   * Size of network buffer and write buffer. Int type value, the size of the network buffer and
+   * write buffer (buffer size), set by taskmanager.memory.segment-size
+   */
   private final int networkBufferSize;
 
-  /** {@link WriteBuffer} for records sent by {@link #broadcastRecord(ByteBuffer)}. */
+  /**
+   * {@link WriteBuffer} for records sent by {@link #broadcastRecord(ByteBuffer)}. Like {@link
+   * SortMergeResultPartition}#broadcastSortBuffer
+   */
   private WriteBuffer broadcastWriteBuffer;
 
-  /** {@link WriteBuffer} for records sent by {@link #emitRecord(ByteBuffer, int)}. */
+  /**
+   * {@link WriteBuffer} for records sent by {@link #emitRecord(ByteBuffer, int)}. Like {@link
+   * SortMergeResultPartition}#unicastSortBuffer
+   */
   private WriteBuffer unicastWriteBuffer;
 
-  /** Utility to spill data to shuffle workers. */
+  /** All available network buffers can be used by this result partition for a data region. */
+  private final LinkedList<MemorySegment> freeSegments = new LinkedList<>();
+
+  /** Utility to write data to uniffle shuffle servers. */
   private final RssShuffleOutputGate outputGate;
 
+  /**
+   * There is a buffer for writing shuffle-server. We declare this variable in the form of a fixed
+   * variable.
+   */
+  private static final int NUM_REQUIRED_BUFFER = 1;
+
   public RssShuffleResultPartition(
-      String owningTaskName,
+      String taskName,
       int partitionIndex,
       ResultPartitionID partitionId,
       ResultPartitionType partitionType,
@@ -78,11 +107,11 @@ public class RssShuffleResultPartition extends ResultPartition {
       int numTargetKeyGroups,
       int networkBufferSize,
       ResultPartitionManager partitionManager,
-      @Nullable BufferCompressor bufferCompressor,
+      BufferCompressor bufferCompressor,
       SupplierWithException<BufferPool, IOException> bufferPoolFactory,
       RssShuffleOutputGate outputGate) {
     super(
-        owningTaskName,
+        taskName,
         partitionIndex,
         partitionId,
         partitionType,
@@ -95,16 +124,94 @@ public class RssShuffleResultPartition extends ResultPartition {
     this.networkBufferSize = networkBufferSize;
   }
 
+  /**
+   * Registers a buffer pool with this result partition.
+   *
+   * <p>There is one pool for each result partition, which is shared by all its sub partitions.
+   *
+   * <p>The pool is registered with the partition *after* it as been constructed in order to conform
+   * to the life-cycle of task registrations in the {@link TaskExecutor}.
+   */
   @Override
-  public void setup() throws IOException {
+  public synchronized void setup() throws IOException {
+    // ResultPartition#setUp
     super.setup();
-    BufferUtils.bufferReservationForRequirements(bufferPool, 1);
+
+    // We try to apply for MemorySegment and block waiting.
+    requestGuaranteedBuffers();
+
+    // We initialize RssShuffleOutputGate.
     try {
       outputGate.setup();
     } catch (Throwable throwable) {
-      LOG.error("Failed to setup remote output gate.", throwable);
-      translateToRuntimeException(throwable);
+      ExceptionUtils.logAndThrowRuntimeException(
+          "Failed to setup rss shuffle outputgate.", throwable);
     }
+
+    LOG.info("Rss ShuffleResult Partition {} initialized.", getPartitionId());
+  }
+
+  private void requestGuaranteedBuffers() throws IOException {
+    try {
+      while (freeSegments.size() < NUM_REQUIRED_BUFFER) {
+        freeSegments.add(checkNotNull(bufferPool.requestMemorySegmentBlocking()));
+      }
+    } catch (InterruptedException exception) {
+      releaseFreeSegments();
+      ExceptionUtils.logAndThrowIOException(
+          "Failed to allocate buffers for result partition.", exception);
+    }
+  }
+
+  // ------------------------------------------------------------------------
+
+  /** Writes the given serialized record to the target subpartition. */
+  @Override
+  public void emitRecord(ByteBuffer record, int targetSubpartition) throws IOException {
+    emit(record, targetSubpartition, Buffer.DataType.DATA_BUFFER, false);
+  }
+
+  private void emit(
+      ByteBuffer record, int targetSubpartition, Buffer.DataType dataType, boolean isBroadcast)
+      throws IOException {
+
+    checkInProduceState();
+    WriteBuffer writeBuffer = isBroadcast ? getBroadcastWriteBuffer() : getUnicastWriteBuffer();
+    if (!writeBuffer.append(record, targetSubpartition, dataType)) {
+      return;
+    }
+
+    try {
+      if (!writeBuffer.hasRemaining()) {
+        // the record can not be appended to the free sort buffer because it is too large
+        writeBuffer.finish();
+        writeBuffer.release();
+        writeLargeRecord(record, targetSubpartition, dataType, isBroadcast);
+        return;
+      }
+      flushWriteBuffer(writeBuffer, isBroadcast);
+    } catch (InterruptedException e) {
+      ExceptionUtils.logAndThrowRuntimeException("Failed to flush the write buffer.", e);
+    }
+
+    emit(record, targetSubpartition, dataType, isBroadcast);
+  }
+
+  private void writeLargeRecord(
+      ByteBuffer record, int targetSubpartition, Buffer.DataType dataType, boolean isBroadcast)
+      throws InterruptedException {
+    outputGate.startRegion(isBroadcast);
+    while (record.hasRemaining()) {
+      MemorySegment writeBuffer = outputGate.getBufferPool().requestMemorySegmentBlocking();
+      int toCopy = Math.min(record.remaining(), writeBuffer.size() - HEADER_LENGTH);
+      writeBuffer.put(HEADER_LENGTH, record, toCopy);
+      NetworkBuffer buffer =
+          new NetworkBuffer(
+              writeBuffer, outputGate.getBufferPool(), dataType, toCopy + HEADER_LENGTH);
+      updateStatistics(buffer, isBroadcast);
+      compressWriterBufferAndWriteIfPossible(buffer, targetSubpartition);
+    }
+    outputGate.finishRegion();
   }
 
   @Override
@@ -120,42 +227,6 @@ public class RssShuffleResultPartition extends ResultPartition {
   @Override
   protected void releaseInternal() {
     // no-operator
-  }
-
-  @Override
-  public void emitRecord(ByteBuffer record, int targetSubpartition) throws IOException {
-    emit(record, targetSubpartition, Buffer.DataType.DATA_BUFFER, false);
-  }
-
-  private void emit(
-      ByteBuffer record, int targetSubpartition, Buffer.DataType dataType, boolean isBroadcast)
-      throws IOException {
-
-    checkInProduceState();
-    if (isBroadcast) {
-      Preconditions.checkState(
-          targetSubpartition == 0, "Target subpartition index can only be 0 when broadcast.");
-    }
-
-    WriteBuffer sortBuffer = isBroadcast ? getBroadcastWriteBuffer() : getUnicastWriteBuffer();
-    if (sortBuffer.append(record, targetSubpartition, dataType)) {
-      return;
-    }
-
-    try {
-      if (!sortBuffer.hasRemaining()) {
-        // the record can not be appended to the free sort buffer because it is too large
-        sortBuffer.finish();
-        sortBuffer.release();
-        writeLargeRecord(record, targetSubpartition, dataType, isBroadcast);
-        return;
-      }
-      flushWriteBuffer(sortBuffer, isBroadcast);
-    } catch (InterruptedException e) {
-      LOG.error("Failed to flush the sort buffer.", e);
-      ExceptionUtils.translateToRuntimeException(e);
-    }
-    emit(record, targetSubpartition, dataType, isBroadcast);
   }
 
   @Override
@@ -191,35 +262,13 @@ public class RssShuffleResultPartition extends ResultPartition {
       flushBroadcastWriteBuffer();
     } catch (Throwable t) {
       LOG.error("Failed to flush the current sort buffer.", t);
-      ExceptionUtils.translateToRuntimeException(t);
+      throw new RuntimeException(t);
     }
   }
 
   @Override
   public void flush(int subpartitionIndex) {
     flushAll();
-  }
-
-  private void writeLargeRecord(
-      ByteBuffer record, int targetSubpartition, Buffer.DataType dataType, boolean isBroadcast)
-      throws InterruptedException {
-
-    outputGate.regionStart(isBroadcast);
-    while (record.hasRemaining()) {
-      MemorySegment writeBuffer = outputGate.getBufferPool().requestMemorySegmentBlocking();
-      int toCopy = Math.min(record.remaining(), writeBuffer.size() - BufferUtils.HEADER_LENGTH);
-      writeBuffer.put(BufferUtils.HEADER_LENGTH, record, toCopy);
-      NetworkBuffer buffer =
-          new NetworkBuffer(
-              writeBuffer,
-              outputGate.getBufferPool(),
-              dataType,
-              toCopy + BufferUtils.HEADER_LENGTH);
-
-      updateStatistics(buffer, isBroadcast);
-      writeCompressedBufferIfPossible(buffer, targetSubpartition);
-    }
-    outputGate.regionFinish();
   }
 
   private WriteBuffer getUnicastWriteBuffer() throws IOException {
@@ -229,9 +278,9 @@ public class RssShuffleResultPartition extends ResultPartition {
       return unicastWriteBuffer;
     }
 
-    // todo:Need to confirm numGuaranteedBuffers size
     unicastWriteBuffer =
-        new SortBasedWriteBuffer(bufferPool, numSubpartitions, networkBufferSize, 1024, null);
+        new SortBasedWriteBuffer(
+            bufferPool, numSubpartitions, networkBufferSize, NUM_REQUIRED_BUFFER);
     return unicastWriteBuffer;
   }
 
@@ -246,9 +295,9 @@ public class RssShuffleResultPartition extends ResultPartition {
       return broadcastWriteBuffer;
     }
 
-    // todo:Need to confirm numGuaranteedBuffers size
     broadcastWriteBuffer =
-        new SortBasedWriteBuffer(bufferPool, numSubpartitions, networkBufferSize, 1024, null);
+        new SortBasedWriteBuffer(
+            bufferPool, numSubpartitions, networkBufferSize, NUM_REQUIRED_BUFFER);
     return broadcastWriteBuffer;
   }
 
@@ -263,7 +312,7 @@ public class RssShuffleResultPartition extends ResultPartition {
     writeBuffer.finish();
     if (writeBuffer.hasRemaining()) {
       try {
-        outputGate.regionStart(isBroadcast);
+        outputGate.startRegion(isBroadcast);
         while (writeBuffer.hasRemaining()) {
           MemorySegment segment = outputGate.getBufferPool().requestMemorySegmentBlocking();
           BufferWithChannel bufferWithChannel;
@@ -276,9 +325,9 @@ public class RssShuffleResultPartition extends ResultPartition {
           Buffer buffer = bufferWithChannel.getBuffer();
           int subpartitionIndex = bufferWithChannel.getChannelIndex();
           updateStatistics(bufferWithChannel.getBuffer(), isBroadcast);
-          writeCompressedBufferIfPossible(buffer, subpartitionIndex);
+          compressWriterBufferAndWriteIfPossible(buffer, subpartitionIndex);
         }
-        outputGate.regionFinish();
+        outputGate.finishRegion();
       } catch (InterruptedException e) {
         throw new IOException("Failed to flush the write buffer, broadcast = " + isBroadcast, e);
       }
@@ -286,30 +335,30 @@ public class RssShuffleResultPartition extends ResultPartition {
     releaseWriteBuffer(writeBuffer);
   }
 
-  private void releaseWriteBuffer(WriteBuffer writeBuffer) {
-    if (writeBuffer != null) {
-      writeBuffer.release();
-    }
-  }
-
   private void updateStatistics(Buffer buffer, boolean isBroadcast) {
     numBuffersOut.inc(isBroadcast ? numSubpartitions : 1);
-    long readableBytes = buffer.readableBytes() - BufferUtils.HEADER_LENGTH;
-    // numBytesProduced.inc(readableBytes);
+    long readableBytes = buffer.readableBytes() - HEADER_LENGTH;
     numBytesOut.inc(isBroadcast ? readableBytes * numSubpartitions : readableBytes);
   }
 
-  private void writeCompressedBufferIfPossible(Buffer buffer, int targetSubpartition)
+  private void compressWriterBufferAndWriteIfPossible(Buffer buffer, int targetSubpartition)
       throws InterruptedException {
     Buffer compressedBuffer = null;
     try {
       if (canBeCompressed(buffer)) {
-        Buffer dataBuffer =
-            buffer.readOnlySlice(
-                BufferUtils.HEADER_LENGTH, buffer.getSize() - BufferUtils.HEADER_LENGTH);
+        Buffer dataBuffer = buffer.readOnlySlice(HEADER_LENGTH, buffer.getSize() - HEADER_LENGTH);
         compressedBuffer = checkNotNull(bufferCompressor).compressToIntermediateBuffer(dataBuffer);
       }
-      BufferUtils.setCompressedDataWithHeader(buffer, compressedBuffer);
+      boolean isCompressed = compressedBuffer != null && compressedBuffer.isCompressed();
+      int dataLength =
+          isCompressed ? compressedBuffer.readableBytes() : buffer.readableBytes() - HEADER_LENGTH;
+      ByteBuf byteBuf = buffer.asByteBuf();
+      WriteBuffer.setWriterBufferHeader(byteBuf, buffer.getDataType(), isCompressed, dataLength);
+      if (isCompressed) {
+        byteBuf.writeBytes(compressedBuffer.asByteBuf());
+      }
+      buffer.setSize(dataLength + HEADER_LENGTH);
+      outputGate.write(buffer, targetSubpartition);
     } catch (Throwable throwable) {
       buffer.recycleBuffer();
       throw new ShuffleException("Shuffle write failure.", throwable);
@@ -319,58 +368,61 @@ public class RssShuffleResultPartition extends ResultPartition {
         compressedBuffer.recycleBuffer();
       }
     }
-    outputGate.write(buffer, targetSubpartition);
   }
 
+  private void releaseFreeSegments() {
+    if (bufferPool != null) {
+      freeSegments.forEach(buffer -> bufferPool.recycle(buffer));
+      freeSegments.clear();
+    }
+  }
+
+  private void releaseWriteBuffer(WriteBuffer writeBuffer) {
+    if (writeBuffer != null) {
+      writeBuffer.release();
+    }
+  }
+
+  /**
+   * the close method will be always called by the task thread, so we use the synchronous method to
+   * close.
+   */
   @Override
   public synchronized void close() {
-    Throwable closeException = null;
-    try {
-      releaseWriteBuffer(unicastWriteBuffer);
-    } catch (Throwable throwable) {
-      closeException = throwable;
-      LOG.error("Failed to release unicast sort buffer.", throwable);
-    }
-
-    try {
-      releaseWriteBuffer(broadcastWriteBuffer);
-    } catch (Throwable throwable) {
-      closeException = closeException == null ? throwable : closeException;
-      LOG.error("Failed to release broadcast sort buffer.", throwable);
-    }
-
-    try {
-      super.close();
-    } catch (Throwable throwable) {
-      closeException = closeException == null ? throwable : closeException;
-      LOG.error("Failed to call super#close() method.", throwable);
-    }
-
-    try {
-      outputGate.close();
-    } catch (Throwable throwable) {
-      closeException = closeException == null ? throwable : closeException;
-      LOG.error("Failed to close remote shuffle output gate.", throwable);
-    }
-
-    if (closeException != null) {
-      ExceptionUtils.translateToRuntimeException(closeException);
-    }
+    releaseFreeSegments();
+    releaseWriteBuffer(unicastWriteBuffer);
+    releaseWriteBuffer(broadcastWriteBuffer);
+    outputGate.close();
+    super.close();
   }
 
+  /**
+   * Finishes the result partition.
+   *
+   * <p>After this operation, it is not possible to add further data to the result partition.
+   *
+   * <p>For BLOCKING results, this will trigger the deployment of consuming tasks.
+   */
   @Override
   public void finish() throws IOException {
-    checkState(!isReleased(), "Result partition is already released.");
+
+    if (!this.isReleased()) {
+      throw new IllegalStateException("Result Partition is already released!");
+    }
+
+    if (unicastWriteBuffer.isReleased() || unicastWriteBuffer == null) {
+      throw new IllegalStateException("The Unicast Write Buffer Cannot be null or release!");
+    }
+
     broadcastEvent(EndOfPartitionEvent.INSTANCE, false);
-    checkState(
-        unicastWriteBuffer == null || unicastWriteBuffer.isReleased(),
-        "The unicast sort buffer should be either null or released.");
     flushBroadcastWriteBuffer();
+
     try {
       outputGate.finish();
     } catch (InterruptedException e) {
-      throw new IOException("Output gate fails to finish.", e);
+      throw new IOException("RssShuffleOutputGate fails to finish.", e);
     }
+
     super.finish();
   }
 }

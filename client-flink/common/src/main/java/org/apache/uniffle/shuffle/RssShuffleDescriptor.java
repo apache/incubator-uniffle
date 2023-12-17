@@ -25,6 +25,7 @@ import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.shuffle.ShuffleDescriptor;
 
 import org.apache.uniffle.shuffle.resource.DefaultRssShuffleResource;
+import org.apache.uniffle.shuffle.resource.RssShuffleResource;
 
 /**
  * 1. put into ResultPartitionDeploymentDescriptor for submitting producer task 2. as a known
@@ -37,10 +38,10 @@ public class RssShuffleDescriptor implements ShuffleDescriptor {
 
   private final JobID jobId;
 
-  private final DefaultRssShuffleResource shuffleResource;
+  private final RssShuffleResource shuffleResource;
 
   public RssShuffleDescriptor(
-      ResultPartitionID resultPartitionID, JobID jobId, DefaultRssShuffleResource shuffleResource) {
+      ResultPartitionID resultPartitionID, JobID jobId, RssShuffleResource shuffleResource) {
     this.resultPartitionID = resultPartitionID;
     this.jobId = jobId;
     this.shuffleResource = shuffleResource;
@@ -61,6 +62,6 @@ public class RssShuffleDescriptor implements ShuffleDescriptor {
   }
 
   public DefaultRssShuffleResource getShuffleResource() {
-    return shuffleResource;
+    return (DefaultRssShuffleResource) shuffleResource;
   }
 }

@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -52,11 +53,10 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.shuffle.RssFlinkConfig;
 import org.apache.uniffle.shuffle.RssShuffleDescriptor;
 import org.apache.uniffle.shuffle.buffer.WriteBufferPacker;
-import org.apache.uniffle.shuffle.utils.BufferUtils;
 import org.apache.uniffle.shuffle.utils.CommonUtils;
-import org.apache.uniffle.shuffle.utils.ExceptionUtils;
 import org.apache.uniffle.shuffle.utils.FlinkShuffleUtils;
 
+/** */
 public class RssShuffleOutputGate {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleOutputGate.class);
@@ -120,6 +120,19 @@ public class RssShuffleOutputGate {
     this.shuffleServerInfos.addAll(shuffleDesc.getShuffleResource().getMapPartitionLocation());
   }
 
+  @VisibleForTesting
+  public RssShuffleOutputGate(
+      RssShuffleDescriptor pShuffleDesc,
+      int pNumSubs,
+      int pBufferSize,
+      SupplierWithException<BufferPool, IOException> pBufferPoolFactory,
+      Configuration pConfig,
+      int pNumMappers,
+      ShuffleWriteClient shuffleWriteClient) {
+    this(pShuffleDesc, pNumSubs, pBufferSize, pBufferPoolFactory, pConfig, pNumMappers);
+    this.shuffleWriteClient = shuffleWriteClient;
+  }
+
   public void setup() throws IOException, InterruptedException {
     bufferPool = CommonUtils.checkNotNull(bufferPoolFactory.get());
     CommonUtils.checkArgument(
@@ -127,7 +140,10 @@ public class RssShuffleOutputGate {
         "Too few buffers for transfer, the minimum valid required size is 2.");
 
     // guarantee that we have at least one buffer
-    BufferUtils.bufferReservationForRequirements(bufferPool, 1);
+
+    // while (freeSegments.size() < 2) {
+    // freeSegments.add(checkNotNull(bufferPool.requestMemorySegmentBlocking()));
+    // }
   }
 
   public void write(Buffer buffer, int subIdx) throws InterruptedException {
@@ -176,11 +192,11 @@ public class RssShuffleOutputGate {
     return seqNo;
   }
 
-  public void regionStart(boolean isBroadcast) {
+  public void startRegion(boolean isBroadcast) {
     LOG.info("regionStart, isBroadcast = {}", isBroadcast);
   }
 
-  public void regionFinish() throws InterruptedException {
+  public void finishRegion() throws InterruptedException {
     writeBufferPacker.drain();
     JobID jobID = shuffleDesc.getJobId();
     shuffleWriteClient.reportShuffleResult(
@@ -196,7 +212,7 @@ public class RssShuffleOutputGate {
     sendCommit();
   }
 
-  public void close() throws IOException {
+  public void close() {
     Throwable closeException = null;
     try {
       if (bufferPool != null) {
@@ -222,7 +238,7 @@ public class RssShuffleOutputGate {
     }
 
     if (closeException != null) {
-      ExceptionUtils.translateToRuntimeException(closeException);
+      // ExceptionUtils.translateToRuntimeException(closeException);
     }
   }
 
@@ -258,5 +274,11 @@ public class RssShuffleOutputGate {
     } finally {
       executor.shutdown();
     }
+  }
+
+  /** * */
+  @VisibleForTesting
+  public void setShuffleWriteClient(ShuffleWriteClient shuffleWriteClient) {
+    this.shuffleWriteClient = shuffleWriteClient;
   }
 }
