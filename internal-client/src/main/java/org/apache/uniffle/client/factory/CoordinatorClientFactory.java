@@ -57,17 +57,6 @@ public class CoordinatorClientFactory {
     }
   }
 
-  private CoordinatorClient createOrGetCoordinatorClient(
-      ClientType clientType, String host, int port) {
-    String hostPort = host + ":" + port;
-    clients.putIfAbsent(clientType.toString(), JavaUtils.newConcurrentMap());
-    Map<String, CoordinatorClient> hostToClients = clients.get(clientType.toString());
-    if (hostToClients.get(hostPort) == null) {
-      hostToClients.put(hostPort, createCoordinatorClient(clientType, host, port));
-    }
-    return hostToClients.get(hostPort);
-  }
-
   public List<CoordinatorClient> createCoordinatorClient(
       ClientType clientType, String coordinators) {
     LOG.info("Start to create coordinator clients from {}", coordinators);
@@ -100,5 +89,16 @@ public class CoordinatorClientFactory {
             .map(CoordinatorClient::getDesc)
             .collect(Collectors.joining(", ")));
     return coordinatorClients;
+  }
+
+  private CoordinatorClient createOrGetCoordinatorClient(
+    ClientType clientType, String host, int port) {
+    String hostPort = host + ":" + port;
+    clients.putIfAbsent(clientType.toString(), JavaUtils.newConcurrentMap());
+    Map<String, CoordinatorClient> hostToClients = clients.get(clientType.toString());
+    if (hostToClients.get(hostPort) == null) {
+      hostToClients.put(hostPort, createCoordinatorClient(clientType, host, port));
+    }
+    return hostToClients.get(hostPort);
   }
 }
