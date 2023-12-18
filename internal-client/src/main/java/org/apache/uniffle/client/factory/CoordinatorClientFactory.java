@@ -49,7 +49,8 @@ public class CoordinatorClientFactory {
     return CoordinatorClientFactory.LazyHolder.INSTANCE;
   }
 
-  public synchronized CoordinatorClient createCoordinatorClient(ClientType clientType, String host, int port) {
+  public synchronized CoordinatorClient createCoordinatorClient(
+      ClientType clientType, String host, int port) {
     if (clientType.equals(ClientType.GRPC) || clientType.equals(ClientType.GRPC_NETTY)) {
       return new CoordinatorGrpcClient(host, port);
     } else {
