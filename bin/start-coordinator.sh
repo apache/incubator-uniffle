@@ -34,12 +34,11 @@ OUT_PATH="${RSS_LOG_DIR}/coordinator.out"
 
 MAIN_CLASS="org.apache.uniffle.coordinator.CoordinatorServer"
 
-HADOOP_DEPENDENCY="$("$HADOOP_HOME/bin/hadoop" classpath --glob)"
-
 echo "Check process existence"
 is_jvm_process_running "$JPS" $MAIN_CLASS
 
 CLASSPATH=""
+JAVA_LIB_PATH=""
 
 for file in $(ls ${JAR_DIR}/coordinator/*.jar 2>/dev/null); do
   CLASSPATH=$CLASSPATH:$file
@@ -48,8 +47,17 @@ done
 mkdir -p "${RSS_LOG_DIR}"
 mkdir -p "${RSS_PID_DIR}"
 
-CLASSPATH=$CLASSPATH:$HADOOP_CONF_DIR:$HADOOP_DEPENDENCY
-JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native"
+set +u
+if [ $HADOOP_HOME ]; then
+  HADOOP_DEPENDENCY="$("$HADOOP_HOME/bin/hadoop" classpath --glob)"
+  CLASSPATH=$CLASSPATH:$HADOOP_DEPENDENCY
+  JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native"
+fi
+
+if [ $HADOOP_CONF_DIR ]; then
+  CLASSPATH=$CLASSPATH:$HADOOP_CONF_DIR
+fi
+set -u
 
 echo "class path is $CLASSPATH"
 
