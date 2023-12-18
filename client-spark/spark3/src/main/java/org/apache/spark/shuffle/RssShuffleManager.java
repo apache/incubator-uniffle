@@ -658,7 +658,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             + " blockIds for shuffleId["
             + shuffleId
             + "], startPartition["
-            + start
+            + startPartition
             + "], endPartition["
             + endPartition
             + "]");
