@@ -150,4 +150,12 @@ public class RssClientConf {
           .withDescription(
               "This option is only valid when the remote storage path is specified. If ture, "
                   + "the remote storage conf will use the client side hadoop configuration loaded from the classpath.");
+
+  public static final ConfigOption<Boolean> RSS_CLIENT_BLOCKID_ROLLOVER_TASKATTEMPTID_ENABLED =
+      ConfigOptions.key("rss.client.blockId.rollover.taskAttemptId.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "This option enables the taskAttemptId rollover when exceeding the MAX attemptId in blockId "
+                  + "construction.");
 }

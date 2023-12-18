@@ -50,6 +50,7 @@ import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.compression.Codec;
+import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
@@ -95,6 +96,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private boolean memorySpillEnabled;
   private int memorySpillTimeoutSec;
   private boolean isRowBased;
+  private boolean isRolloverTaskAttemptIdBlockId;
 
   public WriteBufferManager(
       int shuffleId,
@@ -160,6 +162,8 @@ public class WriteBufferManager extends MemoryConsumer {
     this.sendSizeLimit = rssConf.get(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMITATION);
     this.memorySpillTimeoutSec = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_TIMEOUT);
     this.memorySpillEnabled = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_ENABLED);
+    this.isRolloverTaskAttemptIdBlockId =
+        rssConf.get(RssClientConf.RSS_CLIENT_BLOCKID_ROLLOVER_TASKATTEMPTID_ENABLED);
   }
 
   /** add serialized columnar data directly when integrate with gluten */
@@ -321,7 +325,8 @@ public class WriteBufferManager extends MemoryConsumer {
     }
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     final long blockId =
-        ClientUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
+        ClientUtils.getBlockId(
+            partitionId, taskAttemptId, getNextSeqNo(partitionId), isRolloverTaskAttemptIdBlockId);
     uncompressedDataLen += data.length;
     shuffleWriteMetrics.incBytesWritten(compressed.length);
     // add memory to indicate bytes which will be sent to shuffle server

@@ -34,11 +34,8 @@ import org.apache.uniffle.storage.util.StorageType;
 
 public class ClientUtils {
 
-  // BlockId is long and composed of partitionId, executorId and AtomicInteger.
-  // AtomicInteger is first 19 bit, max value is 2^19 - 1
-  // partitionId is next 24 bit, max value is 2^24 - 1
-  // taskAttemptId is rest of 20 bit, max value is 2^20 - 1
-  public static Long getBlockId(long partitionId, long taskAttemptId, long atomicInt) {
+  public static Long getBlockId(
+      long partitionId, long taskAttemptId, long atomicInt, boolean isTaskAttemptIdRollover) {
     if (atomicInt < 0 || atomicInt > Constants.MAX_SEQUENCE_NO) {
       throw new IllegalArgumentException(
           "Can't support sequence["
@@ -53,16 +50,43 @@ public class ClientUtils {
               + "], the max value should be "
               + Constants.MAX_PARTITION_ID);
     }
-    if (taskAttemptId < 0 || taskAttemptId > Constants.MAX_TASK_ATTEMPT_ID) {
+
+    if (taskAttemptId < 0) {
       throw new IllegalArgumentException(
-          "Can't support taskAttemptId["
-              + taskAttemptId
-              + "], the max value should be "
-              + Constants.MAX_TASK_ATTEMPT_ID);
+          "Illegal taskAttemptId[" + taskAttemptId + "]. It should always be greater than 0");
     }
+
+    boolean exceedMaxTaskAttemptId = taskAttemptId > Constants.MAX_TASK_ATTEMPT_ID;
+    if (exceedMaxTaskAttemptId) {
+      if (!isTaskAttemptIdRollover) {
+        throw new IllegalArgumentException(
+            "Can't support taskAttemptId["
+                + taskAttemptId
+                + "], the max value should be "
+                + Constants.MAX_TASK_ATTEMPT_ID);
+      } else {
+        /**
+         * The taskAttemptId in blockId ensures the uniqueness of the global blockIds and won't be
+         * retrieved from the blockId explicitly.
+         *
+         * <p>And blockId will be bound to the shuffleId in shuffle server side that means the
+         * taskAttemptId could be rolled over. In other words, we have it as a placeholder
+         */
+        taskAttemptId = taskAttemptId % Constants.MAX_TASK_ATTEMPT_ID;
+      }
+    }
+
     return (atomicInt << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
         + (partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH)
         + taskAttemptId;
+  }
+
+  // BlockId is long and composed of partitionId, executorId and AtomicInteger.
+  // AtomicInteger is first 19 bit, max value is 2^19 - 1
+  // partitionId is next 24 bit, max value is 2^24 - 1
+  // taskAttemptId is rest of 20 bit, max value is 2^20 - 1
+  public static Long getBlockId(long partitionId, long taskAttemptId, long atomicInt) {
+    return getBlockId(partitionId, taskAttemptId, atomicInt, false);
   }
 
   public static RemoteStorageInfo fetchRemoteStorage(
