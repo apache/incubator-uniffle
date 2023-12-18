@@ -78,13 +78,14 @@ Local shuffle reader as its name indicates is suitable and optimized for spark's
 
 The important configuration is listed as following.
 
-|Property Name|Default|Description|
-|---|---|---|
-|spark.rss.writer.buffer.spill.size|128m|Buffer size for total partition data|
-|spark.rss.client.send.size.limit|16m|The max data size sent to shuffle server|
-|spark.rss.client.unregister.thread.pool.size|10|The max size of thread pool of unregistering|
-|spark.rss.client.unregister.request.timeout.sec|10|The max timeout sec when doing unregister to remote shuffle-servers|
-|spark.rss.client.off.heap.memory.enable|false|The client use off heap memory to process data|
+| Property Name                                         | Default | Description                                                                                                                                                                    |
+|-------------------------------------------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| spark.rss.writer.buffer.spill.size                    | 128m    | Buffer size for total partition data                                                                                                                                           |
+| spark.rss.client.send.size.limit                      | 16m     | The max data size sent to shuffle server                                                                                                                                       |
+| spark.rss.client.unregister.thread.pool.size          | 10      | The max size of thread pool of unregistering                                                                                                                                   |
+| spark.rss.client.unregister.request.timeout.sec       | 10      | The max timeout sec when doing unregister to remote shuffle-servers                                                                                                            |
+| spark.rss.client.off.heap.memory.enable               | false   | The client use off heap memory to process data                                                                                                                                 |
+| spark.rss.client.remote.storage.useLocalConfAsDefault | false   | This option is only valid when the remote storage path is specified. If ture, the remote storage conf will use the client side hadoop configuration loaded from the classpath  |
 
 ### Adaptive Remote Shuffle Enabling 
 Currently, this feature only supports Spark. 
