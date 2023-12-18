@@ -207,13 +207,9 @@ public class WriteBufferManager extends MemoryConsumer {
         requestMemory(required);
         hasRequested = true;
       }
-    }
-
-    if (buffers.containsKey(partitionId)) {
       if (hasRequested) {
         usedBytes.addAndGet(required);
       }
-      WriterBuffer wb = buffers.get(partitionId);
       wb.addRecord(serializedData, serializedDataLength);
       if (wb.getMemoryUsed() > bufferSize) {
         List<ShuffleBlockInfo> sentBlocks = new ArrayList<>(1);
