@@ -92,7 +92,7 @@ public class CoordinatorClientFactory {
   }
 
   private CoordinatorClient createOrGetCoordinatorClient(
-    ClientType clientType, String host, int port) {
+      ClientType clientType, String host, int port) {
     String hostPort = host + ":" + port;
     clients.putIfAbsent(clientType.toString(), JavaUtils.newConcurrentMap());
     Map<String, CoordinatorClient> hostToClients = clients.get(clientType.toString());
