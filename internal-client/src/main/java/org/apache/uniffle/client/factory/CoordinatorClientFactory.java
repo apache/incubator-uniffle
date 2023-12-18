@@ -49,7 +49,7 @@ public class CoordinatorClientFactory {
     return CoordinatorClientFactory.LazyHolder.INSTANCE;
   }
 
-  public CoordinatorClient createCoordinatorClient(ClientType clientType, String host, int port) {
+  public synchronized CoordinatorClient createCoordinatorClient(ClientType clientType, String host, int port) {
     if (clientType.equals(ClientType.GRPC) || clientType.equals(ClientType.GRPC_NETTY)) {
       return new CoordinatorGrpcClient(host, port);
     } else {
@@ -57,7 +57,7 @@ public class CoordinatorClientFactory {
     }
   }
 
-  public List<CoordinatorClient> createCoordinatorClient(
+  public synchronized List<CoordinatorClient> createCoordinatorClient(
       ClientType clientType, String coordinators) {
     LOG.info("Start to create coordinator clients from {}", coordinators);
 
