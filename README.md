@@ -136,7 +136,7 @@ Package will build against Hadoop 2.8.5 in default. If you want to build package
 
 Package with hadoop jars, If you want to build package against Hadoop 3.2.1, run:
 
-    ./build_distribution.sh --hadoop-profile 'hadoop3.2' -Pwith-hadoop
+    ./build_distribution.sh --hadoop-profile 'hadoop3.2' -Phadoop-dependencies-included
 
 rss-xxx.tgz will be generated for deployment
 
