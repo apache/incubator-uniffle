@@ -2175,6 +2175,12 @@
       </modules>
     </profile>
     <profile>
+      <id>hadoop-dependencies-included</id>
+      <properties>
+        <hadoop.scope>compile</hadoop.scope>
+      </properties>
+    </profile>
+    <profile>
       <id>hadoop2.8</id>
       <properties>
         <hadoop.version>2.8.5</hadoop.version>
