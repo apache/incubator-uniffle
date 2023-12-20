@@ -43,6 +43,8 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.uniffle.common.exception.NoBufferException;
+import org.apache.uniffle.common.exception.NoRegisterException;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -455,34 +457,34 @@ public class ShuffleTaskManager {
   }
 
   public long requireBuffer(
-      String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
+      String appId, int shuffleId, List<Integer> partitionIds, int requireSize) throws NoBufferException{
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
     if (null == shuffleTaskInfo) {
-      return RequireBufferStatusCode.NO_REGISTER.statusCode();
+      throw new NoRegisterException("Not Registered");
     }
     for (int partitionId : partitionIds) {
       long partitionUsedDataSize = getPartitionDataSize(appId, shuffleId, partitionId);
       if (shuffleBufferManager.limitHugePartition(
           appId, shuffleId, partitionId, partitionUsedDataSize)) {
         ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.inc();
-        return RequireBufferStatusCode.NO_BUFFER.statusCode();
+        throw new NoBufferException("No Buffer");
       }
     }
     return requireBuffer(requireSize);
   }
 
-  public long requireBuffer(int requireSize) {
+  public long requireBuffer(int requireSize) throws NoBufferException {
     long requireId = -1;
     if (shuffleBufferManager.requireMemory(requireSize, true)) {
       requireId = requireBufferId.incrementAndGet();
       requireBufferIds.put(
           requireId,
           new PreAllocatedBufferInfo(requireId, System.currentTimeMillis(), requireSize));
-    }
-    if (requireId == -1) {
+      return requireId;
+    } else {
       ShuffleServerMetrics.counterTotalRequireBufferFailedForRegularPartition.inc();
+      throw new NoBufferException("No Buffer");
     }
-    return requireId;
   }
 
   public byte[] getFinishedBlockIds(String appId, Integer shuffleId, Set<Integer> partitions)

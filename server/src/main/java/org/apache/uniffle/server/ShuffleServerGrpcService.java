@@ -33,6 +33,8 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.uniffle.common.exception.NoBufferException;
+import org.apache.uniffle.common.exception.NoRegisterException;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -398,31 +400,33 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       requireBufferId =
           shuffleServer.getShuffleTaskManager().requireBuffer(request.getRequireSize());
     } else {
-      requireBufferId =
+      StatusCode status = StatusCode.SUCCESS;
+      try {
+        requireBufferId =
           shuffleServer
-              .getShuffleTaskManager()
-              .requireBuffer(
-                  appId,
-                  request.getShuffleId(),
-                  request.getPartitionIdsList(),
-                  request.getRequireSize());
-    }
-
-    StatusCode status = StatusCode.SUCCESS;
-    if (requireBufferId == RequireBufferStatusCode.NO_BUFFER.statusCode()) {
-      status = StatusCode.NO_BUFFER;
-      ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
-    } else if (requireBufferId == RequireBufferStatusCode.NO_REGISTER.statusCode()) {
-      status = StatusCode.NO_REGISTER;
-      ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
-    }
-    RequireBufferResponse response =
+            .getShuffleTaskManager()
+            .requireBuffer(
+              appId,
+              request.getShuffleId(),
+              request.getPartitionIdsList(),
+              request.getRequireSize());
+      } catch (NoRegisterException noRegisterException) {
+        requireBufferId = -1;
+        status = StatusCode.NO_REGISTER;
+        ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
+      } catch (NoBufferException noBufferException) {
+        requireBufferId = -1;
+        status = StatusCode.NO_BUFFER;
+        ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
+      }
+      RequireBufferResponse response =
         RequireBufferResponse.newBuilder()
-            .setStatus(status.toProto())
-            .setRequireBufferId(requireBufferId)
-            .build();
-    responseObserver.onNext(response);
-    responseObserver.onCompleted();
+          .setStatus(status.toProto())
+          .setRequireBufferId(requireBufferId)
+          .build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+    }
   }
 
   @Override
