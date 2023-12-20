@@ -35,10 +35,8 @@ public class JavaUtils {
   public static boolean isJavaVersionAtLeastJava9() {
     if (Enums.getIfPresent(JavaVersion.class, JAVA_9).isPresent()
         && SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_9)) {
-      logger.info("Jdk version is at least jdk9");
       return true;
     } else {
-      logger.info("Jdk version is jdk8");
       return false;
     }
   }
