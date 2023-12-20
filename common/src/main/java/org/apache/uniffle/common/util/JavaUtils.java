@@ -46,8 +46,10 @@ public class JavaUtils {
   public static <K, V> ConcurrentHashMap<K, V> newConcurrentMap() {
     if (Enums.getIfPresent(JavaVersion.class, JAVA_9).isPresent()
         && SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_9)) {
+      logger.info("Jdk version is jdk9");
       return new ConcurrentHashMap<>();
     } else {
+      logger.info("Jdk version is jdk8");
       return new ConcurrentHashMapForJDK8<>();
     }
   }
