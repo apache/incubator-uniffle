@@ -32,6 +32,17 @@ public class JavaUtils {
   private static final Logger logger = LoggerFactory.getLogger(JavaUtils.class);
   private static final String JAVA_9 = "JAVA_9";
 
+  public static boolean isJavaVersionAtLeastJava9() {
+    if (Enums.getIfPresent(JavaVersion.class, JAVA_9).isPresent()
+        && SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_9)) {
+      logger.info("Jdk version is jdk9");
+      return true;
+    } else {
+      logger.info("Jdk version is jdk8");
+      return false;
+    }
+  }
+
   /** Closes the given object, ignoring IOExceptions. */
   public static void closeQuietly(Closeable closeable) {
     try {
@@ -44,12 +55,9 @@ public class JavaUtils {
   }
 
   public static <K, V> ConcurrentHashMap<K, V> newConcurrentMap() {
-    if (Enums.getIfPresent(JavaVersion.class, JAVA_9).isPresent()
-        && SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_9)) {
-      logger.info("Jdk version is jdk9");
+    if (isJavaVersionAtLeastJava9()) {
       return new ConcurrentHashMap<>();
     } else {
-      logger.info("Jdk version is jdk8");
       return new ConcurrentHashMapForJDK8<>();
     }
   }
