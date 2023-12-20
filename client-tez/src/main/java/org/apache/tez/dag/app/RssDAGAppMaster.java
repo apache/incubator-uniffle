@@ -74,6 +74,7 @@ import org.apache.tez.dag.app.dag.impl.Edge;
 import org.apache.tez.dag.library.vertexmanager.ShuffleVertexManager;
 import org.apache.tez.state.OnStateChangedCallback;
 import org.apache.tez.state.StateMachineTez;
+import org.apache.uniffle.common.exception.RssHeartbeatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -207,6 +208,9 @@ public class RssDAGAppMaster extends DAGAppMaster {
             if (LOG.isDebugEnabled()) {
               LOG.debug("Finish send heartbeat to coordinator and servers");
             }
+          } catch (RssHeartbeatException heartbeatException) {
+            LOG.warn("Fail to send heartbeat to coordinator and servers");
+            throw new RssException("Failed to Send heartbeat and fail");
           } catch (Exception e) {
             LOG.warn("Fail to send heartbeat to coordinator and servers", e);
           }

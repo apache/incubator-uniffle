@@ -41,6 +41,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.uniffle.common.exception.RssHeartbeatException;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -911,11 +912,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                       ShuffleServerClientFactory.getInstance()
                           .getShuffleServerClient(clientType, shuffleServerInfo, rssConf);
                   RssAppHeartBeatResponse response = client.sendHeartBeat(request);
+                  if (1000 > 0) {
+                    throw new RssHeartbeatException("tests");
+                  }
                   if (response.getStatusCode() != StatusCode.SUCCESS) {
                     LOG.warn("Failed to send heartbeat to " + shuffleServerInfo);
+                    throw new RssHeartbeatException("Failed to send heartbeat to " + shuffleServerInfo);
                   }
                 } catch (Exception e) {
                   LOG.warn("Error happened when send heartbeat to " + shuffleServerInfo, e);
+                  throw new RssHeartbeatException("Failed to send heartbeat to " + shuffleServerInfo, e);
                 }
                 return null;
               });
@@ -927,14 +933,19 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               () -> {
                 try {
                   RssAppHeartBeatResponse response = coordinatorClient.sendAppHeartBeat(request);
+                  if (1000 > 0) {
+                    throw new RssHeartbeatException("tests");
+                  }
                   if (response.getStatusCode() != StatusCode.SUCCESS) {
                     LOG.warn("Failed to send heartbeat to " + coordinatorClient.getDesc());
+                    throw new RssHeartbeatException("Failed to send heartbeat to " + coordinatorClient.getDesc());
                   } else {
                     LOG.info("Successfully send heartbeat to " + coordinatorClient.getDesc());
                   }
                 } catch (Exception e) {
                   LOG.warn(
                       "Error happened when send heartbeat to " + coordinatorClient.getDesc(), e);
+                  throw new RssHeartbeatException("Error happened when send heartbeat to " + coordinatorClient.getDesc(), e);
                 }
                 return null;
               });
