@@ -28,7 +28,10 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.ArrayUtils;
@@ -37,7 +40,6 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.checkpoint.channel.InputChannelInfo;
 import org.apache.flink.runtime.deployment.InputGateDeploymentDescriptor;
 import org.apache.flink.runtime.event.TaskEvent;
-import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.buffer.BufferDecompressor;
 import org.apache.flink.runtime.io.network.buffer.BufferPool;
 import org.apache.flink.runtime.io.network.partition.consumer.BufferOrEvent;
@@ -106,12 +108,14 @@ public class RssShuffleInputGate extends IndexedInputGate {
   private int endSubIndex;
   private long pendingEndOfDataEvents;
 
+  private final List<InputChannelInfo> channelsInfo;
+
   private String basePath;
 
   private final Map<Integer, List<ShuffleReadClient>> shuffleReadClientMapping =
       new LinkedHashMap<>();
 
-  private Queue<Pair<Buffer, InputChannelInfo>> receivedBuffers = new LinkedList<>();
+  private Queue<ChannelBuffer> receivedBuffers = new LinkedList<>();
 
   private RssConf rssConf;
 
@@ -122,6 +126,8 @@ public class RssShuffleInputGate extends IndexedInputGate {
   protected ShuffleWriteClient shuffleWriteClient;
 
   private final ShuffleDataDistributionType dataDistributionType;
+
+  private final ExecutorService executor;
 
   public RssShuffleInputGate(
       String owningTaskName,
@@ -156,6 +162,14 @@ public class RssShuffleInputGate extends IndexedInputGate {
     this.shuffleWriteClient = FlinkShuffleUtils.createShuffleClient(conf);
     clientType = conf.get(RssFlinkConfig.RSS_CLIENT_TYPE);
     this.dataDistributionType = getShuffleDataDistributionType(conf);
+    executor = Executors.newFixedThreadPool(numChannels);
+    this.channelsInfo = genChannelInfos();
+  }
+
+  private List<InputChannelInfo> genChannelInfos() {
+    return IntStream.range(0, gateDescriptor.getShuffleDescriptors().length)
+        .mapToObj(i -> new InputChannelInfo(gateIndex, i))
+        .collect(Collectors.toList());
   }
 
   private long initShuffleReadClients() {
@@ -164,6 +178,7 @@ public class RssShuffleInputGate extends IndexedInputGate {
     long numUnconsumedSubpartitions = 0;
 
     List<Pair<Integer, ShuffleDescriptor>> descriptors = genChannelShuffleDescriptorMappingList();
+
     for (int clientIndex = 0; clientIndex < descriptors.size(); clientIndex++) {
       Pair<Integer, ShuffleDescriptor> descriptor = descriptors.get(clientIndex);
       RssShuffleDescriptor shuffleDescriptor = (RssShuffleDescriptor) descriptor.getRight();
@@ -174,6 +189,7 @@ public class RssShuffleInputGate extends IndexedInputGate {
       clientIndexMap[descriptor.getLeft()] = clientIndex;
       channelIndexMap[clientIndex] = descriptor.getLeft();
     }
+
     return numUnconsumedSubpartitions;
   }
 
@@ -293,9 +309,6 @@ public class RssShuffleInputGate extends IndexedInputGate {
 
   @Override
   public boolean isFinished() {
-    /*synchronized (lock) {
-      return allReadersEOF() && receivedBuffers.isEmpty();
-    }*/
     return false;
   }
 
@@ -335,14 +348,13 @@ public class RssShuffleInputGate extends IndexedInputGate {
   @Override
   public void setup() throws IOException {
     bufferPool = bufferPoolFactory.get();
-    List<ShuffleReadClient> allShuffleReadClients = new ArrayList<>();
     for (int i = 0; i < gateDescriptor.getShuffleDescriptors().length; i++) {
       List<ShuffleReadClient> shuffleReadClients = shuffleReadClientMapping.get(i);
-      allShuffleReadClients.addAll(shuffleReadClients);
+      for (ShuffleReadClient client : shuffleReadClients) {
+        InputChannelInfo inputChannelInfo = this.channelsInfo.get(i);
+        executor.submit(new RssFetcher(receivedBuffers, client, inputChannelInfo));
+      }
     }
-    allShuffleReadClients.stream().parallel().forEach(client -> {
-      client.readShuffleBlockData();
-    });
   }
 
   @Override
