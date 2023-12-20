@@ -77,6 +77,12 @@ if [ -n "${MAX_DIRECT_MEMORY_SIZE:-}" ]; then
   MAX_DIRECT_MEMORY_OPTS="-XX:MaxDirectMemorySize=$MAX_DIRECT_MEMORY_SIZE"
 fi
 
+# Attention, the OOM dump file may be very big !
+OOM_DUMP_OPTS=""
+if [ -n "${OOM_DUMP_PATH:-}" ]; then
+  OOM_DUMP_OPTS="-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$OOM_DUMP_PATH"
+fi
+
 JVM_ARGS=" -server \
           -Xmx${XMX_SIZE} \
           -Xms${XMX_SIZE} \
@@ -93,6 +99,9 @@ JVM_ARGS=" -server \
           -XX:+PrintAdaptiveSizePolicy \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
+          -XX:+CrashOnOutOfMemoryError \
+          -XX:+ExitOnOutOfMemoryError \
+          ${OOM_DUMP_OPTS} \
           -XX:+PrintGCDetails \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
