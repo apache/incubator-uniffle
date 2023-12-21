@@ -65,10 +65,11 @@ JVM_ARGS=" -server \
           -XX:+PrintAdaptiveSizePolicy \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
-          -XX:+PrintGCCause \
+          -XX:+PrintTenuringDistribution \
           -XX:+PrintPromotionFailure \
           -XX:+PrintGCApplicationStoppedTime \
           -XX:+PrintCommandLineFlags \
+          -XX:+PrintGCCause \
           -XX:+PrintGCDetails \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 

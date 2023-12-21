@@ -102,10 +102,11 @@ JVM_ARGS=" -server \
           -XX:+CrashOnOutOfMemoryError \
           -XX:+ExitOnOutOfMemoryError \
           ${OOM_OPTS} \
-          -XX:+PrintGCCause \
+          -XX:+PrintTenuringDistribution \
           -XX:+PrintPromotionFailure \
           -XX:+PrintGCApplicationStoppedTime \
           -XX:+PrintCommandLineFlags \
+          -XX:+PrintGCCause \
           -XX:+PrintGCDetails \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
