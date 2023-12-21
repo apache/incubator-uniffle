@@ -78,9 +78,9 @@ if [ -n "${MAX_DIRECT_MEMORY_SIZE:-}" ]; then
 fi
 
 # Attention, the OOM dump file may be very big !
-OOM_DUMP_OPTS=""
+OOM_OPTS=""
 if [ -n "${OOM_DUMP_PATH:-}" ]; then
-  OOM_DUMP_OPTS="-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$OOM_DUMP_PATH"
+  OOM_OPTS="-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$OOM_DUMP_PATH"
 fi
 
 JVM_ARGS=" -server \
@@ -101,7 +101,11 @@ JVM_ARGS=" -server \
           -XX:+PrintGCTimeStamps \
           -XX:+CrashOnOutOfMemoryError \
           -XX:+ExitOnOutOfMemoryError \
-          ${OOM_DUMP_OPTS} \
+          ${OOM_OPTS} \
+          -XX:+PrintGCCause \
+          -XX:+PrintPromotionFailure \
+          -XX:+PrintGCApplicationStoppedTime \
+          -XX:+PrintCommandLineFlags \
           -XX:+PrintGCDetails \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
