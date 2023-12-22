@@ -94,12 +94,13 @@ public class CoordinatorClientFactory {
 
   private CoordinatorClient createOrGetCoordinatorClient(
       ClientType clientType, String host, int port) {
-    String hostPort = host + ":" + port;
-    clients.putIfAbsent(clientType.toString(), JavaUtils.newConcurrentMap());
-    Map<String, CoordinatorClient> hostToClients = clients.get(clientType.toString());
-    if (hostToClients.get(hostPort) == null) {
-      hostToClients.put(hostPort, createCoordinatorClient(clientType, host, port));
-    }
-    return hostToClients.get(hostPort);
+    return createCoordinatorClient(clientType, host, port);
+    //    String hostPort = host + ":" + port;
+    //    clients.putIfAbsent(clientType.toString(), JavaUtils.newConcurrentMap());
+    //    Map<String, CoordinatorClient> hostToClients = clients.get(clientType.toString());
+    //    if (hostToClients.get(hostPort) == null) {
+    //      hostToClients.put(hostPort, createCoordinatorClient(clientType, host, port));
+    //    }
+    //    return hostToClients.get(hostPort);
   }
 }
