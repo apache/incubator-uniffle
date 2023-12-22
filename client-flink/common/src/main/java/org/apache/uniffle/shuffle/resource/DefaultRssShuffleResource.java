@@ -34,16 +34,12 @@ public class DefaultRssShuffleResource implements RssShuffleResource {
   }
 
   @Override
-  public List<ShuffleServerInfo> getMapPartitionLocation(int partitionId) {
-    return partitionToServers.getOrDefault(partitionId, null);
-  }
-
   public List<ShuffleServerInfo> getMapPartitionLocation() {
-    Set<ShuffleServerInfo> shuffleServerInfoSet = new HashSet<>();
+    List<ShuffleServerInfo> shuffleServerList = new ArrayList<>();
     for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : partitionToServers.entrySet()) {
-      shuffleServerInfoSet.addAll(entry.getValue());
+      shuffleServerList.addAll(entry.getValue());
     }
-    return new ArrayList<>(shuffleServerInfoSet);
+    return shuffleServerList;
   }
 
   public RssShuffleResourceDescriptor getShuffleResourceDescriptor() {

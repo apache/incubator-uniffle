@@ -23,5 +23,5 @@ import java.util.List;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 public interface RssShuffleResource extends Serializable {
-  List<ShuffleServerInfo> getMapPartitionLocation(int partitionId);
+  List<ShuffleServerInfo> getMapPartitionLocation();
 }
