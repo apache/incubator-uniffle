@@ -18,6 +18,7 @@
 package org.apache.uniffle.client.factory;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -94,13 +95,12 @@ public class CoordinatorClientFactory {
 
   private CoordinatorClient createOrGetCoordinatorClient(
       ClientType clientType, String host, int port) {
-    return createCoordinatorClient(clientType, host, port);
-    //    String hostPort = host + ":" + port;
-    //    clients.putIfAbsent(clientType.toString(), JavaUtils.newConcurrentMap());
-    //    Map<String, CoordinatorClient> hostToClients = clients.get(clientType.toString());
-    //    if (hostToClients.get(hostPort) == null) {
-    //      hostToClients.put(hostPort, createCoordinatorClient(clientType, host, port));
-    //    }
-    //    return hostToClients.get(hostPort);
+    String hostPort = host + ":" + port;
+    clients.putIfAbsent(clientType.toString(), new HashMap<>());
+    Map<String, CoordinatorClient> hostToClients = clients.get(clientType.toString());
+    if (hostToClients.get(hostPort) == null) {
+      hostToClients.put(hostPort, createCoordinatorClient(clientType, host, port));
+    }
+    return hostToClients.get(hostPort);
   }
 }
