@@ -92,7 +92,7 @@ public class CoordinatorClientFactory {
     return coordinatorClients;
   }
 
-  private CoordinatorClient createOrGetCoordinatorClient(
+  private synchronized CoordinatorClient createOrGetCoordinatorClient(
       ClientType clientType, String host, int port) {
     String hostPort = host + ":" + port;
     clients.putIfAbsent(clientType.toString(), new HashMap<>());
