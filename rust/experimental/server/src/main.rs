@@ -232,7 +232,7 @@ fn main() -> Result<()> {
             .max_decoding_message_size(usize::MAX)
             .max_encoding_message_size(usize::MAX);
         let service_tx = tx.subscribe();
-        std::thread::spawn(move || {
+        runtime_manager.grpc_runtime.spawn_blocking(move || {
             tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()
@@ -283,7 +283,7 @@ async fn grpc_serve(
             if let Err(err) = rx.recv().await {
                 error!("Errors on stopping the GRPC service, err: {:?}.", err);
             } else {
-                info!("GRPC service has been graceful stopped.");
+                debug!("GRPC service has been graceful stopped.");
             }
         })
         .await
