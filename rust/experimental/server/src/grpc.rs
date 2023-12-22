@@ -446,7 +446,16 @@ impl ShuffleServer for DefaultShuffleServer {
                 },
                 blocks: partition_to_block_id.block_ids,
             };
-            let _ = app.report_block_ids(ctx);
+
+            match app.report_block_ids(ctx).await {
+                Err(e) => {
+                    return Ok(Response::new(ReportShuffleResultResponse {
+                        status: StatusCode::INTERNAL_ERROR.into(),
+                        ret_msg: e.to_string(),
+                    }))
+                }
+                _ => (),
+            }
         }
 
         Ok(Response::new(ReportShuffleResultResponse {
