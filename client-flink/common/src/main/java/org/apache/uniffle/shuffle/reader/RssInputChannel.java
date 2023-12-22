@@ -136,4 +136,10 @@ public class RssInputChannel {
   public InputChannelInfo getInputChannelInfo() {
     return inputChannelInfo;
   }
+
+  public void close() {
+    if (shuffleReadClient != null) {
+      shuffleReadClient.close();
+    }
+  }
 }

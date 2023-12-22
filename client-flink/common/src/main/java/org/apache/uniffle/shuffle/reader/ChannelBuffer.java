@@ -27,5 +27,24 @@ public class ChannelBuffer {
 
   public ChannelBuffer() {}
 
-  public ChannelBuffer(Buffer buffer, InputChannelInfo inputChannelInfo) {}
+  public ChannelBuffer(Buffer buffer, InputChannelInfo inputChannelInfo) {
+    this.buffer = buffer;
+    this.inputChannelInfo = inputChannelInfo;
+  }
+
+  public Buffer getBuffer() {
+    return buffer;
+  }
+
+  public void setBuffer(Buffer buffer) {
+    this.buffer = buffer;
+  }
+
+  public InputChannelInfo getInputChannelInfo() {
+    return inputChannelInfo;
+  }
+
+  public void setInputChannelInfo(InputChannelInfo inputChannelInfo) {
+    this.inputChannelInfo = inputChannelInfo;
+  }
 }

@@ -32,7 +32,12 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.checkpoint.channel.InputChannelInfo;
 import org.apache.flink.runtime.deployment.InputGateDeploymentDescriptor;
+import org.apache.flink.runtime.event.AbstractEvent;
 import org.apache.flink.runtime.event.TaskEvent;
+import org.apache.flink.runtime.io.network.api.EndOfData;
+import org.apache.flink.runtime.io.network.api.EndOfPartitionEvent;
+import org.apache.flink.runtime.io.network.api.serialization.EventSerializer;
+import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.buffer.BufferDecompressor;
 import org.apache.flink.runtime.io.network.buffer.BufferPool;
 import org.apache.flink.runtime.io.network.partition.consumer.BufferOrEvent;
@@ -48,6 +53,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.shuffle.RssFlinkConfig;
+import org.apache.uniffle.shuffle.utils.CommonUtils;
 import org.apache.uniffle.shuffle.utils.FlinkShuffleUtils;
 
 import static org.apache.flink.runtime.util.HadoopUtils.getHadoopConfiguration;
@@ -64,7 +70,7 @@ public class RssShuffleInputGate extends IndexedInputGate {
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleInputGate.class);
 
   /** Lock object to guard partition requests and runtime channel updates. */
-  private Object requestLock = new Object();
+  private Object lock = new Object();
 
   /** The name of the owning task, for logging purposes. */
   private final String owningTaskName;
@@ -228,8 +234,73 @@ public class RssShuffleInputGate extends IndexedInputGate {
 
   @Override
   public Optional<BufferOrEvent> pollNext() throws IOException, InterruptedException {
+    ChannelBuffer channelBuffer = getReceivedChannelBuffer();
+    Optional<BufferOrEvent> bufferOrEvent = Optional.empty();
+    while (channelBuffer != null) {
+      Buffer buffer = channelBuffer.getBuffer();
+      InputChannelInfo channelInfo = channelBuffer.getInputChannelInfo();
 
-    return Optional.empty();
+      if (buffer.isBuffer()) {
+        bufferOrEvent = transformBuffer(buffer, channelInfo);
+      } else {
+        bufferOrEvent = transformEvent(buffer, channelInfo);
+      }
+
+      if (bufferOrEvent.isPresent()) {
+        break;
+      }
+      channelBuffer = getReceivedChannelBuffer();
+    }
+
+    return bufferOrEvent;
+  }
+
+  private Optional<BufferOrEvent> transformBuffer(Buffer buf, InputChannelInfo info)
+      throws IOException {
+    return Optional.of(new BufferOrEvent(buf, info, !isFinished(), false));
+  }
+
+  private Optional<BufferOrEvent> transformEvent(Buffer buffer, InputChannelInfo channelInfo)
+      throws IOException {
+    final AbstractEvent event;
+    try {
+      event = EventSerializer.fromBuffer(buffer, getClass().getClassLoader());
+    } catch (Throwable t) {
+      throw new IOException("Deserialize failure.", t);
+    } finally {
+      buffer.recycleBuffer();
+    }
+
+    if (event.getClass() == EndOfPartitionEvent.class) {
+      checkState(
+          numSubPartitionsHasNotConsumed[channelInfo.getInputChannelIdx()] > 0,
+          "BUG -- EndOfPartitionEvent received repeatedly.");
+      numSubPartitionsHasNotConsumed[channelInfo.getInputChannelIdx()]--;
+      numUnconsumedSubpartitions--;
+      // not the real end.
+      if (numSubPartitionsHasNotConsumed[channelInfo.getInputChannelIdx()] != 0) {
+        return Optional.empty();
+      } else {
+        // the real end.
+        int inputChannelIdx = channelInfo.getInputChannelIdx();
+        rssInputChannels.get(inputChannelIdx).close();
+        if (allReadersEOF()) {
+          availabilityHelper.getUnavailableToResetAvailable().complete(null);
+        }
+      }
+    } else if (event.getClass() == EndOfData.class) {
+      CommonUtils.checkState(pendingEndOfDataEvents > 0, "Too many EndOfData event.");
+      --pendingEndOfDataEvents;
+    }
+
+    return Optional.of(
+        new BufferOrEvent(
+            event,
+            buffer.getDataType().hasPriority(),
+            channelInfo,
+            !isFinished(),
+            buffer.getSize(),
+            false));
   }
 
   @Override
@@ -272,4 +343,17 @@ public class RssShuffleInputGate extends IndexedInputGate {
 
   @Override
   public void close() throws Exception {}
+
+  private ChannelBuffer getReceivedChannelBuffer() throws IOException {
+    synchronized (lock) {
+      if (!receivedBuffers.isEmpty()) {
+        return receivedBuffers.poll();
+      } else {
+        if (!allReadersEOF()) {
+          availabilityHelper.resetUnavailable();
+        }
+        return null;
+      }
+    }
+  }
 }
