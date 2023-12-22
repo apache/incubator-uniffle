@@ -31,7 +31,6 @@ import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.util.JavaUtils;
 
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
@@ -39,7 +38,7 @@ public class CoordinatorClientFactory {
   private Map<String, Map<String, CoordinatorClient>> clients;
 
   private CoordinatorClientFactory() {
-    clients = JavaUtils.newConcurrentMap();
+    clients = new HashMap<>();
   }
 
   private static class LazyHolder {
