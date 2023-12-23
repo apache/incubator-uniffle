@@ -173,6 +173,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
   public void heartbeat(
       ShuffleServerHeartBeatRequest request,
       StreamObserver<ShuffleServerHeartBeatResponse> responseObserver) {
+    LOG.info("---heartbeat, request:{}", request);
     final ServerNode serverNode = toServerNode(request);
     coordinatorServer.getClusterManager().add(serverNode);
     final ShuffleServerHeartBeatResponse response =
