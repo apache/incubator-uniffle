@@ -18,7 +18,6 @@
 package org.apache.uniffle.client.factory;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,6 +30,7 @@ import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.JavaUtils;
 
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
@@ -38,7 +38,7 @@ public class CoordinatorClientFactory {
   private Map<String, Map<String, CoordinatorClient>> clients;
 
   private CoordinatorClientFactory() {
-    clients = new HashMap<>();
+    clients = JavaUtils.newConcurrentMap();
   }
 
   private static class LazyHolder {
@@ -46,11 +46,10 @@ public class CoordinatorClientFactory {
   }
 
   public static CoordinatorClientFactory getInstance() {
-    return CoordinatorClientFactory.LazyHolder.INSTANCE;
+    return LazyHolder.INSTANCE;
   }
 
-  public synchronized CoordinatorClient createCoordinatorClient(
-      ClientType clientType, String host, int port) {
+  private CoordinatorClient createCoordinatorClient(ClientType clientType, String host, int port) {
     if (clientType.equals(ClientType.GRPC) || clientType.equals(ClientType.GRPC_NETTY)) {
       return new CoordinatorGrpcClient(host, port);
     } else {
@@ -92,14 +91,17 @@ public class CoordinatorClientFactory {
     return coordinatorClients;
   }
 
-  private synchronized CoordinatorClient createOrGetCoordinatorClient(
+  private CoordinatorClient createOrGetCoordinatorClient(
       ClientType clientType, String host, int port) {
     String hostPort = host + ":" + port;
-    clients.putIfAbsent(clientType.toString(), new HashMap<>());
+    clients.putIfAbsent(clientType.toString(), JavaUtils.newConcurrentMap());
     Map<String, CoordinatorClient> hostToClients = clients.get(clientType.toString());
-    if (hostToClients.get(hostPort) == null) {
-      hostToClients.put(hostPort, createCoordinatorClient(clientType, host, port));
-    }
-    return hostToClients.get(hostPort);
+
+    return createCoordinatorClient(clientType, host, port);
+
+    //    if (hostToClients.get(hostPort) == null) {
+    //      hostToClients.put(hostPort, createCoordinatorClient(clientType, host, port));
+    //    }
+    //    return hostToClients.get(hostPort);
   }
 }
