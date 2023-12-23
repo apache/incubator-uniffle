@@ -436,5 +436,6 @@ public class WriteBufferManager<K, V> {
 
   public void freeAllResources() {
     sendExecutorService.shutdownNow();
+    shuffleWriteClient.close();
   }
 }
