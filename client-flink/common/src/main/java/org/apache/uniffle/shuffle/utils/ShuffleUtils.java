@@ -17,7 +17,10 @@
 
 package org.apache.uniffle.shuffle.utils;
 
-import java.util.*;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.HashSet;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.StringUtils;
@@ -30,8 +33,12 @@ import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.shuffle.RssFlinkConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ShuffleUtils {
+
+  public static final Logger LOG = LoggerFactory.getLogger(ShuffleUtils.class);
 
   public static ShuffleWriteClient createShuffleClient(Configuration conf) {
     int heartBeatThreadNum = conf.getInteger(RssFlinkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
@@ -99,5 +106,34 @@ public class ShuffleUtils {
     if (!condition) {
       throw new IllegalStateException(message);
     }
+  }
+
+  public static void logAndThrowRuntimeException(String errMsg, Throwable t) {
+    if (t != null) {
+      String newErrMsg = getErrorMsg(errMsg, t);
+      LOG.error(newErrMsg, t);
+      throw (Error) t;
+    } else {
+      LOG.error(errMsg);
+      throw new RuntimeException(t);
+    }
+  }
+
+  public static void logAndThrowIOException(String errMsg, Throwable t) throws IOException {
+    if (t != null) {
+      String newErrMsg = getErrorMsg(errMsg, t);
+      LOG.error(newErrMsg, t);
+      throw (Error) t;
+    } else {
+      LOG.error(errMsg);
+      throw new IOException(t);
+    }
+  }
+
+  private static String getErrorMsg(String errMsg, Throwable t) {
+    if (t.getMessage() != null) {
+      return errMsg + "" + t.getMessage();
+    }
+    return errMsg;
   }
 }

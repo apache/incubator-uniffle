@@ -41,6 +41,7 @@ import org.apache.flink.runtime.taskexecutor.TaskExecutor;
 import org.apache.flink.shaded.netty4.io.netty.buffer.ByteBuf;
 import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.function.SupplierWithException;
+import org.apache.uniffle.shuffle.utils.ShuffleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +49,6 @@ import org.apache.uniffle.shuffle.buffer.BufferWithChannel;
 import org.apache.uniffle.shuffle.buffer.SortBasedWriterBuffer;
 import org.apache.uniffle.shuffle.buffer.WriterBuffer;
 import org.apache.uniffle.shuffle.exception.ShuffleException;
-import org.apache.uniffle.shuffle.utils.ExceptionUtils;
 import org.apache.uniffle.shuffle.writer.RssShuffleOutputGate;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -144,7 +144,7 @@ public class RssShuffleResultPartition extends ResultPartition {
     try {
       outputGate.setup();
     } catch (Throwable throwable) {
-      ExceptionUtils.logAndThrowRuntimeException(
+      ShuffleUtils.logAndThrowRuntimeException(
           "Failed to setup rss shuffle outputgate.", throwable);
     }
 
@@ -158,7 +158,7 @@ public class RssShuffleResultPartition extends ResultPartition {
       }
     } catch (InterruptedException exception) {
       releaseFreeSegments();
-      ExceptionUtils.logAndThrowIOException(
+      ShuffleUtils.logAndThrowIOException(
           "Failed to allocate buffers for result partition.", exception);
     }
   }
@@ -190,7 +190,7 @@ public class RssShuffleResultPartition extends ResultPartition {
       }
       flushWriteBuffer(writeBuffer, isBroadcast);
     } catch (InterruptedException e) {
-      ExceptionUtils.logAndThrowRuntimeException("Failed to flush the write buffer.", e);
+      ShuffleUtils.logAndThrowRuntimeException("Failed to flush the write buffer.", e);
     }
 
     emit(record, targetSubpartition, dataType, isBroadcast);
