@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.shuffle.exception.BiConsumerWithException;
 
 import static org.apache.uniffle.shuffle.buffer.WriterBuffer.HEADER_LENGTH;
-import static org.apache.uniffle.shuffle.utils.CommonUtils.checkState;
+import static org.apache.uniffle.shuffle.utils.ShuffleUtils.checkState;
 
 public class WriteBufferPacker {
   private static Logger logger = LoggerFactory.getLogger(WriteBufferPacker.class);

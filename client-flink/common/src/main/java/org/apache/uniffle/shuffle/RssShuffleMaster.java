@@ -55,10 +55,10 @@ import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.shuffle.exception.ShuffleException;
 import org.apache.uniffle.shuffle.resource.DefaultRssShuffleResource;
 import org.apache.uniffle.shuffle.resource.RssShuffleResourceDescriptor;
-import org.apache.uniffle.shuffle.utils.FlinkShuffleUtils;
+import org.apache.uniffle.shuffle.utils.ShuffleUtils;
 
 import static org.apache.uniffle.shuffle.RssFlinkConfig.*;
-import static org.apache.uniffle.shuffle.utils.FlinkShuffleUtils.getShuffleDataDistributionType;
+import static org.apache.uniffle.shuffle.utils.ShuffleUtils.getShuffleDataDistributionType;
 
 public class RssShuffleMaster implements ShuffleMaster<RssShuffleDescriptor> {
 
@@ -123,7 +123,7 @@ public class RssShuffleMaster implements ShuffleMaster<RssShuffleDescriptor> {
     if (shuffleWriteClient == null) {
       synchronized (RssShuffleMaster.class) {
         shuffleWriteClient =
-            FlinkShuffleUtils.createShuffleClient(shuffleMasterContext.getConfiguration());
+            ShuffleUtils.createShuffleClient(shuffleMasterContext.getConfiguration());
         String uniffleApplicationId = rssFlinkApplication.genUniffleApplicationId(jobID);
         LOG.info("uniffle-applicationid : {}.", uniffleApplicationId);
         registerCoordinator(shuffleMasterContext.getConfiguration());
@@ -161,9 +161,8 @@ public class RssShuffleMaster implements ShuffleMaster<RssShuffleDescriptor> {
 
           // Step2. get basic parameters
           Configuration config = shuffleMasterContext.getConfiguration();
-          Set<String> assignmentTags = FlinkShuffleUtils.genAssignmentTags(config);
-          int requiredShuffleServerNumber =
-              FlinkShuffleUtils.getRequiredShuffleServerNumber(config);
+          Set<String> assignmentTags = ShuffleUtils.genAssignmentTags(config);
+          int requiredShuffleServerNumber = ShuffleUtils.getRequiredShuffleServerNumber(config);
           String uniffleAppId = rssFlinkApplication.getUniffleApplicationId();
           boolean dynamicClientConfEnabled =
               config.getBoolean(RssFlinkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED);

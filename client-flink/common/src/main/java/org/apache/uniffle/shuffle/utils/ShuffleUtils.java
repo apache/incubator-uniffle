@@ -17,9 +17,8 @@
 
 package org.apache.uniffle.shuffle.utils;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.configuration.Configuration;
@@ -32,7 +31,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.shuffle.RssFlinkConfig;
 
-public class FlinkShuffleUtils {
+public class ShuffleUtils {
 
   public static ShuffleWriteClient createShuffleClient(Configuration conf) {
     int heartBeatThreadNum = conf.getInteger(RssFlinkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
@@ -81,5 +80,24 @@ public class FlinkShuffleUtils {
   public static ShuffleDataDistributionType getShuffleDataDistributionType(Configuration conf) {
     RssConf rssConf = RssFlinkConfig.toRssConf(conf);
     return rssConf.get(RssClientConf.DATA_DISTRIBUTION_TYPE);
+  }
+
+  public static <T> T checkNotNull(T object) {
+    if (object == null) {
+      throw new NullPointerException("Must be not null.");
+    }
+    return object;
+  }
+
+  public static void checkArgument(boolean condition, @Nullable String message) {
+    if (!condition) {
+      throw new IllegalArgumentException(message);
+    }
+  }
+
+  public static void checkState(boolean condition, @Nullable String message) {
+    if (!condition) {
+      throw new IllegalStateException(message);
+    }
   }
 }

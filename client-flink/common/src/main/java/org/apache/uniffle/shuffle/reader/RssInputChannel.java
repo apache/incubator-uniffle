@@ -56,16 +56,8 @@ public class RssInputChannel {
     this.inputChannelInfo = inputChannelInfo;
   }
 
-  public ShuffleDescriptor getShuffleDescriptor() {
-    return shuffleDescriptor;
-  }
-
   public int getChannelIndex() {
     return channelIndex;
-  }
-
-  public RssShuffleDescriptor getRssShuffleDescriptor() {
-    return (RssShuffleDescriptor) shuffleDescriptor;
   }
 
   public ShuffleReadClient getShuffleReadClient(
@@ -141,5 +133,6 @@ public class RssInputChannel {
     if (shuffleReadClient != null) {
       shuffleReadClient.close();
     }
+    shuffleReadClient = null;
   }
 }

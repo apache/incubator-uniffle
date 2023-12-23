@@ -54,10 +54,9 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.shuffle.RssFlinkConfig;
 import org.apache.uniffle.shuffle.RssShuffleDescriptor;
 import org.apache.uniffle.shuffle.buffer.WriteBufferPacker;
-import org.apache.uniffle.shuffle.utils.CommonUtils;
-import org.apache.uniffle.shuffle.utils.FlinkShuffleUtils;
+import org.apache.uniffle.shuffle.utils.ShuffleUtils;
 
-import static org.apache.uniffle.shuffle.utils.FlinkShuffleUtils.getShuffleDataDistributionType;
+import static org.apache.uniffle.shuffle.utils.ShuffleUtils.*;
 
 /** */
 public class RssShuffleOutputGate {
@@ -103,7 +102,7 @@ public class RssShuffleOutputGate {
     this.numSubs = pNumSubs;
     this.bufferPoolFactory = pBufferPoolFactory;
     this.bufferSize = pBufferSize;
-    this.shuffleWriteClient = FlinkShuffleUtils.createShuffleClient(pConfig);
+    this.shuffleWriteClient = ShuffleUtils.createShuffleClient(pConfig);
 
     this.shuffleId = shuffleDesc.getShuffleResource().getShuffleResourceDescriptor().getShuffleId();
     this.attemptId = shuffleDesc.getShuffleResource().getShuffleResourceDescriptor().getAttemptId();
@@ -138,8 +137,8 @@ public class RssShuffleOutputGate {
   }
 
   public void setup() throws IOException, InterruptedException {
-    bufferPool = CommonUtils.checkNotNull(bufferPoolFactory.get());
-    CommonUtils.checkArgument(
+    bufferPool = checkNotNull(bufferPoolFactory.get());
+    checkArgument(
         bufferPool.getNumberOfRequiredMemorySegments() >= 2,
         "Too few buffers for transfer, the minimum valid required size is 2.");
 
