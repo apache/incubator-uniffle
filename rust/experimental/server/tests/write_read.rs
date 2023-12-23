@@ -27,6 +27,7 @@ mod tests {
 
     use std::time::Duration;
     use tonic::transport::Channel;
+    use uniffle_worker::metric::GAUGE_MEMORY_ALLOCATED;
 
     fn create_mocked_config(grpc_port: i32, capacity: String, local_data_path: String) -> Config {
         Config {
@@ -81,6 +82,9 @@ mod tests {
         let _ = start_embedded_worker(temp_path, port).await;
 
         let client = ShuffleServerClient::connect(format!("http://{}:{}", "0.0.0.0", port)).await?;
+
+        // after one batch write/read process, the allocated memory size should be 0
+        assert_eq!(0, GAUGE_MEMORY_ALLOCATED.get());
 
         write_read_for_one_time(client).await
     }

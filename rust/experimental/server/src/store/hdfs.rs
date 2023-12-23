@@ -16,8 +16,8 @@
 // under the License.
 
 use crate::app::{
-    PartitionedUId, ReadingIndexViewContext, ReadingViewContext, RequireBufferContext,
-    WritingViewContext,
+    PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingViewContext,
+    RequireBufferContext, WritingViewContext,
 };
 use crate::config::HdfsStoreConfig;
 use crate::error::WorkerError;
@@ -246,7 +246,8 @@ impl Store for HdfsStore {
         todo!()
     }
 
-    async fn purge(&self, app_id: String) -> Result<()> {
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<()> {
+        let app_id = ctx.app_id;
         let app_dir = self.get_app_dir(app_id.as_str());
 
         let keys_to_delete: Vec<_> = self

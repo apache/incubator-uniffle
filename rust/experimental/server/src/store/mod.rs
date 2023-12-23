@@ -23,7 +23,8 @@ pub mod mem;
 pub mod memory;
 
 use crate::app::{
-    ReadingIndexViewContext, ReadingViewContext, RequireBufferContext, WritingViewContext,
+    PurgeDataContext, ReadingIndexViewContext, ReadingViewContext, RequireBufferContext,
+    WritingViewContext,
 };
 use crate::config::Config;
 use crate::error::WorkerError;
@@ -170,7 +171,7 @@ pub trait Store {
         &self,
         ctx: RequireBufferContext,
     ) -> Result<RequireBufferResponse, WorkerError>;
-    async fn purge(&self, app_id: String) -> Result<()>;
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<()>;
     async fn is_healthy(&self) -> Result<bool>;
 }
 

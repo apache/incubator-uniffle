@@ -17,8 +17,8 @@
 
 use crate::app::ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE;
 use crate::app::{
-    PartitionedUId, ReadingIndexViewContext, ReadingViewContext, RequireBufferContext,
-    WritingViewContext,
+    PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingViewContext,
+    RequireBufferContext, WritingViewContext,
 };
 use crate::config::MemoryStoreConfig;
 use crate::error::WorkerError;
@@ -481,15 +481,20 @@ impl Store for MemoryStore {
         }
     }
 
-    async fn purge(&self, app_id: String) -> Result<()> {
-        // free allocated
-        let released_size = self.discard_tickets(app_id.as_str(), None);
-        self.budget.free_allocated(released_size).await?;
-        info!(
-            "free allocated buffer size:[{}] for app:[{}]",
-            released_size,
-            app_id.as_str()
-        );
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<()> {
+        let app_id = ctx.app_id;
+        let shuffle_id_option = ctx.shuffle_id;
+
+        if shuffle_id_option.is_none() {
+            // free allocated for the whole app
+            let released_size = self.discard_tickets(app_id.as_str(), None);
+            self.budget.free_allocated(released_size).await?;
+            info!(
+                "free allocated buffer size:[{}] for app:[{}]",
+                released_size,
+                app_id.as_str()
+            );
+        }
 
         // remove the corresponding app's data
         let read_only_state_view = self.state.clone().into_read_only();
@@ -497,7 +502,15 @@ impl Store for MemoryStore {
         for entry in read_only_state_view.iter() {
             let pid = entry.0;
             if pid.app_id == app_id {
-                _removed_list.push(pid);
+                if ctx.shuffle_id.is_some() {
+                    if pid.shuffle_id == shuffle_id_option.unwrap() {
+                        _removed_list.push(pid);
+                    } else {
+                        continue;
+                    }
+                } else {
+                    _removed_list.push(pid);
+                }
             }
         }
 
@@ -512,9 +525,8 @@ impl Store for MemoryStore {
         self.budget.free_used(used).await?;
 
         info!(
-            "removed used buffer size:[{}] for app:[{}]",
-            used,
-            app_id.as_str()
+            "removed used buffer size:[{}] for [{:?}], [{:?}]",
+            used, app_id, shuffle_id_option
         );
 
         Ok(())
@@ -721,7 +733,7 @@ impl MemoryBudget {
 #[cfg(test)]
 mod test {
     use crate::app::{
-        PartitionedUId, ReadingOptions, ReadingViewContext, RequireBufferContext,
+        PartitionedUId, PurgeDataContext, ReadingOptions, ReadingViewContext, RequireBufferContext,
         WritingViewContext,
     };
 
@@ -793,7 +805,7 @@ mod test {
         assert_eq!(snapshot.allocated, 1000 * 2);
         assert_eq!(snapshot.used, 0);
 
-        runtime.wait(store.purge(app_id.to_string()))?;
+        runtime.wait(store.purge(app_id.into()))?;
 
         let snapshot = runtime.wait(store.budget.snapshot());
         assert_eq!(snapshot.allocated, 0);
@@ -1033,9 +1045,7 @@ mod test {
         };
         match runtime.default_runtime.block_on(store.require_buffer(ctx)) {
             Ok(_) => {
-                let _ = runtime
-                    .default_runtime
-                    .block_on(store.purge("100".to_string()));
+                let _ = runtime.default_runtime.block_on(store.purge("100".into()));
             }
             _ => panic!(),
         }
@@ -1094,8 +1104,18 @@ mod test {
             "Failed to obtain weak reference before purge"
         );
 
+        // partial purge for app's one shuffle data
+        runtime
+            .wait(store.purge(PurgeDataContext::new(app_id.to_string(), Some(shuffle_id))))
+            .expect("");
+        assert!(!store.state.contains_key(&PartitionedUId::from(
+            app_id.to_string(),
+            shuffle_id,
+            partition
+        )));
+
         // purge
-        runtime.wait(store.purge(app_id.to_string())).expect("");
+        runtime.wait(store.purge(app_id.into())).expect("");
         assert!(
             weak_ref_before.clone().unwrap().upgrade().is_none(),
             "Arc should not exist after purge"

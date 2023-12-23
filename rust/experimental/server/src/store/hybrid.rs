@@ -16,7 +16,7 @@
 // under the License.
 
 use crate::app::{
-    PartitionedUId, ReadingIndexViewContext, ReadingOptions, ReadingViewContext,
+    PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingOptions, ReadingViewContext,
     RequireBufferContext, WritingViewContext,
 };
 use crate::await_tree::AWAIT_TREE_REGISTRY;
@@ -457,24 +457,17 @@ impl Store for HybridStore {
             .await
     }
 
-    async fn purge(&self, app_id: String) -> Result<()> {
-        self.hot_store.purge(app_id.clone()).await?;
-        info!("Removed data of app:[{}] in hot store", &app_id);
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<()> {
+        let app_id = &ctx.app_id;
+        self.hot_store.purge(ctx.clone()).await?;
+        info!("Removed data of app:[{}] in hot store", app_id);
         if self.warm_store.is_some() {
-            self.warm_store
-                .as_ref()
-                .unwrap()
-                .purge(app_id.clone())
-                .await?;
-            info!("Removed data of app:[{}] in warm store", &app_id);
+            self.warm_store.as_ref().unwrap().purge(ctx.clone()).await?;
+            info!("Removed data of app:[{}] in warm store", app_id);
         }
         if self.cold_store.is_some() {
-            self.cold_store
-                .as_ref()
-                .unwrap()
-                .purge(app_id.clone())
-                .await?;
-            info!("Removed data of app:[{}] in cold store", &app_id);
+            self.cold_store.as_ref().unwrap().purge(ctx.clone()).await?;
+            info!("Removed data of app:[{}] in cold store", app_id);
         }
         Ok(())
     }

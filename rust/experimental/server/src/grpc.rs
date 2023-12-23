@@ -103,12 +103,24 @@ impl ShuffleServer for DefaultShuffleServer {
 
     async fn unregister_shuffle(
         &self,
-        _request: Request<ShuffleUnregisterRequest>,
+        request: Request<ShuffleUnregisterRequest>,
     ) -> Result<Response<ShuffleUnregisterResponse>, Status> {
-        // todo: implement shuffle level deletion
-        info!("Accepted unregister shuffle info....");
+        let request = request.into_inner();
+        let shuffle_id = request.shuffle_id;
+        let app_id = request.app_id;
+
+        info!(
+            "Accepted unregister shuffle info for [app:{:?}, shuffle_id:{:?}]",
+            &app_id, shuffle_id
+        );
+        let status_code = self
+            .app_manager_ref
+            .unregister(app_id, shuffle_id)
+            .await
+            .map_or_else(|_e| StatusCode::INTERNAL_ERROR, |_| StatusCode::SUCCESS);
+
         Ok(Response::new(ShuffleUnregisterResponse {
-            status: StatusCode::SUCCESS.into(),
+            status: status_code.into(),
             ret_msg: "".to_string(),
         }))
     }
