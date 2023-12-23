@@ -151,9 +151,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       response = blockingStub.withDeadlineAfter(timeout, TimeUnit.MILLISECONDS).heartbeat(request);
       status = response.getStatus();
     } catch (StatusRuntimeException e) {
-      LOG.error("-------------StatusRuntimeException:");
-      LOG.error("StatusRuntimeException error:", e);
-      LOG.error(e.getMessage());
+      LOG.error("Failed to doSendHeartBeat, request: {}", request, e);
       status = RssProtos.StatusCode.TIMEOUT;
     } catch (Exception e) {
       LOG.error(e.getMessage());

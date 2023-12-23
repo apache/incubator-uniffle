@@ -174,8 +174,7 @@ public class AccessClusterTest extends CoordinatorTestBase {
 
     CoordinatorClient client =
         CoordinatorClientFactory.getInstance()
-            .createCoordinatorClient(ClientType.GRPC, LOCALHOST + ":" + (COORDINATOR_PORT_1 + 13))
-            .get(0);
+            .createCoordinatorClient(ClientType.GRPC, LOCALHOST, COORDINATOR_PORT_1 + 13);
     request =
         new RssAccessClusterRequest(
             accessId, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");

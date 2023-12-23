@@ -19,7 +19,6 @@ package org.apache.uniffle.client.factory;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
@@ -30,16 +29,11 @@ import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.util.JavaUtils;
 
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
 
-  private Map<String, Map<String, CoordinatorClient>> clients;
-
-  private CoordinatorClientFactory() {
-    clients = JavaUtils.newConcurrentMap();
-  }
+  private CoordinatorClientFactory() {}
 
   private static class LazyHolder {
     static final CoordinatorClientFactory INSTANCE = new CoordinatorClientFactory();
@@ -49,7 +43,8 @@ public class CoordinatorClientFactory {
     return LazyHolder.INSTANCE;
   }
 
-  private CoordinatorClient createCoordinatorClient(ClientType clientType, String host, int port) {
+  public synchronized CoordinatorClient createCoordinatorClient(
+      ClientType clientType, String host, int port) {
     if (clientType.equals(ClientType.GRPC) || clientType.equals(ClientType.GRPC_NETTY)) {
       return new CoordinatorGrpcClient(host, port);
     } else {
@@ -79,7 +74,7 @@ public class CoordinatorClientFactory {
 
       String host = ipPort[0];
       int port = Integer.parseInt(ipPort[1]);
-      CoordinatorClient coordinatorClient = createOrGetCoordinatorClient(clientType, host, port);
+      CoordinatorClient coordinatorClient = createCoordinatorClient(clientType, host, port);
       coordinatorClients.add(coordinatorClient);
       LOG.info("Add coordinator client {}", coordinatorClient.getDesc());
     }
@@ -89,19 +84,5 @@ public class CoordinatorClientFactory {
             .map(CoordinatorClient::getDesc)
             .collect(Collectors.joining(", ")));
     return coordinatorClients;
-  }
-
-  private CoordinatorClient createOrGetCoordinatorClient(
-      ClientType clientType, String host, int port) {
-    //    return createCoordinatorClient(clientType, host, port);
-
-    String hostPort = host + ":" + port;
-    clients.putIfAbsent(clientType.toString(), JavaUtils.newConcurrentMap());
-    Map<String, CoordinatorClient> hostToClients = clients.get(clientType.toString());
-
-    if (hostToClients.get(hostPort) == null) {
-      hostToClients.put(hostPort, createCoordinatorClient(clientType, host, port));
-    }
-    return hostToClients.get(hostPort);
   }
 }
