@@ -148,6 +148,11 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
     ShuffleServerHeartBeatResponse response = null;
 
     try {
+      LOG.info(
+          "-----------------------blockingStub:\n{}\n----{}---request: {}",
+          blockingStub,
+          timeout,
+          request);
       response = blockingStub.withDeadlineAfter(timeout, TimeUnit.MILLISECONDS).heartbeat(request);
       status = response.getStatus();
     } catch (StatusRuntimeException e) {
