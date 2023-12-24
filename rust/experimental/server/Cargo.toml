@@ -95,6 +95,7 @@ pin-project-lite = "0.2.8"
 signal-hook = "0.3.17"
 clap = "3.0.14"
 socket2 = { version="0.4", features = ["all"]}
+cap = "0.1.2"
 
 [dependencies.hdrs]
 version = "0.3.0"

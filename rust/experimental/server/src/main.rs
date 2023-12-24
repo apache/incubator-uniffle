@@ -32,10 +32,13 @@ use crate::runtime::manager::RuntimeManager;
 use crate::signal::details::graceful_wait_for_signal;
 use crate::util::{gen_worker_uid, get_local_ip};
 
+use crate::mem_allocator::ALLOCATOR;
+use crate::readable_size::ReadableSize;
 use anyhow::Result;
 use clap::{App, Arg};
 use log::{debug, error, info};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::str::FromStr;
 use std::time::Duration;
 use tokio::net::TcpListener;
 use tokio::sync::broadcast;
@@ -60,6 +63,7 @@ pub mod signal;
 pub mod store;
 mod util;
 
+const MAX_MEMORY_ALLOCATION_SIZE_ENV_KEY: &str = "MAX_MEMORY_ALLOCATION_SIZE";
 const DEFAULT_SHUFFLE_SERVER_TAG: &str = "ss_v4";
 
 fn start_coordinator_report(
@@ -170,6 +174,8 @@ fn init_log(log: &LogConfig) -> WorkerGuard {
 }
 
 fn main() -> Result<()> {
+    setup_max_memory_allocation();
+
     let args_match = App::new("Uniffle Worker")
         .version("0.9.0-SNAPSHOT")
         .about("Rust based shuffle server for Apache Uniffle")
@@ -244,6 +250,13 @@ fn main() -> Result<()> {
     graceful_wait_for_signal(tx);
 
     Ok(())
+}
+
+fn setup_max_memory_allocation() {
+    let _ = std::env::var(MAX_MEMORY_ALLOCATION_SIZE_ENV_KEY).map(|v| {
+        let readable_size = ReadableSize::from_str(v.as_str()).unwrap();
+        ALLOCATOR.set_limit(readable_size.as_bytes() as usize)
+    });
 }
 
 async fn grpc_serve(
