@@ -246,7 +246,7 @@ impl HybridStore {
         self.hot_store
             .release_in_flight_blocks_in_underlying_staging_buffer(uid, in_flight_blocks_id)
             .await?;
-        self.hot_store.free_memory(spill_size).await?;
+        self.hot_store.free_used(spill_size).await?;
 
         match self.get_store_type(candidate_store) {
             StorageType::LOCALFILE => {
@@ -268,6 +268,10 @@ impl HybridStore {
 
     pub fn discard_tickets(&self, app_id: &str, ticket_id: i64) -> i64 {
         self.hot_store.discard_tickets(app_id, Some(ticket_id))
+    }
+
+    pub async fn free_hot_store_allocated_memory_size(&self, size: i64) -> Result<bool> {
+        self.hot_store.free_allocated(size).await
     }
 
     pub async fn get_hot_store_memory_snapshot(&self) -> Result<MemorySnapshot> {

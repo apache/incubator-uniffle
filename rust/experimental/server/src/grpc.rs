@@ -154,9 +154,9 @@ impl ShuffleServer for DefaultShuffleServer {
                 status: StatusCode::NO_BUFFER.into(),
                 ret_msg: "No such buffer ticket id, it may be discarded due to timeout".to_string(),
             }));
-        } else {
-            app.discard_tickets(ticket_id);
         }
+
+        let ticket_required_size = app.discard_tickets(ticket_id);
 
         let mut blocks_map = HashMap::new();
         for shuffle_data in req.shuffle_data {
@@ -168,7 +168,15 @@ impl ShuffleServer for DefaultShuffleServer {
             blocks.extend(partitioned_blocks);
         }
 
+        let mut inserted_failure_occurs = false;
+        let mut inserted_failure_error = None;
+        let mut inserted_total_size = 0;
+
         for (partition_id, blocks) in blocks_map.into_iter() {
+            if inserted_failure_occurs {
+                continue;
+            }
+
             let uid = PartitionedUId {
                 app_id: app_id.clone(),
                 shuffle_id,
@@ -190,11 +198,33 @@ impl ShuffleServer for DefaultShuffleServer {
                     inserted.err()
                 );
                 error!("{}", &err);
-                return Ok(Response::new(SendShuffleDataResponse {
-                    status: StatusCode::INTERNAL_ERROR.into(),
-                    ret_msg: err,
-                }));
+
+                inserted_failure_error = Some(err);
+                inserted_failure_occurs = true;
+                continue;
             }
+
+            let inserted_size = inserted.unwrap();
+            inserted_total_size += inserted_size as i64;
+        }
+
+        let unused_allocated_size = ticket_required_size - inserted_total_size;
+        if unused_allocated_size != 0 {
+            debug!("The required buffer size:[{:?}] has remaining allocated size:[{:?}] of unused, this should not happen",
+                ticket_required_size, unused_allocated_size);
+            if let Err(e) = app.free_allocated_memory_size(unused_allocated_size).await {
+                warn!(
+                    "Errors on free allocated size: {:?} for app: {:?}. err: {:#?}",
+                    unused_allocated_size, &app_id, e
+                );
+            }
+        }
+
+        if inserted_failure_occurs {
+            return Ok(Response::new(SendShuffleDataResponse {
+                status: StatusCode::INTERNAL_ERROR.into(),
+                ret_msg: inserted_failure_error.unwrap(),
+            }));
         }
 
         timer.observe_duration();

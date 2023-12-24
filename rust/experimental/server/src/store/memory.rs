@@ -128,8 +128,12 @@ impl MemoryStore {
         self.in_flush_buffer_size.fetch_sub(size, Ordering::SeqCst);
     }
 
-    pub async fn free_memory(&self, size: i64) -> Result<bool> {
+    pub async fn free_used(&self, size: i64) -> Result<bool> {
         self.budget.free_used(size).await
+    }
+
+    pub async fn free_allocated(&self, size: i64) -> Result<bool> {
+        self.budget.free_allocated(size).await
     }
 
     pub async fn get_required_spill_buffer(

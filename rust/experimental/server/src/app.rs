@@ -173,13 +173,15 @@ impl App {
         Ok(())
     }
 
-    pub async fn insert(&self, ctx: WritingViewContext) -> Result<(), WorkerError> {
+    pub async fn insert(&self, ctx: WritingViewContext) -> Result<i32, WorkerError> {
         let len: i32 = ctx.data_blocks.iter().map(|block| block.length).sum();
         self.get_underlying_partition_bitmap(ctx.uid.clone())
             .incr_data_size(len)?;
         TOTAL_RECEIVED_DATA.inc_by(len as u64);
 
-        self.store.insert(ctx).await
+        self.store.insert(ctx).await?;
+
+        Ok(len)
     }
 
     pub async fn select(&self, ctx: ReadingViewContext) -> Result<ResponseData, WorkerError> {
@@ -238,6 +240,10 @@ impl App {
 
     pub fn discard_tickets(&self, ticket_id: i64) -> i64 {
         self.store.discard_tickets(self.app_id.as_str(), ticket_id)
+    }
+
+    pub async fn free_allocated_memory_size(&self, size: i64) -> Result<bool> {
+        self.store.free_hot_store_allocated_memory_size(size).await
     }
 
     pub async fn require_buffer(
