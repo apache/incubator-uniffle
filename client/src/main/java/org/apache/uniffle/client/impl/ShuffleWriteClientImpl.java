@@ -906,7 +906,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           return null;
         },
         timeoutMs,
-        "heartbeat to shuffle server task");
+        "send heartbeat to shuffle server");
 
     ThreadUtils.executeTasks(
         heartBeatExecutorService,
@@ -925,7 +925,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           return null;
         },
         timeoutMs,
-        "heartbeat to coordinator task");
+        "send heartbeat to coordinator");
   }
 
   @Override
@@ -972,7 +972,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             return null;
           },
           unregisterRequestTimeSec,
-          "unregister shuffle task");
+          "unregister shuffle server");
 
     } finally {
       if (executorService != null) {

@@ -129,7 +129,7 @@ public class RegisterHeartBeat {
         coordinatorClients,
         client -> client.sendHeartBeat(request),
         request.getTimeout() * 2,
-        "Send HeartBeat",
+        "send heartbeat",
         future -> {
           try {
             if (future.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode()
