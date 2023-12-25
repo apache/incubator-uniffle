@@ -29,6 +29,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -99,35 +100,65 @@ public class ThreadUtils {
     }
   }
 
-  public static <T, R> List<R> executeTasks(
-      ExecutorService executorService,
-      Collection<T> items,
-      Function<T, R> task,
-      long timeoutMs,
-      String taskMsg) {
-    List<Callable<R>> callableList =
-        items.stream().map(item -> (Callable<R>) () -> task.apply(item)).collect(Collectors.toList());
+//  public static <T, R> List<R> executeTasks(
+//      ExecutorService executorService,
+//      Collection<T> items,
+//      Function<T, R> task,
+//      long timeoutMs,
+//      String taskMsg) {
+//    List<Callable<R>> callableList =
+//        items.stream()
+//            .map(item -> (Callable<R>) () -> task.apply(item))
+//            .collect(Collectors.toList());
+//    try {
+//      List<Future<R>> futures =
+//          executorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
+//      return futures.stream()
+//          .map(
+//              future -> {
+//                try {
+//                  if (future.isDone()) {
+//                    return future.get();
+//                  } else {
+//                    future.cancel(true);
+//                    return null;
+//                  }
+//                } catch (InterruptedException | ExecutionException e) {
+//                  LOGGER.warn("Error getting future result", e);
+//                  return null;
+//                }
+//              })
+//          .collect(Collectors.toList());
+//    } catch (InterruptedException ie) {
+//      LOGGER.warn("Execute " + taskMsg + " is interrupted", ie);
+//      return Collections.emptyList();
+//    }
+//  }
+
+
+  public static <T> void executeTasks(
+    ExecutorService executorService,
+    List<Callable<T>> tasks,
+    long timeout,
+    TimeUnit timeUnit,
+    String taskName,
+    BiConsumer<T, Exception> resultHandler) {
     try {
-      List<Future<R>> futures = executorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
-      return futures.stream()
-          .map(
-              future -> {
-                try {
-                  if (future.isDone()) {
-                    return future.get();
-                  } else {
-                    future.cancel(true);
-                    return null;
-                  }
-                } catch (InterruptedException | ExecutionException e) {
-                  LOGGER.warn("Error getting future result", e);
-                  return null;
-                }
-              })
-          .collect(Collectors.toList());
+      List<Future<T>> futures = executorService.invokeAll(tasks, timeout, timeUnit);
+      for (Future<T> future : futures) {
+        try {
+          if (future.isDone()) {
+            resultHandler.accept(future.get(), null);
+          } else {
+            future.cancel(true);
+          }
+        } catch (InterruptedException | ExecutionException  e) {
+          resultHandler.accept(null, e);
+          LOGGER.error("Error happened when executing " + taskName, e);
+        }
+      }
     } catch (InterruptedException ie) {
-      LOGGER.warn("Execute " + taskMsg + " is interrupted", ie);
-      return Collections.emptyList();
+      LOGGER.warn(taskName + " is interrupted", ie);
     }
   }
 }
