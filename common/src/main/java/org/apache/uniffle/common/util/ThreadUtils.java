@@ -30,7 +30,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -136,30 +135,29 @@ public class ThreadUtils {
     }
   }
 
-
-//  public static <T> void executeTasks(
-//    ExecutorService executorService,
-//    List<Callable<T>> tasks,
-//    long timeout,
-//    TimeUnit timeUnit,
-//    String taskName,
-//    BiConsumer<T, Exception> resultHandler) {
-//    try {
-//      List<Future<T>> futures = executorService.invokeAll(tasks, timeout, timeUnit);
-//      for (Future<T> future : futures) {
-//        try {
-//          if (future.isDone()) {
-//            resultHandler.accept(future.get(), null);
-//          } else {
-//            future.cancel(true);
-//          }
-//        } catch (InterruptedException | ExecutionException  e) {
-//          resultHandler.accept(null, e);
-//          LOGGER.error("Error happened when executing " + taskName, e);
-//        }
-//      }
-//    } catch (InterruptedException ie) {
-//      LOGGER.warn(taskName + " is interrupted", ie);
-//    }
-//  }
+  //  public static <T> void executeTasks(
+  //    ExecutorService executorService,
+  //    List<Callable<T>> tasks,
+  //    long timeout,
+  //    TimeUnit timeUnit,
+  //    String taskName,
+  //    BiConsumer<T, Exception> resultHandler) {
+  //    try {
+  //      List<Future<T>> futures = executorService.invokeAll(tasks, timeout, timeUnit);
+  //      for (Future<T> future : futures) {
+  //        try {
+  //          if (future.isDone()) {
+  //            resultHandler.accept(future.get(), null);
+  //          } else {
+  //            future.cancel(true);
+  //          }
+  //        } catch (InterruptedException | ExecutionException  e) {
+  //          resultHandler.accept(null, e);
+  //          LOGGER.error("Error happened when executing " + taskName, e);
+  //        }
+  //      }
+  //    } catch (InterruptedException ie) {
+  //      LOGGER.warn(taskName + " is interrupted", ie);
+  //    }
+  //  }
 }
