@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -29,7 +28,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -134,17 +132,10 @@ public class ThreadUtils {
         timeoutMs,
         taskMsg,
         future -> {
-          try {
-            if (future.isDone()) {
-              return future.get(timeoutMs, TimeUnit.MILLISECONDS);
-            } else {
-              future.cancel(true);
-              return null;
-            }
-          } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            LOGGER.warn("Error getting future result", e);
-            return null;
+          if (!future.isDone()) {
+            future.cancel(true);
           }
+          return null;
         });
   }
 }

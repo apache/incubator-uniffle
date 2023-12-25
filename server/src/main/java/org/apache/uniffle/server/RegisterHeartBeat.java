@@ -125,25 +125,25 @@ public class RegisterHeartBeat {
             localStorageInfo,
             nettyPort);
 
-    List<RssSendHeartBeatResponse> responses =
-        ThreadUtils.executeTasks(
-            heartBeatExecutorService,
-            coordinatorClients,
-            client -> client.sendHeartBeat(request),
-            request.getTimeout() * 2,
-            "Send HeartBeat",
-            future -> {
-              try {
-                if (future.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode()
-                    == StatusCode.SUCCESS) {
-                  sendSuccessfully.set(true);
-                }
-              } catch (Exception e) {
-                LOG.error(e.getMessage());
-                return null;
+
+      ThreadUtils.executeTasks(
+          heartBeatExecutorService,
+          coordinatorClients,
+          client -> client.sendHeartBeat(request),
+          request.getTimeout() * 2,
+          "Send HeartBeat",
+          future -> {
+            try {
+              if (future.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode()
+                  == StatusCode.SUCCESS) {
+                sendSuccessfully.set(true);
               }
+            } catch (Exception e) {
+              LOG.error(e.getMessage());
               return null;
-            });
+            }
+            return null;
+          });
 
     return sendSuccessfully.get();
   }
