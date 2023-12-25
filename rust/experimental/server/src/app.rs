@@ -233,15 +233,6 @@ impl App {
         }
     }
 
-    pub fn is_buffer_ticket_exist(&self, ticket_id: i64) -> bool {
-        self.store
-            .is_buffer_ticket_exist(self.app_id.as_str(), ticket_id)
-    }
-
-    pub fn discard_tickets(&self, ticket_id: i64) -> i64 {
-        self.store.discard_tickets(self.app_id.as_str(), ticket_id)
-    }
-
     pub async fn free_allocated_memory_size(&self, size: i64) -> Result<bool> {
         self.store.free_hot_store_allocated_memory_size(size).await
     }
@@ -256,6 +247,12 @@ impl App {
         }
 
         self.store.require_buffer(ctx).await
+    }
+
+    pub async fn release_buffer(&self, ticket_id: i64) -> Result<i64, WorkerError> {
+        self.store
+            .release_buffer(ReleaseBufferContext::from(ticket_id))
+            .await
     }
 
     fn get_underlying_partition_bitmap(&self, uid: PartitionedUId) -> PartitionedMeta {
@@ -342,6 +339,17 @@ pub struct ReadingIndexViewContext {
 pub struct RequireBufferContext {
     pub uid: PartitionedUId,
     pub size: i64,
+}
+
+#[derive(Debug, Clone)]
+pub struct ReleaseBufferContext {
+    pub(crate) ticket_id: i64,
+}
+
+impl From<i64> for ReleaseBufferContext {
+    fn from(value: i64) -> Self {
+        Self { ticket_id: value }
+    }
 }
 
 impl RequireBufferContext {

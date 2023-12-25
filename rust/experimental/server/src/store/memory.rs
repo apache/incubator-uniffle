@@ -18,7 +18,7 @@
 use crate::app::ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE;
 use crate::app::{
     PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingViewContext,
-    RequireBufferContext, WritingViewContext,
+    ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
 use crate::config::MemoryStoreConfig;
 use crate::error::WorkerError;
@@ -39,27 +39,22 @@ use std::collections::{BTreeMap, HashMap};
 
 use std::str::FromStr;
 
+use crate::store::mem::ticket::TicketManager;
 use crate::store::mem::InstrumentAwait;
-use crate::store::mem::MemoryBufferTicket;
 use croaring::Treemap;
-use log::error;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::Mutex;
-use tokio::time::sleep as delay_for;
 
 pub struct MemoryStore {
     // todo: change to RW lock
     state: DashMap<PartitionedUId, Arc<Mutex<StagingBuffer>>>,
     budget: MemoryBudget,
     // key: app_id, value: allocated memory size
-    memory_allocated_of_app: DashMap<String, DashMap<i64, MemoryBufferTicket>>,
     memory_capacity: i64,
-    buffer_ticket_timeout_sec: i64,
-    buffer_ticket_check_interval_sec: i64,
     in_flush_buffer_size: AtomicU64,
     runtime_manager: RuntimeManager,
+    ticket_manager: TicketManager,
 }
 
 unsafe impl Send for MemoryStore {}
@@ -68,45 +63,59 @@ unsafe impl Sync for MemoryStore {}
 impl MemoryStore {
     // only for test cases
     pub fn new(max_memory_size: i64) -> Self {
-        MemoryStore {
-            state: DashMap::new(),
-            budget: MemoryBudget::new(max_memory_size),
-            memory_allocated_of_app: DashMap::new(),
-            memory_capacity: max_memory_size,
-            buffer_ticket_timeout_sec: 5 * 60,
-            buffer_ticket_check_interval_sec: 10,
-            in_flush_buffer_size: Default::default(),
-            runtime_manager: Default::default(),
-        }
-    }
+        let budget = MemoryBudget::new(max_memory_size);
+        let runtime_manager: RuntimeManager = Default::default();
 
-    pub fn from(conf: MemoryStoreConfig, runtime_manager: RuntimeManager) -> Self {
-        let capacity = ReadableSize::from_str(&conf.capacity).unwrap();
+        let budget_clone = budget.clone();
+        let free_allocated_size_func =
+            move |size: i64| budget_clone.free_allocated(size).map_or(false, |v| v);
+        let ticket_manager = TicketManager::new(
+            5 * 60,
+            10,
+            free_allocated_size_func,
+            runtime_manager.clone(),
+        );
         MemoryStore {
+            budget,
             state: DashMap::new(),
-            budget: MemoryBudget::new(capacity.as_bytes() as i64),
-            memory_allocated_of_app: DashMap::new(),
-            memory_capacity: capacity.as_bytes() as i64,
-            buffer_ticket_timeout_sec: conf.buffer_ticket_timeout_sec.unwrap_or(5 * 60),
-            buffer_ticket_check_interval_sec: 10,
+            memory_capacity: max_memory_size,
+            ticket_manager,
             in_flush_buffer_size: Default::default(),
             runtime_manager,
         }
     }
 
-    // only for tests
-    fn refresh_buffer_ticket_check_interval_sec(&mut self, interval: i64) {
-        self.buffer_ticket_check_interval_sec = interval
+    pub fn from(conf: MemoryStoreConfig, runtime_manager: RuntimeManager) -> Self {
+        let capacity = ReadableSize::from_str(&conf.capacity).unwrap();
+        let budget = MemoryBudget::new(capacity.as_bytes() as i64);
+
+        let budget_clone = budget.clone();
+        let free_allocated_size_func =
+            move |size: i64| budget_clone.free_allocated(size).map_or(false, |v| v);
+        let ticket_manager = TicketManager::new(
+            5 * 60,
+            10,
+            free_allocated_size_func,
+            runtime_manager.clone(),
+        );
+        MemoryStore {
+            state: DashMap::new(),
+            budget: MemoryBudget::new(capacity.as_bytes() as i64),
+            memory_capacity: capacity.as_bytes() as i64,
+            ticket_manager,
+            in_flush_buffer_size: Default::default(),
+            runtime_manager,
+        }
     }
 
     // todo: make this used size as a var
     pub async fn memory_usage_ratio(&self) -> f32 {
-        let snapshot = self.budget.snapshot().await;
+        let snapshot = self.budget.snapshot();
         snapshot.get_used_percent()
     }
 
     pub async fn memory_snapshot(&self) -> Result<MemorySnapshot> {
-        Ok(self.budget.snapshot().await)
+        Ok(self.budget.snapshot())
     }
 
     pub fn get_capacity(&self) -> Result<i64> {
@@ -114,7 +123,7 @@ impl MemoryStore {
     }
 
     pub async fn memory_used_ratio(&self) -> f32 {
-        let snapshot = self.budget.snapshot().await;
+        let snapshot = self.budget.snapshot();
         (snapshot.used + snapshot.allocated
             - self.in_flush_buffer_size.load(Ordering::SeqCst) as i64) as f32
             / snapshot.capacity as f32
@@ -129,11 +138,11 @@ impl MemoryStore {
     }
 
     pub async fn free_used(&self, size: i64) -> Result<bool> {
-        self.budget.free_used(size).await
+        self.budget.free_used(size)
     }
 
     pub async fn free_allocated(&self, size: i64) -> Result<bool> {
-        self.budget.free_allocated(size).await
+        self.budget.free_allocated(size)
     }
 
     pub async fn get_required_spill_buffer(
@@ -143,7 +152,7 @@ impl MemoryStore {
         // sort
         // get the spill buffers
 
-        let snapshot = self.budget.snapshot().await;
+        let snapshot = self.budget.snapshot();
         let removed_size = snapshot.used - target_len;
         if removed_size <= 0 {
             return HashMap::new();
@@ -238,90 +247,12 @@ impl MemoryStore {
 
         (fetched, fetched_size)
     }
-
-    pub(crate) fn is_ticket_exist(&self, app_id: &str, ticket_id: i64) -> bool {
-        self.memory_allocated_of_app
-            .get(app_id)
-            .map_or(false, |app_entry| app_entry.contains_key(&ticket_id))
-    }
-
-    /// return the discarded memory allocated size
-    pub(crate) fn discard_tickets(&self, app_id: &str, ticket_id_option: Option<i64>) -> i64 {
-        match ticket_id_option {
-            None => self
-                .memory_allocated_of_app
-                .remove(app_id)
-                .map_or(0, |app| app.1.iter().map(|x| x.get_size()).sum()),
-            Some(ticket_id) => self.memory_allocated_of_app.get(app_id).map_or(0, |app| {
-                app.remove(&ticket_id)
-                    .map_or(0, |ticket| ticket.1.get_size())
-            }),
-        }
-    }
-
-    fn cache_buffer_required_ticket(
-        &self,
-        app_id: &str,
-        require_buffer: &RequireBufferResponse,
-        size: i64,
-    ) {
-        let app_entry = self
-            .memory_allocated_of_app
-            .entry(app_id.to_string())
-            .or_insert_with(|| DashMap::default());
-        app_entry.insert(
-            require_buffer.ticket_id,
-            MemoryBufferTicket::new(
-                require_buffer.ticket_id,
-                require_buffer.allocated_timestamp,
-                size,
-            ),
-        );
-    }
-
-    async fn check_allocated_tickets(&self) {
-        // if the ticket is timeout, discard this.
-        let mut timeout_ids = vec![];
-        let iter = self.memory_allocated_of_app.iter();
-        for app in iter {
-            let app_id = &app.key().to_string();
-            let app_iter = app.iter();
-            for ticket in app_iter {
-                if ticket.is_timeout(self.buffer_ticket_timeout_sec) {
-                    timeout_ids.push((app_id.to_string(), ticket.key().clone()))
-                }
-            }
-        }
-        for (app_id, ticket_id) in timeout_ids {
-            info!(
-                "Releasing timeout ticket of id:{}, app_id:{}",
-                ticket_id, app_id
-            );
-            let released = self.discard_tickets(&app_id, Some(ticket_id));
-            if let Err(e) = self.budget.free_allocated(released).await {
-                error!(
-                    "Errors on removing the timeout ticket of id:{}, app_id:{}. error: {:?}",
-                    ticket_id, app_id, e
-                );
-            }
-        }
-    }
 }
 
 #[async_trait]
 impl Store for MemoryStore {
     fn start(self: Arc<Self>) {
-        // schedule check to find out the timeout allocated buffer ticket
-        let mem_store = self.clone();
-        self.runtime_manager.default_runtime.spawn(async move {
-            loop {
-                mem_store.check_allocated_tickets().await;
-                delay_for(Duration::from_secs(
-                    mem_store.buffer_ticket_check_interval_sec as u64,
-                ))
-                .await;
-            }
-        });
+        // ignore
     }
 
     async fn insert(&self, ctx: WritingViewContext) -> Result<(), WorkerError> {
@@ -336,10 +267,7 @@ impl Store for MemoryStore {
         let inserted_size = buffer_guarded.add(blocks)?;
         drop(buffer_guarded);
 
-        self.budget
-            .allocated_to_used(inserted_size)
-            .instrument_await("make budget allocated -> used")
-            .await?;
+        self.budget.allocated_to_used(inserted_size)?;
 
         TOTAL_MEMORY_USED.inc_by(inserted_size as u64);
 
@@ -466,39 +394,9 @@ impl Store for MemoryStore {
         panic!("It should not be invoked.")
     }
 
-    async fn require_buffer(
-        &self,
-        ctx: RequireBufferContext,
-    ) -> Result<RequireBufferResponse, WorkerError> {
-        let (succeed, ticket_id) = self.budget.pre_allocate(ctx.size).await?;
-        match succeed {
-            true => {
-                let require_buffer_resp = RequireBufferResponse::new(ticket_id);
-                self.cache_buffer_required_ticket(
-                    ctx.uid.app_id.as_str(),
-                    &require_buffer_resp,
-                    ctx.size,
-                );
-                Ok(require_buffer_resp)
-            }
-            _ => Err(WorkerError::NO_ENOUGH_MEMORY_TO_BE_ALLOCATED),
-        }
-    }
-
     async fn purge(&self, ctx: PurgeDataContext) -> Result<()> {
         let app_id = ctx.app_id;
         let shuffle_id_option = ctx.shuffle_id;
-
-        if shuffle_id_option.is_none() {
-            // free allocated for the whole app
-            let released_size = self.discard_tickets(app_id.as_str(), None);
-            self.budget.free_allocated(released_size).await?;
-            info!(
-                "free allocated buffer size:[{}] for app:[{}]",
-                released_size,
-                app_id.as_str()
-            );
-        }
 
         // remove the corresponding app's data
         let read_only_state_view = self.state.clone().into_read_only();
@@ -526,7 +424,7 @@ impl Store for MemoryStore {
         }
 
         // free used
-        self.budget.free_used(used).await?;
+        self.budget.free_used(used)?;
 
         info!(
             "removed used buffer size:[{}] for [{:?}], [{:?}]",
@@ -538,6 +436,31 @@ impl Store for MemoryStore {
 
     async fn is_healthy(&self) -> Result<bool> {
         Ok(true)
+    }
+
+    async fn require_buffer(
+        &self,
+        ctx: RequireBufferContext,
+    ) -> Result<RequireBufferResponse, WorkerError> {
+        let (succeed, ticket_id) = self.budget.pre_allocate(ctx.size)?;
+        match succeed {
+            true => {
+                let require_buffer_resp = RequireBufferResponse::new(ticket_id);
+                self.ticket_manager.insert(
+                    ticket_id,
+                    ctx.size,
+                    require_buffer_resp.allocated_timestamp,
+                    &ctx.uid.app_id,
+                );
+                Ok(require_buffer_resp)
+            }
+            _ => Err(WorkerError::NO_ENOUGH_MEMORY_TO_BE_ALLOCATED),
+        }
+    }
+
+    async fn release_buffer(&self, ctx: ReleaseBufferContext) -> Result<i64, WorkerError> {
+        let ticket_id = ctx.ticket_id;
+        self.ticket_manager.delete(ticket_id)
     }
 }
 
@@ -678,12 +601,12 @@ impl MemoryBudget {
         }
     }
 
-    pub async fn snapshot(&self) -> MemorySnapshot {
+    pub fn snapshot(&self) -> MemorySnapshot {
         let inner = self.inner.lock().unwrap();
         (inner.capacity, inner.allocated, inner.used).into()
     }
 
-    async fn pre_allocate(&self, size: i64) -> Result<(bool, i64)> {
+    fn pre_allocate(&self, size: i64) -> Result<(bool, i64)> {
         let mut inner = self.inner.lock().unwrap();
         let free_space = inner.capacity - inner.allocated - inner.used;
         if free_space < size {
@@ -697,7 +620,7 @@ impl MemoryBudget {
         }
     }
 
-    async fn allocated_to_used(&self, size: i64) -> Result<bool> {
+    fn allocated_to_used(&self, size: i64) -> Result<bool> {
         let mut inner = self.inner.lock().unwrap();
         if inner.allocated < size {
             inner.allocated = 0;
@@ -710,7 +633,7 @@ impl MemoryBudget {
         Ok(true)
     }
 
-    async fn free_used(&self, size: i64) -> Result<bool> {
+    fn free_used(&self, size: i64) -> Result<bool> {
         let mut inner = self.inner.lock().unwrap();
         if inner.used < size {
             inner.used = 0;
@@ -722,7 +645,7 @@ impl MemoryBudget {
         Ok(true)
     }
 
-    async fn free_allocated(&self, size: i64) -> Result<bool> {
+    fn free_allocated(&self, size: i64) -> Result<bool> {
         let mut inner = self.inner.lock().unwrap();
         if inner.allocated < size {
             inner.allocated = 0;
@@ -749,74 +672,9 @@ mod test {
     use bytes::BytesMut;
     use core::panic;
     use std::sync::Arc;
-    use std::thread;
-    use std::time::Duration;
 
-    use crate::config::MemoryStoreConfig;
-    use crate::runtime::manager::RuntimeManager;
     use anyhow::Result;
     use croaring::Treemap;
-
-    #[test]
-    fn test_ticket_timeout() -> Result<()> {
-        let cfg = MemoryStoreConfig::from("2M".to_string(), 1);
-        let runtime_manager: RuntimeManager = Default::default();
-        let mut store = MemoryStore::from(cfg, runtime_manager.clone());
-
-        store.refresh_buffer_ticket_check_interval_sec(1);
-
-        let store = Arc::new(store);
-        store.clone().start();
-
-        let app_id = "mocked-app-id";
-        let ctx = RequireBufferContext::new(PartitionedUId::from(app_id.to_string(), 1, 1), 1000);
-        let resp = runtime_manager.wait(store.require_buffer(ctx.clone()))?;
-        assert!(store.is_ticket_exist(app_id, resp.ticket_id));
-
-        let snapshot = runtime_manager.wait(store.budget.snapshot());
-        assert_eq!(snapshot.allocated, 1000);
-        assert_eq!(snapshot.used, 0);
-
-        thread::sleep(Duration::from_secs(5));
-
-        assert!(!store.is_ticket_exist(app_id, resp.ticket_id));
-
-        let snapshot = runtime_manager.wait(store.budget.snapshot());
-        assert_eq!(snapshot.allocated, 0);
-        assert_eq!(snapshot.used, 0);
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_memory_buffer_ticket() -> Result<()> {
-        let store = MemoryStore::new(1024 * 1000);
-        let runtime = store.runtime_manager.clone();
-
-        let app_id = "mocked-app-id";
-        let ctx = RequireBufferContext::new(PartitionedUId::from(app_id.to_string(), 1, 1), 1000);
-        let resp = runtime.wait(store.require_buffer(ctx.clone()))?;
-        let ticket_id_1 = resp.ticket_id;
-
-        let resp = runtime.wait(store.require_buffer(ctx.clone()))?;
-        let ticket_id_2 = resp.ticket_id;
-
-        assert!(store.is_ticket_exist(app_id, ticket_id_1));
-        assert!(store.is_ticket_exist(app_id, ticket_id_2));
-        assert!(!store.is_ticket_exist(app_id, 100239));
-
-        let snapshot = runtime.wait(store.budget.snapshot());
-        assert_eq!(snapshot.allocated, 1000 * 2);
-        assert_eq!(snapshot.used, 0);
-
-        runtime.wait(store.purge(app_id.into()))?;
-
-        let snapshot = runtime.wait(store.budget.snapshot());
-        assert_eq!(snapshot.allocated, 0);
-        assert_eq!(snapshot.used, 0);
-
-        Ok(())
-    }
 
     #[test]
     fn test_read_buffer_in_flight() {
@@ -1055,7 +913,6 @@ mod test {
         }
 
         let budget = store.budget.inner.lock().unwrap();
-        assert_eq!(0, budget.allocated);
         assert_eq!(0, budget.used);
         assert_eq!(1024 * 1024 * 1024, budget.capacity);
     }
@@ -1124,10 +981,8 @@ mod test {
             weak_ref_before.clone().unwrap().upgrade().is_none(),
             "Arc should not exist after purge"
         );
-        let snapshot = runtime.wait(store.budget.snapshot());
+        let snapshot = store.budget.snapshot();
         assert_eq!(snapshot.used, 0);
-        // the remaining allocated will be removed.
-        assert_eq!(snapshot.allocated, 0);
         assert_eq!(snapshot.capacity, 1024);
         let data = runtime.wait(store.get(reading_ctx.clone())).expect("");
         assert_eq!(0, data.from_memory().shuffle_data_block_segments.len());

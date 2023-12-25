@@ -128,6 +128,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "awaitility"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46ee60785cbb3a23bde2c462098564a6337432b9fa032a62bb7ddb5e734c135d"
+
+[[package]]
 name = "axum"
 version = "0.6.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3180,6 +3186,7 @@ dependencies = [
  "async-channel",
  "async-trait",
  "await-tree",
+ "awaitility",
  "bytes 1.5.0",
  "cap",
  "clap",

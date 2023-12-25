@@ -17,7 +17,7 @@
 
 use crate::app::{
     PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingOptions, ReadingViewContext,
-    RequireBufferContext, WritingViewContext,
+    ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
 use crate::await_tree::AWAIT_TREE_REGISTRY;
 
@@ -261,15 +261,6 @@ impl HybridStore {
         Ok(message)
     }
 
-    // For app to check the ticket allocated existence and discard if it has been used
-    pub fn is_buffer_ticket_exist(&self, app_id: &str, ticket_id: i64) -> bool {
-        self.hot_store.is_ticket_exist(app_id, ticket_id)
-    }
-
-    pub fn discard_tickets(&self, app_id: &str, ticket_id: i64) -> i64 {
-        self.hot_store.discard_tickets(app_id, Some(ticket_id))
-    }
-
     pub async fn free_hot_store_allocated_memory_size(&self, size: i64) -> Result<bool> {
         self.hot_store.free_allocated(size).await
     }
@@ -459,6 +450,10 @@ impl Store for HybridStore {
             .require_buffer(ctx)
             .instrument_await(format!("requiring buffers. uid: {:?}", uid))
             .await
+    }
+
+    async fn release_buffer(&self, ctx: ReleaseBufferContext) -> Result<i64, WorkerError> {
+        self.hot_store.release_buffer(ctx).await
     }
 
     async fn purge(&self, ctx: PurgeDataContext) -> Result<()> {
