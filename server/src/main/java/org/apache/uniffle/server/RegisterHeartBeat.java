@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -109,7 +110,7 @@ public class RegisterHeartBeat {
       ServerStatus serverStatus,
       Map<String, StorageInfo> localStorageInfo,
       int nettyPort) {
-    boolean sendSuccessfully = false;
+    AtomicBoolean sendSuccessfully = new AtomicBoolean(false);
     // use `rss.server.heartbeat.interval` as the timeout option
     RssSendHeartBeatRequest request =
         new RssSendHeartBeatRequest(
@@ -125,28 +126,26 @@ public class RegisterHeartBeat {
             serverStatus,
             localStorageInfo,
             nettyPort);
-    List<Future<RssSendHeartBeatResponse>> respFutures =
-        coordinatorClients.stream()
-            .map(client -> heartBeatExecutorService.submit(() -> client.sendHeartBeat(request)))
-            .collect(Collectors.toList());
 
-    String msg = "";
-    for (Future<RssSendHeartBeatResponse> rf : respFutures) {
-      try {
-        if (rf.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode()
-            == StatusCode.SUCCESS) {
-          sendSuccessfully = true;
+    List<RssSendHeartBeatResponse> responses = ThreadUtils.executeTasks(
+      heartBeatExecutorService,
+      coordinatorClients,
+      client -> client.sendHeartBeat(request),
+      request.getTimeout() * 2,
+      "Send HeartBeat",
+      future -> {
+        try {
+          if( future.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode() == StatusCode.SUCCESS){
+            sendSuccessfully.set(true);
+          }
+        } catch (Exception e) {
+          LOG.error(e.getMessage());
+          return null;
         }
-      } catch (Exception e) {
-        msg = e.getMessage();
-      }
-    }
+        return null;
+      });
 
-    if (!sendSuccessfully) {
-      LOG.error(msg);
-    }
-
-    return sendSuccessfully;
+    return sendSuccessfully.get();
   }
 
   public void shutdown() {
