@@ -17,12 +17,21 @@
 
 package org.apache.uniffle.common.util;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -88,6 +97,40 @@ public class ThreadUtils {
       if (!threadPool.awaitTermination(waitSec, TimeUnit.SECONDS)) {
         LOGGER.warn("Thread pool don't stop gracefully.");
       }
+    }
+  }
+
+
+  public static <T, R> List<R> executeTasks(
+    ExecutorService executorService,
+    Collection<T> items,
+    Function<T, R> task,
+    long timeoutMs, String taskMsg) {
+    List<Callable<R>> callableList = items.stream()
+      .map(item -> (Callable<R>) () -> task.apply(item))
+      .collect(Collectors.toList());
+
+    try {
+      List<Future<R>> futures =
+        executorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
+      return futures.stream()
+        .map(future -> {
+          try {
+            if (future.isDone()) {
+              return future.get();
+            } else {
+              future.cancel(true);
+              return null;
+            }
+          } catch (InterruptedException | ExecutionException e) {
+            LOGGER.warn("Error getting future result", e);
+            return null;
+          }
+        })
+        .collect(Collectors.toList());
+    } catch (InterruptedException ie) {
+      LOGGER.warn("Execute " + taskMsg + " is interrupted", ie);
+      return Collections.emptyList();
     }
   }
 }
