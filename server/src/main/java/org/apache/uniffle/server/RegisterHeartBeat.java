@@ -20,11 +20,10 @@ package org.apache.uniffle.server;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -58,9 +57,10 @@ public class RegisterHeartBeat {
     this.heartBeatInitialDelay = conf.getLong(ShuffleServerConf.SERVER_HEARTBEAT_DELAY);
     this.heartBeatInterval = conf.getLong(ShuffleServerConf.SERVER_HEARTBEAT_INTERVAL);
     this.coordinatorQuorum = conf.getString(ShuffleServerConf.RSS_COORDINATOR_QUORUM);
-    CoordinatorClientFactory factory =
-        new CoordinatorClientFactory(conf.get(ShuffleServerConf.RSS_CLIENT_TYPE));
-    this.coordinatorClients = factory.createCoordinatorClient(this.coordinatorQuorum);
+    CoordinatorClientFactory factory = CoordinatorClientFactory.getInstance();
+    this.coordinatorClients =
+        factory.createCoordinatorClient(
+            conf.get(ShuffleServerConf.RSS_CLIENT_TYPE), this.coordinatorQuorum);
     this.shuffleServer = shuffleServer;
     this.heartBeatExecutorService =
         ThreadUtils.getDaemonFixedThreadPool(
@@ -109,7 +109,7 @@ public class RegisterHeartBeat {
       ServerStatus serverStatus,
       Map<String, StorageInfo> localStorageInfo,
       int nettyPort) {
-    AtomicBoolean sendSuccessfully = new AtomicBoolean(false);
+    boolean sendSuccessfully = false;
     // use `rss.server.heartbeat.interval` as the timeout option
     RssSendHeartBeatRequest request =
         new RssSendHeartBeatRequest(
@@ -125,25 +125,28 @@ public class RegisterHeartBeat {
             serverStatus,
             localStorageInfo,
             nettyPort);
-    List<Callable<RssSendHeartBeatResponse>> tasks =
+    List<Future<RssSendHeartBeatResponse>> respFutures =
         coordinatorClients.stream()
-            .map(client -> (Callable<RssSendHeartBeatResponse>) () -> client.sendHeartBeat(request))
+            .map(client -> heartBeatExecutorService.submit(() -> client.sendHeartBeat(request)))
             .collect(Collectors.toList());
 
-    ThreadUtils.executeTasks(
-        heartBeatExecutorService,
-        tasks,
-        request.getTimeout() * 2,
-        TimeUnit.MILLISECONDS,
-        "register heartbeat task",
-        (response, exception) -> {
-          if (exception != null) {
-            LOG.error(exception.getMessage());
-          } else if (response.getStatusCode() == StatusCode.SUCCESS) {
-            sendSuccessfully.set(true);
-          }
-        });
-    return sendSuccessfully.get();
+    String msg = "";
+    for (Future<RssSendHeartBeatResponse> rf : respFutures) {
+      try {
+        if (rf.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode()
+            == StatusCode.SUCCESS) {
+          sendSuccessfully = true;
+        }
+      } catch (Exception e) {
+        msg = e.getMessage();
+      }
+    }
+
+    if (!sendSuccessfully) {
+      LOG.error(msg);
+    }
+
+    return sendSuccessfully;
   }
 
   public void shutdown() {
@@ -151,3 +154,4 @@ public class RegisterHeartBeat {
     service.shutdownNow();
   }
 }
+
