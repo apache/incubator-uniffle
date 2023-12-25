@@ -865,9 +865,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   @Override
   public void registerApplicationInfo(String appId, long timeoutMs, String user) {
     RssApplicationInfoRequest request = new RssApplicationInfoRequest(appId, timeoutMs, user);
-    List<Callable<Void>> callableList = Lists.newArrayList();
-
-
 
     ThreadUtils.executeTasks(heartBeatExecutorService, coordinatorClients,
       coordinatorClient -> {
@@ -942,7 +939,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   @Override
   public void unregisterShuffle(String appId, int shuffleId) {
     RssUnregisterShuffleRequest request = new RssUnregisterShuffleRequest(appId, shuffleId);
-    List<Callable<Void>> callableList = Lists.newArrayList();
 
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
     if (appServerMap == null) {
@@ -953,31 +949,11 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       return;
     }
 
-    shuffleServerInfos.forEach(shuffleServerInfo -> {
-        callableList.add(() -> {
-          try {
-            ShuffleServerClient client =
-              ShuffleServerClientFactory.getInstance().getShuffleServerClient(clientType, shuffleServerInfo);
-            RssUnregisterShuffleResponse response = client.unregisterShuffle(request);
-            if (response.getStatusCode() != StatusCode.SUCCESS) {
-              LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
-            }
-          } catch (Exception e) {
-            LOG.warn("Error happened when unregistering to " + shuffleServerInfo, e);
-          }
-          return null;
-        });
-      }
-    );
-
-
     ExecutorService executorService = null;
     try {
       executorService =
           ThreadUtils.getDaemonFixedThreadPool(
               Math.min(unregisterThreadPoolSize, shuffleServerInfos.size()), "unregister-shuffle");
-
-      ThreadUtils.executeTasks(executorService, callableList, unregisterRequestTimeSec, TimeUnit.MILLISECONDS, "000", null);
 
       ThreadUtils.executeTasks(executorService, shuffleServerInfos,
         shuffleServerInfo -> {
