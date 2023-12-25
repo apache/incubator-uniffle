@@ -147,12 +147,6 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       long alreadyReleasedSize = 0;
       boolean isFailureOccurs = false;
       for (ShufflePartitionedData spd : shufflePartitionedData) {
-        // Once the cache failure occurs, we should explicitly release data held by byteBuf
-        if (isFailureOccurs) {
-          Arrays.stream(spd.getBlockList()).forEach(block -> block.getData().release());
-          continue;
-        }
-
         String shuffleDataInfo =
             "appId["
                 + appId
@@ -162,6 +156,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 + spd.getPartitionId()
                 + "]";
         try {
+          if (isFailureOccurs) {
+            continue;
+          }
           ret = manager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
           if (ret != StatusCode.SUCCESS) {
             String errorMsg =
@@ -190,6 +187,11 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           responseMessage = errorMsg;
           LOG.error(errorMsg);
           isFailureOccurs = true;
+        } finally {
+          // Once the cache failure occurs, we should explicitly release data held by byteBuf
+          if (isFailureOccurs) {
+            Arrays.stream(spd.getBlockList()).forEach(block -> block.getData().release());
+          }
         }
       }
       // since the required buffer id is only used once, the shuffle client would try to require
