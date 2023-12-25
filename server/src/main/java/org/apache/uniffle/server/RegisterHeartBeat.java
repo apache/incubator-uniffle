@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.request.RssSendHeartBeatRequest;
-import org.apache.uniffle.client.response.RssSendHeartBeatResponse;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.storage.StorageInfo;
@@ -125,25 +124,24 @@ public class RegisterHeartBeat {
             localStorageInfo,
             nettyPort);
 
-
-      ThreadUtils.executeTasks(
-          heartBeatExecutorService,
-          coordinatorClients,
-          client -> client.sendHeartBeat(request),
-          request.getTimeout() * 2,
-          "Send HeartBeat",
-          future -> {
-            try {
-              if (future.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode()
-                  == StatusCode.SUCCESS) {
-                sendSuccessfully.set(true);
-              }
-            } catch (Exception e) {
-              LOG.error(e.getMessage());
-              return null;
+    ThreadUtils.executeTasks(
+        heartBeatExecutorService,
+        coordinatorClients,
+        client -> client.sendHeartBeat(request),
+        request.getTimeout() * 2,
+        "Send HeartBeat",
+        future -> {
+          try {
+            if (future.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode()
+                == StatusCode.SUCCESS) {
+              sendSuccessfully.set(true);
             }
+          } catch (Exception e) {
+            LOG.error(e.getMessage());
             return null;
-          });
+          }
+          return null;
+        });
 
     return sendSuccessfully.get();
   }
