@@ -101,22 +101,20 @@ public class ThreadUtils {
   }
 
   public static <T, R> List<R> executeTasks(
-    ExecutorService executorService,
-    Collection<T> items,
-    Function<T, R> task,
-    long timeoutMs,
-    String taskMsg,
-    Function<Future<R>, R> futureHandler) {
+      ExecutorService executorService,
+      Collection<T> items,
+      Function<T, R> task,
+      long timeoutMs,
+      String taskMsg,
+      Function<Future<R>, R> futureHandler) {
     List<Callable<R>> callableList =
-      items.stream()
-        .map(item -> (Callable<R>) () -> task.apply(item))
-        .collect(Collectors.toList());
+        items.stream()
+            .map(item -> (Callable<R>) () -> task.apply(item))
+            .collect(Collectors.toList());
     try {
       List<Future<R>> futures =
-        executorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
-      return futures.stream()
-        .map(futureHandler)
-        .collect(Collectors.toList());
+          executorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
+      return futures.stream().map(futureHandler).collect(Collectors.toList());
     } catch (InterruptedException ie) {
       LOGGER.warn("Execute " + taskMsg + " is interrupted", ie);
       return Collections.emptyList();
@@ -129,18 +127,24 @@ public class ThreadUtils {
       Function<T, R> task,
       long timeoutMs,
       String taskMsg) {
-    return executeTasks(executorService, items, task, timeoutMs,taskMsg, future -> {
-      try {
-        if (future.isDone()) {
-          return future.get(timeoutMs, TimeUnit.MILLISECONDS);
-        } else {
-          future.cancel(true);
-          return null;
-        }
-      } catch (InterruptedException | ExecutionException | TimeoutException e) {
-        LOGGER.warn("Error getting future result", e);
-        return null;
-      }
-    });
+    return executeTasks(
+        executorService,
+        items,
+        task,
+        timeoutMs,
+        taskMsg,
+        future -> {
+          try {
+            if (future.isDone()) {
+              return future.get(timeoutMs, TimeUnit.MILLISECONDS);
+            } else {
+              future.cancel(true);
+              return null;
+            }
+          } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            LOGGER.warn("Error getting future result", e);
+            return null;
+          }
+        });
   }
 }

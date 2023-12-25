@@ -21,11 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
@@ -127,23 +125,25 @@ public class RegisterHeartBeat {
             localStorageInfo,
             nettyPort);
 
-    List<RssSendHeartBeatResponse> responses = ThreadUtils.executeTasks(
-      heartBeatExecutorService,
-      coordinatorClients,
-      client -> client.sendHeartBeat(request),
-      request.getTimeout() * 2,
-      "Send HeartBeat",
-      future -> {
-        try {
-          if( future.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode() == StatusCode.SUCCESS){
-            sendSuccessfully.set(true);
-          }
-        } catch (Exception e) {
-          LOG.error(e.getMessage());
-          return null;
-        }
-        return null;
-      });
+    List<RssSendHeartBeatResponse> responses =
+        ThreadUtils.executeTasks(
+            heartBeatExecutorService,
+            coordinatorClients,
+            client -> client.sendHeartBeat(request),
+            request.getTimeout() * 2,
+            "Send HeartBeat",
+            future -> {
+              try {
+                if (future.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode()
+                    == StatusCode.SUCCESS) {
+                  sendSuccessfully.set(true);
+                }
+              } catch (Exception e) {
+                LOG.error(e.getMessage());
+                return null;
+              }
+              return null;
+            });
 
     return sendSuccessfully.get();
   }
