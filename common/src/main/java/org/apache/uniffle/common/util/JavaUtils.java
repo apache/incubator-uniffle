@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import com.google.common.base.Enums;
 import org.apache.commons.lang3.JavaVersion;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
@@ -29,6 +30,16 @@ import org.slf4j.LoggerFactory;
 
 public class JavaUtils {
   private static final Logger logger = LoggerFactory.getLogger(JavaUtils.class);
+  private static final String JAVA_9 = "JAVA_9";
+
+  public static boolean isJavaVersionAtLeastJava9() {
+    if (Enums.getIfPresent(JavaVersion.class, JAVA_9).isPresent()
+        && SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_9)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   /** Closes the given object, ignoring IOExceptions. */
   public static void closeQuietly(Closeable closeable) {
@@ -42,7 +53,7 @@ public class JavaUtils {
   }
 
   public static <K, V> ConcurrentHashMap<K, V> newConcurrentMap() {
-    if (SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_9)) {
+    if (isJavaVersionAtLeastJava9()) {
       return new ConcurrentHashMap<>();
     } else {
       return new ConcurrentHashMapForJDK8<>();

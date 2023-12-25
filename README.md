@@ -134,9 +134,15 @@ Package will build against Hadoop 2.8.5 in default. If you want to build package
 
     ./build_distribution.sh --hadoop-profile 'hadoop3.2'
 
+Package with hadoop jars, If you want to build package against Hadoop 3.2.1, run:
+
+    ./build_distribution.sh --hadoop-profile 'hadoop3.2' -Phadoop-dependencies-included
+
 rss-xxx.tgz will be generated for deployment
 
 ## Deploy
+
+If you have packaged tgz with hadoop jars, the env of `HADOOP_HOME` is needn't specified in `rss-env.sh`.
 
 ### Deploy Coordinator
 
