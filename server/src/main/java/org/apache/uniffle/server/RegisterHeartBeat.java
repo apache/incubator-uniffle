@@ -154,4 +154,3 @@ public class RegisterHeartBeat {
     service.shutdownNow();
   }
 }
-
