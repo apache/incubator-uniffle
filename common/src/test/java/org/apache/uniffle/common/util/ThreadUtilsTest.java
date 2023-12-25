@@ -28,7 +28,6 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -60,15 +59,17 @@ public class ThreadUtilsTest {
     Function<Integer, Integer> task = item -> item * 2;
     long timeoutMs = 1000;
     String taskMsg = "Test Task";
-    Function<Future<Integer>, Integer> futureHandler = future -> {
-      try {
-        return future.get(timeoutMs, TimeUnit.MILLISECONDS);
-      } catch (Exception e) {
-        return null;
-      }
-    };
+    Function<Future<Integer>, Integer> futureHandler =
+        future -> {
+          try {
+            return future.get(timeoutMs, TimeUnit.MILLISECONDS);
+          } catch (Exception e) {
+            return null;
+          }
+        };
 
-    List<Integer> results = ThreadUtils.executeTasks(executorService, items, task, timeoutMs, taskMsg, futureHandler);
+    List<Integer> results =
+        ThreadUtils.executeTasks(executorService, items, task, timeoutMs, taskMsg, futureHandler);
     assertEquals(Arrays.asList(2, 4, 6, 8, 10), results);
   }
 }
