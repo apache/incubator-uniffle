@@ -41,7 +41,6 @@ import org.apache.flink.runtime.taskexecutor.TaskExecutor;
 import org.apache.flink.shaded.netty4.io.netty.buffer.ByteBuf;
 import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.function.SupplierWithException;
-import org.apache.uniffle.shuffle.utils.ShuffleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,24 +48,25 @@ import org.apache.uniffle.shuffle.buffer.BufferWithChannel;
 import org.apache.uniffle.shuffle.buffer.SortBasedWriterBuffer;
 import org.apache.uniffle.shuffle.buffer.WriterBuffer;
 import org.apache.uniffle.shuffle.exception.ShuffleException;
+import org.apache.uniffle.shuffle.utils.ShuffleUtils;
 import org.apache.uniffle.shuffle.writer.RssShuffleOutputGate;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.uniffle.shuffle.buffer.WriterBuffer.HEADER_LENGTH;
 
 /**
- * In the process of implementing {@link RssShuffleResultPartition}, we referenced {@link
+ * In the process of implementing {@link RssShuffleResultPartitionPlugin}, we referenced {@link
  * SortMergeResultPartition}, and we defined a WriteBuffer similar to {@link SortBuffer}.
  *
- * <p>{@link RssShuffleResultPartition} appends records and events to {@link WriterBuffer}.
+ * <p>{@link RssShuffleResultPartitionPlugin} appends records and events to {@link WriterBuffer}.
  *
  * <p>{@link WriterBuffer} is full, all data in the {@link WriterBuffer} will write out to shuffle
  * server in subpartition index order sequentially. Large records that can not be appended to an
  * empty {@link WriterBuffer} will be spilled directly.
  */
-public class RssShuffleResultPartition extends ResultPartition {
+public class RssShuffleResultPartitionPlugin extends ResultPartition {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RssShuffleResultPartition.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RssShuffleResultPartitionPlugin.class);
 
   /**
    * Size of network buffer and write buffer. Int type value, the size of the network buffer and
@@ -98,7 +98,7 @@ public class RssShuffleResultPartition extends ResultPartition {
    */
   private static final int NUM_REQUIRED_BUFFER = 1;
 
-  public RssShuffleResultPartition(
+  public RssShuffleResultPartitionPlugin(
       String taskName,
       int partitionIndex,
       ResultPartitionID partitionId,

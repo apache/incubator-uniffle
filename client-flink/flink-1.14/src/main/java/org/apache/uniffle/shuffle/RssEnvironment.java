@@ -28,6 +28,7 @@ import org.apache.flink.runtime.deployment.ResultPartitionDeploymentDescriptor;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.executiongraph.PartitionInfo;
 import org.apache.flink.runtime.io.network.api.writer.ResultPartitionWriter;
+import org.apache.flink.runtime.io.network.buffer.NetworkBufferPool;
 import org.apache.flink.runtime.io.network.partition.PartitionProducerStateProvider;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionManager;
@@ -35,16 +36,29 @@ import org.apache.flink.runtime.io.network.partition.consumer.IndexedInputGate;
 import org.apache.flink.runtime.shuffle.ShuffleEnvironment;
 import org.apache.flink.runtime.shuffle.ShuffleIOOwnerContext;
 
-import org.apache.uniffle.common.config.RssConf;
-
-import static com.google.gson.internal.$Gson$Preconditions.checkNotNull;
 import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_GROUP_INPUT;
 import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_GROUP_OUTPUT;
 import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.createShuffleIOOwnerMetricGroup;
-import static org.apache.flink.shaded.guava30.com.google.common.base.Preconditions.checkState;
+import static org.apache.uniffle.shuffle.utils.ShuffleUtils.checkNotNull;
 
 public class RssEnvironment implements ShuffleEnvironment<ResultPartitionWriter, IndexedInputGate> {
 
+  private final Object lock = new Object();
+
+  private NetworkBufferPool networkBufferPool;
+
+  private ResultPartitionManager resultPartitionManager;
+
+  private int bufferSize;
+
+  public RssEnvironment(
+      int bufferSize,
+      NetworkBufferPool networkBufferPool,
+      ResultPartitionManager resultPartitionManager) {
+    this.bufferSize = bufferSize;
+    this.networkBufferPool = networkBufferPool;
+    this.resultPartitionManager = resultPartitionManager;
+  }
 
   @Override
   public int start() throws IOException {
@@ -52,19 +66,34 @@ public class RssEnvironment implements ShuffleEnvironment<ResultPartitionWriter,
   }
 
   @Override
-  public ShuffleIOOwnerContext createShuffleIOOwnerContext(String ownerName, ExecutionAttemptID executionAttemptID, MetricGroup parentGroup) {
-    return null;
+  public ShuffleIOOwnerContext createShuffleIOOwnerContext(
+      String ownerName, ExecutionAttemptID executionAttemptID, MetricGroup parentGroup) {
+    MetricGroup nettyGroup = createShuffleIOOwnerMetricGroup(checkNotNull(parentGroup));
+    return new ShuffleIOOwnerContext(
+        checkNotNull(ownerName),
+        checkNotNull(executionAttemptID),
+        parentGroup,
+        nettyGroup.addGroup(METRIC_GROUP_OUTPUT),
+        nettyGroup.addGroup(METRIC_GROUP_INPUT));
   }
 
   @Override
-  public List<ResultPartitionWriter> createResultPartitionWriters(ShuffleIOOwnerContext ownerContext, List<ResultPartitionDeploymentDescriptor> resultPartitionDeploymentDescriptors) {
-    return null;
+  public List<ResultPartitionWriter> createResultPartitionWriters(
+      ShuffleIOOwnerContext ownerContext,
+      List<ResultPartitionDeploymentDescriptor> resultPartitionDeploymentDescriptors) {
+    synchronized (lock) {
+      ResultPartitionWriter[] resultPartitions =
+          new ResultPartitionWriter[resultPartitionDeploymentDescriptors.size()];
+      for (int index = 0; index < resultPartitions.length; index++) {
+        ResultPartitionDeploymentDescriptor descriptor =
+            resultPartitionDeploymentDescriptors.get(index);
+      }
+      return Arrays.asList(resultPartitions);
+    }
   }
 
   @Override
-  public void releasePartitionsLocally(Collection<ResultPartitionID> partitionIds) {
-
-  }
+  public void releasePartitionsLocally(Collection<ResultPartitionID> partitionIds) {}
 
   @Override
   public Collection<ResultPartitionID> getPartitionsOccupyingLocalResources() {
@@ -72,17 +101,19 @@ public class RssEnvironment implements ShuffleEnvironment<ResultPartitionWriter,
   }
 
   @Override
-  public List<IndexedInputGate> createInputGates(ShuffleIOOwnerContext ownerContext, PartitionProducerStateProvider partitionProducerStateProvider, List<InputGateDeploymentDescriptor> inputGateDeploymentDescriptors) {
+  public List<IndexedInputGate> createInputGates(
+      ShuffleIOOwnerContext ownerContext,
+      PartitionProducerStateProvider partitionProducerStateProvider,
+      List<InputGateDeploymentDescriptor> inputGateDeploymentDescriptors) {
     return null;
   }
 
   @Override
-  public boolean updatePartitionInfo(ExecutionAttemptID consumerID, PartitionInfo partitionInfo) throws IOException, InterruptedException {
+  public boolean updatePartitionInfo(ExecutionAttemptID consumerID, PartitionInfo partitionInfo)
+      throws IOException, InterruptedException {
     return false;
   }
 
   @Override
-  public void close() throws Exception {
-
-  }
+  public void close() throws Exception {}
 }

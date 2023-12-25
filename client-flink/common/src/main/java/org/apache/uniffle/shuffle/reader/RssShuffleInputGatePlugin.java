@@ -19,12 +19,10 @@ package org.apache.uniffle.shuffle.reader;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -34,7 +32,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.checkpoint.channel.InputChannelInfo;
 import org.apache.flink.runtime.deployment.InputGateDeploymentDescriptor;
 import org.apache.flink.runtime.event.AbstractEvent;
-import org.apache.flink.runtime.event.TaskEvent;
+import org.apache.flink.runtime.io.AvailabilityProvider;
 import org.apache.flink.runtime.io.network.api.EndOfData;
 import org.apache.flink.runtime.io.network.api.EndOfPartitionEvent;
 import org.apache.flink.runtime.io.network.api.serialization.EventSerializer;
@@ -67,9 +65,9 @@ import static org.apache.uniffle.shuffle.utils.ShuffleUtils.getShuffleDataDistri
  * RssShuffleInputGate is responsible for fetching data from the ShuffleServer and is an
  * implementation of {@link IndexedInputGate}.
  */
-public class RssShuffleInputGate extends IndexedInputGate {
+public class RssShuffleInputGatePlugin {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RssShuffleInputGate.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RssShuffleInputGatePlugin.class);
 
   /** Lock object to guard partition requests and runtime channel updates. */
   private final Object requestLock = new Object();
@@ -91,6 +89,8 @@ public class RssShuffleInputGate extends IndexedInputGate {
 
   /** Data decompressor. */
   private final BufferDecompressor bufferDecompressor;
+
+  private final AvailabilityProvider.AvailabilityHelper availabilityHelper;
 
   private final int[] numSubPartitionsHasNotConsumed;
 
@@ -119,9 +119,10 @@ public class RssShuffleInputGate extends IndexedInputGate {
 
   private final ExecutorService executor;
 
-  public RssShuffleInputGate(
+  public RssShuffleInputGatePlugin(
       String owningTaskName,
       int gateIndex,
+      AvailabilityProvider.AvailabilityHelper availabilityHelper,
       InputGateDeploymentDescriptor gateDescriptor,
       SupplierWithException<BufferPool, IOException> bufferPoolFactory,
       BufferDecompressor bufferDecompressor,
@@ -136,6 +137,7 @@ public class RssShuffleInputGate extends IndexedInputGate {
     this.gateDescriptor = gateDescriptor;
     this.bufferPoolFactory = checkNotNull(bufferPoolFactory);
     this.bufferDecompressor = bufferDecompressor;
+    this.availabilityHelper = availabilityHelper;
 
     int numChannels = gateDescriptor.getShuffleDescriptors().length;
     this.numSubPartitionsHasNotConsumed = new int[numChannels];
@@ -159,7 +161,6 @@ public class RssShuffleInputGate extends IndexedInputGate {
   // Setup
   // ------------------------------------------------------------------------
 
-  @Override
   public void setup() throws IOException {
     BufferPool bufferPool = bufferPoolFactory.get();
     setBufferPool(bufferPool);
@@ -223,18 +224,15 @@ public class RssShuffleInputGate extends IndexedInputGate {
   }
 
   // DONE
-  @Override
   public int getGateIndex() {
     return gateIndex;
   }
 
   // DONE
-  @Override
   public int getNumberOfInputChannels() {
     return channelsInfo.size();
   }
 
-  @Override
   public boolean isFinished() {
     synchronized (requestLock) {
       return allSubpartitionsConsumed() && receivedBuffers.isEmpty();
@@ -245,7 +243,6 @@ public class RssShuffleInputGate extends IndexedInputGate {
     return numUnconsumedSubpartitions <= 0;
   }
 
-  @Override
   public boolean hasReceivedEndOfData() {
     return pendingEndOfDataEvents <= 0;
   }
@@ -254,7 +251,6 @@ public class RssShuffleInputGate extends IndexedInputGate {
   // Consume
   // ------------------------------------------------------------------------
 
-  @Override
   public Optional<BufferOrEvent> pollNext() throws IOException {
     ChannelBuffer channelBuffer = getReceivedChannelBuffer();
     Optional<BufferOrEvent> bufferOrEvent = Optional.empty();
@@ -377,7 +373,6 @@ public class RssShuffleInputGate extends IndexedInputGate {
             false));
   }
 
-  @Override
   public void close() throws Exception {
     synchronized (requestLock) {
       for (RssInputChannel rssInputChannel : rssInputChannels) {
@@ -412,57 +407,8 @@ public class RssShuffleInputGate extends IndexedInputGate {
   // Fake InputChannel.
   // ------------------------------------------------------------------------
 
-  @Override
   public InputChannel getChannel(int channelIndex) {
     return new FakedRssInputChannel(this.gateIndex, channelIndex);
   }
 
-  // ------------------------------------------------------------------------
-  // There is currently no implementation method.
-  // ------------------------------------------------------------------------
-
-  // DONE
-  @Override
-  public void sendTaskEvent(TaskEvent event) {}
-
-  // DONE
-  @Override
-  public void resumeConsumption(InputChannelInfo channelInfo) {}
-
-  // DONE
-  @Override
-  public void acknowledgeAllRecordsProcessed(InputChannelInfo channelInfo) {}
-
-  // DONE
-  @Override
-  public void requestPartitions() {}
-
-  // DONE
-  @Override
-  public CompletableFuture<Void> getStateConsumedFuture() {
-    return CompletableFuture.completedFuture(null);
-  }
-
-  @Override
-  public void finishReadRecoveredState() {}
-
-  @Override
-  public List<InputChannelInfo> getUnfinishedChannels() {
-    return Collections.emptyList();
-  }
-
-  // DONE
-  @Override
-  public int getBuffersInUseCount() {
-    return 0;
-  }
-
-  @Override
-  public Optional<BufferOrEvent> getNext() {
-    throw new UnsupportedOperationException("Not implemented.");
-  }
-
-  // DONE
-  @Override
-  public void announceBufferSize(int bufferSize) {}
 }

@@ -56,8 +56,9 @@ import org.apache.uniffle.shuffle.RssShuffleDescriptor;
 import org.apache.uniffle.shuffle.buffer.WriteBufferPacker;
 import org.apache.uniffle.shuffle.utils.ShuffleUtils;
 
-import static org.apache.uniffle.shuffle.utils.ShuffleUtils.*;
-
+import static org.apache.uniffle.shuffle.utils.ShuffleUtils.getShuffleDataDistributionType;
+import static org.apache.uniffle.shuffle.utils.ShuffleUtils.checkNotNull;
+import static org.apache.uniffle.shuffle.utils.ShuffleUtils.checkArgument;
 /** */
 public class RssShuffleOutputGate {
 

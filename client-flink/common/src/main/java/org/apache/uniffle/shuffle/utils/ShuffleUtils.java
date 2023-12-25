@@ -19,12 +19,14 @@ package org.apache.uniffle.shuffle.utils;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.configuration.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
@@ -33,8 +35,6 @@ import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.shuffle.RssFlinkConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ShuffleUtils {
 

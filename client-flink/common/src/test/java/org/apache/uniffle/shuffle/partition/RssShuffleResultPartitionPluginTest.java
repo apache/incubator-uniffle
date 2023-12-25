@@ -56,7 +56,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RssShuffleResultPartitionTest {
+public class RssShuffleResultPartitionPluginTest {
 
   private NetworkBufferPool globalPool;
 
@@ -81,7 +81,7 @@ public class RssShuffleResultPartitionTest {
 
     JobID jobId = new JobID(10, 2);
     BufferPool bufferPool = globalPool.createBufferPool(1, 10);
-    RssShuffleResultPartition partition =
+    RssShuffleResultPartitionPlugin partition =
         genRssShuffleResultPartition(jobId, numSubpartitions, bufferPool);
 
     for (int i = 0; i < numRecords; i++) {
@@ -104,7 +104,7 @@ public class RssShuffleResultPartitionTest {
 
     JobID jobId = new JobID(10, 2);
     BufferPool bufferPool = globalPool.createBufferPool(1, 10);
-    RssShuffleResultPartition partition =
+    RssShuffleResultPartitionPlugin partition =
         genRssShuffleResultPartition(jobId, numSubpartitions, bufferPool);
 
     for (int i = 0; i < numRecords; i++) {
@@ -130,7 +130,7 @@ public class RssShuffleResultPartitionTest {
     int numSubpartitions = 2;
     JobID jobId = new JobID(10, 1);
     BufferPool bufferPool = globalPool.createBufferPool(numBuffers, numBuffers);
-    RssShuffleResultPartition partition =
+    RssShuffleResultPartitionPlugin partition =
         genRssShuffleResultPartition(jobId, numSubpartitions, bufferPool);
 
     ByteBuffer recordWritten = generateRandomData(BUFFER_SIZE * numBuffers, new Random());
@@ -147,13 +147,13 @@ public class RssShuffleResultPartitionTest {
   // Statistics and states
   // ---------------------------------------------------------------------------------------------
 
-  private RssShuffleResultPartition genRssShuffleResultPartition(
+  private RssShuffleResultPartitionPlugin genRssShuffleResultPartition(
       JobID jobId, int numSubpartitions, BufferPool bufferPool) throws Exception {
     BufferPool outPutBufferPool = globalPool.createBufferPool(10, 200);
     RssShuffleOutputGate outputGate =
         genRssShuffleOutputGate(jobId, numSubpartitions, outPutBufferPool);
-    RssShuffleResultPartition rssShuffleResultPartition =
-        new RssShuffleResultPartition(
+    RssShuffleResultPartitionPlugin rssShuffleResultPartition =
+        new RssShuffleResultPartitionPlugin(
             "RssShuffleResultPartitionTest",
             0,
             new ResultPartitionID(),
