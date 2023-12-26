@@ -29,13 +29,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.prometheus.client.CollectorRegistry;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
-import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
@@ -74,6 +75,7 @@ public class ShuffleServer {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServer.class);
   private RegisterHeartBeat registerHeartBeat;
+  private NettyDirectMemoryTracker directMemoryUsageReporter;
   private String id;
   private String ip;
   private int grpcPort;
@@ -167,6 +169,10 @@ public class ShuffleServer {
       registerHeartBeat.shutdown();
       LOG.info("HeartBeat Stopped!");
     }
+    if (directMemoryUsageReporter != null) {
+      directMemoryUsageReporter.stop();
+      LOG.info("Direct memory usage tracker Stopped!");
+    }
     if (storageManager != null) {
       storageManager.stop();
       LOG.info("MultiStorage Stopped!");
@@ -207,6 +213,8 @@ public class ShuffleServer {
     }
     grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
+
+    initServerTags();
 
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
@@ -256,49 +264,43 @@ public class ShuffleServer {
     }
 
     registerHeartBeat = new RegisterHeartBeat(this);
+    directMemoryUsageReporter = new NettyDirectMemoryTracker(shuffleServerConf);
     shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, this, storageManager);
     shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
     shuffleTaskManager =
         new ShuffleTaskManager(
             shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
+
     nettyServerEnabled = shuffleServerConf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
     if (nettyServerEnabled) {
       streamServer = new StreamServer(this);
     }
 
     setServer();
-
-    initServerTags();
   }
 
   private void initServerTags() {
     // it's the system tag for server's version
     tags.add(Constants.SHUFFLE_SERVER_VERSION);
+    // the rpc service type bound into tags
+    tags.add(shuffleServerConf.get(RssBaseConf.RPC_SERVER_TYPE).name());
 
     List<String> configuredTags = shuffleServerConf.get(ShuffleServerConf.TAGS);
     if (CollectionUtils.isNotEmpty(configuredTags)) {
       tags.addAll(configuredTags);
     }
-    tagServer();
-    LOG.info("Server tags: {}", tags);
-  }
 
-  private void tagServer() {
-    if (nettyServerEnabled) {
-      tags.add(ClientType.GRPC_NETTY.name());
-    } else {
-      tags.add(ClientType.GRPC.name());
-    }
+    LOG.info("Server tags: {}", tags);
   }
 
   private void registerMetrics() {
     LOG.info("Register metrics");
     CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
-    String tags = coverToString();
-    ShuffleServerMetrics.register(shuffleServerCollectorRegistry, tags);
-    grpcMetrics = new ShuffleServerGrpcMetrics(this.shuffleServerConf, tags);
+    String rawTags = getEncodedTags();
+    ShuffleServerMetrics.register(shuffleServerCollectorRegistry, rawTags);
+    grpcMetrics = new ShuffleServerGrpcMetrics(this.shuffleServerConf, rawTags);
     grpcMetrics.register(new CollectorRegistry(true));
-    nettyMetrics = new ShuffleServerNettyMetrics(shuffleServerConf, tags);
+    nettyMetrics = new ShuffleServerNettyMetrics(shuffleServerConf, rawTags);
     nettyMetrics.register(new CollectorRegistry(true));
     CollectorRegistry jvmCollectorRegistry = new CollectorRegistry(true);
     boolean verbose =
@@ -494,17 +496,7 @@ public class ShuffleServer {
     return nettyPort;
   }
 
-  public String coverToString() {
-    List<String> tags = shuffleServerConf.get(ShuffleServerConf.TAGS);
-    StringBuilder sb = new StringBuilder();
-    sb.append(Constants.SHUFFLE_SERVER_VERSION);
-    if (tags == null || tags.size() == 0) {
-      return sb.toString();
-    }
-    for (String tag : tags) {
-      sb.append(",");
-      sb.append(tag);
-    }
-    return sb.toString();
+  public String getEncodedTags() {
+    return StringUtils.join(tags, ",");
   }
 }

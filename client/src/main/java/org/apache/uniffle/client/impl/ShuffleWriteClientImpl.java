@@ -912,9 +912,11 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                   RssAppHeartBeatResponse response = client.sendHeartBeat(request);
                   if (response.getStatusCode() != StatusCode.SUCCESS) {
                     LOG.warn("Failed to send heartbeat to " + shuffleServerInfo);
+                    throw new RssException("fds");
                   }
                 } catch (Exception e) {
                   LOG.warn("Error happened when send heartbeat to " + shuffleServerInfo, e);
+                  throw new RssException("fds");
                 }
                 return null;
               });
@@ -1015,6 +1017,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public void unregisterShuffle(String appId) {
+    if (appId == null) {
+      return;
+    }
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
     if (appServerMap == null) {
       return;

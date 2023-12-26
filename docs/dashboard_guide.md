@@ -23,8 +23,8 @@ limitations under the License.
 This document explains how to install and start Uniffle's dashboard.
 
 ### Configure related parameters
-In $RSS_HOME/conf directory, configure the dashboard data request port and front-end access port in the coordinator
-``` shell
+In $RSS_HOME/conf directory, Create a dashboard.conf configuration file and configure the data request port and front-end access port in dashboard.conf.
+``` properties
 ## Front-end access port
 rss.dashboard.http.port 19997
 ## The dashboard request data port, which is the Coordinator's HTTP port
