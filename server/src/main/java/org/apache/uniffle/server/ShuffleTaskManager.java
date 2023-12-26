@@ -460,7 +460,8 @@ public class ShuffleTaskManager {
       throws NoBufferException {
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
     if (null == shuffleTaskInfo) {
-      throw new NoRegisterException("Not Registered");
+      LOG.error("Find not registered app, appId: {}, shuffleId: {}", appId, shuffleId);
+      throw new NoRegisterException("Not Registered, appId: " + appId);
     }
     for (int partitionId : partitionIds) {
       long partitionUsedDataSize = getPartitionDataSize(appId, shuffleId, partitionId);
