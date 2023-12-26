@@ -33,8 +33,6 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.uniffle.common.exception.NoBufferException;
-import org.apache.uniffle.common.exception.NoRegisterException;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +47,8 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
+import org.apache.uniffle.common.exception.NoBufferException;
+import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -85,7 +85,6 @@ import org.apache.uniffle.proto.RssProtos.ShuffleRegisterRequest;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerImplBase;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
-import org.apache.uniffle.server.buffer.RequireBufferStatusCode;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -403,13 +402,13 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       StatusCode status = StatusCode.SUCCESS;
       try {
         requireBufferId =
-          shuffleServer
-            .getShuffleTaskManager()
-            .requireBuffer(
-              appId,
-              request.getShuffleId(),
-              request.getPartitionIdsList(),
-              request.getRequireSize());
+            shuffleServer
+                .getShuffleTaskManager()
+                .requireBuffer(
+                    appId,
+                    request.getShuffleId(),
+                    request.getPartitionIdsList(),
+                    request.getRequireSize());
       } catch (NoRegisterException noRegisterException) {
         requireBufferId = -1;
         status = StatusCode.NO_REGISTER;
@@ -420,10 +419,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
       }
       RequireBufferResponse response =
-        RequireBufferResponse.newBuilder()
-          .setStatus(status.toProto())
-          .setRequireBufferId(requireBufferId)
-          .build();
+          RequireBufferResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRequireBufferId(requireBufferId)
+              .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     }

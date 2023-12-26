@@ -43,8 +43,6 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.uniffle.common.exception.NoBufferException;
-import org.apache.uniffle.common.exception.NoRegisterException;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +56,8 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
+import org.apache.uniffle.common.exception.NoBufferException;
+import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
@@ -65,7 +65,6 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
-import org.apache.uniffle.server.buffer.RequireBufferStatusCode;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.event.AppPurgeEvent;
@@ -457,7 +456,8 @@ public class ShuffleTaskManager {
   }
 
   public long requireBuffer(
-      String appId, int shuffleId, List<Integer> partitionIds, int requireSize) throws NoBufferException{
+      String appId, int shuffleId, List<Integer> partitionIds, int requireSize)
+      throws NoBufferException {
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
     if (null == shuffleTaskInfo) {
       throw new NoRegisterException("Not Registered");
@@ -467,23 +467,32 @@ public class ShuffleTaskManager {
       if (shuffleBufferManager.limitHugePartition(
           appId, shuffleId, partitionId, partitionUsedDataSize)) {
         ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.inc();
-        throw new NoBufferException("No Buffer");
+        LOG.error(
+            "No Buffer For Huge Partition, appId: {} ,shuffleId: {} ,partitionIds: {} ,requireSize: {}",
+            appId,
+            shuffleId,
+            partitionIds,
+            requireSize);
+        throw new NoBufferException(
+            String.format(
+                "No Buffer For Huge Partition, appId: %s ,shuffleId: %s ,partitionIds: %s ,requireSize: %s",
+                appId, shuffleId, partitionIds, requireSize));
       }
     }
     return requireBuffer(requireSize);
   }
 
   public long requireBuffer(int requireSize) throws NoBufferException {
-    long requireId = -1;
     if (shuffleBufferManager.requireMemory(requireSize, true)) {
-      requireId = requireBufferId.incrementAndGet();
+      long requireId = requireBufferId.incrementAndGet();
       requireBufferIds.put(
           requireId,
           new PreAllocatedBufferInfo(requireId, System.currentTimeMillis(), requireSize));
       return requireId;
     } else {
       ShuffleServerMetrics.counterTotalRequireBufferFailedForRegularPartition.inc();
-      throw new NoBufferException("No Buffer");
+      LOG.error("Failed to require buffer, require size: {}", requireSize);
+      throw new NoBufferException("No Buffer For Regular Partition, requireSize: " + requireSize);
     }
   }
 
