@@ -49,7 +49,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
-import org.apache.uniffle.common.exception.NoBufferException;
+import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -71,6 +71,7 @@ import static org.apache.uniffle.server.ShuffleServerConf.CLIENT_MAX_CONCURRENCY
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -116,11 +117,10 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     String appId = "hugePartitionMemoryUsageLimitTest_appId";
     int shuffleId = 1;
 
-    // case1, return -4 means not registered.
-    long requiredId;
+    // case1, expect NoRegisterException
     try {
       shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
-      fail("Should not registered");
+      fail("Should thow NoRegisterException");
     } catch (Exception e) {
       assertTrue(e instanceof NoRegisterException);
     }
@@ -134,9 +134,10 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
 
     // case2
     try {
-      shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+      long requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+      assertNotEquals(-1, requiredId);
     } catch (Exception e) {
-      assertTrue(e instanceof NoBufferException);
+      fail("Should not throw Exception");
     }
 
     // case3
@@ -144,9 +145,10 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData0);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
     try {
-      shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+      long requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+      assertNotEquals(-1, requiredId);
     } catch (Exception e) {
-      assertTrue(e instanceof NoBufferException);
+      fail("Should not throw Exception");
     }
 
     // case4
@@ -155,12 +157,13 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
     try {
       shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+      fail("Should throw NoBufferForHugePartitionException");
     } catch (Exception e) {
-      assertTrue(e instanceof NoBufferException);
+      assertTrue(e instanceof NoBufferForHugePartitionException);
     }
 
     // metrics test
-    assertEquals(1, ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.get());
+    assertEquals(0, ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.get());
     assertEquals(0, ShuffleServerMetrics.counterTotalRequireBufferFailedForRegularPartition.get());
     assertEquals(1, ShuffleServerMetrics.counterTotalAppWithHugePartitionNum.get());
     assertEquals(1, ShuffleServerMetrics.counterTotalHugePartitionNum.get());

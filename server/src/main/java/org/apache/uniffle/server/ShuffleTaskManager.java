@@ -57,6 +57,7 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.NoBufferException;
+import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -459,20 +460,19 @@ public class ShuffleTaskManager {
       String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
     if (null == shuffleTaskInfo) {
-      LOG.error("Find not registered app, appId: {}, shuffleId: {}", appId, shuffleId);
-      throw new NoRegisterException("Not Registered, appId: " + appId);
+      LOG.error("No such app is registered. appId: {}, shuffleId: {}", appId, shuffleId);
+      throw new NoRegisterException("No such app is registered. appId: " + appId);
     }
     for (int partitionId : partitionIds) {
       long partitionUsedDataSize = getPartitionDataSize(appId, shuffleId, partitionId);
       if (shuffleBufferManager.limitHugePartition(
           appId, shuffleId, partitionId, partitionUsedDataSize)) {
-        ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.inc();
         String errorMessage =
             String.format(
-                "No Buffer For Huge Partition, appId: %s, shuffleId: %s, partitionIds: %s, partitionUsedDataSize: %s",
+                "Huge partition is limited to writing. appId: %s, shuffleId: %s, partitionIds: %s, partitionUsedDataSize: %s",
                 appId, shuffleId, partitionIds, partitionUsedDataSize);
         LOG.error(errorMessage);
-        throw new NoBufferException(errorMessage);
+        throw new NoBufferForHugePartitionException(errorMessage);
       }
     }
     return requireBuffer(requireSize);
@@ -486,7 +486,6 @@ public class ShuffleTaskManager {
           new PreAllocatedBufferInfo(requireId, System.currentTimeMillis(), requireSize));
       return requireId;
     } else {
-      ShuffleServerMetrics.counterTotalRequireBufferFailedForRegularPartition.inc();
       LOG.error("Failed to require buffer, require size: {}", requireSize);
       throw new NoBufferException("No Buffer For Regular Partition, requireSize: " + requireSize);
     }

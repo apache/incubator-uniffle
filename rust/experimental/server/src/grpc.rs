@@ -65,6 +65,7 @@ enum StatusCode {
     NO_PARTITION = 5,
     INTERNAL_ERROR = 6,
     TIMEOUT = 7,
+    NO_BUFFER_FOR_HUGE_PARTITION = 8,
 }
 
 impl Into<i32> for StatusCode {

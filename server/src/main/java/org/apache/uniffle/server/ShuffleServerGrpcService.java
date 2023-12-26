@@ -48,6 +48,7 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.NoBufferException;
+import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
@@ -393,7 +394,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void requireBuffer(
       RequireBufferRequest request, StreamObserver<RequireBufferResponse> responseObserver) {
     String appId = request.getAppId();
-    long requireBufferId;
+    long requireBufferId = -1;
     StatusCode status = StatusCode.SUCCESS;
     try {
       if (StringUtils.isEmpty(appId)) {
@@ -410,13 +411,16 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                     request.getPartitionIdsList(),
                     request.getRequireSize());
       }
-    } catch (NoRegisterException e) {
-      requireBufferId = -1;
-      status = StatusCode.NO_REGISTER;
-      ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
     } catch (NoBufferException e) {
-      requireBufferId = -1;
       status = StatusCode.NO_BUFFER;
+      ShuffleServerMetrics.counterTotalRequireBufferFailedForRegularPartition.inc();
+      ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
+    } catch (NoBufferForHugePartitionException e) {
+      status = StatusCode.NO_BUFFER_FOR_HUGE_PARTITION;
+      ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.inc();
+      ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
+    } catch (NoRegisterException e) {
+      status = StatusCode.NO_REGISTER;
       ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
     }
     RequireBufferResponse response =
