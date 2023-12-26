@@ -401,8 +401,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         requireBufferId =
             shuffleServer.getShuffleTaskManager().requireBuffer(request.getRequireSize());
       } else {
-        status = StatusCode.SUCCESS;
-
         requireBufferId =
             shuffleServer
                 .getShuffleTaskManager()
@@ -412,11 +410,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                     request.getPartitionIdsList(),
                     request.getRequireSize());
       }
-    } catch (NoRegisterException noRegisterException) {
+    } catch (NoRegisterException e) {
       requireBufferId = -1;
       status = StatusCode.NO_REGISTER;
       ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
-    } catch (NoBufferException noBufferException) {
+    } catch (NoBufferException e) {
       requireBufferId = -1;
       status = StatusCode.NO_BUFFER;
       ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();

@@ -49,6 +49,8 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.exception.NoBufferException;
+import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ChecksumUtils;
@@ -69,7 +71,6 @@ import static org.apache.uniffle.server.ShuffleServerConf.CLIENT_MAX_CONCURRENCY
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -116,8 +117,13 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     int shuffleId = 1;
 
     // case1, return -4 means not registered.
-    long requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
-    assertEquals(-4, requiredId);
+    long requiredId;
+    try {
+      shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+      fail("Should not registered");
+    } catch (Exception e) {
+      assertTrue(e instanceof NoRegisterException);
+    }
 
     shuffleTaskManager.registerShuffle(
         appId,
@@ -127,22 +133,32 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
         StringUtils.EMPTY);
 
     // case2
-    requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
-    assertNotEquals(-1, requiredId);
+    try {
+      shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+    } catch (Exception e) {
+      assertTrue(e instanceof NoBufferException);
+    }
 
     // case3
     ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 500);
     shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData0);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
-    requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
-    assertNotEquals(-1, requiredId);
+    try {
+      shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+    } catch (Exception e) {
+      assertTrue(e instanceof NoBufferException);
+    }
 
     // case4
     partitionedData0 = createPartitionedData(1, 1, 500);
     shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData0);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
-    requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
-    assertEquals(-1, requiredId);
+    try {
+      shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+    } catch (Exception e) {
+      assertTrue(e instanceof NoBufferException);
+    }
+
     // metrics test
     assertEquals(1, ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.get());
     assertEquals(0, ShuffleServerMetrics.counterTotalRequireBufferFailedForRegularPartition.get());
