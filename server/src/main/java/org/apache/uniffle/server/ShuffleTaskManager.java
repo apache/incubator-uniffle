@@ -467,16 +467,12 @@ public class ShuffleTaskManager {
       if (shuffleBufferManager.limitHugePartition(
           appId, shuffleId, partitionId, partitionUsedDataSize)) {
         ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.inc();
-        LOG.error(
-            "No Buffer For Huge Partition, appId: {} ,shuffleId: {} ,partitionIds: {} ,partitionUsedDataSize: {}",
-            appId,
-            shuffleId,
-            partitionIds,
-            partitionUsedDataSize);
-        throw new NoBufferException(
+        String errorMessage =
             String.format(
-                "No Buffer For Huge Partition, appId: %s ,shuffleId: %s ,partitionIds: %s ,partitionUsedDataSize: %s",
-                appId, shuffleId, partitionIds, partitionUsedDataSize));
+                "No Buffer For Huge Partition, appId: %s, shuffleId: %s, partitionIds: %s, partitionUsedDataSize: %s",
+                appId, shuffleId, partitionIds, partitionUsedDataSize);
+        LOG.error(errorMessage);
+        throw new NoBufferException(errorMessage);
       }
     }
     return requireBuffer(requireSize);
