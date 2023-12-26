@@ -456,8 +456,7 @@ public class ShuffleTaskManager {
   }
 
   public long requireBuffer(
-      String appId, int shuffleId, List<Integer> partitionIds, int requireSize)
-      throws NoBufferException {
+      String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
     if (null == shuffleTaskInfo) {
       LOG.error("Find not registered app, appId: {}, shuffleId: {}", appId, shuffleId);
@@ -469,21 +468,21 @@ public class ShuffleTaskManager {
           appId, shuffleId, partitionId, partitionUsedDataSize)) {
         ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.inc();
         LOG.error(
-            "No Buffer For Huge Partition, appId: {} ,shuffleId: {} ,partitionIds: {} ,requireSize: {}",
+            "No Buffer For Huge Partition, appId: {} ,shuffleId: {} ,partitionIds: {} ,partitionUsedDataSize: {}",
             appId,
             shuffleId,
             partitionIds,
-            requireSize);
+            partitionUsedDataSize);
         throw new NoBufferException(
             String.format(
-                "No Buffer For Huge Partition, appId: %s ,shuffleId: %s ,partitionIds: %s ,requireSize: %s",
-                appId, shuffleId, partitionIds, requireSize));
+                "No Buffer For Huge Partition, appId: %s ,shuffleId: %s ,partitionIds: %s ,partitionUsedDataSize: %s",
+                appId, shuffleId, partitionIds, partitionUsedDataSize));
       }
     }
     return requireBuffer(requireSize);
   }
 
-  public long requireBuffer(int requireSize) throws NoBufferException {
+  public long requireBuffer(int requireSize) {
     if (shuffleBufferManager.requireMemory(requireSize, true)) {
       long requireId = requireBufferId.incrementAndGet();
       requireBufferIds.put(
