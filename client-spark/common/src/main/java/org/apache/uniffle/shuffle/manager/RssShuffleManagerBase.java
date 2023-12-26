@@ -19,20 +19,29 @@ package org.apache.uniffle.shuffle.manager;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.collect.Maps;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.MapOutputTracker;
 import org.apache.spark.MapOutputTrackerMaster;
+import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
 import org.apache.spark.SparkException;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.RssSparkShuffleUtils;
 import org.apache.spark.shuffle.ShuffleManager;
 import org.apache.spark.shuffle.SparkVersionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+
+import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED;
 
 public abstract class RssShuffleManagerBase implements RssShuffleManagerInterface, ShuffleManager {
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleManagerBase.class);
@@ -150,5 +159,24 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     MapOutputTracker tracker =
         Optional.ofNullable(SparkEnv.get()).map(SparkEnv::mapOutputTracker).orElse(null);
     return tracker instanceof MapOutputTrackerMaster ? (MapOutputTrackerMaster) tracker : null;
+  }
+
+  private Map<String, String> parseRemoteStorageConf(Configuration conf) {
+    Map<String, String> confItems = Maps.newHashMap();
+    for (Map.Entry<String, String> entry : conf) {
+      confItems.put(entry.getKey(), entry.getValue());
+    }
+    return confItems;
+  }
+
+  protected RemoteStorageInfo getRemoteStorageInfo(SparkConf sparkConf) {
+    Map<String, String> confItems = Maps.newHashMap();
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+    if (rssConf.getBoolean(RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED)) {
+      confItems = parseRemoteStorageConf(new Configuration(true));
+    }
+
+    return new RemoteStorageInfo(
+        sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""), confItems);
   }
 }

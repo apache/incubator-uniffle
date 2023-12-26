@@ -51,14 +51,13 @@ export MALLOC_ARENA_MAX=${MALLOC_ARENA_MAX:-4}
 
 MAIN_CLASS="org.apache.uniffle.server.ShuffleServer"
 
-HADOOP_DEPENDENCY="$("$HADOOP_HOME/bin/hadoop" classpath --glob)"
-
 echo "Check process existence"
 RPC_PORT=`grep '^rss.rpc.server.port' $SHUFFLE_SERVER_CONF_FILE |awk '{print $2}'`
 is_port_in_use $RPC_PORT
 
 
 CLASSPATH=""
+JAVA_LIB_PATH=""
 
 for file in $(ls ${JAR_DIR}/server/*.jar 2>/dev/null); do
   CLASSPATH=$CLASSPATH:$file
@@ -67,8 +66,17 @@ done
 mkdir -p "${RSS_LOG_DIR}"
 mkdir -p "${RSS_PID_DIR}"
 
-CLASSPATH=$CLASSPATH:$HADOOP_CONF_DIR:$HADOOP_DEPENDENCY
-JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native"
+set +u
+if [ $HADOOP_HOME ]; then
+  HADOOP_DEPENDENCY="$("$HADOOP_HOME/bin/hadoop" classpath --glob)"
+  CLASSPATH=$CLASSPATH:$HADOOP_DEPENDENCY
+  JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native"
+fi
+
+if [ "$HADOOP_CONF_DIR" ]; then
+  CLASSPATH=$CLASSPATH:$HADOOP_CONF_DIR
+fi
+set -u
 
 echo "class path is $CLASSPATH"
 
@@ -77,10 +85,17 @@ if [ -n "${MAX_DIRECT_MEMORY_SIZE:-}" ]; then
   MAX_DIRECT_MEMORY_OPTS="-XX:MaxDirectMemorySize=$MAX_DIRECT_MEMORY_SIZE"
 fi
 
+# Attention, the OOM dump file may be very big !
+JAVA_OPTS=""
+if [ -n "${OOM_DUMP_PATH:-}" ]; then
+  JAVA_OPTS="-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$OOM_DUMP_PATH"
+fi
+
 JVM_ARGS=" -server \
           -Xmx${XMX_SIZE} \
           -Xms${XMX_SIZE} \
           ${MAX_DIRECT_MEMORY_OPTS} \
+          ${JAVA_OPTS} \
           -XX:+UseG1GC \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
@@ -93,6 +108,13 @@ JVM_ARGS=" -server \
           -XX:+PrintAdaptiveSizePolicy \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
+          -XX:+CrashOnOutOfMemoryError \
+          -XX:+ExitOnOutOfMemoryError \
+          -XX:+PrintTenuringDistribution \
+          -XX:+PrintPromotionFailure \
+          -XX:+PrintGCApplicationStoppedTime \
+          -XX:+PrintCommandLineFlags \
+          -XX:+PrintGCCause \
           -XX:+PrintGCDetails \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 

@@ -142,4 +142,12 @@ public class RssClientConf {
           .enumType(ClientType.class)
           .defaultValue(ClientType.GRPC)
           .withDescription("Supports GRPC, GRPC_NETTY");
+
+  public static final ConfigOption<Boolean> RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED =
+      ConfigOptions.key("rss.client.remote.storage.useLocalConfAsDefault")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "This option is only valid when the remote storage path is specified. If ture, "
+                  + "the remote storage conf will use the client side hadoop configuration loaded from the classpath.");
 }
