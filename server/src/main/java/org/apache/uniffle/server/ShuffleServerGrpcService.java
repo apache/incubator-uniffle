@@ -394,13 +394,15 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       RequireBufferRequest request, StreamObserver<RequireBufferResponse> responseObserver) {
     String appId = request.getAppId();
     long requireBufferId;
-    if (StringUtils.isEmpty(appId)) {
-      // To be compatible with older client version
-      requireBufferId =
-          shuffleServer.getShuffleTaskManager().requireBuffer(request.getRequireSize());
-    } else {
-      StatusCode status = StatusCode.SUCCESS;
-      try {
+    StatusCode status = StatusCode.SUCCESS;
+    try {
+      if (StringUtils.isEmpty(appId)) {
+        // To be compatible with older client version
+        requireBufferId =
+            shuffleServer.getShuffleTaskManager().requireBuffer(request.getRequireSize());
+      } else {
+        status = StatusCode.SUCCESS;
+
         requireBufferId =
             shuffleServer
                 .getShuffleTaskManager()
@@ -409,23 +411,23 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                     request.getShuffleId(),
                     request.getPartitionIdsList(),
                     request.getRequireSize());
-      } catch (NoRegisterException noRegisterException) {
-        requireBufferId = -1;
-        status = StatusCode.NO_REGISTER;
-        ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
-      } catch (NoBufferException noBufferException) {
-        requireBufferId = -1;
-        status = StatusCode.NO_BUFFER;
-        ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
       }
-      RequireBufferResponse response =
-          RequireBufferResponse.newBuilder()
-              .setStatus(status.toProto())
-              .setRequireBufferId(requireBufferId)
-              .build();
-      responseObserver.onNext(response);
-      responseObserver.onCompleted();
+    } catch (NoRegisterException noRegisterException) {
+      requireBufferId = -1;
+      status = StatusCode.NO_REGISTER;
+      ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
+    } catch (NoBufferException noBufferException) {
+      requireBufferId = -1;
+      status = StatusCode.NO_BUFFER;
+      ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
     }
+    RequireBufferResponse response =
+        RequireBufferResponse.newBuilder()
+            .setStatus(status.toProto())
+            .setRequireBufferId(requireBufferId)
+            .build();
+    responseObserver.onNext(response);
+    responseObserver.onCompleted();
   }
 
   @Override
