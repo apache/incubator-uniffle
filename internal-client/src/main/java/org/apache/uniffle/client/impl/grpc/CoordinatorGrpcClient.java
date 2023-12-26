@@ -436,4 +436,3 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
     return serverToPartitionRanges;
   }
 }
-
