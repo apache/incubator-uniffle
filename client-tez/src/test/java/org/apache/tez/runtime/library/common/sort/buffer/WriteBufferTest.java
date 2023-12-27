@@ -61,6 +61,7 @@ public class WriteBufferTest {
             valSerializer);
 
     long recordLength = buffer.addRecord(key, value);
+    buffer.sort();
     assertEquals(20, buffer.getData().length);
     assertEquals(16, recordLength);
     assertEquals(1, buffer.getPartitionId());
@@ -134,6 +135,7 @@ public class WriteBufferTest {
     recordLength = buffer.addRecord(key, value);
     recordLenMap.putIfAbsent(keyStr, recordLength);
 
+    buffer.sort();
     result = buffer.getData();
     byteArrayInputStream = new ByteArrayInputStream(result);
     keyDeserializer.open(byteArrayInputStream);
