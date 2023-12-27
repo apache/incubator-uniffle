@@ -104,6 +104,9 @@ public class ShuffleFlushManager {
   private void recordSuccess(ShuffleDataFlushEvent event, long start) {
     updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
     ShuffleServerMetrics.incStorageSuccessCounter(event.getUnderStorage().getStorageHost());
+    ShuffleTaskInfo shuffleTaskInfo =
+        shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
+    shuffleTaskInfo.addOnDiskDataSize(event.getSize());
     event.doCleanup();
     if (shuffleServer != null) {
       if (LOG.isDebugEnabled()) {

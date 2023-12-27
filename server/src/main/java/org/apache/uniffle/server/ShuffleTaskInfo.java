@@ -51,6 +51,8 @@ public class ShuffleTaskInfo {
   private AtomicReference<String> user;
 
   private AtomicLong totalDataSize = new AtomicLong(0);
+  private AtomicLong totalDataSizeOnDisk = new AtomicLong(0);
+
   /** shuffleId -> partitionId -> partition shuffle data size */
   private Map<Integer, Map<Integer, Long>> partitionDataSizes;
   /** shuffleId -> huge partitionIds set */
@@ -123,6 +125,14 @@ public class ShuffleTaskInfo {
 
   public long getTotalDataSize() {
     return totalDataSize.get();
+  }
+
+  public long addOnDiskDataSize(long delta) {
+    return totalDataSizeOnDisk.addAndGet(delta);
+  }
+
+  public long getTotalOnDiskDataSize() {
+    return totalDataSizeOnDisk.get();
   }
 
   public long getPartitionDataSize(int shuffleId, int partitionId) {
