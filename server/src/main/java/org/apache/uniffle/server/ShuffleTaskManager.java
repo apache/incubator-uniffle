@@ -86,6 +86,7 @@ public class ShuffleTaskManager {
   private final ScheduledExecutorService expiredAppCleanupExecutorService;
   private final ScheduledExecutorService leakShuffleDataCheckExecutorService;
   private ScheduledExecutorService triggerFlushExecutorService;
+  private final TopNShuffleDataSizeOfAppCalcTask topNShuffleDataSizeOfAppCalcTask;
   private final StorageManager storageManager;
   private AtomicLong requireBufferId = new AtomicLong(0);
   private ShuffleServerConf conf;
@@ -104,7 +105,6 @@ public class ShuffleTaskManager {
   private final ShuffleBufferManager shuffleBufferManager;
   private Map<String, ShuffleTaskInfo> shuffleTaskInfos = JavaUtils.newConcurrentMap();
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = JavaUtils.newConcurrentMap();
-  private Runnable clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
   private final Cache<String, Lock> appLocks;
 
@@ -165,8 +165,14 @@ public class ShuffleTaskManager {
             .maximumSize(Integer.MAX_VALUE)
             .build();
 
+    startClearResourceThread();
+    topNShuffleDataSizeOfAppCalcTask = new TopNShuffleDataSizeOfAppCalcTask(this, conf);
+    topNShuffleDataSizeOfAppCalcTask.start();
+  }
+
+  private void startClearResourceThread() {
     // the thread for clear expired resources
-    clearResourceThread =
+    Runnable clearResourceThread =
         () -> {
           while (true) {
             PurgeEvent event = null;
@@ -832,5 +838,13 @@ public class ShuffleTaskManager {
     synchronized (this.shuffleBufferManager) {
       this.shuffleBufferManager.flushIfNecessary();
     }
+  }
+
+  public Map<String, ShuffleTaskInfo> getShuffleTaskInfos() {
+    return shuffleTaskInfos;
+  }
+
+  public void stop() {
+    topNShuffleDataSizeOfAppCalcTask.stop();
   }
 }

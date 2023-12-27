@@ -193,6 +193,9 @@ public class ShuffleServer {
     if (executorService != null) {
       executorService.shutdownNow();
     }
+    if (shuffleTaskManager != null) {
+      shuffleTaskManager.stop();
+    }
     running = false;
     LOG.info("RPC Server Stopped!");
   }

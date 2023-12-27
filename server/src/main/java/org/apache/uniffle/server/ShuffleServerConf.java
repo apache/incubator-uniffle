@@ -538,6 +538,19 @@ public class ShuffleServerConf extends RssBaseConf {
                   + "network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB."
                   + "Default is 0, OS will dynamically adjust the buf size.");
 
+  public static final ConfigOption<Integer> TOP_N_APP_SHUFFLE_DATA_SIZE_NUMBER =
+      ConfigOptions.key("rss.server.topN.appShuffleDataSize.number")
+          .intType()
+          .defaultValue(10)
+          .withDescription("number of topN shuffle data size of app level.");
+
+  public static final ConfigOption<Integer> TOP_N_APP_SHUFFLE_DATA_REFRESH_INTERVAL =
+      ConfigOptions.key("rss.server.topN.appShuffleDataSize.refreshIntervalMs")
+          .intType()
+          .defaultValue(1000)
+          .withDescription(
+              "refresh interval in ms for TopN shuffle data size of app level calc task.");
+
   public static final ConfigOption<Integer> SUMMARY_METRIC_WAIT_QUEUE_SIZE =
       ConfigOptions.key("rss.server.summary.metric.wait.queue.size")
           .intType()
