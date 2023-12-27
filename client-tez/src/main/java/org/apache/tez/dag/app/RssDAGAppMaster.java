@@ -348,8 +348,9 @@ public class RssDAGAppMaster extends DAGAppMaster {
       for (int i = 0; i < args.length; i++) {
         if (args[i].contains(DAGAppMaster.class.getName()) && isLocalShuffleMode(conf)) {
           // fallback to local shuffle mode.
-          LOG.info("Fallback to local shuffle mode, since tez.shuffle.mode = {}",
-            conf.get(RssTezConfig.RSS_SHUFFLE_MODE, RssTezConfig.DEFAULT_RSS_SHUFFLE_MODE));
+          LOG.info(
+              "Fallback to local shuffle mode, since tez.shuffle.mode = {}",
+              conf.get(RssTezConfig.RSS_SHUFFLE_MODE, RssTezConfig.DEFAULT_RSS_SHUFFLE_MODE));
           DAGAppMaster.main(Arrays.copyOfRange(args, i + 1, args.length));
           return;
         }
@@ -394,8 +395,6 @@ public class RssDAGAppMaster extends DAGAppMaster {
               + System.getenv(ApplicationConstants.Environment.LOCAL_DIRS.name())
               + ", logDirs="
               + System.getenv(ApplicationConstants.Environment.LOG_DIRS.name()));
-
-
 
       DAGProtos.ConfigurationProto confProto =
           TezUtilsInternal.readUserSpecifiedTezConfiguration(
@@ -467,14 +466,16 @@ public class RssDAGAppMaster extends DAGAppMaster {
   }
 
   private static boolean isLocalShuffleMode(Configuration conf) {
-    String shuffleMode = conf.get(RssTezConfig.RSS_SHUFFLE_MODE, RssTezConfig.DEFAULT_RSS_SHUFFLE_MODE);
+    String shuffleMode =
+        conf.get(RssTezConfig.RSS_SHUFFLE_MODE, RssTezConfig.DEFAULT_RSS_SHUFFLE_MODE);
     switch (shuffleMode) {
       case "remote":
         return false;
       case "local":
         return true;
       default:
-        throw new RssException("Unsupported shuffle mode" + shuffleMode + ", ensure that it is set to local/remote.");
+        throw new RssException(
+            "Unsupported shuffle mode" + shuffleMode + ", ensure that it is set to local/remote.");
     }
   }
 
