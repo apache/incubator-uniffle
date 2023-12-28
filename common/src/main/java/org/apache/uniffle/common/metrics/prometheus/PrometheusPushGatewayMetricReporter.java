@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.common.metrics.prometheus;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -62,7 +64,7 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
       throw new RssException(JOB_NAME + " should not be empty!");
     }
     Map<String, String> groupingKey = parseGroupingKey(conf.getString(GROUPING_KEY, ""));
-    groupingKey.put("instance", instanceId);
+    groupingKey.put("instance", getHostNameInstanceId());
     int reportInterval = conf.getInteger(REPORT_INTEVAL, 10);
     scheduledExecutorService =
         ThreadUtils.getDaemonSingleThreadScheduledExecutor("PrometheusPushGatewayMetricReporter");
@@ -120,5 +122,21 @@ public class PrometheusPushGatewayMetricReporter extends AbstractMetricReporter 
     }
 
     return groupingKey;
+  }
+
+  private String getHostNameInstanceId() {
+    String hostname = null;
+    try {
+      hostname = InetAddress.getLocalHost().getHostName();
+    } catch (UnknownHostException e) {
+      LOG.error("Unknown host.", e);
+    }
+
+    if (StringUtils.isNotEmpty(hostname)) {
+      LOG.info("Hostname: {}", hostname);
+      return hostname;
+    } else {
+      return instanceId;
+    }
   }
 }
