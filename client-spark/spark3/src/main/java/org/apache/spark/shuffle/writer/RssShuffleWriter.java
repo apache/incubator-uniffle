@@ -231,13 +231,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   @Override
-  public void write(Iterator<Product2<K, V>> records) throws IOException {
+  public void write(Iterator<Product2<K, V>> records) {
     try {
       writeImpl(records);
     } catch (Exception e) {
       taskFailureCallback.apply(taskId);
       if (shuffleManager.isRssResubmitStage()) {
-        throw throwFetchFailedIfNecessary(e);
+        throwFetchFailedIfNecessary(e);
       } else {
         throw e;
       }
@@ -501,7 +501,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     return ShuffleManagerClientFactory.getInstance().createShuffleManagerClient(grpc, host, port);
   }
 
-  private RssException throwFetchFailedIfNecessary(Exception e) {
+  private void throwFetchFailedIfNecessary(Exception e) {
     // The shuffleServer is registered only when a Block fails to be sent
     if (e instanceof RssSendFailedException) {
       Map<Long, BlockingQueue<ShuffleServerInfo>> failedBlockIds =
@@ -541,12 +541,12 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
           FetchFailedException ffe =
               RssSparkShuffleUtils.createFetchFailedException(
                   shuffleId, -1, taskContext.stageAttemptNumber(), e);
-          return new RssException(ffe);
+          throw new RssException(ffe);
         }
       } catch (IOException ioe) {
         LOG.info("Error closing shuffle manager client with error:", ioe);
       }
     }
-    return new RssException(e);
+    throw new RssException(e);
   }
 }
