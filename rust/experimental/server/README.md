@@ -71,11 +71,21 @@ memory_spill_low_watermark = 0.7
 ``` 
 
 #### TeraSort cost times
-| type                         |         1T         |
-|------------------------------|:------------------:|
-| vanilla uniffle (grpc-based) |  5.3min (2.3m/3m)  |
-| rust based shuffle server    | 4.6min (2.2m/2.4m) |
+| type/buffer capacity                 | 250G (compressed)  |                         comment                          |
+|--------------------------------------|:------------------:|:--------------------------------------------------------:|
+| vanilla uniffle (grpc-based)  / 10g  |  5.3min (2.3m/3m)  |                          1.9G/s                          |
+| vanilla uniffle (grpc-based)  / 300g | 5.6min (3.7m/1.9m) |              GC occurs frequently / 2.5G/s               |
+| vanilla uniffle (netty-based) / 10g  |         /          | read failed. 2.5G/s (write is better due to zero copy)   |
+| vanilla uniffle (netty-based) / 300g |         /          |                         app hang                         |
+| rust based shuffle server     / 10g  | 4.6min (2.2m/2.4m) |                         2.0 G/s                          |
+| rust based shuffle server     / 300g |  4min (1.5m/2.5m)  |                         3.5 G/s                          |
 
+
+Compared with grpc based server, rust-based server has less memory footprint and stable performance.  
+
+And Netty is still not stable for production env.
+
+In the future, rust-based server will use io_uring mechanism to improve writing performance.
 
 ## Build
 
