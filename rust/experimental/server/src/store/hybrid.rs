@@ -47,11 +47,12 @@ use std::any::Any;
 use std::collections::VecDeque;
 
 use await_tree::InstrumentAwait;
+use spin::mutex::Mutex;
 use std::str::FromStr;
 use std::sync::Arc;
 
 use crate::runtime::manager::RuntimeManager;
-use tokio::sync::{Mutex, Semaphore};
+use tokio::sync::Semaphore;
 
 trait PersistentStore: Store + Persistent + Send + Sync {}
 impl PersistentStore for LocalFileStore {}
@@ -399,7 +400,7 @@ impl Store for HybridStore {
                 let buffer = self
                     .hot_store
                     .get_or_create_underlying_staging_buffer(uid.clone());
-                let mut buffer_inner = buffer.lock().await;
+                let mut buffer_inner = buffer.lock();
                 if size.as_bytes() < buffer_inner.get_staging_size()? as u64 {
                     let (in_flight_uid, blocks) = buffer_inner.migrate_staging_to_in_flight()?;
                     self.make_memory_buffer_flush(in_flight_uid, blocks, uid.clone())
@@ -410,7 +411,7 @@ impl Store for HybridStore {
 
         // if the used size exceed the ratio of high watermark,
         // then send watermark flush trigger
-        if let Ok(_lock) = self.memory_spill_lock.try_lock() {
+        if let Some(_lock) = self.memory_spill_lock.try_lock() {
             let used_ratio = self.hot_store.memory_used_ratio().await;
             if used_ratio > self.config.memory_spill_high_watermark {
                 if let Err(e) = self.memory_watermark_flush_trigger_sender.send(()).await {
@@ -503,7 +504,7 @@ pub async fn watermark_flush(store: Arc<HybridStore>) -> Result<()> {
 
     let mut flushed_size = 0u64;
     for (partition_id, buffer) in buffers {
-        let mut buffer_inner = buffer.lock().await;
+        let mut buffer_inner = buffer.lock();
         let (in_flight_uid, blocks) = buffer_inner.migrate_staging_to_in_flight()?;
         drop(buffer_inner);
         for block in &blocks {

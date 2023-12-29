@@ -40,11 +40,10 @@ use std::collections::{BTreeMap, HashMap};
 use std::str::FromStr;
 
 use crate::store::mem::ticket::TicketManager;
-use crate::store::mem::InstrumentAwait;
 use croaring::Treemap;
+use spin::mutex::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 pub struct MemoryStore {
     // todo: change to RW lock
@@ -162,7 +161,7 @@ impl MemoryStore {
 
         let buffers = self.state.clone().into_read_only();
         for buffer in buffers.iter() {
-            let staging_size = buffer.1.lock().await.staging_size;
+            let staging_size = buffer.1.lock().staging_size;
             let valset = sorted_tree_map
                 .entry(staging_size)
                 .or_insert_with(|| vec![]);
@@ -193,7 +192,7 @@ impl MemoryStore {
 
     pub async fn get_partitioned_buffer_size(&self, uid: &PartitionedUId) -> Result<u64> {
         let buffer = self.get_underlying_partition_buffer(uid);
-        let buffer = buffer.lock().await;
+        let buffer = buffer.lock();
         Ok(buffer.total_size as u64)
     }
 
@@ -207,7 +206,7 @@ impl MemoryStore {
         in_flight_blocks_id: i64,
     ) -> Result<()> {
         let buffer = self.get_or_create_underlying_staging_buffer(uid);
-        let mut buffer_ref = buffer.lock().await;
+        let mut buffer_ref = buffer.lock();
         buffer_ref.flight_finished(&in_flight_blocks_id)?;
         Ok(())
     }
@@ -258,10 +257,7 @@ impl Store for MemoryStore {
     async fn insert(&self, ctx: WritingViewContext) -> Result<(), WorkerError> {
         let uid = ctx.uid;
         let buffer = self.get_or_create_underlying_staging_buffer(uid.clone());
-        let mut buffer_guarded = buffer
-            .lock()
-            .instrument_await("trying buffer lock to insert")
-            .await;
+        let mut buffer_guarded = buffer.lock();
 
         let blocks = ctx.data_blocks;
         let inserted_size = buffer_guarded.add(blocks)?;
@@ -277,10 +273,7 @@ impl Store for MemoryStore {
     async fn get(&self, ctx: ReadingViewContext) -> Result<ResponseData, WorkerError> {
         let uid = ctx.uid;
         let buffer = self.get_or_create_underlying_staging_buffer(uid);
-        let buffer = buffer
-            .lock()
-            .instrument_await("getting partitioned buffer lock")
-            .await;
+        let buffer = buffer.lock();
 
         let options = ctx.reading_options;
         let (fetched_blocks, length) = match options {
@@ -419,7 +412,7 @@ impl Store for MemoryStore {
         let mut used = 0;
         for removed_pid in _removed_list {
             if let Some(entry) = self.state.remove(removed_pid) {
-                used += entry.1.lock().await.total_size;
+                used += entry.1.lock().total_size;
             }
         }
 
@@ -768,7 +761,7 @@ mod test {
 
         // case4: some data are in inflight blocks
         let buffer = store.get_or_create_underlying_staging_buffer(uid.clone());
-        let mut buffer = runtime.wait(buffer.lock());
+        let mut buffer = buffer.lock();
         let owned = buffer.staging.to_owned();
         buffer.staging.clear();
         let mut idx = 0;
@@ -806,7 +799,7 @@ mod test {
         // case5: old data in in_flight and latest data in staging.
         // read it from the block id 9, and read size of 30
         let buffer = store.get_or_create_underlying_staging_buffer(uid.clone());
-        let mut buffer = runtime.wait(buffer.lock());
+        let mut buffer = buffer.lock();
         buffer.staging.push(PartitionedDataBlock {
             block_id: 20,
             length: 10,
