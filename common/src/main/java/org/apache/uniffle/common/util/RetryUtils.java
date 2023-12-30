@@ -76,12 +76,14 @@ public class RetryUtils {
       Function<Throwable, Boolean> isRetryFunc)
       throws Throwable {
     int retry = 0;
+    Throwable previousThrowable = null;
     while (true) {
       try {
         return cmd.execute();
       } catch (Throwable t) {
         retry++;
         if (isRetryFunc.apply(t) && retry < retryTimes) {
+          previousThrowable = t;
           LOG.info("Retry due to Throwable, " + t.getClass().getName() + " " + t.getMessage());
           LOG.info("Waiting " + intervalMs + " milliseconds before next connection attempt.");
           Thread.sleep(intervalMs);
@@ -89,6 +91,9 @@ public class RetryUtils {
             callBack.execute();
           }
         } else {
+          if (previousThrowable != null) {
+            LOG.error("The previous retry failed due to ", previousThrowable);
+          }
           throw t;
         }
       }
