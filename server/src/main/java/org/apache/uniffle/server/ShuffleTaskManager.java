@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
@@ -766,6 +767,7 @@ public class ShuffleTaskManager {
           removeIds.add(info.getRequireId());
         }
       }
+      List<Long> expiredRequireBufferIds = new ArrayList<>();
       for (Long requireId : removeIds) {
         PreAllocatedBufferInfo info = requireBufferIds.remove(requireId);
         if (info != null) {
@@ -773,11 +775,14 @@ public class ShuffleTaskManager {
           // removing processing.
           shuffleBufferManager.releaseMemory(info.getRequireSize(), false, true);
           ShuffleServerMetrics.gaugeExpiredPreAllocatedBufferSize.inc(info.getRequireSize());
+          expiredRequireBufferIds.add(requireId);
           LOG.info("Remove expired preAllocatedBuffer " + requireId);
         } else {
           LOG.info("PreAllocatedBuffer[id={}] has already been removed", requireId);
         }
       }
+      ShuffleServerMetrics.updateExpiredRequireBufferId(
+          expiredRequireBufferIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
     } catch (Exception e) {
       LOG.warn("Error happened in preAllocatedBufferCheck", e);
     }
