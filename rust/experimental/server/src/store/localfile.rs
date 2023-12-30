@@ -17,8 +17,8 @@
 
 use crate::app::ReadingOptions::FILE_OFFSET_AND_LEN;
 use crate::app::{
-    PartitionedUId, ReadingIndexViewContext, ReadingViewContext, RequireBufferContext,
-    WritingViewContext,
+    PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingViewContext,
+    ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
 use crate::config::LocalfileStoreConfig;
 use crate::error::WorkerError;
@@ -110,6 +110,10 @@ impl LocalFileStore {
 
     fn gen_relative_path_for_app(app_id: &str) -> String {
         format!("{}", app_id)
+    }
+
+    fn gen_relative_path_for_shuffle(app_id: &str, shuffle_id: i32) -> String {
+        format!("{}/{}", app_id, shuffle_id)
     }
 
     fn gen_relative_path_for_partition(uid: &PartitionedUId) -> (String, String) {
@@ -426,32 +430,44 @@ impl Store for LocalFileStore {
         todo!()
     }
 
-    async fn purge(&self, app_id: String) -> Result<()> {
-        let app_relative_dir_path = LocalFileStore::gen_relative_path_for_app(&app_id);
+    async fn release_buffer(&self, _ctx: ReleaseBufferContext) -> Result<i64, WorkerError> {
+        todo!()
+    }
 
-        let all_partition_ids = self.get_app_all_partitions(&app_id);
-        if all_partition_ids.is_empty() {
-            return Ok(());
-        }
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<()> {
+        let app_id = ctx.app_id;
+        let shuffle_id_option = ctx.shuffle_id;
+
+        let data_relative_dir_path = match shuffle_id_option {
+            Some(shuffle_id) => LocalFileStore::gen_relative_path_for_shuffle(&app_id, shuffle_id),
+            _ => LocalFileStore::gen_relative_path_for_app(&app_id),
+        };
 
         for local_disk_ref in &self.local_disks {
             let disk = local_disk_ref.clone();
-            disk.delete(app_relative_dir_path.to_string()).await?;
+            disk.delete(data_relative_dir_path.to_string()).await?;
         }
 
-        for (shuffle_id, partition_id) in all_partition_ids.into_iter() {
-            // delete lock
-            let uid = PartitionedUId {
-                app_id: app_id.clone(),
-                shuffle_id,
-                partition_id,
-            };
-            let (data_file_path, _) = LocalFileStore::gen_relative_path_for_partition(&uid);
-            self.partition_file_locks.remove(&data_file_path);
-        }
+        if shuffle_id_option.is_none() {
+            let all_partition_ids = self.get_app_all_partitions(&app_id);
+            if all_partition_ids.is_empty() {
+                return Ok(());
+            }
 
-        // delete disk mapping
-        self.delete_app(&app_id)?;
+            for (shuffle_id, partition_id) in all_partition_ids.into_iter() {
+                // delete lock
+                let uid = PartitionedUId {
+                    app_id: app_id.clone(),
+                    shuffle_id,
+                    partition_id,
+                };
+                let (data_file_path, _) = LocalFileStore::gen_relative_path_for_partition(&uid);
+                self.partition_file_locks.remove(&data_file_path);
+            }
+
+            // delete disk mapping
+            self.delete_app(&app_id)?;
+        }
 
         Ok(())
     }
@@ -739,8 +755,8 @@ impl LocalDisk {
 #[cfg(test)]
 mod test {
     use crate::app::{
-        PartitionedUId, ReadingIndexViewContext, ReadingOptions, ReadingViewContext,
-        WritingViewContext,
+        PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingOptions,
+        ReadingViewContext, WritingViewContext,
     };
     use crate::store::localfile::{LocalDisk, LocalDiskConfig, LocalFileStore};
 
@@ -805,11 +821,29 @@ mod test {
                 &temp_path, &app_id, "0", "0"
             )))?
         );
-        runtime.wait(local_store.purge(app_id.clone()))?;
+
+        // shuffle level purge
+        runtime
+            .wait(local_store.purge(PurgeDataContext::new(app_id.to_string(), Some(0))))
+            .expect("");
+        assert_eq!(
+            false,
+            runtime.wait(tokio::fs::try_exists(format!(
+                "{}/{}/{}",
+                &temp_path, &app_id, 0
+            )))?
+        );
+
+        // app level purge
+        runtime.wait(local_store.purge((&*app_id).into()))?;
         assert_eq!(
             false,
             runtime.wait(tokio::fs::try_exists(format!("{}/{}", &temp_path, &app_id)))?
         );
+        assert!(!local_store
+            .partition_file_locks
+            .contains_key(&format!("{}/{}/{}/{}.data", &temp_path, &app_id, 0, 0)));
+        assert!(!local_store.partition_written_disk_map.contains_key(&app_id));
 
         Ok(())
     }

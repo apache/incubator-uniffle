@@ -20,18 +20,20 @@ Another implementation of Apache Uniffle shuffle server
 ## Benchmark report
 
 #### Environment
-_Software_: Uniffle 0.7.0 / Hadoop 3.2.2 / Spark 3.1.2
+
+_Software_: Uniffle 0.8.0 / Hadoop 3.2.2 / Spark 3.1.2
 
 _Hardware_: Machine 96 cores, 512G memory, 1T * 4 SSD, network bandwidth 8GB/s
 
 _Hadoop Yarn Cluster_: 1 * ResourceManager + 40 * NodeManager, every machine 4T * 4 HDD
 
-_Uniffle Cluster_: 1 * Coordinator + 5 * Shuffle Server, every machine 1T * 4 SSD
+_Uniffle Cluster_: 1 * Coordinator + 1 * Shuffle Server, every machine 1T * 4 NVME SSD
 
 #### Configuration
+
 spark's conf
-``` 
-spark.executor.instances 100
+```yaml
+spark.executor.instances 400
 spark.executor.cores 1
 spark.executor.memory 2g
 spark.shuffle.manager org.apache.spark.shuffle.RssShuffleManager
@@ -39,42 +41,51 @@ spark.rss.storage.type MEMORY_LOCALFILE
 ``` 
 
 uniffle grpc-based server's conf
-``` 
-JVM XMX=130g
+``` yaml
+JVM XMX=30g
 
-...
-rss.server.buffer.capacity 100g
-rss.server.read.buffer.capacity 20g
+# JDK11 + G1 
+
+rss.server.buffer.capacity 10g
+rss.server.read.buffer.capacity 10g
 rss.server.flush.thread.alive 10
 rss.server.flush.threadPool.size 50
 rss.server.high.watermark.write 80
 rss.server.low.watermark.write 70
-...
 ``` 
 
-uniffle-x(Rust-based)'s conf
+Rust-based shuffle-server conf
 ```
 store_type = "MEMORY_LOCALFILE"
 
 [memory_store]
-capacity = "100G"
+capacity = "10G"
 
 [localfile_store]
 data_paths = ["/data1/uniffle", "/data2/uniffle", "/data3/uniffle", "/data4/uniffle"]
 healthy_check_min_disks = 0
 
 [hybrid_store]
-memory_spill_high_watermark = 0.5
-memory_spill_low_watermark = 0.4
+memory_spill_high_watermark = 0.8
+memory_spill_low_watermark = 0.7
 ``` 
 
-#### Tera Sort
-| type                         |       100G       |           1T          | 5T (run with 400 executors) |
-|------------------------------|:----------------:|:---------------------:|:---------------------------:|
-| vanilla uniffle (grpc-based) | 1.4min (29s/53s) | 12min (4.7min/7.0min) |    18.7min(12min/6.7min)    |
-| uniffle-x                    | 1.3min (28s/48s) | 11min (4.3min/6.5min) |    14min(7.8min/6.2min)     |
+#### TeraSort cost times
+| type/buffer capacity                 | 250G (compressed)  |                         comment                          |
+|--------------------------------------|:------------------:|:--------------------------------------------------------:|
+| vanilla uniffle (grpc-based)  / 10g  |  5.3min (2.3m/3m)  |                          1.9G/s                          |
+| vanilla uniffle (grpc-based)  / 300g | 5.6min (3.7m/1.9m) |              GC occurs frequently / 2.5G/s               |
+| vanilla uniffle (netty-based) / 10g  |         /          | read failed. 2.5G/s (write is better due to zero copy)   |
+| vanilla uniffle (netty-based) / 300g |         /          |                         app hang                         |
+| rust based shuffle server     / 10g  | 4.6min (2.2m/2.4m) |                         2.0 G/s                          |
+| rust based shuffle server     / 300g |  4min (1.5m/2.5m)  |                         3.5 G/s                          |
 
-> Tips: When running 5T on vanilla Uniffle, data sent timeouts may occur, and there can be occasional failures in client fetching the block bitmap.
+
+Compared with grpc based server, rust-based server has less memory footprint and stable performance.  
+
+And Netty is still not stable for production env.
+
+In the future, rust-based server will use io_uring mechanism to improve writing performance.
 
 ## Build
 

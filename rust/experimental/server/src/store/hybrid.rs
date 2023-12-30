@@ -16,8 +16,8 @@
 // under the License.
 
 use crate::app::{
-    PartitionedUId, ReadingIndexViewContext, ReadingOptions, ReadingViewContext,
-    RequireBufferContext, WritingViewContext,
+    PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingOptions, ReadingViewContext,
+    ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
 use crate::await_tree::AWAIT_TREE_REGISTRY;
 
@@ -47,11 +47,12 @@ use std::any::Any;
 use std::collections::VecDeque;
 
 use await_tree::InstrumentAwait;
+use spin::mutex::Mutex;
 use std::str::FromStr;
 use std::sync::Arc;
 
 use crate::runtime::manager::RuntimeManager;
-use tokio::sync::{Mutex, Semaphore};
+use tokio::sync::Semaphore;
 
 trait PersistentStore: Store + Persistent + Send + Sync {}
 impl PersistentStore for LocalFileStore {}
@@ -246,7 +247,7 @@ impl HybridStore {
         self.hot_store
             .release_in_flight_blocks_in_underlying_staging_buffer(uid, in_flight_blocks_id)
             .await?;
-        self.hot_store.free_memory(spill_size).await?;
+        self.hot_store.free_used(spill_size).await?;
 
         match self.get_store_type(candidate_store) {
             StorageType::LOCALFILE => {
@@ -261,13 +262,8 @@ impl HybridStore {
         Ok(message)
     }
 
-    // For app to check the ticket allocated existence and discard if it has been used
-    pub fn is_buffer_ticket_exist(&self, app_id: &str, ticket_id: i64) -> bool {
-        self.hot_store.is_ticket_exist(app_id, ticket_id)
-    }
-
-    pub fn discard_tickets(&self, app_id: &str, ticket_id: i64) -> i64 {
-        self.hot_store.discard_tickets(app_id, Some(ticket_id))
+    pub async fn free_hot_store_allocated_memory_size(&self, size: i64) -> Result<bool> {
+        self.hot_store.free_allocated(size).await
     }
 
     pub async fn get_hot_store_memory_snapshot(&self) -> Result<MemorySnapshot> {
@@ -404,7 +400,7 @@ impl Store for HybridStore {
                 let buffer = self
                     .hot_store
                     .get_or_create_underlying_staging_buffer(uid.clone());
-                let mut buffer_inner = buffer.lock().await;
+                let mut buffer_inner = buffer.lock();
                 if size.as_bytes() < buffer_inner.get_staging_size()? as u64 {
                     let (in_flight_uid, blocks) = buffer_inner.migrate_staging_to_in_flight()?;
                     self.make_memory_buffer_flush(in_flight_uid, blocks, uid.clone())
@@ -415,7 +411,7 @@ impl Store for HybridStore {
 
         // if the used size exceed the ratio of high watermark,
         // then send watermark flush trigger
-        if let Ok(_lock) = self.memory_spill_lock.try_lock() {
+        if let Some(_lock) = self.memory_spill_lock.try_lock() {
             let used_ratio = self.hot_store.memory_used_ratio().await;
             if used_ratio > self.config.memory_spill_high_watermark {
                 if let Err(e) = self.memory_watermark_flush_trigger_sender.send(()).await {
@@ -457,24 +453,21 @@ impl Store for HybridStore {
             .await
     }
 
-    async fn purge(&self, app_id: String) -> Result<()> {
-        self.hot_store.purge(app_id.clone()).await?;
-        info!("Removed data of app:[{}] in hot store", &app_id);
+    async fn release_buffer(&self, ctx: ReleaseBufferContext) -> Result<i64, WorkerError> {
+        self.hot_store.release_buffer(ctx).await
+    }
+
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<()> {
+        let app_id = &ctx.app_id;
+        self.hot_store.purge(ctx.clone()).await?;
+        info!("Removed data of app:[{}] in hot store", app_id);
         if self.warm_store.is_some() {
-            self.warm_store
-                .as_ref()
-                .unwrap()
-                .purge(app_id.clone())
-                .await?;
-            info!("Removed data of app:[{}] in warm store", &app_id);
+            self.warm_store.as_ref().unwrap().purge(ctx.clone()).await?;
+            info!("Removed data of app:[{}] in warm store", app_id);
         }
         if self.cold_store.is_some() {
-            self.cold_store
-                .as_ref()
-                .unwrap()
-                .purge(app_id.clone())
-                .await?;
-            info!("Removed data of app:[{}] in cold store", &app_id);
+            self.cold_store.as_ref().unwrap().purge(ctx.clone()).await?;
+            info!("Removed data of app:[{}] in cold store", app_id);
         }
         Ok(())
     }
@@ -511,7 +504,7 @@ pub async fn watermark_flush(store: Arc<HybridStore>) -> Result<()> {
 
     let mut flushed_size = 0u64;
     for (partition_id, buffer) in buffers {
-        let mut buffer_inner = buffer.lock().await;
+        let mut buffer_inner = buffer.lock();
         let (in_flight_uid, blocks) = buffer_inner.migrate_staging_to_in_flight()?;
         drop(buffer_inner);
         for block in &blocks {

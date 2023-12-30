@@ -95,6 +95,8 @@ pin-project-lite = "0.2.8"
 signal-hook = "0.3.17"
 clap = "3.0.14"
 socket2 = { version="0.4", features = ["all"]}
+cap = "0.1.2"
+spin = "0.9.8"
 
 [dependencies.hdrs]
 version = "0.3.0"
@@ -122,6 +124,7 @@ prost-build = "0.11.9"
 
 [dev-dependencies]
 env_logger = "0.10.0"
+awaitility = "0.3.1"
 
 [profile.dev]
 # re-enable debug assertions when pprof-rs fixed the reports for misaligned pointer dereferences

@@ -103,12 +103,24 @@ impl ShuffleServer for DefaultShuffleServer {
 
     async fn unregister_shuffle(
         &self,
-        _request: Request<ShuffleUnregisterRequest>,
+        request: Request<ShuffleUnregisterRequest>,
     ) -> Result<Response<ShuffleUnregisterResponse>, Status> {
-        // todo: implement shuffle level deletion
-        info!("Accepted unregister shuffle info....");
+        let request = request.into_inner();
+        let shuffle_id = request.shuffle_id;
+        let app_id = request.app_id;
+
+        info!(
+            "Accepted unregister shuffle info for [app:{:?}, shuffle_id:{:?}]",
+            &app_id, shuffle_id
+        );
+        let status_code = self
+            .app_manager_ref
+            .unregister(app_id, shuffle_id)
+            .await
+            .map_or_else(|_e| StatusCode::INTERNAL_ERROR, |_| StatusCode::SUCCESS);
+
         Ok(Response::new(ShuffleUnregisterResponse {
-            status: StatusCode::SUCCESS.into(),
+            status: status_code.into(),
             ret_msg: "".to_string(),
         }))
     }
@@ -137,14 +149,15 @@ impl ShuffleServer for DefaultShuffleServer {
 
         let app = app_option.unwrap();
 
-        if !app.is_buffer_ticket_exist(ticket_id) {
+        let release_result = app.release_buffer(ticket_id).await;
+        if release_result.is_err() {
             return Ok(Response::new(SendShuffleDataResponse {
                 status: StatusCode::NO_BUFFER.into(),
                 ret_msg: "No such buffer ticket id, it may be discarded due to timeout".to_string(),
             }));
-        } else {
-            app.discard_tickets(ticket_id);
         }
+
+        let ticket_required_size = release_result.unwrap();
 
         let mut blocks_map = HashMap::new();
         for shuffle_data in req.shuffle_data {
@@ -156,7 +169,15 @@ impl ShuffleServer for DefaultShuffleServer {
             blocks.extend(partitioned_blocks);
         }
 
+        let mut inserted_failure_occurs = false;
+        let mut inserted_failure_error = None;
+        let mut inserted_total_size = 0;
+
         for (partition_id, blocks) in blocks_map.into_iter() {
+            if inserted_failure_occurs {
+                continue;
+            }
+
             let uid = PartitionedUId {
                 app_id: app_id.clone(),
                 shuffle_id,
@@ -178,11 +199,33 @@ impl ShuffleServer for DefaultShuffleServer {
                     inserted.err()
                 );
                 error!("{}", &err);
-                return Ok(Response::new(SendShuffleDataResponse {
-                    status: StatusCode::INTERNAL_ERROR.into(),
-                    ret_msg: err,
-                }));
+
+                inserted_failure_error = Some(err);
+                inserted_failure_occurs = true;
+                continue;
             }
+
+            let inserted_size = inserted.unwrap();
+            inserted_total_size += inserted_size as i64;
+        }
+
+        let unused_allocated_size = ticket_required_size - inserted_total_size;
+        if unused_allocated_size != 0 {
+            debug!("The required buffer size:[{:?}] has remaining allocated size:[{:?}] of unused, this should not happen",
+                ticket_required_size, unused_allocated_size);
+            if let Err(e) = app.free_allocated_memory_size(unused_allocated_size).await {
+                warn!(
+                    "Errors on free allocated size: {:?} for app: {:?}. err: {:#?}",
+                    unused_allocated_size, &app_id, e
+                );
+            }
+        }
+
+        if inserted_failure_occurs {
+            return Ok(Response::new(SendShuffleDataResponse {
+                status: StatusCode::INTERNAL_ERROR.into(),
+                ret_msg: inserted_failure_error.unwrap(),
+            }));
         }
 
         timer.observe_duration();
@@ -446,7 +489,16 @@ impl ShuffleServer for DefaultShuffleServer {
                 },
                 blocks: partition_to_block_id.block_ids,
             };
-            let _ = app.report_block_ids(ctx);
+
+            match app.report_block_ids(ctx).await {
+                Err(e) => {
+                    return Ok(Response::new(ReportShuffleResultResponse {
+                        status: StatusCode::INTERNAL_ERROR.into(),
+                        ret_msg: e.to_string(),
+                    }))
+                }
+                _ => (),
+            }
         }
 
         Ok(Response::new(ReportShuffleResultResponse {
