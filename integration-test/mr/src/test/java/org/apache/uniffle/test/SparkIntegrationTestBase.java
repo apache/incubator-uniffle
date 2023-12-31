@@ -17,6 +17,14 @@
 
 package org.apache.uniffle.test;
 
+import java.io.EOFException;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -31,25 +39,18 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.RssMRConfig;
 import org.apache.hadoop.mapreduce.filecache.DistributedCache;
 import org.apache.hadoop.mapreduce.v2.MiniMRYarnCluster;
-import org.apache.hadoop.yarn.server.MiniYARNCluster;
 import org.apache.hadoop.mapreduce.v2.TestMRJobs;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.server.MiniYARNCluster;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-
-import java.io.EOFException;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -77,25 +78,21 @@ public class SparkIntegrationTestBase extends IntegrationTestBase {
 
   @BeforeAll
   public static void setUpMRYarn() throws IOException {
-//    mrYarnCluster = new MiniMRYarnCluster("test");
-//    conf.set(MRJobConfig.MR_AM_STAGING_DIR, "/apps_staging_dir");
-//    conf.setInt(YarnConfiguration.MAX_CLUSTER_LEVEL_APPLICATION_PRIORITY, 10);
-//    mrYarnCluster.init(conf);
-//    mrYarnCluster.start();
-//    localFs.copyFromLocalFile(new Path(MiniMRYarnCluster.APPJAR), APP_JAR);
-//    localFs.setPermission(APP_JAR, new FsPermission("700"));
-
-
+    //    mrYarnCluster = new MiniMRYarnCluster("test");
+    //    conf.set(MRJobConfig.MR_AM_STAGING_DIR, "/apps_staging_dir");
+    //    conf.setInt(YarnConfiguration.MAX_CLUSTER_LEVEL_APPLICATION_PRIORITY, 10);
+    //    mrYarnCluster.init(conf);
+    //    mrYarnCluster.start();
+    //    localFs.copyFromLocalFile(new Path(MiniMRYarnCluster.APPJAR), APP_JAR);
+    //    localFs.setPermission(APP_JAR, new FsPermission("700"));
 
     // Disable the disk utilization check to avoid the test hanging when people's disks are
     // getting full.
 
-
     conf.setInt(YarnConfiguration.MAX_CLUSTER_LEVEL_APPLICATION_PRIORITY, 10);
 
-    conf.set("yarn.nodemanager.disk-health-checker.max-disk-utilization-per-disk-percentage",
-      "100.0");
-
+    conf.set(
+        "yarn.nodemanager.disk-health-checker.max-disk-utilization-per-disk-percentage", "100.0");
 
     // capacity-scheduler.xml is missing in hadoop-client-minicluster so this is a workaround
     conf.set("yarn.scheduler.capacity.root.queues", "default");
@@ -110,18 +107,17 @@ public class SparkIntegrationTestBase extends IntegrationTestBase {
     // Set bind host to localhost to avoid java.net.BindException
     conf.set("yarn.resourcemanager.bind-host", "localhost");
 
-//    // enable proxy
-//    val currentUser = UserGroupInformation.getCurrentUser.getShortUserName
-//    yarnConf.set(s"hadoop.proxyuser.$currentUser.groups", "*")
-//    yarnConf.set(s"hadoop.proxyuser.$currentUser.hosts", "*")
+    //    // enable proxy
+    //    val currentUser = UserGroupInformation.getCurrentUser.getShortUserName
+    //    yarnConf.set(s"hadoop.proxyuser.$currentUser.groups", "*")
+    //    yarnConf.set(s"hadoop.proxyuser.$currentUser.hosts", "*")
 
-     yarnCluster = new MiniYARNCluster("test", 1, 1, 1);
+    yarnCluster = new MiniYARNCluster("test", 1, 1, 1);
     yarnCluster.init(conf);
     yarnCluster.start();
 
     localFs.copyFromLocalFile(new Path(MiniMRYarnCluster.APPJAR), APP_JAR);
     localFs.setPermission(APP_JAR, new FsPermission("700"));
-
   }
 
   @AfterAll
