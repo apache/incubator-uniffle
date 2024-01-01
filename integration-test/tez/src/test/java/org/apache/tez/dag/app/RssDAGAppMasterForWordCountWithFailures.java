@@ -40,6 +40,7 @@ import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tez.common.AsyncDispatcher;
 import org.apache.tez.common.TezClassLoader;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.common.VersionInfo;
@@ -60,8 +61,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.exception.RssException;
 
-import static org.apache.tez.common.RssTezConfig.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK;
-import static org.apache.tez.common.RssTezConfig.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK_DEFAULT;
 import static org.apache.tez.dag.api.TezConfiguration.TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS;
 import static org.apache.tez.dag.api.TezConfiguration.TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS_DEFAULT;
 import static org.mockito.Mockito.mock;
@@ -255,12 +254,14 @@ public class RssDAGAppMasterForWordCountWithFailures extends RssDAGAppMaster {
       LOG.info(
           "recompute is {}, reschedule is {}",
           conf.getBoolean(
-              RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK, RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK_DEFAULT),
+              TezClientConf.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK.key(),
+              TezClientConf.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK.defaultValue()),
           conf.getBoolean(
               TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS,
               TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS_DEFAULT));
       if (conf.getBoolean(
-              RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK, RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK_DEFAULT)
+              TezClientConf.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK.key(),
+              TezClientConf.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK.defaultValue())
           && conf.getBoolean(
               TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS,
               TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS_DEFAULT)) {
@@ -296,7 +297,8 @@ public class RssDAGAppMasterForWordCountWithFailures extends RssDAGAppMaster {
     RssTaskAttemptEventDispatcher(Configuration conf) {
       avoidRecompute =
           conf.getBoolean(
-              RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK, RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK_DEFAULT);
+              TezClientConf.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK.key(),
+              TezClientConf.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK.defaultValue());
     }
 
     @SuppressWarnings("unchecked")

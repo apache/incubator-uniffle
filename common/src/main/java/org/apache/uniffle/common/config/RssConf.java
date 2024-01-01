@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
+import org.apache.hadoop.conf.Configuration;
 
 import org.apache.uniffle.common.util.UnitConverter;
 
@@ -593,7 +594,7 @@ public class RssConf implements Cloneable {
   /**
    * loadConf
    *
-   * @param properties all config items in configration file
+   * @param properties all config items in configuration file
    * @param configOptions the config items defined in base config class
    * @param includeMissingKey if include the keys which not defined in base config class
    * @return true if load successfully, otherwise false
@@ -619,6 +620,39 @@ public class RssConf implements Cloneable {
             set(config, ConfigUtils.convertValue(v, config.getClazz()));
           }
         });
+    return true;
+  }
+
+  /**
+   * loadConf
+   *
+   * @param properties all config items in configuration file
+   * @param configOptions the config items defined in base config class
+   * @param includeMissingKey if include the keys which not defined in base config class
+   * @return true if load successfully, otherwise false
+   */
+  public boolean loadConf(
+      Configuration properties,
+      List<ConfigOption<Object>> configOptions,
+      boolean includeMissingKey) {
+    if (properties == null || configOptions == null) {
+      return false;
+    }
+    Map<String, ConfigOption<Object>> configOptionMap =
+        configOptions.stream().collect(Collectors.toMap(c -> c.key().toLowerCase(), c -> c));
+
+    for (Map.Entry<String, String> property : properties) {
+      ConfigOption<Object> config =
+          configOptionMap.get(property.getKey().toLowerCase()); // property.getKey().toLowerCase();
+      if (config == null) {
+        // if the key is not defined in configOptions, set it as a string value
+        if (includeMissingKey) {
+          setString(property.getKey(), property.getValue());
+        }
+      } else {
+        set(config, ConfigUtils.convertValue(property.getValue(), config.getClazz()));
+      }
+    }
     return true;
   }
 

@@ -35,6 +35,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.counters.TaskCounter;
 import org.apache.tez.common.counters.TezCounter;
 import org.apache.tez.common.counters.TezCounters;
@@ -49,7 +50,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.tez.common.RssTezConfig.RSS_REMOTE_SPILL_STORAGE_PATH;
 import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS;
 import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MEMORY_LIMIT_PERCENT;
 import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MERGE_PERCENT;
@@ -100,7 +100,7 @@ public class RssMergeManagerTest {
   public void mergerTest() throws Throwable {
     // 1 Construct and start RssMergeManager
     Configuration conf = new Configuration();
-    conf.set(RSS_REMOTE_SPILL_STORAGE_PATH, BASE_SPILL_PATH);
+    conf.set(TezClientConf.RSS_REMOTE_SPILL_STORAGE_PATH.key(), BASE_SPILL_PATH);
     conf.setInt(TEZ_RUNTIME_TASK_MEMORY, 1024);
     conf.setClass(TEZ_RUNTIME_KEY_CLASS, Text.class, Text.class);
     conf.setClass(TEZ_RUNTIME_VALUE_CLASS, Text.class, Text.class);

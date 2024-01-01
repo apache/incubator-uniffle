@@ -20,6 +20,8 @@ package org.apache.uniffle.common.config;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.hadoop.conf.Configuration;
+
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.StorageType;
 import org.apache.uniffle.common.rpc.ServerType;
@@ -265,5 +267,18 @@ public class RssBaseConf extends RssConf {
   public boolean loadCommonConf(Map<String, String> properties) {
     List<ConfigOption<Object>> configOptions = ConfigUtils.getAllConfigOptions(RssBaseConf.class);
     return loadConf(properties, configOptions, false);
+  }
+
+  public boolean loadCommonConf(Configuration config) {
+    List<ConfigOption<Object>> configOptions = ConfigUtils.getAllConfigOptions(RssBaseConf.class);
+    return loadConf(config, configOptions, false);
+  }
+
+  public boolean loadConfFromHadoopConfig(
+      Configuration config, List<ConfigOption<Object>> configOptions) {
+    if (config == null) {
+      return false;
+    }
+    return loadCommonConf(config) && loadConf(config, configOptions, true);
   }
 }

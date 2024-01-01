@@ -37,7 +37,7 @@ import org.apache.hadoop.util.LineReader;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.tez.client.TezClientUtils;
-import org.apache.tez.common.RssTezConfig;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.dag.app.RssDAGAppMaster;
 import org.apache.tez.test.MiniTezCluster;
@@ -78,7 +78,7 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = new HashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssTezConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    dynamicConf.put(TezClientConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -125,8 +125,8 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
 
     // 3 Run Tez examples base on rss with remote spill enable
     appConf = new TezConfiguration(miniTezCluster.getConfig());
-    appConf.setBoolean(RssTezConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED, true);
-    appConf.set(RssTezConfig.RSS_REMOTE_SPILL_STORAGE_PATH, "/tmp/spill");
+    appConf.setBoolean(TezClientConf.RSS_REDUCE_REMOTE_SPILL_ENABLED.key(), true);
+    appConf.set(TezClientConf.RSS_REMOTE_SPILL_STORAGE_PATH.key(), "/tmp/spill");
     updateRssConfiguration(appConf);
     appendAndUploadRssJars(appConf);
     runTezApp(appConf, getTestTool(), getTestArgs("rss-spill"));
@@ -170,8 +170,8 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
     appConf.set(TezConfiguration.TEZ_AM_LAUNCH_CMD_OPTS, " -Xmx384m");
     appConf.setInt(TezConfiguration.TEZ_TASK_RESOURCE_MEMORY_MB, 512);
     appConf.set(TezConfiguration.TEZ_TASK_LAUNCH_CMD_OPTS, " -Xmx384m");
-    appConf.set(RssTezConfig.RSS_COORDINATOR_QUORUM, COORDINATOR_QUORUM);
-    appConf.set(RssTezConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
+    appConf.set(TezClientConf.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
+    appConf.set(TezClientConf.RSS_CLIENT_TYPE.key(), ClientType.GRPC.name());
     appConf.set(
         TezConfiguration.TEZ_AM_LAUNCH_CMD_OPTS,
         TezConfiguration.TEZ_AM_LAUNCH_CMD_OPTS_DEFAULT + " " + RssDAGAppMaster.class.getName());

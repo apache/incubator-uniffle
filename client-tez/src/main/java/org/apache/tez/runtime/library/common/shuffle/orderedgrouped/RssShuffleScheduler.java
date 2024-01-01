@@ -64,8 +64,8 @@ import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
 import org.apache.tez.common.InputContextUtils;
-import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezIdHelper;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.common.UmbilicalUtils;
@@ -525,18 +525,19 @@ class RssShuffleScheduler extends ShuffleScheduler {
     pipelinedShuffleInfoEventsMap = Maps.newConcurrentMap();
 
     this.storageType =
-        conf.get(RssTezConfig.RSS_STORAGE_TYPE, RssTezConfig.RSS_STORAGE_TYPE_DEFAULT_VALUE);
+        conf.get(
+            TezClientConf.RSS_STORAGE_TYPE.key(), TezClientConf.RSS_STORAGE_TYPE.defaultValue());
     String readBufferSize =
         conf.get(
-            RssTezConfig.RSS_CLIENT_READ_BUFFER_SIZE,
-            RssTezConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE);
+            TezClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key(),
+            TezClientConf.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue());
     this.readBufferSize = (int) UnitConverter.byteStringAsBytes(readBufferSize);
     this.partitionNumPerRange =
         conf.getInt(
-            RssTezConfig.RSS_PARTITION_NUM_PER_RANGE,
-            RssTezConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
-    this.basePath = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH);
-    String remoteStorageConf = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_CONF);
+            TezClientConf.RSS_PARTITION_NUM_PER_RANGE.key(),
+            TezClientConf.RSS_PARTITION_NUM_PER_RANGE.defaultValue());
+    this.basePath = this.conf.get(TezClientConf.RSS_REMOTE_STORAGE_PATH.key());
+    String remoteStorageConf = this.conf.get(TezClientConf.RSS_REMOTE_STORAGE_CONF.key());
     this.remoteStorageInfo = new RemoteStorageInfo(basePath, remoteStorageConf);
 
     LOG.info(
@@ -1816,7 +1817,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
         mapHost.getPartitionId(),
         attempt);
 
-    ShuffleWriteClient writeClient = RssTezUtils.createShuffleClient(conf);
+    ShuffleWriteClient writeClient = RssTezUtils.createShuffleClient(new TezClientConf(conf));
     String clientType = "";
     Roaring64NavigableMap blockIdBitmap =
         writeClient.getShuffleResult(
@@ -1866,7 +1867,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
                       .hadoopConf(hadoopConf)
                       .idHelper(new TezIdHelper())
                       .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
-                      .rssConf(RssTezConfig.toRssConf(conf)));
+                      .rssConf(TezClientConf.toRssConf(conf)));
       RssTezShuffleDataFetcher fetcher =
           new RssTezShuffleDataFetcher(
               partitionIdToSuccessMapTaskAttempts.get(mapHost.getPartitionId()).iterator().next(),
@@ -1875,7 +1876,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
               inputContext.getCounters(),
               shuffleReadClient,
               blockIdBitmap.getLongCardinality(),
-              RssTezConfig.toRssConf(conf),
+              TezClientConf.toRssConf(conf),
               exceptionReporter);
       return fetcher;
     }

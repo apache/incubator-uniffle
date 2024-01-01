@@ -36,7 +36,7 @@ import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tez.common.GetShuffleServerRequest;
 import org.apache.tez.common.GetShuffleServerResponse;
-import org.apache.tez.common.RssTezConfig;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezRemoteShuffleUmbilicalProtocol;
 import org.apache.tez.common.security.JobTokenIdentifier;
 import org.apache.tez.common.security.JobTokenSecretManager;
@@ -106,9 +106,9 @@ public class TezRemoteShuffleManagerTest {
 
       ApplicationId appId = ApplicationId.newInstance(9999, 72);
 
-      Configuration conf = new Configuration();
-      conf.set(RssTezConfig.RSS_TEST_MODE_ENABLE, "true");
-      conf.set(RssTezConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+      TezClientConf conf = new TezClientConf(new Configuration());
+      conf.setBoolean(TezClientConf.TEZ_RSS_TEST_MODE_ENABLE, true);
+      conf.set(TezClientConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
       JobTokenIdentifier identifier = new JobTokenIdentifier(new Text(appId.toString()));
       JobTokenSecretManager secretManager = new JobTokenSecretManager();
       String tokenIdentifier = appId.toString();
@@ -135,7 +135,7 @@ public class TezRemoteShuffleManagerTest {
                       TezRemoteShuffleUmbilicalProtocol.class,
                       TezRemoteShuffleUmbilicalProtocol.versionID,
                       address,
-                      conf);
+                      conf.getHadoopConfig());
                 }
               });
 
@@ -213,8 +213,10 @@ public class TezRemoteShuffleManagerTest {
 
       Configuration conf = new Configuration();
       conf.set("hadoop.security.authentication", "kerberos");
-      conf.set(RssTezConfig.RSS_TEST_MODE_ENABLE, "true");
-      conf.set(RssTezConfig.RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+      conf.setBoolean(
+          TezClientConf.TEZ_RSS_TEST_MODE_ENABLE.key(),
+          TezClientConf.TEZ_RSS_TEST_MODE_ENABLE.defaultValue());
+      conf.set(TezClientConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
       JobTokenIdentifier identifier = new JobTokenIdentifier(new Text(appId.toString()));
       JobTokenSecretManager secretManager = new JobTokenSecretManager();
       String tokenIdentifier = appId.toString();
@@ -224,7 +226,12 @@ public class TezRemoteShuffleManagerTest {
       secretManager.addTokenForJob(tokenIdentifier, sessionToken);
       TezRemoteShuffleManager tezRemoteShuffleManager =
           new TezRemoteShuffleManager(
-              appId.toString(), sessionToken, conf, appId.toString(), client, null);
+              appId.toString(),
+              sessionToken,
+              new TezClientConf(conf),
+              appId.toString(),
+              client,
+              null);
       tezRemoteShuffleManager.initialize();
       tezRemoteShuffleManager.start();
 

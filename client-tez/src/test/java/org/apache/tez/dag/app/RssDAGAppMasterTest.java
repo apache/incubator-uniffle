@@ -43,6 +43,7 @@ import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tez.client.TezApiVersionInfo;
 import org.apache.tez.common.AsyncDispatcher;
 import org.apache.tez.common.RssTezUtils;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezUtils;
 import org.apache.tez.common.security.ACLManager;
@@ -93,11 +94,6 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
-import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
-import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_ID;
-import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
-import static org.apache.tez.common.RssTezConfig.RSS_STORAGE_TYPE;
 import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_IFILE_READAHEAD_BYTES;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -139,11 +135,11 @@ public class RssDAGAppMasterTest {
     when(shuffleManager.unregisterShuffleByDagId(any())).thenReturn(true);
     when(appMaster.getTezRemoteShuffleManager()).thenReturn(shuffleManager);
     Configuration clientConf = new Configuration(false);
-    clientConf.set(RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    clientConf.set(TezClientConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     clientConf.set("tez.config1", "value1");
     clientConf.set("config2", "value2");
     Map<String, String> dynamicConf = new HashMap();
-    dynamicConf.put(RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    dynamicConf.put(TezClientConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     dynamicConf.put("tez.config3", "value3");
     when(appMaster.getClusterClientConf()).thenReturn(dynamicConf);
     when(appMaster.getConfig()).thenReturn(clientConf);
@@ -224,13 +220,17 @@ public class RssDAGAppMasterTest {
     // 2 verfiy the address and port of shuffle manager
     UserPayload payload = inputSpecs.get(0).getInputDescriptor().getUserPayload();
     Configuration conf = TezUtils.createConfFromUserPayload(payload);
-    Assertions.assertEquals("host", conf.get(RSS_AM_SHUFFLE_MANAGER_ADDRESS));
-    Assertions.assertEquals(0, conf.getInt(RSS_AM_SHUFFLE_MANAGER_PORT, -1));
+    TezClientConf tezClientConf = new TezClientConf(conf);
+    Assertions.assertEquals(
+        "host", tezClientConf.get(TezClientConf.RSS_AM_SHUFFLE_MANAGER_ADDRESS));
+    Assertions.assertEquals(
+        0, tezClientConf.getInteger(TezClientConf.RSS_AM_SHUFFLE_MANAGER_PORT, -1));
     // 3 verfiy the config
-    Assertions.assertEquals(StorageType.LOCALFILE.name(), conf.get(RSS_STORAGE_TYPE));
-    Assertions.assertEquals("value1", conf.get("tez.config1"));
-    Assertions.assertEquals("value3", conf.get("tez.config3"));
-    Assertions.assertNull(conf.get("tez.config2"));
+    Assertions.assertEquals(
+        StorageType.LOCALFILE.name(), tezClientConf.get(TezClientConf.RSS_STORAGE_TYPE));
+    Assertions.assertEquals("value1", tezClientConf.getString("tez.config1", ""));
+    Assertions.assertEquals("value3", tezClientConf.getString("tez.config3", ""));
+    Assertions.assertNull(tezClientConf.getString("tez.config2", null));
     // TEZ_RUNTIME_IFILE_READAHEAD_BYTES is in getConfigurationKeySet, so the config from client
     // should deliver
     // to Input/Output. But tez.config.from.client is not in getConfigurationKeySet, so the config
@@ -239,9 +239,11 @@ public class RssDAGAppMasterTest {
     Assertions.assertEquals(12345, conf.getInt(TEZ_RUNTIME_IFILE_READAHEAD_BYTES, -1));
     Assertions.assertNull(conf.get("tez.config.from.client"));
     // 4 verfiy vertex id
-    Assertions.assertEquals(expectedSourceVertexId, conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1));
     Assertions.assertEquals(
-        expectedDestinationVertexId, conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1));
+        expectedSourceVertexId, tezClientConf.get(TezClientConf.RSS_SHUFFLE_SOURCE_VERTEX_ID));
+    Assertions.assertEquals(
+        expectedDestinationVertexId,
+        tezClientConf.get(TezClientConf.RSS_SHUFFLE_DESTINATION_VERTEX_ID));
   }
 
   public static void verifyOutput(
@@ -259,17 +261,29 @@ public class RssDAGAppMasterTest {
     // 2 verfiy the address and port of shuffle manager
     UserPayload payload = outputSpecs.get(0).getOutputDescriptor().getUserPayload();
     Configuration conf = TezUtils.createConfFromUserPayload(payload);
-    Assertions.assertEquals("host", conf.get(RSS_AM_SHUFFLE_MANAGER_ADDRESS));
-    Assertions.assertEquals(0, conf.getInt(RSS_AM_SHUFFLE_MANAGER_PORT, -1));
+    Assertions.assertEquals("host", conf.get(TezClientConf.RSS_AM_SHUFFLE_MANAGER_ADDRESS.key()));
+    Assertions.assertEquals(
+        0,
+        conf.getInt(
+            TezClientConf.RSS_AM_SHUFFLE_MANAGER_PORT.key(),
+            TezClientConf.RSS_AM_SHUFFLE_MANAGER_PORT.defaultValue()));
     // 3 verfiy the config
-    Assertions.assertEquals(StorageType.LOCALFILE.name(), conf.get(RSS_STORAGE_TYPE));
+    Assertions.assertEquals(
+        StorageType.LOCALFILE.name(), conf.get(TezClientConf.RSS_STORAGE_TYPE.key()));
     Assertions.assertEquals("value1", conf.get("tez.config1"));
     Assertions.assertEquals("value3", conf.get("tez.config3"));
     Assertions.assertNull(conf.get("tez.config2"));
     // 4 verfiy vertex id
-    Assertions.assertEquals(expectedSourceVertexId, conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1));
     Assertions.assertEquals(
-        expectedDestinationVertexId, conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1));
+        expectedSourceVertexId,
+        conf.getInt(
+            TezClientConf.RSS_SHUFFLE_SOURCE_VERTEX_ID.key(),
+            TezClientConf.RSS_SHUFFLE_SOURCE_VERTEX_ID.defaultValue()));
+    Assertions.assertEquals(
+        expectedDestinationVertexId,
+        conf.getInt(
+            TezClientConf.RSS_SHUFFLE_DESTINATION_VERTEX_ID.key(),
+            TezClientConf.RSS_SHUFFLE_DESTINATION_VERTEX_ID.defaultValue()));
   }
 
   private static DAG createDAG(String dageName, Configuration conf) {

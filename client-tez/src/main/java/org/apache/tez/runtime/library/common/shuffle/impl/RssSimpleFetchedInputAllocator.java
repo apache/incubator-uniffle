@@ -27,7 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
-import org.apache.tez.common.RssTezConfig;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
 import org.apache.tez.runtime.library.common.Constants;
@@ -44,8 +44,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
-
-import static org.apache.tez.common.RssTezConfig.RSS_REMOTE_SPILL_STORAGE_PATH;
 
 /** Usage: Create instance, setInitialMemoryAvailable(long), configureAndStart() */
 @Private
@@ -136,14 +134,17 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
     }
     this.maxSingleShuffleLimit =
         (long) Math.min((memoryLimit * singleShuffleMemoryLimitPercent), Integer.MAX_VALUE);
-    this.remoteSpillEnable = conf.getBoolean(RssTezConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED, false);
+    this.remoteSpillEnable =
+        conf.getBoolean(
+            TezClientConf.RSS_REDUCE_REMOTE_SPILL_ENABLED.key(),
+            TezClientConf.RSS_REDUCE_REMOTE_SPILL_ENABLED.defaultValue());
     if (this.remoteSpillEnable) {
-      this.remoteSpillBasePath = conf.get(RSS_REMOTE_SPILL_STORAGE_PATH);
+      this.remoteSpillBasePath = conf.get(TezClientConf.RSS_REMOTE_SPILL_STORAGE_PATH.key());
       if (StringUtils.isBlank(this.remoteSpillBasePath)) {
         throw new RssException("You must set remote spill path!");
       }
       // construct remote configuration
-      String remoteStorageConf = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_CONF);
+      String remoteStorageConf = this.conf.get(TezClientConf.RSS_REMOTE_STORAGE_CONF.key());
       Map<String, String> remoteStorageConfMap =
           RemoteStorageInfo.parseRemoteStorageConf(remoteStorageConf);
       Configuration remoteConf = new Configuration(this.conf);
@@ -153,12 +154,12 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
       // construct remote filesystem
       int replication =
           this.conf.getInt(
-              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION,
-              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION_DEFAULT);
+              TezClientConf.RSS_REDUCE_REMOTE_SPILL_REPLICATION.key(),
+              TezClientConf.RSS_REDUCE_REMOTE_SPILL_REPLICATION.defaultValue());
       int retries =
           this.conf.getInt(
-              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES,
-              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES_DEFAULT);
+              TezClientConf.RSS_REDUCE_REMOTE_SPILL_RETRIES.key(),
+              TezClientConf.RSS_REDUCE_REMOTE_SPILL_RETRIES.defaultValue());
       try {
         remoteConf.setInt("dfs.replication", replication);
         remoteConf.setInt("dfs.client.block.write.retries", retries);
