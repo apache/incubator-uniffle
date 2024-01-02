@@ -41,8 +41,6 @@ use tokio::sync::{Mutex, Semaphore};
 
 use tracing::debug;
 
-use url::Url;
-
 struct PartitionCachedMeta {
     is_file_created: bool,
     data_len: i64,
@@ -79,12 +77,11 @@ impl Persistent for HdfsStore {}
 impl HdfsStore {
     pub fn from(conf: HdfsStoreConfig) -> Self {
         let data_path = conf.data_path;
-        let data_url = Url::parse(data_path.as_str()).unwrap();
 
         let filesystem = HdfsNativeClient::new();
 
         HdfsStore {
-            root: data_url.to_string(),
+            root: data_path,
             filesystem: Box::new(filesystem),
             partition_file_locks: DashMap::new(),
             concurrency_access_limiter: Semaphore::new(conf.max_concurrency.unwrap_or(1) as usize),

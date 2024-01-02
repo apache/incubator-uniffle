@@ -16,7 +16,6 @@
 // under the License.
 
 use anyhow::Error;
-use hdfs_native::HdfsError;
 
 use log::error;
 use poem::error::ParseQueryError;
@@ -63,12 +62,6 @@ impl From<AcquireError> for WorkerError {
 impl From<ParseQueryError> for WorkerError {
     fn from(error: ParseQueryError) -> Self {
         WorkerError::Other(Error::new(error))
-    }
-}
-
-impl From<HdfsError> for WorkerError {
-    fn from(err: HdfsError) -> Self {
-        WorkerError::Other(Error::new(err))
     }
 }
 
