@@ -45,7 +45,8 @@ memory-prof = [
 ]
 
 hdfs = [
-    "dep:hdrs"
+    "dep:hdrs",
+    "dep:hdfs-native"
 ]
 
 [dependencies]
@@ -102,6 +103,11 @@ spin = "0.9.8"
 version = "0.3.0"
 optional = true
 features = ["async_file"]
+
+[dependencies.hdfs-native]
+version = "0.5.0"
+optional = true
+features = ["kerberos"]
 
 # jemalloc related optional dependencies
 [dependencies.tikv-jemalloc-ctl]

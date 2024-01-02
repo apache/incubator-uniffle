@@ -31,14 +31,12 @@ use await_tree::InstrumentAwait;
 use bytes::{BufMut, Bytes, BytesMut};
 use dashmap::DashMap;
 
-use futures::AsyncWriteExt;
-use hdrs::{Client, ClientBuilder};
-use log::{error, info};
+use log::info;
 
 use std::path::Path;
 
 use std::sync::Arc;
-use std::{env, io};
+use hdfs_native::{Client, WriteOptions};
 use tokio::sync::{Mutex, Semaphore};
 
 use tracing::debug;
@@ -67,7 +65,7 @@ impl Default for PartitionCachedMeta {
 
 pub struct HdfsStore {
     root: String,
-    filesystem: Box<Hdrs>,
+    filesystem: Box<HdfsNativeClient>,
     concurrency_access_limiter: Semaphore,
 
     partition_file_locks: DashMap<String, Arc<Mutex<()>>>,
@@ -83,19 +81,7 @@ impl HdfsStore {
         let data_path = conf.data_path;
         let data_url = Url::parse(data_path.as_str()).unwrap();
 
-        let name_node = match data_url.host_str() {
-            Some(host) => format!("{}://{}", data_url.scheme(), host),
-            _ => "default".to_string(),
-        };
-        let krb5_cache = env::var("KRB5CACHE_PATH").map_or(None, |v| Some(v));
-        let hdfs_user = env::var("HDFS_USER").map_or(None, |v| Some(v));
-
-        let fs = Hdrs::new(name_node.as_str(), krb5_cache, hdfs_user);
-        if fs.is_err() {
-            error!("Errors on connecting the hdfs. error: {:?}", fs.err());
-            panic!();
-        }
-        let filesystem = fs.unwrap();
+        let filesystem = HdfsNativeClient::new();
 
         HdfsStore {
             root: data_url.to_string(),
@@ -285,73 +271,45 @@ trait HdfsDelegator {
     async fn delete_dir(&self, dir: &str) -> Result<()>;
 }
 
-struct Hdrs {
+struct HdfsNativeClient {
     client: Client,
 }
 
-#[async_trait]
-impl HdfsDelegator for Hdrs {
-    async fn touch(&self, file_path: &str) -> Result<()> {
-        let metadata = self.client.metadata(file_path);
-        if metadata.is_err() && metadata.unwrap_err().kind() == io::ErrorKind::NotFound {
-            debug!("Creating the file, path: {}", file_path);
-            let mut write = self
-                .client
-                .open_file()
-                .create(true)
-                .write(true)
-                .async_open(file_path)
-                .await?;
-            write.write("".as_bytes()).await?;
-            write.flush().await?;
-            write.close().await?;
-            debug!("the file: {} is created!", file_path);
+impl HdfsNativeClient {
+    fn new() -> Self {
+        let client = Client::default();
+        Self {
+            client
         }
+    }
+}
+
+#[async_trait]
+impl HdfsDelegator for HdfsNativeClient {
+    async fn touch(&self, file_path: &str) -> Result<()> {
+        self.client.create(file_path, WriteOptions::default()).await?.close().await?;
         Ok(())
     }
 
     async fn append(&self, file_path: &str, data: Bytes) -> Result<()> {
-        let mut data_writer = self
-            .client
-            .open_file()
-            .create(true)
-            .append(true)
-            .async_open(file_path)
-            .await?;
-        data_writer.write_all(data.as_ref()).await?;
-        data_writer.flush().await?;
-        data_writer.close().await?;
-        debug!("data has been flushed. path: {}", file_path);
-        Ok(())
-    }
-
-    async fn create_dir(&self, dir: &str) -> Result<()> {
-        self.client.create_dir(dir)?;
+        let mut file_writer = self.client.append(file_path).await?;
+        file_writer.write(data).await?;
         Ok(())
     }
 
     async fn len(&self, file_path: &str) -> Result<u64> {
-        let meta = self.client.metadata(file_path)?;
-        Ok(meta.len())
+        let file_info = self.client.get_file_info(file_path).await?;
+        Ok(file_info.length as u64)
+    }
+
+    async fn create_dir(&self, dir: &str) -> Result<()> {
+        let _ = self.client.mkdirs(dir, 777, true).await?;
+        Ok(())
     }
 
     async fn delete_dir(&self, dir: &str) -> Result<()> {
-        self.client.remove_dir_all(dir)?;
+        self.client.delete(dir, true).await?;
         Ok(())
-    }
-}
-
-impl Hdrs {
-    fn new(name_node: &str, krb5_cache: Option<String>, user: Option<String>) -> Result<Self> {
-        let mut builder = ClientBuilder::new(name_node);
-        if krb5_cache.is_some() {
-            builder = builder.with_kerberos_ticket_cache_path(krb5_cache.unwrap().as_str());
-        }
-        if user.is_some() {
-            builder = builder.with_user(user.unwrap().as_str())
-        }
-        let client = builder.connect()?;
-        Ok(Hdrs { client })
     }
 }
 
