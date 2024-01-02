@@ -224,6 +224,92 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- shade the native netty libs as well -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>regex-property</id>
+                        <goals>
+                            <goal>regex-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>rss.shade.native.packageName</name>
+                            <value>${rss.shade.packageName}</value>
+                            <regex>\.</regex>
+                            <replacement>_</replacement>
+                            <failIfNoMatch>true</failIfNoMatch>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <echo message="Shade netty native libraries to ${rss.shade.native.packageName}"/>
+                                <unzip src="${project.build.directory}/shaded/${project.artifactId}-${project.version}-shaded.jar"
+                                       dest="${project.build.directory}/unpacked/"/>
+                                <echo message="renaming native epoll library"></echo>
+                                <move includeemptydirs="false"
+                                      todir="${project.build.directory}/unpacked/META-INF/native">
+                                    <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                                    <mapper from="libnetty_transport_native_epoll_x86_64.so"
+                                            to="lib${rss.shade.native.packageName}_netty_transport_native_epoll_x86_64.so"
+                                            type="glob"></mapper>
+                                </move>
+                                <move includeemptydirs="false"
+                                      todir="${project.build.directory}/unpacked/META-INF/native">
+                                    <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                                    <mapper from="libnetty_transport_native_epoll_aarch_64.so"
+                                            to="lib${rss.shade.native.packageName}_netty_transport_native_epoll_aarch_64.so"
+                                            type="glob"></mapper>
+                                </move>
+                                <move includeemptydirs="false"
+                                      todir="${project.build.directory}/unpacked/META-INF/native">
+                                    <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                                    <mapper from="libnetty_transport_native_kqueue_x86_64.jnilib"
+                                            to="lib${rss.shade.native.packageName}_netty_transport_native_kqueue_x86_64.jnilib"
+                                            type="glob"></mapper>
+                                </move>
+                                <move includeemptydirs="false"
+                                      todir="${project.build.directory}/unpacked/META-INF/native">
+                                    <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                                    <mapper from="libnetty_resolver_dns_native_macos_aarch_64.jnilib"
+                                            to="lib${rss.shade.native.packageName}_netty_resolver_dns_native_macos_aarch_64.jnilib"
+                                            type="glob"></mapper>
+                                </move>
+                                <move includeemptydirs="false"
+                                      todir="${project.build.directory}/unpacked/META-INF/native">
+                                    <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                                    <mapper from="libnetty_resolver_dns_native_macos_x86_64.jnilib"
+                                            to="lib${rss.shade.native.packageName}_netty_resolver_dns_native_macos_x86_64.jnilib"
+                                            type="glob"></mapper>
+                                </move>
+                                <move includeemptydirs="false"
+                                      todir="${project.build.directory}/unpacked/META-INF/native">
+                                    <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                                    <mapper from="libnetty_transport_native_kqueue_aarch_64.jnilib"
+                                            to="lib${rss.shade.native.packageName}_netty_transport_native_kqueue_aarch_64.jnilib"
+                                            type="glob"></mapper>
+                                </move>
+                                <echo message="repackaging netty jar"></echo>
+                                <jar destfile="${project.build.directory}/shaded/${project.artifactId}-${project.version}-shaded.jar"
+                                     basedir="${project.build.directory}/unpacked"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
