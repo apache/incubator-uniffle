@@ -116,7 +116,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   public ShuffleWriteClientImpl(ShuffleClientFactory.WriteClientBuilder builder) {
     // set default value
-    if (builder.getRssConf() != null) {
+    if (builder.getRssConf() == null) {
       builder.rssConf(new RssConf());
     }
     if (builder.getUnregisterThreadPoolSize() == 0) {

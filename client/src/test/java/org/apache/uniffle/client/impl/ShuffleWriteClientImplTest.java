@@ -35,6 +35,9 @@ import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.netty.IOMode;
 import org.apache.uniffle.common.rpc.StatusCode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -288,5 +291,30 @@ public class ShuffleWriteClientImplTest {
     assertEquals(2, excludeServers.size());
     assertEquals(ssi3, excludeServers.get(0));
     assertEquals(ssi1, excludeServers.get(1));
+  }
+
+  @Test
+  public void testSettingRssClientConfigs() {
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.NETTY_IO_MODE, IOMode.EPOLL);
+    ShuffleClientFactory.WriteClientBuilder writeClientBuilder =
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC_NETTY.name())
+            .retryMax(3)
+            .retryIntervalMax(2000)
+            .heartBeatThreadNum(4)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterRequestTimeSec(10)
+            .rssConf(rssConf);
+    ShuffleWriteClientImpl client = writeClientBuilder.build();
+    IOMode ioMode = writeClientBuilder.getRssConf().get(RssClientConf.NETTY_IO_MODE);
+    client.close();
+    assertEquals(IOMode.EPOLL, ioMode);
   }
 }
