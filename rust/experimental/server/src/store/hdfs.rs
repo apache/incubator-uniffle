@@ -291,6 +291,7 @@ impl HdfsDelegator for HdfsNativeClient {
     async fn append(&self, file_path: &str, data: Bytes) -> Result<()> {
         let mut file_writer = self.client.append(file_path).await?;
         file_writer.write(data).await?;
+        file_writer.close().await?;
         Ok(())
     }
 
