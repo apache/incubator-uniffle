@@ -781,7 +781,6 @@ public class ShuffleTaskManager {
         }
       }
       ShuffleServerMetrics.gaugeExpiredPreAllocatedBufferIdCnt.set(expiredBufferIdsCnt);
-
     } catch (Exception e) {
       LOG.warn("Error happened in preAllocatedBufferCheck", e);
     }
