@@ -21,12 +21,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.StatusCode;
 
 public class RssGetShuffleAssignmentsResponse extends ClientResponse {
 
-  private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+  private Map<Integer, List<PartitionServerInfo>> partitionToServers;
   private Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges;
 
   public RssGetShuffleAssignmentsResponse(StatusCode statusCode) {
@@ -37,11 +38,11 @@ public class RssGetShuffleAssignmentsResponse extends ClientResponse {
     super(statusCode, message);
   }
 
-  public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
+  public Map<Integer, List<PartitionServerInfo>> getPartitionToServers() {
     return partitionToServers;
   }
 
-  public void setPartitionToServers(Map<Integer, List<ShuffleServerInfo>> partitionToServers) {
+  public void setPartitionToServers(Map<Integer, List<PartitionServerInfo>> partitionToServers) {
     this.partitionToServers = partitionToServers;
   }
 

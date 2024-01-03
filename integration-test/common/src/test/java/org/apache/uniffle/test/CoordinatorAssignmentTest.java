@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.ReconfigurableBase;
@@ -258,8 +259,8 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
         shuffleWriteClient.getShuffleAssignments(
             "app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1, excludeServer);
     List<ShuffleServerInfo> resultShuffle = Lists.newArrayList();
-    for (List<ShuffleServerInfo> ssis : shuffleAssignmentsInfo.getPartitionToServers().values()) {
-      resultShuffle.addAll(ssis);
+    for (List<PartitionServerInfo> psis : shuffleAssignmentsInfo.getPartitionToServers().values()) {
+      psis.forEach(psi -> resultShuffle.addAll(psi.getSplitServers()));
     }
 
     List<String> resultShuffleServerId =

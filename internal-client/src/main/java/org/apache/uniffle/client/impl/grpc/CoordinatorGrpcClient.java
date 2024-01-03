@@ -48,6 +48,7 @@ import org.apache.uniffle.client.response.RssFetchRemoteStorageResponse;
 import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
 import org.apache.uniffle.client.response.RssSendHeartBeatResponse;
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -287,7 +288,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         // get all register info according to coordinator's response
         Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
             getServerToPartitionRanges(rpcResponse);
-        Map<Integer, List<ShuffleServerInfo>> partitionToServers =
+        Map<Integer, List<PartitionServerInfo>> partitionToServers =
             getPartitionToServers(rpcResponse);
         response.setServerToPartitionRanges(serverToPartitionRanges);
         response.setPartitionToServers(partitionToServers);
@@ -382,9 +383,9 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   // transform [startPartition, endPartition] -> [server1, server2] to
   // {partition1 -> [server1, server2], partition2 - > [server1, server2]}
   @VisibleForTesting
-  public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers(
+  public Map<Integer, List<PartitionServerInfo>> getPartitionToServers(
       GetShuffleAssignmentsResponse response) {
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
+    Map<Integer, List<PartitionServerInfo>> partitionToServers = Maps.newHashMap();
     List<PartitionRangeAssignment> assigns = response.getAssignmentsList();
     for (PartitionRangeAssignment partitionRangeAssignment : assigns) {
       final int startPartition = partitionRangeAssignment.getStartPartition();
@@ -397,7 +398,14 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
                           ss.getId(), ss.getIp(), ss.getPort(), ss.getNettyPort()))
               .collect(Collectors.toList());
       for (int i = startPartition; i <= endPartition; i++) {
-        partitionToServers.put(i, shuffleServerInfos);
+        int partitionId = i;
+        List<PartitionServerInfo> partitionServerInfos =
+            shuffleServerInfos.stream()
+                .map(
+                    shuffleServerInfo ->
+                        new PartitionServerInfo(partitionId, Lists.newArrayList(shuffleServerInfo)))
+                .collect(Collectors.toList());
+        partitionToServers.put(i, partitionServerInfos);
       }
     }
     if (partitionToServers.isEmpty()) {

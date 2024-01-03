@@ -23,11 +23,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import scala.reflect.ClassTag$;
 import scala.reflect.ManifestFactory$;
@@ -47,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.compression.Codec;
@@ -75,7 +78,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private ShuffleWriteMetrics shuffleWriteMetrics;
   // cache partition -> records
   private Map<Integer, WriterBuffer> buffers;
-  private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+  private Map<Integer, List<PartitionServerInfo>> partitionToServers;
   private int serializerBufferSize;
   private int bufferSegmentSize;
   private long copyTime = 0;
@@ -101,7 +104,7 @@ public class WriteBufferManager extends MemoryConsumer {
       long taskAttemptId,
       BufferManagerOptions bufferManagerOptions,
       Serializer serializer,
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      Map<Integer, List<PartitionServerInfo>> partitionToServers,
       TaskMemoryManager taskMemoryManager,
       ShuffleWriteMetrics shuffleWriteMetrics,
       RssConf rssConf) {
@@ -124,7 +127,7 @@ public class WriteBufferManager extends MemoryConsumer {
       long taskAttemptId,
       BufferManagerOptions bufferManagerOptions,
       Serializer serializer,
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      Map<Integer, List<PartitionServerInfo>> partitionToServers,
       TaskMemoryManager taskMemoryManager,
       ShuffleWriteMetrics shuffleWriteMetrics,
       RssConf rssConf,
@@ -326,6 +329,13 @@ public class WriteBufferManager extends MemoryConsumer {
     shuffleWriteMetrics.incBytesWritten(compressed.length);
     // add memory to indicate bytes which will be sent to shuffle server
     inSendListBytes.addAndGet(wb.getMemoryUsed());
+
+    List<ShuffleServerInfo> blockToServers =
+        Optional.ofNullable(partitionToServers.get(partitionId)).orElse(Lists.newArrayList())
+            .stream()
+            .map(partitionServerInfo -> partitionServerInfo.getLastSplitServer())
+            .collect(Collectors.toList());
+
     return new ShuffleBlockInfo(
         shuffleId,
         partitionId,
@@ -333,7 +343,7 @@ public class WriteBufferManager extends MemoryConsumer {
         compressed.length,
         crc32,
         compressed,
-        partitionToServers.get(partitionId),
+        blockToServers,
         uncompressLength,
         wb.getMemoryUsed(),
         taskAttemptId);

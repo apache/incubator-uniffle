@@ -35,6 +35,7 @@ import org.apache.uniffle.client.response.RssApplicationInfoResponse;
 import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleRegisterInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
@@ -86,28 +87,36 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
   public void testGetPartitionToServers() {
     GetShuffleAssignmentsResponse testResponse = generateShuffleAssignmentsResponse();
 
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers =
+    Map<Integer, List<PartitionServerInfo>> partitionToServers =
         coordinatorClient.getPartitionToServers(testResponse);
 
     assertEquals(
         Arrays.asList(
-            new ShuffleServerInfo("id1", "0.0.0.1", 100),
-            new ShuffleServerInfo("id2", "0.0.0.2", 100)),
+            new PartitionServerInfo(
+                0, Lists.newArrayList(new ShuffleServerInfo("id1", "0.0.0.1", 100))),
+            new PartitionServerInfo(
+                0, Lists.newArrayList(new ShuffleServerInfo("id2", "0.0.0.2", 100)))),
         partitionToServers.get(0));
     assertEquals(
         Arrays.asList(
-            new ShuffleServerInfo("id1", "0.0.0.1", 100),
-            new ShuffleServerInfo("id2", "0.0.0.2", 100)),
+            new PartitionServerInfo(
+                1, Lists.newArrayList(new ShuffleServerInfo("id1", "0.0.0.1", 100))),
+            new PartitionServerInfo(
+                1, Lists.newArrayList(new ShuffleServerInfo("id2", "0.0.0.2", 100)))),
         partitionToServers.get(1));
     assertEquals(
         Arrays.asList(
-            new ShuffleServerInfo("id3", "0.0.0.3", 100),
-            new ShuffleServerInfo("id4", "0.0.0.4", 100)),
+            new PartitionServerInfo(
+                2, Lists.newArrayList(new ShuffleServerInfo("id3", "0.0.0.3", 100))),
+            new PartitionServerInfo(
+                2, Lists.newArrayList(new ShuffleServerInfo("id4", "0.0.0.4", 100)))),
         partitionToServers.get(2));
     assertEquals(
         Arrays.asList(
-            new ShuffleServerInfo("id3", "0.0.0.3", 100),
-            new ShuffleServerInfo("id4", "0.0.0.4", 100)),
+            new PartitionServerInfo(
+                3, Lists.newArrayList(new ShuffleServerInfo("id3", "0.0.0.3", 100))),
+            new PartitionServerInfo(
+                3, Lists.newArrayList(new ShuffleServerInfo("id4", "0.0.0.4", 100)))),
         partitionToServers.get(3));
     assertNull(partitionToServers.get(4));
   }

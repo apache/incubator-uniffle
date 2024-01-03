@@ -54,6 +54,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
@@ -347,15 +348,17 @@ public class RssUtils {
   }
 
   public static Map<ShuffleServerInfo, Set<Integer>> generateServerToPartitions(
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers) {
+      Map<Integer, List<PartitionServerInfo>> partitionToServers) {
     Map<ShuffleServerInfo, Set<Integer>> serverToPartitions = Maps.newHashMap();
-    for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : partitionToServers.entrySet()) {
+    for (Map.Entry<Integer, List<PartitionServerInfo>> entry : partitionToServers.entrySet()) {
       int partitionId = entry.getKey();
-      for (ShuffleServerInfo serverInfo : entry.getValue()) {
-        if (!serverToPartitions.containsKey(serverInfo)) {
-          serverToPartitions.put(serverInfo, Sets.newHashSet(partitionId));
-        } else {
-          serverToPartitions.get(serverInfo).add(partitionId);
+      for (PartitionServerInfo partitionServerInfo : entry.getValue()) {
+        for (ShuffleServerInfo serverInfo : partitionServerInfo.getSplitServers()) {
+          if (!serverToPartitions.containsKey(serverInfo)) {
+            serverToPartitions.put(serverInfo, Sets.newHashSet(partitionId));
+          } else {
+            serverToPartitions.get(serverInfo).add(partitionId);
+          }
         }
       }
     }

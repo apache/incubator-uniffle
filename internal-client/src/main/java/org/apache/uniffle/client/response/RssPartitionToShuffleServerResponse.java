@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.client.response;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,6 +26,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -32,14 +34,14 @@ import org.apache.uniffle.proto.RssProtos;
 
 public class RssPartitionToShuffleServerResponse extends ClientResponse {
 
-  private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+  private Map<Integer, List<PartitionServerInfo>> partitionToServers;
   private Set<ShuffleServerInfo> shuffleServersForData;
   private RemoteStorageInfo remoteStorageInfo;
 
   public RssPartitionToShuffleServerResponse(
       StatusCode statusCode,
       String message,
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      Map<Integer, List<PartitionServerInfo>> partitionToServers,
       Set<ShuffleServerInfo> shuffleServersForData,
       RemoteStorageInfo remoteStorageInfo) {
     super(statusCode, message);
@@ -48,7 +50,7 @@ public class RssPartitionToShuffleServerResponse extends ClientResponse {
     this.shuffleServersForData = shuffleServersForData;
   }
 
-  public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
+  public Map<Integer, List<PartitionServerInfo>> getPartitionToServers() {
     return partitionToServers;
   }
 
@@ -64,7 +66,7 @@ public class RssPartitionToShuffleServerResponse extends ClientResponse {
       RssProtos.PartitionToShuffleServerResponse response) {
     Map<Integer, RssProtos.GetShuffleServerListResponse> partitionToShuffleServerMap =
         response.getPartitionToShuffleServerMap();
-    Map<Integer, List<ShuffleServerInfo>> rpcPartitionToShuffleServerInfos = Maps.newHashMap();
+    Map<Integer, List<PartitionServerInfo>> rpcPartitionToShuffleServerInfos = Maps.newHashMap();
     Set<Map.Entry<Integer, RssProtos.GetShuffleServerListResponse>> entries =
         partitionToShuffleServerMap.entrySet();
     for (Map.Entry<Integer, RssProtos.GetShuffleServerListResponse> entry : entries) {
@@ -80,13 +82,15 @@ public class RssPartitionToShuffleServerResponse extends ClientResponse {
                 shuffleServerIdOrBuilder.getPort(),
                 shuffleServerIdOrBuilder.getNettyPort()));
       }
-
-      rpcPartitionToShuffleServerInfos.put(partitionId, shuffleServerInfos);
+      rpcPartitionToShuffleServerInfos.put(
+          partitionId,
+          Lists.newArrayList(new PartitionServerInfo(partitionId, shuffleServerInfos)));
     }
     Set<ShuffleServerInfo> rpcShuffleServersForData = Sets.newHashSet();
-    for (List<ShuffleServerInfo> ssis : rpcPartitionToShuffleServerInfos.values()) {
-      rpcShuffleServersForData.addAll(ssis);
-    }
+    rpcPartitionToShuffleServerInfos.values().stream()
+        .flatMap(Collection::stream)
+        .forEach(psi -> rpcShuffleServersForData.addAll(psi.getSplitServers()));
+
     RssProtos.RemoteStorageInfo protoRemoteStorageInfo = response.getRemoteStorageInfo();
     RemoteStorageInfo rpcRemoteStorageInfo =
         new RemoteStorageInfo(

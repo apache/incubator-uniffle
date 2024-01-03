@@ -27,6 +27,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RssUtils;
@@ -57,13 +58,13 @@ public class ShuffleHandlerFactory {
   }
 
   public ClientReadHandler createShuffleReadHandler(CreateShuffleReadHandlerRequest request) {
-    if (CollectionUtils.isEmpty(request.getShuffleServerInfoList())) {
+    if (CollectionUtils.isEmpty(request.getPartitionServerInfoList())) {
       throw new RssException("Shuffle servers should not be empty!");
     }
-    if (request.getShuffleServerInfoList().size() > 1) {
+    if (request.getPartitionServerInfoList().size() > 1) {
       List<ClientReadHandler> handlers = Lists.newArrayList();
       request
-          .getShuffleServerInfoList()
+          .getPartitionServerInfoList()
           .forEach(
               (ssi) -> {
                 handlers.add(
@@ -72,48 +73,61 @@ public class ShuffleHandlerFactory {
               });
       return new MultiReplicaClientReadHandler(
           handlers,
-          request.getShuffleServerInfoList(),
+          request.getPartitionServerInfoList(),
           request.getExpectBlockIds(),
           request.getProcessBlockIds());
     } else {
-      ShuffleServerInfo serverInfo = request.getShuffleServerInfoList().get(0);
-      return createSingleReplicaClientReadHandler(request, serverInfo);
+      // TODO: read partition to multi split server not support now
+      if (request.getPartitionServerInfoList().size() > 1) {
+        throw new RssException("multi split server not support, trigger same fatal.");
+      }
+      PartitionServerInfo partitionServerInfo = request.getPartitionServerInfoList().get(0);
+      return createSingleReplicaClientReadHandler(request, partitionServerInfo);
     }
   }
 
   public ClientReadHandler createSingleReplicaClientReadHandler(
-      CreateShuffleReadHandlerRequest request, ShuffleServerInfo serverInfo) {
+      CreateShuffleReadHandlerRequest request, PartitionServerInfo partitionServerInfo) {
     String storageType = request.getStorageType();
     StorageType type = StorageType.valueOf(storageType);
 
+    if (partitionServerInfo.getSplitServers().size() == 0) {
+      throw new UnsupportedOperationException("spilt servers can't be empty, trigger same fatal.");
+    }
+    if (partitionServerInfo.getSplitServers().size() > 1) {
+      // TODO : read partition data from multi split server not support now
+      throw new UnsupportedOperationException(
+          "partition to multi split server not support, trigger same fatal.");
+    }
+    ShuffleServerInfo shuffleServerInfo = partitionServerInfo.getSplitServers().get(0);
     if (StorageType.MEMORY == type) {
       throw new UnsupportedOperationException(
           "Doesn't support storage type for client read  :" + storageType);
     }
 
     if (StorageType.HDFS == type) {
-      return getHadoopClientReadHandler(request, serverInfo);
+      return getHadoopClientReadHandler(request, shuffleServerInfo);
     }
     if (StorageType.LOCALFILE == type) {
-      return getLocalfileClientReaderHandler(request, serverInfo);
+      return getLocalfileClientReaderHandler(request, shuffleServerInfo);
     }
 
     List<Supplier<ClientReadHandler>> handlers = new ArrayList<>();
     if (StorageType.withMemory(type)) {
-      handlers.add(() -> getMemoryClientReadHandler(request, serverInfo));
+      handlers.add(() -> getMemoryClientReadHandler(request, shuffleServerInfo));
     }
     if (StorageType.withLocalfile(type)) {
-      handlers.add(() -> getLocalfileClientReaderHandler(request, serverInfo));
+      handlers.add(() -> getLocalfileClientReaderHandler(request, shuffleServerInfo));
     }
     if (StorageType.withHadoop(type)) {
-      handlers.add(() -> getHadoopClientReadHandler(request, serverInfo));
+      handlers.add(() -> getHadoopClientReadHandler(request, shuffleServerInfo));
     }
     if (handlers.isEmpty()) {
       throw new RssException(
           "This should not happen due to the unknown storage type: " + storageType);
     }
 
-    return new ComposedClientReadHandler(serverInfo, handlers);
+    return new ComposedClientReadHandler(shuffleServerInfo, handlers);
   }
 
   private ClientReadHandler getMemoryClientReadHandler(

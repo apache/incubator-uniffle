@@ -38,6 +38,7 @@ import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
@@ -246,15 +247,19 @@ public class RssUtilsTest {
 
   @Test
   public void testGenerateServerToPartitions() {
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
+    Map<Integer, List<PartitionServerInfo>> partitionToServers = Maps.newHashMap();
     ShuffleServerInfo server1 = new ShuffleServerInfo("server1", "0.0.0.1", 100);
     ShuffleServerInfo server2 = new ShuffleServerInfo("server2", "0.0.0.2", 200);
     ShuffleServerInfo server3 = new ShuffleServerInfo("server3", "0.0.0.3", 300);
     ShuffleServerInfo server4 = new ShuffleServerInfo("server4", "0.0.0.4", 400);
-    partitionToServers.put(1, Lists.newArrayList(server1, server2));
-    partitionToServers.put(2, Lists.newArrayList(server3, server4));
-    partitionToServers.put(3, Lists.newArrayList(server1, server2));
-    partitionToServers.put(4, Lists.newArrayList(server3, server4));
+    partitionToServers.put(
+        1, Lists.newArrayList(new PartitionServerInfo(1, Lists.newArrayList(server1, server2))));
+    partitionToServers.put(
+        2, Lists.newArrayList(new PartitionServerInfo(1, Lists.newArrayList(server3, server4))));
+    partitionToServers.put(
+        3, Lists.newArrayList(new PartitionServerInfo(1, Lists.newArrayList(server1, server2))));
+    partitionToServers.put(
+        4, Lists.newArrayList(new PartitionServerInfo(1, Lists.newArrayList(server3, server4))));
     Map<ShuffleServerInfo, Set<Integer>> serverToPartitions =
         RssUtils.generateServerToPartitions(partitionToServers);
     assertEquals(4, serverToPartitions.size());

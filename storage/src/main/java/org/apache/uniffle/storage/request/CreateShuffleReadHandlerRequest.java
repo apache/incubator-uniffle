@@ -23,8 +23,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
-import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.IdHelper;
@@ -42,7 +42,7 @@ public class CreateShuffleReadHandlerRequest {
   private String storageBasePath;
   private RssBaseConf rssBaseConf;
   private Configuration hadoopConf;
-  private List<ShuffleServerInfo> shuffleServerInfoList;
+  private List<PartitionServerInfo> partitionServerInfoList;
   private Roaring64NavigableMap expectBlockIds;
   private Roaring64NavigableMap processBlockIds;
   private ShuffleDataDistributionType distributionType;
@@ -137,12 +137,12 @@ public class CreateShuffleReadHandlerRequest {
     this.storageBasePath = storageBasePath;
   }
 
-  public List<ShuffleServerInfo> getShuffleServerInfoList() {
-    return shuffleServerInfoList;
+  public List<PartitionServerInfo> getPartitionServerInfoList() {
+    return partitionServerInfoList;
   }
 
-  public void setShuffleServerInfoList(List<ShuffleServerInfo> shuffleServerInfoList) {
-    this.shuffleServerInfoList = shuffleServerInfoList;
+  public void setPartitionServerInfoList(List<PartitionServerInfo> partitionServerInfoList) {
+    this.partitionServerInfoList = partitionServerInfoList;
   }
 
   public Configuration getHadoopConf() {

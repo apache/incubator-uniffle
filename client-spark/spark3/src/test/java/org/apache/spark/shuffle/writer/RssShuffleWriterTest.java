@@ -54,6 +54,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.JavaUtils;
@@ -374,13 +375,28 @@ public class RssShuffleWriterTest {
 
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
     ShuffleWriteMetrics shuffleWriteMetrics = new ShuffleWriteMetrics();
+    Map<Integer, List<PartitionServerInfo>> partitionToServerInfos = Maps.newHashMap();
+    partitionToServers.entrySet().stream()
+        .forEach(
+            entry -> {
+              entry
+                  .getValue()
+                  .forEach(
+                      shuffleServerInfo -> {
+                        partitionToServerInfos
+                            .computeIfAbsent(entry.getKey(), k -> Lists.newArrayList())
+                            .add(
+                                new PartitionServerInfo(
+                                    entry.getKey(), Lists.newArrayList(shuffleServerInfo)));
+                      });
+            });
     WriteBufferManager bufferManager =
         new WriteBufferManager(
             0,
             0,
             bufferOptions,
             kryoSerializer,
-            partitionToServers,
+            partitionToServerInfos,
             mockTaskMemoryManager,
             shuffleWriteMetrics,
             RssSparkConfig.toRssConf(conf));

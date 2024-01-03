@@ -69,6 +69,7 @@ import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
@@ -428,7 +429,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
     int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
     int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+    Map<Integer, List<PartitionServerInfo>> partitionToServers;
     try {
       partitionToServers =
           RetryUtils.retry(
@@ -634,9 +635,9 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               rssShuffleHandle.getPartitionToServers(),
               rssShuffleHandle.getRemoteStorage());
     }
-    Map<Integer, List<ShuffleServerInfo>> allPartitionToServers =
+    Map<Integer, List<PartitionServerInfo>> allPartitionToServers =
         shuffleHandleInfo.getPartitionToServers();
-    Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers =
+    Map<Integer, List<PartitionServerInfo>> requirePartitionToServers =
         allPartitionToServers.entrySet().stream()
             .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -1139,7 +1140,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
       /** Before reassigning ShuffleServer, clear the ShuffleServer list in ShuffleWriteClient. */
       shuffleWriteClient.unregisterShuffle(id.get(), shuffleId);
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+      Map<Integer, List<PartitionServerInfo>> partitionToServers;
       try {
         partitionToServers =
             RetryUtils.retry(

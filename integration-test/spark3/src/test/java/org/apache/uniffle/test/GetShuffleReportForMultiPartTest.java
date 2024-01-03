@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.MockedGrpcServer;
@@ -256,7 +256,7 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
         Roaring64NavigableMap taskIdBitmap) {
       int shuffleId = handle.shuffleId();
       RssShuffleHandle<?, ?, ?> rssShuffleHandle = (RssShuffleHandle<?, ?, ?>) handle;
-      Map<Integer, List<ShuffleServerInfo>> allPartitionToServers =
+      Map<Integer, List<PartitionServerInfo>> allPartitionToServers =
           rssShuffleHandle.getPartitionToServers();
       int partitionNum =
           (int)

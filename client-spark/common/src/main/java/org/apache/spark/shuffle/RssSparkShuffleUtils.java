@@ -48,8 +48,8 @@ import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
@@ -263,7 +263,7 @@ public class RssSparkShuffleUtils {
   public static Broadcast<ShuffleHandleInfo> broadcastShuffleHdlInfo(
       SparkContext sc,
       int shuffleId,
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      Map<Integer, List<PartitionServerInfo>> partitionToServers,
       RemoteStorageInfo storageInfo) {
     ShuffleHandleInfo handleInfo =
         new ShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
