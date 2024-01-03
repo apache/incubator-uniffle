@@ -35,8 +35,8 @@ use log::info;
 
 use std::path::Path;
 
-use std::sync::Arc;
 use hdfs_native::{Client, WriteOptions};
+use std::sync::Arc;
 use tokio::sync::{Mutex, Semaphore};
 
 use tracing::debug;
@@ -91,6 +91,11 @@ impl HdfsStore {
 
     fn get_app_dir(&self, app_id: &str) -> String {
         format!("{}/{}/", &self.root, app_id)
+    }
+
+    /// the dir created with app_id/shuffle_id
+    fn get_shuffle_dir(&self, app_id: &str, shuffle_id: i32) -> String {
+        format!("{}/{}/{}/", &self.root, app_id, shuffle_id)
     }
 
     fn get_file_path_by_uid(&self, uid: &PartitionedUId) -> (String, String) {
@@ -235,12 +240,16 @@ impl Store for HdfsStore {
 
     async fn purge(&self, ctx: PurgeDataContext) -> Result<()> {
         let app_id = ctx.app_id;
-        let app_dir = self.get_app_dir(app_id.as_str());
+
+        let dir = match ctx.shuffle_id {
+            Some(shuffle_id) => self.get_shuffle_dir(app_id.as_str(), shuffle_id),
+            _ => self.get_app_dir(app_id.as_str()),
+        };
 
         let keys_to_delete: Vec<_> = self
             .partition_file_locks
             .iter()
-            .filter(|entry| entry.key().contains(app_dir.as_str()))
+            .filter(|entry| entry.key().starts_with(dir.as_str()))
             .map(|entry| entry.key().to_string())
             .collect();
 
@@ -249,11 +258,11 @@ impl Store for HdfsStore {
             self.partition_cached_meta.remove(&deleted_key);
         }
 
-        info!("The hdfs data for {} has been deleted", &app_dir);
-        self.filesystem.delete_dir(app_dir.as_str()).await
+        info!("The hdfs data for {} has been deleted", &dir);
+        self.filesystem.delete_dir(dir.as_str()).await
     }
 
-    async fn is_healthy(&self) -> anyhow::Result<bool> {
+    async fn is_healthy(&self) -> Result<bool> {
         Ok(true)
     }
 }
@@ -275,16 +284,18 @@ struct HdfsNativeClient {
 impl HdfsNativeClient {
     fn new() -> Self {
         let client = Client::default();
-        Self {
-            client
-        }
+        Self { client }
     }
 }
 
 #[async_trait]
 impl HdfsDelegator for HdfsNativeClient {
     async fn touch(&self, file_path: &str) -> Result<()> {
-        self.client.create(file_path, WriteOptions::default()).await?.close().await?;
+        self.client
+            .create(file_path, WriteOptions::default())
+            .await?
+            .close()
+            .await?;
         Ok(())
     }
 
