@@ -71,7 +71,8 @@ public class ShuffleServerMetrics {
   private static final String ALLOCATED_BUFFER_SIZE = "allocated_buffer_size";
   private static final String EXPIRED_PRE_ALLOCATED_BUFFER_SIZE =
       "expired_pre_allocated_buffer_size";
-  private static final String EXPIRED_REQUIRE_BUFFER_IDS = "expired_require_buffer_ids";
+  private static final String EXPIRED_PRE_ALLOCATED_BUFFER_ID_CNT =
+      "expired_pre_allocated_buffer_id_cnt";
   private static final String IN_FLUSH_BUFFER_SIZE = "in_flush_buffer_size";
   private static final String USED_BUFFER_SIZE = "used_buffer_size";
   private static final String READ_USED_BUFFER_SIZE = "read_used_buffer_size";
@@ -164,7 +165,7 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeIsHealthy;
   public static Gauge.Child gaugePreAllocatedBufferSize;
   public static Gauge.Child gaugeExpiredPreAllocatedBufferSize;
-  public static Gauge gaugeExpiredRequireBufferIds;
+  public static Gauge.Child gaugeExpiredPreAllocatedBufferIdCnt;
   public static Gauge.Child gaugeInFlushBufferSize;
   public static Gauge.Child gaugeUsedBufferSize;
   public static Gauge.Child gaugeReadBufferUsedSize;
@@ -257,12 +258,6 @@ public class ShuffleServerMetrics {
     counterTotalHadoopWriteDataSize.labels(tags, STORAGE_HOST_LABEL_ALL).inc(size);
   }
 
-  public static void updateExpiredRequireBufferId(String expiredRequireBufferIds) {
-    metricsManager.getCollectorRegistry().unregister(gaugeExpiredRequireBufferIds);
-    gaugeExpiredRequireBufferIds =
-        metricsManager.addGauge(EXPIRED_REQUIRE_BUFFER_IDS, expiredRequireBufferIds);
-  }
-
   private static void setUpMetrics() {
     counterTotalReceivedDataSize = metricsManager.addLabeledCounter(TOTAL_RECEIVED_DATA);
     counterTotalWriteDataSize = metricsManager.addLabeledCounter(TOTAL_WRITE_DATA);
@@ -338,7 +333,8 @@ public class ShuffleServerMetrics {
     gaugePreAllocatedBufferSize = metricsManager.addLabeledGauge(ALLOCATED_BUFFER_SIZE);
     gaugeExpiredPreAllocatedBufferSize =
         metricsManager.addLabeledGauge(EXPIRED_PRE_ALLOCATED_BUFFER_SIZE);
-    gaugeExpiredRequireBufferIds = metricsManager.addGauge(EXPIRED_REQUIRE_BUFFER_IDS);
+    gaugeExpiredPreAllocatedBufferIdCnt =
+        metricsManager.addLabeledGauge(EXPIRED_PRE_ALLOCATED_BUFFER_ID_CNT);
     gaugeInFlushBufferSize = metricsManager.addLabeledGauge(IN_FLUSH_BUFFER_SIZE);
     gaugeUsedBufferSize = metricsManager.addLabeledGauge(USED_BUFFER_SIZE);
     gaugeReadBufferUsedSize = metricsManager.addLabeledGauge(READ_USED_BUFFER_SIZE);
