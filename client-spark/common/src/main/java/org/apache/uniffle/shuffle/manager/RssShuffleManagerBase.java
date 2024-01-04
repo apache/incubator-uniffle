@@ -41,6 +41,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 
+import static org.apache.uniffle.common.config.RssClientConf.HADOOP_CONFIG_KEY_PREFIX;
 import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED;
 
 public abstract class RssShuffleManagerBase implements RssShuffleManagerInterface, ShuffleManager {
@@ -161,7 +162,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     return tracker instanceof MapOutputTrackerMaster ? (MapOutputTrackerMaster) tracker : null;
   }
 
-  private Map<String, String> parseRemoteStorageConf(Configuration conf) {
+  private static Map<String, String> parseRemoteStorageConf(Configuration conf) {
     Map<String, String> confItems = Maps.newHashMap();
     for (Map.Entry<String, String> entry : conf) {
       confItems.put(entry.getKey(), entry.getValue());
@@ -169,11 +170,21 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     return confItems;
   }
 
-  protected RemoteStorageInfo getRemoteStorageInfo(SparkConf sparkConf) {
+  protected static RemoteStorageInfo getDefaultRemoteStorageInfo(SparkConf sparkConf) {
     Map<String, String> confItems = Maps.newHashMap();
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     if (rssConf.getBoolean(RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED)) {
       confItems = parseRemoteStorageConf(new Configuration(true));
+    }
+
+    for (String key : rssConf.getKeySet()) {
+      if (key.startsWith(HADOOP_CONFIG_KEY_PREFIX)) {
+        String val = rssConf.getString(key, null);
+        if (val != null) {
+          String extractedKey = key.replaceFirst(HADOOP_CONFIG_KEY_PREFIX, "");
+          confItems.put(extractedKey, val);
+        }
+      }
     }
 
     return new RemoteStorageInfo(
