@@ -21,6 +21,27 @@ license: |
 ---
 
 # Tez Client On RSS Design
+This docs describe the design about Tez Client on RSS, include why and how to design it.
+
+## Why design Tez Client
+Now, uniffle support Spark and MR client，whereas does not support tez.
+Considering tez is also widely used, so design client-tez module and implements the function.
+
+## How to implement Tez Client
+Before introduce design, let's show you the local tez shuffle:
+
+![tez_local_shuffle](../asset/tez_local_shuffle.png)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
