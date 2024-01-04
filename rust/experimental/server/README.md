@@ -133,15 +133,16 @@ push_gateway_endpoint = "http://xxxxxxxxxxxxxx/pushgateway"
 
 ### HDFS Setup 
 
+Benefit from the hdfs-native crate, there is no need to setup the JAVA_HOME and relative dependencies.
+
 ```shell
-export JAVA_HOME=/path/to/java
-export LD_LIBRARY_PATH=${JAVA_HOME}/jre/lib/amd64/server:${LD_LIBRARY_PATH}
-
-export HADOOP_HOME=/path/to/hadoop
-export CLASSPATH=$(${HADOOP_HOME}/bin/hadoop classpath --glob)
-
 cargo build --features hdfs --release
-``` 
+```
+
+```shell
+# configure the kerberos and conf env
+HADOOP_CONF_DIR=/etc/hadoop/conf KRB5_CONFIG=/etc/krb5.conf KRB5CCNAME=/tmp/krb5cc_2002 LOG=info ./uniffle-worker
+```
 
 ## Profiling
 
