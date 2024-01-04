@@ -32,6 +32,7 @@ Before introduce design, let's show you the local tez shuffle:
 
 ![tez_local_shuffle](../asset/tez_local_shuffle.png)
 
+From the flow diagram, we find that tez client interact 
 
 
 
