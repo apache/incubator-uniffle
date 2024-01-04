@@ -64,7 +64,7 @@ Introduce RssDagAppMaster and extend DAGAppMaster to implement the following fun
 Add RssUnorderedKVOutput, similar to the original UnorderedKVOutput, responsible for unordered shuffle write. 
 This is the entry point to implement the shuffle write logic.
 2. Add new logic to request for workers.
-3. The main change is to send shuffle data blocks to workers.
+3. **The main change is to send shuffle data blocks to workers.**
 
 
 
@@ -73,7 +73,7 @@ This is the entry point to implement the shuffle write logic.
 Add RssUnorderedKVInput, similar to the original UnorderedKVInput, responsible for unordered shuffle read. 
 This is the entry point to implement the shuffle read logic.
 2. Also add new logic to request for workers.
-3. The main change is to read shuffle data blocks from workers. 
+3. **The main change is to read shuffle data blocks from workers.** 
 
 
 
