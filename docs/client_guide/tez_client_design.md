@@ -28,7 +28,6 @@ Currently, Uniffle supports Spark and MR clients, but does not support Tez.
 Given that Tez is also widely used, we decided to design a client-tez module and implement its functionality.
 
 
-
 ## Implementation of the Tez Client
 Before delving into the design, let's first understand the local Tez shuffle:
 
@@ -58,7 +57,6 @@ Introduce RssDagAppMaster and extend DAGAppMaster to implement the following fun
 3. Start a heartbeat thread to send heartbeats to the coordinator.
 
 
-
 ### Shuffle Write Module
 1. Add a new class, RssOrderedPartitionedKVOutput, similar to the original OrderedPartitionedKVOutput, responsible for ordered shuffle write. 
 Add RssUnorderedKVOutput, similar to the original UnorderedKVOutput, responsible for unordered shuffle write. 
@@ -67,28 +65,10 @@ This is the entry point to implement the shuffle write logic.
 3. **The main change is to send shuffle data blocks to workers.**
 
 
-
 ### Shuffle Read Module
 1. Like the Shuffle Write Module, add a new class, RssOrderedGroupedKVInput, similar to the original OrderedGroupedKVInput, responsible for ordered shuffle read. 
 Add RssUnorderedKVInput, similar to the original UnorderedKVInput, responsible for unordered shuffle read. 
 This is the entry point to implement the shuffle read logic.
 2. Also add new logic to request for workers.
-3. **The main change is to read shuffle data blocks from workers.** 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+3. **The main change is to read shuffle data blocks from workers.**
 
