@@ -163,7 +163,7 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeLocalStorageUsedSpaceRatio;
 
   public static Gauge.Child gaugeIsHealthy;
-  public static Gauge.Child gaugePreAllocatedBufferSize;
+  public static Gauge.Child gaugeAllocatedBufferSize;
   public static Gauge.Child gaugeInFlushBufferSize;
   public static Gauge.Child gaugeUsedBufferSize;
   public static Gauge.Child gaugeReadBufferUsedSize;
@@ -330,7 +330,7 @@ public class ShuffleServerMetrics {
         metricsManager.addLabeledGauge(LOCAL_STORAGE_USED_SPACE_RATIO);
 
     gaugeIsHealthy = metricsManager.addLabeledGauge(IS_HEALTHY);
-    gaugePreAllocatedBufferSize = metricsManager.addLabeledGauge(ALLOCATED_BUFFER_SIZE);
+    gaugeAllocatedBufferSize = metricsManager.addLabeledGauge(ALLOCATED_BUFFER_SIZE);
     counterExpiredPreAllocatedBufferSizeTotal =
         metricsManager.addCounter(EXPIRED_PRE_ALLOCATED_BUFFER_SIZE_TOTAL);
     counterExpiredPreAllocatedBufferIdTotal =

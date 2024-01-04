@@ -461,12 +461,12 @@ public class ShuffleBufferManager {
 
   void requirePreAllocatedSize(long delta) {
     preAllocatedSize.addAndGet(delta);
-    ShuffleServerMetrics.gaugePreAllocatedBufferSize.set(preAllocatedSize.get());
+    ShuffleServerMetrics.gaugeAllocatedBufferSize.set(preAllocatedSize.get());
   }
 
   public void releasePreAllocatedSize(long delta) {
     preAllocatedSize.addAndGet(-delta);
-    ShuffleServerMetrics.gaugePreAllocatedBufferSize.set(preAllocatedSize.get());
+    ShuffleServerMetrics.gaugeAllocatedBufferSize.set(preAllocatedSize.get());
   }
 
   boolean isFull() {
