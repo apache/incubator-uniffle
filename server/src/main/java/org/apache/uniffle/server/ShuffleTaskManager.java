@@ -766,17 +766,21 @@ public class ShuffleTaskManager {
           removeIds.add(info.getRequireId());
         }
       }
+      int expiredBufferIdsCnt = 0;
       for (Long requireId : removeIds) {
         PreAllocatedBufferInfo info = requireBufferIds.remove(requireId);
         if (info != null) {
           // move release memory code down to here as the requiredBuffer could be consumed during
           // removing processing.
           shuffleBufferManager.releaseMemory(info.getRequireSize(), false, true);
+          ShuffleServerMetrics.counterExpiredPreAllocatedBufferSizeTotal.inc(info.getRequireSize());
+          expiredBufferIdsCnt++;
           LOG.info("Remove expired preAllocatedBuffer " + requireId);
         } else {
           LOG.info("PreAllocatedBuffer[id={}] has already been removed", requireId);
         }
       }
+      ShuffleServerMetrics.counterExpiredPreAllocatedBufferIdTotal.inc(expiredBufferIdsCnt);
     } catch (Exception e) {
       LOG.warn("Error happened in preAllocatedBufferCheck", e);
     }
