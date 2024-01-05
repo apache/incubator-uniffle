@@ -164,10 +164,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
         return canAccess;
       } catch (Throwable e) {
         LOG.warn(
-            "Fail to access cluster {} using {} for {}",
-            coordinatorClient.getDesc(),
-            accessId,
-            e.getMessage());
+            "Fail to access cluster {} using {} for ", coordinatorClient.getDesc(), accessId, e);
       }
     }
 

@@ -154,7 +154,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
             maxRetryAttempts,
             t -> !(t instanceof OutOfMemoryError));
       } catch (Throwable throwable) {
-        LOG.warn(throwable.getMessage());
+        LOG.warn("Failed to send shuffle data due to ", throwable);
         isSuccessful = false;
         break;
       }
