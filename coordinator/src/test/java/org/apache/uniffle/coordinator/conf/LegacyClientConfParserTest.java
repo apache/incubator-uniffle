@@ -32,6 +32,10 @@ public class LegacyClientConfParserTest {
     assertEquals("v1", conf.getRssClientConf().get("k1"));
     assertEquals("v2", conf.getRssClientConf().get("k2"));
     assertEquals("v1", conf.getRemoteStorageInfos().get("hdfs://a-ns01").getConfItems().get("k1"));
-    assertEquals("v1", conf.getRemoteStorageInfos().get("hdfs://x-ns01").getConfItems().get("k1"));
+    assertEquals(
+        "v1,v2,v3", conf.getRemoteStorageInfos().get("hdfs://x-ns01").getConfItems().get("k1"));
+    assertEquals("v4", conf.getRemoteStorageInfos().get("hdfs://x-ns01").getConfItems().get("k2"));
+    assertEquals(
+        "v5,v6", conf.getRemoteStorageInfos().get("hdfs://x-ns01").getConfItems().get("k3"));
   }
 }

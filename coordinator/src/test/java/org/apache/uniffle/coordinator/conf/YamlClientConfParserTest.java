@@ -32,7 +32,8 @@ public class YamlClientConfParserTest {
             getClass().getClassLoader().getResource("dynamicClientConf.yaml").openStream());
     assertEquals("v1", conf.getRssClientConf().get("k1"));
     assertEquals("v2", conf.getRssClientConf().get("k2"));
-    assertEquals("v1", conf.getRemoteStorageInfos().get("hdfs://a-ns01").getConfItems().get("k1"));
+    assertEquals(
+        "v1,v2,v3", conf.getRemoteStorageInfos().get("hdfs://a-ns01").getConfItems().get("k1"));
     assertEquals("v1", conf.getRemoteStorageInfos().get("hdfs://x-ns01").getConfItems().get("k1"));
   }
 
@@ -74,7 +75,7 @@ public class YamlClientConfParserTest {
     yaml =
         "remoteStorageInfos:\n"
             + "   hdfs://a-ns01:\n"
-            + "      k1: v1\n"
+            + "      k1: v1,v5\n"
             + "      k2: v2\n"
             + "   hdfs://x-ns01:\n"
             + "      k1: v1\n"
@@ -82,7 +83,8 @@ public class YamlClientConfParserTest {
     conf = parser.tryParse(IOUtils.toInputStream(yaml));
     assertEquals(0, conf.getRssClientConf().size());
     assertEquals(2, conf.getRemoteStorageInfos().size());
-    assertEquals("v1", conf.getRemoteStorageInfos().get("hdfs://a-ns01").getConfItems().get("k1"));
+    assertEquals(
+        "v1,v5", conf.getRemoteStorageInfos().get("hdfs://a-ns01").getConfItems().get("k1"));
     assertEquals("v1", conf.getRemoteStorageInfos().get("hdfs://x-ns01").getConfItems().get("k1"));
 
     yaml =
