@@ -456,10 +456,15 @@ public class ShuffleTaskManager {
 
   public long requireBuffer(
       String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
-    ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
-    if (null == shuffleTaskInfo) {
+    // Once the shuffle server is restarted, the following shuffleTaskInfo may exist as
+    // a result of the refreshAppId() method being invoked during the process of sending/getting data
+    // from the client side. However, it is essential for the app's buffer pool to exist once it has been registered.
+    // This can serve as a crucial criterion for determining whether the app is not registered,
+    // especially following a server restart.
+    if (null == shuffleTaskInfos.get(appId) || !shuffleBufferManager.containsBufferByApp(appId)) {
       return RequireBufferStatusCode.NO_REGISTER.statusCode();
     }
+
     for (int partitionId : partitionIds) {
       long partitionUsedDataSize = getPartitionDataSize(appId, shuffleId, partitionId);
       if (shuffleBufferManager.limitHugePartition(
