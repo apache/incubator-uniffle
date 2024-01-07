@@ -47,6 +47,9 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
+import org.apache.uniffle.common.exception.NoBufferException;
+import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
+import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -83,7 +86,6 @@ import org.apache.uniffle.proto.RssProtos.ShuffleRegisterRequest;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerImplBase;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
-import org.apache.uniffle.server.buffer.RequireBufferStatusCode;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -392,27 +394,32 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void requireBuffer(
       RequireBufferRequest request, StreamObserver<RequireBufferResponse> responseObserver) {
     String appId = request.getAppId();
-    long requireBufferId;
-    if (StringUtils.isEmpty(appId)) {
-      // To be compatible with older client version
-      requireBufferId =
-          shuffleServer.getShuffleTaskManager().requireBuffer(request.getRequireSize());
-    } else {
-      requireBufferId =
-          shuffleServer
-              .getShuffleTaskManager()
-              .requireBuffer(
-                  appId,
-                  request.getShuffleId(),
-                  request.getPartitionIdsList(),
-                  request.getRequireSize());
-    }
-
+    long requireBufferId = -1;
     StatusCode status = StatusCode.SUCCESS;
-    if (requireBufferId == RequireBufferStatusCode.NO_BUFFER.statusCode()) {
+    try {
+      if (StringUtils.isEmpty(appId)) {
+        // To be compatible with older client version
+        requireBufferId =
+            shuffleServer.getShuffleTaskManager().requireBuffer(request.getRequireSize());
+      } else {
+        requireBufferId =
+            shuffleServer
+                .getShuffleTaskManager()
+                .requireBuffer(
+                    appId,
+                    request.getShuffleId(),
+                    request.getPartitionIdsList(),
+                    request.getRequireSize());
+      }
+    } catch (NoBufferException e) {
       status = StatusCode.NO_BUFFER;
+      ShuffleServerMetrics.counterTotalRequireBufferFailedForRegularPartition.inc();
       ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
-    } else if (requireBufferId == RequireBufferStatusCode.NO_REGISTER.statusCode()) {
+    } catch (NoBufferForHugePartitionException e) {
+      status = StatusCode.NO_BUFFER_FOR_HUGE_PARTITION;
+      ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.inc();
+      ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
+    } catch (NoRegisterException e) {
       status = StatusCode.NO_REGISTER;
       ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
     }

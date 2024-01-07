@@ -56,6 +56,9 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
+import org.apache.uniffle.common.exception.NoBufferException;
+import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
+import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
@@ -63,7 +66,6 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
-import org.apache.uniffle.server.buffer.RequireBufferStatusCode;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.event.AppPurgeEvent;
@@ -458,31 +460,35 @@ public class ShuffleTaskManager {
       String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
     if (null == shuffleTaskInfo) {
-      return RequireBufferStatusCode.NO_REGISTER.statusCode();
+      LOG.error("No such app is registered. appId: {}, shuffleId: {}", appId, shuffleId);
+      throw new NoRegisterException("No such app is registered. appId: " + appId);
     }
     for (int partitionId : partitionIds) {
       long partitionUsedDataSize = getPartitionDataSize(appId, shuffleId, partitionId);
       if (shuffleBufferManager.limitHugePartition(
           appId, shuffleId, partitionId, partitionUsedDataSize)) {
-        ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.inc();
-        return RequireBufferStatusCode.NO_BUFFER.statusCode();
+        String errorMessage =
+            String.format(
+                "Huge partition is limited to writing. appId: %s, shuffleId: %s, partitionIds: %s, partitionUsedDataSize: %s",
+                appId, shuffleId, partitionIds, partitionUsedDataSize);
+        LOG.error(errorMessage);
+        throw new NoBufferForHugePartitionException(errorMessage);
       }
     }
     return requireBuffer(requireSize);
   }
 
   public long requireBuffer(int requireSize) {
-    long requireId = -1;
     if (shuffleBufferManager.requireMemory(requireSize, true)) {
-      requireId = requireBufferId.incrementAndGet();
+      long requireId = requireBufferId.incrementAndGet();
       requireBufferIds.put(
           requireId,
           new PreAllocatedBufferInfo(requireId, System.currentTimeMillis(), requireSize));
+      return requireId;
+    } else {
+      LOG.error("Failed to require buffer, require size: {}", requireSize);
+      throw new NoBufferException("No Buffer For Regular Partition, requireSize: " + requireSize);
     }
-    if (requireId == -1) {
-      ShuffleServerMetrics.counterTotalRequireBufferFailedForRegularPartition.inc();
-    }
-    return requireId;
   }
 
   public byte[] getFinishedBlockIds(String appId, Integer shuffleId, Set<Integer> partitions)
@@ -766,21 +772,17 @@ public class ShuffleTaskManager {
           removeIds.add(info.getRequireId());
         }
       }
-      int expiredBufferIdsCnt = 0;
       for (Long requireId : removeIds) {
         PreAllocatedBufferInfo info = requireBufferIds.remove(requireId);
         if (info != null) {
           // move release memory code down to here as the requiredBuffer could be consumed during
           // removing processing.
           shuffleBufferManager.releaseMemory(info.getRequireSize(), false, true);
-          ShuffleServerMetrics.counterExpiredPreAllocatedBufferSizeTotal.inc(info.getRequireSize());
-          expiredBufferIdsCnt++;
           LOG.info("Remove expired preAllocatedBuffer " + requireId);
         } else {
           LOG.info("PreAllocatedBuffer[id={}] has already been removed", requireId);
         }
       }
-      ShuffleServerMetrics.counterExpiredPreAllocatedBufferIdTotal.inc(expiredBufferIdsCnt);
     } catch (Exception e) {
       LOG.warn("Error happened in preAllocatedBufferCheck", e);
     }

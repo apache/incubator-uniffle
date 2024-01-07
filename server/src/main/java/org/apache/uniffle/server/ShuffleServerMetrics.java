@@ -69,10 +69,6 @@ public class ShuffleServerMetrics {
 
   private static final String IS_HEALTHY = "is_healthy";
   private static final String ALLOCATED_BUFFER_SIZE = "allocated_buffer_size";
-  private static final String EXPIRED_PRE_ALLOCATED_BUFFER_SIZE_TOTAL =
-      "expired_pre_allocated_buffer_size_total";
-  private static final String EXPIRED_PRE_ALLOCATED_BUFFER_ID_TOTAL =
-      "expired_pre_allocated_buffer_id_total";
   private static final String IN_FLUSH_BUFFER_SIZE = "in_flush_buffer_size";
   private static final String USED_BUFFER_SIZE = "used_buffer_size";
   private static final String READ_USED_BUFFER_SIZE = "read_used_buffer_size";
@@ -84,7 +80,7 @@ public class ShuffleServerMetrics {
   private static final String LOCAL_DISK_PATH_LABEL = "local_disk_path";
   public static final String LOCAL_DISK_PATH_LABEL_ALL = "ALL";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED = "total_require_buffer_failed";
-  private static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION =
+  public static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION =
       "total_require_buffer_failed_for_huge_partition";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_REGULAR_PARTITION =
       "total_require_buffer_failed_for_regular_partition";
@@ -180,8 +176,6 @@ public class ShuffleServerMetrics {
   public static Counter counterRemoteStorageSuccessWrite;
   public static Counter counterTotalHadoopWriteDataSize;
   public static Counter counterTotalLocalFileWriteDataSize;
-  public static Counter counterExpiredPreAllocatedBufferSizeTotal;
-  public static Counter counterExpiredPreAllocatedBufferIdTotal;
 
   private static String tags;
   public static Counter counterLocalFileEventFlush;
@@ -287,11 +281,13 @@ public class ShuffleServerMetrics {
             TOTAL_HADOOP_WRITE_DATA, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
     counterTotalLocalFileWriteDataSize =
         metricsManager.addCounter(TOTAL_LOCALFILE_WRITE_DATA, LOCAL_DISK_PATH_LABEL);
+
     counterTotalRequireBufferFailed = metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED);
     counterTotalRequireBufferFailedForRegularPartition =
         metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_REGULAR_PARTITION);
     counterTotalRequireBufferFailedForHugePartition =
         metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION);
+
     counterLocalStorageTotalWrite = metricsManager.addLabeledCounter(STORAGE_TOTAL_WRITE_LOCAL);
     counterLocalStorageRetryWrite = metricsManager.addLabeledCounter(STORAGE_RETRY_WRITE_LOCAL);
     counterLocalStorageFailedWrite = metricsManager.addLabeledCounter(STORAGE_FAILED_WRITE_LOCAL);
@@ -333,10 +329,6 @@ public class ShuffleServerMetrics {
 
     gaugeIsHealthy = metricsManager.addLabeledGauge(IS_HEALTHY);
     gaugeAllocatedBufferSize = metricsManager.addLabeledGauge(ALLOCATED_BUFFER_SIZE);
-    counterExpiredPreAllocatedBufferSizeTotal =
-        metricsManager.addCounter(EXPIRED_PRE_ALLOCATED_BUFFER_SIZE_TOTAL);
-    counterExpiredPreAllocatedBufferIdTotal =
-        metricsManager.addCounter(EXPIRED_PRE_ALLOCATED_BUFFER_ID_TOTAL);
     gaugeInFlushBufferSize = metricsManager.addLabeledGauge(IN_FLUSH_BUFFER_SIZE);
     gaugeUsedBufferSize = metricsManager.addLabeledGauge(USED_BUFFER_SIZE);
     gaugeReadBufferUsedSize = metricsManager.addLabeledGauge(READ_USED_BUFFER_SIZE);

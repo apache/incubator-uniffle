@@ -18,6 +18,7 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -50,7 +53,9 @@ import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
+import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
+import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -58,6 +63,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.metrics.TestUtils;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -71,6 +77,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -80,6 +87,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
   private final AtomicInteger atomicInteger = new AtomicInteger(0);
   private static final Long EVENT_THRESHOLD_SIZE = 2048L;
   private static final int GB = 1024 * 1024 * 1024;
+  protected static final long FAILED_REQUIRE_ID = -1;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
@@ -97,6 +105,8 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     shuffleServerConf.set(RssBaseConf.RPC_METRICS_ENABLED, true);
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     shuffleServerConf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 5000L);
+    shuffleServerConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1024 * 1024 * 50L);
+    shuffleServerConf.set(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD, 1024 * 1024 * 10L);
     createShuffleServer(shuffleServerConf);
     startServers();
   }
@@ -393,7 +403,6 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     shuffleServerClient.getShuffleResult(req);
     req = new RssGetShuffleResultRequest("registerTest", 1, 2);
     shuffleServerClient.getShuffleResult(req);
-
     // registerShuffle with remote storage
     String appId1 = "remote_storage_register_app1";
     String appId2 = "remote_storage_register_app2";
@@ -428,7 +437,97 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
   }
 
   @Test
-  public void sendDataWithoutRegisterTest() throws Exception {
+  public void sendDataAndRequireBufferTest() throws IOException {
+    String appId = "sendDataAndRequireBufferTest";
+    int shuffleId = 0;
+    int partitionId = 0;
+    // bigger than the config above: HUGE_PARTITION_SIZE_THRESHOLD : 1024 * 1024 * 10L
+    int hugePartitionDataLength = 1024 * 1024 * 11;
+    List<PartitionRange> partitionIds = Lists.newArrayList(new PartitionRange(0, 3));
+
+    RssRegisterShuffleRequest registerShuffleRequest =
+        new RssRegisterShuffleRequest(appId, shuffleId, partitionIds, "");
+    RssRegisterShuffleResponse registerResponse =
+        shuffleServerClient.registerShuffle(registerShuffleRequest);
+    assertSame(StatusCode.SUCCESS, registerResponse.getStatusCode());
+
+    List<ShuffleBlockInfo> blockInfos =
+        Lists.newArrayList(
+            new ShuffleBlockInfo(
+                shuffleId,
+                partitionId,
+                0,
+                hugePartitionDataLength,
+                0,
+                new byte[] {},
+                Lists.newArrayList(),
+                0,
+                100,
+                0));
+
+    Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
+    partitionToBlocks.put(partitionId, blockInfos);
+    Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
+    shuffleToBlocks.put(shuffleId, partitionToBlocks);
+
+    RssSendShuffleDataRequest sendShuffleDataRequest =
+        new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
+    RssSendShuffleDataResponse response =
+        shuffleServerClient.sendShuffleData(sendShuffleDataRequest);
+    assertSame(StatusCode.SUCCESS, response.getStatusCode());
+
+    // trigger NoBufferForHugePartitionException and get FAILED_REQUIRE_ID
+    long requireId =
+        shuffleServerClient.requirePreAllocation(
+            appId, shuffleId, Lists.newArrayList(partitionId), hugePartitionDataLength, 3, 100);
+    assertEquals(FAILED_REQUIRE_ID, requireId);
+
+    // Add NoBufferForHugePartitionException check
+    // and ShuffleServerMetrics.TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION metric should be 1
+    String content = TestUtils.httpGet(SHUFFLE_SERVER_METRICS_URL);
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode actualObj = mapper.readTree(content);
+    JsonNode metricsNode = actualObj.get("metrics");
+    boolean checkSuccess = false;
+    for (int i = 0; i < metricsNode.size(); i++) {
+      JsonNode metricsName = metricsNode.get(i).get("name");
+      if (ShuffleServerMetrics.TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION.equals(
+          metricsName.textValue())) {
+        double labelValues = mapper.convertValue(metricsNode.get(i).get("value"), Double.class);
+        assertEquals(4, labelValues); // There is retry in ShuffleServerGrpcClient
+        checkSuccess = true;
+        break;
+      }
+    }
+    assertTrue(checkSuccess);
+
+    partitionId = 3;
+    List<ShuffleBlockInfo> blockInfos2 =
+        Lists.newArrayList(
+            new ShuffleBlockInfo(
+                shuffleId,
+                partitionId,
+                0,
+                hugePartitionDataLength,
+                0,
+                new byte[] {},
+                Lists.newArrayList(),
+                0,
+                100,
+                0));
+
+    Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks3 = Maps.newHashMap();
+    partitionToBlocks3.put(partitionId, blockInfos2);
+    Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks2 = Maps.newHashMap();
+    shuffleToBlocks2.put(shuffleId, partitionToBlocks3);
+
+    sendShuffleDataRequest = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks2);
+    response = shuffleServerClient.sendShuffleData(sendShuffleDataRequest);
+    assertSame(StatusCode.SUCCESS, response.getStatusCode());
+  }
+
+  @Test
+  public void sendDataWithoutRegisterTest() {
     List<ShuffleBlockInfo> blockInfos =
         Lists.newArrayList(
             new ShuffleBlockInfo(0, 0, 0, 100, 0, new byte[] {}, Lists.newArrayList(), 0, 100, 0));
@@ -439,13 +538,21 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
     RssSendShuffleDataRequest rssdr =
         new RssSendShuffleDataRequest("sendDataWithoutRegisterTest", 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    RssSendShuffleDataResponse response = shuffleServerClient.sendShuffleData(rssdr);
+    // NO_REGISTER
+    assertSame(StatusCode.INTERNAL_ERROR, response.getStatusCode());
     assertEquals(0, shuffleServers.get(0).getPreAllocatedMemory());
   }
 
   @Test
-  public void sendDataWithoutRequirePreAllocation() throws Exception {
+  public void sendDataWithoutRequirePreAllocation() {
     String appId = "sendDataWithoutRequirePreAllocation";
+    RssRegisterShuffleRequest registerShuffleRequest =
+        new RssRegisterShuffleRequest(appId, 0, Lists.newArrayList(new PartitionRange(0, 0)), "");
+    RssRegisterShuffleResponse registerResponse =
+        shuffleServerClient.registerShuffle(registerShuffleRequest);
+    assertSame(StatusCode.SUCCESS, registerResponse.getStatusCode());
+
     List<ShuffleBlockInfo> blockInfos =
         Lists.newArrayList(
             new ShuffleBlockInfo(0, 0, 0, 100, 0, new byte[] {}, Lists.newArrayList(), 0, 100, 0));
@@ -485,7 +592,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
               .build();
       RssProtos.SendShuffleDataResponse response =
           shuffleServerClient.getBlockingStub().sendShuffleData(rpcRequest);
-      assertTrue(RssProtos.StatusCode.INTERNAL_ERROR.equals(response.getStatus()));
+      assertEquals(RssProtos.StatusCode.INTERNAL_ERROR, response.getStatus());
       assertTrue(response.getRetMsg().contains("Can't find requireBufferId[10000]"));
     }
   }
