@@ -17,7 +17,9 @@
 
 package org.apache.uniffle.coordinator.util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
