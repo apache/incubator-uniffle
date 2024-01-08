@@ -25,6 +25,15 @@ import org.apache.uniffle.common.netty.IOMode;
 import static org.apache.uniffle.common.compression.Codec.Type.LZ4;
 
 public class RssClientConf {
+  /**
+   * The prefix key for Hadoop conf. For Spark like that:
+   *
+   * <p>key: spark.rss.hadoop.fs.defaultFS val: hdfs://rbf-x1
+   *
+   * <p>The key will be extracted to the hadoop conf: "fs.defaultFS" and inject this into Hadoop
+   * storage configuration.
+   */
+  public static final String HADOOP_CONFIG_KEY_PREFIX = "rss.hadoop.";
 
   public static final ConfigOption<Codec.Type> COMPRESSION_TYPE =
       ConfigOptions.key("rss.client.io.compression.codec")
