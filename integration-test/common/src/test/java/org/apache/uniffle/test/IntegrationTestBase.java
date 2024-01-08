@@ -58,6 +58,8 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
   protected static final int JETTY_PORT_1 = 19998;
   protected static final int JETTY_PORT_2 = 20040;
   protected static final String COORDINATOR_QUORUM = LOCALHOST + ":" + COORDINATOR_PORT_1;
+  protected static final String SHUFFLE_SERVER_METRICS_URL =
+      "http://127.0.0.1:18080/metrics/server";
 
   protected static List<ShuffleServer> shuffleServers = Lists.newArrayList();
   protected static List<CoordinatorServer> coordinators = Lists.newArrayList();
