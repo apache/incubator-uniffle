@@ -29,7 +29,6 @@ deploy/kubernetes/docker/hadoopconfig/*
 *.dll
 *.so
 *.dylib
-local
 vendor
 VERSION
 testbin/*

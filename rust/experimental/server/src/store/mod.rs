@@ -18,6 +18,7 @@
 #[cfg(feature = "hdfs")]
 pub mod hdfs;
 pub mod hybrid;
+pub mod local;
 pub mod localfile;
 pub mod mem;
 pub mod memory;

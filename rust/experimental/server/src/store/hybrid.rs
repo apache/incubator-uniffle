@@ -230,7 +230,10 @@ impl HybridStore {
         ctx.data_blocks.sort_by_key(|block| block.task_attempt_id);
 
         // when throwing the data lost error, it should fast fail for this partition data.
-        let inserted = candidate_store.insert(ctx).await;
+        let inserted = candidate_store
+            .insert(ctx)
+            .instrument_await("inserting into the persistent store, invoking [write]")
+            .await;
         if let Err(err) = inserted {
             match err {
                 WorkerError::PARTIAL_DATA_LOST(msg) => {
@@ -335,15 +338,19 @@ impl Store for HybridStore {
         let store = self.clone();
         let concurrency_limiter =
             Arc::new(Semaphore::new(store.memory_spill_max_concurrency as usize));
-        self.runtime_manager.default_runtime.spawn(async move {
+        self.runtime_manager.write_runtime.spawn(async move {
             while let Ok(message) = store.memory_spill_recv.recv().await {
                 let await_root = await_tree_registry
-                    .register(format!("hot->warm flush."))
+                    .register(format!("hot->warm flush. uid: {:#?}", &message.ctx.uid))
                     .await;
 
                 // using acquire_owned(), refer to https://github.com/tokio-rs/tokio/issues/1998
-                let concurrency_guarder =
-                    concurrency_limiter.clone().acquire_owned().await.unwrap();
+                let concurrency_guarder = concurrency_limiter
+                    .clone()
+                    .acquire_owned()
+                    .instrument_await("waiting for the spill concurrent lock.")
+                    .await
+                    .unwrap();
 
                 TOTAL_MEMORY_SPILL_OPERATION.inc();
                 GAUGE_MEMORY_SPILL_OPERATION.inc();
@@ -358,6 +365,7 @@ impl Store for HybridStore {
                         }
                         match store_cloned
                             .memory_spill_to_persistent_store(message.ctx.clone(), message.id)
+                            .instrument_await("memory_spill_to_persistent_store.")
                             .await
                         {
                             Ok(msg) => {
@@ -768,8 +776,9 @@ mod tests {
                     let reading_view_ctx = ReadingViewContext {
                         uid: uid.clone(),
                         reading_options: ReadingOptions::FILE_OFFSET_AND_LEN(offset, length as i64),
-                        serialized_expected_task_ids_bitmap: Default::default(),
+                        serialized_expected_task_ids_bitmap: None,
                     };
+                    println!("reading. offset: {:?}. len: {:?}", offset, length);
                     let read_data = store.get(reading_view_ctx).await.unwrap();
                     match read_data {
                         ResponseData::Local(local_data) => {
