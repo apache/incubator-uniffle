@@ -50,8 +50,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.util.RssClientConfig;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
-import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 
@@ -59,7 +59,7 @@ import static org.apache.uniffle.common.util.Constants.DRIVER_HOST;
 
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleReader.class);
-  private final Map<Integer, List<ShuffleServerInfo>> partitionToShuffleServers;
+  private final Map<Integer, List<PartitionServerInfo>> partitionToShuffleServers;
 
   private String appId;
   private int shuffleId;
@@ -96,7 +96,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       ShuffleReadMetrics readMetrics,
       RssConf rssConf,
       ShuffleDataDistributionType dataDistributionType,
-      Map<Integer, List<ShuffleServerInfo>> allPartitionToServers) {
+      Map<Integer, List<PartitionServerInfo>> allPartitionToServers) {
     this.appId = rssShuffleHandle.getAppId();
     this.startPartition = startPartition;
     this.endPartition = endPartition;
@@ -240,7 +240,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
           LOG.info("{} partition is empty partition", partition);
           continue;
         }
-        List<ShuffleServerInfo> shuffleServerInfoList = partitionToShuffleServers.get(partition);
+        List<PartitionServerInfo> shuffleServerInfoList = partitionToShuffleServers.get(partition);
         // This mechanism of expectedTaskIdsBitmap filter is to filter out the most of data.
         // especially for AQE skew optimization
         boolean expectedTaskIdsBitmapFilterEnable =
@@ -258,7 +258,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
                         .partitionNum(partitionNum)
                         .blockIdBitmap(partitionToExpectBlocks.get(partition))
                         .taskIdBitmap(taskIdBitmap)
-                        .shuffleServerInfoList(shuffleServerInfoList)
+                        .partitionServerInfoList(shuffleServerInfoList)
                         .hadoopConf(hadoopConf)
                         .shuffleDataDistributionType(dataDistributionType)
                         .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)

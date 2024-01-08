@@ -18,14 +18,16 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
-import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
@@ -35,7 +37,7 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(MultiReplicaClientReadHandler.class);
 
   private final List<ClientReadHandler> handlers;
-  private final List<ShuffleServerInfo> shuffleServerInfos;
+  private final List<PartitionServerInfo> partitionServerInfos;
   private final Roaring64NavigableMap blockIdBitmap;
   private final Roaring64NavigableMap processedBlockIds;
 
@@ -43,13 +45,13 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
 
   public MultiReplicaClientReadHandler(
       List<ClientReadHandler> handlers,
-      List<ShuffleServerInfo> shuffleServerInfos,
+      List<PartitionServerInfo> shuffleServerInfos,
       Roaring64NavigableMap blockIdBitmap,
       Roaring64NavigableMap processedBlockIds) {
     this.handlers = handlers;
     this.blockIdBitmap = blockIdBitmap;
     this.processedBlockIds = processedBlockIds;
-    this.shuffleServerInfos = shuffleServerInfos;
+    this.partitionServerInfos = shuffleServerInfos;
   }
 
   @Override
@@ -66,7 +68,9 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
       } catch (Exception e) {
         LOG.warn(
             "Failed to read a replica from [{}] due to ",
-            shuffleServerInfos.get(readHandlerIndex).getId(),
+            partitionServerInfos.get(readHandlerIndex).getSplitServers().stream()
+                .flatMap(si -> Stream.of(si.getId()))
+                .collect(Collectors.joining(",")),
             e);
       }
       if (result != null && !result.isEmpty()) {
@@ -78,7 +82,9 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
         } catch (RssException e) {
           LOG.warn(
               "Finished read from [{}], but haven't finished read all the blocks.",
-              shuffleServerInfos.get(readHandlerIndex).getId(),
+              partitionServerInfos.get(readHandlerIndex).getSplitServers().stream()
+                  .flatMap(si -> Stream.of(si.getId()))
+                  .collect(Collectors.joining(",")),
               e);
         }
         readHandlerIndex++;

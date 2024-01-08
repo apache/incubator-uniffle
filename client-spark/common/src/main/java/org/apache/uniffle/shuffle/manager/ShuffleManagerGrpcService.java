@@ -31,6 +31,7 @@ import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.JavaUtils;
@@ -193,14 +194,15 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
         shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
     if (shuffleHandleInfoByShuffleId != null) {
       code = RssProtos.StatusCode.SUCCESS;
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers =
+      Map<Integer, List<PartitionServerInfo>> partitionToServers =
           shuffleHandleInfoByShuffleId.getPartitionToServers();
       Map<Integer, RssProtos.GetShuffleServerListResponse> protopartitionToServers =
           JavaUtils.newConcurrentMap();
-      for (Map.Entry<Integer, List<ShuffleServerInfo>> integerListEntry :
+      for (Map.Entry<Integer, List<PartitionServerInfo>> integerListEntry :
           partitionToServers.entrySet()) {
+        // @TODO proto
         List<RssProtos.ShuffleServerId> shuffleServerIds =
-            ShuffleServerInfo.toProto(integerListEntry.getValue());
+            ShuffleServerInfo.toProto(integerListEntry.getValue().get(0).getSplitServers());
         RssProtos.GetShuffleServerListResponse getShuffleServerListResponse =
             RssProtos.GetShuffleServerListResponse.newBuilder()
                 .addAllServers(shuffleServerIds)

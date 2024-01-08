@@ -25,6 +25,7 @@ import java.util.Set;
 
 import com.google.common.collect.Sets;
 
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
@@ -37,7 +38,7 @@ public class ShuffleHandleInfo implements Serializable {
 
   private int shuffleId;
 
-  private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+  private Map<Integer, List<PartitionServerInfo>> partitionToServers;
   // shuffle servers which is for store shuffle data
   private Set<ShuffleServerInfo> shuffleServersForData;
   // remoteStorage used for this job
@@ -48,18 +49,21 @@ public class ShuffleHandleInfo implements Serializable {
 
   public ShuffleHandleInfo(
       int shuffleId,
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      Map<Integer, List<PartitionServerInfo>> partitionToServers,
       RemoteStorageInfo storageInfo) {
     this.shuffleId = shuffleId;
     this.partitionToServers = partitionToServers;
     this.shuffleServersForData = Sets.newHashSet();
-    for (List<ShuffleServerInfo> ssis : partitionToServers.values()) {
-      this.shuffleServersForData.addAll(ssis);
+    for (List<PartitionServerInfo> ssis : partitionToServers.values()) {
+      ssis.stream()
+          .forEach(
+              partitionServerInfo ->
+                  this.shuffleServersForData.addAll(partitionServerInfo.getSplitServers()));
     }
     this.remoteStorage = storageInfo;
   }
 
-  public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
+  public Map<Integer, List<PartitionServerInfo>> getPartitionToServers() {
     return partitionToServers;
   }
 

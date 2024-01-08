@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -39,6 +40,7 @@ import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
@@ -224,6 +226,10 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
       List<ShuffleServerInfo> shuffleServerInfoList,
       Roaring64NavigableMap expectBlockIds,
       StorageType storageType) {
+    List<PartitionServerInfo> partitionServerInfos =
+        shuffleServerInfoList.stream()
+            .map(ssi -> new PartitionServerInfo(partitionId, Lists.newArrayList(ssi)))
+            .collect(Collectors.toList());
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
     request.setStorageType(storageType.name());
     request.setAppId(testAppId);
@@ -234,7 +240,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     request.setPartitionNum(1);
     request.setReadBufferSize(14 * 1024 * 1024);
     request.setStorageBasePath(remoteStoragePath);
-    request.setShuffleServerInfoList(shuffleServerInfoList);
+    request.setPartitionServerInfoList(partitionServerInfos);
     request.setHadoopConf(conf);
     request.setExpectBlockIds(expectBlockIds);
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();

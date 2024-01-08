@@ -68,6 +68,7 @@ import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
 import org.apache.uniffle.client.response.RssReassignServersReponse;
 import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
@@ -97,7 +98,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final int bitmapSplitNum;
   private final Map<Integer, Set<Long>> partitionToBlockIds;
   private final ShuffleWriteClient shuffleWriteClient;
-  private final Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+  private final Map<Integer, List<PartitionServerInfo>> partitionToServers;
   private final Set<ShuffleServerInfo> shuffleServersForData;
   private final long[] partitionLengths;
   private final boolean isMemoryShuffleEnabled;
@@ -451,9 +452,23 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         for (Map.Entry<Integer, Set<Long>> entry : partitionToBlockIds.entrySet()) {
           ptb.put(entry.getKey(), Lists.newArrayList(entry.getValue()));
         }
+        // TODO: report partition to multi split server not support now
+        if (partitionToServers.values().stream().anyMatch(psis -> psis.size() > 1)) {
+          throw new RssException("multi split server not support, trigger same fatal.");
+        }
+
+        Map<Integer, List<ShuffleServerInfo>> partitionToServerInfos = Maps.newHashMap();
+        partitionToServers.entrySet().stream()
+            .forEach(
+                entry -> {
+                  List<ShuffleServerInfo> shuffleServerInfoList =
+                      partitionToServerInfos.putIfAbsent(entry.getKey(), Lists.newArrayList());
+                  shuffleServerInfoList.add(entry.getValue().get(0).getFirstSplitServer());
+                });
+
         long start = System.currentTimeMillis();
         shuffleWriteClient.reportShuffleResult(
-            partitionToServers, appId, shuffleId, taskAttemptId, ptb, bitmapSplitNum);
+            partitionToServerInfos, appId, shuffleId, taskAttemptId, ptb, bitmapSplitNum);
         LOG.info(
             "Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
             taskAttemptId,

@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
 import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
-import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -63,30 +63,33 @@ public class PartitionBalanceCoordinatorGrpcTest extends CoordinatorTestBase {
             "app1", 1, 1, 1, 1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     RssGetShuffleAssignmentsResponse response = coordinatorClient.getShuffleAssignments(request);
     assertEquals(1, response.getPartitionToServers().size());
-    for (Map.Entry<Integer, List<ShuffleServerInfo>> entry :
+    for (Map.Entry<Integer, List<PartitionServerInfo>> entry :
         response.getPartitionToServers().entrySet()) {
       assertEquals(1, entry.getValue().size());
-      assertEquals(SHUFFLE_SERVER_PORT + 1, entry.getValue().get(0).getGrpcPort());
+      assertEquals(
+          SHUFFLE_SERVER_PORT + 1, entry.getValue().get(0).getFirstSplitServer().getGrpcPort());
     }
     request =
         new RssGetShuffleAssignmentsRequest(
             "app1", 2, 1, 1, 1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     response = coordinatorClient.getShuffleAssignments(request);
     assertEquals(1, response.getPartitionToServers().size());
-    for (Map.Entry<Integer, List<ShuffleServerInfo>> entry :
+    for (Map.Entry<Integer, List<PartitionServerInfo>> entry :
         response.getPartitionToServers().entrySet()) {
       assertEquals(1, entry.getValue().size());
-      assertEquals(SHUFFLE_SERVER_PORT + 1, entry.getValue().get(0).getGrpcPort());
+      assertEquals(
+          SHUFFLE_SERVER_PORT + 1, entry.getValue().get(0).getFirstSplitServer().getGrpcPort());
     }
     request =
         new RssGetShuffleAssignmentsRequest(
             "app1", 2, 1, 1, 1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
     response = coordinatorClient.getShuffleAssignments(request);
     assertEquals(1, response.getPartitionToServers().size());
-    for (Map.Entry<Integer, List<ShuffleServerInfo>> entry :
+    for (Map.Entry<Integer, List<PartitionServerInfo>> entry :
         response.getPartitionToServers().entrySet()) {
       assertEquals(1, entry.getValue().size());
-      assertEquals(SHUFFLE_SERVER_PORT, entry.getValue().get(0).getGrpcPort());
+      assertEquals(
+          SHUFFLE_SERVER_PORT, entry.getValue().get(0).getFirstSplitServer().getGrpcPort());
     }
   }
 }

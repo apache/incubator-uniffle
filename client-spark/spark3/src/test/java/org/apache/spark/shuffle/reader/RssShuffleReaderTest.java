@@ -36,6 +36,7 @@ import org.apache.spark.shuffle.RssShuffleHandle;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
@@ -73,9 +74,11 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     when(handleMock.getDependency()).thenReturn(dependencyMock);
     when(handleMock.getShuffleId()).thenReturn(1);
     when(handleMock.getNumMaps()).thenReturn(1);
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
-    partitionToServers.put(0, Lists.newArrayList(ssi));
-    partitionToServers.put(1, Lists.newArrayList(ssi));
+    Map<Integer, List<PartitionServerInfo>> partitionToServers = new HashMap<>();
+    partitionToServers.put(
+        0, Lists.newArrayList(new PartitionServerInfo(0, Lists.newArrayList(ssi))));
+    partitionToServers.put(
+        1, Lists.newArrayList(new PartitionServerInfo(1, Lists.newArrayList(ssi))));
     when(handleMock.getPartitionToServers()).thenReturn(partitionToServers);
     when(dependencyMock.serializer()).thenReturn(KRYO_SERIALIZER);
     TaskContext contextMock = mock(TaskContext.class);

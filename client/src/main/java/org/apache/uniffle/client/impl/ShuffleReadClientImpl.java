@@ -35,9 +35,9 @@ import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
-import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
@@ -51,7 +51,7 @@ import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleReadClientImpl.class);
-  private List<ShuffleServerInfo> shuffleServerInfoList;
+  private List<PartitionServerInfo> partitionServerInfoList;
   private int shuffleId;
   private int partitionId;
   private ByteBuffer readBuffer;
@@ -121,7 +121,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     this.blockIdBitmap = builder.getBlockIdBitmap();
     this.taskIdBitmap = builder.getTaskIdBitmap();
     this.idHelper = builder.getIdHelper();
-    this.shuffleServerInfoList = builder.getShuffleServerInfoList();
+    this.partitionServerInfoList = builder.getPartitionServerInfoList();
 
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
     request.setStorageType(builder.getStorageType());
@@ -133,7 +133,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setPartitionNum(builder.getPartitionNum());
     request.setReadBufferSize((int) builder.getReadBufferSize());
     request.setStorageBasePath(builder.getBasePath());
-    request.setShuffleServerInfoList(shuffleServerInfoList);
+    request.setPartitionServerInfoList(partitionServerInfoList);
     request.setHadoopConf(builder.getHadoopConf());
     request.setExpectBlockIds(blockIdBitmap);
     request.setProcessBlockIds(processedBlockIds);
@@ -223,7 +223,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
                   + actualCrc;
           // If some blocks of one replica are corrupted,but maybe other replicas are not corrupted,
           // so exception should not be thrown here if blocks have multiple replicas
-          if (shuffleServerInfoList.size() > 1) {
+          if (partitionServerInfoList.size() > 1) {
             LOG.warn(errMsg);
             clientReadHandler.updateConsumedBlockInfo(bs, true);
             continue;

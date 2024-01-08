@@ -18,7 +18,10 @@
 package org.apache.uniffle.client.factory;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -27,6 +30,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
@@ -201,7 +205,7 @@ public class ShuffleClientFactory {
     private int partitionNum;
     private Roaring64NavigableMap blockIdBitmap;
     private Roaring64NavigableMap taskIdBitmap;
-    private List<ShuffleServerInfo> shuffleServerInfoList;
+    private List<PartitionServerInfo> partitionServerInfoList;
     private Configuration hadoopConf;
     private IdHelper idHelper;
     private ShuffleDataDistributionType shuffleDataDistributionType;
@@ -253,8 +257,20 @@ public class ShuffleClientFactory {
       return this;
     }
 
+    public ReadClientBuilder partitionServerInfoList(
+        List<PartitionServerInfo> partitionServerInfoList) {
+      this.partitionServerInfoList = partitionServerInfoList;
+      return this;
+    }
+
+    @VisibleForTesting
     public ReadClientBuilder shuffleServerInfoList(List<ShuffleServerInfo> shuffleServerInfoList) {
-      this.shuffleServerInfoList = shuffleServerInfoList;
+      this.partitionServerInfoList =
+          shuffleServerInfoList.stream()
+              .map(
+                  shuffleServerInfo ->
+                      new PartitionServerInfo(partitionId, Lists.newArrayList(shuffleServerInfo)))
+              .collect(Collectors.toList());
       return this;
     }
 
@@ -344,8 +360,8 @@ public class ShuffleClientFactory {
       return taskIdBitmap;
     }
 
-    public List<ShuffleServerInfo> getShuffleServerInfoList() {
-      return shuffleServerInfoList;
+    public List<PartitionServerInfo> getPartitionServerInfoList() {
+      return partitionServerInfoList;
     }
 
     public Configuration getHadoopConf() {

@@ -22,17 +22,17 @@ import java.util.Map;
 
 public class ShuffleAssignmentsInfo {
 
-  private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+  private Map<Integer, List<PartitionServerInfo>> partitionToServers;
   private Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges;
 
   public ShuffleAssignmentsInfo(
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      Map<Integer, List<PartitionServerInfo>> partitionToServers,
       Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges) {
     this.partitionToServers = partitionToServers;
     this.serverToPartitionRanges = serverToPartitionRanges;
   }
 
-  public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
+  public Map<Integer, List<PartitionServerInfo>> getPartitionToServers() {
     return partitionToServers;
   }
 

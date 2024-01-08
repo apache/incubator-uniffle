@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.broadcast.Broadcast;
 
+import org.apache.uniffle.common.PartitionServerInfo;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
@@ -67,7 +68,7 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
     return handlerInfoBd.value().getRemoteStorage();
   }
 
-  public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
+  public Map<Integer, List<PartitionServerInfo>> getPartitionToServers() {
     return handlerInfoBd.value().getPartitionToServers();
   }
 
