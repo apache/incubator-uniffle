@@ -142,43 +142,72 @@ public class RssMRUtilsTest {
     clientConf.put(mockKey, mockValue);
 
     RssMRUtils.applyDynamicClientConf(conf, clientConf);
-    assertEquals(remoteStoragePath, conf.get(MRClientConf.RSS_REMOTE_STORAGE_PATH.key(), MRClientConf.RSS_REMOTE_STORAGE_PATH.defaultValue()));
     assertEquals(
-        RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE, conf.get(MRClientConf.RSS_CLIENT_TYPE.key(), MRClientConf.RSS_CLIENT_TYPE.defaultValue()));
+        remoteStoragePath,
+        conf.get(
+            MRClientConf.RSS_REMOTE_STORAGE_PATH.key(),
+            MRClientConf.RSS_REMOTE_STORAGE_PATH.defaultValue()));
+    assertEquals(
+        RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE,
+        conf.get(MRClientConf.RSS_CLIENT_TYPE.key(), MRClientConf.RSS_CLIENT_TYPE.defaultValue()));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),
-        conf.getInt(MRClientConf.RSS_CLIENT_RETRY_MAX.key(), MRClientConf.RSS_CLIENT_RETRY_MAX.defaultValue()));
+        conf.getInt(
+            MRClientConf.RSS_CLIENT_RETRY_MAX.key(),
+            MRClientConf.RSS_CLIENT_RETRY_MAX.defaultValue()));
     assertEquals(
         Long.toString(RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE),
-        conf.getLong(MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.key(), MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.defaultValue()));
+        conf.getLong(
+            MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.key(),
+            MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.defaultValue()));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE),
-        conf.getInt(MRClientConf.RSS_DATA_REPLICA.key(), MRClientConf.RSS_DATA_REPLICA.defaultValue()));
+        conf.getInt(
+            MRClientConf.RSS_DATA_REPLICA.key(), MRClientConf.RSS_DATA_REPLICA.defaultValue()));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE),
-        conf.getInt(MRClientConf.RSS_DATA_REPLICA_WRITE.key(), MRClientConf.RSS_DATA_REPLICA_WRITE.defaultValue()));
+        conf.getInt(
+            MRClientConf.RSS_DATA_REPLICA_WRITE.key(),
+            MRClientConf.RSS_DATA_REPLICA_WRITE.defaultValue()));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE),
-        conf.getInt(MRClientConf.RSS_DATA_REPLICA_READ.key(), MRClientConf.RSS_DATA_REPLICA_READ.defaultValue()));
+        conf.getInt(
+            MRClientConf.RSS_DATA_REPLICA_READ.key(),
+            MRClientConf.RSS_DATA_REPLICA_READ.defaultValue()));
     assertEquals(
         Long.toString(RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE),
-        conf.getLong(MRClientConf.RSS_HEARTBEAT_INTERVAL.key(), MRClientConf.RSS_HEARTBEAT_INTERVAL.defaultValue()));
-    assertEquals(StorageType.MEMORY_LOCALFILE_HDFS.name(), conf.get(MRClientConf.RSS_STORAGE_TYPE.key(), MRClientConf.RSS_STORAGE_TYPE.defaultValue()));
+        conf.getLong(
+            MRClientConf.RSS_HEARTBEAT_INTERVAL.key(),
+            MRClientConf.RSS_HEARTBEAT_INTERVAL.defaultValue()));
+    assertEquals(
+        StorageType.MEMORY_LOCALFILE_HDFS.name(),
+        conf.get(
+            MRClientConf.RSS_STORAGE_TYPE.key(), MRClientConf.RSS_STORAGE_TYPE.defaultValue()));
     assertEquals(
         Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE),
-        conf.getLong(MRClientConf.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(), MRClientConf.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.defaultValue()));
+        conf.getLong(
+            MRClientConf.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(),
+            MRClientConf.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.defaultValue()));
     assertEquals(
         Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE),
-        conf.getLong(MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(), MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.defaultValue()));
+        conf.getLong(
+            MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(),
+            MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.defaultValue()));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE),
-        conf.getInt(MRClientConf.RSS_PARTITION_NUM_PER_RANGE.key(), MRClientConf.RSS_PARTITION_NUM_PER_RANGE.defaultValue()));
+        conf.getInt(
+            MRClientConf.RSS_PARTITION_NUM_PER_RANGE.key(),
+            MRClientConf.RSS_PARTITION_NUM_PER_RANGE.defaultValue()));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE),
-        conf.getInt(MRClientConf.RSS_INDEX_READ_LIMIT.key(), MRClientConf.RSS_INDEX_READ_LIMIT.defaultValue()));
+        conf.getInt(
+            MRClientConf.RSS_INDEX_READ_LIMIT.key(),
+            MRClientConf.RSS_INDEX_READ_LIMIT.defaultValue()));
     assertEquals(
         RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE,
-        conf.get(MRClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key(), MRClientConf.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue()));
+        conf.get(
+            MRClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key(),
+            MRClientConf.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue()));
     assertEquals(mockValue, conf.get(mockKey));
 
     String remoteStoragePath2 = "hdfs://path2";
@@ -189,13 +218,22 @@ public class RssMRUtilsTest {
     clientConf.put(RssClientConfig.RSS_CLIENT_RETRY_MAX, "99999");
     RssMRUtils.applyDynamicClientConf(conf, clientConf);
     // overwrite
-    assertEquals(remoteStoragePath2, conf.get(MRClientConf.RSS_REMOTE_STORAGE_PATH.key(), MRClientConf.RSS_REMOTE_STORAGE_PATH.defaultValue()));
-    assertEquals(StorageType.MEMORY_HDFS.name(), conf.get(MRClientConf.RSS_STORAGE_TYPE.key(), MRClientConf.RSS_STORAGE_TYPE.defaultValue()));
+    assertEquals(
+        remoteStoragePath2,
+        conf.get(
+            MRClientConf.RSS_REMOTE_STORAGE_PATH.key(),
+            MRClientConf.RSS_REMOTE_STORAGE_PATH.defaultValue()));
+    assertEquals(
+        StorageType.MEMORY_HDFS.name(),
+        conf.get(
+            MRClientConf.RSS_STORAGE_TYPE.key(), MRClientConf.RSS_STORAGE_TYPE.defaultValue()));
     // won't be overwrite
     assertEquals(mockValue, conf.get(mockKey));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),
-        conf.getInt(MRClientConf.RSS_CLIENT_RETRY_MAX.key(), MRClientConf.RSS_CLIENT_RETRY_MAX.defaultValue()));
+        conf.getInt(
+            MRClientConf.RSS_CLIENT_RETRY_MAX.key(),
+            MRClientConf.RSS_CLIENT_RETRY_MAX.defaultValue()));
   }
 
   @Test

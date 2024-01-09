@@ -137,7 +137,10 @@ public class RssMRAppMaster extends MRAppMaster {
     ShuffleWriteClient shuffleWriteClient = null;
     int numReduceTasks = conf.getInt(MRJobConfig.NUM_REDUCES, 0);
     if (numReduceTasks > 0) {
-      String coordinators = conf.get(MRClientConf.RSS_COORDINATOR_QUORUM.key(), MRClientConf.RSS_COORDINATOR_QUORUM.defaultValue());
+      String coordinators =
+          conf.get(
+              MRClientConf.RSS_COORDINATOR_QUORUM.key(),
+              MRClientConf.RSS_COORDINATOR_QUORUM.defaultValue());
 
       ShuffleWriteClient client = RssMRUtils.createShuffleClient(mrClientConf);
       shuffleWriteClient = client;
@@ -182,17 +185,26 @@ public class RssMRAppMaster extends MRAppMaster {
       }
       assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
       String clientType =
-          extraConf.get(MRClientConf.RSS_CLIENT_TYPE.key(), MRClientConf.RSS_CLIENT_TYPE.defaultValue());
+          extraConf.get(
+              MRClientConf.RSS_CLIENT_TYPE.key(), MRClientConf.RSS_CLIENT_TYPE.defaultValue());
       ClientUtils.validateClientType(clientType);
       assignmentTags.add(clientType);
 
-      String storageType = extraConf.get(MRClientConf.RSS_STORAGE_TYPE.key(), MRClientConf.RSS_STORAGE_TYPE.defaultValue());
-      boolean testMode = extraConf.getBoolean(MRClientConf.MR_RSS_TEST_MODE_ENABLE.key(), MRClientConf.MR_RSS_TEST_MODE_ENABLE.defaultValue());
+      String storageType =
+          extraConf.get(
+              MRClientConf.RSS_STORAGE_TYPE.key(), MRClientConf.RSS_STORAGE_TYPE.defaultValue());
+      boolean testMode =
+          extraConf.getBoolean(
+              MRClientConf.MR_RSS_TEST_MODE_ENABLE.key(),
+              MRClientConf.MR_RSS_TEST_MODE_ENABLE.defaultValue());
       ClientUtils.validateTestModeConf(testMode, storageType);
       ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
       String appId = applicationAttemptId.toString();
       RemoteStorageInfo defaultRemoteStorage =
-          new RemoteStorageInfo(extraConf.get(MRClientConf.RSS_REMOTE_STORAGE_PATH.key(), MRClientConf.RSS_REMOTE_STORAGE_PATH.defaultValue()));
+          new RemoteStorageInfo(
+              extraConf.get(
+                  MRClientConf.RSS_REMOTE_STORAGE_PATH.key(),
+                  MRClientConf.RSS_REMOTE_STORAGE_PATH.defaultValue()));
       RemoteStorageInfo remoteStorage =
           ClientUtils.fetchRemoteStorage(
               appId, defaultRemoteStorage, dynamicConfEnabled, storageType, client);
@@ -227,7 +239,8 @@ public class RssMRAppMaster extends MRAppMaster {
         conf.setInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, originalAttempts + inc);
       }
 
-      int requiredAssignmentShuffleServersNum = RssMRUtils.getRequiredShuffleServerNumber(mrClientConf);
+      int requiredAssignmentShuffleServersNum =
+          RssMRUtils.getRequiredShuffleServerNumber(mrClientConf);
       // retryInterval must bigger than `rss.server.heartbeat.interval`, or maybe it will return the
       // same result
       long retryInterval =
@@ -291,7 +304,8 @@ public class RssMRAppMaster extends MRAppMaster {
       }
       long heartbeatInterval =
           conf.getLong(
-              MRClientConf.RSS_HEARTBEAT_INTERVAL.key(), MRClientConf.RSS_HEARTBEAT_INTERVAL.defaultValue());
+              MRClientConf.RSS_HEARTBEAT_INTERVAL.key(),
+              MRClientConf.RSS_HEARTBEAT_INTERVAL.defaultValue());
       long heartbeatTimeout =
           conf.getLong(MRClientConf.RSS_HEARTBEAT_TIMEOUT.key(), heartbeatInterval / 2);
       client.registerApplicationInfo(appId, heartbeatTimeout, "user");

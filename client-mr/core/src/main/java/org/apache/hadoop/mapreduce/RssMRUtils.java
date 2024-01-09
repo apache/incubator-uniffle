@@ -81,8 +81,7 @@ public class RssMRUtils {
   }
 
   public static ShuffleWriteClient createShuffleClient(MRClientConf conf) {
-    int heartBeatThreadNum =
-            conf.get(MRClientConf.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
+    int heartBeatThreadNum = conf.get(MRClientConf.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
     int retryMax = conf.get(MRClientConf.RSS_CLIENT_RETRY_MAX);
     long retryIntervalMax = conf.get(MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX);
     String clientType = conf.get(MRClientConf.RSS_CLIENT_TYPE);
@@ -255,8 +254,7 @@ public class RssMRUtils {
   }
 
   public static int estimateTaskConcurrency(MRClientConf conf) {
-    double dynamicFactor =
-        conf.get(MRClientConf.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR);
+    double dynamicFactor = conf.get(MRClientConf.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR);
     double slowStart =
         conf.getDouble(Constants.MR_SLOW_START, Constants.MR_SLOW_START_DEFAULT_VALUE);
     int mapNum = conf.getHadoopConfig().getNumMapTasks();
@@ -275,21 +273,30 @@ public class RssMRUtils {
   }
 
   public static int getRequiredShuffleServerNumber(MRClientConf conf) {
-    int requiredShuffleServerNumber = conf.get(MRClientConf.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
+    int requiredShuffleServerNumber =
+        conf.get(MRClientConf.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
     boolean enabledEstimateServer = conf.get(MRClientConf.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED);
     if (!enabledEstimateServer || requiredShuffleServerNumber > 0) {
       return requiredShuffleServerNumber;
     }
     int taskConcurrency = estimateTaskConcurrency(conf);
-    int taskConcurrencyPerServer =
-        conf.get(MRClientConf.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER);
+    int taskConcurrencyPerServer = conf.get(MRClientConf.RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER);
     return (int) Math.ceil(taskConcurrency * 1.0 / taskConcurrencyPerServer);
   }
 
   public static void validateRssClientConf(Configuration rssJobConf) {
-    int retryMax = rssJobConf.getInt(MRClientConf.RSS_CLIENT_RETRY_MAX.key(), MRClientConf.RSS_CLIENT_RETRY_MAX.defaultValue());
-    long retryIntervalMax = rssJobConf.getLong(MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.key(), MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.defaultValue());
-    long sendCheckTimeout =  rssJobConf.getLong(MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(), MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.defaultValue());
+    int retryMax =
+        rssJobConf.getInt(
+            MRClientConf.RSS_CLIENT_RETRY_MAX.key(),
+            MRClientConf.RSS_CLIENT_RETRY_MAX.defaultValue());
+    long retryIntervalMax =
+        rssJobConf.getLong(
+            MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.key(),
+            MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.defaultValue());
+    long sendCheckTimeout =
+        rssJobConf.getLong(
+            MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(),
+            MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.defaultValue());
     if (retryIntervalMax * retryMax > sendCheckTimeout) {
       throw new IllegalArgumentException(
           String.format(
