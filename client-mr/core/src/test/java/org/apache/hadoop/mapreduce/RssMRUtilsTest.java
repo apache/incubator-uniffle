@@ -151,31 +151,31 @@ public class RssMRUtilsTest {
         RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE,
         conf.get(MRClientConf.RSS_CLIENT_TYPE.key(), MRClientConf.RSS_CLIENT_TYPE.defaultValue()));
     assertEquals(
-        Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),
+        RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE,
         conf.getInt(
             MRClientConf.RSS_CLIENT_RETRY_MAX.key(),
             MRClientConf.RSS_CLIENT_RETRY_MAX.defaultValue()));
     assertEquals(
-        Long.toString(RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE),
+        RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE,
         conf.getLong(
             MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.key(),
             MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.defaultValue()));
     assertEquals(
-        Integer.toString(RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE),
+        RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE,
         conf.getInt(
             MRClientConf.RSS_DATA_REPLICA.key(), MRClientConf.RSS_DATA_REPLICA.defaultValue()));
     assertEquals(
-        Integer.toString(RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE),
+        RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE,
         conf.getInt(
             MRClientConf.RSS_DATA_REPLICA_WRITE.key(),
             MRClientConf.RSS_DATA_REPLICA_WRITE.defaultValue()));
     assertEquals(
-        Integer.toString(RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE),
+        RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE,
         conf.getInt(
             MRClientConf.RSS_DATA_REPLICA_READ.key(),
             MRClientConf.RSS_DATA_REPLICA_READ.defaultValue()));
     assertEquals(
-        Long.toString(RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE),
+        RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE,
         conf.getLong(
             MRClientConf.RSS_HEARTBEAT_INTERVAL.key(),
             MRClientConf.RSS_HEARTBEAT_INTERVAL.defaultValue()));
@@ -184,22 +184,22 @@ public class RssMRUtilsTest {
         conf.get(
             MRClientConf.RSS_STORAGE_TYPE.key(), MRClientConf.RSS_STORAGE_TYPE.defaultValue()));
     assertEquals(
-        Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE),
+        RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE,
         conf.getLong(
             MRClientConf.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(),
             MRClientConf.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.defaultValue()));
     assertEquals(
-        Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE),
+        RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE,
         conf.getLong(
             MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(),
             MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.defaultValue()));
     assertEquals(
-        Integer.toString(RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE),
+        RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE,
         conf.getInt(
             MRClientConf.RSS_PARTITION_NUM_PER_RANGE.key(),
             MRClientConf.RSS_PARTITION_NUM_PER_RANGE.defaultValue()));
     assertEquals(
-        Integer.toString(RssClientConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE),
+        RssClientConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE,
         conf.getInt(
             MRClientConf.RSS_INDEX_READ_LIMIT.key(),
             MRClientConf.RSS_INDEX_READ_LIMIT.defaultValue()));
@@ -230,7 +230,7 @@ public class RssMRUtilsTest {
     // won't be overwrite
     assertEquals(mockValue, conf.get(mockKey));
     assertEquals(
-        Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),
+        RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE,
         conf.getInt(
             MRClientConf.RSS_CLIENT_RETRY_MAX.key(),
             MRClientConf.RSS_CLIENT_RETRY_MAX.defaultValue()));

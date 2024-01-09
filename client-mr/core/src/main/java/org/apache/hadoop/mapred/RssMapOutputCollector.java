@@ -60,7 +60,7 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
   @Override
   public void init(Context context) throws IOException, ClassNotFoundException {
     JobConf mrJobConf = context.getJobConf();
-    MRClientConf mrClientConf = new MRClientConf(mrJobConf);
+    final MRClientConf mrClientConf = new MRClientConf(mrJobConf);
     reporter = context.getReporter();
     keyClass = (Class<K>) mrJobConf.getMapOutputKeyClass();
     valClass = (Class<V>) mrJobConf.getMapOutputValueClass();

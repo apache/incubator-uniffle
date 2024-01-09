@@ -257,8 +257,8 @@ public class RssMRUtils {
     double dynamicFactor = conf.get(MRClientConf.RSS_ESTIMATE_TASK_CONCURRENCY_DYNAMIC_FACTOR);
     double slowStart =
         conf.getDouble(Constants.MR_SLOW_START, Constants.MR_SLOW_START_DEFAULT_VALUE);
-    int mapNum = conf.getHadoopConfig().getNumMapTasks();
-    int reduceNum = conf.getHadoopConfig().getNumReduceTasks();
+    int mapNum = conf.getInteger("mapreduce.job.maps", 1);
+    int reduceNum = conf.getInteger("mapreduce.job.reduces", 1);
     int mapLimit = conf.getInteger(Constants.MR_MAP_LIMIT, Constants.MR_MAP_LIMIT_DEFAULT_VALUE);
     int reduceLimit =
         conf.getInteger(Constants.MR_REDUCE_LIMIT, Constants.MR_REDUCE_LIMIT_DEFAULT_VALUE);
