@@ -30,7 +30,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.RssMRConfig;
+import org.apache.hadoop.mapreduce.MRClientConf;
 import org.apache.hadoop.mapreduce.RssMRUtils;
 import org.apache.hadoop.mapreduce.TaskCounter;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
@@ -60,6 +60,7 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
   @Override
   public void init(Context context) throws IOException, ClassNotFoundException {
     JobConf mrJobConf = context.getJobConf();
+    MRClientConf mrClientConf = new MRClientConf(mrJobConf);
     reporter = context.getReporter();
     keyClass = (Class<K>) mrJobConf.getMapOutputKeyClass();
     valClass = (Class<V>) mrJobConf.getMapOutputValueClass();
@@ -69,12 +70,9 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     }
     partitions = mrJobConf.getNumReduceTasks();
     MapTask mapTask = context.getMapTask();
-    Configuration rssJobConf = new JobConf(RssMRConfig.RSS_CONF_FILE);
-    double sortThreshold =
-        RssMRUtils.getDouble(
-            rssJobConf,
-            RssMRConfig.RSS_CLIENT_SORT_MEMORY_USE_THRESHOLD,
-            RssMRConfig.RSS_CLIENT_DEFAULT_SORT_MEMORY_USE_THRESHOLD);
+    JobConf rssJobConf = new JobConf(MRClientConf.RSS_CONF_FILE);
+    MRClientConf rssClientConf = new MRClientConf(rssJobConf);
+    double sortThreshold = rssClientConf.get(MRClientConf.RSS_CLIENT_SORT_MEMORY_USE_THRESHOLD);
     if (sortThreshold <= 0 || Double.compare(sortThreshold, 1.0) > 0) {
       throw new IOException("Invalid  sort memory use threshold : " + sortThreshold);
     }
@@ -86,45 +84,20 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
         Task.CombinerRunner.create(
             mrJobConf, mapTask.getTaskID(), combineInputCounter, reporter, null);
 
-    int batch =
-        RssMRUtils.getInt(
-            rssJobConf,
-            RssMRConfig.RSS_CLIENT_BATCH_TRIGGER_NUM,
-            RssMRConfig.RSS_CLIENT_DEFAULT_BATCH_TRIGGER_NUM);
+    int batch = rssClientConf.get(MRClientConf.RSS_CLIENT_BATCH_TRIGGER_NUM);
     RawComparator<K> comparator = mrJobConf.getOutputKeyComparator();
-    double memoryThreshold =
-        RssMRUtils.getDouble(
-            rssJobConf,
-            RssMRConfig.RSS_CLIENT_MEMORY_THRESHOLD,
-            RssMRConfig.RSS_CLIENT_DEFAULT_MEMORY_THRESHOLD);
+    double memoryThreshold = rssClientConf.get(MRClientConf.RSS_CLIENT_MEMORY_THRESHOLD);
     ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
     String appId = applicationAttemptId.toString();
     long taskAttemptId =
         RssMRUtils.convertTaskAttemptIdToLong(
             mapTask.getTaskID(), applicationAttemptId.getAttemptId());
-    double sendThreshold =
-        RssMRUtils.getDouble(
-            rssJobConf,
-            RssMRConfig.RSS_CLIENT_SEND_THRESHOLD,
-            RssMRConfig.RSS_CLIENT_DEFAULT_SEND_THRESHOLD);
-
-    long sendCheckInterval =
-        RssMRUtils.getLong(
-            rssJobConf,
-            RssMRConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS,
-            RssMRConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE);
-    long sendCheckTimeout =
-        RssMRUtils.getLong(
-            rssJobConf,
-            RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS,
-            RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE);
-    int bitmapSplitNum =
-        RssMRUtils.getInt(
-            rssJobConf,
-            RssMRConfig.RSS_CLIENT_BITMAP_NUM,
-            RssMRConfig.RSS_CLIENT_DEFAULT_BITMAP_NUM);
+    double sendThreshold = rssClientConf.get(MRClientConf.RSS_CLIENT_SEND_THRESHOLD);
+    long sendCheckInterval = rssClientConf.get(MRClientConf.RSS_CLIENT_SEND_CHECK_INTERVAL_MS);
+    long sendCheckTimeout = rssClientConf.get(MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS);
+    int bitmapSplitNum = rssClientConf.get(MRClientConf.RSS_CLIENT_BITMAP_NUM);
     int numMaps = mrJobConf.getNumMapTasks();
-    String storageType = RssMRUtils.getString(rssJobConf, RssMRConfig.RSS_STORAGE_TYPE);
+    String storageType = rssClientConf.get(MRClientConf.RSS_STORAGE_TYPE);
     if (StringUtils.isEmpty(storageType)) {
       throw new RssException("storage type mustn't be empty");
     }
@@ -132,22 +105,10 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = createAssignmentMap(rssJobConf);
 
     SerializationFactory serializationFactory = new SerializationFactory(mrJobConf);
-    long maxSegmentSize =
-        RssMRUtils.getLong(
-            rssJobConf,
-            RssMRConfig.RSS_CLIENT_MAX_SEGMENT_SIZE,
-            RssMRConfig.RSS_CLIENT_DEFAULT_MAX_SEGMENT_SIZE);
-    int sendThreadNum =
-        RssMRUtils.getInt(
-            rssJobConf,
-            RssMRConfig.RSS_CLIENT_SEND_THREAD_NUM,
-            RssMRConfig.RSS_CLIENT_DEFAULT_SEND_THREAD_NUM);
-    long maxBufferSize =
-        RssMRUtils.getLong(
-            rssJobConf,
-            RssMRConfig.RSS_WRITER_BUFFER_SIZE,
-            RssMRConfig.RSS_WRITER_BUFFER_SIZE_DEFAULT_VALUE);
-    shuffleClient = RssMRUtils.createShuffleClient(mrJobConf);
+    long maxSegmentSize = rssClientConf.get(MRClientConf.RSS_CLIENT_MAX_BUFFER_SIZE);
+    int sendThreadNum = rssClientConf.get(MRClientConf.RSS_CLIENT_SEND_THREAD_NUM);
+    long maxBufferSize = rssClientConf.get(MRClientConf.RSS_WRITER_BUFFER_SIZE);
+    shuffleClient = RssMRUtils.createShuffleClient(mrClientConf);
     bufferManager =
         new SortWriteBufferManager(
             (long) (ByteUnit.MiB.toBytes(sortmb) * sortThreshold),
@@ -173,14 +134,14 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
             sendThreadNum,
             sendThreshold,
             maxBufferSize,
-            RssMRConfig.toRssConf(rssJobConf),
+            MRClientConf.toRssConf(rssJobConf),
             combinerRunner);
   }
 
   private Map<Integer, List<ShuffleServerInfo>> createAssignmentMap(Configuration jobConf) {
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
     for (int i = 0; i < partitions; i++) {
-      String servers = jobConf.get(RssMRConfig.RSS_ASSIGNMENT_PREFIX + i);
+      String servers = jobConf.get(MRClientConf.RSS_ASSIGNMENT_PREFIX + i);
       if (StringUtils.isEmpty(servers)) {
         throw new RssException("assign partition " + i + " shouldn't be empty");
       }

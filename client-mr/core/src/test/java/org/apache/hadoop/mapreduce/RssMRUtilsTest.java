@@ -142,102 +142,105 @@ public class RssMRUtilsTest {
     clientConf.put(mockKey, mockValue);
 
     RssMRUtils.applyDynamicClientConf(conf, clientConf);
-    assertEquals(remoteStoragePath, conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH));
+    assertEquals(remoteStoragePath, conf.get(MRClientConf.RSS_REMOTE_STORAGE_PATH.key(), MRClientConf.RSS_REMOTE_STORAGE_PATH.defaultValue()));
     assertEquals(
-        RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE, conf.get(RssMRConfig.RSS_CLIENT_TYPE));
+        RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE, conf.get(MRClientConf.RSS_CLIENT_TYPE.key(), MRClientConf.RSS_CLIENT_TYPE.defaultValue()));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),
-        conf.get(RssMRConfig.RSS_CLIENT_RETRY_MAX));
+        conf.getInt(MRClientConf.RSS_CLIENT_RETRY_MAX.key(), MRClientConf.RSS_CLIENT_RETRY_MAX.defaultValue()));
     assertEquals(
         Long.toString(RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE),
-        conf.get(RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX));
+        conf.getLong(MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.key(), MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.defaultValue()));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_DATA_REPLICA_DEFAULT_VALUE),
-        conf.get(RssMRConfig.RSS_DATA_REPLICA));
+        conf.getInt(MRClientConf.RSS_DATA_REPLICA.key(), MRClientConf.RSS_DATA_REPLICA.defaultValue()));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_DATA_REPLICA_WRITE_DEFAULT_VALUE),
-        conf.get(RssMRConfig.RSS_DATA_REPLICA_WRITE));
+        conf.getInt(MRClientConf.RSS_DATA_REPLICA_WRITE.key(), MRClientConf.RSS_DATA_REPLICA_WRITE.defaultValue()));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_DATA_REPLICA_READ_DEFAULT_VALUE),
-        conf.get(RssMRConfig.RSS_DATA_REPLICA_READ));
+        conf.getInt(MRClientConf.RSS_DATA_REPLICA_READ.key(), MRClientConf.RSS_DATA_REPLICA_READ.defaultValue()));
     assertEquals(
         Long.toString(RssClientConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE),
-        conf.get(RssMRConfig.RSS_HEARTBEAT_INTERVAL));
-    assertEquals(StorageType.MEMORY_LOCALFILE_HDFS.name(), conf.get(RssMRConfig.RSS_STORAGE_TYPE));
+        conf.getLong(MRClientConf.RSS_HEARTBEAT_INTERVAL.key(), MRClientConf.RSS_HEARTBEAT_INTERVAL.defaultValue()));
+    assertEquals(StorageType.MEMORY_LOCALFILE_HDFS.name(), conf.get(MRClientConf.RSS_STORAGE_TYPE.key(), MRClientConf.RSS_STORAGE_TYPE.defaultValue()));
     assertEquals(
         Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS_DEFAULT_VALUE),
-        conf.get(RssMRConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS));
+        conf.getLong(MRClientConf.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(), MRClientConf.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.defaultValue()));
     assertEquals(
         Long.toString(RssClientConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS_DEFAULT_VALUE),
-        conf.get(RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS));
+        conf.getLong(MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(), MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.defaultValue()));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE),
-        conf.get(RssMRConfig.RSS_PARTITION_NUM_PER_RANGE));
+        conf.getInt(MRClientConf.RSS_PARTITION_NUM_PER_RANGE.key(), MRClientConf.RSS_PARTITION_NUM_PER_RANGE.defaultValue()));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_INDEX_READ_LIMIT_DEFAULT_VALUE),
-        conf.get(RssMRConfig.RSS_INDEX_READ_LIMIT));
+        conf.getInt(MRClientConf.RSS_INDEX_READ_LIMIT.key(), MRClientConf.RSS_INDEX_READ_LIMIT.defaultValue()));
     assertEquals(
         RssClientConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE,
-        conf.get(RssMRConfig.RSS_CLIENT_READ_BUFFER_SIZE));
+        conf.get(MRClientConf.RSS_CLIENT_READ_BUFFER_SIZE.key(), MRClientConf.RSS_CLIENT_READ_BUFFER_SIZE.defaultValue()));
     assertEquals(mockValue, conf.get(mockKey));
 
     String remoteStoragePath2 = "hdfs://path2";
     clientConf = Maps.newHashMap();
     clientConf.put(RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_HDFS.name());
-    clientConf.put(RssMRConfig.RSS_REMOTE_STORAGE_PATH, remoteStoragePath2);
+    clientConf.put(MRClientConf.RSS_REMOTE_STORAGE_PATH.key(), remoteStoragePath2);
     clientConf.put(mockKey, "won't be rewrite");
     clientConf.put(RssClientConfig.RSS_CLIENT_RETRY_MAX, "99999");
     RssMRUtils.applyDynamicClientConf(conf, clientConf);
     // overwrite
-    assertEquals(remoteStoragePath2, conf.get(RssMRConfig.RSS_REMOTE_STORAGE_PATH));
-    assertEquals(StorageType.MEMORY_HDFS.name(), conf.get(RssMRConfig.RSS_STORAGE_TYPE));
+    assertEquals(remoteStoragePath2, conf.get(MRClientConf.RSS_REMOTE_STORAGE_PATH.key(), MRClientConf.RSS_REMOTE_STORAGE_PATH.defaultValue()));
+    assertEquals(StorageType.MEMORY_HDFS.name(), conf.get(MRClientConf.RSS_STORAGE_TYPE.key(), MRClientConf.RSS_STORAGE_TYPE.defaultValue()));
     // won't be overwrite
     assertEquals(mockValue, conf.get(mockKey));
     assertEquals(
         Integer.toString(RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE),
-        conf.get(RssMRConfig.RSS_CLIENT_RETRY_MAX));
+        conf.getInt(MRClientConf.RSS_CLIENT_RETRY_MAX.key(), MRClientConf.RSS_CLIENT_RETRY_MAX.defaultValue()));
   }
 
   @Test
   public void testEstimateTaskConcurrency() {
     JobConf jobConf = new JobConf();
-    jobConf.setInt("mapreduce.job.maps", 500);
-    jobConf.setInt("mapreduce.job.reduces", 20);
-    assertEquals(495, RssMRUtils.estimateTaskConcurrency(jobConf));
+    MRClientConf mrClientConf = new MRClientConf(jobConf);
+    mrClientConf.setInteger("mapreduce.job.maps", 500);
+    mrClientConf.setInteger("mapreduce.job.reduces", 20);
+    assertEquals(495, RssMRUtils.estimateTaskConcurrency(mrClientConf));
 
-    jobConf.setDouble(Constants.MR_SLOW_START, 1.0);
-    assertEquals(500, RssMRUtils.estimateTaskConcurrency(jobConf));
-    jobConf.setInt(Constants.MR_MAP_LIMIT, 200);
-    jobConf.setInt(Constants.MR_REDUCE_LIMIT, 200);
-    assertEquals(200, RssMRUtils.estimateTaskConcurrency(jobConf));
+    mrClientConf.setDouble(Constants.MR_SLOW_START, 1.0);
+    assertEquals(500, RssMRUtils.estimateTaskConcurrency(mrClientConf));
+    mrClientConf.setInteger(Constants.MR_MAP_LIMIT, 200);
+    mrClientConf.setInteger(Constants.MR_REDUCE_LIMIT, 200);
+    assertEquals(200, RssMRUtils.estimateTaskConcurrency(mrClientConf));
 
-    jobConf.setDouble("mapreduce.rss.estimate.task.concurrency.dynamic.factor", 0.5);
-    assertEquals(100, RssMRUtils.estimateTaskConcurrency(jobConf));
+    mrClientConf.setDouble("mapreduce.rss.estimate.task.concurrency.dynamic.factor", 0.5);
+    assertEquals(100, RssMRUtils.estimateTaskConcurrency(mrClientConf));
   }
 
   @Test
   public void testGetRequiredShuffleServerNumber() {
     JobConf jobConf = new JobConf();
-    jobConf.setInt("mapreduce.job.maps", 500);
-    jobConf.setInt("mapreduce.job.reduces", 20);
-    jobConf.setInt(RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, 10);
-    assertEquals(10, RssMRUtils.getRequiredShuffleServerNumber(jobConf));
+    MRClientConf mrClientConf = new MRClientConf(jobConf);
 
-    jobConf.setBoolean(RssMRConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED, true);
-    assertEquals(10, RssMRUtils.getRequiredShuffleServerNumber(jobConf));
+    mrClientConf.setInteger("mapreduce.job.maps", 500);
+    mrClientConf.setInteger("mapreduce.job.reduces", 20);
+    mrClientConf.setInteger(MRClientConf.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, 10);
+    assertEquals(10, RssMRUtils.getRequiredShuffleServerNumber(mrClientConf));
 
-    jobConf.unset(RssMRConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
-    assertEquals(7, RssMRUtils.getRequiredShuffleServerNumber(jobConf));
+    mrClientConf.setBoolean(MRClientConf.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED, true);
+    assertEquals(10, RssMRUtils.getRequiredShuffleServerNumber(mrClientConf));
 
-    jobConf.setDouble(Constants.MR_SLOW_START, 1.0);
-    assertEquals(7, RssMRUtils.getRequiredShuffleServerNumber(jobConf));
+    mrClientConf.remove(MRClientConf.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER.key());
+    assertEquals(7, RssMRUtils.getRequiredShuffleServerNumber(mrClientConf));
 
-    jobConf.setInt(Constants.MR_MAP_LIMIT, 200);
-    jobConf.setInt(Constants.MR_REDUCE_LIMIT, 200);
-    assertEquals(3, RssMRUtils.getRequiredShuffleServerNumber(jobConf));
+    mrClientConf.setDouble(Constants.MR_SLOW_START, 1.0);
+    assertEquals(7, RssMRUtils.getRequiredShuffleServerNumber(mrClientConf));
 
-    jobConf.setDouble("mapreduce.rss.estimate.task.concurrency.dynamic.factor", 0.5);
-    assertEquals(2, RssMRUtils.getRequiredShuffleServerNumber(jobConf));
+    mrClientConf.setInteger(Constants.MR_MAP_LIMIT, 200);
+    mrClientConf.setInteger(Constants.MR_REDUCE_LIMIT, 200);
+    assertEquals(3, RssMRUtils.getRequiredShuffleServerNumber(mrClientConf));
+
+    mrClientConf.setDouble("mapreduce.rss.estimate.task.concurrency.dynamic.factor", 0.5);
+    assertEquals(2, RssMRUtils.getRequiredShuffleServerNumber(mrClientConf));
   }
 
   @Test
@@ -247,9 +250,9 @@ public class RssMRUtilsTest {
     rssJobConf.setInt("mapreduce.job.maps", 500);
     rssJobConf.setInt("mapreduce.job.reduces", 20);
     RssMRUtils.validateRssClientConf(rssJobConf);
-    rssJobConf.setInt(RssMRConfig.RSS_CLIENT_RETRY_MAX, 5);
-    rssJobConf.setLong(RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX, 1000L);
-    rssJobConf.setLong(RssMRConfig.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS, 4999L);
+    rssJobConf.setInt(MRClientConf.RSS_CLIENT_RETRY_MAX.key(), 5);
+    rssJobConf.setLong(MRClientConf.RSS_CLIENT_RETRY_INTERVAL_MAX.key(), 1000L);
+    rssJobConf.setLong(MRClientConf.RSS_CLIENT_SEND_CHECK_TIMEOUT_MS.key(), 4999L);
     try {
       RssMRUtils.validateRssClientConf(rssJobConf);
       fail(EXPECTED_EXCEPTION_MESSAGE);
