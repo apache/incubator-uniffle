@@ -33,13 +33,18 @@ import org.apache.uniffle.common.exception.RssException;
 public class CoordinatorClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorClientFactory.class);
 
-  private ClientType clientType;
+  private CoordinatorClientFactory() {}
 
-  public CoordinatorClientFactory(ClientType clientType) {
-    this.clientType = clientType;
+  private static class LazyHolder {
+    static final CoordinatorClientFactory INSTANCE = new CoordinatorClientFactory();
   }
 
-  public CoordinatorClient createCoordinatorClient(String host, int port) {
+  public static CoordinatorClientFactory getInstance() {
+    return LazyHolder.INSTANCE;
+  }
+
+  public synchronized CoordinatorClient createCoordinatorClient(
+      ClientType clientType, String host, int port) {
     if (clientType.equals(ClientType.GRPC) || clientType.equals(ClientType.GRPC_NETTY)) {
       return new CoordinatorGrpcClient(host, port);
     } else {
@@ -47,9 +52,10 @@ public class CoordinatorClientFactory {
     }
   }
 
-  public List<CoordinatorClient> createCoordinatorClient(String coordinators) {
+  public synchronized List<CoordinatorClient> createCoordinatorClient(
+      ClientType clientType, String coordinators) {
     LOG.info("Start to create coordinator clients from {}", coordinators);
-    List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
+
     String[] coordinatorList = coordinators.trim().split(",");
     if (coordinatorList.length == 0) {
       String msg = "Invalid " + coordinators;
@@ -57,6 +63,7 @@ public class CoordinatorClientFactory {
       throw new RssException(msg);
     }
 
+    List<CoordinatorClient> coordinatorClients = Lists.newLinkedList();
     for (String coordinator : coordinatorList) {
       String[] ipPort = coordinator.trim().split(":");
       if (ipPort.length != 2) {
@@ -67,7 +74,7 @@ public class CoordinatorClientFactory {
 
       String host = ipPort[0];
       int port = Integer.parseInt(ipPort[1]);
-      CoordinatorClient coordinatorClient = createCoordinatorClient(host, port);
+      CoordinatorClient coordinatorClient = createCoordinatorClient(clientType, host, port);
       coordinatorClients.add(coordinatorClient);
       LOG.info("Add coordinator client {}", coordinatorClient.getDesc());
     }

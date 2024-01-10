@@ -15,28 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.test;
+package org.apache.uniffle.coordinator.conf;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import java.util.Map;
 
-import org.apache.uniffle.common.KerberizedHadoopBase;
+import org.apache.uniffle.common.RemoteStorageInfo;
 
-public class ClientConfManagerKerberlizedHadoopTest extends KerberizedHadoopBase {
+/**
+ * This class is to hold the dynamic conf, which includes the rss conf for the client and the remote
+ * storage hadoop configs.
+ */
+public class ClientConf {
+  private Map<String, String> rssClientConf;
 
-  @BeforeAll
-  public static void beforeAll() throws Exception {
-    testRunner = ClientConfManagerKerberlizedHadoopTest.class;
-    KerberizedHadoopBase.init();
+  // key:remote-path, val: storage-conf
+  private Map<String, RemoteStorageInfo> remoteStorageInfos;
+
+  public ClientConf(
+      Map<String, String> rssClientConf, Map<String, RemoteStorageInfo> remoteStorageInfos) {
+    this.rssClientConf = rssClientConf;
+    this.remoteStorageInfos = remoteStorageInfos;
   }
 
-  @Test
-  public void testConfInHadoop() throws Exception {
-    String cfgFile = kerberizedHadoop.getSchemeAndAuthorityPrefix() + "/test/client_conf";
-    ClientConfManagerHadoopTest.createAndRunClientConfManagerCases(
-        kerberizedHadoop.getSchemeAndAuthorityPrefix(),
-        cfgFile,
-        kerberizedHadoop.getFileSystem(),
-        kerberizedHadoop.getConf());
+  public Map<String, String> getRssClientConf() {
+    return rssClientConf;
+  }
+
+  public Map<String, RemoteStorageInfo> getRemoteStorageInfos() {
+    return remoteStorageInfos;
   }
 }

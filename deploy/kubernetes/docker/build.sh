@@ -109,7 +109,7 @@ fi
 
 RSS_DIR=../../..
 cd $RSS_DIR || exit
-RSS_VERSION=$(mvn help:evaluate -Dexpression=project.version 2>/dev/null | grep -v "INFO" | grep -v "WARNING" | tail -n 1)
+RSS_VERSION=$(./mvnw help:evaluate -Dexpression=project.version 2>/dev/null | grep -v "INFO" | grep -v "WARNING" | tail -n 1)
 RSS_FILE=rss-${RSS_VERSION}-hadoop${HADOOP_SHORT_VERSION}.tgz
 echo "RSS_VERSION: $RSS_VERSION"
 echo "RSS_FILE: $RSS_FILE"

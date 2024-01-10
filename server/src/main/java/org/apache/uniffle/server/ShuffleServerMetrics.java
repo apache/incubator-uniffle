@@ -72,6 +72,7 @@ public class ShuffleServerMetrics {
   private static final String IN_FLUSH_BUFFER_SIZE = "in_flush_buffer_size";
   private static final String USED_BUFFER_SIZE = "used_buffer_size";
   private static final String READ_USED_BUFFER_SIZE = "read_used_buffer_size";
+  private static final String USED_DIRECT_MEMORY_SIZE = "used_direct_memory_size";
   private static final String TOTAL_FAILED_WRITTEN_EVENT_NUM = "total_failed_written_event_num";
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
   private static final String TOTAL_HADOOP_WRITE_DATA = "total_hadoop_write_data";
@@ -79,7 +80,7 @@ public class ShuffleServerMetrics {
   private static final String LOCAL_DISK_PATH_LABEL = "local_disk_path";
   public static final String LOCAL_DISK_PATH_LABEL_ALL = "ALL";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED = "total_require_buffer_failed";
-  private static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION =
+  public static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION =
       "total_require_buffer_failed_for_huge_partition";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_REGULAR_PARTITION =
       "total_require_buffer_failed_for_regular_partition";
@@ -163,6 +164,7 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeInFlushBufferSize;
   public static Gauge.Child gaugeUsedBufferSize;
   public static Gauge.Child gaugeReadBufferUsedSize;
+  public static Gauge.Child gaugeUsedDirectMemorySize;
   public static Gauge.Child gaugeWriteHandler;
   public static Gauge.Child gaugeEventQueueSize;
   public static Gauge.Child gaugeAppNum;
@@ -279,11 +281,13 @@ public class ShuffleServerMetrics {
             TOTAL_HADOOP_WRITE_DATA, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
     counterTotalLocalFileWriteDataSize =
         metricsManager.addCounter(TOTAL_LOCALFILE_WRITE_DATA, LOCAL_DISK_PATH_LABEL);
+
     counterTotalRequireBufferFailed = metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED);
     counterTotalRequireBufferFailedForRegularPartition =
         metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_REGULAR_PARTITION);
     counterTotalRequireBufferFailedForHugePartition =
         metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION);
+
     counterLocalStorageTotalWrite = metricsManager.addLabeledCounter(STORAGE_TOTAL_WRITE_LOCAL);
     counterLocalStorageRetryWrite = metricsManager.addLabeledCounter(STORAGE_RETRY_WRITE_LOCAL);
     counterLocalStorageFailedWrite = metricsManager.addLabeledCounter(STORAGE_FAILED_WRITE_LOCAL);
@@ -328,6 +332,7 @@ public class ShuffleServerMetrics {
     gaugeInFlushBufferSize = metricsManager.addLabeledGauge(IN_FLUSH_BUFFER_SIZE);
     gaugeUsedBufferSize = metricsManager.addLabeledGauge(USED_BUFFER_SIZE);
     gaugeReadBufferUsedSize = metricsManager.addLabeledGauge(READ_USED_BUFFER_SIZE);
+    gaugeUsedDirectMemorySize = metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE);
     gaugeWriteHandler = metricsManager.addLabeledGauge(TOTAL_WRITE_HANDLER);
     gaugeEventQueueSize = metricsManager.addLabeledGauge(EVENT_QUEUE_SIZE);
     gaugeAppNum = metricsManager.addLabeledGauge(APP_NUM_WITH_NODE);

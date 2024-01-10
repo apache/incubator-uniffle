@@ -90,6 +90,12 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   public CoordinatorGrpcClient(String host, int port, int maxRetryAttempts, boolean usePlaintext) {
     super(host, port, maxRetryAttempts, usePlaintext);
     blockingStub = CoordinatorServerGrpc.newBlockingStub(channel);
+    LOG.info(
+        "Created CoordinatorGrpcClient, host:{}, port:{}, maxRetryAttempts:{}, usePlaintext:{}",
+        host,
+        port,
+        maxRetryAttempts,
+        usePlaintext);
   }
 
   public CoordinatorGrpcClient(ManagedChannel channel) {
@@ -145,7 +151,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       response = blockingStub.withDeadlineAfter(timeout, TimeUnit.MILLISECONDS).heartbeat(request);
       status = response.getStatus();
     } catch (StatusRuntimeException e) {
-      LOG.error(e.getMessage());
+      LOG.error("Failed to doSendHeartBeat, request: {}", request, e);
       status = RssProtos.StatusCode.TIMEOUT;
     } catch (Exception e) {
       LOG.error(e.getMessage());

@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.function.Consumer;
+
 import io.prometheus.client.CollectorRegistry;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
@@ -37,6 +39,8 @@ import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
+import org.apache.uniffle.coordinator.conf.ClientConf;
+import org.apache.uniffle.coordinator.conf.DynamicClientConfService;
 import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategy;
@@ -59,7 +63,7 @@ public class CoordinatorServer extends ReconfigurableBase {
   private ServerInterface server;
   private ClusterManager clusterManager;
   private AssignmentStrategy assignmentStrategy;
-  private ClientConfManager clientConfManager;
+  private DynamicClientConfService dynamicClientConfService;
   private AccessManager accessManager;
   private ApplicationManager applicationManager;
   private GRPCMetrics grpcMetrics;
@@ -133,8 +137,8 @@ public class CoordinatorServer extends ReconfigurableBase {
     if (accessManager != null) {
       accessManager.close();
     }
-    if (clientConfManager != null) {
-      clientConfManager.close();
+    if (dynamicClientConfService != null) {
+      dynamicClientConfService.close();
     }
     if (metricReporter != null) {
       metricReporter.stop();
@@ -177,7 +181,11 @@ public class CoordinatorServer extends ReconfigurableBase {
         new ClusterManagerFactory(coordinatorConf, hadoopConf);
 
     this.clusterManager = clusterManagerFactory.getClusterManager();
-    this.clientConfManager = new ClientConfManager(coordinatorConf, hadoopConf, applicationManager);
+    this.dynamicClientConfService =
+        new DynamicClientConfService(
+            coordinatorConf,
+            hadoopConf,
+            new Consumer[] {(Consumer<ClientConf>) applicationManager::refreshRemoteStorages});
     AssignmentStrategyFactory assignmentStrategyFactory =
         new AssignmentStrategyFactory(coordinatorConf, clusterManager);
     this.assignmentStrategy = assignmentStrategyFactory.getAssignmentStrategy();
@@ -247,8 +255,8 @@ public class CoordinatorServer extends ReconfigurableBase {
     return accessManager;
   }
 
-  public ClientConfManager getClientConfManager() {
-    return clientConfManager;
+  public DynamicClientConfService getDynamicClientConfService() {
+    return dynamicClientConfService;
   }
 
   public GRPCMetrics getGrpcMetrics() {

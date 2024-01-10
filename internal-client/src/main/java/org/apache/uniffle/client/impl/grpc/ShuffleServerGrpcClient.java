@@ -223,17 +223,18 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     long result = FAILED_REQUIRE_ID;
     Random random = new Random();
     final int backOffBase = 2000;
-    while (rpcResponse.getStatus() == RssProtos.StatusCode.NO_BUFFER) {
-      LOG.info(
-          "Can't require "
-              + requireSize
-              + " bytes from "
-              + host
-              + ":"
-              + port
-              + ", sleep and try["
-              + retry
-              + "] again");
+    LOG.info(
+        "Can't require buffer for appId: {}, shuffleId: {}, partitionIds: {} with {} bytes from {}:{} due to {}, sleep and try[{}] again",
+        appId,
+        shuffleId,
+        partitionIds,
+        requireSize,
+        host,
+        port,
+        rpcResponse.getStatus(),
+        retry);
+    while (rpcResponse.getStatus() == RssProtos.StatusCode.NO_BUFFER
+        || rpcResponse.getStatus() == RssProtos.StatusCode.NO_BUFFER_FOR_HUGE_PARTITION) {
       if (retry >= retryMax) {
         LOG.warn(
             "ShuffleServer "
@@ -241,7 +242,9 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                 + ":"
                 + port
                 + " is full and can't send shuffle"
-                + " data successfully after retry "
+                + " data successfully due to "
+                + rpcResponse.getStatus()
+                + " after retry "
                 + retryMax
                 + " times, cost: {}(ms)",
             System.currentTimeMillis() - start);
@@ -398,7 +401,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       final int allocateSize = size;
       final int finalBlockNum = blockNum;
       try {
-        RetryUtils.retry(
+        RetryUtils.retryWithCondition(
             () -> {
               long requireId =
                   requirePreAllocation(
@@ -456,8 +459,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               }
               return response;
             },
+            null,
             request.getRetryIntervalMax(),
-            maxRetryAttempts);
+            maxRetryAttempts,
+            t -> !(t instanceof OutOfMemoryError));
       } catch (Throwable throwable) {
         LOG.warn(throwable.getMessage());
         isSuccessful = false;

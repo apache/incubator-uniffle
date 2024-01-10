@@ -25,6 +25,15 @@ import org.apache.uniffle.common.netty.IOMode;
 import static org.apache.uniffle.common.compression.Codec.Type.LZ4;
 
 public class RssClientConf {
+  /**
+   * The prefix key for Hadoop conf. For Spark like that:
+   *
+   * <p>key: spark.rss.hadoop.fs.defaultFS val: hdfs://rbf-x1
+   *
+   * <p>The key will be extracted to the hadoop conf: "fs.defaultFS" and inject this into Hadoop
+   * storage configuration.
+   */
+  public static final String HADOOP_CONFIG_KEY_PREFIX = "rss.hadoop.";
 
   public static final ConfigOption<Codec.Type> COMPRESSION_TYPE =
       ConfigOptions.key("rss.client.io.compression.codec")
@@ -142,4 +151,12 @@ public class RssClientConf {
           .enumType(ClientType.class)
           .defaultValue(ClientType.GRPC)
           .withDescription("Supports GRPC, GRPC_NETTY");
+
+  public static final ConfigOption<Boolean> RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED =
+      ConfigOptions.key("rss.client.remote.storage.useLocalConfAsDefault")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "This option is only valid when the remote storage path is specified. If ture, "
+                  + "the remote storage conf will use the client side hadoop configuration loaded from the classpath.");
 }

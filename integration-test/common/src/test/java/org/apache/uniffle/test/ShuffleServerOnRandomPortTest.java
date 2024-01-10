@@ -36,14 +36,17 @@ public class ShuffleServerOnRandomPortTest extends CoordinatorTestBase {
     coordinatorConf.setLong("rss.coordinator.app.expired", 2000);
     coordinatorConf.setLong("rss.coordinator.server.heartbeat.timeout", 3000);
     createCoordinatorServer(coordinatorConf);
+
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.setInteger("rss.server.netty.port", 0);
     shuffleServerConf.setInteger("rss.rpc.server.port", 0);
     shuffleServerConf.setInteger("rss.random.port.min", 30000);
     shuffleServerConf.setInteger("rss.random.port.max", 40000);
     createShuffleServer(shuffleServerConf);
+
     shuffleServerConf.setInteger("rss.jetty.http.port", 18081);
     createShuffleServer(shuffleServerConf);
+
     startServers();
   }
 

@@ -21,7 +21,7 @@ set -e
 
 BASE_DIR="$(cd "`dirname "$0"`/.."; pwd)"
 cd "${BASE_DIR}"
-mvn clean javadoc:aggregate
+./mvnw clean javadoc:aggregate
 mv target/site/apidocs docs
 cd docs
 

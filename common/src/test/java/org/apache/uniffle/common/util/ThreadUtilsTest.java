@@ -17,12 +17,18 @@
 
 package org.apache.uniffle.common.util;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ThreadUtilsTest {
@@ -44,5 +50,26 @@ public class ThreadUtilsTest {
     ThreadUtils.shutdownThreadPool(executorService, 1);
     assertTrue(finished.get());
     assertTrue(executorService.isShutdown());
+  }
+
+  @Test
+  public void testExecuteTasksWithFutureHandler() {
+    ExecutorService executorService = Executors.newFixedThreadPool(2);
+    List<Integer> items = Arrays.asList(1, 2, 3, 4, 5);
+    Function<Integer, Integer> task = item -> item * 2;
+    long timeoutMs = 1000;
+    String taskMsg = "Test Task";
+    Function<Future<Integer>, Integer> futureHandler =
+        future -> {
+          try {
+            return future.get(timeoutMs, TimeUnit.MILLISECONDS);
+          } catch (Exception e) {
+            return null;
+          }
+        };
+
+    List<Integer> results =
+        ThreadUtils.executeTasks(executorService, items, task, timeoutMs, taskMsg, futureHandler);
+    assertEquals(Arrays.asList(2, 4, 6, 8, 10), results);
   }
 }

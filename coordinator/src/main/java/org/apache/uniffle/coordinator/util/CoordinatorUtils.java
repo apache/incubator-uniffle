@@ -18,8 +18,11 @@
 package org.apache.uniffle.coordinator.util;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -141,7 +144,10 @@ public class CoordinatorUtils {
     }
 
     for (String s : clusterConfItems) {
-      String[] item = s.split(Constants.COMMA_SPLIT_CHAR);
+      Pattern pattern = Pattern.compile("([^,=]+=)");
+      Matcher matcher = pattern.matcher(s);
+      List<Integer> matchIndices = getMatchIndices(matcher);
+      String[] item = splitStringByIndices(s, matchIndices);
       if (ArrayUtils.isEmpty(item) || item.length < 2) {
         LOG.warn(msg, s);
         return Maps.newHashMap();
@@ -166,5 +172,30 @@ public class CoordinatorUtils {
       res.put(clusterId, curClusterConf);
     }
     return res;
+  }
+
+  public static List<Integer> getMatchIndices(Matcher matcher) {
+    List<Integer> matchIndices = new ArrayList<>();
+    while (matcher.find()) {
+      matchIndices.add(matcher.start());
+    }
+    return matchIndices.isEmpty() ? Collections.emptyList() : matchIndices;
+  }
+
+  public static String[] splitStringByIndices(String inputString, List<Integer> indices) {
+    if (indices.get(0) != 0) {
+      indices.add(0, 0);
+    }
+    int length = indices.size();
+    String[] resultArray = new String[length];
+    for (int i = 0; i < length; i++) {
+      int startIndex = indices.get(i);
+      int endIndex = (i < length - 1) ? indices.get(i + 1) : inputString.length();
+      resultArray[i] =
+          (inputString.charAt(endIndex - 1) == ',')
+              ? inputString.substring(startIndex, endIndex - 1)
+              : inputString.substring(startIndex, endIndex);
+    }
+    return resultArray;
   }
 }
