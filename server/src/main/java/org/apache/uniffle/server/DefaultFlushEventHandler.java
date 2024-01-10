@@ -77,7 +77,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
     } finally {
       if (storage instanceof LocalStorage) {
         ShuffleServerMetrics.counterLocalFileEventFlush.inc();
-      } else if (storage instanceof HadoopStorage){
+      } else if (storage instanceof HadoopStorage) {
         ShuffleServerMetrics.counterHadoopEventFlush.inc();
       }
     }
@@ -123,7 +123,10 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
         localFileThreadPoolExecutor.execute(() -> handleEventAndUpdateMetrics(event, storage));
       } else {
         fallbackThreadPoolExecutor.execute(() -> handleEventAndUpdateMetrics(event, storage));
-        LOG.warn("Found unexpected storage type: {}, this should not happen for event: {}.", storage, event);
+        LOG.warn(
+            "Found unexpected storage type: {}, this should not happen for event: {}.",
+            storage,
+            event);
       }
     } catch (Exception e) {
       LOG.error("Exception happened when process event.", e);
