@@ -149,6 +149,7 @@ public class ShuffleFlushManager {
 
       Storage storage = event.getUnderStorage();
       if (storage == null) {
+        ShuffleServerMetrics.counterTotalDroppedEventNum.inc();
         LOG.error("Storage selected is null and this should not happen. event: {}", event);
         return true;
       }
@@ -172,6 +173,7 @@ public class ShuffleFlushManager {
             LOG.error(
                 "Drop this event directly due to already having entered pending queue. event: {}",
                 event);
+            ShuffleServerMetrics.counterTotalDroppedEventNum.inc();
             return true;
           }
           event.increaseRetryTimes();

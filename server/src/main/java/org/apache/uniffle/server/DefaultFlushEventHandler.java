@@ -71,13 +71,13 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
     }
   }
 
-  private void handleEventAndUpdateMetrics(ShuffleDataFlushEvent event, boolean isLocalFile) {
+  private void handleEventAndUpdateMetrics(ShuffleDataFlushEvent event, Storage storage) {
     try {
       eventConsumer.accept(event);
     } finally {
-      if (isLocalFile) {
+      if (storage instanceof LocalStorage) {
         ShuffleServerMetrics.counterLocalFileEventFlush.inc();
-      } else {
+      } else if (storage instanceof HadoopStorage){
         ShuffleServerMetrics.counterHadoopEventFlush.inc();
       }
     }
@@ -118,14 +118,12 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       ShuffleDataFlushEvent event = flushQueue.take();
       Storage storage = storageManager.selectStorage(event);
       if (storage instanceof HadoopStorage) {
-        hadoopThreadPoolExecutor.execute(() -> handleEventAndUpdateMetrics(event, false));
+        hadoopThreadPoolExecutor.execute(() -> handleEventAndUpdateMetrics(event, storage));
       } else if (storage instanceof LocalStorage) {
-        localFileThreadPoolExecutor.execute(() -> handleEventAndUpdateMetrics(event, true));
+        localFileThreadPoolExecutor.execute(() -> handleEventAndUpdateMetrics(event, storage));
       } else {
-        // When we did not select storage for this event, we will ignore this event.
-        // Then we must doCleanup, or will result to resource leak.
-        fallbackThreadPoolExecutor.execute(() -> event.doCleanup());
-        LOG.error("Found unexpected storage type, will not flush for event {}.", event);
+        fallbackThreadPoolExecutor.execute(() -> handleEventAndUpdateMetrics(event, storage));
+        LOG.warn("Found unexpected storage type: {}, this should not happen for event: {}.", storage, event);
       }
     } catch (Exception e) {
       LOG.error("Exception happened when process event.", e);
