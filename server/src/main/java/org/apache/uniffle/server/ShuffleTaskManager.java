@@ -106,7 +106,7 @@ public class ShuffleTaskManager {
   private final ShuffleBufferManager shuffleBufferManager;
   private Map<String, ShuffleTaskInfo> shuffleTaskInfos = JavaUtils.newConcurrentMap();
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = JavaUtils.newConcurrentMap();
-  private Runnable clearResourceThread;
+  private Thread clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
   private final Cache<String, Lock> appLocks;
 
@@ -168,7 +168,7 @@ public class ShuffleTaskManager {
             .build();
 
     // the thread for clear expired resources
-    clearResourceThread =
+    Runnable clearResourceRunnable =
         () -> {
           while (true) {
             PurgeEvent event = null;
@@ -204,10 +204,9 @@ public class ShuffleTaskManager {
             }
           }
         };
-    Thread thread = new Thread(clearResourceThread);
-    thread.setName("clearResourceThread");
-    thread.setDaemon(true);
-    thread.start();
+    clearResourceThread = new Thread(clearResourceRunnable);
+    clearResourceThread.setName("clearResourceThread");
+    clearResourceThread.setDaemon(true);
   }
 
   private Lock getAppLock(String appId) {
@@ -838,5 +837,9 @@ public class ShuffleTaskManager {
     synchronized (this.shuffleBufferManager) {
       this.shuffleBufferManager.flushIfNecessary();
     }
+  }
+
+  public void start() {
+    clearResourceThread.start();
   }
 }

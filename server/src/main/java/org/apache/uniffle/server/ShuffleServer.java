@@ -270,6 +270,7 @@ public class ShuffleServer {
     shuffleTaskManager =
         new ShuffleTaskManager(
             shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
+    shuffleTaskManager.start();
 
     nettyServerEnabled = shuffleServerConf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
     if (nettyServerEnabled) {
