@@ -328,20 +328,17 @@ public class ShuffleServer {
     return serverStatus.get();
   }
 
-  public void setServerStatus(ServerStatus serverStatus) {
-    this.serverStatus.set(serverStatus);
-  }
-
   public synchronized void decommission() {
-    if (isDecommissioning()) {
+    if (isDecommissioning() || isDecommissioned()) {
       LOG.info("Shuffle Server is decommissioning. Nothing needs to be done.");
       return;
     }
-    if (!ServerStatus.ACTIVE.equals(serverStatus.get())) {
+    boolean wasActive = serverStatus.compareAndSet(ServerStatus.ACTIVE, ServerStatus.DECOMMISSIONING);
+    if (!wasActive) {
       throw new InvalidRequestException(
           "Shuffle Server is processing other procedures, current status:" + serverStatus);
     }
-    serverStatus.set(ServerStatus.DECOMMISSIONING);
+
     LOG.info("Shuffle Server is decommissioning.");
     if (executorService == null) {
       executorService = ThreadUtils.getDaemonSingleThreadExecutor("shuffle-server-decommission");
@@ -356,7 +353,11 @@ public class ShuffleServer {
     while (isDecommissioning()) {
       remainApplicationNum = shuffleTaskManager.getAppIds().size();
       if (remainApplicationNum == 0) {
-        serverStatus.set(ServerStatus.DECOMMISSIONED);
+        boolean wasDecommissioning = serverStatus.compareAndSet(ServerStatus.DECOMMISSIONING, ServerStatus.DECOMMISSIONED);
+        if (!wasDecommissioning) {
+          break;
+        }
+
         LOG.info("All applications finished. Current status is " + serverStatus);
         if (shutdownAfterDecommission) {
           LOG.info("Exiting...");
@@ -386,21 +387,21 @@ public class ShuffleServer {
   }
 
   public synchronized void cancelDecommission() {
-    if (!isDecommissioning()) {
+    boolean wasDecomissioning = serverStatus.compareAndSet(ServerStatus.DECOMMISSIONING, ServerStatus.ACTIVE);
+    boolean wasDecomissioned = serverStatus.compareAndSet(ServerStatus.DECOMMISSIONED, ServerStatus.ACTIVE);
+    if (!wasDecomissioning && !wasDecomissioned) {
       LOG.info("Shuffle server is not decommissioning. Nothing needs to be done.");
       return;
     }
-    if (ServerStatus.DECOMMISSIONED.equals(serverStatus.get())) {
-      serverStatus.set(ServerStatus.ACTIVE);
-      return;
+
+    if (wasDecomissioning) {
+      if (decommissionFuture.cancel(true)) {
+        LOG.info("Decommission canceled.");
+      } else {
+        LOG.warn("Failed to cancel decommission.");
+      }
+      decommissionFuture = null;
     }
-    serverStatus.set(ServerStatus.ACTIVE);
-    if (decommissionFuture.cancel(true)) {
-      LOG.info("Decommission canceled.");
-    } else {
-      LOG.warn("Failed to cancel decommission.");
-    }
-    decommissionFuture = null;
   }
 
   public String getIp() {
@@ -483,8 +484,11 @@ public class ShuffleServer {
   }
 
   public boolean isDecommissioning() {
-    return ServerStatus.DECOMMISSIONING.equals(serverStatus.get())
-        || ServerStatus.DECOMMISSIONED.equals(serverStatus.get());
+    return ServerStatus.DECOMMISSIONING.equals(serverStatus.get());
+  }
+
+  public boolean isDecommissioned() {
+    return ServerStatus.DECOMMISSIONED.equals(serverStatus.get());
   }
 
   @VisibleForTesting
