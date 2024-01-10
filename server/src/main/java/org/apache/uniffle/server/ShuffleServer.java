@@ -333,7 +333,8 @@ public class ShuffleServer {
       LOG.info("Shuffle Server is decommissioning. Nothing needs to be done.");
       return;
     }
-    boolean wasActive = serverStatus.compareAndSet(ServerStatus.ACTIVE, ServerStatus.DECOMMISSIONING);
+    boolean wasActive =
+        serverStatus.compareAndSet(ServerStatus.ACTIVE, ServerStatus.DECOMMISSIONING);
     if (!wasActive) {
       throw new InvalidRequestException(
           "Shuffle Server is processing other procedures, current status:" + serverStatus);
@@ -353,7 +354,8 @@ public class ShuffleServer {
     while (isDecommissioning()) {
       remainApplicationNum = shuffleTaskManager.getAppIds().size();
       if (remainApplicationNum == 0) {
-        boolean wasDecommissioning = serverStatus.compareAndSet(ServerStatus.DECOMMISSIONING, ServerStatus.DECOMMISSIONED);
+        boolean wasDecommissioning =
+            serverStatus.compareAndSet(ServerStatus.DECOMMISSIONING, ServerStatus.DECOMMISSIONED);
         if (!wasDecommissioning) {
           break;
         }
@@ -387,8 +389,10 @@ public class ShuffleServer {
   }
 
   public synchronized void cancelDecommission() {
-    boolean wasDecomissioning = serverStatus.compareAndSet(ServerStatus.DECOMMISSIONING, ServerStatus.ACTIVE);
-    boolean wasDecomissioned = serverStatus.compareAndSet(ServerStatus.DECOMMISSIONED, ServerStatus.ACTIVE);
+    boolean wasDecomissioning =
+        serverStatus.compareAndSet(ServerStatus.DECOMMISSIONING, ServerStatus.ACTIVE);
+    boolean wasDecomissioned =
+        serverStatus.compareAndSet(ServerStatus.DECOMMISSIONED, ServerStatus.ACTIVE);
     if (!wasDecomissioning && !wasDecomissioned) {
       LOG.info("Shuffle server is not decommissioning. Nothing needs to be done.");
       return;
