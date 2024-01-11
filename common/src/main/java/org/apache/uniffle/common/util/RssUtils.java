@@ -364,10 +364,10 @@ public class RssUtils {
 
   public static void checkProcessedBlockIds(
       Roaring64NavigableMap blockIdBitmap, Roaring64NavigableMap processedBlockIds) {
-    Roaring64NavigableMap cloneBitmap;
-    cloneBitmap = RssUtils.cloneBitMap(blockIdBitmap);
-    cloneBitmap.and(processedBlockIds);
-    if (!blockIdBitmap.equals(cloneBitmap)) {
+    if (!blockIdBitmap.equals(processedBlockIds)) {
+      Roaring64NavigableMap cloneBitmap;
+      cloneBitmap = RssUtils.cloneBitMap(blockIdBitmap);
+      cloneBitmap.and(processedBlockIds);
       throw new RssException(
           "Blocks read inconsistent: expected "
               + blockIdBitmap.getLongCardinality()
