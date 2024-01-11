@@ -22,6 +22,8 @@ import java.util.Set;
 
 import org.apache.spark.shuffle.ShuffleHandleInfo;
 
+import org.apache.uniffle.common.ShuffleServerInfo;
+
 public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   public Set<Integer> unregisteredShuffleIds = new LinkedHashSet<>();
 
@@ -62,5 +64,11 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   public boolean reassignShuffleServers(
       int stageId, int stageAttemptNumber, int shuffleId, int numMaps) {
     return false;
+  }
+
+  @Override
+  public ShuffleServerInfo reassignFaultyShuffleServer(
+      int shuffleId, Set<String> partitionIds, String faultyShuffleServerId) {
+    return null;
   }
 }

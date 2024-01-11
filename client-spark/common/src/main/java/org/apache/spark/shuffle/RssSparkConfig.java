@@ -347,6 +347,16 @@ public class RssSparkConfig {
                           + " of concurrent tasks."))
           .createWithDefault(RssClientConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE);
 
+  public static final ConfigEntry<Boolean> RSS_DYNAMIC_SERVER_ASSIGNMENT_ENABLED =
+      createBooleanBuilder(
+              new ConfigBuilder(
+                      SPARK_RSS_CONFIG_PREFIX
+                          + RssClientConfig.RSS_DYNAMIC_SERVER_ASSIGNMENT_ENABLED)
+                  .doc(
+                      "Whether to estimate the number of ShuffleServers to be allocated based on the number"
+                          + " of concurrent tasks."))
+          .createWithDefault(RssClientConfig.RSS_DYNAMIC_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE);
+
   public static final ConfigEntry<Integer> RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER =
       createIntegerBuilder(
               new ConfigBuilder(
