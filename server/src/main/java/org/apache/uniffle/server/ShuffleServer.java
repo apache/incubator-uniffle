@@ -356,11 +356,12 @@ public class ShuffleServer {
       if (remainApplicationNum == 0) {
         boolean wasDecommissioning =
             serverStatus.compareAndSet(ServerStatus.DECOMMISSIONING, ServerStatus.DECOMMISSIONED);
+        LOG.info("All applications finished. Current status is " + serverStatus);
         if (!wasDecommissioning) {
+          LOG.info("Ready to decommission but decommissioning state left unexpectedly.");
           break;
         }
 
-        LOG.info("All applications finished. Current status is " + serverStatus);
         if (shutdownAfterDecommission) {
           LOG.info("Exiting...");
           try {
