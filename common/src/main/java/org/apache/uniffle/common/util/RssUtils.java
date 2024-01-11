@@ -374,11 +374,11 @@ public class RssUtils {
       cloneBitmap.and(processedBlockIds);
       if (!blockIdBitmap.equals(cloneBitmap)) {
         throw new RssException(
-                "Blocks read inconsistent: expected "
-                        + blockIdBitmap.getLongCardinality()
-                        + " blocks, actual "
-                        + cloneBitmap.getLongCardinality()
-                        + " blocks");
+            "Blocks read inconsistent: expected "
+                + blockIdBitmap.getLongCardinality()
+                + " blocks, actual "
+                + cloneBitmap.getLongCardinality()
+                + " blocks");
       }
     }
   }
