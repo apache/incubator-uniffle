@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Field;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -98,11 +99,26 @@ public class RustShuffleServer {
         });
     }
 
-    public void stopServer() {
+    public void stopServer() throws NoSuchFieldException, IllegalAccessException, IOException {
         if (rustServer != null) {
-            rustServer.destroy();
+            String os = System.getProperty("os.name").toLowerCase();
+            String command;
+            if (os.contains("win")) {
+                // Windows
+                command = "taskkill /PID " + getPid() + " /F";
+            } else {
+                // Linux and Mac
+                command = "kill -15 " + getPid();
+            }
+
+            Runtime.getRuntime().exec(command);
         }
-        shutdown();
+    }
+
+    private int getPid() throws NoSuchFieldException, IllegalAccessException {
+        Field field = rustServer.getClass().getDeclaredField("pid");
+        field.setAccessible(true);
+        return field.getInt(rustServer);
     }
 
     private void shutdown() {

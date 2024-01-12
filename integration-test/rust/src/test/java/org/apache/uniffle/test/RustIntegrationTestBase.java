@@ -9,19 +9,19 @@ import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class RustIntegrationTestBase {
+public abstract class RustIntegrationTestBase extends HadoopTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(RustIntegrationTestBase.class);
 
-    protected static final int SHUFFLE_SERVER_PORT = 20001;
+    protected static final int SHUFFLE_SERVER_PORT = 19999;
     protected static final String LOCALHOST;
 
     static {
@@ -36,7 +36,7 @@ public class RustIntegrationTestBase {
 
     protected static final int COORDINATOR_PORT = 19999;
 
-    protected static final String COORDINATOR_QUORUM = LOCALHOST + ":" + COORDINATOR_PORT + ",";
+    protected static final String COORDINATOR_QUORUM = LOCALHOST + ":" + COORDINATOR_PORT;
 
     static @TempDir File tempDir;
 
@@ -48,7 +48,7 @@ public class RustIntegrationTestBase {
     }
 
     @AfterAll
-    public static void shutdownServers() throws Exception {
+    public static void shutdownServers() throws IOException, NoSuchFieldException, IllegalAccessException {
         for (RustShuffleServer shuffleServer : shuffleServers) {
             shuffleServer.stopServer();
         }
@@ -58,7 +58,7 @@ public class RustIntegrationTestBase {
     protected static RustShuffleServerConf getShuffleServerConf() throws Exception {
         RustShuffleServerConf serverConf = new RustShuffleServerConf(tempDir);
         Map<String, Object> data = new HashMap<>();
-        data.put("coordinator_quorum", Lists.newArrayList("127.0.0.1:19999"));
+        data.put("coordinator_quorum", Lists.newArrayList(COORDINATOR_QUORUM));
 
         Map<String, Object> hybridStore = new HashMap<>();
         hybridStore.put("memory_spill_high_watermark", 0.9);
@@ -69,11 +69,11 @@ public class RustIntegrationTestBase {
         memoryStore.put("capacity", "1G");
         data.put("memory_store", memoryStore);
 
+//        data.putAll(set);
 
         serverConf.generateTomlConf(data);
         return serverConf;
     }
-
 
     protected static void createShuffleServer(RustShuffleServerConf serverConf) throws Exception {
         shuffleServers.add(new RustShuffleServer(serverConf));
@@ -109,22 +109,35 @@ public class RustIntegrationTestBase {
 //    }
 
     protected static void compileRustServer() throws IOException, InterruptedException {
-        ProcessBuilder builder = new ProcessBuilder("cargo", "build", "--debug");
-
+        ProcessBuilder builder = new ProcessBuilder("cargo", "build");
         builder.directory(new File("../../rust/experimental/server"));
-        Process process = null;
-        int exitCode = 0;
-        process = builder.start();
 
-        exitCode = process.waitFor();
+        // Redirect error stream to standard output stream
+        builder.redirectErrorStream(true);
+
+        Process process = builder.start();
+
+        // Read output (and error) stream of the process
+        try (InputStreamReader isr = new InputStreamReader(process.getInputStream());
+             BufferedReader br = new BufferedReader(isr)) {
+
+            String line;
+            while ((line = br.readLine()) != null) {
+                System.out.println(line);  // Or use LOG.error(line) to log
+            }
+        }
+
+        int exitCode = process.waitFor();
         if (exitCode != 0) {
             LOG.error("Compilation error with exit code: " + exitCode);
+            System.exit(-1);
         }
     }
 
-    @Test
-    public void Main() throws Exception {
-        createShuffleServer(getShuffleServerConf());
-        startServers();
-    }
+
+//    @Test
+//    public void Main() throws Exception {
+//        createShuffleServer(getShuffleServerConf());
+//        startServers();
+//    }
 }

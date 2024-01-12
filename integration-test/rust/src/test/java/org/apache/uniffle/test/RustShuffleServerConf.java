@@ -92,7 +92,7 @@ public class RustShuffleServerConf {
         return value.toString();
     }
 
-    public void writeToFile(String content, String filePath) throws IOException {
+    private void writeToFile(String content, String filePath) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             writer.write(content);
         }
