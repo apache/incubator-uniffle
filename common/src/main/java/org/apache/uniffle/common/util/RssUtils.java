@@ -364,16 +364,22 @@ public class RssUtils {
 
   public static void checkProcessedBlockIds(
       Roaring64NavigableMap blockIdBitmap, Roaring64NavigableMap processedBlockIds) {
-    Roaring64NavigableMap cloneBitmap;
-    cloneBitmap = RssUtils.cloneBitMap(blockIdBitmap);
-    cloneBitmap.and(processedBlockIds);
-    if (!blockIdBitmap.equals(cloneBitmap)) {
-      throw new RssException(
-          "Blocks read inconsistent: expected "
-              + blockIdBitmap.getLongCardinality()
-              + " blocks, actual "
-              + cloneBitmap.getLongCardinality()
-              + " blocks");
+    // processedBlockIds can be a superset of blockIdBitmap,
+    // here we check that processedBlockIds has all bits of blockIdBitmap set
+    // first a quick check:
+    //   we only need to do the bitwise AND when blockIdBitmap is not equal to processedBlockIds
+    if (!blockIdBitmap.equals(processedBlockIds)) {
+      Roaring64NavigableMap cloneBitmap;
+      cloneBitmap = RssUtils.cloneBitMap(blockIdBitmap);
+      cloneBitmap.and(processedBlockIds);
+      if (!blockIdBitmap.equals(cloneBitmap)) {
+        throw new RssException(
+            "Blocks read inconsistent: expected "
+                + blockIdBitmap.getLongCardinality()
+                + " blocks, actual "
+                + cloneBitmap.getLongCardinality()
+                + " blocks");
+      }
     }
   }
 
