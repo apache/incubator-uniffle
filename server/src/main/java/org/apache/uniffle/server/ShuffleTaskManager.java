@@ -105,6 +105,7 @@ public class ShuffleTaskManager {
   private final ShuffleBufferManager shuffleBufferManager;
   private Map<String, ShuffleTaskInfo> shuffleTaskInfos = JavaUtils.newConcurrentMap();
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = JavaUtils.newConcurrentMap();
+  private Thread clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
   private final Cache<String, Lock> appLocks;
 
@@ -165,53 +166,49 @@ public class ShuffleTaskManager {
             .maximumSize(Integer.MAX_VALUE)
             .build();
 
-    startClearResourceThread();
+    // the thread for clear expired resources
+    Runnable clearResourceRunnable =
+      () -> {
+        while (true) {
+          PurgeEvent event = null;
+          try {
+            event = expiredAppIdQueue.take();
+            long startTime = System.currentTimeMillis();
+            if (event instanceof AppPurgeEvent) {
+              removeResources(event.getAppId(), true);
+              double usedTime =
+                (System.currentTimeMillis() - startTime) / Constants.MILLION_SECONDS_PER_SECOND;
+              ShuffleServerMetrics.summaryTotalRemoveResourceTime.observe(usedTime);
+            }
+            if (event instanceof ShufflePurgeEvent) {
+              removeResourcesByShuffleIds(event.getAppId(), event.getShuffleIds());
+              double usedTime =
+                (System.currentTimeMillis() - startTime) / Constants.MILLION_SECONDS_PER_SECOND;
+              ShuffleServerMetrics.summaryTotalRemoveResourceByShuffleIdsTime.observe(usedTime);
+            }
+          } catch (Exception e) {
+            StringBuilder diagnosticMessageBuilder =
+              new StringBuilder(
+                "Exception happened when clearing resource for expired application");
+            if (event != null) {
+              diagnosticMessageBuilder.append(" for appId: ");
+              diagnosticMessageBuilder.append(event.getAppId());
+
+              if (CollectionUtils.isNotEmpty(event.getShuffleIds())) {
+                diagnosticMessageBuilder.append(", shuffleIds: ");
+                diagnosticMessageBuilder.append(event.getShuffleIds());
+              }
+            }
+            LOG.error("{}", diagnosticMessageBuilder, e);
+          }
+        }
+      };
+    clearResourceThread = new Thread(clearResourceRunnable);
+    clearResourceThread.setName("clearResourceThread");
+    clearResourceThread.setDaemon(true);
+
     topNShuffleDataSizeOfAppCalcTask = new TopNShuffleDataSizeOfAppCalcTask(this, conf);
     topNShuffleDataSizeOfAppCalcTask.start();
-  }
-
-  private void startClearResourceThread() {
-    // the thread for clear expired resources
-    Runnable clearResourceThread =
-        () -> {
-          while (true) {
-            PurgeEvent event = null;
-            try {
-              event = expiredAppIdQueue.take();
-              long startTime = System.currentTimeMillis();
-              if (event instanceof AppPurgeEvent) {
-                removeResources(event.getAppId(), true);
-                double usedTime =
-                    (System.currentTimeMillis() - startTime) / Constants.MILLION_SECONDS_PER_SECOND;
-                ShuffleServerMetrics.summaryTotalRemoveResourceTime.observe(usedTime);
-              }
-              if (event instanceof ShufflePurgeEvent) {
-                removeResourcesByShuffleIds(event.getAppId(), event.getShuffleIds());
-                double usedTime =
-                    (System.currentTimeMillis() - startTime) / Constants.MILLION_SECONDS_PER_SECOND;
-                ShuffleServerMetrics.summaryTotalRemoveResourceByShuffleIdsTime.observe(usedTime);
-              }
-            } catch (Exception e) {
-              StringBuilder diagnosticMessageBuilder =
-                  new StringBuilder(
-                      "Exception happened when clearing resource for expired application");
-              if (event != null) {
-                diagnosticMessageBuilder.append(" for appId: ");
-                diagnosticMessageBuilder.append(event.getAppId());
-
-                if (CollectionUtils.isNotEmpty(event.getShuffleIds())) {
-                  diagnosticMessageBuilder.append(", shuffleIds: ");
-                  diagnosticMessageBuilder.append(event.getShuffleIds());
-                }
-              }
-              LOG.error("{}", diagnosticMessageBuilder, e);
-            }
-          }
-        };
-    Thread thread = new Thread(clearResourceThread);
-    thread.setName("clearResourceThread");
-    thread.setDaemon(true);
-    thread.start();
   }
 
   private Lock getAppLock(String appId) {
