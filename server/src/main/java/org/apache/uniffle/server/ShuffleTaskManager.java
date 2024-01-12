@@ -169,7 +169,7 @@ public class ShuffleTaskManager {
             .build();
 
     // the thread for clear expired resources
-    Runnable clearResourceRunnable =       
+    Runnable clearResourceRunnable =
         () -> {
           while (true) {
             PurgeEvent event = null;
@@ -200,20 +200,17 @@ public class ShuffleTaskManager {
                   diagnosticMessageBuilder.append(", shuffleIds: ");
                   diagnosticMessageBuilder.append(event.getShuffleIds());
                 }
-
               }
+              LOG.error("{}", diagnosticMessageBuilder, e);
             }
-            LOG.error("{}", diagnosticMessageBuilder, e);
           }
-        }
-      };
+        };
     clearResourceThread = new Thread(clearResourceRunnable);
     clearResourceThread.setName("clearResourceThread");
     clearResourceThread.setDaemon(true);
 
     topNShuffleDataSizeOfAppCalcTask = new TopNShuffleDataSizeOfAppCalcTask(this, conf);
     topNShuffleDataSizeOfAppCalcTask.start();
-
   }
 
   private Lock getAppLock(String appId) {
@@ -852,6 +849,7 @@ public class ShuffleTaskManager {
 
   public void stop() {
     topNShuffleDataSizeOfAppCalcTask.stop();
+  }
 
   public void start() {
     clearResourceThread.start();
