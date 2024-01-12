@@ -363,28 +363,28 @@ public class ShuffleServerMetrics {
         Gauge.build()
             .name(TOPN_OF_TOTAL_DATA_SIZE_FOR_APP)
             .help("top N of total shuffle data size for app level")
-            .labelNames("TOPN_OF_TOTAL_DATA_SIZE_FOR_APP")
+            .labelNames("app_id")
             .register(metricsManager.getCollectorRegistry());
 
     gaugeInMemoryDataSizeUsage =
         Gauge.build()
             .name(TOPN_OF_IN_MEMORY_DATA_SIZE_FOR_APP)
             .help("top N of in memory shuffle data size for app level")
-            .labelNames("TOPN_OF_IN_MEMORY_DATA_SIZE_FOR_APP")
+            .labelNames("app_id")
             .register(metricsManager.getCollectorRegistry());
 
     gaugeOnDiskDataSizeUsage =
         Gauge.build()
             .name(TOPN_OF_ON_LOCALFILE_DATA_SIZE_FOR_APP)
             .help("top N of on disk shuffle data size for app level")
-            .labelNames("TOPN_OF_ON_LOCALFILE_DATA_SIZE_FOR_APP")
+            .labelNames("app_id")
             .register(metricsManager.getCollectorRegistry());
 
     gaugeOnHadoopDataSizeUsage =
         Gauge.build()
             .name(TOPN_OF_ON_HADOOP_DATA_SIZE_FOR_APP)
             .help("top N of on hadoop shuffle data size for app level")
-            .labelNames("TOPN_OF_ON_HADOOP_DATA_SIZE_FOR_APP")
+            .labelNames("app_id")
             .register(metricsManager.getCollectorRegistry());
   }
 }
