@@ -91,11 +91,11 @@ jobs:
         ./mvnw -B -fae ${{ inputs.maven-args }} -P${PROFILES} | tee /tmp/maven.log
       shell: bash
     - name: Summary of failures
-      if: ${{ failure() && inputs.summary != '' }}
+      if: failure() && inputs.summary != ''
       run: ${{ inputs.summary }}
       continue-on-error: true
     - name: Upload test reports
-      if: ${{ failure() && inputs.reports-path != '' }}
+      if: always() && inputs.reports-path != ''
       uses: actions/upload-artifact@v3
       with:
         name: ${{ inputs.reports-name }}-${{ matrix.profile }}
