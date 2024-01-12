@@ -330,12 +330,15 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
                 });
             List<Map.Entry<String, AtomicInteger>> list =
                 new ArrayList(shuffleServerFailureRecordCount.entrySet());
-            Collections.sort(list, (o1, o2) -> (o1.getValue().get() - o2.getValue().get()));
-            Map.Entry<String, AtomicInteger> shuffleServerInfoIntegerEntry = list.get(0);
-            if (shuffleServerInfoIntegerEntry.getValue().get()
-                > shuffleManager.getMaxFetchFailures()) {
-              shuffleManager.addFailuresShuffleServerInfos(shuffleServerInfoIntegerEntry.getKey());
-              return true;
+            if (!list.isEmpty()) {
+              Collections.sort(list, (o1, o2) -> (o1.getValue().get() - o2.getValue().get()));
+              Map.Entry<String, AtomicInteger> shuffleServerInfoIntegerEntry = list.get(0);
+              if (shuffleServerInfoIntegerEntry.getValue().get()
+                  > shuffleManager.getMaxFetchFailures()) {
+                shuffleManager.addFailuresShuffleServerInfos(
+                    shuffleServerInfoIntegerEntry.getKey());
+                return true;
+              }
             }
             return false;
           });

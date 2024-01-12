@@ -80,7 +80,7 @@ public class ShuffleServerMetrics {
   private static final String LOCAL_DISK_PATH_LABEL = "local_disk_path";
   public static final String LOCAL_DISK_PATH_LABEL_ALL = "ALL";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED = "total_require_buffer_failed";
-  private static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION =
+  public static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION =
       "total_require_buffer_failed_for_huge_partition";
   private static final String TOTAL_REQUIRE_BUFFER_FAILED_FOR_REGULAR_PARTITION =
       "total_require_buffer_failed_for_regular_partition";
@@ -294,11 +294,13 @@ public class ShuffleServerMetrics {
             TOTAL_HADOOP_WRITE_DATA, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
     counterTotalLocalFileWriteDataSize =
         metricsManager.addCounter(TOTAL_LOCALFILE_WRITE_DATA, LOCAL_DISK_PATH_LABEL);
+
     counterTotalRequireBufferFailed = metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED);
     counterTotalRequireBufferFailedForRegularPartition =
         metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_REGULAR_PARTITION);
     counterTotalRequireBufferFailedForHugePartition =
         metricsManager.addLabeledCounter(TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION);
+
     counterLocalStorageTotalWrite = metricsManager.addLabeledCounter(STORAGE_TOTAL_WRITE_LOCAL);
     counterLocalStorageRetryWrite = metricsManager.addLabeledCounter(STORAGE_RETRY_WRITE_LOCAL);
     counterLocalStorageFailedWrite = metricsManager.addLabeledCounter(STORAGE_FAILED_WRITE_LOCAL);

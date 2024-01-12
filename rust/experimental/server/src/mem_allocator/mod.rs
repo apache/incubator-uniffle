@@ -24,9 +24,10 @@ mod imp;
 #[path = "system_std.rs"]
 mod imp;
 
-// set default allocator
+use cap::Cap;
+
 #[global_allocator]
-static ALLOC: imp::Allocator = imp::allocator();
+pub static ALLOCATOR: Cap<imp::Allocator> = Cap::new(imp::allocator(), usize::max_value());
 
 pub mod error;
 pub type AllocStats = Vec<(&'static str, usize)>;
@@ -34,6 +35,7 @@ pub type AllocStats = Vec<(&'static str, usize)>;
 // when memory-prof feature is enabled, provide empty profiling functions
 #[cfg(not(all(unix, feature = "memory-prof")))]
 mod default;
+
 #[cfg(not(all(unix, feature = "memory-prof")))]
 pub use default::*;
 

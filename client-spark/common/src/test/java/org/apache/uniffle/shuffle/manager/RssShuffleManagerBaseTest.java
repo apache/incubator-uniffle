@@ -15,27 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.conf;
+package org.apache.uniffle.shuffle.manager;
 
+import org.apache.spark.SparkConf;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.apache.uniffle.common.RemoteStorageInfo;
 
-public class LegacyClientConfParserTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class RssShuffleManagerBaseTest {
 
   @Test
-  public void testParse() throws Exception {
-    ClientConfParser parser = new LegacyClientConfParser();
-    ClientConf conf =
-        parser.tryParse(
-            getClass().getClassLoader().getResource("dynamicClientConf.legacy").openStream());
-    assertEquals("v1", conf.getRssClientConf().get("k1"));
-    assertEquals("v2", conf.getRssClientConf().get("k2"));
-    assertEquals("v1", conf.getRemoteStorageInfos().get("hdfs://a-ns01").getConfItems().get("k1"));
-    assertEquals(
-        "v1,v2,v3", conf.getRemoteStorageInfos().get("hdfs://x-ns01").getConfItems().get("k1"));
-    assertEquals("v4", conf.getRemoteStorageInfos().get("hdfs://x-ns01").getConfItems().get("k2"));
-    assertEquals(
-        "v5,v6", conf.getRemoteStorageInfos().get("hdfs://x-ns01").getConfItems().get("k3"));
+  public void testGetDefaultRemoteStorageInfo() {
+    SparkConf sparkConf = new SparkConf();
+    RemoteStorageInfo remoteStorageInfo =
+        RssShuffleManagerBase.getDefaultRemoteStorageInfo(sparkConf);
+    assertTrue(remoteStorageInfo.getConfItems().isEmpty());
+
+    sparkConf.set("spark.rss.hadoop.fs.defaultFs", "hdfs://rbf-xxx/foo");
+    remoteStorageInfo = RssShuffleManagerBase.getDefaultRemoteStorageInfo(sparkConf);
+    assertEquals(remoteStorageInfo.getConfItems().size(), 1);
+    assertEquals(remoteStorageInfo.getConfItems().get("fs.defaultFs"), "hdfs://rbf-xxx/foo");
   }
 }

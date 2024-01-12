@@ -48,6 +48,9 @@ pub enum WorkerError {
 
     #[error("Http request failed. {0}")]
     HTTP_SERVICE_ERROR(String),
+
+    #[error("Ticket id: {0} not exist")]
+    TICKET_ID_NOT_EXIST(i64),
 }
 
 impl From<AcquireError> for WorkerError {

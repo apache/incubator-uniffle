@@ -31,7 +31,7 @@ use crate::store::{
     StoreProvider,
 };
 use crate::util::current_timestamp_sec;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use bytes::Bytes;
 use croaring::treemap::JvmSerializer;
 use croaring::Treemap;
@@ -173,13 +173,15 @@ impl App {
         Ok(())
     }
 
-    pub async fn insert(&self, ctx: WritingViewContext) -> Result<(), WorkerError> {
+    pub async fn insert(&self, ctx: WritingViewContext) -> Result<i32, WorkerError> {
         let len: i32 = ctx.data_blocks.iter().map(|block| block.length).sum();
         self.get_underlying_partition_bitmap(ctx.uid.clone())
             .incr_data_size(len)?;
         TOTAL_RECEIVED_DATA.inc_by(len as u64);
 
-        self.store.insert(ctx).await
+        self.store.insert(ctx).await?;
+
+        Ok(len)
     }
 
     pub async fn select(&self, ctx: ReadingViewContext) -> Result<ResponseData, WorkerError> {
@@ -231,13 +233,8 @@ impl App {
         }
     }
 
-    pub fn is_buffer_ticket_exist(&self, ticket_id: i64) -> bool {
-        self.store
-            .is_buffer_ticket_exist(self.app_id.as_str(), ticket_id)
-    }
-
-    pub fn discard_tickets(&self, ticket_id: i64) -> i64 {
-        self.store.discard_tickets(self.app_id.as_str(), ticket_id)
+    pub async fn free_allocated_memory_size(&self, size: i64) -> Result<bool> {
+        self.store.free_hot_store_allocated_memory_size(size).await
     }
 
     pub async fn require_buffer(
@@ -250,6 +247,12 @@ impl App {
         }
 
         self.store.require_buffer(ctx).await
+    }
+
+    pub async fn release_buffer(&self, ticket_id: i64) -> Result<i64, WorkerError> {
+        self.store
+            .release_buffer(ReleaseBufferContext::from(ticket_id))
+            .await
     }
 
     fn get_underlying_partition_bitmap(&self, uid: PartitionedUId) -> PartitionedMeta {
@@ -277,13 +280,30 @@ impl App {
     }
 
     pub async fn purge(&self, app_id: String, shuffle_id: Option<i32>) -> Result<()> {
-        if shuffle_id.is_some() {
-            error!("Partial purge is not supported.");
-        } else {
-            self.store.purge(app_id).await?
-        }
+        self.store
+            .purge(PurgeDataContext::new(app_id, shuffle_id))
+            .await
+    }
+}
 
-        Ok(())
+#[derive(Debug, Clone)]
+pub struct PurgeDataContext {
+    pub(crate) app_id: String,
+    pub(crate) shuffle_id: Option<i32>,
+}
+
+impl PurgeDataContext {
+    pub fn new(app_id: String, shuffle_id: Option<i32>) -> PurgeDataContext {
+        PurgeDataContext { app_id, shuffle_id }
+    }
+}
+
+impl From<&str> for PurgeDataContext {
+    fn from(app_id_ref: &str) -> Self {
+        PurgeDataContext {
+            app_id: app_id_ref.to_string(),
+            shuffle_id: None,
+        }
     }
 }
 
@@ -321,6 +341,17 @@ pub struct RequireBufferContext {
     pub size: i64,
 }
 
+#[derive(Debug, Clone)]
+pub struct ReleaseBufferContext {
+    pub(crate) ticket_id: i64,
+}
+
+impl From<i64> for ReleaseBufferContext {
+    fn from(value: i64) -> Self {
+        Self { ticket_id: value }
+    }
+}
+
 impl RequireBufferContext {
     pub fn new(uid: PartitionedUId, size: i64) -> Self {
         Self { uid, size }
@@ -343,7 +374,7 @@ pub enum PurgeEvent {
     // app_id
     HEART_BEAT_TIMEOUT(String),
     // app_id + shuffle_id
-    APP_PARTIAL_SHUFFLES_PURGE(String, Vec<i32>),
+    APP_PARTIAL_SHUFFLES_PURGE(String, i32),
     // app_id
     APP_PURGE(String),
 }
@@ -424,18 +455,18 @@ impl AppManager {
                             "The app:[{}]'s data will be purged due to heartbeat timeout",
                             &app_id
                         );
-                        app_manager_cloned.purge_app_data(app_id).await
+                        app_manager_cloned.purge_app_data(app_id, None).await
                     }
                     PurgeEvent::APP_PURGE(app_id) => {
                         info!(
                             "The app:[{}] has been finished, its data will be purged.",
                             &app_id
                         );
-                        app_manager_cloned.purge_app_data(app_id).await
+                        app_manager_cloned.purge_app_data(app_id, None).await
                     }
-                    PurgeEvent::APP_PARTIAL_SHUFFLES_PURGE(_app_id, _shuffle_ids) => {
-                        info!("Partial data purge is not supported currently");
-                        Ok(())
+                    PurgeEvent::APP_PARTIAL_SHUFFLES_PURGE(app_id, shuffle_id) => {
+                        info!("The app:[{:?}] with shuffleId: [{:?}] will be purged due to unregister grpc interface", &app_id, shuffle_id);
+                        app_manager_cloned.purge_app_data(app_id, Some(shuffle_id)).await
                     }
                 }
                 .map_err(|err| error!("Errors on purging data. error: {:?}", err));
@@ -457,19 +488,16 @@ impl AppManager {
         self.store.memory_spill_event_num()
     }
 
-    async fn purge_app_data(&self, app_id: String) -> Result<()> {
-        let app = self.get_app(&app_id);
-        if app.is_none() {
-            error!(
-                "App:{} don't exist when purging data, this should not happen",
-                &app_id
-            );
-        } else {
-            let app = app.unwrap();
-            app.purge(app_id.clone(), None).await?;
-        }
+    async fn purge_app_data(&self, app_id: String, shuffle_id_option: Option<i32>) -> Result<()> {
+        let app = self.get_app(&app_id).ok_or(anyhow!(format!(
+            "App:{} don't exist when purging data, this should not happen",
+            &app_id
+        )))?;
+        app.purge(app_id.clone(), shuffle_id_option).await?;
 
-        self.apps.remove(&app_id);
+        if shuffle_id_option.is_none() {
+            self.apps.remove(&app_id);
+        }
 
         Ok(())
     }
@@ -520,13 +548,10 @@ impl AppManager {
         app_ref.register_shuffle(shuffle_id)
     }
 
-    pub async fn unregister(&self, app_id: String, shuffle_ids: Option<Vec<i32>>) -> Result<()> {
-        let event = match shuffle_ids {
-            Some(ids) => PurgeEvent::APP_PARTIAL_SHUFFLES_PURGE(app_id, ids),
-            _ => PurgeEvent::APP_PURGE(app_id),
-        };
-
-        self.sender.send(event).await?;
+    pub async fn unregister(&self, app_id: String, shuffle_id: i32) -> Result<()> {
+        self.sender
+            .send(PurgeEvent::APP_PARTIAL_SHUFFLES_PURGE(app_id, shuffle_id))
+            .await?;
         Ok(())
     }
 }
@@ -649,7 +674,7 @@ mod test {
 
             // case3: purge
             app_manager_ref
-                .purge_app_data(app_id.to_string())
+                .purge_app_data(app_id.to_string(), None)
                 .await
                 .expect("");
 

@@ -222,6 +222,8 @@ public class RssTezConfig {
   public static final int RSS_REDUCE_REMOTE_SPILL_RETRIES_DEFAULT = 5;
   public static final String RSS_REMOTE_SPILL_STORAGE_PATH =
       TEZ_RSS_CONFIG_PREFIX + "rss.remote.spill.storage.path";
+  public static final String RSS_SHUFFLE_MODE = TEZ_RSS_CONFIG_PREFIX + "shuffle.mode";
+  public static final String DEFAULT_RSS_SHUFFLE_MODE = "remote";
 
   public static RssConf toRssConf(Configuration jobConf) {
     RssConf rssConf = new RssConf();
