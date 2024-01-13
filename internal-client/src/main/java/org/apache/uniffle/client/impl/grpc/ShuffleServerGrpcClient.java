@@ -62,6 +62,8 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
@@ -108,22 +110,39 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcClient.class);
   protected static final long FAILED_REQUIRE_ID = -1;
-  protected static final long RPC_TIMEOUT_DEFAULT_MS = 60000;
-  private long rpcTimeout = RPC_TIMEOUT_DEFAULT_MS;
+  protected long rpcTimeout;
   private ShuffleServerBlockingStub blockingStub;
 
+  @VisibleForTesting
   public ShuffleServerGrpcClient(String host, int port) {
-    this(host, port, 3);
+    this(
+        host,
+        port,
+        RssClientConf.RPC_MAX_ATTEMPTS.defaultValue(),
+        RssClientConf.RPC_TIMEOUT_MS.defaultValue());
   }
 
-  public ShuffleServerGrpcClient(String host, int port, int maxRetryAttempts) {
-    this(host, port, maxRetryAttempts, true);
+  public ShuffleServerGrpcClient(RssConf rssConf, String host, int port) {
+    this(
+        host,
+        port,
+        rssConf == null
+            ? RssClientConf.RPC_MAX_ATTEMPTS.defaultValue()
+            : rssConf.getInteger(RssClientConf.RPC_MAX_ATTEMPTS),
+        rssConf == null
+            ? RssClientConf.RPC_TIMEOUT_MS.defaultValue()
+            : rssConf.getLong(RssClientConf.RPC_TIMEOUT_MS));
+  }
+
+  public ShuffleServerGrpcClient(String host, int port, int maxRetryAttempts, long rpcTimeoutMs) {
+    this(host, port, maxRetryAttempts, rpcTimeoutMs, true);
   }
 
   public ShuffleServerGrpcClient(
-      String host, int port, int maxRetryAttempts, boolean usePlaintext) {
+      String host, int port, int maxRetryAttempts, long rpcTimeoutMs, boolean usePlaintext) {
     super(host, port, maxRetryAttempts, usePlaintext);
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
+    rpcTimeout = rpcTimeoutMs;
   }
 
   public ShuffleServerBlockingStub getBlockingStub() {
