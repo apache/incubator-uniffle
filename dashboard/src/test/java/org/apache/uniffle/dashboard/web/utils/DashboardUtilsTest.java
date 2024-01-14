@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-import request from "@/utils/request";
+package org.apache.uniffle.dashboard.web.utils;
 
-const http = {
-    get(url, params, headers, fontBackFlag) {
-        if (fontBackFlag == 0) {
-            return request.getBackEndAxiosInstance().get(url,{params,headers});
-        } else {
-            return request.getFontEndAxiosInstance().get(url,{params,headers});
-        }
-    },
-    post(url, data, headers, fontBackFlag) {
-        if (fontBackFlag == 0) {
-            return request.getBackEndAxiosInstance().post(url,data,headers);
-        } else {
-            return request.getFontEndAxiosInstance().post(url,data,headers);
-        }
-    }
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class DashboardUtilsTest {
+  @Test
+  public void testConvertToMap() {
+    String coordinatorStr =
+        "http://coordinator.hostname00:19998/,http://coordinator.hostname01:19998/,http://coordinator.hostname02:19998/,http://coordinator.hostname03:19998/";
+    Map<String, String> stringStringMap = DashboardUtils.convertToMap(coordinatorStr);
+    assertEquals(stringStringMap.size(), 4);
+  }
 }
-export default http
