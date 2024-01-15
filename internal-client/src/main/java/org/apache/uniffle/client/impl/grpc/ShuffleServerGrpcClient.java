@@ -218,23 +218,33 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .build();
 
     long start = System.currentTimeMillis();
-    RequireBufferResponse rpcResponse = getBlockingStub().requireBuffer(rpcRequest);
     int retry = 0;
     long result = FAILED_REQUIRE_ID;
     Random random = new Random();
     final int backOffBase = 2000;
-    LOG.info(
-        "Can't require buffer for appId: {}, shuffleId: {}, partitionIds: {} with {} bytes from {}:{} due to {}, sleep and try[{}] again",
-        appId,
-        shuffleId,
-        partitionIds,
-        requireSize,
-        host,
-        port,
-        rpcResponse.getStatus(),
-        retry);
-    while (rpcResponse.getStatus() == RssProtos.StatusCode.NO_BUFFER
-        || rpcResponse.getStatus() == RssProtos.StatusCode.NO_BUFFER_FOR_HUGE_PARTITION) {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(
+          "Requiring buffer for appId: {}, shuffleId: {}, partitionIds: {} with {} bytes from {}:{}",
+          appId,
+          shuffleId,
+          partitionIds,
+          requireSize,
+          host,
+          port);
+    }
+    RequireBufferResponse rpcResponse;
+    while (true) {
+      try {
+        rpcResponse = getBlockingStub().requireBuffer(rpcRequest);
+      } catch (Exception e) {
+        LOG.error(
+            "Exception happened when requiring pre-allocated buffer from {}:{}", host, port, e);
+        return result;
+      }
+      if (rpcResponse.getStatus() != RssProtos.StatusCode.NO_BUFFER
+          && rpcResponse.getStatus() != RssProtos.StatusCode.NO_BUFFER_FOR_HUGE_PARTITION) {
+        break;
+      }
       if (retry >= retryMax) {
         LOG.warn(
             "ShuffleServer "
@@ -251,15 +261,25 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         return result;
       }
       try {
+        LOG.info(
+            "Can't require buffer for appId: {}, shuffleId: {}, partitionIds: {} with {} bytes from {}:{} due to {}, sleep and try[{}] again",
+            appId,
+            shuffleId,
+            partitionIds,
+            requireSize,
+            host,
+            port,
+            rpcResponse.getStatus(),
+            retry);
         long backoffTime =
             Math.min(
                 retryIntervalMax,
                 backOffBase * (1L << Math.min(retry, 16)) + random.nextInt(backOffBase));
         Thread.sleep(backoffTime);
       } catch (Exception e) {
-        LOG.warn("Exception happened when require pre allocation from " + host + ":" + port, e);
+        LOG.warn(
+            "Exception happened when requiring pre-allocated buffer from {}:{}", host, port, e);
       }
-      rpcResponse = getBlockingStub().requireBuffer(rpcRequest);
       retry++;
     }
     if (rpcResponse.getStatus() == RssProtos.StatusCode.SUCCESS) {
