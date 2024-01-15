@@ -73,11 +73,14 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
         return null;
       }
 
-      shuffleDataSegments =
-          SegmentSplitterFactory.getInstance()
-              .get(distributionType, expectTaskIds, readBufferSize)
-              .split(shuffleIndexResult);
-      shuffleIndexResult.release();
+      try {
+        shuffleDataSegments =
+            SegmentSplitterFactory.getInstance()
+                .get(distributionType, expectTaskIds, readBufferSize)
+                .split(shuffleIndexResult);
+      } finally {
+        shuffleIndexResult.release();
+      }
     }
 
     // We should skip unexpected and processed segments when handler is read
