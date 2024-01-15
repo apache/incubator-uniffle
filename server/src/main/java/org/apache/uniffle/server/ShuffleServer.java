@@ -142,6 +142,7 @@ public class ShuffleServer {
     initMetricsReporter();
 
     registerHeartBeat.startHeartBeat();
+    directMemoryUsageReporter.start();
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread() {
