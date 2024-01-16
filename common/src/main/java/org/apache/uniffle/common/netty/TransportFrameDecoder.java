@@ -71,19 +71,23 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
       try {
         msg = Message.decode(curType, frame);
       } finally {
-        boolean shouldRelease =
-            msg == null
-                || (msg != null
-                    && (msg.body() == null
-                        || (msg.body().byteBuf() != null
-                            && msg.body().byteBuf().readableBytes() == 0)));
-        if (shouldRelease) {
+        if (shouldRelease(msg)) {
           frame.release();
         }
       }
       ctx.fireChannelRead(msg);
       clear();
     }
+  }
+
+  public static boolean shouldRelease(Message msg) {
+    boolean shouldRelease =
+        msg == null
+            || (msg != null
+                && (msg.body() == null
+                    || (msg.body().byteBuf() != null
+                        && msg.body().byteBuf().readableBytes() == 0)));
+    return shouldRelease;
   }
 
   private void clear() {
