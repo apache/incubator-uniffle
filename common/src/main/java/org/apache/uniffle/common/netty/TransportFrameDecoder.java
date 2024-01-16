@@ -80,13 +80,12 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
     }
   }
 
-  public static boolean shouldRelease(Message msg) {
+  static boolean shouldRelease(Message msg) {
+    if (msg == null || msg.body() == null) {
+      return true;
+    }
     boolean shouldRelease =
-        msg == null
-            || (msg != null
-                && (msg.body() == null
-                    || (msg.body().byteBuf() != null
-                        && msg.body().byteBuf().readableBytes() == 0)));
+        msg.body().byteBuf() != null && msg.body().byteBuf().readableBytes() == 0;
     return shouldRelease;
   }
 
