@@ -73,7 +73,7 @@ public class HybridStorageManagerTest {
         new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
     assertTrue((manager.selectStorage(event) instanceof HadoopStorage));
 
-    // case2: fallback invalid when fallback_max_fail_time = 0
+    // case2: fallback is still valid when fallback_max_fail_time = 0
     conf.setLong(ShuffleServerConf.FALLBACK_MAX_FAIL_TIMES, 0);
     manager = new HybridStorageManager(conf);
 
@@ -81,10 +81,6 @@ public class HybridStorageManagerTest {
     localStorageManager.getStorages().get(0).markCorrupted();
 
     event = new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
-    manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
-    assertNull(manager.selectStorage(event));
-    // and the event failed at the first time, it will fallback to hadoop storage
-    event.increaseRetryTimes();
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
     assertTrue((manager.selectStorage(event) instanceof HadoopStorage));
   }

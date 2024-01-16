@@ -352,7 +352,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Long> FALLBACK_MAX_FAIL_TIMES =
       ConfigOptions.key("rss.server.hybrid.storage.fallback.max.fail.times")
           .longType()
-          .defaultValue(-1L)
+          .defaultValue(0L)
           .withDescription("For hybrid storage, fail times exceed the number, will switch storage")
           .withDeprecatedKeys("rss.server.multistorage.fallback.max.fail.times");
 
