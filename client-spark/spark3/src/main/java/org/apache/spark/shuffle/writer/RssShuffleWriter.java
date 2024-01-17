@@ -400,7 +400,11 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     if (dynamicServerAssign
         && !failedBlockIds.isEmpty()
         && needReAssignShuffleServer(failedBlockIds)) {
-      reAssignServerForFailedBlockIds(failedBlockIds);
+      try {
+        reSendFailedBlockIds(failedBlockIds);
+      }catch (Exception e){
+        LOG.error("resend failed blocks failed.", e);
+      }
     }
 
     if (!failedBlockIds.isEmpty()) {
@@ -429,7 +433,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     return result;
   }
 
-  private void reAssignServerForFailedBlockIds(Set<Long> failedBlockIds) {
+  private void reSendFailedBlockIds(Set<Long> failedBlockIds) {
     List<ShuffleBlockInfo> reAssignSeverBlockInfoList = Lists.newArrayList();
     List<ShuffleBlockInfo> failedBlockInfoList = Lists.newArrayList();
     for (Long failedBlockId : failedBlockIds) {
@@ -452,13 +456,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                 ShuffleServerInfo dynamicShuffleServer =
                     shuffleManager.getReassignedFaultyServers().get(t.getKey().getId());
                 if (dynamicShuffleServer == null) {
-                  dynamicShuffleServer =
-                      reAssignFaultyShuffleServer(partitionIds, t.getKey().getId());
-                  if (dynamicShuffleServer == null) {
-                    return;
-                  }
-                  shuffleManager
-                      .getReassignedFaultyServers()
+                  dynamicShuffleServer = reAssignFaultyShuffleServer(partitionIds, t.getKey().getId());
+                  shuffleManager.getReassignedFaultyServers()
                       .put(t.getKey().getId(), dynamicShuffleServer);
                 }
 
@@ -507,11 +506,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
           new RssReassignFaultyShuffleServerRequest(shuffleId, partitionIds, faultyServerId);
       RssReassignFaultyShuffleServerResponse response =
           shuffleManagerClient.reassignFaultyShuffleServer(request);
+      if (response.getStatusCode() != StatusCode.SUCCESS) {
+        throw new RssException("reassign server response with statusCode[" + response.getStatusCode() +"]");
+      }
       return response.getShuffleServer();
     } catch (Exception e) {
-      LOG.warn(
+      throw new RssException(
           "Failed to reassign a new server for faultyServerId server[" + faultyServerId + "]", e);
-      return null;
     }
   }
 
