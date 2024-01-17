@@ -185,11 +185,11 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
           ShuffleServerMetrics.gaugeHadoopFlushThreadPoolQueueSize.inc();
         } else if (storage instanceof LocalStorage) {
           dedicatedExecutor = localFileThreadPoolExecutor;
-          ShuffleServerMetrics.gaugeHadoopFlushThreadPoolQueueSize.dec();
+          ShuffleServerMetrics.gaugeLocalfileFlushThreadPoolQueueSize.inc();
         }
       } else {
         dedicatedExecutor = fallbackThreadPoolExecutor;
-        ShuffleServerMetrics.gaugeFallbackFlushThreadPoolQueueSize.dec();
+        ShuffleServerMetrics.gaugeFallbackFlushThreadPoolQueueSize.inc();
       }
 
       dedicatedExecutor.execute(() -> handleEventAndUpdateMetrics(event, storage));
