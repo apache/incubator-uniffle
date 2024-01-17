@@ -177,7 +177,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       ShuffleDataFlushEvent event = flushQueue.take();
       Storage storage = storageManager.selectStorage(event);
 
-      Executor dedicatedExecutor = null;
+      Executor dedicatedExecutor = fallbackThreadPoolExecutor;
       // pending event will be delegated to fallback threadPool
       if (!event.isPended()) {
         if (storage instanceof HadoopStorage) {
@@ -219,7 +219,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
 
   @Override
   public int getEventNumInFlush() {
-    return flushQueue.size();
+    return (int) ShuffleServerMetrics.gaugeEventQueueSize.get();
   }
 
   @Override
