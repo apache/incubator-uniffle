@@ -31,6 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import scala.Function1;
 import scala.Option;
@@ -364,7 +365,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   protected void checkBlockSendResult(Set<Long> blockIds) {
     long start = System.currentTimeMillis();
     while (true) {
-      Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
+      Map<Long, BlockingQueue<ShuffleServerInfo>> failedBlockIdsWithShuffleServer =
+          shuffleManager.getFailedBlockIdsWithShuffleServer(taskId);
+      Set<Long> failedBlockIds = failedBlockIdsWithShuffleServer.keySet();
       Set<Long> successBlockIds = shuffleManager.getSuccessBlockIds(taskId);
       // if failed when send data to shuffle server, mark task as failed
       if (failedBlockIds.size() > 0) {
@@ -373,7 +376,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                 + taskId
                 + "] failed because "
                 + failedBlockIds.size()
-                + " blocks can't be sent to shuffle server.";
+                + " blocks can't be sent to shuffle server: "
+                + failedBlockIdsWithShuffleServer.values().stream().collect(Collectors.toSet());
         LOG.error(errorMsg);
         throw new RssSendFailedException(errorMsg);
       }
