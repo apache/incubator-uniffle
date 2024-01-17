@@ -147,6 +147,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * assignments, stageID, Attemptnumber Whether to reassign the combination flag;
    */
   private Map<String, Boolean> serverAssignedInfos;
+  private Map<String, ShuffleServerInfo> reassignedFaultyServers;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
@@ -276,6 +277,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.shuffleIdToShuffleHandleInfo = JavaUtils.newConcurrentMap();
     this.failuresShuffleServerIds = Sets.newHashSet();
     this.serverAssignedInfos = JavaUtils.newConcurrentMap();
+    this.reassignedFaultyServers = JavaUtils.newConcurrentMap();
   }
 
   public CompletableFuture<Long> sendData(AddBlockEvent event) {
@@ -1228,8 +1230,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
     return newShuffleServerInfo;
   }
-
-  private Map<String, ShuffleServerInfo> reassignedFaultyServers = Maps.newConcurrentMap();
 
   public Map<String, ShuffleServerInfo> getReassignedFaultyServers() {
     return reassignedFaultyServers;
