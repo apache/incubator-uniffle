@@ -396,19 +396,6 @@ message GetShuffleServerRequest {
   repeated string faultyServerIds = 12;
 }
 
-message ReassignShuffleServerRequest {
-  string applicationId = 4;
-  int32 shuffleId = 5;
-  int32 partitionNum = 6;
-  int32 partitionNumPerRange = 7;
-  int32 dataReplica = 8;
-  repeated string requireTags = 9;
-  int32 assignmentShuffleServerNumber = 10;
-  int32 estimateTaskConcurrency = 11;
-  repeated string faultyServerIds = 12;
-}
-
-
 message PartitionRangeAssignment {
   int32 startPartition = 1;
   int32 endPartition = 2;
