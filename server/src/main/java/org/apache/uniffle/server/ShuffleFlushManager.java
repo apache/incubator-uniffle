@@ -142,7 +142,7 @@ public class ShuffleFlushManager {
     try {
       ShuffleServerMetrics.gaugeWriteHandler.inc();
 
-      if (event.isValid()) {
+      if (!event.isValid()) {
         LOG.warn(
             "AppId {} was removed already, event:{} should be dropped", event.getAppId(), event);
         // we should catch this to avoid cleaning up duplicate.
@@ -155,7 +155,7 @@ public class ShuffleFlushManager {
       }
 
       List<ShufflePartitionedBlock> blocks = event.getShuffleBlocks();
-      if (CollectionUtils.isNotEmpty(blocks)) {
+      if (CollectionUtils.isEmpty(blocks)) {
         LOG.info("There is no block to be flushed: {}", event);
         return;
       }
