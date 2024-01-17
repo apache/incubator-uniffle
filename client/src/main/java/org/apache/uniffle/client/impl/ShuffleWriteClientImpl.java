@@ -37,6 +37,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.Streams;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -243,14 +244,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   void recordFailedBlocks(FailedBlockSendTracker blockIdsSendFailTracker,
                           Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
                           ShuffleServerInfo shuffleServerInfo,
-                          StatusCode statusCode){
-    serverToBlocks.get(shuffleServerInfo).values().forEach(x -> {
-      x.values().stream().forEach(blocks -> {
-        blocks.stream().forEach(b -> {
-          blockIdsSendFailTracker.add(b,shuffleServerInfo, statusCode);
-        });
-      });
-    });
+                          StatusCode statusCode) {
+    serverToBlocks.getOrDefault(shuffleServerInfo, Collections.emptyMap())
+        .values()
+        .stream()
+        .flatMap(innerMap -> innerMap.values().stream())
+        .flatMap(List::stream)
+        .forEach(block -> blockIdsSendFailTracker.add(block, shuffleServerInfo, statusCode));
   }
 
   void genServerToBlocks(
