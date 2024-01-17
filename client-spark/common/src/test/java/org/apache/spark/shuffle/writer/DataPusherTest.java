@@ -29,6 +29,8 @@ import java.util.function.Supplier;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
@@ -82,28 +84,28 @@ public class DataPusherTest {
 
     Map<String, Set<Long>> taskToSuccessBlockIds = Maps.newConcurrentMap();
     Map<String, Set<Long>> taskToFailedBlockIds = Maps.newConcurrentMap();
-    Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer =
-        JavaUtils.newConcurrentMap();
+    Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker = JavaUtils.newConcurrentMap();
     Set<String> failedTaskIds = new HashSet<>();
 
     DataPusher dataPusher =
         new DataPusher(
             shuffleWriteClient,
             taskToSuccessBlockIds,
-            taskToFailedBlockIds,
-            taskToFailedBlockIdsAndServer,
+            taskToFailedBlockSendTracker,
             failedTaskIds,
             1,
             2);
     dataPusher.setRssAppId("testSendData_appId");
-
+    ShuffleBlockInfo shuffleBlockInfo = new ShuffleBlockInfo(1, 1, 1, 1, 1, new byte[1], null, 1, 100, 1);
     // sync send
     AddBlockEvent event =
         new AddBlockEvent(
             "taskId",
-            Arrays.asList(new ShuffleBlockInfo(1, 1, 1, 1, 1, new byte[1], null, 1, 100, 1)));
+            Arrays.asList(shuffleBlockInfo));
+    FailedBlockSendTracker failedBlockSendTracker = new FailedBlockSendTracker();
+    failedBlockSendTracker.add(shuffleBlockInfo, new ShuffleServerInfo("host", 39998), StatusCode.NO_BUFFER);
     shuffleWriteClient.setFakedShuffleDataResult(
-        new SendShuffleDataResult(Sets.newHashSet(1L, 2L), Sets.newHashSet(3L, 4L)));
+        new SendShuffleDataResult(Sets.newHashSet(1L, 2L), failedBlockSendTracker));
     CompletableFuture<Long> future = dataPusher.send(event);
     long memoryFree = future.get();
     assertEquals(100, memoryFree);

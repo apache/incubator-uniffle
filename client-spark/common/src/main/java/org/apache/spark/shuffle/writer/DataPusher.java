@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,9 +57,7 @@ public class DataPusher implements Closeable {
   // Must be thread safe
   private final Map<String, Set<Long>> taskToSuccessBlockIds;
   // Must be thread safe
-  private final Map<String, Set<Long>> taskToFailedBlockIds;
-  private final Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>>
-      taskToFailedBlockIdsAndServer;
+  Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker;
   private String rssAppId;
   // Must be thread safe
   private final Set<String> failedTaskIds;
@@ -66,15 +65,13 @@ public class DataPusher implements Closeable {
   public DataPusher(
       ShuffleWriteClient shuffleWriteClient,
       Map<String, Set<Long>> taskToSuccessBlockIds,
-      Map<String, Set<Long>> taskToFailedBlockIds,
-      Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
+      Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker,
       Set<String> failedTaskIds,
       int threadPoolSize,
       int threadKeepAliveTime) {
     this.shuffleWriteClient = shuffleWriteClient;
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
-    this.taskToFailedBlockIds = taskToFailedBlockIds;
-    this.taskToFailedBlockIdsAndServer = taskToFailedBlockIdsAndServer;
+    this.taskToFailedBlockSendTracker = taskToFailedBlockSendTracker;
     this.failedTaskIds = failedTaskIds;
     this.executorService =
         new ThreadPoolExecutor(
@@ -99,9 +96,7 @@ public class DataPusher implements Closeable {
                 shuffleWriteClient.sendShuffleData(
                     rssAppId, shuffleBlockInfoList, () -> !isValidTask(taskId));
             putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
-            putBlockId(taskToFailedBlockIds, taskId, result.getFailedBlockIds());
-            putSendFailedBlockIdAndShuffleServer(
-                taskToFailedBlockIdsAndServer, taskId, result.getSendFailedBlockIds());
+            putFailedBlockSendTracker(taskToFailedBlockSendTracker, taskId, result.getFailedBlockSendTracker());
           } finally {
             List<Runnable> callbackChain =
                 Optional.of(event.getProcessedCallbackChain()).orElse(Collections.EMPTY_LIST);
@@ -127,16 +122,16 @@ public class DataPusher implements Closeable {
         .addAll(blockIds);
   }
 
-  private synchronized void putSendFailedBlockIdAndShuffleServer(
-      Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
+  private synchronized void putFailedBlockSendTracker(
+      Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker,
       String taskAttemptId,
-      Map<Long, BlockingQueue<ShuffleServerInfo>> blockIdsAndServer) {
-    if (blockIdsAndServer == null || blockIdsAndServer.isEmpty()) {
+      FailedBlockSendTracker failedBlockSendTracker) {
+    if (taskToFailedBlockSendTracker == null || taskToFailedBlockSendTracker.isEmpty()) {
       return;
     }
-    taskToFailedBlockIdsAndServer
-        .computeIfAbsent(taskAttemptId, x -> JavaUtils.newConcurrentMap())
-        .putAll(blockIdsAndServer);
+    taskToFailedBlockSendTracker
+        .computeIfAbsent(taskAttemptId, x -> new FailedBlockSendTracker())
+        .merge(failedBlockSendTracker);
   }
 
   public boolean isValidTask(String taskId) {

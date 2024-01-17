@@ -29,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import scala.Product2;
 import scala.Tuple2;
 import scala.collection.mutable.MutableList;
@@ -169,7 +170,7 @@ public class RssShuffleWriterTest {
         ShuffleWriteClient shuffleWriteClient,
         Map<String, Set<Long>> taskToSuccessBlockIds,
         Map<String, Set<Long>> taskToFailedBlockIds,
-        Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
+        Map<String, FailedBlockSendTracker> failedBlockSendTracker,
         Set<String> failedTaskIds,
         int threadPoolSize,
         int threadKeepAliveTime,
@@ -178,7 +179,7 @@ public class RssShuffleWriterTest {
           shuffleWriteClient,
           taskToSuccessBlockIds,
           taskToFailedBlockIds,
-          taskToFailedBlockIdsAndServer,
+          failedBlockSendTracker,
           failedTaskIds,
           threadPoolSize,
           threadKeepAliveTime);

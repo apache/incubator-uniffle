@@ -106,10 +106,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final int dataTransferPoolSize;
   private final int dataCommitPoolSize;
   private final Map<String, Set<Long>> taskToSuccessBlockIds;
-  private final Map<String, Set<Long>> taskToFailedBlockIds;
-  // Record both the block that failed to be sent and the ShuffleServer
-  private final Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>>
-      taskToFailedBlockIdsAndServer;
   private final Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker =
       Maps.newConcurrentMap();
   private ScheduledExecutorService heartBeatScheduledExecutorService;
@@ -235,8 +231,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     sparkConf.set("spark.shuffle.reduceLocality.enabled", "false");
     LOG.info("Disable shuffle data locality in RssShuffleManager.");
     taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
-    taskToFailedBlockIds = JavaUtils.newConcurrentMap();
-    this.taskToFailedBlockIdsAndServer = JavaUtils.newConcurrentMap();
     this.rssResubmitStage =
         rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
             && RssSparkShuffleUtils.isStageResubmitSupported();
@@ -269,8 +263,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         new DataPusher(
             shuffleWriteClient,
             taskToSuccessBlockIds,
-            taskToFailedBlockIds,
-            taskToFailedBlockIdsAndServer,
+            taskToFailedBlockSendTracker,
             failedTaskIds,
             poolSize,
             keepAliveTime);
@@ -359,8 +352,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     .unregisterRequestTimeSec(unregisterRequestTimeoutSec)
                     .rssConf(RssSparkConfig.toRssConf(sparkConf)));
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
-    this.taskToFailedBlockIds = taskToFailedBlockIds;
-    this.taskToFailedBlockIdsAndServer = taskToFailedBlockIdsAndServer;
     this.heartBeatScheduledExecutorService = null;
     this.dataPusher = dataPusher;
   }
@@ -865,7 +856,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
   public void clearTaskMeta(String taskId) {
     taskToSuccessBlockIds.remove(taskId);
-    taskToFailedBlockIds.remove(taskId);
+    taskToFailedBlockSendTracker.remove(taskId);
   }
 
   @VisibleForTesting
@@ -934,11 +925,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   }
 
   public Set<Long> getFailedBlockIds(String taskId) {
-    Set<Long> result = taskToFailedBlockIds.get(taskId);
-    if (result == null) {
-      result = Collections.emptySet();
+    FailedBlockSendTracker blockIdsFailedSendTracker = getBlockIdsFailedSendTracker(taskId);
+    if (blockIdsFailedSendTracker == null) {
+      return Collections.emptySet();
     }
-    return result;
+    return blockIdsFailedSendTracker.getFailedBlockIds();
   }
 
   public Set<Long> getSuccessBlockIds(String taskId) {
@@ -1054,21 +1045,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       throw RssSparkShuffleUtils.reportRssFetchFailedException(
           e, sparkConf, appId, shuffleId, stageAttemptId, failedPartitions);
     }
-  }
-
-  /**
-   * The ShuffleServer list of block sending failures is returned using the shuffle task ID
-   *
-   * @param taskId Shuffle taskId
-   * @return failed ShuffleServer blocks
-   */
-  public Map<Long, BlockingQueue<ShuffleServerInfo>> getFailedBlockIdsWithShuffleServer(
-      String taskId) {
-    Map<Long, BlockingQueue<ShuffleServerInfo>> result = taskToFailedBlockIdsAndServer.get(taskId);
-    if (result == null) {
-      result = Collections.emptyMap();
-    }
-    return result;
   }
 
   public FailedBlockSendTracker getBlockIdsFailedSendTracker(String taskId) {

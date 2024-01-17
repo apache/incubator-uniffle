@@ -17,12 +17,14 @@
 
 package org.apache.uniffle.client.impl;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import java.util.stream.Collectors;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -40,8 +42,12 @@ public class FailedBlockSendTracker {
       ShuffleServerInfo shuffleServerInfo,
       StatusCode statusCode) {
     trackBlockStatusMap
-        .computeIfAbsent(shuffleBlockInfo.getBlockId(), s -> Sets.newHashSet())
+        .computeIfAbsent(shuffleBlockInfo.getBlockId(), s -> Sets.newConcurrentHashSet())
         .add(new TrackBlockStatus(shuffleBlockInfo, shuffleServerInfo, statusCode));
+  }
+
+  public void merge(FailedBlockSendTracker failedBlockSendTracker){
+    this.trackBlockStatusMap.putAll(failedBlockSendTracker.trackBlockStatusMap);
   }
 
   public void remove(long blockId) {
@@ -52,7 +58,19 @@ public class FailedBlockSendTracker {
     trackBlockStatusMap.clear();
   }
 
+  public Set<Long> getFailedBlockIds(){
+    return trackBlockStatusMap.keySet();
+  }
+
   public Set<TrackBlockStatus> getFailedBlockStatus(Long blockId) {
     return trackBlockStatusMap.get(blockId);
+  }
+
+  public Set<ShuffleServerInfo> getFaultyShuffleServers(){
+    return trackBlockStatusMap.values()
+        .stream()
+        .flatMap(Collection::stream)
+        .map(s -> s.getShuffleServerInfo())
+        .collect(Collectors.toSet());
   }
 }

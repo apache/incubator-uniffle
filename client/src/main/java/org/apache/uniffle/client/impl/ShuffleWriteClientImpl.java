@@ -152,7 +152,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
       Map<ShuffleServerInfo, List<Long>> serverToBlockIds,
       Map<Long, AtomicInteger> blockIdsSendSuccessTracker,
-      Map<Long, BlockingQueue<ShuffleServerInfo>> blockIdsSendFailTracker,
+      FailedBlockSendTracker failedBlockSendTracker,
       boolean allowFastFail,
       Supplier<Boolean> needCancelRequest) {
 
@@ -203,13 +203,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                       LOG.debug("{} successfully.", logMsg);
                     }
                   } else {
-                    serverToBlockIds
-                        .get(ssi)
-                        .forEach(
-                            blockId ->
-                                blockIdsSendFailTracker
-                                    .computeIfAbsent(blockId, id -> new LinkedBlockingQueue<>())
-                                    .add(ssi));
+                    recordFailedBlocks(failedBlockSendTracker, serverToBlocks, ssi, response.getStatusCode());
                     if (defectiveServers != null) {
                       defectiveServers.add(ssi);
                     }
@@ -217,13 +211,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                     return false;
                   }
                 } catch (Exception e) {
-                  serverToBlockIds
-                      .get(ssi)
-                      .forEach(
-                          blockId ->
-                              blockIdsSendFailTracker
-                                  .computeIfAbsent(blockId, id -> new LinkedBlockingQueue<>())
-                                  .add(ssi));
+                  recordFailedBlocks(failedBlockSendTracker, serverToBlocks, ssi, StatusCode.INTERNAL_ERROR);
                   if (defectiveServers != null) {
                     defectiveServers.add(ssi);
                   }
@@ -250,6 +238,19 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           futures.size());
     }
     return result;
+  }
+
+  void recordFailedBlocks(FailedBlockSendTracker blockIdsSendFailTracker,
+                          Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
+                          ShuffleServerInfo shuffleServerInfo,
+                          StatusCode statusCode){
+    serverToBlocks.get(shuffleServerInfo).values().forEach(x -> {
+      x.values().stream().forEach(blocks -> {
+        blocks.stream().forEach(b -> {
+          blockIdsSendFailTracker.add(b,shuffleServerInfo, statusCode);
+        });
+      });
+    });
   }
 
   void genServerToBlocks(
@@ -372,8 +373,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                     block ->
                         blockIdsSendSuccessTracker.computeIfAbsent(
                             block, id -> new AtomicInteger(0))));
-    Map<Long, BlockingQueue<ShuffleServerInfo>> blockIdsSendFailTracker =
-        JavaUtils.newConcurrentMap();
+    FailedBlockSendTracker blockIdsSendFailTracker = new FailedBlockSendTracker();
 
     // sent the primary round of blocks.
     boolean isAllSuccess =
@@ -418,7 +418,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               }
             });
     return new SendShuffleDataResult(
-        blockIdsSendSuccessSet, blockIdsSendFailTracker.keySet(), blockIdsSendFailTracker);
+        blockIdsSendSuccessSet, blockIdsSendFailTracker);
   }
 
   /**

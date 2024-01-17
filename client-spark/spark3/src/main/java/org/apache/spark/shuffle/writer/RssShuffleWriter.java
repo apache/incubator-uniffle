@@ -487,9 +487,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   private void clearFailedBlockIdsStates(List<ShuffleBlockInfo> failedBlockInfoList) {
-    shuffleManager.getFailedBlockIds(taskId).clear();
     shuffleManager.getBlockIdsFailedSendTracker(taskId).clear();
-    shuffleManager.getFailedBlockIdsWithShuffleServer(taskId).clear();
     failedBlockInfoList.forEach(
         shuffleBlockInfo -> {
           partitionLengths[shuffleBlockInfo.getPartitionId()] -= shuffleBlockInfo.getLength();
@@ -618,13 +616,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private void throwFetchFailedIfNecessary(Exception e) {
     // The shuffleServer is registered only when a Block fails to be sent
     if (e instanceof RssSendFailedException) {
-      Map<Long, BlockingQueue<ShuffleServerInfo>> failedBlockIds =
-          shuffleManager.getFailedBlockIdsWithShuffleServer(taskId);
-      List<ShuffleServerInfo> shuffleServerInfos = Lists.newArrayList();
-      for (Map.Entry<Long, BlockingQueue<ShuffleServerInfo>> longListEntry :
-          failedBlockIds.entrySet()) {
-        shuffleServerInfos.addAll(longListEntry.getValue());
-      }
+      FailedBlockSendTracker blockIdsFailedSendTracker = shuffleManager.getBlockIdsFailedSendTracker(taskId);
+      List<ShuffleServerInfo> shuffleServerInfos = Lists.newArrayList(blockIdsFailedSendTracker.getFaultyShuffleServers());
       RssReportShuffleWriteFailureRequest req =
           new RssReportShuffleWriteFailureRequest(
               appId,

@@ -21,28 +21,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.JavaUtils;
 
 public class SendShuffleDataResult {
 
   private Set<Long> successBlockIds;
-  private Set<Long> failedBlockIds;
-  private Map<Long, BlockingQueue<ShuffleServerInfo>> sendFailedBlockIds;
+  private FailedBlockSendTracker failedBlockSendTracker;
 
-  public SendShuffleDataResult(Set<Long> successBlockIds, Set<Long> failedBlockIds) {
+  public SendShuffleDataResult(Set<Long> successBlockIds, FailedBlockSendTracker failedBlockSendTracker) {
     this.successBlockIds = successBlockIds;
-    this.failedBlockIds = failedBlockIds;
-    this.sendFailedBlockIds = JavaUtils.newConcurrentMap();
-  }
-
-  public SendShuffleDataResult(
-      Set<Long> successBlockIds,
-      Set<Long> failedBlockIds,
-      Map<Long, BlockingQueue<ShuffleServerInfo>> sendFailedBlockIds) {
-    this.successBlockIds = successBlockIds;
-    this.failedBlockIds = failedBlockIds;
-    this.sendFailedBlockIds = sendFailedBlockIds;
+    this.failedBlockSendTracker = failedBlockSendTracker;
   }
 
   public Set<Long> getSuccessBlockIds() {
@@ -50,10 +40,14 @@ public class SendShuffleDataResult {
   }
 
   public Set<Long> getFailedBlockIds() {
-    return failedBlockIds;
+    return failedBlockSendTracker.getFailedBlockIds();
   }
 
   public Map<Long, BlockingQueue<ShuffleServerInfo>> getSendFailedBlockIds() {
-    return sendFailedBlockIds;
+    return null;
+  }
+
+  public FailedBlockSendTracker getFailedBlockSendTracker() {
+    return failedBlockSendTracker;
   }
 }
