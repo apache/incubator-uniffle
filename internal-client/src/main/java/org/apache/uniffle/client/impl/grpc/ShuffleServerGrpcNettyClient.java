@@ -33,6 +33,7 @@ import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleIndexResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
@@ -58,12 +59,27 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
   private TransportClientFactory clientFactory;
 
   public ShuffleServerGrpcNettyClient(RssConf rssConf, String host, int grpcPort, int nettyPort) {
-    this(rssConf, host, grpcPort, nettyPort, 3);
+    this(
+        rssConf,
+        host,
+        grpcPort,
+        nettyPort,
+        rssConf == null
+            ? RssClientConf.RPC_MAX_ATTEMPTS.defaultValue()
+            : rssConf.getInteger(RssClientConf.RPC_MAX_ATTEMPTS),
+        rssConf == null
+            ? RssClientConf.RPC_TIMEOUT_MS.defaultValue()
+            : rssConf.getLong(RssClientConf.RPC_TIMEOUT_MS));
   }
 
   public ShuffleServerGrpcNettyClient(
-      RssConf rssConf, String host, int grpcPort, int nettyPort, int maxRetryAttempts) {
-    super(host, grpcPort, maxRetryAttempts);
+      RssConf rssConf,
+      String host,
+      int grpcPort,
+      int nettyPort,
+      int maxRetryAttempts,
+      long rpcTimeoutMs) {
+    super(host, grpcPort, maxRetryAttempts, rpcTimeoutMs);
     this.nettyPort = nettyPort;
     TransportContext transportContext = new TransportContext(new TransportConf(rssConf));
     this.clientFactory = new TransportClientFactory(transportContext);
@@ -116,7 +132,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
                       System.currentTimeMillis());
               long start = System.currentTimeMillis();
               RpcResponse rpcResponse =
-                  transportClient.sendRpcSync(sendShuffleDataRequest, RPC_TIMEOUT_DEFAULT_MS);
+                  transportClient.sendRpcSync(sendShuffleDataRequest, rpcTimeout);
               if (LOG.isDebugEnabled()) {
                 LOG.debug(
                     "Do sendShuffleData to {}:{} rpc cost:"
@@ -154,7 +170,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
             maxRetryAttempts,
             t -> !(t instanceof OutOfMemoryError));
       } catch (Throwable throwable) {
-        LOG.warn(throwable.getMessage());
+        LOG.warn("Failed to send shuffle data due to ", throwable);
         isSuccessful = false;
         break;
       }
@@ -193,8 +209,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
             + "], lastBlockId["
             + request.getLastBlockId()
             + "]";
-    RpcResponse rpcResponse =
-        transportClient.sendRpcSync(getMemoryShuffleDataRequest, RPC_TIMEOUT_DEFAULT_MS);
+    RpcResponse rpcResponse = transportClient.sendRpcSync(getMemoryShuffleDataRequest, rpcTimeout);
     GetMemoryShuffleDataResponse getMemoryShuffleDataResponse =
         (GetMemoryShuffleDataResponse) rpcResponse;
     StatusCode statusCode = rpcResponse.getStatusCode();
@@ -231,8 +246,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
             request.getPartitionNumPerRange(),
             request.getPartitionNum());
     long start = System.currentTimeMillis();
-    RpcResponse rpcResponse =
-        transportClient.sendRpcSync(getLocalShuffleIndexRequest, RPC_TIMEOUT_DEFAULT_MS);
+    RpcResponse rpcResponse = transportClient.sendRpcSync(getLocalShuffleIndexRequest, rpcTimeout);
     String requestInfo =
         "appId["
             + request.getAppId()
@@ -285,8 +299,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
             request.getLength(),
             System.currentTimeMillis());
     long start = System.currentTimeMillis();
-    RpcResponse rpcResponse =
-        transportClient.sendRpcSync(getLocalShuffleIndexRequest, RPC_TIMEOUT_DEFAULT_MS);
+    RpcResponse rpcResponse = transportClient.sendRpcSync(getLocalShuffleIndexRequest, rpcTimeout);
     String requestInfo =
         "appId["
             + request.getAppId()

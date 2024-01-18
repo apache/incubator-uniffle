@@ -404,7 +404,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         LOG.error("resend failed blocks failed.", e);
       }
     }
-
     if (!failedBlockIds.isEmpty()) {
       String errorMsg =
           "Send failed: Task["
@@ -412,7 +411,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               + "]"
               + " failed because "
               + failedBlockIds.size()
-              + " blocks can't be sent to shuffle server.";
+              + " blocks can't be sent to shuffle server: "
+              + failedBlockIdsWithShuffleServer.values().stream().collect(Collectors.toSet());
       LOG.error(errorMsg);
       throw new RssSendFailedException(errorMsg);
     }

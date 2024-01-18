@@ -65,6 +65,18 @@ public class RssClientConf {
               "The max concurrency for single partition to write, the value is the max file number "
                   + "for one partition, remote shuffle server should respect this.");
 
+  public static final ConfigOption<Long> RPC_TIMEOUT_MS =
+      ConfigOptions.key("rss.client.rpc.timeout.ms")
+          .longType()
+          .defaultValue(60 * 1000L)
+          .withDescription("Timeout in milliseconds for RPC calls.");
+
+  public static final ConfigOption<Integer> RPC_MAX_ATTEMPTS =
+      ConfigOptions.key("rss.client.rpc.maxAttempts")
+          .intType()
+          .defaultValue(3)
+          .withDescription("When we fail to send RPC calls, we will retry for maxAttempts times.");
+
   public static final ConfigOption<Integer> NETTY_IO_CONNECT_TIMEOUT_MS =
       ConfigOptions.key("rss.client.netty.io.connect.timeout.ms")
           .intType()

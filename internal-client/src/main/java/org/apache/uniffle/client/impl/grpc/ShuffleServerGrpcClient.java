@@ -63,6 +63,8 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
@@ -109,22 +111,39 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcClient.class);
   protected static final long FAILED_REQUIRE_ID = -1;
-  protected static final long RPC_TIMEOUT_DEFAULT_MS = 60000;
-  private long rpcTimeout = RPC_TIMEOUT_DEFAULT_MS;
+  protected long rpcTimeout;
   private ShuffleServerBlockingStub blockingStub;
 
+  @VisibleForTesting
   public ShuffleServerGrpcClient(String host, int port) {
-    this(host, port, 3);
+    this(
+        host,
+        port,
+        RssClientConf.RPC_MAX_ATTEMPTS.defaultValue(),
+        RssClientConf.RPC_TIMEOUT_MS.defaultValue());
   }
 
-  public ShuffleServerGrpcClient(String host, int port, int maxRetryAttempts) {
-    this(host, port, maxRetryAttempts, true);
+  public ShuffleServerGrpcClient(RssConf rssConf, String host, int port) {
+    this(
+        host,
+        port,
+        rssConf == null
+            ? RssClientConf.RPC_MAX_ATTEMPTS.defaultValue()
+            : rssConf.getInteger(RssClientConf.RPC_MAX_ATTEMPTS),
+        rssConf == null
+            ? RssClientConf.RPC_TIMEOUT_MS.defaultValue()
+            : rssConf.getLong(RssClientConf.RPC_TIMEOUT_MS));
+  }
+
+  public ShuffleServerGrpcClient(String host, int port, int maxRetryAttempts, long rpcTimeoutMs) {
+    this(host, port, maxRetryAttempts, rpcTimeoutMs, true);
   }
 
   public ShuffleServerGrpcClient(
-      String host, int port, int maxRetryAttempts, boolean usePlaintext) {
+      String host, int port, int maxRetryAttempts, long rpcTimeoutMs, boolean usePlaintext) {
     super(host, port, maxRetryAttempts, usePlaintext);
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
+    rpcTimeout = rpcTimeoutMs;
   }
 
   public ShuffleServerBlockingStub getBlockingStub() {
@@ -219,23 +238,33 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .build();
 
     long start = System.currentTimeMillis();
-    RequireBufferResponse rpcResponse = getBlockingStub().requireBuffer(rpcRequest);
     int retry = 0;
     long result = FAILED_REQUIRE_ID;
     Random random = new Random();
     final int backOffBase = 2000;
-    LOG.info(
-        "Can't require buffer for appId: {}, shuffleId: {}, partitionIds: {} with {} bytes from {}:{} due to {}, sleep and try[{}] again",
-        appId,
-        shuffleId,
-        partitionIds,
-        requireSize,
-        host,
-        port,
-        rpcResponse.getStatus(),
-        retry);
-    while (rpcResponse.getStatus() == RssProtos.StatusCode.NO_BUFFER
-        || rpcResponse.getStatus() == RssProtos.StatusCode.NO_BUFFER_FOR_HUGE_PARTITION) {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(
+          "Requiring buffer for appId: {}, shuffleId: {}, partitionIds: {} with {} bytes from {}:{}",
+          appId,
+          shuffleId,
+          partitionIds,
+          requireSize,
+          host,
+          port);
+    }
+    RequireBufferResponse rpcResponse;
+    while (true) {
+      try {
+        rpcResponse = getBlockingStub().requireBuffer(rpcRequest);
+      } catch (Exception e) {
+        LOG.error(
+            "Exception happened when requiring pre-allocated buffer from {}:{}", host, port, e);
+        return result;
+      }
+      if (rpcResponse.getStatus() != RssProtos.StatusCode.NO_BUFFER
+          && rpcResponse.getStatus() != RssProtos.StatusCode.NO_BUFFER_FOR_HUGE_PARTITION) {
+        break;
+      }
       if (retry >= retryMax) {
         LOG.warn(
             "ShuffleServer "
@@ -252,15 +281,25 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         return result;
       }
       try {
+        LOG.info(
+            "Can't require buffer for appId: {}, shuffleId: {}, partitionIds: {} with {} bytes from {}:{} due to {}, sleep and try[{}] again",
+            appId,
+            shuffleId,
+            partitionIds,
+            requireSize,
+            host,
+            port,
+            rpcResponse.getStatus(),
+            retry);
         long backoffTime =
             Math.min(
                 retryIntervalMax,
                 backOffBase * (1L << Math.min(retry, 16)) + random.nextInt(backOffBase));
         Thread.sleep(backoffTime);
       } catch (Exception e) {
-        LOG.warn("Exception happened when require pre allocation from " + host + ":" + port, e);
+        LOG.warn(
+            "Exception happened when requiring pre-allocated buffer from {}:{}", host, port, e);
       }
-      rpcResponse = getBlockingStub().requireBuffer(rpcRequest);
       retry++;
     }
     if (rpcResponse.getStatus() == RssProtos.StatusCode.SUCCESS) {
@@ -467,7 +506,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             maxRetryAttempts,
             t -> !(t instanceof OutOfMemoryError));
       } catch (Throwable throwable) {
-        LOG.warn(throwable.getMessage());
+        LOG.warn("Failed to send shuffle data due to ", throwable);
         isSuccessful = false;
         break;
       }

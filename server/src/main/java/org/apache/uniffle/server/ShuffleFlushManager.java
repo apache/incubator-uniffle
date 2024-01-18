@@ -36,6 +36,7 @@ import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.storage.StorageManager;
+import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
@@ -104,12 +105,22 @@ public class ShuffleFlushManager {
   private void recordSuccess(ShuffleDataFlushEvent event, long start) {
     updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
     ShuffleServerMetrics.incStorageSuccessCounter(event.getUnderStorage().getStorageHost());
-    event.doCleanup();
-    if (shuffleServer != null) {
-      if (LOG.isDebugEnabled()) {
-        long duration = System.currentTimeMillis() - start;
-        LOG.debug("Flush to file success in {} ms and release {} bytes", duration, event.getSize());
+
+    ShuffleTaskInfo shuffleTaskInfo =
+        shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
+    if (null != shuffleTaskInfo) {
+      String storageHost = event.getUnderStorage().getStorageHost();
+      if (LocalStorage.STORAGE_HOST.equals(storageHost)) {
+        shuffleTaskInfo.addOnLocalFileDataSize(event.getSize());
+      } else {
+        shuffleTaskInfo.addOnHadoopDataSize(event.getSize());
       }
+    }
+
+    event.doCleanup();
+    if (LOG.isDebugEnabled()) {
+      long duration = System.currentTimeMillis() - start;
+      LOG.debug("Flush to file success in {} ms and release {} bytes", duration, event.getSize());
     }
   }
 

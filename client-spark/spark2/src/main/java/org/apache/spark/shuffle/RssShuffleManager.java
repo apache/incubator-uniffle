@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -33,6 +34,7 @@ import scala.collection.Iterator;
 import scala.collection.Seq;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.ShuffleDependency;
@@ -656,6 +658,14 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       taskToFailedBlockIds.put(taskId, Sets.newHashSet());
     }
     taskToFailedBlockIds.get(taskId).addAll(blockIds);
+  }
+
+  @VisibleForTesting
+  public void addTaskToFailedBlockIdsAndServer(
+      String taskId, Long blockId, ShuffleServerInfo shuffleServerInfo) {
+    taskToFailedBlockIdsAndServer.putIfAbsent(taskId, Maps.newHashMap());
+    taskToFailedBlockIdsAndServer.get(taskId).putIfAbsent(blockId, new LinkedBlockingDeque<>());
+    taskToFailedBlockIdsAndServer.get(taskId).get(blockId).add(shuffleServerInfo);
   }
 
   @VisibleForTesting
