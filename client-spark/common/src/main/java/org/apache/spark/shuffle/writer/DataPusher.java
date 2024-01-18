@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -32,16 +31,14 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
-import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.ShuffleBlockInfo;
-import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 /**
@@ -96,7 +93,8 @@ public class DataPusher implements Closeable {
                 shuffleWriteClient.sendShuffleData(
                     rssAppId, shuffleBlockInfoList, () -> !isValidTask(taskId));
             putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
-            putFailedBlockSendTracker(taskToFailedBlockSendTracker, taskId, result.getFailedBlockSendTracker());
+            putFailedBlockSendTracker(
+                taskToFailedBlockSendTracker, taskId, result.getFailedBlockSendTracker());
           } finally {
             List<Runnable> callbackChain =
                 Optional.of(event.getProcessedCallbackChain()).orElse(Collections.EMPTY_LIST);

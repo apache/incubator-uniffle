@@ -143,6 +143,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * assignments, stageID, Attemptnumber Whether to reassign the combination flag;
    */
   private Map<String, Boolean> serverAssignedInfos;
+
   private Map<String, ShuffleServerInfo> reassignedFaultyServers;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {

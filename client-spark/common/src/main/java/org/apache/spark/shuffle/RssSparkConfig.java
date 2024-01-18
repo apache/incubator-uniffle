@@ -350,10 +350,8 @@ public class RssSparkConfig {
   public static final ConfigEntry<Boolean> RSS_TASK_FAILED_CALLBACK_ENABLED =
       createBooleanBuilder(
               new ConfigBuilder(
-                      SPARK_RSS_CONFIG_PREFIX
-                          + RssClientConfig.RSS_TASK_FAILED_CALLBACK_ENABLED)
-                  .doc(
-                      "Whether to support task failed retry internal."))
+                      SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_TASK_FAILED_CALLBACK_ENABLED)
+                  .doc("Whether to support task failed retry internal."))
           .createWithDefault(false);
 
   public static final ConfigEntry<Integer> RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER =

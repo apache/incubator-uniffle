@@ -111,7 +111,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final Set<Long> blockIds = Sets.newConcurrentHashSet();
   private TaskContext taskContext;
   private SparkConf sparkConf;
-  private boolean dynamicServerAssign;
+  private boolean taskFailRetry;
 
   /** used by columnar rss shuffle writer implementation */
   protected final long taskAttemptId;
@@ -189,7 +189,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.taskFailureCallback = taskFailureCallback;
     this.taskContext = context;
     this.sparkConf = sparkConf;
-    this.dynamicServerAssign = sparkConf.get(RssSparkConfig.RSS_DYNAMIC_SERVER_ASSIGNMENT_ENABLED);
+    this.taskFailRetry = sparkConf.get(RssSparkConfig.RSS_TASK_FAILED_CALLBACK_ENABLED);
   }
 
   public RssShuffleWriter(
@@ -397,12 +397,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private void checkIfBlocksFailed() {
     Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
-    if (dynamicServerAssign
-        && !failedBlockIds.isEmpty()
-        && needReAssignShuffleServer(failedBlockIds)) {
+    if (taskFailRetry && !failedBlockIds.isEmpty() && needReAssignShuffleServer(failedBlockIds)) {
       try {
         reSendFailedBlockIds(failedBlockIds);
-      }catch (Exception e){
+      } catch (Exception e) {
         LOG.error("resend failed blocks failed.", e);
       }
     }
@@ -456,8 +454,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                 ShuffleServerInfo dynamicShuffleServer =
                     shuffleManager.getReassignedFaultyServers().get(t.getKey().getId());
                 if (dynamicShuffleServer == null) {
-                  dynamicShuffleServer = reAssignFaultyShuffleServer(partitionIds, t.getKey().getId());
-                  shuffleManager.getReassignedFaultyServers()
+                  dynamicShuffleServer =
+                      reAssignFaultyShuffleServer(partitionIds, t.getKey().getId());
+                  shuffleManager
+                      .getReassignedFaultyServers()
                       .put(t.getKey().getId(), dynamicShuffleServer);
                 }
 
@@ -505,7 +505,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssReassignFaultyShuffleServerResponse response =
           shuffleManagerClient.reassignFaultyShuffleServer(request);
       if (response.getStatusCode() != StatusCode.SUCCESS) {
-        throw new RssException("reassign server response with statusCode[" + response.getStatusCode() +"]");
+        throw new RssException(
+            "reassign server response with statusCode[" + response.getStatusCode() + "]");
       }
       return response.getShuffleServer();
     } catch (Exception e) {
@@ -616,8 +617,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private void throwFetchFailedIfNecessary(Exception e) {
     // The shuffleServer is registered only when a Block fails to be sent
     if (e instanceof RssSendFailedException) {
-      FailedBlockSendTracker blockIdsFailedSendTracker = shuffleManager.getBlockIdsFailedSendTracker(taskId);
-      List<ShuffleServerInfo> shuffleServerInfos = Lists.newArrayList(blockIdsFailedSendTracker.getFaultyShuffleServers());
+      FailedBlockSendTracker blockIdsFailedSendTracker =
+          shuffleManager.getBlockIdsFailedSendTracker(taskId);
+      List<ShuffleServerInfo> shuffleServerInfos =
+          Lists.newArrayList(blockIdsFailedSendTracker.getFaultyShuffleServers());
       RssReportShuffleWriteFailureRequest req =
           new RssReportShuffleWriteFailureRequest(
               appId,

@@ -22,22 +22,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.uniffle.client.impl.FailedBlockSendTracker;
-import org.apache.uniffle.common.rpc.StatusCode;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.JavaUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,7 +82,6 @@ public class DataPusherTest {
     FakedShuffleWriteClient shuffleWriteClient = new FakedShuffleWriteClient();
 
     Map<String, Set<Long>> taskToSuccessBlockIds = Maps.newConcurrentMap();
-    Map<String, Set<Long>> taskToFailedBlockIds = Maps.newConcurrentMap();
     Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker = JavaUtils.newConcurrentMap();
     Set<String> failedTaskIds = new HashSet<>();
 
@@ -96,14 +94,13 @@ public class DataPusherTest {
             1,
             2);
     dataPusher.setRssAppId("testSendData_appId");
-    ShuffleBlockInfo shuffleBlockInfo = new ShuffleBlockInfo(1, 1, 1, 1, 1, new byte[1], null, 1, 100, 1);
+    ShuffleBlockInfo shuffleBlockInfo =
+        new ShuffleBlockInfo(1, 1, 1, 1, 1, new byte[1], null, 1, 100, 1);
     // sync send
-    AddBlockEvent event =
-        new AddBlockEvent(
-            "taskId",
-            Arrays.asList(shuffleBlockInfo));
+    AddBlockEvent event = new AddBlockEvent("taskId", Arrays.asList(shuffleBlockInfo));
     FailedBlockSendTracker failedBlockSendTracker = new FailedBlockSendTracker();
-    failedBlockSendTracker.add(shuffleBlockInfo, new ShuffleServerInfo("host", 39998), StatusCode.NO_BUFFER);
+    failedBlockSendTracker.add(
+        shuffleBlockInfo, new ShuffleServerInfo("host", 39998), StatusCode.NO_BUFFER);
     shuffleWriteClient.setFakedShuffleDataResult(
         new SendShuffleDataResult(Sets.newHashSet(1L, 2L), failedBlockSendTracker));
     CompletableFuture<Long> future = dataPusher.send(event);
@@ -111,7 +108,7 @@ public class DataPusherTest {
     assertEquals(100, memoryFree);
     assertTrue(taskToSuccessBlockIds.get("taskId").contains(1L));
     assertTrue(taskToSuccessBlockIds.get("taskId").contains(2L));
-    assertTrue(taskToFailedBlockIds.get("taskId").contains(3L));
-    assertTrue(taskToFailedBlockIds.get("taskId").contains(4L));
+    assertTrue(taskToFailedBlockSendTracker.get("taskId").getFailedBlockIds().contains(3L));
+    assertTrue(taskToFailedBlockSendTracker.get("taskId").getFailedBlockIds().contains(4L));
   }
 }

@@ -24,12 +24,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import scala.Product2;
 import scala.Tuple2;
 import scala.collection.mutable.MutableList;
@@ -55,6 +53,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.JavaUtils;
@@ -178,7 +177,6 @@ public class RssShuffleWriterTest {
       super(
           shuffleWriteClient,
           taskToSuccessBlockIds,
-          taskToFailedBlockIds,
           failedBlockSendTracker,
           failedTaskIds,
           threadPoolSize,

@@ -23,14 +23,14 @@ import java.util.concurrent.BlockingQueue;
 
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.util.JavaUtils;
 
 public class SendShuffleDataResult {
 
   private Set<Long> successBlockIds;
   private FailedBlockSendTracker failedBlockSendTracker;
 
-  public SendShuffleDataResult(Set<Long> successBlockIds, FailedBlockSendTracker failedBlockSendTracker) {
+  public SendShuffleDataResult(
+      Set<Long> successBlockIds, FailedBlockSendTracker failedBlockSendTracker) {
     this.successBlockIds = successBlockIds;
     this.failedBlockSendTracker = failedBlockSendTracker;
   }
