@@ -93,7 +93,6 @@ public class RssClientConfig {
   public static final int RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER_DEFAULT_VALUE = 80;
 
   public static final String RSS_RESUBMIT_STAGE = "rss.resubmit.stage";
-  public static final String RSS_DYNAMIC_SERVER_ASSIGNMENT_ENABLED =
-      "rss.server.dynamic.assign.enabled";
-  public static final boolean RSS_DYNAMIC_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE = false;
+  public static final String RSS_TASK_FAILED_CALLBACK_ENABLED =
+      "rss.task.failed.callback.enabled";
 }
