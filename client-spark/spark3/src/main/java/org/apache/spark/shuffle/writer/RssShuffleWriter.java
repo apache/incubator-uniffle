@@ -404,6 +404,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         LOG.error("resend failed blocks failed.", e);
       }
     }
+    failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
     if (!failedBlockIds.isEmpty()) {
       String errorMsg =
           "Send failed: Task["
