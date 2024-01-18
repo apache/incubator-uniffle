@@ -1109,46 +1109,21 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   public synchronized boolean reassignShuffleServers(
       int stageId, int stageAttemptNumber, int shuffleId, int numPartitions) {
     String stageIdAndAttempt = stageId + "_" + stageAttemptNumber;
-    Boolean needReassgin = serverAssignedInfos.computeIfAbsent(stageIdAndAttempt, id -> false);
-    if (!needReassgin) {
-      String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
-      RemoteStorageInfo defaultRemoteStorage =
-          new RemoteStorageInfo(sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""));
-      RemoteStorageInfo remoteStorage =
-          ClientUtils.fetchRemoteStorage(
-              id.get(), defaultRemoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
-      Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
+    Boolean needReassign = serverAssignedInfos.computeIfAbsent(stageIdAndAttempt, id -> false);
+    if (!needReassign) {
       int requiredShuffleServerNumber =
           RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
-      long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
-      int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
       int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
       /** Before reassigning ShuffleServer, clear the ShuffleServer list in ShuffleWriteClient. */
       shuffleWriteClient.unregisterShuffle(id.get(), shuffleId);
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers;
-      try {
-        partitionToServers =
-            RetryUtils.retry(
-                () -> {
-                  ShuffleAssignmentsInfo response =
-                      shuffleWriteClient.getShuffleAssignments(
-                          id.get(),
-                          shuffleId,
-                          numPartitions,
-                          1,
-                          assignmentTags,
-                          requiredShuffleServerNumber,
-                          estimateTaskConcurrency,
-                          failuresShuffleServerIds);
-                  registerShuffleServers(
-                      id.get(), shuffleId, response.getServerToPartitionRanges(), remoteStorage);
-                  return response.getPartitionToServers();
-                },
-                retryInterval,
-                retryTimes);
-      } catch (Throwable throwable) {
-        throw new RssException("registerShuffle failed!", throwable);
-      }
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers =
+          requestShuffleAssignment(
+              shuffleId,
+              numPartitions,
+              1,
+              requiredShuffleServerNumber,
+              estimateTaskConcurrency,
+              failuresShuffleServerIds);
       /**
        * we need to clear the metadata of the completed task, otherwise some of the stage's data
        * will be lost
@@ -1160,7 +1135,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         throw new RssException("Clear MapoutTracker Meta failed!", e);
       }
       ShuffleHandleInfo handleInfo =
-          new ShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
+          new ShuffleHandleInfo(shuffleId, partitionToServers, getRemoteStorageInfo());
       shuffleIdToShuffleHandleInfo.put(shuffleId, handleInfo);
       serverAssignedInfos.put(stageIdAndAttempt, true);
       return true;
@@ -1208,39 +1183,57 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   }
 
   private ShuffleServerInfo assignShuffleServer(int shuffleId, String faultyShuffleServerId) {
-    Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
-    String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
-    RemoteStorageInfo defaultRemoteStorage =
-        new RemoteStorageInfo(sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""));
-    RemoteStorageInfo remoteStorage =
-        ClientUtils.fetchRemoteStorage(
-            id.get(), defaultRemoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
-    long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
-    int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
     Set<String> faultyServerIds = Sets.newHashSet(faultyShuffleServerId);
     faultyServerIds.addAll(failuresShuffleServerIds);
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers;
-    try {
-      partitionToServers =
-          RetryUtils.retry(
-              () -> {
-                // todo: reuse shuffle assign at now ,wo should add new rpc to get a single server
-                ShuffleAssignmentsInfo response =
-                    shuffleWriteClient.getShuffleAssignments(
-                        id.get(), shuffleId, 1, 1, assignmentTags, 1, 1, faultyServerIds);
-                registerShuffleServers(
-                    id.get(), shuffleId, response.getServerToPartitionRanges(), remoteStorage);
-                return response.getPartitionToServers();
-              },
-              retryInterval,
-              retryTimes);
-    } catch (Throwable throwable) {
-      throw new RssException("registerShuffle failed!", throwable);
-    }
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers =
+        requestShuffleAssignment(shuffleId, 1, 1, 1, 1, faultyServerIds);
     if (partitionToServers.get(0) != null && partitionToServers.get(0).size() == 1) {
       return partitionToServers.get(0).get(0);
     }
     return null;
+  }
+
+  private Map<Integer, List<ShuffleServerInfo>> requestShuffleAssignment(
+      int shuffleId,
+      int partitionNum,
+      int partitionNumPerRange,
+      int assignmentShuffleServerNumber,
+      int estimateTaskConcurrency,
+      Set<String> faultyServerIds) {
+    Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
+    long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
+    int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
+    faultyServerIds.addAll(failuresShuffleServerIds);
+    try {
+      return RetryUtils.retry(
+          () -> {
+            ShuffleAssignmentsInfo response =
+                shuffleWriteClient.getShuffleAssignments(
+                    id.get(),
+                    shuffleId,
+                    partitionNum,
+                    partitionNumPerRange,
+                    assignmentTags,
+                    assignmentShuffleServerNumber,
+                    estimateTaskConcurrency,
+                    faultyServerIds);
+            registerShuffleServers(
+                id.get(), shuffleId, response.getServerToPartitionRanges(), getRemoteStorageInfo());
+            return response.getPartitionToServers();
+          },
+          retryInterval,
+          retryTimes);
+    } catch (Throwable throwable) {
+      throw new RssException("registerShuffle failed!", throwable);
+    }
+  }
+
+  private RemoteStorageInfo getRemoteStorageInfo() {
+    String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
+    RemoteStorageInfo defaultRemoteStorage =
+        new RemoteStorageInfo(sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""));
+    return ClientUtils.fetchRemoteStorage(
+            id.get(), defaultRemoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
   }
 
   public boolean isRssResubmitStage() {
