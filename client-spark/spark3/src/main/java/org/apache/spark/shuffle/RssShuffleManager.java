@@ -1177,34 +1177,30 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   @Override
   public ShuffleServerInfo reassignFaultyShuffleServer(
       int shuffleId, Set<String> partitionIds, String faultyShuffleServerId) {
-    ShuffleServerInfo newShuffleServerInfo;
-    synchronized (this) {
-      if (getReassignedFaultyServers().containsKey(faultyShuffleServerId)) {
-        return getReassignedFaultyServers().get(faultyShuffleServerId);
-      }
-      newShuffleServerInfo = assignShuffleServer(shuffleId, faultyShuffleServerId);
-      if (newShuffleServerInfo == null) {
-        return null;
-      }
-      getReassignedFaultyServers().put(faultyShuffleServerId, newShuffleServerInfo);
-    }
-    ShuffleHandleInfo shuffleHandleInfo = shuffleIdToShuffleHandleInfo.get(shuffleId);
-    for (String partitionId : partitionIds) {
-      List<ShuffleServerInfo> shuffleServerInfoList =
-          shuffleHandleInfo.getPartitionToServers().get(partitionId);
-      for (int i = 0; i < shuffleServerInfoList.size(); i++) {
-        if (shuffleServerInfoList.get(i).getId().equals(faultyShuffleServerId)) {
-          shuffleHandleInfo
-              .getDynamicAssignedPartitionServers()
-              .computeIfAbsent(Integer.valueOf(partitionId), k -> Maps.newHashMap());
-          shuffleHandleInfo
-              .getDynamicAssignedPartitionServers()
-              .get(partitionId)
-              .computeIfAbsent(i, j -> Lists.newArrayList())
-              .add(newShuffleServerInfo);
-        }
-      }
-    }
+    ShuffleServerInfo newShuffleServerInfo =
+        reassignedFaultyServers.computeIfAbsent(
+            faultyShuffleServerId,
+            id -> {
+              ShuffleServerInfo newAssignedServer = assignShuffleServer(shuffleId, id);
+              ShuffleHandleInfo shuffleHandleInfo = shuffleIdToShuffleHandleInfo.get(shuffleId);
+              for (String partitionId : partitionIds) {
+                List<ShuffleServerInfo> shuffleServerInfoList =
+                    shuffleHandleInfo.getPartitionToServers().get(partitionId);
+                for (int i = 0; i < shuffleServerInfoList.size(); i++) {
+                  if (shuffleServerInfoList.get(i).getId().equals(faultyShuffleServerId)) {
+                    shuffleHandleInfo
+                        .getDynamicAssignedPartitionServers()
+                        .computeIfAbsent(Integer.valueOf(partitionId), k -> Maps.newHashMap());
+                    shuffleHandleInfo
+                        .getDynamicAssignedPartitionServers()
+                        .get(partitionId)
+                        .computeIfAbsent(i, j -> Lists.newArrayList())
+                        .add(newAssignedServer);
+                  }
+                }
+              }
+              return newAssignedServer;
+            });
     return newShuffleServerInfo;
   }
 
