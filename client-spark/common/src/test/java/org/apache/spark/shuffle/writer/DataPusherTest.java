@@ -94,15 +94,21 @@ public class DataPusherTest {
             1,
             2);
     dataPusher.setRssAppId("testSendData_appId");
-    ShuffleBlockInfo shuffleBlockInfo =
-        new ShuffleBlockInfo(1, 1, 1, 1, 1, new byte[1], null, 1, 100, 1);
-    // sync send
-    AddBlockEvent event = new AddBlockEvent("taskId", Arrays.asList(shuffleBlockInfo));
     FailedBlockSendTracker failedBlockSendTracker = new FailedBlockSendTracker();
+    ShuffleBlockInfo failedBlock1 =
+        new ShuffleBlockInfo(1, 1, 3, 1, 1, new byte[1], null, 1, 100, 1);
+    ShuffleBlockInfo failedBlock2 =
+        new ShuffleBlockInfo(1, 1, 4, 1, 1, new byte[1], null, 1, 100, 1);
     failedBlockSendTracker.add(
-        shuffleBlockInfo, new ShuffleServerInfo("host", 39998), StatusCode.NO_BUFFER);
+        failedBlock1, new ShuffleServerInfo("host", 39998), StatusCode.NO_BUFFER);
+    failedBlockSendTracker.add(
+        failedBlock2, new ShuffleServerInfo("host", 39998), StatusCode.NO_BUFFER);
     shuffleWriteClient.setFakedShuffleDataResult(
         new SendShuffleDataResult(Sets.newHashSet(1L, 2L), failedBlockSendTracker));
+    ShuffleBlockInfo shuffleBlockInfo =
+        new ShuffleBlockInfo(1, 1, 1, 1, 1, new byte[1], null, 1, 100, 1);
+    AddBlockEvent event = new AddBlockEvent("taskId", Arrays.asList(shuffleBlockInfo));
+    // sync send
     CompletableFuture<Long> future = dataPusher.send(event);
     long memoryFree = future.get();
     assertEquals(100, memoryFree);

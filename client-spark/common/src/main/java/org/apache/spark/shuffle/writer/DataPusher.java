@@ -124,7 +124,7 @@ public class DataPusher implements Closeable {
       Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker,
       String taskAttemptId,
       FailedBlockSendTracker failedBlockSendTracker) {
-    if (taskToFailedBlockSendTracker == null || taskToFailedBlockSendTracker.isEmpty()) {
+    if (failedBlockSendTracker == null) {
       return;
     }
     taskToFailedBlockSendTracker
