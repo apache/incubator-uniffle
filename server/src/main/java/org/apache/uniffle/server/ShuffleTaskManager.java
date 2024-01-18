@@ -786,16 +786,13 @@ public class ShuffleTaskManager {
           // move release memory code down to here as the requiredBuffer could be consumed during
           // removing processing.
           shuffleBufferManager.releaseMemory(info.getRequireSize(), false, true);
-          LOG.info(
-              "Remove expired preAllocatedBuffer: {} required by app: {}",
+          LOG.warn(
+              "Remove expired preAllocatedBuffer[id={}] that required by app: {}",
               requireId,
               info.getAppId());
           ShuffleServerMetrics.counterPreAllocatedBufferExpired.inc();
         } else {
-          LOG.info(
-              "PreAllocatedBuffer[id={}] from app: {} has already been removed",
-              requireId,
-              info.getAppId());
+          LOG.info("PreAllocatedBuffer[id={}] has already be used", requireId);
         }
       }
     } catch (Exception e) {
