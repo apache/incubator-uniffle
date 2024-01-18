@@ -478,20 +478,25 @@ public class ShuffleTaskManager {
         throw new NoBufferForHugePartitionException(errorMessage);
       }
     }
-    return requireBuffer(requireSize);
+    return requireBuffer(appId, requireSize);
   }
 
-  public long requireBuffer(int requireSize) {
+  public long requireBuffer(String appId, int requireSize) {
     if (shuffleBufferManager.requireMemory(requireSize, true)) {
       long requireId = requireBufferId.incrementAndGet();
       requireBufferIds.put(
           requireId,
-          new PreAllocatedBufferInfo(requireId, System.currentTimeMillis(), requireSize));
+          new PreAllocatedBufferInfo(appId, requireId, System.currentTimeMillis(), requireSize));
       return requireId;
     } else {
       LOG.error("Failed to require buffer, require size: {}", requireSize);
       throw new NoBufferException("No Buffer For Regular Partition, requireSize: " + requireSize);
     }
+  }
+
+  public long requireBuffer(int requireSize) {
+    // appId of EMPTY means the client uses the old version that should be upgraded.
+    return requireBuffer("EMPTY", requireSize);
   }
 
   public byte[] getFinishedBlockIds(String appId, Integer shuffleId, Set<Integer> partitions)
@@ -781,9 +786,16 @@ public class ShuffleTaskManager {
           // move release memory code down to here as the requiredBuffer could be consumed during
           // removing processing.
           shuffleBufferManager.releaseMemory(info.getRequireSize(), false, true);
-          LOG.info("Remove expired preAllocatedBuffer " + requireId);
+          LOG.info(
+              "Remove expired preAllocatedBuffer: {} required by app: {}",
+              requireId,
+              info.getAppId());
+          ShuffleServerMetrics.counterPreAllocatedBufferExpired.inc();
         } else {
-          LOG.info("PreAllocatedBuffer[id={}] has already been removed", requireId);
+          LOG.info(
+              "PreAllocatedBuffer[id={}] from app: {} has already been removed",
+              requireId,
+              info.getAppId());
         }
       }
     } catch (Exception e) {
