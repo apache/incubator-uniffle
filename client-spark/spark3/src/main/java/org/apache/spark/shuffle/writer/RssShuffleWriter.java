@@ -412,7 +412,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               + " failed because "
               + failedBlockIds.size()
               + " blocks can't be sent to shuffle server: "
-              + failedBlockIdsWithShuffleServer.values().stream().collect(Collectors.toSet());
+              + shuffleManager.getBlockIdsFailedSendTracker(taskId).getFaultyShuffleServers();
       LOG.error(errorMsg);
       throw new RssSendFailedException(errorMsg);
     }
