@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -106,8 +105,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final int dataTransferPoolSize;
   private final int dataCommitPoolSize;
   private final Map<String, Set<Long>> taskToSuccessBlockIds;
-  private final Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker =
-      Maps.newConcurrentMap();
+  private final Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker;
   private ScheduledExecutorService heartBeatScheduledExecutorService;
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
@@ -232,6 +230,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     sparkConf.set("spark.shuffle.reduceLocality.enabled", "false");
     LOG.info("Disable shuffle data locality in RssShuffleManager.");
     taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
+    taskToFailedBlockSendTracker = JavaUtils.newConcurrentMap();
     this.rssResubmitStage =
         rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
             && RssSparkShuffleUtils.isStageResubmitSupported();
@@ -299,8 +298,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       boolean isDriver,
       DataPusher dataPusher,
       Map<String, Set<Long>> taskToSuccessBlockIds,
-      Map<String, Set<Long>> taskToFailedBlockIds,
-      Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer) {
+      Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker) {
     this.sparkConf = conf;
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     this.dataDistributionType =
@@ -354,6 +352,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     .rssConf(RssSparkConfig.toRssConf(sparkConf)));
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
     this.heartBeatScheduledExecutorService = null;
+    this.taskToFailedBlockSendTracker = taskToFailedBlockSendTracker;
     this.dataPusher = dataPusher;
   }
 
