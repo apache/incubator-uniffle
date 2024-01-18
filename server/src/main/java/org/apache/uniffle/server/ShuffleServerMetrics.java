@@ -48,6 +48,12 @@ public class ShuffleServerMetrics {
   private static final String EVENT_SIZE_THRESHOLD_LEVEL3 = "event_size_threshold_level3";
   private static final String EVENT_SIZE_THRESHOLD_LEVEL4 = "event_size_threshold_level4";
   private static final String EVENT_QUEUE_SIZE = "event_queue_size";
+  private static final String HADOOP_FLUSH_THREAD_POOL_QUEUE_SIZE =
+      "hadoop_flush_thread_pool_queue_size";
+  private static final String LOCALFILE_FLUSH_THREAD_POOL_QUEUE_SIZE =
+      "localfile_flush_thread_pool_queue_size";
+  private static final String FALLBACK_FLUSH_THREAD_POOL_QUEUE_SIZE =
+      "fallback_flush_thread_pool_queue_size";
   private static final String TOTAL_READ_DATA = "total_read_data";
   private static final String TOTAL_READ_LOCAL_DATA_FILE = "total_read_local_data_file";
   private static final String TOTAL_READ_LOCAL_INDEX_FILE = "total_read_local_index_file";
@@ -175,6 +181,9 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeUsedDirectMemorySize;
   public static Gauge.Child gaugeWriteHandler;
   public static Gauge.Child gaugeEventQueueSize;
+  public static Gauge.Child gaugeHadoopFlushThreadPoolQueueSize;
+  public static Gauge.Child gaugeLocalfileFlushThreadPoolQueueSize;
+  public static Gauge.Child gaugeFallbackFlushThreadPoolQueueSize;
   public static Gauge.Child gaugeAppNum;
   public static Gauge.Child gaugeTotalPartitionNum;
 
@@ -348,6 +357,13 @@ public class ShuffleServerMetrics {
     gaugeUsedDirectMemorySize = metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE);
     gaugeWriteHandler = metricsManager.addLabeledGauge(TOTAL_WRITE_HANDLER);
     gaugeEventQueueSize = metricsManager.addLabeledGauge(EVENT_QUEUE_SIZE);
+    gaugeHadoopFlushThreadPoolQueueSize =
+        metricsManager.addLabeledGauge(HADOOP_FLUSH_THREAD_POOL_QUEUE_SIZE);
+    gaugeLocalfileFlushThreadPoolQueueSize =
+        metricsManager.addLabeledGauge(LOCALFILE_FLUSH_THREAD_POOL_QUEUE_SIZE);
+    gaugeFallbackFlushThreadPoolQueueSize =
+        metricsManager.addLabeledGauge(FALLBACK_FLUSH_THREAD_POOL_QUEUE_SIZE);
+
     gaugeAppNum = metricsManager.addLabeledGauge(APP_NUM_WITH_NODE);
     gaugeTotalPartitionNum = metricsManager.addLabeledGauge(PARTITION_NUM_WITH_NODE);
 
