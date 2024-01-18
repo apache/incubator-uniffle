@@ -73,7 +73,8 @@ public class HadoopStorageManager extends SingleStorageManager {
       LOG.warn("The storage owned by event: {} is null, this should not happen", event);
       return;
     }
-    ShuffleServerMetrics.incHadoopStorageWriteDataSize(storage.getStorageHost(), event.getSize());
+    ShuffleServerMetrics.incHadoopStorageWriteDataSize(
+        storage.getStorageHost(), event.getSize(), event.isOwnedByHugePartition());
   }
 
   @Override
