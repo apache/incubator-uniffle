@@ -82,6 +82,8 @@ public class ShuffleServerMetrics {
   private static final String TOTAL_FAILED_WRITTEN_EVENT_NUM = "total_failed_written_event_num";
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
   private static final String TOTAL_HADOOP_WRITE_DATA = "total_hadoop_write_data";
+  private static final String TOTAL_HADOOP_WRITE_DATA_FOR_HUGE_PARTITION =
+      "total_hadoop_write_data_for_huge_partition";
   private static final String TOTAL_LOCALFILE_WRITE_DATA = "total_localfile_write_data";
   private static final String LOCAL_DISK_PATH_LABEL = "local_disk_path";
   public static final String LOCAL_DISK_PATH_LABEL_ALL = "ALL";
@@ -197,6 +199,7 @@ public class ShuffleServerMetrics {
   public static Counter counterRemoteStorageFailedWrite;
   public static Counter counterRemoteStorageSuccessWrite;
   public static Counter counterTotalHadoopWriteDataSize;
+  public static Counter counterTotalHadoopWriteDataSizeForHugePartition;
   public static Counter counterTotalLocalFileWriteDataSize;
 
   private static String tags;
@@ -268,12 +271,25 @@ public class ShuffleServerMetrics {
     }
   }
 
-  public static void incHadoopStorageWriteDataSize(String storageHost, long size) {
+  public static void incHadoopStorageWriteDataSize(
+      String storageHost, long size, boolean isOwnedByHugePartition) {
     if (StringUtils.isEmpty(storageHost)) {
       return;
     }
     counterTotalHadoopWriteDataSize.labels(tags, storageHost).inc(size);
     counterTotalHadoopWriteDataSize.labels(tags, STORAGE_HOST_LABEL_ALL).inc(size);
+    if (isOwnedByHugePartition) {
+      counterTotalHadoopWriteDataSizeForHugePartition.labels(tags, storageHost).inc(size);
+      counterTotalHadoopWriteDataSizeForHugePartition
+          .labels(tags, STORAGE_HOST_LABEL_ALL)
+          .inc(size);
+    }
+  }
+
+  // only for test cases
+  @VisibleForTesting
+  public static void incHadoopStorageWriteDataSize(String storageHost, long size) {
+    incHadoopStorageWriteDataSize(storageHost, size, false);
   }
 
   private static void setUpMetrics() {
@@ -301,6 +317,11 @@ public class ShuffleServerMetrics {
     counterTotalHadoopWriteDataSize =
         metricsManager.addCounter(
             TOTAL_HADOOP_WRITE_DATA, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
+    counterTotalHadoopWriteDataSizeForHugePartition =
+        metricsManager.addCounter(
+            TOTAL_HADOOP_WRITE_DATA_FOR_HUGE_PARTITION,
+            Constants.METRICS_TAG_LABEL_NAME,
+            STORAGE_HOST_LABEL);
     counterTotalLocalFileWriteDataSize =
         metricsManager.addCounter(TOTAL_LOCALFILE_WRITE_DATA, LOCAL_DISK_PATH_LABEL);
 
