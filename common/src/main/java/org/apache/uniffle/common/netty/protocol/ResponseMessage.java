@@ -29,6 +29,6 @@ public abstract class ResponseMessage extends Message {
   }
 
   public ResponseMessage createFailureResponse(String error) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(error);
   }
 }

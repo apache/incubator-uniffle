@@ -293,6 +293,9 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   @Override
   public void close() {
+    if (sdr != null) {
+      sdr.release();
+    }
     if (readBuffer != null) {
       RssUtils.releaseByteBuffer(readBuffer);
     }
