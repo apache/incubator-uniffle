@@ -71,6 +71,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       LOG.error("Flush queue is full, discard event: " + event);
       // We need to release the memory when discarding the event
       event.doCleanup();
+      ShuffleServerMetrics.counterTotalDroppedEventNum.inc();
     } else {
       ShuffleServerMetrics.gaugeEventQueueSize.inc();
     }
