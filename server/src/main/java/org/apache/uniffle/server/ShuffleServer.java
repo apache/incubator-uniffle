@@ -49,6 +49,7 @@ import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExitUtils;
+import org.apache.uniffle.common.util.JvmPauseMonitor;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
@@ -99,6 +100,7 @@ public class ShuffleServer {
   private Future<?> decommissionFuture;
   private boolean nettyServerEnabled;
   private StreamServer streamServer;
+  private JvmPauseMonitor jvmPauseMonitor;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -197,11 +199,19 @@ public class ShuffleServer {
     if (shuffleTaskManager != null) {
       shuffleTaskManager.stop();
     }
+    if (jvmPauseMonitor != null) {
+      jvmPauseMonitor.close();
+    }
     running = false;
     LOG.info("RPC Server Stopped!");
   }
 
   private void initialization() throws Exception {
+    // setup jvm pause monitor
+    final JvmPauseMonitor monitor = new JvmPauseMonitor(shuffleServerConf);
+    monitor.start();
+    this.jvmPauseMonitor = monitor;
+
     boolean testMode = shuffleServerConf.getBoolean(RSS_TEST_MODE_ENABLE);
     String storageType = shuffleServerConf.get(RSS_STORAGE_TYPE).name();
     if (!testMode
