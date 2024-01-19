@@ -20,6 +20,7 @@ package org.apache.spark.shuffle.writer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -377,7 +378,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                 + "] failed because "
                 + failedBlockIds.size()
                 + " blocks can't be sent to shuffle server: "
-                + failedBlockIdsWithShuffleServer.values().stream().collect(Collectors.toSet());
+                + failedBlockIdsWithShuffleServer.values().stream()
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toSet());
         LOG.error(errorMsg);
         throw new RssSendFailedException(errorMsg);
       }
