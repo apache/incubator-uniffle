@@ -15,20 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common.netty.protocol;
+package org.apache.uniffle.server.flush;
 
-import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
-
-public abstract class ResponseMessage extends Message {
-  public ResponseMessage() {
+public class EventDiscardException extends Exception {
+  public EventDiscardException() {
     super();
   }
 
-  public ResponseMessage(ManagedBuffer buffer) {
-    super(buffer);
+  public EventDiscardException(String message) {
+    super(message);
   }
 
-  public ResponseMessage createFailureResponse(String error) {
-    throw new UnsupportedOperationException(error);
+  public EventDiscardException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  public EventDiscardException(Throwable cause) {
+    super(cause);
   }
 }

@@ -15,20 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common.netty.protocol;
+package org.apache.uniffle.common.function;
 
-import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
-
-public abstract class ResponseMessage extends Message {
-  public ResponseMessage() {
-    super();
-  }
-
-  public ResponseMessage(ManagedBuffer buffer) {
-    super(buffer);
-  }
-
-  public ResponseMessage createFailureResponse(String error) {
-    throw new UnsupportedOperationException(error);
-  }
+@FunctionalInterface
+public interface ConsumerWithException<T> {
+  void accept(T t) throws Exception;
 }
