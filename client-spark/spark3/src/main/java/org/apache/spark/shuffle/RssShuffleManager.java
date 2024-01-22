@@ -1233,7 +1233,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     RemoteStorageInfo defaultRemoteStorage =
         new RemoteStorageInfo(sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""));
     return ClientUtils.fetchRemoteStorage(
-            id.get(), defaultRemoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
+        id.get(), defaultRemoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
   }
 
   public boolean isRssResubmitStage() {

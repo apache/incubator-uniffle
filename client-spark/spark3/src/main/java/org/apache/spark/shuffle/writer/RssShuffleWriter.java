@@ -397,9 +397,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private void checkIfBlocksFailed() {
     Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
-    if (taskFailRetry && !failedBlockIds.isEmpty() && needReAssignShuffleServer(failedBlockIds)) {
+    if (taskFailRetry && !failedBlockIds.isEmpty()) {
+      Set<TrackBlockStatus> shouldResendBlockSet = shouldResendBlockStatusSet(failedBlockIds);
       try {
-        reSendFailedBlockIds(failedBlockIds);
+        reSendFailedBlockIds(shouldResendBlockSet);
       } catch (Exception e) {
         LOG.error("resend failed blocks failed.", e);
       }
@@ -419,78 +420,69 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
   }
 
-  private boolean needReAssignShuffleServer(Set<Long> failedBlockIds) {
-    boolean result = true;
+  private Set<TrackBlockStatus> shouldResendBlockStatusSet(Set<Long> failedBlockIds) {
     FailedBlockSendTracker failedBlockTracker = shuffleManager.getBlockIdsFailedSendTracker(taskId);
+    Set<TrackBlockStatus> resendBlockStatusSet = Sets.newHashSet();
     for (Long failedBlockId : failedBlockIds) {
-      result =
-          failedBlockTracker.getFailedBlockStatus(failedBlockId).stream()
-              // todo: more status need reassign
-              .allMatch(
-                  trackBlockStatus -> trackBlockStatus.getStatusCode() == StatusCode.NO_BUFFER);
+      failedBlockTracker.getFailedBlockStatus(failedBlockId).stream()
+          // todo: more status need reassign
+          .filter(trackBlockStatus -> trackBlockStatus.getStatusCode() == StatusCode.NO_BUFFER)
+          .forEach(trackBlockStatus -> resendBlockStatusSet.add(trackBlockStatus));
     }
-    return result;
+    return resendBlockStatusSet;
   }
 
-  private void reSendFailedBlockIds(Set<Long> failedBlockIds) {
+  private void reSendFailedBlockIds(Set<TrackBlockStatus> failedBlockStatusSet) {
     List<ShuffleBlockInfo> reAssignSeverBlockInfoList = Lists.newArrayList();
     List<ShuffleBlockInfo> failedBlockInfoList = Lists.newArrayList();
-    for (Long failedBlockId : failedBlockIds) {
-      FailedBlockSendTracker failedBlockTracker =
-          shuffleManager.getBlockIdsFailedSendTracker(taskId);
-      Set<TrackBlockStatus> trackBlockStatusSet =
-          failedBlockTracker.getFailedBlockStatus(failedBlockId);
+    Map<ShuffleServerInfo, List<TrackBlockStatus>> faultyServerToPartitions =
+        failedBlockStatusSet.stream().collect(Collectors.groupingBy(d -> d.getShuffleServerInfo()));
 
-      Map<ShuffleServerInfo, List<TrackBlockStatus>> faultyServerToPartitions =
-          trackBlockStatusSet.stream()
-              .collect(Collectors.groupingBy(d -> d.getShuffleServerInfo()));
+    faultyServerToPartitions.entrySet().stream()
+        .forEach(
+            t -> {
+              Set<String> partitionIds =
+                  t.getValue().stream()
+                      .map(x -> String.valueOf(x.getShuffleBlockInfo().getPartitionId()))
+                      .collect(Collectors.toSet());
+              ShuffleServerInfo dynamicShuffleServer =
+                  shuffleManager.getReassignedFaultyServers().get(t.getKey().getId());
+              if (dynamicShuffleServer == null) {
+                dynamicShuffleServer =
+                    reAssignFaultyShuffleServer(partitionIds, t.getKey().getId());
+                shuffleManager
+                    .getReassignedFaultyServers()
+                    .put(t.getKey().getId(), dynamicShuffleServer);
+              }
 
-      faultyServerToPartitions.entrySet().stream()
-          .forEach(
-              t -> {
-                Set<String> partitionIds =
-                    t.getValue().stream()
-                        .map(x -> String.valueOf(x.getShuffleBlockInfo().getPartitionId()))
-                        .collect(Collectors.toSet());
-                ShuffleServerInfo dynamicShuffleServer =
-                    shuffleManager.getReassignedFaultyServers().get(t.getKey().getId());
-                if (dynamicShuffleServer == null) {
-                  dynamicShuffleServer =
-                      reAssignFaultyShuffleServer(partitionIds, t.getKey().getId());
-                  shuffleManager
-                      .getReassignedFaultyServers()
-                      .put(t.getKey().getId(), dynamicShuffleServer);
-                }
-
-                ShuffleServerInfo finalDynamicShuffleServer = dynamicShuffleServer;
-                trackBlockStatusSet.forEach(
-                    trackBlockStatus -> {
-                      ShuffleBlockInfo failedBlockInfo = trackBlockStatus.getShuffleBlockInfo();
-                      failedBlockInfoList.add(failedBlockInfo);
-                      reAssignSeverBlockInfoList.add(
-                          new ShuffleBlockInfo(
-                              failedBlockInfo.getShuffleId(),
-                              failedBlockInfo.getPartitionId(),
-                              failedBlockInfo.getBlockId(),
-                              failedBlockInfo.getLength(),
-                              failedBlockInfo.getCrc(),
-                              failedBlockInfo.getData(),
-                              Lists.newArrayList(finalDynamicShuffleServer),
-                              failedBlockInfo.getUncompressLength(),
-                              failedBlockInfo.getFreeMemory(),
-                              taskAttemptId));
-                    });
-              });
-    }
+              ShuffleServerInfo finalDynamicShuffleServer = dynamicShuffleServer;
+              failedBlockStatusSet.forEach(
+                  trackBlockStatus -> {
+                    ShuffleBlockInfo failedBlockInfo = trackBlockStatus.getShuffleBlockInfo();
+                    failedBlockInfoList.add(failedBlockInfo);
+                    reAssignSeverBlockInfoList.add(
+                        new ShuffleBlockInfo(
+                            failedBlockInfo.getShuffleId(),
+                            failedBlockInfo.getPartitionId(),
+                            failedBlockInfo.getBlockId(),
+                            failedBlockInfo.getLength(),
+                            failedBlockInfo.getCrc(),
+                            failedBlockInfo.getData(),
+                            Lists.newArrayList(finalDynamicShuffleServer),
+                            failedBlockInfo.getUncompressLength(),
+                            failedBlockInfo.getFreeMemory(),
+                            taskAttemptId));
+                  });
+            });
     clearFailedBlockIdsStates(failedBlockInfoList);
     processShuffleBlockInfos(reAssignSeverBlockInfoList);
     checkIfBlocksFailed();
   }
 
   private void clearFailedBlockIdsStates(List<ShuffleBlockInfo> failedBlockInfoList) {
-    shuffleManager.getBlockIdsFailedSendTracker(taskId).clear();
     failedBlockInfoList.forEach(
         shuffleBlockInfo -> {
+          shuffleManager.getBlockIdsFailedSendTracker(taskId).remove(shuffleBlockInfo.getBlockId());
           partitionLengths[shuffleBlockInfo.getPartitionId()] -= shuffleBlockInfo.getLength();
         });
   }
