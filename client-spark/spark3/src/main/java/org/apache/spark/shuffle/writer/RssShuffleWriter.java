@@ -20,7 +20,6 @@ package org.apache.spark.shuffle.writer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -405,8 +404,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       } catch (Exception e) {
         LOG.error("resend failed blocks failed.", e);
       }
+      failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
     }
-    failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
     if (!failedBlockIds.isEmpty()) {
       String errorMsg =
           "Send failed: Task["
