@@ -20,7 +20,6 @@ package org.apache.tez.runtime.library.common.sort.buffer;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +54,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -64,6 +64,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -542,7 +543,12 @@ public class WriteBufferManagerTest {
       if (mode == 0) {
         throw new RssException("send data failed.");
       } else if (mode == 1) {
-        return new SendShuffleDataResult(Sets.newHashSet(2L), Sets.newHashSet(1L));
+        FailedBlockSendTracker failedBlockSendTracker = new FailedBlockSendTracker();
+        ShuffleBlockInfo failedBlock =
+            new ShuffleBlockInfo(1, 1, 3, 1, 1, new byte[1], null, 1, 100, 1);
+        failedBlockSendTracker.add(
+            failedBlock, new ShuffleServerInfo("host", 39998), StatusCode.NO_BUFFER);
+        return new SendShuffleDataResult(Sets.newHashSet(2L), failedBlockSendTracker);
       } else {
         if (mode == 3) {
           try {
@@ -557,7 +563,7 @@ public class WriteBufferManagerTest {
         for (ShuffleBlockInfo blockInfo : shuffleBlockInfoList) {
           successBlockIds.add(blockInfo.getBlockId());
         }
-        return new SendShuffleDataResult(successBlockIds, Collections.EMPTY_SET);
+        return new SendShuffleDataResult(successBlockIds, new FailedBlockSendTracker());
       }
     }
 

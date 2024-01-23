@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -50,9 +49,11 @@ import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -145,9 +146,12 @@ public class RssShuffleWriterTest {
 
     // case 3: partial blocks are sent failed, Runtime exception will be thrown
     manager.addSuccessBlockIds(taskId, Sets.newHashSet(1L, 2L));
-    manager.addFailedBlockIds(taskId, Sets.newHashSet(3L));
-    ShuffleServerInfo shuffleServerInfo = new ShuffleServerInfo("127.0.0.1", 20001);
-    manager.addTaskToFailedBlockIdsAndServer(taskId, 3L, shuffleServerInfo);
+    FailedBlockSendTracker failedBlockSendTracker = new FailedBlockSendTracker();
+    ShuffleBlockInfo failedBlock1 =
+        new ShuffleBlockInfo(1, 1, 3, 1, 1, new byte[1], null, 1, 100, 1);
+    failedBlockSendTracker.add(
+        failedBlock1, new ShuffleServerInfo("127.0.0.1", 20001), StatusCode.INTERNAL_ERROR);
+    manager.addFailedBlockSendTracker(taskId, failedBlockSendTracker);
     Throwable e3 =
         assertThrows(
             RuntimeException.class,
@@ -171,7 +175,7 @@ public class RssShuffleWriterTest {
         ShuffleWriteClient shuffleWriteClient,
         Map<String, Set<Long>> taskToSuccessBlockIds,
         Map<String, Set<Long>> taskToFailedBlockIds,
-        Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer,
+        Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker,
         Set<String> failedTaskIds,
         int threadPoolSize,
         int threadKeepAliveTime,
@@ -179,8 +183,7 @@ public class RssShuffleWriterTest {
       super(
           shuffleWriteClient,
           taskToSuccessBlockIds,
-          taskToFailedBlockIds,
-          taskToFailedBlockIdsAndServer,
+          taskToFailedBlockSendTracker,
           failedTaskIds,
           threadPoolSize,
           threadKeepAliveTime);

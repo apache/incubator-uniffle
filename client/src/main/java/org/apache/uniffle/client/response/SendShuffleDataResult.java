@@ -17,12 +17,9 @@
 
 package org.apache.uniffle.client.response;
 
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
-import org.apache.uniffle.common.ShuffleServerInfo;
 
 public class SendShuffleDataResult {
 
@@ -41,10 +38,6 @@ public class SendShuffleDataResult {
 
   public Set<Long> getFailedBlockIds() {
     return failedBlockSendTracker.getFailedBlockIds();
-  }
-
-  public Map<Long, BlockingQueue<ShuffleServerInfo>> getSendFailedBlockIds() {
-    return null;
   }
 
   public FailedBlockSendTracker getFailedBlockSendTracker() {

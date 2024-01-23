@@ -659,6 +659,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     taskToSuccessBlockIds.get(taskId).addAll(blockIds);
   }
 
+  @VisibleForTesting
+  public void addFailedBlockSendTracker(
+      String taskId, FailedBlockSendTracker failedBlockSendTracker) {
+    taskToFailedBlockSendTracker.putIfAbsent(taskId, failedBlockSendTracker);
+  }
+
   public void clearTaskMeta(String taskId) {
     taskToSuccessBlockIds.remove(taskId);
     taskToFailedBlockSendTracker.remove(taskId);

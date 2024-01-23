@@ -61,6 +61,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.PartitionRange;
@@ -73,6 +74,7 @@ import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.compression.Lz4Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.hadoop.shim.HadoopShimImpl;
 
@@ -463,7 +465,12 @@ public class FetcherTest {
       if (mode == 0) {
         throw new RssException("send data failed");
       } else if (mode == 1) {
-        return new SendShuffleDataResult(Sets.newHashSet(2L), Sets.newHashSet(1L));
+        FailedBlockSendTracker failedBlockSendTracker = new FailedBlockSendTracker();
+        ShuffleBlockInfo failedBlock =
+            new ShuffleBlockInfo(1, 1, 3, 1, 1, new byte[1], null, 1, 100, 1);
+        failedBlockSendTracker.add(
+            failedBlock, new ShuffleServerInfo("host", 39998), StatusCode.NO_BUFFER);
+        return new SendShuffleDataResult(Sets.newHashSet(2L), failedBlockSendTracker);
       } else {
         Set<Long> successBlockIds = Sets.newHashSet();
         for (ShuffleBlockInfo blockInfo : shuffleBlockInfoList) {
@@ -476,7 +483,7 @@ public class FetcherTest {
                   block.getData().nioBuffer(), block.getUncompressLength(), uncompressedBuffer, 0);
               data.add(uncompressedBuffer.array());
             });
-        return new SendShuffleDataResult(successBlockIds, Sets.newHashSet());
+        return new SendShuffleDataResult(successBlockIds, new FailedBlockSendTracker());
       }
     }
 
