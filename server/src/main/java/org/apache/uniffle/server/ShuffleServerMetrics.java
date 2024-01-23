@@ -115,6 +115,9 @@ public class ShuffleServerMetrics {
   private static final String LOCAL_FILE_EVENT_FLUSH_NUM = "local_file_event_flush_num";
   private static final String HADOOP_EVENT_FLUSH_NUM = "hadoop_event_flush_num";
 
+  private static final String TOTAL_EXPIRED_PRE_ALLOCATED_BUFFER_NUM =
+      "total_expired_preAllocated_buffer_num";
+
   private static final String TOTAL_REMOVE_RESOURCE_TIME = "total_remove_resource_time";
   private static final String TOTAL_REMOVE_RESOURCE_BY_SHUFFLE_IDS_TIME =
       "total_remove_resource_by_shuffle_ids_time";
@@ -205,6 +208,7 @@ public class ShuffleServerMetrics {
   private static String tags;
   public static Counter counterLocalFileEventFlush;
   public static Counter counterHadoopEventFlush;
+  public static Counter counterPreAllocatedBufferExpired;
 
   private static MetricsManager metricsManager;
   private static boolean isRegister = false;
@@ -393,6 +397,9 @@ public class ShuffleServerMetrics {
 
     counterLocalFileEventFlush = metricsManager.addCounter(LOCAL_FILE_EVENT_FLUSH_NUM);
     counterHadoopEventFlush = metricsManager.addCounter(HADOOP_EVENT_FLUSH_NUM);
+
+    counterPreAllocatedBufferExpired =
+        metricsManager.addCounter(TOTAL_EXPIRED_PRE_ALLOCATED_BUFFER_NUM);
 
     summaryTotalRemoveResourceTime = metricsManager.addSummary(TOTAL_REMOVE_RESOURCE_TIME);
     summaryTotalRemoveResourceByShuffleIdsTime =

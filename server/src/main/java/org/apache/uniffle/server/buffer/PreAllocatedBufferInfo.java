@@ -18,12 +18,13 @@
 package org.apache.uniffle.server.buffer;
 
 public class PreAllocatedBufferInfo {
-
+  private String appId;
   private long requireId;
   private long timestamp;
   private int requireSize;
 
-  public PreAllocatedBufferInfo(long requireId, long timestamp, int requireSize) {
+  public PreAllocatedBufferInfo(String appId, long requireId, long timestamp, int requireSize) {
+    this.appId = appId;
     this.requireId = requireId;
     this.timestamp = timestamp;
     this.requireSize = requireSize;
@@ -39,5 +40,9 @@ public class PreAllocatedBufferInfo {
 
   public int getRequireSize() {
     return requireSize;
+  }
+
+  public String getAppId() {
+    return appId;
   }
 }
