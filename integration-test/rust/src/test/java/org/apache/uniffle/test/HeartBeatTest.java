@@ -5,12 +5,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
+import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
 import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
+import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,11 +33,14 @@ public class HeartBeatTest extends RustIntegrationTestBase {
 
     @BeforeAll
     public static void setupServers(@TempDir File tmpDir) throws Exception {
+        CoordinatorConf coordinatorConf = getCoordinatorConf();
+        coordinatorConf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
+        createCoordinatorServer(coordinatorConf);
         RustShuffleServerConf shuffleServerConf = getShuffleServerConf();
         Map<String, Object> conf = new HashMap<>();
         conf.put("grpc_port", 8888);
 
-        createAndStartServers(shuffleServerConf);
+        createShuffleServer(shuffleServerConf);
         startServers();
     }
 
@@ -43,14 +50,22 @@ public class HeartBeatTest extends RustIntegrationTestBase {
     }
 
     @Test
-    public void appHeartBeatTest() {
+    public void appHeartBeatTest() throws InterruptedException {
         String appId = "appHeartBeatTest";
-        String dataBasePath = HDFS_URI + "rss/test";
+        String dataBasePath = "";
+        int shuffleId = 0;
 
-        RssRegisterShuffleResponse rssRegisterShuffleResponse = shuffleServerClient.registerShuffle(new RssRegisterShuffleRequest(appId, 0, Lists.newArrayList(new PartitionRange(0, 1)), ""));
+        // register app and send heart beat, should succeed
+        RssRegisterShuffleResponse rssRegisterShuffleResponse = shuffleServerClient.registerShuffle(new RssRegisterShuffleRequest(appId, shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), dataBasePath));
         RssAppHeartBeatResponse heartBeatResponse = shuffleServerClient.sendHeartBeat(new RssAppHeartBeatRequest(appId, 10000));
 
-        assertEquals(rssRegisterShuffleResponse.getStatusCode().statusCode(), 0);
-        assertEquals(heartBeatResponse.getStatusCode().statusCode(), 0);
+        assertEquals(StatusCode.SUCCESS, rssRegisterShuffleResponse.getStatusCode());
+        assertEquals(StatusCode.SUCCESS, heartBeatResponse.getStatusCode());
+
+        // unregister app and send heart beat, should also succeed
+        RssUnregisterShuffleResponse rssUnregisterShuffleResponse = shuffleServerClient.unregisterShuffle(new RssUnregisterShuffleRequest(appId, shuffleId));
+        heartBeatResponse = shuffleServerClient.sendHeartBeat(new RssAppHeartBeatRequest(appId, 10000));
+        assertEquals(StatusCode.SUCCESS, rssUnregisterShuffleResponse.getStatusCode());
+        assertEquals(StatusCode.SUCCESS, heartBeatResponse.getStatusCode());
     }
 }

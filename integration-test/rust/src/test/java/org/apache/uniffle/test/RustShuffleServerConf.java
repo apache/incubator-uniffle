@@ -5,12 +5,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class RustShuffleServerConf {
 
     private static final Logger LOG = LoggerFactory.getLogger(RustShuffleServerConf.class);
+
+    private final Map<String, Object> conf;
 
     private final File tempDir;
 
@@ -19,6 +22,7 @@ public class RustShuffleServerConf {
     public RustShuffleServerConf(File tempDir) {
         this.tempDir = tempDir;
         this.tempFile = new File(tempDir, "config.toml");
+        conf = new HashMap<>();
     }
 
     public String getTempDirPath() {
@@ -29,8 +33,12 @@ public class RustShuffleServerConf {
         return tempFile.getPath();
     }
 
-    public void generateTomlConf(Map<String, Object> tomlData) throws IOException {
-        writeToFile(toTomlString(tomlData), tempFile.getPath());
+    public void set(String key, Object value) {
+        conf.put(key, value);
+    }
+
+    public void generateTomlConf() throws IOException {
+        writeToFile(toTomlString(conf), tempFile.getPath());
     }
 
     public String toTomlString(Map<String, Object> tomlData) {
