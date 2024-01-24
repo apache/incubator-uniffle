@@ -352,8 +352,6 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Long> FALLBACK_MAX_FAIL_TIMES =
       ConfigOptions.key("rss.server.hybrid.storage.fallback.max.fail.times")
           .longType()
-          .checkValue(
-              ConfigUtils.NON_NEGATIVE_LONG_VALIDATOR, " fallback times must be non-negative")
           .defaultValue(0L)
           .withDescription("For hybrid storage, fail times exceed the number, will switch storage")
           .withDeprecatedKeys("rss.server.multistorage.fallback.max.fail.times");
@@ -537,6 +535,19 @@ public class ShuffleServerConf extends RssBaseConf {
                   + "should be latency * network_bandwidth. Assuming latency = 1ms,"
                   + "network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB."
                   + "Default is 0, OS will dynamically adjust the buf size.");
+
+  public static final ConfigOption<Integer> TOP_N_APP_SHUFFLE_DATA_SIZE_NUMBER =
+      ConfigOptions.key("rss.server.topN.appShuffleDataSize.number")
+          .intType()
+          .defaultValue(10)
+          .withDescription("number of topN shuffle data size of app level.");
+
+  public static final ConfigOption<Integer> TOP_N_APP_SHUFFLE_DATA_REFRESH_INTERVAL =
+      ConfigOptions.key("rss.server.topN.appShuffleDataSize.refreshIntervalMs")
+          .intType()
+          .defaultValue(1000)
+          .withDescription(
+              "refresh interval in ms for TopN shuffle data size of app level calc task.");
 
   public static final ConfigOption<Integer> SUMMARY_METRIC_WAIT_QUEUE_SIZE =
       ConfigOptions.key("rss.server.summary.metric.wait.queue.size")

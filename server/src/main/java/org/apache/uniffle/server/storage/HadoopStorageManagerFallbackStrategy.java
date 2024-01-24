@@ -37,7 +37,7 @@ public class HadoopStorageManagerFallbackStrategy extends AbstractStorageManager
   @Override
   public StorageManager tryFallback(
       StorageManager current, ShuffleDataFlushEvent event, StorageManager... candidates) {
-    if (event.getRetryTimes() > fallBackTimes) {
+    if (event.getRetryTimes() > fallBackTimes || !current.canWrite(event)) {
       return findNextStorageManager(current, excludeTypes, event, candidates);
     }
     return current;

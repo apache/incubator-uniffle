@@ -88,6 +88,7 @@ public class ShuffleTaskManager {
   private final ScheduledExecutorService expiredAppCleanupExecutorService;
   private final ScheduledExecutorService leakShuffleDataCheckExecutorService;
   private ScheduledExecutorService triggerFlushExecutorService;
+  private final TopNShuffleDataSizeOfAppCalcTask topNShuffleDataSizeOfAppCalcTask;
   private final StorageManager storageManager;
   private AtomicLong requireBufferId = new AtomicLong(0);
   private ShuffleServerConf conf;
@@ -106,7 +107,7 @@ public class ShuffleTaskManager {
   private final ShuffleBufferManager shuffleBufferManager;
   private Map<String, ShuffleTaskInfo> shuffleTaskInfos = JavaUtils.newConcurrentMap();
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = JavaUtils.newConcurrentMap();
-  private Runnable clearResourceThread;
+  private Thread clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
   private final Cache<String, Lock> appLocks;
 
@@ -168,7 +169,7 @@ public class ShuffleTaskManager {
             .build();
 
     // the thread for clear expired resources
-    clearResourceThread =
+    Runnable clearResourceRunnable =
         () -> {
           while (true) {
             PurgeEvent event = null;
@@ -204,10 +205,12 @@ public class ShuffleTaskManager {
             }
           }
         };
-    Thread thread = new Thread(clearResourceThread);
-    thread.setName("clearResourceThread");
-    thread.setDaemon(true);
-    thread.start();
+    clearResourceThread = new Thread(clearResourceRunnable);
+    clearResourceThread.setName("clearResourceThread");
+    clearResourceThread.setDaemon(true);
+
+    topNShuffleDataSizeOfAppCalcTask = new TopNShuffleDataSizeOfAppCalcTask(this, conf);
+    topNShuffleDataSizeOfAppCalcTask.start();
   }
 
   private Lock getAppLock(String appId) {
@@ -475,20 +478,25 @@ public class ShuffleTaskManager {
         throw new NoBufferForHugePartitionException(errorMessage);
       }
     }
-    return requireBuffer(requireSize);
+    return requireBuffer(appId, requireSize);
   }
 
-  public long requireBuffer(int requireSize) {
+  public long requireBuffer(String appId, int requireSize) {
     if (shuffleBufferManager.requireMemory(requireSize, true)) {
       long requireId = requireBufferId.incrementAndGet();
       requireBufferIds.put(
           requireId,
-          new PreAllocatedBufferInfo(requireId, System.currentTimeMillis(), requireSize));
+          new PreAllocatedBufferInfo(appId, requireId, System.currentTimeMillis(), requireSize));
       return requireId;
     } else {
       LOG.error("Failed to require buffer, require size: {}", requireSize);
       throw new NoBufferException("No Buffer For Regular Partition, requireSize: " + requireSize);
     }
+  }
+
+  public long requireBuffer(int requireSize) {
+    // appId of EMPTY means the client uses the old version that should be upgraded.
+    return requireBuffer("EMPTY", requireSize);
   }
 
   public byte[] getFinishedBlockIds(String appId, Integer shuffleId, Set<Integer> partitions)
@@ -778,9 +786,13 @@ public class ShuffleTaskManager {
           // move release memory code down to here as the requiredBuffer could be consumed during
           // removing processing.
           shuffleBufferManager.releaseMemory(info.getRequireSize(), false, true);
-          LOG.info("Remove expired preAllocatedBuffer " + requireId);
+          LOG.warn(
+              "Remove expired preAllocatedBuffer[id={}] that required by app: {}",
+              requireId,
+              info.getAppId());
+          ShuffleServerMetrics.counterPreAllocatedBufferExpired.inc();
         } else {
-          LOG.info("PreAllocatedBuffer[id={}] has already been removed", requireId);
+          LOG.info("PreAllocatedBuffer[id={}] has already be used", requireId);
         }
       }
     } catch (Exception e) {
@@ -838,5 +850,17 @@ public class ShuffleTaskManager {
     synchronized (this.shuffleBufferManager) {
       this.shuffleBufferManager.flushIfNecessary();
     }
+  }
+
+  public Map<String, ShuffleTaskInfo> getShuffleTaskInfos() {
+    return shuffleTaskInfos;
+  }
+
+  public void stop() {
+    topNShuffleDataSizeOfAppCalcTask.stop();
+  }
+
+  public void start() {
+    clearResourceThread.start();
   }
 }
