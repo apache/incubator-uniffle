@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -85,10 +86,12 @@ public class RssShuffleWriterTest {
         .set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "127.0.0.1:12345,127.0.0.1:12346");
     Map<String, Set<Long>> failBlocks = JavaUtils.newConcurrentMap();
     Map<String, Set<Long>> successBlocks = JavaUtils.newConcurrentMap();
+    Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer =
+        JavaUtils.newConcurrentMap();
     Serializer kryoSerializer = new KryoSerializer(conf);
     RssShuffleManager manager =
         TestUtils.createShuffleManager(
-            conf, false, null, successBlocks, failBlocks, JavaUtils.newConcurrentMap());
+            conf, false, null, successBlocks, failBlocks, taskToFailedBlockIdsAndServer);
 
     ShuffleWriteClient mockShuffleWriteClient = mock(ShuffleWriteClient.class);
     Partitioner mockPartitioner = mock(Partitioner.class);
@@ -149,6 +152,13 @@ public class RssShuffleWriterTest {
     // case 3: partial blocks are sent failed, Runtime exception will be thrown
     successBlocks.put("taskId", Sets.newHashSet(1L, 2L));
     failBlocks.put("taskId", Sets.newHashSet(3L));
+    Map<Long, BlockingQueue<ShuffleServerInfo>> blockIdToShuffleServerInfoMap =
+        JavaUtils.newConcurrentMap();
+    BlockingQueue blockingQueue = new LinkedBlockingQueue<>();
+    ShuffleServerInfo shuffleServerInfo = new ShuffleServerInfo("127.0.0.1", 20001);
+    blockingQueue.add(shuffleServerInfo);
+    blockIdToShuffleServerInfoMap.put(3L, blockingQueue);
+    taskToFailedBlockIdsAndServer.put("taskId", blockIdToShuffleServerInfoMap);
     Throwable e3 =
         assertThrows(
             RuntimeException.class,

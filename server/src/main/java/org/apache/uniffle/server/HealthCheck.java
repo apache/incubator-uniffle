@@ -88,15 +88,13 @@ public class HealthCheck {
   public void check() {
     for (Checker checker : checkers) {
       if (!checker.checkIsHealthy()) {
-        serverStatus.set(ServerStatus.UNHEALTHY);
+        serverStatus.compareAndSet(ServerStatus.ACTIVE, ServerStatus.UNHEALTHY);
         ShuffleServerMetrics.gaugeIsHealthy.set(1);
         return;
       }
     }
     ShuffleServerMetrics.gaugeIsHealthy.set(0);
-    if (serverStatus.get() == ServerStatus.UNHEALTHY) {
-      serverStatus.set(ServerStatus.ACTIVE);
-    }
+    serverStatus.compareAndSet(ServerStatus.UNHEALTHY, ServerStatus.ACTIVE);
   }
 
   public ServerStatus getServerStatus() {

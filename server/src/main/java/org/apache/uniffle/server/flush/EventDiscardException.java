@@ -15,34 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.server.buffer;
+package org.apache.uniffle.server.flush;
 
-public class PreAllocatedBufferInfo {
-  private String appId;
-  private long requireId;
-  private long timestamp;
-  private int requireSize;
-
-  public PreAllocatedBufferInfo(String appId, long requireId, long timestamp, int requireSize) {
-    this.appId = appId;
-    this.requireId = requireId;
-    this.timestamp = timestamp;
-    this.requireSize = requireSize;
+public class EventDiscardException extends Exception {
+  public EventDiscardException() {
+    super();
   }
 
-  public long getRequireId() {
-    return requireId;
+  public EventDiscardException(String message) {
+    super(message);
   }
 
-  public long getTimestamp() {
-    return timestamp;
+  public EventDiscardException(String message, Throwable cause) {
+    super(message, cause);
   }
 
-  public int getRequireSize() {
-    return requireSize;
-  }
-
-  public String getAppId() {
-    return appId;
+  public EventDiscardException(Throwable cause) {
+    super(cause);
   }
 }

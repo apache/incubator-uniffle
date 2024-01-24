@@ -49,6 +49,7 @@ import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExitUtils;
+import org.apache.uniffle.common.util.JvmPauseMonitor;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
@@ -99,6 +100,7 @@ public class ShuffleServer {
   private Future<?> decommissionFuture;
   private boolean nettyServerEnabled;
   private StreamServer streamServer;
+  private JvmPauseMonitor jvmPauseMonitor;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -142,6 +144,7 @@ public class ShuffleServer {
     initMetricsReporter();
 
     registerHeartBeat.startHeartBeat();
+    directMemoryUsageReporter.start();
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread() {
@@ -193,11 +196,22 @@ public class ShuffleServer {
     if (executorService != null) {
       executorService.shutdownNow();
     }
+    if (shuffleTaskManager != null) {
+      shuffleTaskManager.stop();
+    }
+    if (jvmPauseMonitor != null) {
+      jvmPauseMonitor.close();
+    }
     running = false;
     LOG.info("RPC Server Stopped!");
   }
 
   private void initialization() throws Exception {
+    // setup jvm pause monitor
+    final JvmPauseMonitor monitor = new JvmPauseMonitor(shuffleServerConf);
+    monitor.start();
+    this.jvmPauseMonitor = monitor;
+
     boolean testMode = shuffleServerConf.getBoolean(RSS_TEST_MODE_ENABLE);
     String storageType = shuffleServerConf.get(RSS_STORAGE_TYPE).name();
     if (!testMode
@@ -270,6 +284,7 @@ public class ShuffleServer {
     shuffleTaskManager =
         new ShuffleTaskManager(
             shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
+    shuffleTaskManager.start();
 
     nettyServerEnabled = shuffleServerConf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
     if (nettyServerEnabled) {
@@ -328,20 +343,18 @@ public class ShuffleServer {
     return serverStatus.get();
   }
 
-  public void setServerStatus(ServerStatus serverStatus) {
-    this.serverStatus.set(serverStatus);
-  }
-
   public synchronized void decommission() {
-    if (isDecommissioning()) {
+    if (isDecommissioning() || isDecommissioned()) {
       LOG.info("Shuffle Server is decommissioning. Nothing needs to be done.");
       return;
     }
-    if (!ServerStatus.ACTIVE.equals(serverStatus.get())) {
+    boolean wasActive =
+        serverStatus.compareAndSet(ServerStatus.ACTIVE, ServerStatus.DECOMMISSIONING);
+    if (!wasActive) {
       throw new InvalidRequestException(
           "Shuffle Server is processing other procedures, current status:" + serverStatus);
     }
-    serverStatus.set(ServerStatus.DECOMMISSIONING);
+
     LOG.info("Shuffle Server is decommissioning.");
     if (executorService == null) {
       executorService = ThreadUtils.getDaemonSingleThreadExecutor("shuffle-server-decommission");
@@ -356,8 +369,14 @@ public class ShuffleServer {
     while (isDecommissioning()) {
       remainApplicationNum = shuffleTaskManager.getAppIds().size();
       if (remainApplicationNum == 0) {
-        serverStatus.set(ServerStatus.DECOMMISSIONED);
+        boolean wasDecommissioning =
+            serverStatus.compareAndSet(ServerStatus.DECOMMISSIONING, ServerStatus.DECOMMISSIONED);
         LOG.info("All applications finished. Current status is " + serverStatus);
+        if (!wasDecommissioning) {
+          LOG.info("Ready to decommission but decommissioning state left unexpectedly.");
+          break;
+        }
+
         if (shutdownAfterDecommission) {
           LOG.info("Exiting...");
           try {
@@ -386,21 +405,23 @@ public class ShuffleServer {
   }
 
   public synchronized void cancelDecommission() {
-    if (!isDecommissioning()) {
+    boolean wasDecomissioning =
+        serverStatus.compareAndSet(ServerStatus.DECOMMISSIONING, ServerStatus.ACTIVE);
+    boolean wasDecomissioned =
+        serverStatus.compareAndSet(ServerStatus.DECOMMISSIONED, ServerStatus.ACTIVE);
+    if (!wasDecomissioning && !wasDecomissioned) {
       LOG.info("Shuffle server is not decommissioning. Nothing needs to be done.");
       return;
     }
-    if (ServerStatus.DECOMMISSIONED.equals(serverStatus.get())) {
-      serverStatus.set(ServerStatus.ACTIVE);
-      return;
+
+    if (wasDecomissioning) {
+      if (decommissionFuture.cancel(true)) {
+        LOG.info("Decommission canceled.");
+      } else {
+        LOG.warn("Failed to cancel decommission.");
+      }
+      decommissionFuture = null;
     }
-    serverStatus.set(ServerStatus.ACTIVE);
-    if (decommissionFuture.cancel(true)) {
-      LOG.info("Decommission canceled.");
-    } else {
-      LOG.warn("Failed to cancel decommission.");
-    }
-    decommissionFuture = null;
   }
 
   public String getIp() {
@@ -483,8 +504,11 @@ public class ShuffleServer {
   }
 
   public boolean isDecommissioning() {
-    return ServerStatus.DECOMMISSIONING.equals(serverStatus.get())
-        || ServerStatus.DECOMMISSIONED.equals(serverStatus.get());
+    return ServerStatus.DECOMMISSIONING.equals(serverStatus.get());
+  }
+
+  public boolean isDecommissioned() {
+    return ServerStatus.DECOMMISSIONED.equals(serverStatus.get());
   }
 
   @VisibleForTesting
