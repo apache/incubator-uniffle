@@ -57,22 +57,6 @@ import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageInfoUtils;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
 import org.apache.uniffle.proto.CoordinatorServerGrpc.CoordinatorServerBlockingStub;
-import org.apache.uniffle.proto.RssProtos;
-import org.apache.uniffle.proto.RssProtos.AccessClusterRequest;
-import org.apache.uniffle.proto.RssProtos.AccessClusterResponse;
-import org.apache.uniffle.proto.RssProtos.ApplicationInfoRequest;
-import org.apache.uniffle.proto.RssProtos.ApplicationInfoResponse;
-import org.apache.uniffle.proto.RssProtos.ClientConfItem;
-import org.apache.uniffle.proto.RssProtos.FetchClientConfResponse;
-import org.apache.uniffle.proto.RssProtos.FetchRemoteStorageRequest;
-import org.apache.uniffle.proto.RssProtos.FetchRemoteStorageResponse;
-import org.apache.uniffle.proto.RssProtos.GetShuffleAssignmentsResponse;
-import org.apache.uniffle.proto.RssProtos.GetShuffleServerListResponse;
-import org.apache.uniffle.proto.RssProtos.PartitionRangeAssignment;
-import org.apache.uniffle.proto.RssProtos.RemoteStorageConfItem;
-import org.apache.uniffle.proto.RssProtos.ShuffleServerHeartBeatRequest;
-import org.apache.uniffle.proto.RssProtos.ShuffleServerHeartBeatResponse;
-import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 
 public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClient {
 

@@ -22,8 +22,6 @@ import java.util.List;
 import com.google.common.collect.Lists;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.proto.RssProtos.ReportShuffleWriteFailureRequest;
-import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 
 public class RssReportShuffleWriteFailureRequest {
   private String appId;

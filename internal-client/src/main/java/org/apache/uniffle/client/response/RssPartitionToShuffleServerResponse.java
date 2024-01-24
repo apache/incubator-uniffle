@@ -28,7 +28,6 @@ import com.google.common.collect.Sets;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.proto.RssProtos;
 
 public class RssPartitionToShuffleServerResponse extends ClientResponse {
 

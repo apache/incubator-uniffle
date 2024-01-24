@@ -33,9 +33,6 @@ import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.proto.RssProtos;
-import org.apache.uniffle.proto.RssProtos.ReportShuffleFetchFailureRequest;
-import org.apache.uniffle.proto.RssProtos.ReportShuffleFetchFailureResponse;
 import org.apache.uniffle.proto.ShuffleManagerGrpc;
 
 public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManagerClient {

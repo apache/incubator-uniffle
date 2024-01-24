@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.JavaUtils;
-import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleManagerGrpc.ShuffleManagerImplBase;
 
 public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {

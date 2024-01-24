@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.coordinator.ServerNode;
-import org.apache.uniffle.proto.RssProtos;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

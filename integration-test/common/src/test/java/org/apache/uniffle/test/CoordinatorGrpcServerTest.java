@@ -28,7 +28,6 @@ import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.rpc.GrpcServer;
 import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
-import org.apache.uniffle.proto.RssProtos;
 
 import static org.apache.uniffle.common.metrics.GRPCMetrics.GRPC_SERVER_CONNECTION_NUMBER_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;

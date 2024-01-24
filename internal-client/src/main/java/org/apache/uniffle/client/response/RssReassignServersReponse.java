@@ -18,7 +18,6 @@
 package org.apache.uniffle.client.response;
 
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.proto.RssProtos;
 
 public class RssReassignServersReponse extends ClientResponse {
 

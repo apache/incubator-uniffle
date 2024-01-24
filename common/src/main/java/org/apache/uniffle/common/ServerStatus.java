@@ -21,8 +21,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.uniffle.proto.RssProtos;
-
 public enum ServerStatus {
   ACTIVE(0),
   DECOMMISSIONING(1),

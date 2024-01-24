@@ -21,8 +21,6 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 
-import org.apache.uniffle.proto.RssProtos;
-
 public class StorageInfoUtils {
   public static Map<String, RssProtos.StorageInfo> toProto(Map<String, StorageInfo> info) {
     Map<String, RssProtos.StorageInfo> result = Maps.newHashMapWithExpectedSize(info.size());

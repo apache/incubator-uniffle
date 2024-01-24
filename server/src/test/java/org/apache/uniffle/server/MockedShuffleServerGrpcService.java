@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.util.JavaUtils;
-import org.apache.uniffle.proto.RssProtos;
 
 public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 

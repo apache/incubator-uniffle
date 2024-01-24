@@ -42,29 +42,6 @@ import org.apache.uniffle.coordinator.conf.DynamicClientConfService;
 import org.apache.uniffle.coordinator.strategy.assignment.PartitionRangeAssignment;
 import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
-import org.apache.uniffle.proto.RssProtos.AccessClusterRequest;
-import org.apache.uniffle.proto.RssProtos.AccessClusterResponse;
-import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
-import org.apache.uniffle.proto.RssProtos.AppHeartBeatResponse;
-import org.apache.uniffle.proto.RssProtos.ApplicationInfoRequest;
-import org.apache.uniffle.proto.RssProtos.ApplicationInfoResponse;
-import org.apache.uniffle.proto.RssProtos.CheckServiceAvailableResponse;
-import org.apache.uniffle.proto.RssProtos.ClientConfItem;
-import org.apache.uniffle.proto.RssProtos.FetchClientConfResponse;
-import org.apache.uniffle.proto.RssProtos.FetchRemoteStorageRequest;
-import org.apache.uniffle.proto.RssProtos.FetchRemoteStorageResponse;
-import org.apache.uniffle.proto.RssProtos.GetShuffleAssignmentsResponse;
-import org.apache.uniffle.proto.RssProtos.GetShuffleServerListResponse;
-import org.apache.uniffle.proto.RssProtos.GetShuffleServerNumResponse;
-import org.apache.uniffle.proto.RssProtos.GetShuffleServerRequest;
-import org.apache.uniffle.proto.RssProtos.RemoteStorage;
-import org.apache.uniffle.proto.RssProtos.RemoteStorageConfItem;
-import org.apache.uniffle.proto.RssProtos.ReportShuffleClientOpRequest;
-import org.apache.uniffle.proto.RssProtos.ReportShuffleClientOpResponse;
-import org.apache.uniffle.proto.RssProtos.ShuffleServerHeartBeatRequest;
-import org.apache.uniffle.proto.RssProtos.ShuffleServerHeartBeatResponse;
-import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
-import org.apache.uniffle.proto.RssProtos.StatusCode;
 
 /** Implementation class for services defined in protobuf */
 public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorServerImplBase {

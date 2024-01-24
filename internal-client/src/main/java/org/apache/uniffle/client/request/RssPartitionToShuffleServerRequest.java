@@ -17,8 +17,6 @@
 
 package org.apache.uniffle.client.request;
 
-import org.apache.uniffle.proto.RssProtos;
-
 public class RssPartitionToShuffleServerRequest {
   private int shuffleId;
 

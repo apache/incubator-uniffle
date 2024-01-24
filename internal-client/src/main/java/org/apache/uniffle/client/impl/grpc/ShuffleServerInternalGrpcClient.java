@@ -28,7 +28,6 @@ import org.apache.uniffle.client.request.RssDecommissionRequest;
 import org.apache.uniffle.client.response.RssCancelDecommissionResponse;
 import org.apache.uniffle.client.response.RssDecommissionResponse;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleServerInternalGrpc;
 
 public class ShuffleServerInternalGrpcClient extends GrpcClient

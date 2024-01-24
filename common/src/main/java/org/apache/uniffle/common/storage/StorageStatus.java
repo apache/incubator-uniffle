@@ -17,8 +17,6 @@
 
 package org.apache.uniffle.common.storage;
 
-import org.apache.uniffle.proto.RssProtos.StorageInfo;
-
 public enum StorageStatus {
   UNKNOWN(0),
   NORMAL(1),

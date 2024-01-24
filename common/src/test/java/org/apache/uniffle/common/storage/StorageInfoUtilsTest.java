@@ -22,8 +22,6 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.proto.RssProtos;
-
 import static org.apache.uniffle.common.storage.StorageInfoUtils.fromProto;
 import static org.apache.uniffle.common.storage.StorageInfoUtils.toProto;
 import static org.junit.jupiter.api.Assertions.assertEquals;

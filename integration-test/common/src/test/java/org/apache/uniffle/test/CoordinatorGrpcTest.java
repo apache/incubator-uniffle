@@ -49,10 +49,6 @@ import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.SimpleClusterManager;
 import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
-import org.apache.uniffle.proto.RssProtos;
-import org.apache.uniffle.proto.RssProtos.GetShuffleAssignmentsResponse;
-import org.apache.uniffle.proto.RssProtos.PartitionRangeAssignment;
-import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 

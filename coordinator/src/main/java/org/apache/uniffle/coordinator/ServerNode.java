@@ -25,7 +25,6 @@ import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.storage.StorageInfo;
-import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 
 public class ServerNode implements Comparable<ServerNode> {
 

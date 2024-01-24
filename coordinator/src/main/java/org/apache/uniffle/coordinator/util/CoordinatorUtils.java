@@ -34,8 +34,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.strategy.assignment.PartitionRangeAssignment;
-import org.apache.uniffle.proto.RssProtos;
-import org.apache.uniffle.proto.RssProtos.GetShuffleAssignmentsResponse;
 
 public class CoordinatorUtils {
 

@@ -27,7 +27,6 @@ import com.google.common.base.Objects;
 
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.coordinator.ServerNode;
-import org.apache.uniffle.proto.RssProtos;
 
 public class PartitionRangeAssignment {
 

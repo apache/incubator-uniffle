@@ -21,7 +21,6 @@ import io.grpc.stub.StreamObserver;
 
 import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleServerInternalGrpc.ShuffleServerInternalImplBase;
 
 public class ShuffleServerInternalGrpcService extends ShuffleServerInternalImplBase {

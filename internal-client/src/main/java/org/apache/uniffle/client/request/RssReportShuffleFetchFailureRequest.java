@@ -17,8 +17,6 @@
 
 package org.apache.uniffle.client.request;
 
-import org.apache.uniffle.proto.RssProtos.ReportShuffleFetchFailureRequest;
-
 public class RssReportShuffleFetchFailureRequest {
   private String appId;
   private int shuffleId;

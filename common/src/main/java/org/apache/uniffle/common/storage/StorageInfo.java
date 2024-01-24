@@ -19,8 +19,6 @@ package org.apache.uniffle.common.storage;
 
 import java.util.Objects;
 
-import org.apache.uniffle.proto.RssProtos;
-
 public class StorageInfo {
   private String mountPoint;
   private StorageMedia type;
