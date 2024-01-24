@@ -57,6 +57,12 @@
             <artifactId>rss-client-spark3</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-client</artifactId>
+            <scope>test</scope>
+            <type>test-jar</type>
+        </dependency>
     </dependencies>
 
 </project>
