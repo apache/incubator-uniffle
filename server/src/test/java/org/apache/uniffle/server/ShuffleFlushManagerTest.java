@@ -697,16 +697,15 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     List<ShufflePartitionedBlock> blocks =
         Lists.newArrayList(new ShufflePartitionedBlock(100000, 1000, 1, 1, 1L, (byte[]) null));
     ShuffleDataFlushEvent bigEvent =
-        new ShuffleDataFlushEvent(1, "1", 1, 1, 1, 100, blocks, null, null);
+        new ShuffleDataFlushEvent(1, "1", 2, 1, 1, 100, blocks, null, null);
     bigEvent.setUnderStorage(
         ((HybridStorageManager) storageManager).getWarmStorageManager().selectStorage(event));
     ((HybridStorageManager) storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
 
-    event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100);
+    event = createShuffleDataFlushEvent(appId, 3, 1, 1, null, 100);
     flushManager.addToFlushQueue(event);
     Thread.sleep(1000);
     assertTrue(event.getUnderStorage() instanceof HadoopStorage);
-    assertEquals(1, event.getRetryTimes());
   }
 
   @Test
@@ -756,11 +755,11 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         ((HybridStorageManager) storageManager).getWarmStorageManager().selectStorage(event));
     ((HybridStorageManager) storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
 
-    event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100);
+    event = createShuffleDataFlushEvent(appId, 2, 1, 1, null, 100);
     flushManager.addToFlushQueue(event);
-    waitForFlush(flushManager, appId, 1, 15);
-    assertEquals(1, event.getRetryTimes());
-    assertEquals(2, ShuffleServerMetrics.counterLocalFileEventFlush.get());
+    waitForFlush(flushManager, appId, 2, 5);
+    assertEquals(0, event.getRetryTimes());
+    assertEquals(1, ShuffleServerMetrics.counterLocalFileEventFlush.get());
     assertEquals(2, ShuffleServerMetrics.counterHadoopEventFlush.get());
   }
 

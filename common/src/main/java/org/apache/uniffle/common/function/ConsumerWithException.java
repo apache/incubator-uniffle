@@ -15,34 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.server.buffer;
+package org.apache.uniffle.common.function;
 
-public class PreAllocatedBufferInfo {
-  private String appId;
-  private long requireId;
-  private long timestamp;
-  private int requireSize;
-
-  public PreAllocatedBufferInfo(String appId, long requireId, long timestamp, int requireSize) {
-    this.appId = appId;
-    this.requireId = requireId;
-    this.timestamp = timestamp;
-    this.requireSize = requireSize;
-  }
-
-  public long getRequireId() {
-    return requireId;
-  }
-
-  public long getTimestamp() {
-    return timestamp;
-  }
-
-  public int getRequireSize() {
-    return requireSize;
-  }
-
-  public String getAppId() {
-    return appId;
-  }
+@FunctionalInterface
+public interface ConsumerWithException<T> {
+  void accept(T t) throws Exception;
 }

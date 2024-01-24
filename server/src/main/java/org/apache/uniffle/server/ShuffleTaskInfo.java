@@ -50,7 +50,11 @@ public class ShuffleTaskInfo {
 
   private AtomicReference<String> user;
 
-  private AtomicLong totalDataSize = new AtomicLong(0);
+  private final AtomicLong totalDataSize = new AtomicLong(0);
+  private final AtomicLong inMemoryDataSize = new AtomicLong(0);
+  private final AtomicLong onLocalFileDataSize = new AtomicLong(0);
+  private final AtomicLong onHadoopDataSize = new AtomicLong(0);
+
   /** shuffleId -> partitionId -> partition shuffle data size */
   private Map<Integer, Map<Integer, Long>> partitionDataSizes;
   /** shuffleId -> huge partitionIds set */
@@ -115,6 +119,7 @@ public class ShuffleTaskInfo {
 
   public long addPartitionDataSize(int shuffleId, int partitionId, long delta) {
     totalDataSize.addAndGet(delta);
+    inMemoryDataSize.addAndGet(delta);
     partitionDataSizes.computeIfAbsent(shuffleId, key -> JavaUtils.newConcurrentMap());
     Map<Integer, Long> partitions = partitionDataSizes.get(shuffleId);
     partitions.putIfAbsent(partitionId, 0L);
@@ -123,6 +128,28 @@ public class ShuffleTaskInfo {
 
   public long getTotalDataSize() {
     return totalDataSize.get();
+  }
+
+  public long getInMemoryDataSize() {
+    return inMemoryDataSize.get();
+  }
+
+  public long addOnLocalFileDataSize(long delta) {
+    inMemoryDataSize.addAndGet(-delta);
+    return onLocalFileDataSize.addAndGet(delta);
+  }
+
+  public long getOnLocalFileDataSize() {
+    return onLocalFileDataSize.get();
+  }
+
+  public long addOnHadoopDataSize(long delta) {
+    inMemoryDataSize.addAndGet(-delta);
+    return onHadoopDataSize.addAndGet(delta);
+  }
+
+  public long getOnHadoopDataSize() {
+    return onHadoopDataSize.get();
   }
 
   public long getPartitionDataSize(int shuffleId, int partitionId) {
@@ -165,5 +192,24 @@ public class ShuffleTaskInfo {
           shuffleId,
           partitionId);
     }
+  }
+
+  @Override
+  public String toString() {
+    return "ShuffleTaskInfo{"
+        + "appId='"
+        + appId
+        + '\''
+        + ", totalDataSize="
+        + totalDataSize
+        + ", inMemoryDataSize="
+        + inMemoryDataSize
+        + ", onLocalFileDataSize="
+        + onLocalFileDataSize
+        + ", onHadoopDataSize="
+        + onHadoopDataSize
+        + ", partitionDataSizes="
+        + partitionDataSizes
+        + '}';
   }
 }
