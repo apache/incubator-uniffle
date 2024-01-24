@@ -1163,10 +1163,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                 for (int i = 0; i < shuffleServerInfoList.size(); i++) {
                   if (shuffleServerInfoList.get(i).getId().equals(faultyShuffleServerId)) {
                     shuffleHandleInfo
-                        .getDynamicAssignedPartitionServers()
+                        .getFailoverPartitionServers()
                         .computeIfAbsent(Integer.valueOf(partitionId), k -> Maps.newHashMap());
                     shuffleHandleInfo
-                        .getDynamicAssignedPartitionServers()
+                        .getFailoverPartitionServers()
                         .get(partitionId)
                         .computeIfAbsent(i, j -> Lists.newArrayList())
                         .add(newAssignedServer);

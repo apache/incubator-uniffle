@@ -40,8 +40,8 @@ public class ShuffleHandleInfo implements Serializable {
 
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
 
-  // partitionId -> replica -> dynamic servers
-  private Map<Integer, Map<Integer, List<ShuffleServerInfo>>> dynamicAssignedPartitionServers;
+  // partitionId -> replica -> failover servers
+  private Map<Integer, Map<Integer, List<ShuffleServerInfo>>> failoverPartitionServers;
   // shuffle servers which is for store shuffle data
   private Set<ShuffleServerInfo> shuffleServersForData;
   // remoteStorage used for this job
@@ -57,7 +57,7 @@ public class ShuffleHandleInfo implements Serializable {
     this.shuffleId = shuffleId;
     this.partitionToServers = partitionToServers;
     this.shuffleServersForData = Sets.newHashSet();
-    this.dynamicAssignedPartitionServers = Maps.newConcurrentMap();
+    this.failoverPartitionServers = Maps.newConcurrentMap();
     for (List<ShuffleServerInfo> ssis : partitionToServers.values()) {
       this.shuffleServersForData.addAll(ssis);
     }
@@ -68,8 +68,8 @@ public class ShuffleHandleInfo implements Serializable {
     return partitionToServers;
   }
 
-  public Map<Integer, Map<Integer, List<ShuffleServerInfo>>> getDynamicAssignedPartitionServers() {
-    return dynamicAssignedPartitionServers;
+  public Map<Integer, Map<Integer, List<ShuffleServerInfo>>> getFailoverPartitionServers() {
+    return failoverPartitionServers;
   }
 
   public Set<ShuffleServerInfo> getShuffleServersForData() {
