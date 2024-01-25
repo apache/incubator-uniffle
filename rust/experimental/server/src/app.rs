@@ -246,7 +246,10 @@ impl App {
             return Err(WorkerError::MEMORY_USAGE_LIMITED_BY_HUGE_PARTITION);
         }
 
-        self.store.require_buffer(ctx).await
+        self.store.require_buffer(ctx).await.map_err(|err| {
+            TOTAL_REQUIRE_BUFFER_FAILED.inc();
+            err
+        })
     }
 
     pub async fn release_buffer(&self, ticket_id: i64) -> Result<i64, WorkerError> {
