@@ -79,6 +79,7 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.hadoop.shim.HadoopShimImpl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
 public class FetcherTest {
   static JobID jobId = new JobID("a", 0);
@@ -340,6 +341,7 @@ public class FetcherTest {
     MockShuffleWriteClient client = new MockShuffleWriteClient();
     client.setMode(2);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = JavaUtils.newConcurrentMap();
+    partitionToServers.put(0, Lists.newArrayList(mock(ShuffleServerInfo.class)));
     Set<Long> successBlocks = Sets.newConcurrentHashSet();
     Set<Long> failedBlocks = Sets.newConcurrentHashSet();
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
@@ -524,11 +526,10 @@ public class FetcherTest {
 
     @Override
     public void reportShuffleResult(
-        Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+        Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds,
         String appId,
         int shuffleId,
         long taskAttemptId,
-        Map<Integer, List<Long>> partitionToBlockIds,
         int bitmapNum) {}
 
     @Override

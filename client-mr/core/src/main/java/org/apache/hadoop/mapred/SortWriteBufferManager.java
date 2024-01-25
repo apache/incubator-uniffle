@@ -85,7 +85,9 @@ public class SortWriteBufferManager<K, V> {
   private final long sendCheckInterval;
   private final Set<Long> allBlockIds = Sets.newConcurrentHashSet();
   private final int bitmapSplitNum;
-  private final Map<Integer, List<Long>> partitionToBlocks = JavaUtils.newConcurrentMap();
+  // server -> partitionId -> blockIds
+  private Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds =
+      Maps.newHashMap();
   private final long maxSegmentSize;
   private final boolean isMemoryShuffleEnabled;
   private final int numMaps;
@@ -250,8 +252,17 @@ public class SortWriteBufferManager<K, V> {
     buffer.clear();
     shuffleBlocks.add(block);
     allBlockIds.add(block.getBlockId());
-    partitionToBlocks.computeIfAbsent(block.getPartitionId(), key -> Lists.newArrayList());
-    partitionToBlocks.get(block.getPartitionId()).add(block.getBlockId());
+    block
+        .getShuffleServerInfos()
+        .forEach(
+            shuffleServerInfo -> {
+              Map<Integer, Set<Long>> pToBlockIds =
+                  serverToPartitionToBlockIds.computeIfAbsent(
+                      shuffleServerInfo, k -> Maps.newHashMap());
+              pToBlockIds
+                  .computeIfAbsent(block.getPartitionId(), v -> Sets.newHashSet())
+                  .add(block.getBlockId());
+            });
   }
 
   public SortWriteBuffer<K, V> combineBuffer(SortWriteBuffer<K, V> buffer)
@@ -336,7 +347,7 @@ public class SortWriteBufferManager<K, V> {
 
     start = System.currentTimeMillis();
     shuffleWriteClient.reportShuffleResult(
-        partitionToServers, appId, 0, taskAttemptId, partitionToBlocks, bitmapSplitNum);
+        serverToPartitionToBlockIds, appId, 0, taskAttemptId, bitmapSplitNum);
     LOG.info(
         "Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
         taskAttemptId,

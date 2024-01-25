@@ -62,11 +62,10 @@ public interface ShuffleWriteClient {
   RemoteStorageInfo fetchRemoteStorage(String appId);
 
   void reportShuffleResult(
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds,
       String appId,
       int shuffleId,
       long taskAttemptId,
-      Map<Integer, List<Long>> partitionToBlockIds,
       int bitmapNum);
 
   default ShuffleAssignmentsInfo getShuffleAssignments(

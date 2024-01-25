@@ -240,6 +240,8 @@ public class RssShuffleWriterTest {
     WriteBufferManagerTest.FakedTaskMemoryManager fakedTaskMemoryManager =
         new WriteBufferManagerTest.FakedTaskMemoryManager();
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newConcurrentMap();
+    partitionToServers.put(0, Lists.newArrayList(new ShuffleServerInfo("127.0.0.1", 1111)));
     WriteBufferManager bufferManager =
         new WriteBufferManager(
             0,
@@ -247,7 +249,7 @@ public class RssShuffleWriterTest {
             0,
             bufferOptions,
             new KryoSerializer(conf),
-            Maps.newHashMap(),
+            partitionToServers,
             fakedTaskMemoryManager,
             new ShuffleWriteMetrics(),
             RssSparkConfig.toRssConf(conf),
@@ -441,6 +443,7 @@ public class RssShuffleWriterTest {
       }
     }
     Map<Integer, Set<Long>> partitionToBlockIds = rssShuffleWriterSpy.getPartitionToBlockIds();
+    System.out.println(11111);
     assertEquals(2, partitionToBlockIds.get(1).size());
     assertEquals(2, partitionToBlockIds.get(0).size());
     assertEquals(2, partitionToBlockIds.get(2).size());

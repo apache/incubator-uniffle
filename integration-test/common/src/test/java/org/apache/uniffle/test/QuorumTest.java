@@ -20,6 +20,7 @@ package org.apache.uniffle.test;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -363,13 +364,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
     enableTimeout((MockedShuffleServer) shuffleServers.get(2), 500);
 
     // report result should success
-    Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
-    partitionToBlockIds.put(0, Lists.newArrayList(blockIdBitmap.stream().iterator()));
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    partitionToServers.put(
-        0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
-    shuffleWriteClientImpl.reportShuffleResult(
-        partitionToServers, testAppId, 0, 0L, partitionToBlockIds, 1);
+    Map<Integer, Set<Long>> partitionToBlockIds = Maps.newHashMap();
+    partitionToBlockIds.put(0, Sets.newHashSet(blockIdBitmap.stream().iterator()));
+    Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds = Maps.newHashMap();
+    serverToPartitionToBlockIds.put(shuffleServerInfo0, partitionToBlockIds);
+    serverToPartitionToBlockIds.put(shuffleServerInfo1, partitionToBlockIds);
+    serverToPartitionToBlockIds.put(shuffleServerInfo2, partitionToBlockIds);
+    shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 0, 0L, 1);
     Roaring64NavigableMap report =
         shuffleWriteClientImpl.getShuffleResult(
             "GRPC",
@@ -441,14 +442,14 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertEquals(0, result.getSuccessBlockIds().size());
 
     // report result should fail
-    Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    partitionToBlockIds.put(0, Lists.newArrayList(blockIdBitmap.stream().iterator()));
-    partitionToServers.put(
-        0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+    Map<Integer, Set<Long>> partitionToBlockIds = Maps.newHashMap();
+    partitionToBlockIds.put(0, Sets.newHashSet(blockIdBitmap.stream().iterator()));
+    Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds = Maps.newHashMap();
+    serverToPartitionToBlockIds.put(shuffleServerInfo0, partitionToBlockIds);
+    serverToPartitionToBlockIds.put(shuffleServerInfo1, partitionToBlockIds);
+    serverToPartitionToBlockIds.put(shuffleServerInfo2, partitionToBlockIds);
     try {
-      shuffleWriteClientImpl.reportShuffleResult(
-          partitionToServers, testAppId, 0, 0L, partitionToBlockIds, 1);
+      shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 0, 0L, 1);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Quorum check of report shuffle result is failed"));
@@ -502,13 +503,14 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertEquals(blockIdBitmap, succBlockIdBitmap);
     assertEquals(0, failedBlockIdBitmap.getLongCardinality());
 
-    Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
-    partitionToBlockIds.put(0, Lists.newArrayList(blockIdBitmap.stream().iterator()));
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    partitionToServers.put(
-        0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
-    shuffleWriteClientImpl.reportShuffleResult(
-        partitionToServers, testAppId, 0, 0L, partitionToBlockIds, 1);
+    Map<Integer, Set<Long>> partitionToBlockIds = Maps.newHashMap();
+    partitionToBlockIds.put(0, Sets.newHashSet(blockIdBitmap.stream().iterator()));
+    Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds = Maps.newHashMap();
+    serverToPartitionToBlockIds.put(shuffleServerInfo0, partitionToBlockIds);
+    serverToPartitionToBlockIds.put(shuffleServerInfo1, partitionToBlockIds);
+    serverToPartitionToBlockIds.put(shuffleServerInfo2, partitionToBlockIds);
+
+    shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 0, 0L, 1);
 
     Roaring64NavigableMap report =
         shuffleWriteClientImpl.getShuffleResult(
@@ -603,13 +605,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
             Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
 
     // report result should success
-    Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
-    partitionToBlockIds.put(0, Lists.newArrayList(blockIdBitmap.stream().iterator()));
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    partitionToServers.put(
-        0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
-    shuffleWriteClientImpl.reportShuffleResult(
-        partitionToServers, testAppId, 0, 0L, partitionToBlockIds, 1);
+    Map<Integer, Set<Long>> partitionToBlockIds = Maps.newHashMap();
+    partitionToBlockIds.put(0, Sets.newHashSet(blockIdBitmap.stream().iterator()));
+    Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds = Maps.newHashMap();
+    serverToPartitionToBlockIds.put(shuffleServerInfo0, partitionToBlockIds);
+    serverToPartitionToBlockIds.put(shuffleServerInfo1, partitionToBlockIds);
+    serverToPartitionToBlockIds.put(shuffleServerInfo2, partitionToBlockIds);
+    shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 0, 0L, 1);
     Roaring64NavigableMap report =
         shuffleWriteClientImpl.getShuffleResult(
             "GRPC",
@@ -703,23 +705,21 @@ public class QuorumTest extends ShuffleReadWriteBase {
     enableTimeout((MockedShuffleServer) shuffleServers.get(3), 500);
     enableTimeout((MockedShuffleServer) shuffleServers.get(4), 500);
 
-    Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
-    partitionToBlockIds.put(0, Lists.newArrayList(blockIdBitmap0.stream().iterator()));
-    partitionToBlockIds.put(1, Lists.newArrayList(blockIdBitmap1.stream().iterator()));
-    partitionToBlockIds.put(2, Lists.newArrayList(blockIdBitmap2.stream().iterator()));
+    Map<Integer, Set<Long>> partitionToBlockIds = Maps.newHashMap();
+    partitionToBlockIds.put(0, Sets.newHashSet(blockIdBitmap0.stream().iterator()));
+    partitionToBlockIds.put(1, Sets.newHashSet(blockIdBitmap1.stream().iterator()));
+    Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds = Maps.newHashMap();
+    serverToPartitionToBlockIds.put(shuffleServerInfo0, partitionToBlockIds);
+    serverToPartitionToBlockIds.put(shuffleServerInfo1, partitionToBlockIds);
+    serverToPartitionToBlockIds.put(shuffleServerInfo2, partitionToBlockIds);
 
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    partitionToServers.put(
-        0, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
-    partitionToServers.put(
-        1, Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
-    partitionToServers.put(
-        2, Lists.newArrayList(shuffleServerInfo2, shuffleServerInfo3, shuffleServerInfo4));
-
+    Map<Integer, Set<Long>> partitionToBlockIds2 = Maps.newHashMap();
+    partitionToBlockIds2.put(2, Sets.newHashSet(blockIdBitmap2.stream().iterator()));
+    serverToPartitionToBlockIds.put(shuffleServerInfo3, partitionToBlockIds2);
+    serverToPartitionToBlockIds.put(shuffleServerInfo4, partitionToBlockIds2);
     // report result should fail because partition2 is failed to report server 3,4
     try {
-      shuffleWriteClientImpl.reportShuffleResult(
-          partitionToServers, testAppId, 0, 0L, partitionToBlockIds, 1);
+      shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 0, 0L, 1);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
       assertTrue(e.getMessage().startsWith("Quorum check of report shuffle result is failed"));
