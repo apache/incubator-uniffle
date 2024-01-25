@@ -34,6 +34,9 @@ pub enum WorkerError {
     #[error("Partial data has been lost, corrupted path: {0}")]
     PARTIAL_DATA_LOST(String),
 
+    #[error("Local disk:[{0}] is not healthy")]
+    LOCAL_DISK_UNHEALTHY(String),
+
     #[error("Local disk:[{0}] owned by current partition has been corrupted")]
     LOCAL_DISK_OWNED_BY_PARTITION_CORRUPTED(String),
 
