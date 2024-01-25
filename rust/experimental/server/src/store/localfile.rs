@@ -430,9 +430,9 @@ mod test {
 
         let data = b"hello world!hello china!";
         let size = data.len();
-        let writing_ctx = WritingViewContext {
-            uid: uid.clone(),
-            data_blocks: vec![
+        let writing_ctx = WritingViewContext::from(
+            uid.clone(),
+            vec![
                 PartitionedDataBlock {
                     block_id: 0,
                     length: size as i32,
@@ -450,7 +450,7 @@ mod test {
                     task_attempt_id: 0,
                 },
             ],
-        };
+        );
 
         writing_ctx
     }
@@ -522,9 +522,9 @@ mod test {
 
         let data = b"hello world!hello china!";
         let size = data.len();
-        let writing_ctx = WritingViewContext {
-            uid: uid.clone(),
-            data_blocks: vec![
+        let writing_ctx = WritingViewContext::from(
+            uid.clone(),
+            vec![
                 PartitionedDataBlock {
                     block_id: 0,
                     length: size as i32,
@@ -542,7 +542,7 @@ mod test {
                     task_attempt_id: 0,
                 },
             ],
-        };
+        );
 
         let insert_result = runtime.wait(local_store.insert(writing_ctx));
         if insert_result.is_err() {
@@ -596,9 +596,9 @@ mod test {
 
         let data = b"hello world!hello china!";
         let size = data.len();
-        let writing_ctx = WritingViewContext {
-            uid: uid.clone(),
-            data_blocks: vec![
+        let writing_ctx = WritingViewContext::from(
+            uid.clone(),
+            vec![
                 PartitionedDataBlock {
                     block_id: 0,
                     length: size as i32,
@@ -616,7 +616,7 @@ mod test {
                     task_attempt_id: 0,
                 },
             ],
-        };
+        );
 
         let insert_result = runtime.wait(local_store.insert(writing_ctx));
         if insert_result.is_err() {

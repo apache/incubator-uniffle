@@ -179,8 +179,12 @@ impl App {
             .incr_data_size(len)?;
         TOTAL_RECEIVED_DATA.inc_by(len as u64);
 
-        self.store.insert(ctx).await?;
+        let ctx = match self.is_huge_partition(&ctx.uid).await {
+            Ok(true) => WritingViewContext::new(ctx.uid.clone(), ctx.data_blocks, true),
+            _ => ctx,
+        };
 
+        self.store.insert(ctx).await?;
         Ok(len)
     }
 
@@ -204,23 +208,37 @@ impl App {
         self.store.get_index(ctx).await
     }
 
-    async fn huge_partition_limit(&self, uid: &PartitionedUId) -> Result<bool> {
-        let huge_partition_threshold = &self.huge_partition_marked_threshold;
-        let huge_partition_memory_used = &self.huge_partition_memory_max_available_size;
-        if huge_partition_threshold.is_none() || huge_partition_memory_used.is_none() {
+    async fn is_huge_partition(&self, uid: &PartitionedUId) -> Result<bool> {
+        let huge_partition_threshold_option = &self.huge_partition_marked_threshold;
+        let huge_partition_memory_used_option = &self.huge_partition_memory_max_available_size;
+        if huge_partition_threshold_option.is_none() || huge_partition_memory_used_option.is_none()
+        {
             return Ok(false);
         }
-        let huge_partition_size = &huge_partition_threshold.unwrap();
-        let huge_partition_memory = &huge_partition_memory_used.unwrap();
+
+        let huge_partition_threshold = &huge_partition_threshold_option.unwrap();
 
         let meta = self.get_underlying_partition_bitmap(uid.clone());
         let data_size = meta.get_data_size()?;
-        if data_size > *huge_partition_size
-            && self
-                .store
-                .get_hot_store_memory_partitioned_buffer_size(uid)
-                .await?
-                > *huge_partition_memory
+        if data_size > *huge_partition_threshold {
+            return Ok(true);
+        }
+
+        return Ok(false);
+    }
+
+    async fn is_backpressure_for_huge_partition(&self, uid: &PartitionedUId) -> Result<bool> {
+        if !self.is_huge_partition(uid).await? {
+            return Ok(false);
+        }
+        let huge_partition_memory_used = &self.huge_partition_memory_max_available_size;
+        let huge_partition_memory = &huge_partition_memory_used.unwrap();
+
+        if self
+            .store
+            .get_hot_store_memory_partitioned_buffer_size(uid)
+            .await?
+            > *huge_partition_memory
         {
             info!(
                 "[{:?}] with huge partition, it has been writing speed limited",
@@ -241,7 +259,7 @@ impl App {
         &self,
         ctx: RequireBufferContext,
     ) -> Result<RequireBufferResponse, WorkerError> {
-        if self.huge_partition_limit(&ctx.uid).await? {
+        if self.is_backpressure_for_huge_partition(&ctx.uid).await? {
             TOTAL_REQUIRE_BUFFER_FAILED.inc();
             return Err(WorkerError::MEMORY_USAGE_LIMITED_BY_HUGE_PARTITION);
         }
@@ -325,6 +343,29 @@ pub struct GetBlocksContext {
 pub struct WritingViewContext {
     pub uid: PartitionedUId,
     pub data_blocks: Vec<PartitionedDataBlock>,
+    pub owned_by_huge_partition: bool,
+}
+
+impl WritingViewContext {
+    pub fn from(uid: PartitionedUId, data_blocks: Vec<PartitionedDataBlock>) -> Self {
+        WritingViewContext {
+            uid,
+            data_blocks,
+            owned_by_huge_partition: false,
+        }
+    }
+
+    pub fn new(
+        uid: PartitionedUId,
+        data_blocks: Vec<PartitionedDataBlock>,
+        owned_by_huge_partition: bool,
+    ) -> Self {
+        WritingViewContext {
+            uid,
+            data_blocks,
+            owned_by_huge_partition,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -624,13 +665,13 @@ mod test {
         app_manager_ref.register(app_id.clone().into(), 1).unwrap();
 
         if let Some(app) = app_manager_ref.get_app("app_id".into()) {
-            let writing_ctx = WritingViewContext {
-                uid: PartitionedUId {
+            let writing_ctx = WritingViewContext::from(
+                PartitionedUId {
                     app_id: app_id.clone().into(),
                     shuffle_id: 1,
                     partition_id: 0,
                 },
-                data_blocks: vec![
+                vec![
                     PartitionedDataBlock {
                         block_id: 0,
                         length: 10,
@@ -648,7 +689,7 @@ mod test {
                         task_attempt_id: 0,
                     },
                 ],
-            };
+            );
 
             // case1: put
             let result = app.insert(writing_ctx);

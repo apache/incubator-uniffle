@@ -184,10 +184,7 @@ impl ShuffleServer for DefaultShuffleServer {
                 shuffle_id,
                 partition_id,
             };
-            let ctx = WritingViewContext {
-                uid: uid.clone(),
-                data_blocks: blocks,
-            };
+            let ctx = WritingViewContext::from(uid.clone(), blocks);
 
             let inserted = app
                 .insert(ctx)
