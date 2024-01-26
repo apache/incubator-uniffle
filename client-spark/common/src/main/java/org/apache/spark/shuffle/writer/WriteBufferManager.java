@@ -197,20 +197,17 @@ public class WriteBufferManager extends MemoryConsumer {
   private List<ShuffleBlockInfo> insertIntoBuffer(
       int partitionId, byte[] serializedData, int serializedDataLength) {
     long required = Math.max(bufferSegmentSize, serializedDataLength);
-    // Asking memory from task memory manager for the existing writer buffer,
-    // this may trigger current WriteBufferManager spill method, which will
-    // make the current write buffer discard. So we have to recheck the buffer existence.
     WriterBuffer wb = buffers.get(partitionId);
     if (wb != null) {
+      // Asking memory from task memory manager for the existing writer buffer,
+      // this may trigger current WriteBufferManager spill method, which will
+      // make the current write buffer discard. So we have to recheck the buffer existence.
       if (wb.askForMemory(serializedDataLength)) {
         requestMemory(required);
         usedBytes.addAndGet(required);
       }
       wb.addRecord(serializedData, serializedDataLength);
     } else {
-      // The true of hasRequested means the former partitioned buffer has been flushed, that is
-      // triggered by the spill operation caused by asking for memory. So it needn't to re-request
-      // the memory.
       requestMemory(required);
       usedBytes.addAndGet(required);
       wb = new WriterBuffer(bufferSegmentSize);
