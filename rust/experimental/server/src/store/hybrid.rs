@@ -487,19 +487,21 @@ impl Store for HybridStore {
         self.hot_store.release_buffer(ctx).await
     }
 
-    async fn purge(&self, ctx: PurgeDataContext) -> Result<()> {
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<i64> {
         let app_id = &ctx.app_id;
-        self.hot_store.purge(ctx.clone()).await?;
+        let mut removed_size = 0i64;
+
+        removed_size += self.hot_store.purge(ctx.clone()).await?;
         info!("Removed data of app:[{}] in hot store", app_id);
         if self.warm_store.is_some() {
-            self.warm_store.as_ref().unwrap().purge(ctx.clone()).await?;
+            removed_size += self.warm_store.as_ref().unwrap().purge(ctx.clone()).await?;
             info!("Removed data of app:[{}] in warm store", app_id);
         }
         if self.cold_store.is_some() {
-            self.cold_store.as_ref().unwrap().purge(ctx.clone()).await?;
+            removed_size += self.cold_store.as_ref().unwrap().purge(ctx.clone()).await?;
             info!("Removed data of app:[{}] in cold store", app_id);
         }
-        Ok(())
+        Ok(removed_size)
     }
 
     async fn is_healthy(&self) -> Result<bool> {

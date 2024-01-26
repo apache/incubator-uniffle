@@ -242,7 +242,7 @@ impl Store for HdfsStore {
         todo!()
     }
 
-    async fn purge(&self, ctx: PurgeDataContext) -> Result<()> {
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<i64> {
         let app_id = ctx.app_id;
         let filesystem = self.app_remote_clients.get(&app_id).ok_or(
             WorkerError::HDFS_NATIVE_CLIENT_NOT_FOUND(app_id.to_string()),
@@ -260,9 +260,12 @@ impl Store for HdfsStore {
             .map(|entry| entry.key().to_string())
             .collect();
 
+        let mut removed_size = 0i64;
         for deleted_key in keys_to_delete {
             self.partition_file_locks.remove(&deleted_key);
-            self.partition_cached_meta.remove(&deleted_key);
+            if let Some(meta) = self.partition_cached_meta.remove(&deleted_key) {
+                removed_size += meta.1.data_len;
+            }
         }
 
         info!("The hdfs data for {} has been deleted", &dir);
@@ -273,7 +276,7 @@ impl Store for HdfsStore {
             self.app_remote_clients.remove(&app_id);
         }
 
-        Ok(())
+        Ok(removed_size)
     }
 
     async fn is_healthy(&self) -> Result<bool> {

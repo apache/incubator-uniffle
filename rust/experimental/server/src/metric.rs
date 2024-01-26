@@ -233,6 +233,15 @@ pub static GAUGE_RUNTIME_IDLE_THREAD_NUM: Lazy<IntGaugeVec> = Lazy::new(|| {
     .unwrap()
 });
 
+pub static GAUGE_TOPN_APP_RESIDENT_DATA_SIZE: Lazy<IntGaugeVec> = Lazy::new(|| {
+    register_int_gauge_vec!(
+        "topN_app_resident_data_size",
+        "topN app resident data size",
+        &["app_id"]
+    )
+    .unwrap()
+});
+
 pub static GAUGE_IN_SPILL_DATA_SIZE: Lazy<IntGauge> =
     Lazy::new(|| IntGauge::new("in_spill_data_size", "total data size in spill").unwrap());
 
@@ -240,6 +249,10 @@ pub static GAUGE_GRPC_REQUEST_QUEUE_SIZE: Lazy<IntGauge> =
     Lazy::new(|| IntGauge::new("grpc_request_queue_size", "grpc request queue size").unwrap());
 
 fn register_custom_metrics() {
+    REGISTRY
+        .register(Box::new(GAUGE_TOPN_APP_RESIDENT_DATA_SIZE.clone()))
+        .expect("");
+
     REGISTRY
         .register(Box::new(TOTAL_READ_DATA_FROM_LOCALFILE.clone()))
         .expect("total_read_data must be registered");
