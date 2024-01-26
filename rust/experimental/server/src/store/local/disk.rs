@@ -228,15 +228,15 @@ impl LocalDisk {
         Ok(())
     }
 
-    fn mark_corrupted(&self) {
+    pub fn mark_corrupted(&self) {
         self.is_corrupted.store(true, Ordering::SeqCst);
     }
 
-    fn mark_unhealthy(&self) {
+    pub fn mark_unhealthy(&self) {
         self.is_healthy.store(false, Ordering::SeqCst);
     }
 
-    fn mark_healthy(&self) {
+    pub fn mark_healthy(&self) {
         self.is_healthy.store(true, Ordering::SeqCst);
     }
 

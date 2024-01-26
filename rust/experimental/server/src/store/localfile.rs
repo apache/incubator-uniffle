@@ -18,7 +18,7 @@
 use crate::app::ReadingOptions::FILE_OFFSET_AND_LEN;
 use crate::app::{
     PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingViewContext,
-    ReleaseBufferContext, RequireBufferContext, WritingViewContext,
+    RegisterAppContext, ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
 use crate::config::LocalfileStoreConfig;
 use crate::error::WorkerError;
@@ -201,6 +201,12 @@ impl Store for LocalFileStore {
 
         if local_disk.is_corrupted()? {
             return Err(WorkerError::PARTIAL_DATA_LOST(local_disk.root.to_string()));
+        }
+
+        if !local_disk.is_healthy()? {
+            return Err(WorkerError::LOCAL_DISK_UNHEALTHY(
+                local_disk.root.to_string(),
+            ));
         }
 
         if !parent_dir_is_created {
@@ -400,6 +406,10 @@ impl Store for LocalFileStore {
     async fn release_buffer(&self, _ctx: ReleaseBufferContext) -> Result<i64, WorkerError> {
         todo!()
     }
+
+    async fn register_app(&self, _ctx: RegisterAppContext) -> Result<()> {
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -410,9 +420,93 @@ mod test {
     };
     use crate::store::localfile::LocalFileStore;
 
+    use crate::error::WorkerError;
     use crate::store::{PartitionedDataBlock, ResponseData, ResponseDataIndex, Store};
     use bytes::{Buf, Bytes, BytesMut};
     use log::info;
+
+    fn create_writing_ctx() -> WritingViewContext {
+        let uid = PartitionedUId {
+            app_id: "100".to_string(),
+            shuffle_id: 0,
+            partition_id: 0,
+        };
+
+        let data = b"hello world!hello china!";
+        let size = data.len();
+        let writing_ctx = WritingViewContext::from(
+            uid.clone(),
+            vec![
+                PartitionedDataBlock {
+                    block_id: 0,
+                    length: size as i32,
+                    uncompress_length: 200,
+                    crc: 0,
+                    data: Bytes::copy_from_slice(data),
+                    task_attempt_id: 0,
+                },
+                PartitionedDataBlock {
+                    block_id: 1,
+                    length: size as i32,
+                    uncompress_length: 200,
+                    crc: 0,
+                    data: Bytes::copy_from_slice(data),
+                    task_attempt_id: 0,
+                },
+            ],
+        );
+
+        writing_ctx
+    }
+
+    #[test]
+    fn local_disk_under_exception_test() -> anyhow::Result<()> {
+        let temp_dir = tempdir::TempDir::new("local_disk_under_exception_test").unwrap();
+        let temp_path = temp_dir.path().to_str().unwrap().to_string();
+        println!("init local file path: {}", &temp_path);
+        let local_store = LocalFileStore::new(vec![temp_path.to_string()]);
+
+        let runtime = local_store.runtime_manager.clone();
+
+        let writing_view_ctx = create_writing_ctx();
+        let insert_result = runtime.wait(local_store.insert(writing_view_ctx));
+
+        if insert_result.is_err() {
+            println!("{:?}", insert_result.err());
+            panic!()
+        }
+
+        // case1: mark the local disk unhealthy, that will the following flush throw exception directly.
+        let local_disk = local_store.local_disks[0].clone();
+        local_disk.mark_unhealthy();
+
+        let writing_view_ctx = create_writing_ctx();
+        let insert_result = runtime.wait(local_store.insert(writing_view_ctx));
+        match insert_result {
+            Err(WorkerError::LOCAL_DISK_UNHEALTHY(_)) => {}
+            _ => panic!(),
+        }
+
+        // case2: mark the local disk healthy, all things work!
+        local_disk.mark_healthy();
+        let writing_view_ctx = create_writing_ctx();
+        let insert_result = runtime.wait(local_store.insert(writing_view_ctx));
+        match insert_result {
+            Err(WorkerError::LOCAL_DISK_UNHEALTHY(_)) => panic!(),
+            _ => {}
+        }
+
+        // case3: mark the local disk corrupted, fail directly.
+        local_disk.mark_corrupted();
+        let writing_view_ctx = create_writing_ctx();
+        let insert_result = runtime.wait(local_store.insert(writing_view_ctx));
+        match insert_result {
+            Err(WorkerError::PARTIAL_DATA_LOST(_)) => {}
+            _ => panic!(),
+        }
+
+        Ok(())
+    }
 
     #[test]
     fn purge_test() -> anyhow::Result<()> {
@@ -432,9 +526,9 @@ mod test {
 
         let data = b"hello world!hello china!";
         let size = data.len();
-        let writing_ctx = WritingViewContext {
-            uid: uid.clone(),
-            data_blocks: vec![
+        let writing_ctx = WritingViewContext::from(
+            uid.clone(),
+            vec![
                 PartitionedDataBlock {
                     block_id: 0,
                     length: size as i32,
@@ -452,7 +546,7 @@ mod test {
                     task_attempt_id: 0,
                 },
             ],
-        };
+        );
 
         let insert_result = runtime.wait(local_store.insert(writing_ctx));
         if insert_result.is_err() {
@@ -506,9 +600,9 @@ mod test {
 
         let data = b"hello world!hello china!";
         let size = data.len();
-        let writing_ctx = WritingViewContext {
-            uid: uid.clone(),
-            data_blocks: vec![
+        let writing_ctx = WritingViewContext::from(
+            uid.clone(),
+            vec![
                 PartitionedDataBlock {
                     block_id: 0,
                     length: size as i32,
@@ -526,7 +620,7 @@ mod test {
                     task_attempt_id: 0,
                 },
             ],
-        };
+        );
 
         let insert_result = runtime.wait(local_store.insert(writing_ctx));
         if insert_result.is_err() {

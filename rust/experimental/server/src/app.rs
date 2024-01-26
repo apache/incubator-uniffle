@@ -40,19 +40,22 @@ use dashmap::DashMap;
 use log::{debug, error, info};
 
 use std::collections::hash_map::DefaultHasher;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use std::hash::{Hash, Hasher};
 
 use std::str::FromStr;
 
+use crate::proto::uniffle::RemoteStorage;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
 use std::sync::RwLock;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
+pub static SHUFFLE_SERVER_ID: OnceLock<String> = OnceLock::new();
+
 #[derive(Debug, Clone)]
-enum DataDistribution {
+pub enum DataDistribution {
     NORMAL,
     #[allow(non_camel_case_types)]
     LOCAL_ORDER,
@@ -61,9 +64,24 @@ enum DataDistribution {
 pub const MAX_CONCURRENCY_PER_PARTITION_TO_WRITE: i32 = 20;
 
 #[derive(Debug, Clone)]
-struct AppConfigOptions {
-    data_distribution: DataDistribution,
-    max_concurrency_per_partition_to_write: i32,
+pub struct AppConfigOptions {
+    pub data_distribution: DataDistribution,
+    pub max_concurrency_per_partition_to_write: i32,
+    pub remote_storage_config_option: Option<RemoteStorageConfig>,
+}
+
+impl AppConfigOptions {
+    pub fn new(
+        data_distribution: DataDistribution,
+        max_concurrency_per_partition_to_write: i32,
+        remote_storage_config_option: Option<RemoteStorageConfig>,
+    ) -> Self {
+        Self {
+            data_distribution,
+            max_concurrency_per_partition_to_write,
+            remote_storage_config_option,
+        }
+    }
 }
 
 impl Default for AppConfigOptions {
@@ -71,6 +89,30 @@ impl Default for AppConfigOptions {
         AppConfigOptions {
             data_distribution: DataDistribution::LOCAL_ORDER,
             max_concurrency_per_partition_to_write: 20,
+            remote_storage_config_option: None,
+        }
+    }
+}
+
+// =============================================================
+
+#[derive(Clone, Debug)]
+pub struct RemoteStorageConfig {
+    pub root: String,
+    pub configs: HashMap<String, String>,
+}
+
+impl From<RemoteStorage> for RemoteStorageConfig {
+    fn from(remote_conf: RemoteStorage) -> Self {
+        let root = remote_conf.path;
+        let mut confs = HashMap::new();
+        for kv in remote_conf.remote_storage_conf {
+            confs.insert(kv.key, kv.value);
+        }
+
+        Self {
+            root,
+            configs: confs,
         }
     }
 }
@@ -81,7 +123,7 @@ pub struct App {
     app_id: String,
     // key: shuffleId, value: partitionIds
     partitions: DashMap<i32, HashSet<i32>>,
-    app_config_options: Option<AppConfigOptions>,
+    app_config_options: AppConfigOptions,
     latest_heartbeat_time: AtomicU64,
     store: Arc<HybridStore>,
     // key: (shuffle_id, partition_id)
@@ -139,11 +181,36 @@ impl PartitionedMeta {
 impl App {
     fn from(
         app_id: String,
-        config_options: Option<AppConfigOptions>,
+        config_options: AppConfigOptions,
         store: Arc<HybridStore>,
         huge_partition_marked_threshold: Option<u64>,
         huge_partition_memory_max_available_size: Option<u64>,
+        runtime_manager: RuntimeManager,
     ) -> Self {
+        // todo: should throw exception if register failed.
+        let copy_app_id = app_id.to_string();
+        let app_options = config_options.clone();
+        let cloned_store = store.clone();
+        let register_result = futures::executor::block_on(async move {
+            runtime_manager
+                .default_runtime
+                .spawn(async move {
+                    cloned_store
+                        .register_app(RegisterAppContext {
+                            app_id: copy_app_id,
+                            app_config_options: app_options,
+                        })
+                        .await
+                })
+                .await
+        });
+        if register_result.is_err() {
+            error!(
+                "Errors on registering app to store: {:#?}",
+                register_result.err()
+            );
+        }
+
         App {
             app_id,
             partitions: DashMap::new(),
@@ -179,8 +246,12 @@ impl App {
             .incr_data_size(len)?;
         TOTAL_RECEIVED_DATA.inc_by(len as u64);
 
-        self.store.insert(ctx).await?;
+        let ctx = match self.is_huge_partition(&ctx.uid).await {
+            Ok(true) => WritingViewContext::new(ctx.uid.clone(), ctx.data_blocks, true),
+            _ => ctx,
+        };
 
+        self.store.insert(ctx).await?;
         Ok(len)
     }
 
@@ -204,23 +275,37 @@ impl App {
         self.store.get_index(ctx).await
     }
 
-    async fn huge_partition_limit(&self, uid: &PartitionedUId) -> Result<bool> {
-        let huge_partition_threshold = &self.huge_partition_marked_threshold;
-        let huge_partition_memory_used = &self.huge_partition_memory_max_available_size;
-        if huge_partition_threshold.is_none() || huge_partition_memory_used.is_none() {
+    async fn is_huge_partition(&self, uid: &PartitionedUId) -> Result<bool> {
+        let huge_partition_threshold_option = &self.huge_partition_marked_threshold;
+        let huge_partition_memory_used_option = &self.huge_partition_memory_max_available_size;
+        if huge_partition_threshold_option.is_none() || huge_partition_memory_used_option.is_none()
+        {
             return Ok(false);
         }
-        let huge_partition_size = &huge_partition_threshold.unwrap();
-        let huge_partition_memory = &huge_partition_memory_used.unwrap();
+
+        let huge_partition_threshold = &huge_partition_threshold_option.unwrap();
 
         let meta = self.get_underlying_partition_bitmap(uid.clone());
         let data_size = meta.get_data_size()?;
-        if data_size > *huge_partition_size
-            && self
-                .store
-                .get_hot_store_memory_partitioned_buffer_size(uid)
-                .await?
-                > *huge_partition_memory
+        if data_size > *huge_partition_threshold {
+            return Ok(true);
+        }
+
+        return Ok(false);
+    }
+
+    async fn is_backpressure_for_huge_partition(&self, uid: &PartitionedUId) -> Result<bool> {
+        if !self.is_huge_partition(uid).await? {
+            return Ok(false);
+        }
+        let huge_partition_memory_used = &self.huge_partition_memory_max_available_size;
+        let huge_partition_memory = &huge_partition_memory_used.unwrap();
+
+        if self
+            .store
+            .get_hot_store_memory_partitioned_buffer_size(uid)
+            .await?
+            > *huge_partition_memory
         {
             info!(
                 "[{:?}] with huge partition, it has been writing speed limited",
@@ -241,12 +326,15 @@ impl App {
         &self,
         ctx: RequireBufferContext,
     ) -> Result<RequireBufferResponse, WorkerError> {
-        if self.huge_partition_limit(&ctx.uid).await? {
+        if self.is_backpressure_for_huge_partition(&ctx.uid).await? {
             TOTAL_REQUIRE_BUFFER_FAILED.inc();
             return Err(WorkerError::MEMORY_USAGE_LIMITED_BY_HUGE_PARTITION);
         }
 
-        self.store.require_buffer(ctx).await
+        self.store.require_buffer(ctx).await.map_err(|err| {
+            TOTAL_REQUIRE_BUFFER_FAILED.inc();
+            err
+        })
     }
 
     pub async fn release_buffer(&self, ticket_id: i64) -> Result<i64, WorkerError> {
@@ -322,6 +410,29 @@ pub struct GetBlocksContext {
 pub struct WritingViewContext {
     pub uid: PartitionedUId,
     pub data_blocks: Vec<PartitionedDataBlock>,
+    pub owned_by_huge_partition: bool,
+}
+
+impl WritingViewContext {
+    pub fn from(uid: PartitionedUId, data_blocks: Vec<PartitionedDataBlock>) -> Self {
+        WritingViewContext {
+            uid,
+            data_blocks,
+            owned_by_huge_partition: false,
+        }
+    }
+
+    pub fn new(
+        uid: PartitionedUId,
+        data_blocks: Vec<PartitionedDataBlock>,
+        owned_by_huge_partition: bool,
+    ) -> Self {
+        WritingViewContext {
+            uid,
+            data_blocks,
+            owned_by_huge_partition,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -339,6 +450,12 @@ pub struct ReadingIndexViewContext {
 pub struct RequireBufferContext {
     pub uid: PartitionedUId,
     pub size: i64,
+}
+
+#[derive(Debug, Clone)]
+pub struct RegisterAppContext {
+    pub app_id: String,
+    pub app_config_options: AppConfigOptions,
 }
 
 #[derive(Debug, Clone)]
@@ -389,6 +506,7 @@ pub struct AppManager {
     store: Arc<HybridStore>,
     app_heartbeat_timeout_min: u32,
     config: Config,
+    runtime_manager: RuntimeManager,
 }
 
 impl AppManager {
@@ -404,6 +522,7 @@ impl AppManager {
             store,
             app_heartbeat_timeout_min,
             config,
+            runtime_manager: runtime_manager.clone(),
         };
         manager
     }
@@ -506,7 +625,12 @@ impl AppManager {
         self.apps.get(app_id).map(|v| v.value().clone())
     }
 
-    pub fn register(&self, app_id: String, shuffle_id: i32) -> Result<()> {
+    pub fn register(
+        &self,
+        app_id: String,
+        shuffle_id: i32,
+        app_config_options: AppConfigOptions,
+    ) -> Result<()> {
         info!(
             "Accepted registry. app_id: {}, shuffle_id: {}",
             app_id.clone(),
@@ -539,10 +663,11 @@ impl AppManager {
 
             Arc::new(App::from(
                 app_id,
-                Some(AppConfigOptions::default()),
+                app_config_options,
                 self.store.clone(),
                 threshold,
                 huge_partition_max_available_size,
+                self.runtime_manager.clone(),
             ))
         });
         app_ref.register_shuffle(shuffle_id)
@@ -590,6 +715,7 @@ mod test {
     };
     use crate::config::{Config, HybridStoreConfig, LocalfileStoreConfig, MemoryStoreConfig};
 
+    use crate::runtime::manager::RuntimeManager;
     use crate::store::{PartitionedDataBlock, ResponseData};
     use croaring::treemap::JvmSerializer;
     use croaring::Treemap;
@@ -613,21 +739,24 @@ mod test {
         config
     }
 
-    #[tokio::test]
-    async fn app_put_get_purge_test() {
+    #[test]
+    fn app_put_get_purge_test() {
         let app_id = "app_put_get_purge_test-----id";
 
-        let app_manager_ref = AppManager::get_ref(Default::default(), mock_config()).clone();
-        app_manager_ref.register(app_id.clone().into(), 1).unwrap();
+        let runtime_manager: RuntimeManager = Default::default();
+        let app_manager_ref = AppManager::get_ref(runtime_manager.clone(), mock_config()).clone();
+        app_manager_ref
+            .register(app_id.clone().into(), 1, Default::default())
+            .unwrap();
 
         if let Some(app) = app_manager_ref.get_app("app_id".into()) {
-            let writing_ctx = WritingViewContext {
-                uid: PartitionedUId {
+            let writing_ctx = WritingViewContext::from(
+                PartitionedUId {
                     app_id: app_id.clone().into(),
                     shuffle_id: 1,
                     partition_id: 0,
                 },
-                data_blocks: vec![
+                vec![
                     PartitionedDataBlock {
                         block_id: 0,
                         length: 10,
@@ -645,11 +774,11 @@ mod test {
                         task_attempt_id: 0,
                     },
                 ],
-            };
+            );
 
             // case1: put
-            let result = app.insert(writing_ctx);
-            if result.await.is_err() {
+            let f = app.insert(writing_ctx);
+            if runtime_manager.wait(f).is_err() {
                 panic!()
             }
 
@@ -660,7 +789,8 @@ mod test {
             };
 
             // case2: get
-            let result = app.select(reading_ctx).await;
+            let f = app.select(reading_ctx);
+            let result = runtime_manager.wait(f);
             if result.is_err() {
                 panic!()
             }
@@ -673,42 +803,46 @@ mod test {
             }
 
             // case3: purge
-            app_manager_ref
-                .purge_app_data(app_id.to_string(), None)
-                .await
+            runtime_manager
+                .wait(app_manager_ref.purge_app_data(app_id.to_string(), None))
                 .expect("");
 
             assert_eq!(false, app_manager_ref.get_app(app_id).is_none());
         }
     }
 
-    #[tokio::test]
-    async fn app_manager_test() {
+    #[test]
+    fn app_manager_test() {
         let app_manager_ref = AppManager::get_ref(Default::default(), mock_config()).clone();
-        app_manager_ref.register("app_id".into(), 1).unwrap();
+        app_manager_ref
+            .register("app_id".into(), 1, Default::default())
+            .unwrap();
         if let Some(app) = app_manager_ref.get_app("app_id".into()) {
             assert_eq!("app_id", app.app_id);
         }
     }
 
-    #[tokio::test]
-    async fn test_get_or_put_block_ids() {
+    #[test]
+    fn test_get_or_put_block_ids() {
         let app_id = "test_get_or_put_block_ids-----id".to_string();
 
-        let app_manager_ref = AppManager::get_ref(Default::default(), mock_config()).clone();
-        app_manager_ref.register(app_id.clone().into(), 1).unwrap();
+        let runtime_manager: RuntimeManager = Default::default();
+        let app_manager_ref = AppManager::get_ref(runtime_manager.clone(), mock_config()).clone();
+        app_manager_ref
+            .register(app_id.clone().into(), 1, Default::default())
+            .unwrap();
 
         let app = app_manager_ref.get_app(app_id.as_ref()).unwrap();
-        app.report_block_ids(ReportBlocksContext {
-            uid: PartitionedUId {
-                app_id: app_id.clone(),
-                shuffle_id: 1,
-                partition_id: 0,
-            },
-            blocks: vec![123, 124],
-        })
-        .await
-        .expect("TODO: panic message");
+        runtime_manager
+            .wait(app.report_block_ids(ReportBlocksContext {
+                uid: PartitionedUId {
+                    app_id: app_id.clone(),
+                    shuffle_id: 1,
+                    partition_id: 0,
+                },
+                blocks: vec![123, 124],
+            }))
+            .expect("TODO: panic message");
 
         let data = app
             .get_block_ids(GetBlocksContext {
