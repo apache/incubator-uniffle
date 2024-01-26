@@ -20,6 +20,7 @@ package org.apache.spark.shuffle.writer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import scala.Function1;
 import scala.Option;
@@ -388,7 +390,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   private void checkIfBlocksFailed() {
-    Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
+    Map<Long, BlockingQueue<ShuffleServerInfo>> failedBlockIdsWithShuffleServer =
+        shuffleManager.getFailedBlockIdsWithShuffleServer(taskId);
+    Set<Long> failedBlockIds = failedBlockIdsWithShuffleServer.keySet();
     if (!failedBlockIds.isEmpty()) {
       String errorMsg =
           "Send failed: Task["
@@ -396,7 +400,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               + "]"
               + " failed because "
               + failedBlockIds.size()
-              + " blocks can't be sent to shuffle server.";
+              + " blocks can't be sent to shuffle server: "
+              + failedBlockIdsWithShuffleServer.values().stream()
+                  .flatMap(Collection::stream)
+                  .collect(Collectors.toSet());
       LOG.error(errorMsg);
       throw new RssSendFailedException(errorMsg);
     }

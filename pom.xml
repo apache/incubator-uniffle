@@ -940,6 +940,7 @@
                 <file>${execution.root}/.baseline/copyright/apache-license-header.txt</file>
               </licenseHeader>
             </java>
+            <lineEndings>UNIX</lineEndings>
           </configuration>
           <executions>
             <execution>

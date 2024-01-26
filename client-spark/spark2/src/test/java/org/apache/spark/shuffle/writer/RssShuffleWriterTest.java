@@ -146,6 +146,8 @@ public class RssShuffleWriterTest {
     // case 3: partial blocks are sent failed, Runtime exception will be thrown
     manager.addSuccessBlockIds(taskId, Sets.newHashSet(1L, 2L));
     manager.addFailedBlockIds(taskId, Sets.newHashSet(3L));
+    ShuffleServerInfo shuffleServerInfo = new ShuffleServerInfo("127.0.0.1", 20001);
+    manager.addTaskToFailedBlockIdsAndServer(taskId, 3L, shuffleServerInfo);
     Throwable e3 =
         assertThrows(
             RuntimeException.class,

@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -35,6 +36,9 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.server.flush.EventDiscardException;
+import org.apache.uniffle.server.flush.EventInvalidException;
+import org.apache.uniffle.server.flush.EventRetryException;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
@@ -77,126 +81,65 @@ public class ShuffleFlushManager {
     storageBasePaths = RssUtils.getConfiguredLocalDirs(shuffleServerConf);
     pendingEventTimeoutSec = shuffleServerConf.getLong(ShuffleServerConf.PENDING_EVENT_TIMEOUT_SEC);
     eventHandler =
-        new DefaultFlushEventHandler(shuffleServerConf, storageManager, this::processEvent);
+        new DefaultFlushEventHandler(shuffleServerConf, storageManager, this::processFlushEvent);
   }
 
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
     eventHandler.handle(event);
   }
 
-  private void recordFinalFail(ShuffleDataFlushEvent event, long start) {
-    LOG.error(
-        "Failed to write data for {} in {} times, shuffle data will be lost", event, retryMax);
-    if (event.getUnderStorage() != null) {
-      ShuffleServerMetrics.incStorageFailedCounter(event.getUnderStorage().getStorageHost());
-    }
-    event.doCleanup();
-    if (shuffleServer != null) {
-      long duration = System.currentTimeMillis() - start;
-      ShuffleServerMetrics.counterTotalFailedWrittenEventNum.inc();
-      LOG.error(
-          "Flush to file for {} failed in {} ms and release {} bytes",
-          event,
-          duration,
-          event.getSize());
-    }
-  }
-
-  private void recordSuccess(ShuffleDataFlushEvent event, long start) {
-    updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
-    ShuffleServerMetrics.incStorageSuccessCounter(event.getUnderStorage().getStorageHost());
-
-    ShuffleTaskInfo shuffleTaskInfo =
-        shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
-    if (null != shuffleTaskInfo) {
-      String storageHost = event.getUnderStorage().getStorageHost();
-      if (LocalStorage.STORAGE_HOST.equals(storageHost)) {
-        shuffleTaskInfo.addOnLocalFileDataSize(event.getSize());
-      } else {
-        shuffleTaskInfo.addOnHadoopDataSize(event.getSize());
-      }
-    }
-
-    event.doCleanup();
-    if (LOG.isDebugEnabled()) {
-      long duration = System.currentTimeMillis() - start;
-      LOG.debug("Flush to file success in {} ms and release {} bytes", duration, event.getSize());
-    }
-  }
-
-  public void processEvent(ShuffleDataFlushEvent event) {
+  /**
+   * The method to handle flush event to flush blocks into persistent storage. And we will not
+   * change any internal state for event, that means the event is read-only for this processing.
+   *
+   * <p>Only the blocks are flushed successfully, it can return directly, otherwise it should always
+   * throw dedicated exception.
+   *
+   * @param event
+   * @throws Exception
+   */
+  public void processFlushEvent(ShuffleDataFlushEvent event) throws Exception {
     try {
       ShuffleServerMetrics.gaugeWriteHandler.inc();
-      flushToFile(event);
-      // for thread safety we should not use or change any event info when write to file is failed
-    } catch (Exception e) {
-      LOG.error("Exception happened when flush data for " + event, e);
-    } finally {
-      ShuffleServerMetrics.gaugeWriteHandler.dec();
-      ShuffleServerMetrics.gaugeEventQueueSize.dec();
-    }
-  }
 
-  private boolean reachRetryMax(ShuffleDataFlushEvent event) {
-    return event.getRetryTimes() > retryMax;
-  }
-
-  private boolean flushToFile(ShuffleDataFlushEvent event) {
-    long start = System.currentTimeMillis();
-    boolean writeSuccess = false;
-
-    try {
       if (!event.isValid()) {
         LOG.warn(
-            "AppId {} was removed already, event {} should be dropped", event.getAppId(), event);
-        return true;
+            "AppId {} was removed already, event:{} should be dropped", event.getAppId(), event);
+        // we should catch this to avoid cleaning up duplicate.
+        throw new EventInvalidException();
+      }
+
+      if (reachRetryMax(event)) {
+        LOG.warn("The event:{] has been reached to max retry times, it will be dropped.", event);
+        throw new EventDiscardException();
       }
 
       List<ShufflePartitionedBlock> blocks = event.getShuffleBlocks();
-      if (blocks == null || blocks.isEmpty()) {
+      if (CollectionUtils.isEmpty(blocks)) {
         LOG.info("There is no block to be flushed: {}", event);
-        return true;
+        return;
       }
 
       Storage storage = event.getUnderStorage();
       if (storage == null) {
         LOG.error("Storage selected is null and this should not happen. event: {}", event);
-        return true;
+        throw new EventDiscardException();
       }
 
       if (event.isPended()
           && System.currentTimeMillis() - event.getStartPendingTime()
               > pendingEventTimeoutSec * 1000L) {
-        ShuffleServerMetrics.counterTotalDroppedEventNum.inc();
         LOG.error(
             "Flush event cannot be flushed for {} sec, the event {} is dropped",
             pendingEventTimeoutSec,
             event);
-        return true;
+        throw new EventDiscardException();
       }
 
       if (!storage.canWrite()) {
-        // todo: Could we add an interface supportPending for storageManager
-        //       to unify following logic of multiple different storage managers
-        if (!reachRetryMax(event)) {
-          if (event.isPended()) {
-            LOG.error(
-                "Drop this event directly due to already having entered pending queue. event: {}",
-                event);
-            return true;
-          }
-          event.increaseRetryTimes();
-          event.markPended();
-          if (!reachRetryMax(event)) {
-            ShuffleServerMetrics.incStorageRetryCounter(storage.getStorageHost());
-            eventHandler.handle(event);
-          } else {
-            recordFinalFail(event, start);
-          }
-        } else {
-          recordFinalFail(event, start);
-        }
-        return false;
+        LOG.error(
+            "The event: {} is limited to flush due to storage:{} can't write", event, storage);
+        throw new EventRetryException();
       }
 
       String user =
@@ -218,33 +161,30 @@ public class ShuffleFlushManager {
               user,
               maxConcurrencyPerPartitionToWrite);
       ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
-      writeSuccess = storageManager.write(storage, handler, event);
-      if (writeSuccess) {
-        recordSuccess(event, start);
-      } else if (!reachRetryMax(event)) {
-        if (event.isPended()) {
-          LOG.error(
-              "Drop this event directly due to already having entered pending queue. event: {}",
-              event);
-        }
-        event.increaseRetryTimes();
-        event.markPended();
-        if (!reachRetryMax(event)) {
-          ShuffleServerMetrics.incStorageRetryCounter(storage.getStorageHost());
-          eventHandler.handle(event);
+      boolean writeSuccess = storageManager.write(storage, handler, event);
+      if (!writeSuccess) {
+        throw new EventRetryException();
+      }
+
+      // update some metrics for shuffle task
+      updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
+      ShuffleTaskInfo shuffleTaskInfo =
+          shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
+      if (null != shuffleTaskInfo) {
+        String storageHost = event.getUnderStorage().getStorageHost();
+        if (LocalStorage.STORAGE_HOST.equals(storageHost)) {
+          shuffleTaskInfo.addOnLocalFileDataSize(event.getSize());
         } else {
-          recordFinalFail(event, start);
+          shuffleTaskInfo.addOnHadoopDataSize(event.getSize());
         }
       }
-    } catch (Throwable throwable) {
-      // just log the error, don't throw the exception and stop the flush thread
-      LOG.error("Exception happened when process flush shuffle data for {}", event, throwable);
-      event.increaseRetryTimes();
-      if (reachRetryMax(event)) {
-        recordFinalFail(event, start);
-      }
+    } finally {
+      ShuffleServerMetrics.gaugeWriteHandler.dec();
     }
-    return writeSuccess;
+  }
+
+  private boolean reachRetryMax(ShuffleDataFlushEvent event) {
+    return event.getRetryTimes() > retryMax;
   }
 
   private int getMaxConcurrencyPerPartitionWrite(ShuffleDataFlushEvent event) {

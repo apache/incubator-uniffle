@@ -48,6 +48,12 @@ public class ShuffleServerMetrics {
   private static final String EVENT_SIZE_THRESHOLD_LEVEL3 = "event_size_threshold_level3";
   private static final String EVENT_SIZE_THRESHOLD_LEVEL4 = "event_size_threshold_level4";
   private static final String EVENT_QUEUE_SIZE = "event_queue_size";
+  private static final String HADOOP_FLUSH_THREAD_POOL_QUEUE_SIZE =
+      "hadoop_flush_thread_pool_queue_size";
+  private static final String LOCALFILE_FLUSH_THREAD_POOL_QUEUE_SIZE =
+      "localfile_flush_thread_pool_queue_size";
+  private static final String FALLBACK_FLUSH_THREAD_POOL_QUEUE_SIZE =
+      "fallback_flush_thread_pool_queue_size";
   private static final String TOTAL_READ_DATA = "total_read_data";
   private static final String TOTAL_READ_LOCAL_DATA_FILE = "total_read_local_data_file";
   private static final String TOTAL_READ_LOCAL_INDEX_FILE = "total_read_local_index_file";
@@ -76,6 +82,8 @@ public class ShuffleServerMetrics {
   private static final String TOTAL_FAILED_WRITTEN_EVENT_NUM = "total_failed_written_event_num";
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
   private static final String TOTAL_HADOOP_WRITE_DATA = "total_hadoop_write_data";
+  private static final String TOTAL_HADOOP_WRITE_DATA_FOR_HUGE_PARTITION =
+      "total_hadoop_write_data_for_huge_partition";
   private static final String TOTAL_LOCALFILE_WRITE_DATA = "total_localfile_write_data";
   private static final String LOCAL_DISK_PATH_LABEL = "local_disk_path";
   public static final String LOCAL_DISK_PATH_LABEL_ALL = "ALL";
@@ -106,6 +114,9 @@ public class ShuffleServerMetrics {
 
   private static final String LOCAL_FILE_EVENT_FLUSH_NUM = "local_file_event_flush_num";
   private static final String HADOOP_EVENT_FLUSH_NUM = "hadoop_event_flush_num";
+
+  private static final String TOTAL_EXPIRED_PRE_ALLOCATED_BUFFER_NUM =
+      "total_expired_preAllocated_buffer_num";
 
   private static final String TOTAL_REMOVE_RESOURCE_TIME = "total_remove_resource_time";
   private static final String TOTAL_REMOVE_RESOURCE_BY_SHUFFLE_IDS_TIME =
@@ -175,6 +186,9 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeUsedDirectMemorySize;
   public static Gauge.Child gaugeWriteHandler;
   public static Gauge.Child gaugeEventQueueSize;
+  public static Gauge.Child gaugeHadoopFlushThreadPoolQueueSize;
+  public static Gauge.Child gaugeLocalfileFlushThreadPoolQueueSize;
+  public static Gauge.Child gaugeFallbackFlushThreadPoolQueueSize;
   public static Gauge.Child gaugeAppNum;
   public static Gauge.Child gaugeTotalPartitionNum;
 
@@ -188,11 +202,13 @@ public class ShuffleServerMetrics {
   public static Counter counterRemoteStorageFailedWrite;
   public static Counter counterRemoteStorageSuccessWrite;
   public static Counter counterTotalHadoopWriteDataSize;
+  public static Counter counterTotalHadoopWriteDataSizeForHugePartition;
   public static Counter counterTotalLocalFileWriteDataSize;
 
   private static String tags;
   public static Counter counterLocalFileEventFlush;
   public static Counter counterHadoopEventFlush;
+  public static Counter counterPreAllocatedBufferExpired;
 
   private static MetricsManager metricsManager;
   private static boolean isRegister = false;
@@ -259,12 +275,25 @@ public class ShuffleServerMetrics {
     }
   }
 
-  public static void incHadoopStorageWriteDataSize(String storageHost, long size) {
+  public static void incHadoopStorageWriteDataSize(
+      String storageHost, long size, boolean isOwnedByHugePartition) {
     if (StringUtils.isEmpty(storageHost)) {
       return;
     }
     counterTotalHadoopWriteDataSize.labels(tags, storageHost).inc(size);
     counterTotalHadoopWriteDataSize.labels(tags, STORAGE_HOST_LABEL_ALL).inc(size);
+    if (isOwnedByHugePartition) {
+      counterTotalHadoopWriteDataSizeForHugePartition.labels(tags, storageHost).inc(size);
+      counterTotalHadoopWriteDataSizeForHugePartition
+          .labels(tags, STORAGE_HOST_LABEL_ALL)
+          .inc(size);
+    }
+  }
+
+  // only for test cases
+  @VisibleForTesting
+  public static void incHadoopStorageWriteDataSize(String storageHost, long size) {
+    incHadoopStorageWriteDataSize(storageHost, size, false);
   }
 
   private static void setUpMetrics() {
@@ -292,6 +321,11 @@ public class ShuffleServerMetrics {
     counterTotalHadoopWriteDataSize =
         metricsManager.addCounter(
             TOTAL_HADOOP_WRITE_DATA, Constants.METRICS_TAG_LABEL_NAME, STORAGE_HOST_LABEL);
+    counterTotalHadoopWriteDataSizeForHugePartition =
+        metricsManager.addCounter(
+            TOTAL_HADOOP_WRITE_DATA_FOR_HUGE_PARTITION,
+            Constants.METRICS_TAG_LABEL_NAME,
+            STORAGE_HOST_LABEL);
     counterTotalLocalFileWriteDataSize =
         metricsManager.addCounter(TOTAL_LOCALFILE_WRITE_DATA, LOCAL_DISK_PATH_LABEL);
 
@@ -348,6 +382,13 @@ public class ShuffleServerMetrics {
     gaugeUsedDirectMemorySize = metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE);
     gaugeWriteHandler = metricsManager.addLabeledGauge(TOTAL_WRITE_HANDLER);
     gaugeEventQueueSize = metricsManager.addLabeledGauge(EVENT_QUEUE_SIZE);
+    gaugeHadoopFlushThreadPoolQueueSize =
+        metricsManager.addLabeledGauge(HADOOP_FLUSH_THREAD_POOL_QUEUE_SIZE);
+    gaugeLocalfileFlushThreadPoolQueueSize =
+        metricsManager.addLabeledGauge(LOCALFILE_FLUSH_THREAD_POOL_QUEUE_SIZE);
+    gaugeFallbackFlushThreadPoolQueueSize =
+        metricsManager.addLabeledGauge(FALLBACK_FLUSH_THREAD_POOL_QUEUE_SIZE);
+
     gaugeAppNum = metricsManager.addLabeledGauge(APP_NUM_WITH_NODE);
     gaugeTotalPartitionNum = metricsManager.addLabeledGauge(PARTITION_NUM_WITH_NODE);
 
@@ -356,6 +397,9 @@ public class ShuffleServerMetrics {
 
     counterLocalFileEventFlush = metricsManager.addCounter(LOCAL_FILE_EVENT_FLUSH_NUM);
     counterHadoopEventFlush = metricsManager.addCounter(HADOOP_EVENT_FLUSH_NUM);
+
+    counterPreAllocatedBufferExpired =
+        metricsManager.addCounter(TOTAL_EXPIRED_PRE_ALLOCATED_BUFFER_NUM);
 
     summaryTotalRemoveResourceTime = metricsManager.addSummary(TOTAL_REMOVE_RESOURCE_TIME);
     summaryTotalRemoveResourceByShuffleIdsTime =
