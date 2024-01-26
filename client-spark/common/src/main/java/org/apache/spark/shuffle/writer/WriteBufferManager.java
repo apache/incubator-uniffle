@@ -212,12 +212,12 @@ public class WriteBufferManager extends MemoryConsumer {
       usedBytes.addAndGet(required);
       wb = new WriterBuffer(bufferSegmentSize);
       wb.addRecord(serializedData, serializedDataLength);
-      if (wb.getMemoryUsed() < bufferSize) {
+      if (wb.getMemoryUsed() <= bufferSize) {
         buffers.put(partitionId, wb);
       }
     }
 
-    if (wb.getMemoryUsed() >= bufferSize) {
+    if (wb.getMemoryUsed() > bufferSize) {
       List<ShuffleBlockInfo> sentBlocks = new ArrayList<>(1);
       sentBlocks.add(createShuffleBlock(partitionId, wb));
       copyTime += wb.getCopyTime();
