@@ -197,13 +197,22 @@ public class WriteBufferManager extends MemoryConsumer {
   private List<ShuffleBlockInfo> insertIntoBuffer(
       int partitionId, byte[] serializedData, int serializedDataLength) {
     long required = Math.max(bufferSegmentSize, serializedDataLength);
+    // Asking memory from task memory manager for the existing writer buffer,
+    // this may trigger current WriteBufferManager spill method, which will
+    // make the current write buffer discard. So we have to recheck the buffer existence.
+    boolean hasRequested = false;
     WriterBuffer wb = buffers.get(partitionId);
     if (wb != null) {
-      // Asking memory from task memory manager for the existing writer buffer,
-      // this may trigger current WriteBufferManager spill method, which will
-      // make the current write buffer discard. So we have to recheck the buffer existence.
       if (wb.askForMemory(serializedDataLength)) {
         requestMemory(required);
+        hasRequested = true;
+      }
+    }
+
+    // The clear operation which triggered by spill operation will cause thread-safe problems
+    wb = buffers.remove(partitionId);
+    if (wb != null) {
+      if (hasRequested) {
         usedBytes.addAndGet(required);
       }
       wb.addRecord(serializedData, serializedDataLength);
@@ -212,16 +221,12 @@ public class WriteBufferManager extends MemoryConsumer {
       usedBytes.addAndGet(required);
       wb = new WriterBuffer(bufferSegmentSize);
       wb.addRecord(serializedData, serializedDataLength);
-      if (wb.getMemoryUsed() <= bufferSize) {
-        buffers.put(partitionId, wb);
-      }
     }
 
     if (wb.getMemoryUsed() > bufferSize) {
       List<ShuffleBlockInfo> sentBlocks = new ArrayList<>(1);
       sentBlocks.add(createShuffleBlock(partitionId, wb));
       copyTime += wb.getCopyTime();
-      buffers.remove(partitionId);
       if (LOG.isDebugEnabled()) {
         LOG.debug(
             "Single buffer is full for shuffleId["
@@ -235,6 +240,8 @@ public class WriteBufferManager extends MemoryConsumer {
                 + "]");
       }
       return sentBlocks;
+    } else {
+      buffers.put(partitionId, wb);
     }
     return Collections.emptyList();
   }
