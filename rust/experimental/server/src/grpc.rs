@@ -698,6 +698,7 @@ impl ShuffleServer for DefaultShuffleServer {
 }
 
 pub mod metrics_middleware {
+    use crate::metric::GAUGE_GRPC_REQUEST_QUEUE_SIZE;
     use hyper::service::Service;
     use hyper::Body;
     use prometheus::HistogramVec;
@@ -746,6 +747,8 @@ pub mod metrics_middleware {
         }
 
         fn call(&mut self, req: hyper::Request<Body>) -> Self::Future {
+            GAUGE_GRPC_REQUEST_QUEUE_SIZE.inc();
+
             // This is necessary because tonic internally uses `tower::buffer::Buffer`.
             // See https://github.com/tower-rs/tower/issues/547#issuecomment-767629149
             // for details on why this is necessary
@@ -761,6 +764,8 @@ pub mod metrics_middleware {
                 let response = inner.call(req).await?;
 
                 timer.observe_duration();
+
+                GAUGE_GRPC_REQUEST_QUEUE_SIZE.inc();
 
                 Ok(response)
             })

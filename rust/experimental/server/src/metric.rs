@@ -39,6 +39,19 @@ pub static TOTAL_READ_DATA: Lazy<IntCounter> = Lazy::new(|| {
     IntCounter::new("total_read_data", "Reading Data").expect("metric should be created")
 });
 
+pub static TOTAL_READ_DATA_FROM_MEMORY: Lazy<IntCounter> = Lazy::new(|| {
+    IntCounter::new("total_read_data_from_memory", "Reading Data from memory")
+        .expect("metric should be created")
+});
+
+pub static TOTAL_READ_DATA_FROM_LOCALFILE: Lazy<IntCounter> = Lazy::new(|| {
+    IntCounter::new(
+        "total_read_data_from_localfile",
+        "Reading Data from localfile",
+    )
+    .expect("metric should be created")
+});
+
 pub static GRPC_GET_MEMORY_DATA_TRANSPORT_TIME: Lazy<Histogram> = Lazy::new(|| {
     let opts = HistogramOpts::new("grpc_get_memory_data_transport_time", "none")
         .buckets(Vec::from(DEFAULT_BUCKETS as &'static [f64]));
@@ -175,6 +188,33 @@ pub static TOTAL_HUGE_PARTITION_REQUIRE_BUFFER_FAILED: Lazy<IntCounter> = Lazy::
     .expect("metrics should be created")
 });
 
+pub static GAUGE_LOCAL_DISK_CAPACITY: Lazy<IntGaugeVec> = Lazy::new(|| {
+    register_int_gauge_vec!(
+        "local_disk_capacity",
+        "local disk capacity for root path",
+        &["root"]
+    )
+    .unwrap()
+});
+
+pub static GAUGE_LOCAL_DISK_USED: Lazy<IntGaugeVec> = Lazy::new(|| {
+    register_int_gauge_vec!(
+        "local_disk_used",
+        "local disk used for root path",
+        &["root"]
+    )
+    .unwrap()
+});
+
+pub static GAUGE_LOCAL_DISK_IS_HEALTHY: Lazy<IntGaugeVec> = Lazy::new(|| {
+    register_int_gauge_vec!(
+        "local_disk_is_healthy",
+        "local disk is_healthy for root path",
+        &["root"]
+    )
+    .unwrap()
+});
+
 pub static GAUGE_RUNTIME_ALIVE_THREAD_NUM: Lazy<IntGaugeVec> = Lazy::new(|| {
     register_int_gauge_vec!(
         "runtime_thread_alive_gauge",
@@ -193,7 +233,37 @@ pub static GAUGE_RUNTIME_IDLE_THREAD_NUM: Lazy<IntGaugeVec> = Lazy::new(|| {
     .unwrap()
 });
 
+pub static GAUGE_IN_SPILL_DATA_SIZE: Lazy<IntGauge> =
+    Lazy::new(|| IntGauge::new("in_spill_data_size", "total data size in spill").unwrap());
+
+pub static GAUGE_GRPC_REQUEST_QUEUE_SIZE: Lazy<IntGauge> =
+    Lazy::new(|| IntGauge::new("grpc_request_queue_size", "grpc request queue size").unwrap());
+
 fn register_custom_metrics() {
+    REGISTRY
+        .register(Box::new(TOTAL_READ_DATA_FROM_LOCALFILE.clone()))
+        .expect("total_read_data must be registered");
+
+    REGISTRY
+        .register(Box::new(TOTAL_READ_DATA_FROM_MEMORY.clone()))
+        .expect("total_read_data must be registered");
+
+    REGISTRY
+        .register(Box::new(GAUGE_IN_SPILL_DATA_SIZE.clone()))
+        .expect("");
+
+    REGISTRY
+        .register(Box::new(GAUGE_LOCAL_DISK_CAPACITY.clone()))
+        .expect("");
+
+    REGISTRY
+        .register(Box::new(GAUGE_LOCAL_DISK_USED.clone()))
+        .expect("");
+
+    REGISTRY
+        .register(Box::new(GAUGE_LOCAL_DISK_IS_HEALTHY.clone()))
+        .expect("");
+
     REGISTRY
         .register(Box::new(GAUGE_RUNTIME_ALIVE_THREAD_NUM.clone()))
         .expect("");

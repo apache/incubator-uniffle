@@ -24,8 +24,9 @@ use crate::await_tree::AWAIT_TREE_REGISTRY;
 use crate::config::{Config, HybridStoreConfig, StorageType};
 use crate::error::WorkerError;
 use crate::metric::{
-    GAUGE_MEMORY_SPILL_OPERATION, GAUGE_MEMORY_SPILL_TO_HDFS, GAUGE_MEMORY_SPILL_TO_LOCALFILE,
-    TOTAL_MEMORY_SPILL_OPERATION, TOTAL_MEMORY_SPILL_OPERATION_FAILED, TOTAL_MEMORY_SPILL_TO_HDFS,
+    GAUGE_IN_SPILL_DATA_SIZE, GAUGE_MEMORY_SPILL_OPERATION, GAUGE_MEMORY_SPILL_TO_HDFS,
+    GAUGE_MEMORY_SPILL_TO_LOCALFILE, TOTAL_MEMORY_SPILL_OPERATION,
+    TOTAL_MEMORY_SPILL_OPERATION_FAILED, TOTAL_MEMORY_SPILL_TO_HDFS,
     TOTAL_MEMORY_SPILL_TO_LOCALFILE,
 };
 use crate::readable_size::ReadableSize;
@@ -379,6 +380,8 @@ impl Store for HybridStore {
                         for block in &message.ctx.data_blocks {
                             size += block.length as u64;
                         }
+
+                        GAUGE_IN_SPILL_DATA_SIZE.add(size as i64);
                         match store_cloned
                             .memory_spill_to_persistent_store(message.clone())
                             .instrument_await("memory_spill_to_persistent_store.")
@@ -401,6 +404,7 @@ impl Store for HybridStore {
                             }
                         }
                         store_cloned.memory_spill_event_num.dec_by(1);
+                        GAUGE_IN_SPILL_DATA_SIZE.sub(size as i64);
                         GAUGE_MEMORY_SPILL_OPERATION.dec();
                         drop(concurrency_guarder);
                     }));
