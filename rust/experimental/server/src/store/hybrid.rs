@@ -17,7 +17,7 @@
 
 use crate::app::{
     PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingOptions, ReadingViewContext,
-    ReleaseBufferContext, RequireBufferContext, WritingViewContext,
+    RegisterAppContext, ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
 use crate::await_tree::AWAIT_TREE_REGISTRY;
 
@@ -512,6 +512,25 @@ impl Store for HybridStore {
             .await
             .unwrap_or(false);
         Ok(self.hot_store.is_healthy().await? && (warm || cold))
+    }
+
+    async fn register_app(&self, ctx: RegisterAppContext) -> Result<()> {
+        self.hot_store.register_app(ctx.clone()).await?;
+        if self.warm_store.is_some() {
+            self.warm_store
+                .as_ref()
+                .unwrap()
+                .register_app(ctx.clone())
+                .await?;
+        }
+        if self.cold_store.is_some() {
+            self.cold_store
+                .as_ref()
+                .unwrap()
+                .register_app(ctx.clone())
+                .await?;
+        }
+        Ok(())
     }
 }
 

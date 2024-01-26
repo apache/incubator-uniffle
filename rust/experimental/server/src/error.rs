@@ -54,6 +54,9 @@ pub enum WorkerError {
 
     #[error("Ticket id: {0} not exist")]
     TICKET_ID_NOT_EXIST(i64),
+
+    #[error("Hdfs native client not found for app: {0}")]
+    HDFS_NATIVE_CLIENT_NOT_FOUND(String),
 }
 
 impl From<AcquireError> for WorkerError {

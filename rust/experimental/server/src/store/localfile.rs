@@ -18,7 +18,7 @@
 use crate::app::ReadingOptions::FILE_OFFSET_AND_LEN;
 use crate::app::{
     PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingViewContext,
-    ReleaseBufferContext, RequireBufferContext, WritingViewContext,
+    RegisterAppContext, ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
 use crate::config::LocalfileStoreConfig;
 use crate::error::WorkerError;
@@ -405,6 +405,10 @@ impl Store for LocalFileStore {
 
     async fn release_buffer(&self, _ctx: ReleaseBufferContext) -> Result<i64, WorkerError> {
         todo!()
+    }
+
+    async fn register_app(&self, _ctx: RegisterAppContext) -> Result<()> {
+        Ok(())
     }
 }
 

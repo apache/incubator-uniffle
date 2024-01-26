@@ -24,8 +24,8 @@ pub mod mem;
 pub mod memory;
 
 use crate::app::{
-    PurgeDataContext, ReadingIndexViewContext, ReadingViewContext, ReleaseBufferContext,
-    RequireBufferContext, WritingViewContext,
+    PurgeDataContext, ReadingIndexViewContext, ReadingViewContext, RegisterAppContext,
+    ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
 use crate::config::Config;
 use crate::error::WorkerError;
@@ -176,6 +176,7 @@ pub trait Store {
         ctx: RequireBufferContext,
     ) -> Result<RequireBufferResponse, WorkerError>;
     async fn release_buffer(&self, ctx: ReleaseBufferContext) -> Result<i64, WorkerError>;
+    async fn register_app(&self, ctx: RegisterAppContext) -> Result<()>;
 }
 
 pub trait Persistent {}

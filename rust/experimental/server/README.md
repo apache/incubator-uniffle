@@ -15,7 +15,7 @@
   ~ limitations under the License.
   -->
 
-Another implementation of Apache Uniffle shuffle server
+Another implementation of Apache Uniffle shuffle server (Single binary, no extra dependencies)
 
 ## Benchmark report
 
@@ -90,7 +90,7 @@ In the future, rust-based server will use io_uring mechanism to improve writing 
 
 ## Build
 
-`cargo build --release`
+`cargo build --release --features hdfs,jemalloc`
 
 Uniffle-x currently treats all compiler warnings as error, with some dead-code warning excluded. When you are developing
 and really want to ignore the warnings for now, you can use `ccargo --config 'build.rustflags=["-W", "warnings"]' build`
@@ -115,7 +115,6 @@ data_paths = ["/data1/uniffle", "/data2/uniffle"]
 healthy_check_min_disks = 0
 
 [hdfs_store]
-data_path = "hdfs://rbf-x/user/bi"
 max_concurrency = 10
 
 [hybrid_store]
@@ -135,6 +134,7 @@ push_gateway_endpoint = "http://xxxxxxxxxxxxxx/pushgateway"
 ### HDFS Setup 
 
 Benefit from the hdfs-native crate, there is no need to setup the JAVA_HOME and relative dependencies.
+If HDFS store is valid, the spark client must specify the conf of `spark.rss.client.remote.storage.useLocalConfAsDefault=true`
 
 ```shell
 cargo build --features hdfs --release

@@ -17,7 +17,7 @@
 
 #![feature(impl_trait_in_assoc_type)]
 
-use crate::app::{AppManager, AppManagerRef};
+use crate::app::{AppManager, AppManagerRef, SHUFFLE_SERVER_ID};
 use crate::await_tree::AWAIT_TREE_REGISTRY;
 use crate::config::{Config, LogConfig, RotationConfig};
 use crate::grpc::await_tree_middleware::AwaitTreeMiddlewareLayer;
@@ -201,6 +201,8 @@ fn main() -> Result<()> {
 
     let rpc_port = config.grpc_port.unwrap_or(19999);
     let worker_uid = gen_worker_uid(rpc_port);
+    // todo: remove some unnecessary worker_id transfer.
+    SHUFFLE_SERVER_ID.get_or_init(|| worker_uid.clone());
 
     let metric_config = config.metrics.clone();
     init_metric_service(runtime_manager.clone(), &metric_config, worker_uid.clone());

@@ -467,8 +467,8 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2895653b4d9f1538a83970077cb01dfc77a4810524e51a110944688e916b18e"
 dependencies = [
- "prost",
- "prost-types",
+ "prost 0.11.9",
+ "prost-types 0.11.9",
  "tonic",
  "tracing-core",
 ]
@@ -485,7 +485,7 @@ dependencies = [
  "futures",
  "hdrhistogram",
  "humantime",
- "prost-types",
+ "prost-types 0.11.9",
  "serde",
  "serde_json",
  "thread_local",
@@ -1227,9 +1227,9 @@ checksum = "2c6201b9ff9fd90a5a3bac2e56a830d0caa509576f0e503818ee82c181b3437a"
 
 [[package]]
 name = "hdfs-native"
-version = "0.5.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "824c00b5e1b0ba3aeb5678debcb78bf3a26d3d6473e7fd0f53d1310c988c1f02"
+checksum = "7068d52978481fb74f1ac1522c0823d180a6e112c459169cf72f3cd08b207b0d"
 dependencies = [
  "base64 0.21.4",
  "bytes 1.5.0",
@@ -1240,8 +1240,8 @@ dependencies = [
  "libgssapi",
  "log",
  "num-traits",
- "prost",
- "prost-types",
+ "prost 0.12.3",
+ "prost-types 0.12.3",
  "roxmltree",
  "socket2 0.5.4",
  "thiserror",
@@ -2337,7 +2337,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b82eaa1d779e9a4bc1c3217db8ffbeabaae1dca241bf70183242128d48681cd"
 dependencies = [
  "bytes 1.5.0",
- "prost-derive",
+ "prost-derive 0.11.9",
+]
+
+[[package]]
+name = "prost"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "146c289cda302b98a28d40c8b3b90498d6e526dd24ac2ecea73e4e491685b94a"
+dependencies = [
+ "bytes 1.5.0",
+ "prost-derive 0.12.3",
 ]
 
 [[package]]
@@ -2354,8 +2364,8 @@ dependencies = [
  "multimap",
  "petgraph",
  "prettyplease",
- "prost",
- "prost-types",
+ "prost 0.11.9",
+ "prost-types 0.11.9",
  "regex",
  "syn 1.0.109",
  "tempfile",
@@ -2376,12 +2386,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "prost-derive"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efb6c9a1dd1def8e2124d17e83a20af56f1570d6c2d2bd9e266ccb768df3840e"
+dependencies = [
+ "anyhow",
+ "itertools",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.37",
+]
+
+[[package]]
 name = "prost-types"
 version = "0.11.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213622a1460818959ac1181aaeb2dc9c7f63df720db7d788b3e24eacd1983e13"
 dependencies = [
- "prost",
+ "prost 0.11.9",
+]
+
+[[package]]
+name = "prost-types"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "193898f59edcf43c26227dcd4c8427f00d99d61e95dcde58dabd49fa291d470e"
+dependencies = [
+ "prost 0.12.3",
 ]
 
 [[package]]
@@ -3419,7 +3451,7 @@ dependencies = [
  "hdrhistogram",
  "humantime",
  "once_cell",
- "prost-types",
+ "prost-types 0.11.9",
  "ratatui",
  "regex",
  "serde",
@@ -3587,7 +3619,7 @@ dependencies = [
  "hyper-timeout",
  "percent-encoding",
  "pin-project 1.1.3",
- "prost",
+ "prost 0.11.9",
  "tokio",
  "tokio-stream",
  "tower",
@@ -3809,7 +3841,7 @@ dependencies = [
  "poem",
  "pprof",
  "prometheus",
- "prost",
+ "prost 0.11.9",
  "prost-build",
  "serde",
  "signal-hook",

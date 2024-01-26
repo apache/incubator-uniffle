@@ -16,8 +16,9 @@
 // under the License.
 
 use crate::app::{
-    AppManagerRef, GetBlocksContext, PartitionedUId, ReadingIndexViewContext, ReadingOptions,
-    ReadingViewContext, ReportBlocksContext, RequireBufferContext, WritingViewContext,
+    AppConfigOptions, AppManagerRef, DataDistribution, GetBlocksContext, PartitionedUId,
+    ReadingIndexViewContext, ReadingOptions, ReadingViewContext, RemoteStorageConfig,
+    ReportBlocksContext, RequireBufferContext, WritingViewContext,
 };
 use crate::proto::uniffle::shuffle_server_server::ShuffleServer;
 use crate::proto::uniffle::{
@@ -91,9 +92,17 @@ impl ShuffleServer for DefaultShuffleServer {
         request: Request<ShuffleRegisterRequest>,
     ) -> Result<Response<ShuffleRegisterResponse>, Status> {
         let inner = request.into_inner();
+        // todo: fast fail when hdfs is enabled but empty remote storage info.
+        let remote_storage_info = inner.remote_storage.map(|x| RemoteStorageConfig::from(x));
+        // todo: add more options: huge_partition_threshold. and so on...
+        let app_config_option = AppConfigOptions::new(
+            DataDistribution::LOCAL_ORDER,
+            inner.max_concurrency_per_partition_to_write,
+            remote_storage_info,
+        );
         let status = self
             .app_manager_ref
-            .register(inner.app_id, inner.shuffle_id)
+            .register(inner.app_id, inner.shuffle_id, app_config_option)
             .map_or(StatusCode::INTERNAL_ERROR, |_| StatusCode::SUCCESS)
             .into();
         Ok(Response::new(ShuffleRegisterResponse {
