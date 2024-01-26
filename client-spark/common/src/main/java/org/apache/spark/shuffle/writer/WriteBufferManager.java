@@ -200,52 +200,42 @@ public class WriteBufferManager extends MemoryConsumer {
     // Asking memory from task memory manager for the existing writer buffer,
     // this may trigger current WriteBufferManager spill method, which will
     // make the current write buffer discard. So we have to recheck the buffer existence.
-    boolean hasRequested = false;
-    if (buffers.containsKey(partitionId)) {
-      WriterBuffer wb = buffers.get(partitionId);
+    WriterBuffer wb = buffers.get(partitionId);
+    if (wb != null) {
       if (wb.askForMemory(serializedDataLength)) {
         requestMemory(required);
-        hasRequested = true;
-      }
-    }
-
-    if (buffers.containsKey(partitionId)) {
-      if (hasRequested) {
         usedBytes.addAndGet(required);
       }
-      WriterBuffer wb = buffers.get(partitionId);
       wb.addRecord(serializedData, serializedDataLength);
-      if (wb.getMemoryUsed() > bufferSize) {
-        List<ShuffleBlockInfo> sentBlocks = new ArrayList<>(1);
-        sentBlocks.add(createShuffleBlock(partitionId, wb));
-        copyTime += wb.getCopyTime();
-        buffers.remove(partitionId);
-        if (LOG.isDebugEnabled()) {
-          LOG.debug(
-              "Single buffer is full for shuffleId["
-                  + shuffleId
-                  + "] partition["
-                  + partitionId
-                  + "] with memoryUsed["
-                  + wb.getMemoryUsed()
-                  + "], dataLength["
-                  + wb.getDataLength()
-                  + "]");
-        }
-        return sentBlocks;
-      }
     } else {
       // The true of hasRequested means the former partitioned buffer has been flushed, that is
       // triggered by the spill operation caused by asking for memory. So it needn't to re-request
       // the memory.
-      if (!hasRequested) {
-        requestMemory(required);
-      }
+      requestMemory(required);
       usedBytes.addAndGet(required);
-
-      WriterBuffer wb = new WriterBuffer(bufferSegmentSize);
+      wb = new WriterBuffer(bufferSegmentSize);
       wb.addRecord(serializedData, serializedDataLength);
       buffers.put(partitionId, wb);
+    }
+
+    if (wb.getMemoryUsed() > bufferSize) {
+      List<ShuffleBlockInfo> sentBlocks = new ArrayList<>(1);
+      sentBlocks.add(createShuffleBlock(partitionId, wb));
+      copyTime += wb.getCopyTime();
+      buffers.remove(partitionId);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+            "Single buffer is full for shuffleId["
+                + shuffleId
+                + "] partition["
+                + partitionId
+                + "] with memoryUsed["
+                + wb.getMemoryUsed()
+                + "], dataLength["
+                + wb.getDataLength()
+                + "]");
+      }
+      return sentBlocks;
     }
     return Collections.emptyList();
   }
