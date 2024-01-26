@@ -76,7 +76,7 @@ public class WriteBufferManagerTest {
 
   private SparkConf getConf() {
     SparkConf conf = new SparkConf(false);
-    conf.set(RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key(), "64")
+    conf.set(RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key(), "65")
         .set(RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.key(), "32")
         .set(RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.key(), "128")
         .set(RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.key(), "512")
