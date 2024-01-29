@@ -87,26 +87,6 @@ jobs:
         **/target/surefire-reports/*.txt
         **/target/surefire-reports/*.xml
 
-  publish-test-results:
-    name: "Publish Tests Results"
-    needs: [unit, integration]
-    runs-on: ubuntu-latest
-    permissions:
-      checks: write
-      pull-requests: write
-    if: always()
-
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v3
-        with:
-          path: artifacts
-
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        with:
-          files: "artifacts/**/*.xml"
-
   kubernetes:
     needs: [checkstyle, license, changes] # delay execution
     if: needs.changes.outputs.kubernetes == 'true' ||  github.event_name == 'push'
@@ -115,3 +95,13 @@ jobs:
       maven-args: package -Pkubernetes -DskipUTs -DskipITs -DskipBuildImage=${{ needs.changes.outputs.rss_server_docker == 'false' }}
       cache-key: package
       go-version: '1.17'
+
+  event_file:
+    name: "Event File"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Upload
+      uses: actions/upload-artifact@v3
+      with:
+        name: Event File
+        path: ${{ github.event_path }}
