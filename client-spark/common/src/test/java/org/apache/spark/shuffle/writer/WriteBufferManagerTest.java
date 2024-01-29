@@ -22,6 +22,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -161,6 +164,39 @@ public class WriteBufferManagerTest {
     assertEquals(224, wbm.getAllocatedBytes());
     assertEquals(96, wbm.getUsedBytes());
     assertEquals(96, wbm.getInSendListBytes());
+  }
+
+  @Test
+  public void dataConsistencyTest() throws Exception {
+    SparkConf conf = getConf();
+    WriteBufferManager wbm = createManager(conf);
+    String testKey = "Key";
+    String testValue = "Value";
+    // add the first record
+    List<ShuffleBlockInfo> shuffleBlockInfos1 = wbm.addRecord(0, testKey, testValue);
+    assertEquals(0, shuffleBlockInfos1.size());
+    ExecutorService executorService = Executors.newSingleThreadExecutor();
+    // clear
+    Future<List<ShuffleBlockInfo>> future = executorService.submit(wbm::clear);
+    // add the second record
+    List<ShuffleBlockInfo> shuffleBlockInfos2 = wbm.addRecord(0, testKey, testValue);
+    assertEquals(0, shuffleBlockInfos2.size());
+    List<ShuffleBlockInfo> shuffleBlockInfos = future.get();
+    assertEquals(1, shuffleBlockInfos.size());
+    for (ShuffleBlockInfo sbi: shuffleBlockInfos) {
+      long freeMemory = sbi.getFreeMemory();
+      assertEquals(32, freeMemory);
+      //There should be two results here that are correct:
+      // 1. The write buffer of partition 0 is not existed, and the sbi should contain 2 records.
+      // 2. The write buffer of partition 0 is existed, and the sbi should contain 1 record.
+      WriterBuffer writerBuffer = wbm.getBuffers().get(0);
+      System.out.println(sbi.getFreeMemory());
+      if (writerBuffer == null) {
+        assertEquals(24, sbi.getUncompressLength());
+      } else {
+        assertEquals(12, sbi.getUncompressLength());
+      }
+    }
   }
 
   @Test
