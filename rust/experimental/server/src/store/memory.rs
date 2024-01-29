@@ -387,7 +387,7 @@ impl Store for MemoryStore {
         panic!("It should not be invoked.")
     }
 
-    async fn purge(&self, ctx: PurgeDataContext) -> Result<()> {
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<i64> {
         let app_id = ctx.app_id;
         let shuffle_id_option = ctx.shuffle_id;
 
@@ -424,7 +424,7 @@ impl Store for MemoryStore {
             used, app_id, shuffle_id_option
         );
 
-        Ok(())
+        Ok(used)
     }
 
     async fn is_healthy(&self) -> Result<bool> {

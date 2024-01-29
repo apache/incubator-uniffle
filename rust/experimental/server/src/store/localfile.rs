@@ -364,7 +364,7 @@ impl Store for LocalFileStore {
         }))
     }
 
-    async fn purge(&self, ctx: PurgeDataContext) -> Result<()> {
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<i64> {
         let app_id = ctx.app_id;
         let shuffle_id_option = ctx.shuffle_id;
 
@@ -385,11 +385,16 @@ impl Store for LocalFileStore {
             .map(|entry| entry.key().to_string())
             .collect();
 
+        let mut removed_data_size = 0i64;
         for key in keys_to_delete {
-            self.partition_locks.remove(&key);
+            let meta = self.partition_locks.remove(&key);
+            if let Some(x) = meta {
+                let size = x.1.pointer.load(Ordering::SeqCst);
+                removed_data_size += size;
+            }
         }
 
-        Ok(())
+        Ok(removed_data_size)
     }
 
     async fn is_healthy(&self) -> Result<bool> {

@@ -18,8 +18,9 @@
 use crate::config::Config;
 use crate::error::WorkerError;
 use crate::metric::{
-    GAUGE_APP_NUMBER, TOTAL_APP_NUMBER, TOTAL_HUGE_PARTITION_REQUIRE_BUFFER_FAILED,
-    TOTAL_READ_DATA, TOTAL_RECEIVED_DATA, TOTAL_REQUIRE_BUFFER_FAILED,
+    GAUGE_APP_NUMBER, GAUGE_TOPN_APP_RESIDENT_DATA_SIZE, TOTAL_APP_NUMBER,
+    TOTAL_HUGE_PARTITION_REQUIRE_BUFFER_FAILED, TOTAL_READ_DATA, TOTAL_READ_DATA_FROM_LOCALFILE,
+    TOTAL_READ_DATA_FROM_MEMORY, TOTAL_RECEIVED_DATA, TOTAL_REQUIRE_BUFFER_FAILED,
 };
 
 use crate::readable_size::ReadableSize;
@@ -47,6 +48,7 @@ use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 use crate::proto::uniffle::RemoteStorage;
+use std::sync::atomic::Ordering::SeqCst;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::RwLock;
 use std::sync::{Arc, OnceLock};
@@ -130,6 +132,9 @@ pub struct App {
     bitmap_of_blocks: DashMap<(i32, i32), PartitionedMeta>,
     huge_partition_marked_threshold: Option<u64>,
     huge_partition_memory_max_available_size: Option<u64>,
+
+    total_received_data_size: AtomicU64,
+    total_resident_data_size: AtomicU64,
 }
 
 #[derive(Clone)]
@@ -220,6 +225,8 @@ impl App {
             bitmap_of_blocks: DashMap::new(),
             huge_partition_marked_threshold,
             huge_partition_memory_max_available_size,
+            total_received_data_size: Default::default(),
+            total_resident_data_size: Default::default(),
         }
     }
 
@@ -245,6 +252,8 @@ impl App {
         self.get_underlying_partition_bitmap(ctx.uid.clone())
             .incr_data_size(len)?;
         TOTAL_RECEIVED_DATA.inc_by(len as u64);
+        self.total_received_data_size.fetch_add(len as u64, SeqCst);
+        self.total_resident_data_size.fetch_add(len as u64, SeqCst);
 
         let ctx = match self.is_huge_partition(&ctx.uid).await {
             Ok(true) => WritingViewContext::new(ctx.uid.clone(), ctx.data_blocks, true),
@@ -258,11 +267,18 @@ impl App {
     pub async fn select(&self, ctx: ReadingViewContext) -> Result<ResponseData, WorkerError> {
         let response = self.store.get(ctx).await;
         response.map(|data| {
-            let length = match &data {
-                ResponseData::Local(local_data) => local_data.data.len() as u64,
-                ResponseData::Mem(mem_data) => mem_data.data.len() as u64,
+            match &data {
+                ResponseData::Local(local_data) => {
+                    let length = local_data.data.len() as u64;
+                    TOTAL_READ_DATA_FROM_LOCALFILE.inc_by(length);
+                    TOTAL_READ_DATA.inc_by(length);
+                }
+                ResponseData::Mem(mem_data) => {
+                    let length = mem_data.data.len() as u64;
+                    TOTAL_READ_DATA_FROM_MEMORY.inc_by(length);
+                    TOTAL_READ_DATA.inc_by(length);
+                }
             };
-            TOTAL_READ_DATA.inc_by(length);
 
             data
         })
@@ -368,9 +384,21 @@ impl App {
     }
 
     pub async fn purge(&self, app_id: String, shuffle_id: Option<i32>) -> Result<()> {
-        self.store
+        let removed_size = self
+            .store
             .purge(PurgeDataContext::new(app_id, shuffle_id))
-            .await
+            .await?;
+        self.total_resident_data_size
+            .fetch_sub(removed_size as u64, SeqCst);
+        Ok(())
+    }
+
+    pub fn total_received_data_size(&self) -> u64 {
+        self.total_received_data_size.load(SeqCst)
+    }
+
+    pub fn total_resident_data_size(&self) -> u64 {
+        self.total_resident_data_size.load(SeqCst)
     }
 }
 
@@ -563,6 +591,31 @@ impl AppManager {
             }
         });
 
+        // calculate topN app shuffle data size
+        let app_manager_ref = app_ref.clone();
+        runtime_manager.default_runtime.spawn(async move {
+            info!("Starting calculating topN app shuffle data size...");
+            loop {
+                tokio::time::sleep(Duration::from_secs(10)).await;
+
+                let view = app_manager_ref.apps.clone().into_read_only();
+                let mut apps: Vec<_> = view.values().collect();
+                apps.sort_by_key(|x| 0 - x.total_resident_data_size());
+
+                let top_n = 10;
+                let limit = if apps.len() > top_n {
+                    top_n
+                } else {
+                    apps.len()
+                };
+                for idx in 0..limit {
+                    GAUGE_TOPN_APP_RESIDENT_DATA_SIZE
+                        .with_label_values(&[&apps[idx].app_id])
+                        .set(apps[idx].total_resident_data_size() as i64);
+                }
+            }
+        });
+
         let app_manager_cloned = app_ref.clone();
         runtime_manager.default_runtime.spawn(async move {
             info!("Starting purge event handler...");
@@ -719,6 +772,7 @@ mod test {
     use crate::store::{PartitionedDataBlock, ResponseData};
     use croaring::treemap::JvmSerializer;
     use croaring::Treemap;
+    use dashmap::DashMap;
 
     #[test]
     fn test_uid_hash() {
@@ -802,12 +856,20 @@ mod test {
                 _ => todo!(),
             }
 
+            // check the data size
+            assert_eq!(30, app.total_received_data_size());
+            assert_eq!(30, app.total_resident_data_size());
+
             // case3: purge
             runtime_manager
                 .wait(app_manager_ref.purge_app_data(app_id.to_string(), None))
                 .expect("");
 
             assert_eq!(false, app_manager_ref.get_app(app_id).is_none());
+
+            // check the data size again after the data has been removed
+            assert_eq!(30, app.total_received_data_size());
+            assert_eq!(0, app.total_resident_data_size());
         }
     }
 
@@ -856,5 +918,21 @@ mod test {
 
         let deserialized = Treemap::deserialize(&data).unwrap();
         assert_eq!(deserialized, Treemap::from_iter(vec![123, 124]));
+    }
+
+    #[test]
+    fn test_dashmap_values() {
+        let dashmap = DashMap::new();
+        dashmap.insert(1, 3);
+        dashmap.insert(2, 2);
+        dashmap.insert(3, 8);
+
+        let cloned = dashmap.clone().into_read_only();
+        let mut vals: Vec<_> = cloned.values().collect();
+        vals.sort_by_key(|x| -(*x));
+        assert_eq!(vec![&8, &3, &2], vals);
+
+        let apps = vec![0, 1, 2, 3];
+        println!("{:#?}", &apps[0..2]);
     }
 }
