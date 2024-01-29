@@ -183,14 +183,12 @@ public class WriteBufferManagerTest {
     assertEquals(0, shuffleBlockInfos2.size());
     List<ShuffleBlockInfo> shuffleBlockInfos = future.get();
     assertEquals(1, shuffleBlockInfos.size());
-    for (ShuffleBlockInfo sbi: shuffleBlockInfos) {
-      long freeMemory = sbi.getFreeMemory();
-      assertEquals(32, freeMemory);
-      //There should be two results here that are correct:
+    for (ShuffleBlockInfo sbi : shuffleBlockInfos) {
+      assertEquals(32, sbi.getFreeMemory());
+      // There should be two results here that are correct:
       // 1. The write buffer of partition 0 is not existed, and the sbi should contain 2 records.
       // 2. The write buffer of partition 0 is existed, and the sbi should contain 1 record.
       WriterBuffer writerBuffer = wbm.getBuffers().get(0);
-      System.out.println(sbi.getFreeMemory());
       if (writerBuffer == null) {
         assertEquals(24, sbi.getUncompressLength());
       } else {
