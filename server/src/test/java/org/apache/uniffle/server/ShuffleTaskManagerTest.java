@@ -49,6 +49,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.exception.RssException;
@@ -851,6 +852,14 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
         shuffleTaskManager.getFinishedBlockIds(appId, shuffleId, requestPartitions);
     Roaring64NavigableMap resBlockIds = RssUtils.deserializeBitMap(serializeBitMap);
     assertEquals(expectedBlockIds, resBlockIds);
+
+    try {
+      // calling with same appId and shuffleId but different bitmapNum should fail
+      shuffleTaskManager.addFinishedBlockIds(appId, shuffleId, blockIdsToReport, bitNum - 1);
+      fail("Exception should be thrown");
+    } catch (InvalidRequestException e) {
+      assertEquals(e.getMessage(), "Request expects 2 bitmaps, but there are 3 bitmaps!");
+    }
   }
 
   @Test
