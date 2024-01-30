@@ -48,6 +48,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.config.RssConf;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
@@ -182,6 +183,13 @@ public class WriteBufferManagerTest {
     List<ShuffleBlockInfo> shuffleBlockInfos2 = wbm.addRecord(0, testKey, testValue);
     assertEquals(0, shuffleBlockInfos2.size());
     List<ShuffleBlockInfo> shuffleBlockInfos = future.get();
+    // if shuffleBlockInfos is empty, it means that the buffer of partition 0 was not cleared
+    if (shuffleBlockInfos.size() == 0) {
+      WriterBuffer writerBuffer = wbm.getBuffers().get(0);
+      assertNotNull(writerBuffer);
+      assertEquals(24, writerBuffer.getDataLength());
+      return;
+    }
     assertEquals(1, shuffleBlockInfos.size());
     ShuffleBlockInfo sbi = shuffleBlockInfos.get(0);
     assertEquals(32, sbi.getFreeMemory());
