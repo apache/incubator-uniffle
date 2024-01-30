@@ -56,6 +56,7 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
+import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.exception.NoBufferException;
 import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
@@ -386,6 +387,15 @@ public class ShuffleTaskManager {
           return blockIds;
         });
     Roaring64NavigableMap[] blockIds = shuffleIdToPartitions.get(shuffleId);
+    if (blockIds.length != bitmapNum) {
+      throw new InvalidRequestException(
+          "Request expects "
+              + bitmapNum
+              + " bitmaps, but there are "
+              + blockIds.length
+              + " bitmaps!");
+    }
+
     for (Map.Entry<Integer, long[]> entry : partitionToBlockIds.entrySet()) {
       Integer partitionId = entry.getKey();
       Roaring64NavigableMap bitmap = blockIds[partitionId % bitmapNum];
