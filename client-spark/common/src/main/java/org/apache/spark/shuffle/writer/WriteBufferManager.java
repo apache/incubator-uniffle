@@ -209,7 +209,12 @@ public class WriteBufferManager extends MemoryConsumer {
       }
     }
 
-    wb = buffers.get(partitionId);
+    // hasRequested is not true means spill method was not trigger,
+    // and we don't have to recheck the buffer existence in this case.
+    if (hasRequested) {
+      wb = buffers.get(partitionId);
+    }
+
     if (wb != null) {
       if (hasRequested) {
         usedBytes.addAndGet(required);
