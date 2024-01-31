@@ -241,11 +241,6 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
           continue;
         }
         List<ShuffleServerInfo> shuffleServerInfoList = partitionToShuffleServers.get(partition);
-        // This mechanism of expectedTaskIdsBitmap filter is to filter out the most of data.
-        // especially for AQE skew optimization
-        boolean expectedTaskIdsBitmapFilterEnable =
-            !(mapStartIndex == 0 && mapEndIndex == Integer.MAX_VALUE)
-                || shuffleServerInfoList.size() > 1;
         ShuffleReadClient shuffleReadClient =
             ShuffleClientFactory.getInstance()
                 .createShuffleReadClient(
@@ -261,7 +256,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
                         .shuffleServerInfoList(shuffleServerInfoList)
                         .hadoopConf(hadoopConf)
                         .shuffleDataDistributionType(dataDistributionType)
-                        .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                        .expectedTaskIdsBitmapFilterEnable(false)
                         .rssConf(rssConf));
         RssShuffleDataIterator<K, C> iterator =
             new RssShuffleDataIterator<>(

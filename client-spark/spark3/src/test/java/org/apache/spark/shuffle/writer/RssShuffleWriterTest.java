@@ -108,6 +108,7 @@ public class RssShuffleWriterTest {
         new WriteBufferManager(
             0,
             0,
+            0,
             bufferOptions,
             kryoSerializer,
             Maps.newHashMap(),
@@ -121,6 +122,7 @@ public class RssShuffleWriterTest {
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
             "appId",
+            0,
             0,
             "taskId",
             1L,
@@ -250,6 +252,7 @@ public class RssShuffleWriterTest {
     WriteBufferManager bufferManager =
         new WriteBufferManager(
             0,
+            0,
             "taskId",
             0,
             bufferOptions,
@@ -275,6 +278,7 @@ public class RssShuffleWriterTest {
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
             "appId",
+            0,
             0,
             "taskId",
             1L,
@@ -388,6 +392,7 @@ public class RssShuffleWriterTest {
         new WriteBufferManager(
             0,
             0,
+            0,
             bufferOptions,
             kryoSerializer,
             partitionToServers,
@@ -402,6 +407,7 @@ public class RssShuffleWriterTest {
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
             "appId",
+            0,
             0,
             "taskId",
             1L,
@@ -473,6 +479,7 @@ public class RssShuffleWriterTest {
         new WriteBufferManager(
             0,
             0,
+            0,
             bufferOptions,
             new KryoSerializer(conf),
             Maps.newHashMap(),
@@ -516,6 +523,7 @@ public class RssShuffleWriterTest {
     RssShuffleWriter<String, String, String> writer =
         new RssShuffleWriter<>(
             "appId",
+            0,
             0,
             "taskId",
             1L,

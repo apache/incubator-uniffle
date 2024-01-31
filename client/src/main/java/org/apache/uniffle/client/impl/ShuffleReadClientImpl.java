@@ -23,7 +23,6 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -147,18 +146,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     }
     if (builder.isOffHeapEnable()) {
       request.enableOffHeap();
-    }
-
-    List<Long> removeBlockIds = Lists.newArrayList();
-    blockIdBitmap.forEach(
-        bid -> {
-          if (!taskIdBitmap.contains(idHelper.getTaskAttemptId(bid))) {
-            removeBlockIds.add(bid);
-          }
-        });
-
-    for (long rid : removeBlockIds) {
-      blockIdBitmap.removeLong(rid);
     }
 
     // copy blockIdBitmap to track all pending blocks

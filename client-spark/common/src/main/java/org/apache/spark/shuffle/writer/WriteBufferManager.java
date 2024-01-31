@@ -69,6 +69,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private Map<Integer, Integer> partitionToSeqNo = Maps.newHashMap();
   private long askExecutorMemory;
   private int shuffleId;
+  private int mapIndex;
   private String taskId;
   private long taskAttemptId;
   private SerializerInstance instance;
@@ -98,6 +99,7 @@ public class WriteBufferManager extends MemoryConsumer {
 
   public WriteBufferManager(
       int shuffleId,
+      int mapIndex,
       long taskAttemptId,
       BufferManagerOptions bufferManagerOptions,
       Serializer serializer,
@@ -107,6 +109,7 @@ public class WriteBufferManager extends MemoryConsumer {
       RssConf rssConf) {
     this(
         shuffleId,
+        mapIndex,
         null,
         taskAttemptId,
         bufferManagerOptions,
@@ -120,6 +123,7 @@ public class WriteBufferManager extends MemoryConsumer {
 
   public WriteBufferManager(
       int shuffleId,
+      int mapIndex,
       String taskId,
       long taskAttemptId,
       BufferManagerOptions bufferManagerOptions,
@@ -134,6 +138,7 @@ public class WriteBufferManager extends MemoryConsumer {
     this.spillSize = bufferManagerOptions.getBufferSpillThreshold();
     this.buffers = Maps.newHashMap();
     this.shuffleId = shuffleId;
+    this.mapIndex = mapIndex;
     this.taskId = taskId;
     this.taskAttemptId = taskAttemptId;
     this.partitionToServers = partitionToServers;
@@ -325,8 +330,7 @@ public class WriteBufferManager extends MemoryConsumer {
       compressTime += System.currentTimeMillis() - start;
     }
     final long crc32 = ChecksumUtils.getCrc32(compressed);
-    final long blockId =
-        ClientUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
+    final long blockId = ClientUtils.getBlockId(partitionId, mapIndex, getNextSeqNo(partitionId));
     uncompressedDataLen += data.length;
     shuffleWriteMetrics.incBytesWritten(compressed.length);
     // add memory to indicate bytes which will be sent to shuffle server

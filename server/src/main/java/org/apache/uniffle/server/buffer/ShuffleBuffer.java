@@ -346,7 +346,8 @@ public class ShuffleBuffer {
     for (ShufflePartitionedBlock block : cachedBlocks) {
       if (!foundBlockId) {
         // find lastBlockId
-        if (block.getBlockId() == lastBlockId) {
+        if (block.getBlockId() == lastBlockId
+            && (expectedTaskIds == null || expectedTaskIds.contains(block.getTaskAttemptId()))) {
           foundBlockId = true;
         }
         continue;

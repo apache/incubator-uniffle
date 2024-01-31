@@ -63,6 +63,7 @@ public class WriteBufferManagerTest {
         new WriteBufferManager(
             0,
             0,
+            0,
             bufferOptions,
             kryoSerializer,
             Maps.newHashMap(),
@@ -202,6 +203,7 @@ public class WriteBufferManagerTest {
         new WriteBufferManager(
             0,
             0,
+            0,
             bufferOptions,
             null,
             Maps.newHashMap(),
@@ -257,6 +259,7 @@ public class WriteBufferManagerTest {
         new WriteBufferManager(
             0,
             0,
+            0,
             bufferOptions,
             new KryoSerializer(conf),
             Maps.newHashMap(),
@@ -281,6 +284,7 @@ public class WriteBufferManagerTest {
 
     WriteBufferManager wbm =
         new WriteBufferManager(
+            0,
             0,
             "taskId_spillByOthersTest",
             0,
@@ -314,6 +318,7 @@ public class WriteBufferManagerTest {
 
     WriteBufferManager wbm =
         new WriteBufferManager(
+            0,
             0,
             "taskId_spillTest",
             0,
@@ -436,6 +441,7 @@ public class WriteBufferManagerTest {
 
     WriteBufferManager wbm =
         new WriteBufferManager(
+            0,
             0,
             "taskId_spillTest",
             0,

@@ -90,13 +90,17 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
       spark.close();
     }
     spark = SparkSession.builder().config(sparkConf).getOrCreate();
-    Map resultWithRss = runTest(spark, testFileName);
+    Map result = runTest(spark, testFileName);
     spark.stop();
-    return resultWithRss;
+    return result;
+  }
+
+  protected String getSparkMaster() {
+    return "local[4]";
   }
 
   protected SparkConf createSparkConf() {
-    return new SparkConf().setAppName(this.getClass().getSimpleName()).setMaster("local[4]");
+    return new SparkConf().setAppName(this.getClass().getSimpleName()).setMaster(getSparkMaster());
   }
 
   public void updateSparkConfWithRss(SparkConf sparkConf) {

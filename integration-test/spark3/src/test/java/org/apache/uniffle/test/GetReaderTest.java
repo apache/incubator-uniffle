@@ -147,7 +147,7 @@ public class GetReaderTest extends IntegrationTestBase {
     RssShuffleReader<?, ?> rssShuffleReader =
         (RssShuffleReader<?, ?>)
             rssShuffleManager.getReader(
-                rssShuffleHandle, 0, 0, new MockTaskContext(), new TempShuffleReadMetrics());
+                rssShuffleHandle, 0, 1, new MockTaskContext(), new TempShuffleReadMetrics());
     Configuration hadoopConf = rssShuffleReader.getHadoopConf();
     assertNull(hadoopConf.get("k1"));
     assertNull(hadoopConf.get("k2"));
@@ -174,7 +174,7 @@ public class GetReaderTest extends IntegrationTestBase {
     rssShuffleReader =
         (RssShuffleReader<?, ?>)
             rssShuffleManager.getReader(
-                rssShuffleHandle, 0, 0, new MockTaskContext(), new TempShuffleReadMetrics());
+                rssShuffleHandle, 0, 1, new MockTaskContext(), new TempShuffleReadMetrics());
     hadoopConf = rssShuffleReader.getHadoopConf();
     assertEquals("v1", hadoopConf.get("k1"));
     assertEquals("v2", hadoopConf.get("k2"));
@@ -186,7 +186,7 @@ public class GetReaderTest extends IntegrationTestBase {
     rssShuffleReader =
         (RssShuffleReader<?, ?>)
             rssShuffleManager.getReader(
-                rssShuffleHandle, 0, 0, new MockTaskContext(), new TempShuffleReadMetrics());
+                rssShuffleHandle, 0, 1, new MockTaskContext(), new TempShuffleReadMetrics());
     hadoopConf = rssShuffleReader.getHadoopConf();
     assertEquals("v1", hadoopConf.get("k1"));
     assertEquals("v2", hadoopConf.get("k2"));
