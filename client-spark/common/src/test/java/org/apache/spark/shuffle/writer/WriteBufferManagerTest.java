@@ -22,9 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -48,7 +45,6 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.config.RssConf;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
@@ -165,43 +161,6 @@ public class WriteBufferManagerTest {
     assertEquals(224, wbm.getAllocatedBytes());
     assertEquals(96, wbm.getUsedBytes());
     assertEquals(96, wbm.getInSendListBytes());
-  }
-
-  @Test
-  public void dataConsistencyTest() throws Exception {
-    SparkConf conf = getConf();
-    WriteBufferManager wbm = createManager(conf);
-    String testKey = "Key";
-    String testValue = "Value";
-    // add the first record
-    List<ShuffleBlockInfo> shuffleBlockInfos1 = wbm.addRecord(0, testKey, testValue);
-    assertEquals(0, shuffleBlockInfos1.size());
-    ExecutorService executorService = Executors.newSingleThreadExecutor();
-    // clear
-    Future<List<ShuffleBlockInfo>> future = executorService.submit(wbm::clear);
-    // add the second record
-    List<ShuffleBlockInfo> shuffleBlockInfos2 = wbm.addRecord(0, testKey, testValue);
-    assertEquals(0, shuffleBlockInfos2.size());
-    List<ShuffleBlockInfo> shuffleBlockInfos = future.get();
-    // if shuffleBlockInfos is empty, it means that the buffer of partition 0 was not cleared
-    if (shuffleBlockInfos.size() == 0) {
-      WriterBuffer writerBuffer = wbm.getBuffers().get(0);
-      assertNotNull(writerBuffer);
-      assertEquals(24, writerBuffer.getDataLength());
-      return;
-    }
-    assertEquals(1, shuffleBlockInfos.size());
-    ShuffleBlockInfo sbi = shuffleBlockInfos.get(0);
-    assertEquals(32, sbi.getFreeMemory());
-    // There should be two results here that are correct:
-    // 1. The write buffer of partition 0 is not existed, and the sbi should contain 2 records.
-    // 2. The write buffer of partition 0 is existed, and the sbi should contain 1 record.
-    WriterBuffer writerBuffer = wbm.getBuffers().get(0);
-    if (writerBuffer == null) {
-      assertEquals(24, sbi.getUncompressLength());
-    } else {
-      assertEquals(12, sbi.getUncompressLength());
-    }
   }
 
   @Test

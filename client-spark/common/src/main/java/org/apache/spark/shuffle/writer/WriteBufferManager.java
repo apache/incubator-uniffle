@@ -53,7 +53,6 @@ import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.common.util.JavaUtils;
 
 public class WriteBufferManager extends MemoryConsumer {
 
@@ -133,7 +132,7 @@ public class WriteBufferManager extends MemoryConsumer {
     super(taskMemoryManager, taskMemoryManager.pageSizeBytes(), MemoryMode.ON_HEAP);
     this.bufferSize = bufferManagerOptions.getBufferSize();
     this.spillSize = bufferManagerOptions.getBufferSpillThreshold();
-    this.buffers = JavaUtils.newConcurrentMap();
+    this.buffers = Maps.newHashMap();
     this.shuffleId = shuffleId;
     this.taskId = taskId;
     this.taskAttemptId = taskAttemptId;
@@ -210,8 +209,7 @@ public class WriteBufferManager extends MemoryConsumer {
       }
     }
 
-    // The clear operation which triggered by spill operation will cause thread-safe problems
-    wb = buffers.remove(partitionId);
+    wb = buffers.get(partitionId);
     if (wb != null) {
       if (hasRequested) {
         usedBytes.addAndGet(required);
@@ -227,12 +225,14 @@ public class WriteBufferManager extends MemoryConsumer {
       usedBytes.addAndGet(required);
       wb = new WriterBuffer(bufferSegmentSize);
       wb.addRecord(serializedData, serializedDataLength);
+      buffers.put(partitionId, wb);
     }
 
     if (wb.getMemoryUsed() > bufferSize) {
       List<ShuffleBlockInfo> sentBlocks = new ArrayList<>(1);
       sentBlocks.add(createShuffleBlock(partitionId, wb));
       copyTime += wb.getCopyTime();
+      buffers.remove(partitionId);
       if (LOG.isDebugEnabled()) {
         LOG.debug(
             "Single buffer is full for shuffleId["
@@ -246,8 +246,6 @@ public class WriteBufferManager extends MemoryConsumer {
                 + "]");
       }
       return sentBlocks;
-    } else {
-      buffers.put(partitionId, wb);
     }
     return Collections.emptyList();
   }
@@ -291,13 +289,11 @@ public class WriteBufferManager extends MemoryConsumer {
     Iterator<Entry<Integer, WriterBuffer>> iterator = buffers.entrySet().iterator();
     while (iterator.hasNext()) {
       Entry<Integer, WriterBuffer> entry = iterator.next();
-      WriterBuffer wb = buffers.remove(entry.getKey());
-      if (wb == null) {
-        continue;
-      }
+      WriterBuffer wb = entry.getValue();
       dataSize += wb.getDataLength();
       memoryUsed += wb.getMemoryUsed();
       result.add(createShuffleBlock(entry.getKey(), wb));
+      iterator.remove();
       copyTime += wb.getCopyTime();
     }
     LOG.info(
