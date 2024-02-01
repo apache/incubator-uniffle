@@ -611,7 +611,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
       byte[] buf = new byte[length];
       new Random().nextBytes(buf);
       long blockId =
-          (ATOMIC_LONG.incrementAndGet()
+          (ATOMIC_LONG.getAndIncrement()
                   << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
               + taskAttemptId;
       ShufflePartitionedBlock spb =
