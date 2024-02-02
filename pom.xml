@@ -141,7 +141,6 @@
     <module>client</module>
     <module>integration-test/common</module>
     <module>cli</module>
-    <module>dashboard</module>
   </modules>
 
   <dependencies>
@@ -1164,6 +1163,12 @@
   </reporting>
 
   <profiles>
+    <profile>
+      <id>dashboard</id>
+      <modules>
+        <module>dashboard</module>
+      </modules>
+    </profile>
 
     <profile>
       <!-- This will search remote and local repos to generate THIRD-PARTY license file, make sure
@@ -1975,6 +1980,7 @@
         </dependencies>
       </dependencyManagement>
     </profile>
+
     <profile>
       <id>tez</id>
       <modules>
@@ -2169,6 +2175,7 @@
         </dependencies>
       </dependencyManagement>
       </profile>
+
       <profile>
       <id>kubernetes</id>
       <modules>
@@ -2211,6 +2218,7 @@
         </dependency>
       </dependencies>
     </profile>
+
     <profile>
       <id>apache-release</id>
       <build>

@@ -43,6 +43,7 @@ function exit_with_usage() {
   exit 1
 }
 
+MVN_OPTS="-Pdashboard"
 SPARK2_PROFILE_ID="spark2"
 SPARK2_MVN_OPTS=""
 SPARK3_PROFILE_ID="spark3"
@@ -138,7 +139,7 @@ export MAVEN_OPTS="${MAVEN_OPTS:--Xmx2g -XX:ReservedCodeCacheSize=1g}"
 # Store the command as an array because $MVN variable might have spaces in it.
 # Normal quoting tricks don't work.
 # See: http://mywiki.wooledge.org/BashFAQ/050
-BUILD_COMMAND=("$MVN" clean package -DskipTests $@)
+BUILD_COMMAND=("$MVN" clean package -DskipTests $MVN_OPTS $@)
 
 # Actually build the jar
 echo -e "\nBuilding with..."

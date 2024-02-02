@@ -84,7 +84,7 @@ To build it, run:
 
 To fix code style issues, run:
 
-    ./mvnw spotless:apply -Pspark3 -Pspark2 -Ptez -Pmr -Phadoop2.8
+    ./mvnw spotless:apply -Pspark3 -Pspark2 -Ptez -Pmr -Phadoop2.8 -Pdashboard
 
 Build against profile Spark 2 (2.4.6)
 
@@ -117,6 +117,10 @@ Build against Tez 0.9.1
 Build against Tez 0.9.1 and Hadoop 3.2.1
 
     ./mvnw -DskipTests clean package -Ptez,hadoop3.2
+
+Build with dashboard
+
+    ./mvnw -DskipTests clean package -Pdashboard
 
 To package the Uniffle, run:
 
