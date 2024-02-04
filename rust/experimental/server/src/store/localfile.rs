@@ -20,7 +20,7 @@ use crate::app::{
     PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingViewContext,
     RegisterAppContext, ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
-use crate::config::LocalfileStoreConfig;
+use crate::config::{LocalfileStoreConfig, StorageType};
 use crate::error::WorkerError;
 use crate::metric::TOTAL_LOCALFILE_USED;
 use crate::store::ResponseDataIndex::Local;
@@ -414,6 +414,10 @@ impl Store for LocalFileStore {
 
     async fn register_app(&self, _ctx: RegisterAppContext) -> Result<()> {
         Ok(())
+    }
+
+    async fn name(&self) -> StorageType {
+        StorageType::LOCALFILE
     }
 }
 

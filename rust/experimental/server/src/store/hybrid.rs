@@ -159,17 +159,6 @@ impl HybridStore {
         self.cold_store.is_none() && self.warm_store.is_none()
     }
 
-    fn get_store_type(&self, store: &dyn Any) -> StorageType {
-        if store.is::<LocalFileStore>() {
-            return StorageType::LOCALFILE;
-        }
-        #[cfg(feature = "hdfs")]
-        if store.is::<HdfsStore>() {
-            return StorageType::HDFS;
-        }
-        return StorageType::MEMORY;
-    }
-
     fn is_localfile(&self, store: &dyn Any) -> bool {
         store.is::<LocalFileStore>()
     }
@@ -226,7 +215,7 @@ impl HybridStore {
             candidate_store = cold;
         }
 
-        match self.get_store_type(candidate_store) {
+        match candidate_store.name().await {
             StorageType::LOCALFILE => {
                 TOTAL_MEMORY_SPILL_TO_LOCALFILE.inc();
                 GAUGE_MEMORY_SPILL_TO_LOCALFILE.inc();
@@ -270,7 +259,7 @@ impl HybridStore {
             .await?;
         self.hot_store.free_used(spill_size).await?;
 
-        match self.get_store_type(candidate_store) {
+        match candidate_store.name().await {
             StorageType::LOCALFILE => {
                 GAUGE_MEMORY_SPILL_TO_LOCALFILE.dec();
             }
@@ -538,6 +527,10 @@ impl Store for HybridStore {
         }
         Ok(())
     }
+
+    async fn name(&self) -> StorageType {
+        unimplemented!()
+    }
 }
 
 pub async fn watermark_flush(store: Arc<HybridStore>) -> Result<()> {
@@ -610,6 +603,10 @@ mod tests {
 
         assert_eq!(true, is_apple(&Apple {}));
         assert_eq!(false, is_apple(&Banana {}));
+
+        let boxed_apple = Box::new(Apple {});
+        assert_eq!(true, is_apple(&*boxed_apple));
+        assert_eq!(false, is_apple(&boxed_apple));
     }
 
     #[test]

@@ -27,7 +27,7 @@ use crate::app::{
     PurgeDataContext, ReadingIndexViewContext, ReadingViewContext, RegisterAppContext,
     ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
-use crate::config::Config;
+use crate::config::{Config, StorageType};
 use crate::error::WorkerError;
 use crate::proto::uniffle::{ShuffleData, ShuffleDataBlockSegment};
 use crate::store::hybrid::HybridStore;
@@ -177,6 +177,8 @@ pub trait Store {
     ) -> Result<RequireBufferResponse, WorkerError>;
     async fn release_buffer(&self, ctx: ReleaseBufferContext) -> Result<i64, WorkerError>;
     async fn register_app(&self, ctx: RegisterAppContext) -> Result<()>;
+
+    async fn name(&self) -> StorageType;
 }
 
 pub trait Persistent {}
