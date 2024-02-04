@@ -20,7 +20,7 @@ use crate::app::{
     PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingViewContext,
     RegisterAppContext, ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
-use crate::config::MemoryStoreConfig;
+use crate::config::{MemoryStoreConfig, StorageType};
 use crate::error::WorkerError;
 use crate::metric::{
     GAUGE_MEMORY_ALLOCATED, GAUGE_MEMORY_CAPACITY, GAUGE_MEMORY_USED, TOTAL_MEMORY_USED,
@@ -458,6 +458,10 @@ impl Store for MemoryStore {
 
     async fn register_app(&self, _ctx: RegisterAppContext) -> Result<()> {
         Ok(())
+    }
+
+    async fn name(&self) -> StorageType {
+        StorageType::MEMORY
     }
 }
 

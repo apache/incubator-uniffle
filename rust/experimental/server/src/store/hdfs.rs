@@ -19,7 +19,7 @@ use crate::app::{
     PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingViewContext,
     RegisterAppContext, ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
-use crate::config::HdfsStoreConfig;
+use crate::config::{HdfsStoreConfig, StorageType};
 use crate::error::WorkerError;
 use std::collections::HashMap;
 
@@ -299,6 +299,10 @@ impl Store for HdfsStore {
             .entry(app_id)
             .or_insert_with(|| client);
         Ok(())
+    }
+
+    async fn name(&self) -> StorageType {
+        StorageType::HDFS
     }
 }
 
