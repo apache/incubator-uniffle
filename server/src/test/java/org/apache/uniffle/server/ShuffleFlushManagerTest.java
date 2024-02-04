@@ -72,6 +72,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -454,7 +455,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   @Test
   public void clearLocalTest(@TempDir File tempDir) throws Exception {
     final String appId1 = "clearLocalTest_appId1";
-    final String appId2 = "clearLocalTest_appId2";
+    final String appId2 = "clearLocalTest_appId12";
     ShuffleServerConf serverConf = new ShuffleServerConf();
     serverConf.set(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
@@ -470,14 +471,18 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     manager.addToFlushQueue(event2);
     ShuffleDataFlushEvent event3 = createShuffleDataFlushEvent(appId2, 2, 0, 1, null);
     manager.addToFlushQueue(event3);
+    ShuffleDataFlushEvent event5 = createShuffleDataFlushEvent(appId2, 11, 0, 1, null);
+    manager.addToFlushQueue(event5);
     assertEquals(storageManager.selectStorage(event1), storageManager.selectStorage(event2));
     final AbstractStorage storage = (AbstractStorage) storageManager.selectStorage(event1);
     waitForFlush(manager, appId1, 1, 5);
     waitForFlush(manager, appId2, 1, 5);
     waitForFlush(manager, appId2, 2, 5);
+    waitForFlush(manager, appId2, 11, 5);
     assertEquals(5, manager.getCommittedBlockIds(appId1, 1).getLongCardinality());
     assertEquals(5, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     assertEquals(5, manager.getCommittedBlockIds(appId2, 2).getLongCardinality());
+    assertEquals(5, manager.getCommittedBlockIds(appId2, 11).getLongCardinality());
     assertEquals(2, storage.getHandlerSize());
     File file = new File(tempDir, appId1);
     assertTrue(file.exists());
@@ -490,6 +495,10 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         new AppPurgeEvent(appId1, StringUtils.EMPTY, Lists.newArrayList(1)));
     manager.removeResources(appId1);
     assertFalse(file.exists());
+
+    ShuffleDataReadEvent shuffleReadEvent = new ShuffleDataReadEvent(appId2, 1, 0, 0);
+    assertNotNull(storageManager.selectStorage(shuffleReadEvent));
+
     assertEquals(0, manager.getCommittedBlockIds(appId1, 1).getLongCardinality());
     assertEquals(5, manager.getCommittedBlockIds(appId2, 1).getLongCardinality());
     assertEquals(5, manager.getCommittedBlockIds(appId2, 2).getLongCardinality());
@@ -497,6 +506,12 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     manager.removeResources(appId2);
     storageManager.removeResources(
         new ShufflePurgeEvent(appId2, StringUtils.EMPTY, Lists.newArrayList(1)));
+
+    ShuffleDataReadEvent shuffle1ReadEvent = new ShuffleDataReadEvent(appId2, 1, 0, 0);
+    ShuffleDataReadEvent shuffle11ReadEvent = new ShuffleDataReadEvent(appId2, 11, 0, 0);
+    assertNull(storageManager.selectStorage(shuffle1ReadEvent));
+    assertNotNull(storageManager.selectStorage(shuffle11ReadEvent));
+
     storageManager.removeResources(
         new ShufflePurgeEvent(appId2, StringUtils.EMPTY, Lists.newArrayList(2)));
     storageManager.removeResources(
