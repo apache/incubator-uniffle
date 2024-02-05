@@ -34,38 +34,57 @@ import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBase {
   private ShuffleServerGrpcClient shuffleServerClient;
+  private ShuffleServerGrpcNettyClient shuffleServerNettyClient;
   private static String REMOTE_STORAGE = HDFS_URI + "rss/multi_storage_fault";
 
   @BeforeEach
-  public void createClient() {
+  public void createClient() throws Exception {
     ShuffleServerClientFactory.getInstance().cleanupCache();
     shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
+    shuffleServerNettyClient =
+        new ShuffleServerGrpcNettyClient(
+            rssConf,
+            LOCALHOST,
+            SHUFFLE_SERVER_PORT,
+            NETTY_PORT);
   }
 
   @AfterEach
   public void closeClient() {
     shuffleServerClient.close();
+    shuffleServerNettyClient.close();
   }
 
   abstract void makeChaos();
 
   @Test
   public void fallbackTest() throws Exception {
+    fallbackTest(true);
+    fallbackTest(false);
+  }
+
+  private void fallbackTest(boolean isNettyMode) throws Exception {
     String appId = "fallback_test_" + this.getClass().getSimpleName();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Map<Integer, List<Integer>> map = Maps.newHashMap();
@@ -75,7 +94,7 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
     final List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(0, 0, 0, 40, 2 * 1024 * 1024, blockBitmap, expectedData);
     makeChaos();
-    sendSinglePartitionToShuffleServer(appId, 0, 0, 0, blocks);
+    sendSinglePartitionToShuffleServer(appId, 0, 0, 0, blocks, isNettyMode);
     validateResult(appId, 0, 0, blockBitmap, Roaring64NavigableMap.bitmapOf(0), expectedData);
   }
 
@@ -94,16 +113,25 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
   }
 
   private void sendSinglePartitionToShuffleServer(
-      String appId, int shuffle, int partition, long taskAttemptId, List<ShuffleBlockInfo> blocks) {
+      String appId,
+      int shuffle,
+      int partition,
+      long taskAttemptId,
+      List<ShuffleBlockInfo> blocks,
+      boolean isNettyMode) {
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
     partitionToBlocks.put(partition, blocks);
     shuffleToBlocks.put(shuffle, partitionToBlocks);
     RssSendShuffleDataRequest rs = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rs);
     RssSendCommitRequest rc = new RssSendCommitRequest(appId, shuffle);
-    shuffleServerClient.sendCommit(rc);
     RssFinishShuffleRequest rf = new RssFinishShuffleRequest(appId, shuffle);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rs);
+    } else {
+      shuffleServerClient.sendShuffleData(rs);
+    }
+    shuffleServerClient.sendCommit(rc);
     shuffleServerClient.finishShuffle(rf);
 
     Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();

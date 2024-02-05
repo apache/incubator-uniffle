@@ -145,6 +145,8 @@ MAX_DIRECT_MEMORY_SIZE=60g
 ```
 rss.server.buffer.capacity 40g
 rss.server.read.buffer.capacity 20g
+rss.server.preAllocation.reserved.onHeap.size 1g
+rss.server.preAllocation.reserved.offHeap.size 10g
 ```
 
 #### Example of server conf
@@ -163,6 +165,16 @@ rss.rpc.message.max.size 1073741824
 rss.server.preAllocation.expired 120000
 rss.server.commit.timeout 600000
 rss.server.app.expired.withoutHeartbeat 120000
+
+# netty configs
+rss.rpc.server.type GRPC_NETTY
+rss.server.netty.port 17000
+rss.server.preAllocation.reserved.onHeap.size 1g
+rss.server.preAllocation.reserved.offHeap.size 10g
+rss.server.netty.connect.timeout 50000
+rss.server.netty.accept.thread 10
+rss.server.netty.worker.thread 100
+rss.server.netty.connect.backlog 128
 
 # For huge partitions
 rss.server.flush.localfile.threadPool.size 20

@@ -38,13 +38,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.metrics.TestUtils;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.RssUtils;
@@ -131,9 +135,18 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
     }
   }
 
-  private void registerAndRequireBuffer(String appId, int length) {
+  private void registerAndRequireBuffer(String appId, int length, boolean isNettyMode)
+      throws Exception {
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
     ShuffleServerGrpcClient shuffleServerClient =
-        new ShuffleServerGrpcClient("localhost", SHUFFLE_SERVER_PORT);
+        isNettyMode
+            ? new ShuffleServerGrpcNettyClient(
+                rssConf,
+                LOCALHOST,
+                SHUFFLE_SERVER_PORT,
+                getShuffleServerConf().getInteger(ShuffleServerConf.NETTY_SERVER_PORT))
+            : new ShuffleServerGrpcClient("localhost", SHUFFLE_SERVER_PORT);
     int shuffleId = 0;
     int partitionId = 0;
     List<PartitionRange> partitionIds = Lists.newArrayList(new PartitionRange(0, 3));
@@ -168,17 +181,23 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
     RssSendShuffleDataResponse response =
         shuffleServerClient.sendShuffleData(sendShuffleDataRequest);
     assertSame(StatusCode.SUCCESS, response.getStatusCode());
+    shuffleServerClient.close();
   }
 
   @Test
   public void testTopNShuffleDataSizeOfAppCalcTask() throws Exception {
+    testTopNShuffleDataSizeOfAppCalcTask(true);
+    testTopNShuffleDataSizeOfAppCalcTask(false);
+  }
+
+  private void testTopNShuffleDataSizeOfAppCalcTask(boolean isNettyMode) throws Exception {
     // Here is 6 app, but config max top n number is 5
-    registerAndRequireBuffer("application_id_1", 1000);
-    registerAndRequireBuffer("application_id_2", 2000);
-    registerAndRequireBuffer("application_id_3", 3000);
-    registerAndRequireBuffer("application_id_4", 4000);
-    registerAndRequireBuffer("application_id_5", 5000);
-    registerAndRequireBuffer("application_id_6", 6000);
+    registerAndRequireBuffer("application_id_1", 1000, isNettyMode);
+    registerAndRequireBuffer("application_id_2", 2000, isNettyMode);
+    registerAndRequireBuffer("application_id_3", 3000, isNettyMode);
+    registerAndRequireBuffer("application_id_4", 4000, isNettyMode);
+    registerAndRequireBuffer("application_id_5", 5000, isNettyMode);
+    registerAndRequireBuffer("application_id_6", 6000, isNettyMode);
 
     Thread.sleep(500);
     String content = TestUtils.httpGet("http://127.0.0.1:18080/metrics/server");

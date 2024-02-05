@@ -32,13 +32,17 @@ import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -57,6 +61,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
+  private ShuffleServerGrpcNettyClient shuffleServerNettyClient;
+  private static ShuffleServerConf shuffleServerConfig;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
@@ -75,20 +81,35 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     shuffleServerConf.set(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL, 500L);
     createShuffleServer(shuffleServerConf);
     startServers();
+    shuffleServerConfig = shuffleServerConf;
   }
 
   @BeforeEach
-  public void createClient() {
+  public void createClient() throws Exception {
     shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
+    shuffleServerNettyClient =
+        new ShuffleServerGrpcNettyClient(
+            rssConf,
+            LOCALHOST,
+            SHUFFLE_SERVER_PORT,
+            shuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
   }
 
   @AfterEach
   public void closeClient() {
     shuffleServerClient.close();
+    shuffleServerNettyClient.close();
   }
 
   @Test
   public void memoryWriteReadTest() throws Exception {
+    memoryWriteReadTest(true);
+    memoryWriteReadTest(false);
+  }
+
+  private void memoryWriteReadTest(boolean isNettyMode) throws Exception {
     String testAppId = "memoryWriteReadTest";
     int shuffleId = 0;
     int partitionId = 0;
@@ -110,7 +131,11 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // send data to shuffle server
     RssSendShuffleDataRequest rssdr =
         new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rssdr);
+    } else {
+      shuffleServerClient.sendShuffleData(rssdr);
+    }
 
     // data is cached
     assertEquals(
@@ -126,7 +151,12 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // create memory handler to read data,
     MemoryClientReadHandler memoryClientReadHandler =
         new MemoryClientReadHandler(
-            testAppId, shuffleId, partitionId, 20, shuffleServerClient, exceptTaskIds);
+            testAppId,
+            shuffleId,
+            partitionId,
+            20,
+            isNettyMode ? shuffleServerNettyClient : shuffleServerClient,
+            exceptTaskIds);
     // start to read data, one block data for every call
     ShuffleDataResult sdr = memoryClientReadHandler.readShuffleData();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -150,7 +180,12 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // case: read with ComposedClientReadHandler
     memoryClientReadHandler =
         new MemoryClientReadHandler(
-            testAppId, shuffleId, partitionId, 50, shuffleServerClient, exceptTaskIds);
+            testAppId,
+            shuffleId,
+            partitionId,
+            50,
+            isNettyMode ? shuffleServerNettyClient : shuffleServerClient,
+            exceptTaskIds);
 
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     LocalFileClientReadHandler localFileQuorumClientReadHandler =
@@ -164,7 +199,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
             50,
             expectBlockIds,
             processBlockIds,
-            shuffleServerClient);
+            isNettyMode ? shuffleServerNettyClient : shuffleServerClient);
     ClientReadHandler[] handlers = new ClientReadHandler[2];
     handlers[0] = memoryClientReadHandler;
     handlers[1] = localFileQuorumClientReadHandler;
@@ -190,7 +225,11 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     shuffleToBlocks.put(shuffleId, partitionToBlocks);
 
     rssdr = new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rssdr);
+    } else {
+      shuffleServerClient.sendShuffleData(rssdr);
+    }
     // wait until flush finished
     int retry = 0;
     while (true) {
@@ -233,6 +272,11 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
 
   @Test
   public void memoryWriteReadWithMultiReplicaTest() throws Exception {
+    memoryWriteReadWithMultiReplicaTest(true);
+    memoryWriteReadWithMultiReplicaTest(false);
+  }
+
+  private void memoryWriteReadWithMultiReplicaTest(boolean isNettyMode) throws Exception {
     String testAppId = "memoryWriteReadWithMultiReplicaTest";
     int shuffleId = 0;
     int partitionId = 0;
@@ -259,7 +303,11 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // send data to shuffle server
     RssSendShuffleDataRequest rssdr =
         new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rssdr);
+    } else {
+      shuffleServerClient.sendShuffleData(rssdr);
+    }
 
     // data is cached
     assertEquals(
@@ -276,7 +324,12 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // create memory handler to read data,
     MemoryClientReadHandler memoryClientReadHandler =
         new MemoryClientReadHandler(
-            testAppId, shuffleId, partitionId, 20, shuffleServerClient, exceptTaskIds);
+            testAppId,
+            shuffleId,
+            partitionId,
+            20,
+            isNettyMode ? shuffleServerNettyClient : shuffleServerClient,
+            exceptTaskIds);
     // start to read data, one block data for every call
     ShuffleDataResult sdr = memoryClientReadHandler.readShuffleData();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -286,7 +339,12 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     exceptTaskIds.removeLong(blocks.get(0).getTaskAttemptId());
     MemoryClientReadHandler memoryClientReadHandler2 =
         new MemoryClientReadHandler(
-            testAppId, shuffleId, partitionId, 20, shuffleServerClient, exceptTaskIds);
+            testAppId,
+            shuffleId,
+            partitionId,
+            20,
+            isNettyMode ? shuffleServerNettyClient : shuffleServerClient,
+            exceptTaskIds);
     sdr = memoryClientReadHandler2.readShuffleData();
     expectedData.clear();
     expectedData.put(blocks.get(1).getBlockId(), ByteBufUtils.readBytes(blocks.get(1).getData()));
@@ -308,6 +366,11 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
 
   @Test
   public void memoryAndLocalFileReadWithFilterTest() throws Exception {
+    memoryAndLocalFileReadWithFilterTest(true);
+    memoryAndLocalFileReadWithFilterTest(false);
+  }
+
+  private void memoryAndLocalFileReadWithFilterTest(boolean isNettyMode) throws Exception {
     String testAppId = "memoryAndLocalFileReadWithFilterTest";
     int shuffleId = 0;
     int partitionId = 0;
@@ -329,14 +392,23 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // send data to shuffle server's memory
     RssSendShuffleDataRequest rssdr =
         new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rssdr);
+    } else {
+      shuffleServerClient.sendShuffleData(rssdr);
+    }
 
     // read the 1-th segment from memory
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap exceptTaskIds = Roaring64NavigableMap.bitmapOf(0);
     MemoryClientReadHandler memoryClientReadHandler =
         new MemoryClientReadHandler(
-            testAppId, shuffleId, partitionId, 150, shuffleServerClient, exceptTaskIds);
+            testAppId,
+            shuffleId,
+            partitionId,
+            150,
+            isNettyMode ? shuffleServerNettyClient : shuffleServerClient,
+            exceptTaskIds);
     LocalFileClientReadHandler localFileClientReadHandler =
         new LocalFileClientReadHandler(
             testAppId,
@@ -374,7 +446,11 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     shuffleToBlocks = Maps.newHashMap();
     shuffleToBlocks.put(shuffleId, partitionToBlocks);
     rssdr = new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rssdr);
+    } else {
+      shuffleServerClient.sendShuffleData(rssdr);
+    }
 
     int retry = 0;
     while (true) {

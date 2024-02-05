@@ -33,6 +33,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.client.TestUtils;
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
@@ -43,6 +44,8 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -64,6 +67,7 @@ import static org.mockito.Mockito.when;
 public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
 
   private List<ShuffleServerClient> shuffleServerClients;
+  private List<ShuffleServerClient> shuffleServerNettyClients;
 
   private String remoteStoragePath = HDFS_URI + "rss/test";
 
@@ -76,9 +80,18 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     shuffleServers.add(createServer(2, tmpDir));
     startServers();
     shuffleServerClients = new ArrayList<>();
+    shuffleServerNettyClients = new ArrayList<>();
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
     for (ShuffleServer shuffleServer : shuffleServers) {
       shuffleServerClients.add(
           new ShuffleServerGrpcClient(shuffleServer.getIp(), shuffleServer.getGrpcPort()));
+      shuffleServerNettyClients.add(
+          new ShuffleServerGrpcNettyClient(
+              rssConf,
+              LOCALHOST,
+              SHUFFLE_SERVER_PORT,
+              shuffleServer.getShuffleServerConf().getInteger(ShuffleServerConf.NETTY_SERVER_PORT)));
     }
   }
 
@@ -88,11 +101,20 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
         (client) -> {
           client.close();
         });
+    shuffleServerNettyClients.forEach(
+        (client) -> {
+          client.close();
+        });
     cleanCluster();
   }
 
   @Test
   public void testReadFaultTolerance() throws Exception {
+    testReadFaultTolerance(true);
+    testReadFaultTolerance(false);
+  }
+
+  private void testReadFaultTolerance(boolean isNettyMode) throws Exception {
     String testAppId = "ShuffleServerFaultToleranceTest.testReadFaultTolerance";
     int shuffleId = 0;
     int partitionId = 0;
@@ -109,7 +131,11 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
 
     RssSendShuffleDataRequest rssdr =
         getRssSendShuffleDataRequest(testAppId, shuffleId, partitionId, blocks);
-    shuffleServerClients.get(1).sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClients.get(1).sendShuffleData(rssdr);
+    } else {
+      shuffleServerClients.get(1).sendShuffleData(rssdr);
+    }
 
     List<ShuffleServerInfo> shuffleServerInfoList = new ArrayList<>();
     for (ShuffleServer shuffleServer : shuffleServers) {
@@ -151,7 +177,11 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
         createShuffleBlockList(shuffleId, partitionId, 0, 3, 25, expectBlockIds, dataMap, mockSSI);
 
     rssdr = getRssSendShuffleDataRequest(testAppId, shuffleId, partitionId, blocks2);
-    shuffleServerClients.get(1).sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClients.get(1).sendShuffleData(rssdr);
+    } else {
+      shuffleServerClients.get(1).sendShuffleData(rssdr);
+    }
     RssSendCommitRequest commitRequest = new RssSendCommitRequest(testAppId, shuffleId);
     shuffleServerClients.get(1).sendCommit(commitRequest);
     waitFlush(testAppId, shuffleId);
@@ -190,7 +220,11 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
           expectedData.put(block.getBlockId(), ByteBufUtils.readBytes(block.getData()));
         });
     rssdr = getRssSendShuffleDataRequest(testAppId, shuffleId, partitionId, blocks3);
-    shuffleServerClients.get(1).sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClients.get(1).sendShuffleData(rssdr);
+    } else {
+      shuffleServerClients.get(1).sendShuffleData(rssdr);
+    }
     shuffleServerClients.get(1).sendCommit(commitRequest);
     waitFlush(testAppId, shuffleId);
     request =

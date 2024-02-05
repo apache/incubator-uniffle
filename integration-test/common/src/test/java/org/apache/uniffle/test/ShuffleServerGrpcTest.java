@@ -33,6 +33,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.protobuf.UnsafeByteOperations;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -43,6 +44,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
@@ -57,12 +59,15 @@ import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.metrics.TestUtils;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
@@ -84,6 +89,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
+  private ShuffleServerGrpcNettyClient shuffleServerNettyClient;
+  private static ShuffleServerConf shuffleServerConfig;
   private final AtomicInteger atomicInteger = new AtomicInteger(0);
   private static final Long EVENT_THRESHOLD_SIZE = 2048L;
   private static final int GB = 1024 * 1024 * 1024;
@@ -109,11 +116,26 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     shuffleServerConf.set(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD, 1024 * 1024 * 10L);
     createShuffleServer(shuffleServerConf);
     startServers();
+    shuffleServerConfig = shuffleServerConf;
   }
 
   @BeforeEach
-  public void createClient() {
+  public void createClient() throws Exception {
     shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
+    shuffleServerNettyClient =
+        new ShuffleServerGrpcNettyClient(
+            rssConf,
+            LOCALHOST,
+            SHUFFLE_SERVER_PORT,
+            shuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
+  }
+
+  @AfterEach
+  public void closeClient() {
+    shuffleServerClient.close();
+    shuffleServerNettyClient.close();
   }
 
   @Test
@@ -438,6 +460,11 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
   @Test
   public void sendDataAndRequireBufferTest() throws IOException {
+    sendDataAndRequireBufferTest(true);
+    sendDataAndRequireBufferTest(false);
+  }
+
+  private void sendDataAndRequireBufferTest(boolean isNettyMode) throws IOException {
     String appId = "sendDataAndRequireBufferTest";
     int shuffleId = 0;
     int partitionId = 0;
@@ -473,7 +500,9 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     RssSendShuffleDataRequest sendShuffleDataRequest =
         new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
     RssSendShuffleDataResponse response =
-        shuffleServerClient.sendShuffleData(sendShuffleDataRequest);
+        isNettyMode
+            ? shuffleServerNettyClient.sendShuffleData(sendShuffleDataRequest)
+            : shuffleServerClient.sendShuffleData(sendShuffleDataRequest);
     assertSame(StatusCode.SUCCESS, response.getStatusCode());
 
     // trigger NoBufferForHugePartitionException and get FAILED_REQUIRE_ID
@@ -522,12 +551,20 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     shuffleToBlocks2.put(shuffleId, partitionToBlocks3);
 
     sendShuffleDataRequest = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks2);
-    response = shuffleServerClient.sendShuffleData(sendShuffleDataRequest);
+    response =
+        isNettyMode
+            ? shuffleServerNettyClient.sendShuffleData(sendShuffleDataRequest)
+            : shuffleServerClient.sendShuffleData(sendShuffleDataRequest);
     assertSame(StatusCode.SUCCESS, response.getStatusCode());
   }
 
   @Test
   public void sendDataWithoutRegisterTest() {
+    sendDataWithoutRegisterTest(true);
+    sendDataWithoutRegisterTest(false);
+  }
+
+  private void sendDataWithoutRegisterTest(boolean isNettyMode) {
     List<ShuffleBlockInfo> blockInfos =
         Lists.newArrayList(
             new ShuffleBlockInfo(0, 0, 0, 100, 0, new byte[] {}, Lists.newArrayList(), 0, 100, 0));
@@ -538,7 +575,10 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
     RssSendShuffleDataRequest rssdr =
         new RssSendShuffleDataRequest("sendDataWithoutRegisterTest", 3, 1000, shuffleToBlocks);
-    RssSendShuffleDataResponse response = shuffleServerClient.sendShuffleData(rssdr);
+    RssSendShuffleDataResponse response =
+        isNettyMode
+            ? shuffleServerNettyClient.sendShuffleData(rssdr)
+            : shuffleServerClient.sendShuffleData(rssdr);
     // NO_REGISTER
     assertSame(StatusCode.INTERNAL_ERROR, response.getStatusCode());
     assertEquals(0, shuffleServers.get(0).getPreAllocatedMemory());

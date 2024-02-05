@@ -37,17 +37,21 @@ import org.apache.uniffle.client.TestUtils;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.KerberizedHadoopBase;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -74,9 +78,11 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
 
   private static final int COORDINATOR_RPC_PROT = 19999;
   private static final int SHUFFLE_SERVER_PORT = 29999;
+  private static final int NETTY_SERVER_PORT = 39999;
   private static final String COORDINATOR_QUORUM = LOCALHOST + ":" + COORDINATOR_RPC_PROT;
 
   private ShuffleServerGrpcClient shuffleServerClient;
+  private ShuffleServerGrpcNettyClient shuffleServerNettyClient;
   private static CoordinatorServer coordinatorServer;
   private static ShuffleServer shuffleServer;
 
@@ -102,6 +108,8 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     serverConf.setBoolean("rss.server.health.check.enable", false);
     serverConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
+    serverConf.setInteger(ShuffleServerConf.NETTY_SERVER_PORT, NETTY_SERVER_PORT);
+    serverConf.setString("rss.server.tags", "GRPC,GRPC_NETTY");
     return serverConf;
   }
 
@@ -120,6 +128,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServer = new ShuffleServer(shuffleServerConf);
     shuffleServer.start();
+
   }
 
   @AfterAll
@@ -136,12 +145,21 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
   public void beforeEach() throws Exception {
     initHadoopSecurityContext();
     shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
+    shuffleServerNettyClient =
+        new ShuffleServerGrpcNettyClient(
+            rssConf,
+            LOCALHOST,
+            SHUFFLE_SERVER_PORT,
+            getShuffleServerConf().getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
   }
 
   @AfterEach
   public void clearEach() throws Exception {
     removeHadoopSecurityContext();
     shuffleServerClient.close();
+    shuffleServerNettyClient.close();
   }
 
   private Map<String, String> conf2Map(Configuration conf) {
@@ -190,6 +208,11 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
 
   @Test
   public void hadoopWriteReadTest() throws Exception {
+    hadoopWriteReadTest(true);
+    hadoopWriteReadTest(false);
+  }
+
+  private void hadoopWriteReadTest(boolean isNettyMode) throws Exception {
     String alexDir = kerberizedHadoop.getSchemeAndAuthorityPrefix() + "/alex/";
 
     String user = "alex";
@@ -231,7 +254,12 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
 
     RssSendShuffleDataRequest rssdr =
         new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rssdr);
+    } else {
+      shuffleServerClient.sendShuffleData(rssdr);
+    }
+
     assertEquals(456, shuffleServer.getShuffleBufferManager().getUsedMemory());
     assertEquals(0, shuffleServer.getShuffleBufferManager().getPreAllocatedSize());
     RssSendCommitRequest rscr = new RssSendCommitRequest(appId, 0);
@@ -255,7 +283,11 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     shuffleToBlocks.clear();
     shuffleToBlocks.put(0, partitionToBlocks);
     rssdr = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rssdr);
+    } else {
+      shuffleServerClient.sendShuffleData(rssdr);
+    }
     assertEquals(0, shuffleServer.getShuffleBufferManager().getPreAllocatedSize());
     rscr = new RssSendCommitRequest(appId, 0);
     shuffleServerClient.sendCommit(rscr);
@@ -267,7 +299,11 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     shuffleToBlocks.clear();
     shuffleToBlocks.put(0, partitionToBlocks);
     rssdr = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rssdr);
+    } else {
+      shuffleServerClient.sendShuffleData(rssdr);
+    }
     rscr = new RssSendCommitRequest(appId, 0);
     shuffleServerClient.sendCommit(rscr);
     rfsr = new RssFinishShuffleRequest(appId, 0);

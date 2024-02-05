@@ -32,13 +32,17 @@ import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -59,7 +63,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
+  private ShuffleServerGrpcNettyClient shuffleServerNettyClient;
   private static String REMOTE_STORAGE = HDFS_URI + "rss/test";
+  private static ShuffleServerConf shuffleServerConfig;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
@@ -79,29 +85,41 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     shuffleServerConf.set(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL, 500L);
     createShuffleServer(shuffleServerConf);
     startServers();
+    shuffleServerConfig = shuffleServerConf;
   }
 
   @BeforeEach
-  public void createClient() {
+  public void createClient() throws Exception {
     shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
+    shuffleServerNettyClient =
+        new ShuffleServerGrpcNettyClient(
+            rssConf,
+            LOCALHOST,
+            SHUFFLE_SERVER_PORT,
+            shuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
   }
 
   @AfterEach
   public void closeClient() {
     shuffleServerClient.close();
+    shuffleServerNettyClient.close();
   }
 
   @Test
   public void memoryLocalFileHadoopReadWithFilterAndSkipTest() throws Exception {
-    runTest(true);
+    runTest(true, true);
+    runTest(true, false);
   }
 
   @Test
   public void memoryLocalFileHadoopReadWithFilterTest() throws Exception {
-    runTest(false);
+    runTest(false, true);
+    runTest(false, false);
   }
 
-  private void runTest(boolean checkSkippedMetrics) throws Exception {
+  private void runTest(boolean checkSkippedMetrics, boolean isNettyMode) throws Exception {
     String testAppId = "memoryLocalFileHDFSReadWithFilterTest_" + "ship_" + checkSkippedMetrics;
     int shuffleId = 0;
     int partitionId = 0;
@@ -123,14 +141,23 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     // send data to shuffle server's memory
     RssSendShuffleDataRequest rssdr =
         new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rssdr);
+    } else {
+      shuffleServerClient.sendShuffleData(rssdr);
+    }
 
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap exceptTaskIds = Roaring64NavigableMap.bitmapOf(0);
     // read the 1-th segment from memory
     MemoryClientReadHandler memoryClientReadHandler =
         new MemoryClientReadHandler(
-            testAppId, shuffleId, partitionId, 150, shuffleServerClient, exceptTaskIds);
+            testAppId,
+            shuffleId,
+            partitionId,
+            150,
+            isNettyMode ? shuffleServerNettyClient : shuffleServerClient,
+            exceptTaskIds);
     LocalFileClientReadHandler localFileClientReadHandler =
         new LocalFileClientReadHandler(
             testAppId,
@@ -142,7 +169,7 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
             75,
             expectBlockIds,
             processBlockIds,
-            shuffleServerClient);
+            isNettyMode ? shuffleServerNettyClient : shuffleServerClient);
     HadoopClientReadHandler hadoopClientReadHandler =
         new HadoopClientReadHandler(
             testAppId,
@@ -184,7 +211,11 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     shuffleToBlocks = Maps.newHashMap();
     shuffleToBlocks.put(shuffleId, partitionToBlocks);
     rssdr = new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rssdr);
+    } else {
+      shuffleServerClient.sendShuffleData(rssdr);
+    }
     waitFlush(testAppId, shuffleId);
 
     // read the 2-th segment from localFile
@@ -216,7 +247,11 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     shuffleToBlocks = Maps.newHashMap();
     shuffleToBlocks.put(shuffleId, partitionToBlocks);
     rssdr = new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rssdr);
+    } else {
+      shuffleServerClient.sendShuffleData(rssdr);
+    }
     waitFlush(testAppId, shuffleId);
 
     // read the 4-th segment from HDFS

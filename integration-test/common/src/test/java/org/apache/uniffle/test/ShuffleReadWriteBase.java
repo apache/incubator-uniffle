@@ -141,52 +141,6 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     return dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
   }
 
-  public static List<ShuffleDataSegment> readShuffleIndexSegments(
-      ShuffleServerGrpcClient shuffleServerClient,
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int partitionNumPerRange,
-      int partitionNum,
-      int readBufferSize) {
-    // read index file
-    RssGetShuffleIndexRequest rgsir =
-        new RssGetShuffleIndexRequest(
-            appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
-    ShuffleIndexResult shuffleIndexResult =
-        shuffleServerClient.getShuffleIndex(rgsir).getShuffleIndexResult();
-    return new FixedSizeSegmentSplitter(readBufferSize).split(shuffleIndexResult);
-  }
-
-  public static ShuffleDataResult readShuffleData(
-      ShuffleServerGrpcClient shuffleServerClient,
-      String appId,
-      int shuffleId,
-      int partitionId,
-      int partitionNumPerRange,
-      int partitionNum,
-      int segmentIndex,
-      List<ShuffleDataSegment> sds) {
-    if (segmentIndex >= sds.size()) {
-      return new ShuffleDataResult();
-    }
-
-    // read shuffle data
-    ShuffleDataSegment segment = sds.get(segmentIndex);
-    RssGetShuffleDataRequest rgsdr =
-        new RssGetShuffleDataRequest(
-            appId,
-            shuffleId,
-            partitionId,
-            partitionNumPerRange,
-            partitionNum,
-            segment.getOffset(),
-            segment.getLength());
-
-    return new ShuffleDataResult(
-        shuffleServerClient.getShuffleData(rgsdr).getShuffleData(), segment.getBufferSegments());
-  }
-
   public static ShuffleDataResult readShuffleData(
       ShuffleServerGrpcClient shuffleServerClient,
       String appId,

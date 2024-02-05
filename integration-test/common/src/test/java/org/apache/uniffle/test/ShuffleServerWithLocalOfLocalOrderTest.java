@@ -37,16 +37,20 @@ import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.segment.LocalOrderSegmentSplitter;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -62,6 +66,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
+  private ShuffleServerGrpcNettyClient shuffleServerNettyClient;
+  private static ShuffleServerConf shuffleServerConfig;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
@@ -76,16 +82,26 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     shuffleServerConf.setString("rss.server.app.expired.withoutHeartbeat", "5000");
     createShuffleServer(shuffleServerConf);
     startServers();
+    shuffleServerConfig = shuffleServerConf;
   }
 
   @BeforeEach
-  public void createClient() {
+  public void createClient() throws Exception {
     shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
+    shuffleServerNettyClient =
+        new ShuffleServerGrpcNettyClient(
+            rssConf,
+            LOCALHOST,
+            SHUFFLE_SERVER_PORT,
+            shuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
   }
 
   @AfterEach
   public void closeClient() {
     shuffleServerClient.close();
+    shuffleServerNettyClient.close();
   }
 
   public static Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> createTestDataWithMultiMapIdx(
@@ -131,6 +147,11 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
 
   @Test
   public void testWriteAndReadWithSpecifiedMapRange() throws Exception {
+    testWriteAndReadWithSpecifiedMapRange(true);
+    testWriteAndReadWithSpecifiedMapRange(false);
+  }
+
+  private void testWriteAndReadWithSpecifiedMapRange(boolean isNettyMode) throws Exception {
     String testAppId = "testWriteAndReadWithSpecifiedMapRange";
 
     for (int i = 0; i < 4; i++) {
@@ -169,7 +190,11 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
 
     RssSendShuffleDataRequest rssdr =
         new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rssdr);
+    } else {
+      shuffleServerClient.sendShuffleData(rssdr);
+    }
 
     // Flush the data to file
     RssSendCommitRequest rscr = new RssSendCommitRequest(testAppId, 0);
@@ -191,7 +216,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     Roaring64NavigableMap taskIds = Roaring64NavigableMap.bitmapOf(0);
     ShuffleDataResult sdr =
         readShuffleData(
-            shuffleServerClient,
+            isNettyMode ? shuffleServerNettyClient : shuffleServerClient,
             testAppId,
             0,
             0,
@@ -215,7 +240,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     taskIds = Roaring64NavigableMap.bitmapOf(0, 1);
     sdr =
         readShuffleData(
-            shuffleServerClient,
+            isNettyMode ? shuffleServerNettyClient : shuffleServerClient,
             testAppId,
             0,
             0,
@@ -243,7 +268,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     taskIds = Roaring64NavigableMap.bitmapOf(1, 2);
     sdr =
         readShuffleData(
-            shuffleServerClient,
+            isNettyMode ? shuffleServerNettyClient : shuffleServerClient,
             testAppId,
             0,
             0,
@@ -268,7 +293,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     }
     sdr =
         readShuffleData(
-            shuffleServerClient,
+            isNettyMode ? shuffleServerNettyClient : shuffleServerClient,
             testAppId,
             0,
             0,

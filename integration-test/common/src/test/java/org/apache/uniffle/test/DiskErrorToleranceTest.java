@@ -39,13 +39,17 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -55,6 +59,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
   private ShuffleServerGrpcClient shuffleServerClient;
+  private ShuffleServerGrpcNettyClient shuffleServerNettyClient;
+  private static ShuffleServerConf shuffleServerConfig;
 
   private static File data1;
   private static File data2;
@@ -76,21 +82,35 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     shuffleServerConf.setBoolean(ShuffleServerConf.HEALTH_CHECK_ENABLE, true);
     createShuffleServer(shuffleServerConf);
     startServers();
+    shuffleServerConfig = shuffleServerConf;
   }
 
   @BeforeEach
-  public void createClient() {
+  public void createClient() throws Exception {
     shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
+    shuffleServerNettyClient =
+        new ShuffleServerGrpcNettyClient(
+            rssConf,
+            LOCALHOST,
+            SHUFFLE_SERVER_PORT,
+            shuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
   }
 
   @AfterEach
   public void closeClient() {
     shuffleServerClient.close();
+    shuffleServerNettyClient.close();
   }
 
   @Test
   public void diskErrorTest() throws Exception {
+    diskErrorTest(true);
+    diskErrorTest(false);
+  }
 
+  private void diskErrorTest(boolean isNettyMode) throws Exception {
     String appId = "ap_disk_error_data";
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Set<Long> expectedBlock1 = Sets.newHashSet();
@@ -106,10 +126,14 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
     shuffleToBlocks.put(0, partitionToBlocks);
     RssSendShuffleDataRequest rs1 = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rs1);
     RssSendCommitRequest rc1 = new RssSendCommitRequest(appId, 0);
-    shuffleServerClient.sendCommit(rc1);
     RssFinishShuffleRequest rf1 = new RssFinishShuffleRequest(appId, 0);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rs1);
+    } else {
+      shuffleServerClient.sendShuffleData(rs1);
+    }
+    shuffleServerClient.sendCommit(rc1);
     shuffleServerClient.finishShuffle(rf1);
     ShuffleReadClientImpl readClient =
         ShuffleClientFactory.newReadBuilder()
@@ -148,7 +172,11 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     partitionToBlocks.put(0, blocks2);
     shuffleToBlocks.put(0, partitionToBlocks);
     rs1 = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rs1);
+    if (isNettyMode) {
+      shuffleServerNettyClient.sendShuffleData(rs1);
+    } else {
+      shuffleServerClient.sendShuffleData(rs1);
+    }
     shuffleServerClient.sendCommit(rc1);
     shuffleServerClient.finishShuffle(rf1);
 

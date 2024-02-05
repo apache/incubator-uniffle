@@ -75,12 +75,16 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
 
   private static Stream<Arguments> clientConcurrencyAndExpectedProvider() {
     return Stream.of(
-        Arguments.of(-1, MAX_CONCURRENCY), Arguments.of(MAX_CONCURRENCY + 1, MAX_CONCURRENCY + 1));
+        Arguments.of(-1, MAX_CONCURRENCY, true),
+        Arguments.of(MAX_CONCURRENCY + 1, MAX_CONCURRENCY + 1, true),
+        Arguments.of(-1, MAX_CONCURRENCY, false),
+        Arguments.of(MAX_CONCURRENCY + 1, MAX_CONCURRENCY + 1, false));
   }
 
   @ParameterizedTest
   @MethodSource("clientConcurrencyAndExpectedProvider")
-  public void testConcurrentWrite2Hadoop(int clientSpecifiedConcurrency, int expectedConcurrency)
+  public void testConcurrentWrite2Hadoop(
+      int clientSpecifiedConcurrency, int expectedConcurrency, boolean isNettyMode)
       throws Exception {
     String appId = "testConcurrentWrite2Hadoop_" + new Random().nextInt();
     String dataBasePath = HDFS_URI + "rss/test";
@@ -116,7 +120,11 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
               shuffleToBlocks.put(0, partitionToBlocks);
               RssSendShuffleDataRequest rssdr =
                   new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
-              shuffleServerClient.sendShuffleData(rssdr);
+              if (isNettyMode) {
+                shuffleServerNettyClient.sendShuffleData(rssdr);
+              } else {
+                shuffleServerClient.sendShuffleData(rssdr);
+              }
             });
 
     RssSendCommitRequest rscr = new RssSendCommitRequest(appId, 0);
