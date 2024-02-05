@@ -486,7 +486,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
                 0,
                 hugePartitionDataLength,
                 0,
-                new byte[] {},
+                new byte[hugePartitionDataLength],
                 Lists.newArrayList(),
                 0,
                 100,
@@ -539,7 +539,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
                 0,
                 hugePartitionDataLength,
                 0,
-                new byte[] {},
+                new byte[hugePartitionDataLength],
                 Lists.newArrayList(),
                 0,
                 100,
@@ -567,7 +567,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
   private void sendDataWithoutRegisterTest(boolean isNettyMode) {
     List<ShuffleBlockInfo> blockInfos =
         Lists.newArrayList(
-            new ShuffleBlockInfo(0, 0, 0, 100, 0, new byte[] {}, Lists.newArrayList(), 0, 100, 0));
+            new ShuffleBlockInfo(0, 0, 0, 100, 0, new byte[100], Lists.newArrayList(), 0, 100, 0));
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     partitionToBlocks.put(0, blockInfos);
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
@@ -595,7 +595,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
     List<ShuffleBlockInfo> blockInfos =
         Lists.newArrayList(
-            new ShuffleBlockInfo(0, 0, 0, 100, 0, new byte[] {}, Lists.newArrayList(), 0, 100, 0));
+            new ShuffleBlockInfo(0, 0, 0, 100, 0, new byte[100], Lists.newArrayList(), 0, 100, 0));
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     partitionToBlocks.put(0, blockInfos);
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
@@ -805,7 +805,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     List<ShuffleBlockInfo> blockInfos =
         Lists.newArrayList(
             new ShuffleBlockInfo(
-                shuffleId, 0, 0, 100, 0, new byte[] {}, Lists.newArrayList(), 0, 100, 0));
+                shuffleId, 0, 0, 100, 0, new byte[100], Lists.newArrayList(), 0, 100, 0));
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     partitionToBlocks.put(0, blockInfos);
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();

@@ -165,7 +165,7 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
                 0,
                 length,
                 0,
-                new byte[] {},
+                new byte[length],
                 Lists.newArrayList(),
                 0,
                 100,
