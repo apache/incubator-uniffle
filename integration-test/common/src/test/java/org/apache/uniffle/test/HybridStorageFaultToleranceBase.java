@@ -63,11 +63,7 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
     RssConf rssConf = new RssConf();
     rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
     shuffleServerNettyClient =
-        new ShuffleServerGrpcNettyClient(
-            rssConf,
-            LOCALHOST,
-            SHUFFLE_SERVER_PORT,
-            NETTY_PORT);
+        new ShuffleServerGrpcNettyClient(rssConf, LOCALHOST, SHUFFLE_SERVER_PORT, NETTY_PORT);
   }
 
   @AfterEach

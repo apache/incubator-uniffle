@@ -24,11 +24,14 @@ import java.util.Map;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
@@ -44,6 +47,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.ByteBufUtils;
+import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
@@ -59,6 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mockStatic;
 
 public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
 
@@ -66,9 +71,12 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
   private ShuffleServerGrpcNettyClient shuffleServerNettyClient;
   private static String REMOTE_STORAGE = HDFS_URI + "rss/test";
   private static ShuffleServerConf shuffleServerConfig;
+  private static MockedStatic<NettyUtils> nettyUtils;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
+    nettyUtils = mockStatic(NettyUtils.class, Mockito.CALLS_REAL_METHODS);
+    nettyUtils.when(NettyUtils::getMaxDirectMemory).thenReturn(500L);
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
@@ -83,6 +91,13 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     shuffleServerConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 40.0);
     shuffleServerConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 500L);
     shuffleServerConf.set(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL, 500L);
+    shuffleServerConf.set(
+        ShuffleServerConf.SERVER_PRE_ALLOCATION_RESERVED_OFF_HEAP_SIZE,
+        (long)
+            (NettyUtils.getMaxDirectMemory()
+                / 100
+                * shuffleServerConf.getDouble(
+                    ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE)));
     createShuffleServer(shuffleServerConf);
     startServers();
     shuffleServerConfig = shuffleServerConf;
@@ -105,6 +120,11 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
   public void closeClient() {
     shuffleServerClient.close();
     shuffleServerNettyClient.close();
+  }
+
+  @AfterAll
+  public static void tearDown() {
+    nettyUtils.close();
   }
 
   @Test

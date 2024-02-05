@@ -50,6 +50,8 @@ import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.ShuffleTaskManager;
 
+import static org.apache.uniffle.common.config.RssBaseConf.RSS_TEST_MODE_ENABLE;
+
 public class ShuffleBufferManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleBufferManager.class);
@@ -78,6 +80,7 @@ public class ShuffleBufferManager {
   private long reservedOnHeapPreAllocatedBufferBytes;
   private long reservedOffHeapPreAllocatedBufferBytes;
   private long maxAvailableOffHeapBytes;
+  private boolean testMode;
 
   protected long bufferSize = 0;
   protected AtomicLong preAllocatedSize = new AtomicLong(0L);
@@ -122,6 +125,7 @@ public class ShuffleBufferManager {
         conf.getSizeAsBytes(ShuffleServerConf.SERVER_PRE_ALLOCATION_RESERVED_ON_HEAP_SIZE);
     this.reservedOffHeapPreAllocatedBufferBytes =
         conf.getSizeAsBytes(ShuffleServerConf.SERVER_PRE_ALLOCATION_RESERVED_OFF_HEAP_SIZE);
+    this.testMode = conf.getBoolean(RSS_TEST_MODE_ENABLE);
     if (heapSize < this.reservedOnHeapPreAllocatedBufferBytes) {
       throw new IllegalArgumentException(
           "The reserved on-heap memory size for pre-allocated buffer "
@@ -689,7 +693,13 @@ public class ShuffleBufferManager {
     shuffleIdSet.add(shuffleId);
   }
 
-  private static long getPinnedDirectMemory() {
+  private long getPinnedDirectMemory() {
+    if (testMode) {
+      // In test mode, return the actual pinned direct memory immediately
+      long pinnedDirectMemory = NettyUtils.getNettyBufferAllocator().pinnedDirectMemory();
+      return pinnedDirectMemory == -1L ? 0L : pinnedDirectMemory;
+    }
+    // To optimize performance, return a periodically retrieved pinned direct memory
     long pinnedDirectMemory =
         (long) ShuffleServerMetrics.gaugePinnedDirectMemorySize.get() == -1L
             ? 0L

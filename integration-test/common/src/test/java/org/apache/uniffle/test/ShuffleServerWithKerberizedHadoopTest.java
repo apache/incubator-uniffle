@@ -128,7 +128,6 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServer = new ShuffleServer(shuffleServerConf);
     shuffleServer.start();
-
   }
 
   @AfterAll
