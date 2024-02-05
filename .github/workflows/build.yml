@@ -17,7 +17,15 @@
 
 name: build
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - 'master'
+      - 'branch-*'
+    tags:
+      - '*'
+  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -52,7 +60,7 @@ jobs:
     with:
       maven-args: test-compile spotbugs:check
       cache-key: spotbugs
-  
+
   java-11:
     needs: [spotbugs] # delay execution
     name: 'compile'
