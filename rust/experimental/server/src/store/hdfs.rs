@@ -221,14 +221,14 @@ impl Store for HdfsStore {
     }
 
     async fn get(&self, _ctx: ReadingViewContext) -> Result<ResponseData, WorkerError> {
-        Err(WorkerError::READ_HDFS_DATA_NOT_FROM_SERVER)
+        Err(WorkerError::NOT_READ_HDFS_DATA_FROM_SERVER)
     }
 
     async fn get_index(
         &self,
         _ctx: ReadingIndexViewContext,
     ) -> Result<ResponseDataIndex, WorkerError> {
-        Err(WorkerError::READ_HDFS_DATA_NOT_FROM_SERVER)
+        Err(WorkerError::NOT_READ_HDFS_DATA_FROM_SERVER)
     }
 
     async fn require_buffer(
