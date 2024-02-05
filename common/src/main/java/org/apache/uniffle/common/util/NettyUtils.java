@@ -39,6 +39,8 @@ import org.apache.uniffle.common.netty.protocol.Message;
 public class NettyUtils {
   private static final Logger logger = LoggerFactory.getLogger(NettyUtils.class);
 
+  private static final long MAX_DIRECT_MEMORY_IN_BYTES = PlatformDependent.maxDirectMemory();
+
   /** Creates a Netty EventLoopGroup based on the IOMode. */
   public static EventLoopGroup createEventLoop(IOMode mode, int numThreads, String threadPrefix) {
     ThreadFactory threadFactory = ThreadUtils.getNettyThreadFactory(threadPrefix);
@@ -131,5 +133,9 @@ public class NettyUtils {
         0,
         0,
         PooledByteBufAllocator.defaultUseCacheForAllThreads());
+  }
+
+  public static long getMaxDirectMemory() {
+    return MAX_DIRECT_MEMORY_IN_BYTES;
   }
 }

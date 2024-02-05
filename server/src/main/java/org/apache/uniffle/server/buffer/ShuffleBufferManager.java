@@ -32,6 +32,7 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeRangeMap;
+import io.netty.util.internal.PlatformDependent;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,7 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleFlushManager;
@@ -58,7 +60,9 @@ public class ShuffleBufferManager {
   private long readCapacity;
   private int retryNum;
   private long highWaterMark;
+  private long highWaterMarkForDirectMemory;
   private long lowWaterMark;
+  private long lowWaterMarkForDirectMemory;
   private boolean bufferFlushEnabled;
   private long bufferFlushThreshold;
   // when shuffle buffer manager flushes data, shuffles with data size < shuffleFlushThreshold is
@@ -68,6 +72,12 @@ public class ShuffleBufferManager {
   // Huge partition vars
   private long hugePartitionSizeThreshold;
   private long hugePartitionMemoryLimitSize;
+
+  // vars for server_type: GRPC_NETTY
+  private boolean nettyServerEnabled;
+  private long reservedOnHeapPreAllocatedBufferBytes;
+  private long reservedOffHeapPreAllocatedBufferBytes;
+  private long maxAvailableOffHeapBytes;
 
   protected long bufferSize = 0;
   protected AtomicLong preAllocatedSize = new AtomicLong(0L);
@@ -108,6 +118,32 @@ public class ShuffleBufferManager {
             (capacity
                 / 100.0
                 * conf.get(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE));
+    this.reservedOnHeapPreAllocatedBufferBytes =
+        conf.getSizeAsBytes(ShuffleServerConf.SERVER_PRE_ALLOCATION_RESERVED_ON_HEAP_SIZE);
+    this.reservedOffHeapPreAllocatedBufferBytes =
+        conf.getSizeAsBytes(ShuffleServerConf.SERVER_PRE_ALLOCATION_RESERVED_OFF_HEAP_SIZE);
+    if (heapSize < this.reservedOnHeapPreAllocatedBufferBytes) {
+      throw new IllegalArgumentException(
+          "The reserved on-heap memory size for pre-allocated buffer "
+              + "should not be greater than the max value of heap memory");
+    }
+    if (NettyUtils.getMaxDirectMemory() < this.reservedOffHeapPreAllocatedBufferBytes) {
+      throw new IllegalArgumentException(
+          "The reserved off-heap memory size for pre-allocated buffer "
+              + "should not be greater than the max value of direct memory");
+    }
+    this.maxAvailableOffHeapBytes =
+        NettyUtils.getMaxDirectMemory() - this.reservedOffHeapPreAllocatedBufferBytes;
+    this.highWaterMarkForDirectMemory =
+        (long)
+            (this.maxAvailableOffHeapBytes
+                / 100.0
+                * conf.get(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE));
+    this.lowWaterMarkForDirectMemory =
+        (long)
+            (this.maxAvailableOffHeapBytes
+                / 100.0
+                * conf.get(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE));
     this.bufferFlushEnabled = conf.getBoolean(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED);
     this.bufferFlushThreshold =
         conf.getSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD);
@@ -118,6 +154,7 @@ public class ShuffleBufferManager {
     this.hugePartitionMemoryLimitSize =
         Math.round(
             capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO));
+    this.nettyServerEnabled = conf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
   }
 
   public void setShuffleTaskManager(ShuffleTaskManager taskManager) {
@@ -250,13 +287,25 @@ public class ShuffleBufferManager {
 
   public void flushIfNecessary() {
     // if data size in buffer > highWaterMark, do the flush
-    if (usedMemory.get() - preAllocatedSize.get() - inFlushSize.get() > highWaterMark) {
+    long pinnedDirectMemory = getPinnedDirectMemory();
+    long usedDirectMemory = PlatformDependent.usedDirectMemory();
+    long usedHeapMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+    boolean needFlush;
+    if (nettyServerEnabled) {
+      needFlush = pinnedDirectMemory > highWaterMarkForDirectMemory;
+    } else {
+      needFlush = usedMemory.get() - preAllocatedSize.get() - inFlushSize.get() > highWaterMark;
+    }
+    if (needFlush) {
       // todo: add a metric here to track how many times flush occurs.
       LOG.info(
-          "Start to flush with usedMemory[{}], preAllocatedSize[{}], inFlushSize[{}]",
+          "Start to flush with usedMemory[{}], preAllocatedSize[{}], inFlushSize[{}], usedDirectMemory[{}], usedHeapMemory[{}], pinnedDirectMemory[{}]",
           usedMemory.get(),
           preAllocatedSize.get(),
-          inFlushSize.get());
+          inFlushSize.get(),
+          usedDirectMemory,
+          usedHeapMemory,
+          pinnedDirectMemory);
       Map<String, Set<Integer>> pickedShuffle = pickFlushedShuffle();
       flush(pickedShuffle);
     }
@@ -315,11 +364,42 @@ public class ShuffleBufferManager {
   }
 
   public synchronized boolean requireMemory(long size, boolean isPreAllocated) {
-    if (capacity - usedMemory.get() >= size) {
+    long pinnedDirectMemory = getPinnedDirectMemory();
+    long usedDirectMemory = PlatformDependent.usedDirectMemory();
+    long usedHeapMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+    boolean canAllocate;
+    if (nettyServerEnabled) {
+      boolean canAllocateDirectBuffer = this.maxAvailableOffHeapBytes - pinnedDirectMemory >= size;
+      boolean isSufficientOnHeapMemory =
+          Runtime.getRuntime().maxMemory() - usedHeapMemory
+              >= reservedOnHeapPreAllocatedBufferBytes;
+      canAllocate = canAllocateDirectBuffer && isSufficientOnHeapMemory;
+    } else {
+      canAllocate = capacity - usedMemory.get() >= size;
+    }
+    if (canAllocate) {
       usedMemory.addAndGet(size);
       ShuffleServerMetrics.gaugeUsedBufferSize.set(usedMemory.get());
       if (isPreAllocated) {
         requirePreAllocatedSize(size);
+      }
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+            "Require memory succeeded with "
+                + size
+                + " bytes, usedMemory["
+                + usedMemory.get()
+                + "] include preAllocation["
+                + preAllocatedSize.get()
+                + "], inFlushSize["
+                + inFlushSize.get()
+                + "], usedDirectMemory["
+                + usedDirectMemory
+                + "], usedHeapMemory["
+                + usedHeapMemory
+                + "], pinnedDirectMemory["
+                + pinnedDirectMemory
+                + "]");
       }
       return true;
     }
@@ -333,6 +413,12 @@ public class ShuffleBufferManager {
               + preAllocatedSize.get()
               + "], inFlushSize["
               + inFlushSize.get()
+              + "], usedDirectMemory["
+              + usedDirectMemory
+              + "], usedHeapMemory["
+              + usedHeapMemory
+              + "], pinnedDirectMemory["
+              + pinnedDirectMemory
               + "]");
     }
     return false;
@@ -543,7 +629,10 @@ public class ShuffleBufferManager {
     // The algorithm here is to flush data size > highWaterMark - lowWaterMark
     // the remaining data in buffer maybe more than lowWaterMark
     // because shuffle server is still receiving data, but it should be ok
-    long expectedFlushSize = highWaterMark - lowWaterMark;
+    long expectedFlushSize =
+        nettyServerEnabled
+            ? highWaterMarkForDirectMemory - lowWaterMarkForDirectMemory
+            : highWaterMark - lowWaterMark;
     long atLeastFlushSizeIgnoreThreshold = expectedFlushSize >>> 1;
     long pickedFlushSize = 0L;
     int printIndex = 0;
@@ -598,6 +687,14 @@ public class ShuffleBufferManager {
     pickedShuffle.computeIfAbsent(appId, key -> Sets.newHashSet());
     Set<Integer> shuffleIdSet = pickedShuffle.get(appId);
     shuffleIdSet.add(shuffleId);
+  }
+
+  private static long getPinnedDirectMemory() {
+    long pinnedDirectMemory =
+        (long) ShuffleServerMetrics.gaugePinnedDirectMemorySize.get() == -1L
+            ? 0L
+            : (long) ShuffleServerMetrics.gaugePinnedDirectMemorySize.get();
+    return pinnedDirectMemory;
   }
 
   public void removeBufferByShuffleId(String appId, Collection<Integer> shuffleIds) {

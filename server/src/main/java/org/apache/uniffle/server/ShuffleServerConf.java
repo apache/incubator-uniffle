@@ -80,13 +80,13 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Long> SERVER_NETTY_DIRECT_MEMORY_USAGE_TRACKER_DELAY =
       ConfigOptions.key("rss.server.netty.directMemoryTracker.memoryUsage.initialFetchDelayMs")
           .longType()
-          .defaultValue(10 * 1000L)
+          .defaultValue(1 * 1000L)
           .withDescription("Direct memory usage tracker initial delay (ms)");
 
   public static final ConfigOption<Long> SERVER_NETTY_DIRECT_MEMORY_USAGE_TRACKER_INTERVAL =
       ConfigOptions.key("rss.server.netty.directMemoryTracker.memoryUsage.updateMetricsIntervalMs")
           .longType()
-          .defaultValue(10 * 1000L)
+          .defaultValue(1 * 1000L)
           .withDescription("Direct memory usage tracker interval to MetricSystem (ms)");
 
   public static final ConfigOption<Integer> SERVER_FLUSH_LOCALFILE_THREAD_POOL_SIZE =
@@ -143,6 +143,22 @@ public class ShuffleServerConf extends RssBaseConf {
           .longType()
           .defaultValue(20 * 1000L)
           .withDescription("Expired time (ms) for pre allocated buffer");
+
+  public static final ConfigOption<Long> SERVER_PRE_ALLOCATION_RESERVED_ON_HEAP_SIZE =
+      ConfigOptions.key("rss.server.preAllocation.reserved.onHeap.size")
+          .longType()
+          .defaultValue(1 * 1024 * 1024 * 1024L)
+          .withDescription(
+              "The reserved on-heap memory size which can be used for requiring pre-allocated buffer, "
+                  + "in bytes unless otherwise specified.");
+
+  public static final ConfigOption<Long> SERVER_PRE_ALLOCATION_RESERVED_OFF_HEAP_SIZE =
+      ConfigOptions.key("rss.server.preAllocation.reserved.offHeap.size")
+          .longType()
+          .defaultValue(1 * 1024 * 1024 * 1024L)
+          .withDescription(
+              "The reserved off-heap memory size which can be used for requiring pre-allocated buffer, "
+                  + "in bytes unless otherwise specified.");
 
   public static final ConfigOption<Long> SERVER_COMMIT_CHECK_INTERVAL_MAX =
       ConfigOptions.key("rss.server.commit.check.interval.max.ms")
