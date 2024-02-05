@@ -57,6 +57,9 @@ pub enum WorkerError {
 
     #[error("Hdfs native client not found for app: {0}")]
     HDFS_NATIVE_CLIENT_NOT_FOUND(String),
+
+    #[error("Data should be read from hdfs in client side instead of from server side")]
+    NOT_READ_HDFS_DATA_FROM_SERVER,
 }
 
 impl From<AcquireError> for WorkerError {
