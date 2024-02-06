@@ -26,7 +26,7 @@ package rss.common;
 service ShuffleServer {
   rpc registerShuffle (ShuffleRegisterRequest) returns (ShuffleRegisterResponse);
   rpc unregisterShuffle(ShuffleUnregisterRequest) returns (ShuffleUnregisterResponse);
-  rpc unregisterApp(AppUnregisterRequest) returns (AppUnregisterResponse);
+  rpc unregisterShuffleByAppId(ShuffleUnregisterByAppIdRequest) returns (ShuffleUnregisterByAppIdResponse);
   rpc sendShuffleData (SendShuffleDataRequest) returns (SendShuffleDataResponse);
   rpc getLocalShuffleIndex (GetLocalShuffleIndexRequest) returns (GetLocalShuffleIndexResponse);
   rpc getLocalShuffleData (GetLocalShuffleDataRequest) returns (GetLocalShuffleDataResponse);
@@ -198,11 +198,11 @@ message ShuffleRegisterResponse {
   string retMsg = 2;
 }
 
-message AppUnregisterRequest {
+message ShuffleUnregisterByAppIdRequest {
   string appId = 1;
 }
 
-message AppUnregisterResponse {
+message ShuffleUnregisterByAppIdResponse {
   StatusCode status = 1;
   string retMsg = 2;
 }

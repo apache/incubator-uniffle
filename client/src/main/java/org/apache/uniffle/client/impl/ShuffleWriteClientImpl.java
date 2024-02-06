@@ -60,7 +60,7 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
-import org.apache.uniffle.client.request.RssUnregisterAppRequest;
+import org.apache.uniffle.client.request.RssUnregisterShuffleByAppIdRequest;
 import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.ClientResponse;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
@@ -74,7 +74,7 @@ import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
-import org.apache.uniffle.client.response.RssUnregisterAppResponse;
+import org.apache.uniffle.client.response.RssUnregisterShuffleByAppIdResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.client.util.ClientUtils;
@@ -986,7 +986,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public void unregisterShuffle(String appId) {
-    RssUnregisterAppRequest request = new RssUnregisterAppRequest(appId);
+    RssUnregisterShuffleByAppIdRequest request = new RssUnregisterShuffleByAppIdRequest(appId);
 
     if (appId == null) {
       return;
@@ -1011,7 +1011,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               ShuffleServerClient client =
                   ShuffleServerClientFactory.getInstance()
                       .getShuffleServerClient(clientType, shuffleServerInfo, rssConf);
-              RssUnregisterAppResponse response = client.unregisterApp(request);
+              RssUnregisterShuffleByAppIdResponse response =
+                  client.unregisterShuffleByAppId(request);
               if (response.getStatusCode() != StatusCode.SUCCESS) {
                 LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
               }

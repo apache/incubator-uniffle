@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.request;
+package org.apache.uniffle.client.response;
 
-public class RssUnregisterAppRequest {
-  private String appId;
+import org.apache.uniffle.common.rpc.StatusCode;
 
-  public RssUnregisterAppRequest(String appId) {
-    this.appId = appId;
-  }
+public class RssUnregisterShuffleByAppIdResponse extends ClientResponse {
 
-  public String getAppId() {
-    return appId;
+  public RssUnregisterShuffleByAppIdResponse(StatusCode statusCode) {
+    super(statusCode);
   }
 }

@@ -45,7 +45,7 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
-import org.apache.uniffle.client.request.RssUnregisterAppRequest;
+import org.apache.uniffle.client.request.RssUnregisterShuffleByAppIdRequest;
 import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
 import org.apache.uniffle.client.response.RssFinishShuffleResponse;
@@ -57,7 +57,7 @@ import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
-import org.apache.uniffle.client.response.RssUnregisterAppResponse;
+import org.apache.uniffle.client.response.RssUnregisterShuffleByAppIdResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
@@ -330,22 +330,24 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     return result;
   }
 
-  private RssProtos.AppUnregisterResponse doUnregisterApp(String appId) {
-    RssProtos.AppUnregisterRequest request =
-        RssProtos.AppUnregisterRequest.newBuilder().setAppId(appId).build();
-    return blockingStub.unregisterApp(request);
+  private RssProtos.ShuffleUnregisterByAppIdResponse doUnregisterShuffleByAppId(String appId) {
+    RssProtos.ShuffleUnregisterByAppIdRequest request =
+        RssProtos.ShuffleUnregisterByAppIdRequest.newBuilder().setAppId(appId).build();
+    return blockingStub.unregisterShuffleByAppId(request);
   }
 
   @Override
-  public RssUnregisterAppResponse unregisterApp(RssUnregisterAppRequest request) {
-    RssProtos.AppUnregisterResponse rpcResponse = doUnregisterApp(request.getAppId());
+  public RssUnregisterShuffleByAppIdResponse unregisterShuffleByAppId(
+      RssUnregisterShuffleByAppIdRequest request) {
+    RssProtos.ShuffleUnregisterByAppIdResponse rpcResponse =
+        doUnregisterShuffleByAppId(request.getAppId());
 
-    RssUnregisterAppResponse response;
+    RssUnregisterShuffleByAppIdResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
 
     switch (statusCode) {
       case SUCCESS:
-        response = new RssUnregisterAppResponse(StatusCode.SUCCESS);
+        response = new RssUnregisterShuffleByAppIdResponse(StatusCode.SUCCESS);
         break;
       default:
         String msg =
