@@ -21,17 +21,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
-import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
@@ -41,47 +42,41 @@ import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
-import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.config.RssClientConf;
-import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBase {
-  private ShuffleServerGrpcClient shuffleServerClient;
-  private ShuffleServerGrpcNettyClient shuffleServerNettyClient;
+  protected ShuffleServerGrpcClient grpcShuffleServerClient;
+  protected ShuffleServerGrpcNettyClient nettyShuffleServerClient;
+  protected static ShuffleServerConf grpcShuffleServerConfig;
+  protected static ShuffleServerConf nettyShuffleServerConfig;
   private static String REMOTE_STORAGE = HDFS_URI + "rss/multi_storage_fault";
-
-  @BeforeEach
-  public void createClient() throws Exception {
-    ShuffleServerClientFactory.getInstance().cleanupCache();
-    shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
-    RssConf rssConf = new RssConf();
-    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
-    shuffleServerNettyClient =
-        new ShuffleServerGrpcNettyClient(rssConf, LOCALHOST, SHUFFLE_SERVER_PORT, NETTY_PORT);
-  }
 
   @AfterEach
   public void closeClient() {
-    shuffleServerClient.close();
-    shuffleServerNettyClient.close();
+    grpcShuffleServerClient.close();
+    nettyShuffleServerClient.close();
   }
 
   abstract void makeChaos();
 
-  @Test
-  public void fallbackTest() throws Exception {
-    fallbackTest(true);
-    fallbackTest(false);
+  private static Stream<Arguments> fallbackTestProvider() {
+    return Stream.of(Arguments.of(true), Arguments.of(false));
   }
 
+  @ParameterizedTest
+  @MethodSource("fallbackTestProvider")
   private void fallbackTest(boolean isNettyMode) throws Exception {
-    String appId = "fallback_test_" + this.getClass().getSimpleName() + "_isNettyMode_" + isNettyMode;
+    String appId =
+        "fallback_test_" + this.getClass().getSimpleName() + "_isNettyMode_" + isNettyMode;
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Map<Integer, List<Integer>> map = Maps.newHashMap();
     map.put(0, Lists.newArrayList(0));
@@ -91,7 +86,8 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
         createShuffleBlockList(0, 0, 0, 40, 2 * 1024 * 1024, blockBitmap, expectedData);
     makeChaos();
     sendSinglePartitionToShuffleServer(appId, 0, 0, 0, blocks, isNettyMode);
-    validateResult(appId, 0, 0, blockBitmap, Roaring64NavigableMap.bitmapOf(0), expectedData);
+    validateResult(
+        appId, 0, 0, blockBitmap, Roaring64NavigableMap.bitmapOf(0), expectedData, isNettyMode);
   }
 
   private void registerShuffle(String appId, Map<Integer, List<Integer>> registerMap) {
@@ -103,7 +99,7 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
                 entry.getKey(),
                 Lists.newArrayList(new PartitionRange(partition, partition)),
                 REMOTE_STORAGE);
-        shuffleServerClient.registerShuffle(rr);
+        grpcShuffleServerClient.registerShuffle(rr);
       }
     }
   }
@@ -115,6 +111,8 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
       long taskAttemptId,
       List<ShuffleBlockInfo> blocks,
       boolean isNettyMode) {
+    ShuffleServerGrpcClient shuffleServerClient =
+        isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
     partitionToBlocks.put(partition, blocks);
@@ -122,11 +120,8 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
     RssSendShuffleDataRequest rs = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
     RssSendCommitRequest rc = new RssSendCommitRequest(appId, shuffle);
     RssFinishShuffleRequest rf = new RssFinishShuffleRequest(appId, shuffle);
-    if (isNettyMode) {
-      shuffleServerNettyClient.sendShuffleData(rs);
-    } else {
-      shuffleServerClient.sendShuffleData(rs);
-    }
+    RssSendShuffleDataResponse response = shuffleServerClient.sendShuffleData(rs);
+    assertSame(StatusCode.SUCCESS, response.getStatusCode());
     shuffleServerClient.sendCommit(rc);
     shuffleServerClient.finishShuffle(rf);
 
@@ -144,7 +139,16 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
       int partitionId,
       Roaring64NavigableMap blockBitmap,
       Roaring64NavigableMap taskBitmap,
-      Map<Long, byte[]> expectedData) {
+      Map<Long, byte[]> expectedData,
+      boolean isNettyMode) {
+    ShuffleServerInfo ssi =
+        isNettyMode
+            ? new ShuffleServerInfo(
+                LOCALHOST,
+                nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
+                nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT))
+            : new ShuffleServerInfo(
+                LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
     ShuffleReadClientImpl readClient =
         ShuffleClientFactory.newReadBuilder()
             .storageType(StorageType.LOCALFILE_HDFS.name())
@@ -158,8 +162,7 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
             .basePath(REMOTE_STORAGE)
             .blockIdBitmap(blockBitmap)
             .taskIdBitmap(taskBitmap)
-            .shuffleServerInfoList(
-                Lists.newArrayList(new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT)))
+            .shuffleServerInfoList(Lists.newArrayList(ssi))
             .hadoopConf(conf)
             .build();
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();

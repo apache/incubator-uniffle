@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.common.compression.Codec;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -46,7 +47,7 @@ public class RepartitionWithLocalFileRssTest extends RepartitionTest {
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();

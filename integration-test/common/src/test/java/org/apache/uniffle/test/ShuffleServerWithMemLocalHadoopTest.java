@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -28,16 +29,21 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
@@ -46,9 +52,12 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
@@ -61,27 +70,64 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mockStatic;
 
 public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
-
-  private ShuffleServerGrpcClient shuffleServerClient;
-  private ShuffleServerGrpcNettyClient shuffleServerNettyClient;
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ShuffleServerWithMemLocalHadoopTest.class);
+  private ShuffleServerGrpcClient grpcShuffleServerClient;
+  private ShuffleServerGrpcNettyClient nettyShuffleServerClient;
   private static String REMOTE_STORAGE = HDFS_URI + "rss/test";
-  private static ShuffleServerConf shuffleServerConfig;
+  private static ShuffleServerConf grpcShuffleServerConfig;
+  private static ShuffleServerConf nettyShuffleServerConfig;
   private static MockedStatic<NettyUtils> nettyUtils;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
     nettyUtils = mockStatic(NettyUtils.class, Mockito.CALLS_REAL_METHODS);
-    nettyUtils.when(NettyUtils::getMaxDirectMemory).thenReturn(500L);
+    nettyUtils.when(NettyUtils::getMaxDirectMemory).thenReturn(600L);
+
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+
     File dataDir = new File(tmpDir, "data");
-    String basePath = dataDir.getAbsolutePath();
+    String grpcBasePath = dataDir.getAbsolutePath();
+    ShuffleServerConf grpcShuffleServerConf = buildShuffleServerConf(ServerType.GRPC, grpcBasePath);
+    createShuffleServer(grpcShuffleServerConf);
+
+    File dataDir1 = new File(tmpDir, "data1");
+    String nettyBasePath = dataDir1.getAbsolutePath();
+    ShuffleServerConf nettyShuffleServerConf =
+        buildShuffleServerConf(ServerType.GRPC_NETTY, nettyBasePath);
+    createShuffleServer(nettyShuffleServerConf);
+
+    startServers();
+
+    grpcShuffleServerConfig = grpcShuffleServerConf;
+    nettyShuffleServerConfig = nettyShuffleServerConf;
+  }
+
+  @BeforeEach
+  public void createClient() throws Exception {
+    grpcShuffleServerClient =
+        new ShuffleServerGrpcClient(
+            LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
+    nettyShuffleServerClient =
+        new ShuffleServerGrpcNettyClient(
+            rssConf,
+            LOCALHOST,
+            nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
+            nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
+  }
+
+  private static ShuffleServerConf buildShuffleServerConf(ServerType serverType, String basePath)
+      throws Exception {
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType);
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
     shuffleServerConf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
@@ -91,56 +137,47 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     shuffleServerConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 40.0);
     shuffleServerConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 500L);
     shuffleServerConf.set(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL, 500L);
-    shuffleServerConf.set(
-        ShuffleServerConf.SERVER_PRE_ALLOCATION_RESERVED_OFF_HEAP_SIZE,
-        (long)
-            (NettyUtils.getMaxDirectMemory()
-                / 100
-                * shuffleServerConf.getDouble(
-                    ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE)));
-    createShuffleServer(shuffleServerConf);
-    startServers();
-    shuffleServerConfig = shuffleServerConf;
-  }
-
-  @BeforeEach
-  public void createClient() throws Exception {
-    shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
-    RssConf rssConf = new RssConf();
-    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
-    shuffleServerNettyClient =
-        new ShuffleServerGrpcNettyClient(
-            rssConf,
-            LOCALHOST,
-            SHUFFLE_SERVER_PORT,
-            shuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
+    return shuffleServerConf;
   }
 
   @AfterEach
-  public void closeClient() {
-    shuffleServerClient.close();
-    shuffleServerNettyClient.close();
+  public void closeClient() throws Exception {
+    grpcShuffleServerClient.close();
+    nettyShuffleServerClient.close();
   }
 
   @AfterAll
-  public static void tearDown() {
+  public static void tearDown() throws Exception {
     nettyUtils.close();
+    shutdownServers();
   }
 
-  @Test
-  public void memoryLocalFileHadoopReadWithFilterAndSkipTest() throws Exception {
-    runTest(true, true);
-    runTest(true, false);
+  private static Stream<Arguments> memoryLocalFileHadoopReadWithFilterProvider() {
+    // We don't test the Netty mode here, because we can't guarantee that
+    // the first call of `shuffleServerClient.sendShuffleData` will send data to
+    // shuffle server's memory.
+    // Actually, it will flush in the first call of `shuffleServerClient.sendShuffleData`.
+    // Because we use `PooledByteBufAllocator`, and the `pinnedDirectMemory` is unpredictable.
+    return Stream.of(Arguments.of(true, false), Arguments.of(false, false));
   }
 
-  @Test
-  public void memoryLocalFileHadoopReadWithFilterTest() throws Exception {
-    runTest(false, true);
-    runTest(false, false);
+  @ParameterizedTest
+  @MethodSource("memoryLocalFileHadoopReadWithFilterProvider")
+  public void memoryLocalFileHadoopReadWithFilterTest(
+      boolean checkSkippedMetrics, boolean isNettyMode) throws Exception {
+    runTest(checkSkippedMetrics, isNettyMode);
   }
 
   private void runTest(boolean checkSkippedMetrics, boolean isNettyMode) throws Exception {
-    String testAppId = "memoryLocalFileHDFSReadWithFilterTest_" + "ship_" + checkSkippedMetrics + "_isNettyMode_" + isNettyMode;
+    LOG.info("checkSkippedMetrics={}, isNettyMode={}", checkSkippedMetrics, isNettyMode);
+    ShuffleServerGrpcClient shuffleServerClient =
+        isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
+    String testAppId =
+        "memoryLocalFileHDFSReadWithFilterTest_"
+            + "ship_"
+            + checkSkippedMetrics
+            + "_isNettyMode_"
+            + isNettyMode;
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr =
@@ -161,23 +198,16 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     // send data to shuffle server's memory
     RssSendShuffleDataRequest rssdr =
         new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
-    if (isNettyMode) {
-      shuffleServerNettyClient.sendShuffleData(rssdr);
-    } else {
-      shuffleServerClient.sendShuffleData(rssdr);
-    }
+
+    RssSendShuffleDataResponse response = shuffleServerClient.sendShuffleData(rssdr);
+    assertSame(StatusCode.SUCCESS, response.getStatusCode());
 
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap exceptTaskIds = Roaring64NavigableMap.bitmapOf(0);
     // read the 1-th segment from memory
     MemoryClientReadHandler memoryClientReadHandler =
         new MemoryClientReadHandler(
-            testAppId,
-            shuffleId,
-            partitionId,
-            150,
-            isNettyMode ? shuffleServerNettyClient : shuffleServerClient,
-            exceptTaskIds);
+            testAppId, shuffleId, partitionId, 150, shuffleServerClient, exceptTaskIds);
     LocalFileClientReadHandler localFileClientReadHandler =
         new LocalFileClientReadHandler(
             testAppId,
@@ -189,7 +219,7 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
             75,
             expectBlockIds,
             processBlockIds,
-            isNettyMode ? shuffleServerNettyClient : shuffleServerClient);
+            shuffleServerClient);
     HadoopClientReadHandler hadoopClientReadHandler =
         new HadoopClientReadHandler(
             testAppId,
@@ -207,14 +237,21 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     handlers[0] = memoryClientReadHandler;
     handlers[1] = localFileClientReadHandler;
     handlers[2] = hadoopClientReadHandler;
-    ShuffleServerInfo ssi = new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT);
+    ShuffleServerInfo ssi =
+        isNettyMode
+            ? new ShuffleServerInfo(
+                LOCALHOST,
+                nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
+                nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT))
+            : new ShuffleServerInfo(
+                LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
     ComposedClientReadHandler composedClientReadHandler =
         new ComposedClientReadHandler(ssi, handlers);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     expectedData.clear();
     expectedData.put(blocks.get(0).getBlockId(), ByteBufUtils.readBytes(blocks.get(0).getData()));
     expectedData.put(blocks.get(1).getBlockId(), ByteBufUtils.readBytes(blocks.get(1).getData()));
-    expectedData.put(blocks.get(2).getBlockId(), ByteBufUtils.readBytes(blocks.get(1).getData()));
+    expectedData.put(blocks.get(2).getBlockId(), ByteBufUtils.readBytes(blocks.get(2).getData()));
     ShuffleDataResult sdr = composedClientReadHandler.readShuffleData();
     validateResult(expectedData, sdr);
     processBlockIds.addLong(blocks.get(0).getBlockId());
@@ -231,12 +268,9 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     shuffleToBlocks = Maps.newHashMap();
     shuffleToBlocks.put(shuffleId, partitionToBlocks);
     rssdr = new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
-    if (isNettyMode) {
-      shuffleServerNettyClient.sendShuffleData(rssdr);
-    } else {
-      shuffleServerClient.sendShuffleData(rssdr);
-    }
-    waitFlush(testAppId, shuffleId);
+    response = shuffleServerClient.sendShuffleData(rssdr);
+    assertSame(StatusCode.SUCCESS, response.getStatusCode());
+    waitFlush(testAppId, shuffleId, isNettyMode);
 
     // read the 2-th segment from localFile
     // notice: the 1-th segment is skipped, because it is processed
@@ -267,12 +301,9 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     shuffleToBlocks = Maps.newHashMap();
     shuffleToBlocks.put(shuffleId, partitionToBlocks);
     rssdr = new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
-    if (isNettyMode) {
-      shuffleServerNettyClient.sendShuffleData(rssdr);
-    } else {
-      shuffleServerClient.sendShuffleData(rssdr);
-    }
-    waitFlush(testAppId, shuffleId);
+    response = shuffleServerClient.sendShuffleData(rssdr);
+    assertSame(StatusCode.SUCCESS, response.getStatusCode());
+    waitFlush(testAppId, shuffleId, isNettyMode);
 
     // read the 4-th segment from HDFS
     sdr = composedClientReadHandler.readShuffleData();
@@ -322,11 +353,13 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     }
   }
 
-  protected void waitFlush(String appId, int shuffleId) throws InterruptedException {
+  protected void waitFlush(String appId, int shuffleId, boolean isNettyMode)
+      throws InterruptedException {
+    List<ShuffleServer> shuffleServers = isNettyMode ? nettyShuffleServers : grpcShuffleServers;
     int retry = 0;
     while (true) {
       if (retry > 5) {
-        fail("Timeout for flush data");
+        fail(String.format("Timeout for flush data, isNettyMode=%s", isNettyMode));
       }
       ShuffleBuffer shuffleBuffer =
           shuffleServers.get(0).getShuffleBufferManager().getShuffleBuffer(appId, shuffleId, 0);

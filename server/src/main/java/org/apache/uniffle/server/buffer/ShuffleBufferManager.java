@@ -126,15 +126,18 @@ public class ShuffleBufferManager {
     this.reservedOffHeapPreAllocatedBufferBytes =
         conf.getSizeAsBytes(ShuffleServerConf.SERVER_PRE_ALLOCATION_RESERVED_OFF_HEAP_SIZE);
     this.testMode = conf.getBoolean(RSS_TEST_MODE_ENABLE);
-    if (heapSize < this.reservedOnHeapPreAllocatedBufferBytes) {
-      throw new IllegalArgumentException(
-          "The reserved on-heap memory size for pre-allocated buffer "
-              + "should not be greater than the max value of heap memory");
-    }
-    if (NettyUtils.getMaxDirectMemory() < this.reservedOffHeapPreAllocatedBufferBytes) {
-      throw new IllegalArgumentException(
-          "The reserved off-heap memory size for pre-allocated buffer "
-              + "should not be greater than the max value of direct memory");
+    this.nettyServerEnabled = conf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
+    if (nettyServerEnabled) {
+      if (heapSize < this.reservedOnHeapPreAllocatedBufferBytes) {
+        throw new IllegalArgumentException(
+            "The reserved on-heap memory size for pre-allocated buffer "
+                + "should not be greater than the max value of heap memory");
+      }
+      if (NettyUtils.getMaxDirectMemory() < this.reservedOffHeapPreAllocatedBufferBytes) {
+        throw new IllegalArgumentException(
+            "The reserved off-heap memory size for pre-allocated buffer "
+                + "should not be greater than the max value of direct memory");
+      }
     }
     this.maxAvailableOffHeapBytes =
         NettyUtils.getMaxDirectMemory() - this.reservedOffHeapPreAllocatedBufferBytes;
@@ -158,7 +161,6 @@ public class ShuffleBufferManager {
     this.hugePartitionMemoryLimitSize =
         Math.round(
             capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO));
-    this.nettyServerEnabled = conf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
   }
 
   public void setShuffleTaskManager(ShuffleTaskManager taskManager) {
@@ -695,11 +697,12 @@ public class ShuffleBufferManager {
 
   private long getPinnedDirectMemory() {
     if (testMode) {
-      // In test mode, return the actual pinned direct memory immediately
+      // In test mode, there won't be significant concurrency pressure,
+      // so it's sufficient to simply return the actual pinned direct memory immediately
       long pinnedDirectMemory = NettyUtils.getNettyBufferAllocator().pinnedDirectMemory();
       return pinnedDirectMemory == -1L ? 0L : pinnedDirectMemory;
     }
-    // To optimize performance, return a periodically retrieved pinned direct memory
+    // To improve performance, return a periodically retrieved pinned direct memory
     long pinnedDirectMemory =
         (long) ShuffleServerMetrics.gaugePinnedDirectMemorySize.get() == -1L
             ? 0L

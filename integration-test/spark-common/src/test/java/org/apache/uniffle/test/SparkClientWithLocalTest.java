@@ -20,6 +20,7 @@ package org.apache.uniffle.test;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -27,8 +28,10 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.roaringbitmap.longlong.LongIterator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -46,6 +49,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -59,49 +63,81 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
 
   private static final String EXPECTED_EXCEPTION_MESSAGE = "Exception should be thrown";
-  private static File DATA_DIR1;
-  private static File DATA_DIR2;
-  private ShuffleServerGrpcClient shuffleServerClient;
-  private ShuffleServerGrpcNettyClient shuffleServerNettyClient;
-  private static ShuffleServerConf shuffleServerConfig;
-  private List<ShuffleServerInfo> shuffleServerInfo =
-      Lists.newArrayList(new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT));
+  private static File GRPC_DATA_DIR1;
+  private static File GRPC_DATA_DIR2;
+  private static File NETTY_DATA_DIR1;
+  private static File NETTY_DATA_DIR2;
+  private ShuffleServerGrpcClient grpcShuffleServerClient;
+  private ShuffleServerGrpcNettyClient nettyShuffleServerClient;
+  private static ShuffleServerConf grpcShuffleServerConfig;
+  private static ShuffleServerConf nettyShuffleServerConfig;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    DATA_DIR1 = new File(tmpDir, "data1");
-    DATA_DIR2 = new File(tmpDir, "data2");
-    String basePath = DATA_DIR1.getAbsolutePath() + "," + DATA_DIR2.getAbsolutePath();
+
+    GRPC_DATA_DIR1 = new File(tmpDir, "data1");
+    GRPC_DATA_DIR2 = new File(tmpDir, "data2");
+    String grpcBasePath = GRPC_DATA_DIR1.getAbsolutePath() + "," + GRPC_DATA_DIR2.getAbsolutePath();
+    ShuffleServerConf grpcShuffleServerConf = buildShuffleServerConf(grpcBasePath, ServerType.GRPC);
+    createShuffleServer(grpcShuffleServerConf);
+
+    NETTY_DATA_DIR1 = new File(tmpDir, "netty_data1");
+    NETTY_DATA_DIR2 = new File(tmpDir, "netty_data2");
+    String nettyBasePath =
+        NETTY_DATA_DIR1.getAbsolutePath() + "," + NETTY_DATA_DIR2.getAbsolutePath();
+    ShuffleServerConf nettyShuffleServerConf =
+        buildShuffleServerConf(nettyBasePath, ServerType.GRPC_NETTY);
+    createShuffleServer(nettyShuffleServerConf);
+
+    startServers();
+
+    grpcShuffleServerConfig = grpcShuffleServerConf;
+    nettyShuffleServerConfig = nettyShuffleServerConf;
+  }
+
+  private static ShuffleServerConf buildShuffleServerConf(String basePath, ServerType serverType)
+      throws Exception {
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType);
     shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
     shuffleServerConf.setString("rss.storage.basePath", basePath);
-    createShuffleServer(shuffleServerConf);
-    startServers();
-    shuffleServerConfig = shuffleServerConf;
+    return shuffleServerConf;
   }
 
   @BeforeEach
   public void createClient() throws Exception {
-    shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+    grpcShuffleServerClient =
+        new ShuffleServerGrpcClient(
+            LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
     RssConf rssConf = new RssConf();
     rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
-    shuffleServerNettyClient =
+    nettyShuffleServerClient =
         new ShuffleServerGrpcNettyClient(
             rssConf,
             LOCALHOST,
-            SHUFFLE_SERVER_PORT,
-            shuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
+            nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
+            nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
   }
 
   @AfterEach
   public void closeClient() {
-    shuffleServerClient.close();
-    shuffleServerNettyClient.close();
+    grpcShuffleServerClient.close();
+    nettyShuffleServerClient.close();
   }
 
-  private ShuffleClientFactory.ReadClientBuilder baseReadBuilder() {
+  private ShuffleClientFactory.ReadClientBuilder baseReadBuilder(boolean isNettyMode) {
+    List<ShuffleServerInfo> shuffleServerInfo =
+        isNettyMode
+            ? Lists.newArrayList(
+                new ShuffleServerInfo(
+                    LOCALHOST,
+                    nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
+                    nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT)))
+            : Lists.newArrayList(
+                new ShuffleServerInfo(
+                    LOCALHOST,
+                    grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT)));
     return ShuffleClientFactory.newReadBuilder()
         .storageType(StorageType.LOCALFILE.name())
         .shuffleId(0)
@@ -113,18 +149,23 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
         .shuffleServerInfoList(shuffleServerInfo);
   }
 
-  @Test
-  public void readTest1() {
+  private static Stream<Arguments> isNettyModeProvider() {
+    return Stream.of(Arguments.of(true), Arguments.of(false));
+  }
+
+  @ParameterizedTest
+  @MethodSource("isNettyModeProvider")
+  public void readTest1(boolean isNettyMode) {
     String testAppId = "localReadTest1";
-    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)));
+    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    createTestData(testAppId, expectedData, blockIdBitmap, taskIdBitmap);
+    createTestData(testAppId, expectedData, blockIdBitmap, taskIdBitmap, isNettyMode);
     blockIdBitmap.addLong((1 << Constants.TASK_ATTEMPT_ID_MAX_LENGTH));
     ShuffleReadClientImpl readClient;
     readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -141,22 +182,23 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     }
   }
 
-  @Test
-  public void readTest2() {
+  @ParameterizedTest
+  @MethodSource("isNettyModeProvider")
+  public void readTest2(boolean isNettyMode) {
     String testAppId = "localReadTest2";
-    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)));
+    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(0, 0, 0, 2, 30, blockIdBitmap, expectedData, mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
     blocks = createShuffleBlockList(0, 0, 0, 2, 30, blockIdBitmap, expectedData, mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
 
     ShuffleReadClientImpl readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -167,25 +209,35 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     readClient.close();
   }
 
-  @Test
-  public void readTest3() throws Exception {
+  @ParameterizedTest
+  @MethodSource("isNettyModeProvider")
+  public void readTest3(boolean isNettyMode) throws Exception {
     String testAppId = "localReadTest3";
-    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)));
+    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(0, 0, 0, 2, 30, blockIdBitmap, expectedData, mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
 
-    FileUtils.deleteDirectory(new File(DATA_DIR1.getAbsolutePath() + "/" + testAppId + "/0/0-0"));
-    FileUtils.deleteDirectory(new File(DATA_DIR2.getAbsolutePath() + "/" + testAppId + "/0/0-0"));
+    if (isNettyMode) {
+      FileUtils.deleteDirectory(
+          new File(NETTY_DATA_DIR1.getAbsolutePath() + "/" + testAppId + "/0/0-0"));
+      FileUtils.deleteDirectory(
+          new File(NETTY_DATA_DIR2.getAbsolutePath() + "/" + testAppId + "/0/0-0"));
+    } else {
+      FileUtils.deleteDirectory(
+          new File(GRPC_DATA_DIR1.getAbsolutePath() + "/" + testAppId + "/0/0-0"));
+      FileUtils.deleteDirectory(
+          new File(GRPC_DATA_DIR2.getAbsolutePath() + "/" + testAppId + "/0/0-0"));
+    }
     // sleep to wait delete operation
     Thread.sleep(2000);
 
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     ShuffleReadClientImpl readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -194,10 +246,11 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     readClient.close();
   }
 
-  @Test
-  public void readTest4() {
+  @ParameterizedTest
+  @MethodSource("isNettyModeProvider")
+  public void readTest4(boolean isNettyMode) {
     String testAppId = "localReadTest4";
-    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 1)));
+    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 1)), isNettyMode);
 
     Map<Long, byte[]> expectedData1 = Maps.newHashMap();
     Map<Long, byte[]> expectedData2 = Maps.newHashMap();
@@ -205,24 +258,24 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(0, 0, 0, 10, 30, blockIdBitmap1, expectedData1, mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
 
     Roaring64NavigableMap blockIdBitmap2 = Roaring64NavigableMap.bitmapOf();
     blocks = createShuffleBlockList(0, 1, 0, 10, 30, blockIdBitmap2, expectedData2, mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
 
     blocks = createShuffleBlockList(0, 0, 0, 10, 30, blockIdBitmap1, expectedData1, mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
 
     ShuffleReadClientImpl readClient1 =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .partitionNumPerRange(2)
             .blockIdBitmap(blockIdBitmap1)
             .taskIdBitmap(taskIdBitmap)
             .build();
     final ShuffleReadClientImpl readClient2 =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .partitionId(1)
             .partitionNumPerRange(2)
@@ -238,11 +291,12 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     readClient2.close();
   }
 
-  @Test
-  public void readTest5() {
+  @ParameterizedTest
+  @MethodSource("isNettyModeProvider")
+  public void readTest5(boolean isNettyMode) {
     String testAppId = "localReadTest5";
     ShuffleReadClientImpl readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .partitionId(1)
             .partitionNumPerRange(2)
@@ -253,17 +307,18 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     readClient.checkProcessedBlockIds();
   }
 
-  @Test
-  public void readTest6() {
+  @ParameterizedTest
+  @MethodSource("isNettyModeProvider")
+  public void readTest6(boolean isNettyMode) {
     String testAppId = "localReadTest6";
-    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)));
+    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(0, 0, 0, 5, 30, blockIdBitmap, expectedData, mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
 
     Roaring64NavigableMap wrongBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
     LongIterator iter = blockIdBitmap.getLongIterator();
@@ -272,7 +327,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     }
 
     ShuffleReadClientImpl readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .blockIdBitmap(wrongBlockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -286,10 +341,11 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     }
   }
 
-  @Test
-  public void readTest7() {
+  @ParameterizedTest
+  @MethodSource("isNettyModeProvider")
+  public void readTest7(boolean isNettyMode) {
     String testAppId = "localReadTest7";
-    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)));
+    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -297,17 +353,17 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
 
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(0, 0, 0, 5, 30, blockIdBitmap, expectedData, mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
 
     blocks = createShuffleBlockList(0, 0, 1, 5, 30, blockIdBitmap, expectedData, mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
 
     blocks = createShuffleBlockList(0, 0, 2, 5, 30, blockIdBitmap, Maps.newHashMap(), mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
 
     // unexpected taskAttemptId should be filtered
     ShuffleReadClientImpl readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -318,35 +374,36 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     readClient.close();
   }
 
-  @Test
-  public void readTest8() {
+  @ParameterizedTest
+  @MethodSource("isNettyModeProvider")
+  public void readTest8(boolean isNettyMode) {
     String testAppId = "localReadTest8";
-    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)));
+    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0, 3);
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(0, 0, 0, 5, 30, blockIdBitmap, expectedData, mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
 
     // test case: data generated by speculation task without report result
     blocks =
         createShuffleBlockList(
             0, 0, 1, 5, 30, Roaring64NavigableMap.bitmapOf(), Maps.newHashMap(), mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
     // test case: data generated by speculation task with report result
     blocks = createShuffleBlockList(0, 0, 2, 5, 30, blockIdBitmap, Maps.newHashMap(), mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
 
     blocks =
         createShuffleBlockList(
             0, 0, 3, 5, 30, Roaring64NavigableMap.bitmapOf(), Maps.newHashMap(), mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
 
     // unexpected taskAttemptId should be filtered
     ShuffleReadClientImpl readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -357,30 +414,31 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     readClient.close();
   }
 
-  @Test
-  public void readTest9() throws Exception {
+  @ParameterizedTest
+  @MethodSource("isNettyModeProvider")
+  public void readTest9(boolean isNettyMode) throws Exception {
     String testAppId = "localReadTest9";
-    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)));
+    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
 
     List<ShuffleBlockInfo> blocks;
 
-    createTestData(testAppId, expectedData, blockIdBitmap, taskIdBitmap);
+    createTestData(testAppId, expectedData, blockIdBitmap, taskIdBitmap, isNettyMode);
     Roaring64NavigableMap beforeAdded = RssUtils.cloneBitMap(blockIdBitmap);
     // write data by another task, read data again, the cache for index file should be updated
     blocks = createShuffleBlockList(0, 0, 1, 3, 25, blockIdBitmap, Maps.newHashMap(), mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
     // test with un-changed expected blockId
     ShuffleReadClientImpl readClient;
-    baseReadBuilder()
+    baseReadBuilder(isNettyMode)
         .appId(testAppId)
         .blockIdBitmap(beforeAdded)
         .taskIdBitmap(taskIdBitmap)
         .build();
     readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .blockIdBitmap(beforeAdded)
             .taskIdBitmap(taskIdBitmap)
@@ -391,7 +449,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
 
     // test with changed expected blockId
     readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
@@ -401,10 +459,11 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     readClient.close();
   }
 
-  @Test
-  public void readTest10() throws Exception {
+  @ParameterizedTest
+  @MethodSource("isNettyModeProvider")
+  public void readTest10(boolean isNettyMode) throws Exception {
     String testAppId = "localReadTest10";
-    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)));
+    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap expectedBlockIds = Roaring64NavigableMap.bitmapOf();
@@ -413,20 +472,20 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     // send some expected data
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(0, 0, 0, 2, 30, expectedBlockIds, expectedData, mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
     // send some unexpected data
     blocks = createShuffleBlockList(0, 0, 0, 2, 30, unexpectedBlockIds, Maps.newHashMap(), mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
     // send some expected data
     blocks = createShuffleBlockList(0, 0, 1, 2, 30, expectedBlockIds, expectedData, mockSSI);
-    sendTestData(testAppId, blocks);
-    baseReadBuilder()
+    sendTestData(testAppId, blocks, isNettyMode);
+    baseReadBuilder(isNettyMode)
         .appId(testAppId)
         .blockIdBitmap(expectedBlockIds)
         .taskIdBitmap(taskIdBitmap)
         .build();
     ShuffleReadClientImpl readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .blockIdBitmap(expectedBlockIds)
             .taskIdBitmap(taskIdBitmap)
@@ -437,13 +496,19 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     readClient.close();
   }
 
-  protected void registerApp(String testAppId, List<PartitionRange> partitionRanges) {
+  protected void registerApp(
+      String testAppId, List<PartitionRange> partitionRanges, boolean isNettyMode) {
+    ShuffleServerGrpcClient shuffleServerClient =
+        isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
     RssRegisterShuffleRequest rrsr =
         new RssRegisterShuffleRequest(testAppId, 0, partitionRanges, "");
     shuffleServerClient.registerShuffle(rrsr);
   }
 
-  protected void sendTestData(String testAppId, List<ShuffleBlockInfo> blocks) {
+  protected void sendTestData(
+      String testAppId, List<ShuffleBlockInfo> blocks, boolean isNettyMode) {
+    ShuffleServerGrpcClient shuffleServerClient =
+        isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     partitionToBlocks.put(0, blocks);
 
@@ -463,13 +528,14 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
       String testAppId,
       Map<Long, byte[]> expectedData,
       Roaring64NavigableMap blockIdBitmap,
-      Roaring64NavigableMap taskIdBitmap) {
+      Roaring64NavigableMap taskIdBitmap,
+      boolean isNettyMode) {
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(0, 0, 0, 3, 25, blockIdBitmap, expectedData, mockSSI);
-    sendTestData(testAppId, blocks);
+    sendTestData(testAppId, blocks, isNettyMode);
 
     ShuffleReadClientImpl readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)

@@ -101,6 +101,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
       shuffleServer.stopServer();
       shuffleServer = null;
     }
+    ShuffleServerMetrics.clear();
   }
 
   @Test
@@ -419,7 +420,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
-    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
     shuffleServer = new ShuffleServer(conf);
@@ -545,7 +546,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
-    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
     shuffleServer = new ShuffleServer(conf);
@@ -617,7 +618,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
-    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
     shuffleServer = new ShuffleServer(conf);
@@ -668,7 +669,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
-    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
     shuffleServer = new ShuffleServer(conf);
@@ -805,7 +806,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
-    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
     shuffleServer = new ShuffleServer(conf);
@@ -880,7 +881,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
-    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
     shuffleServer = new ShuffleServer(conf);
@@ -912,7 +913,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
     conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
-    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
     conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());

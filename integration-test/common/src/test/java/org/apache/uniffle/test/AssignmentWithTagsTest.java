@@ -39,6 +39,7 @@ import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -79,7 +80,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
 
   private static void createAndStartShuffleServerWithTags(Set<String> tags, File tmpDir)
       throws Exception {
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 4000);
 
     File dataDir1 = new File(tmpDir, "data1");
@@ -108,7 +109,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
         ports.get(1));
 
     ShuffleServer server = new ShuffleServer(shuffleServerConf);
-    shuffleServers.add(server);
+    grpcShuffleServers.add(server);
     server.start();
   }
 

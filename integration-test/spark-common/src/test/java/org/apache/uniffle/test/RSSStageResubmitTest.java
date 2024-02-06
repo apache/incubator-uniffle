@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.util.RssClientConfig;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.MockedGrpcServer;
 import org.apache.uniffle.server.ShuffleServer;
@@ -50,14 +51,16 @@ public class RSSStageResubmitTest extends SparkIntegrationTestBase {
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    createMockedShuffleServer(shuffleServerConf);
+    ShuffleServerConf grpcShuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+    createMockedShuffleServer(grpcShuffleServerConf);
     enableFirstReadRequest(2 * maxTaskFailures);
+    ShuffleServerConf nettyShuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
+    createMockedShuffleServer(nettyShuffleServerConf);
     startServers();
   }
 
   private static void enableFirstReadRequest(int failCount) {
-    for (ShuffleServer server : shuffleServers) {
+    for (ShuffleServer server : grpcShuffleServers) {
       ((MockedGrpcServer) server.getServer()).getService().enableFirstNReadRequestToFail(failCount);
     }
   }
