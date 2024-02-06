@@ -83,14 +83,14 @@ public class RetryUtils {
         retry++;
         if (isRetryFunc.apply(t) && retry < retryTimes) {
           if (LOG.isDebugEnabled()) {
-            LOG.error("Retry due to Throwable ", t);
+            LOG.debug("Retry due to: ", t);
           } else {
-            LOG.error(
-                "Retry due to Throwable {}. Use DEBUG level to see the full stack: {}",
+            LOG.info(
+                "Retry due to: {}. Use DEBUG level to see the full stack: {}",
                 t.getClass().getName(),
                 t.getMessage());
           }
-          LOG.error(
+          LOG.info(
               "Will retry {} more time(s) after waiting {} milliseconds.",
               retryTimes - retry,
               intervalMs);
