@@ -17,8 +17,31 @@
 
 package org.apache.uniffle.client.api;
 
-import org.apache.uniffle.client.request.*;
-import org.apache.uniffle.client.response.*;
+import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
+import org.apache.uniffle.client.request.RssFinishShuffleRequest;
+import org.apache.uniffle.client.request.RssGetInMemoryShuffleDataRequest;
+import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
+import org.apache.uniffle.client.request.RssGetShuffleIndexRequest;
+import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
+import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
+import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
+import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
+import org.apache.uniffle.client.request.RssSendCommitRequest;
+import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.client.request.RssUnregisterAppRequest;
+import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
+import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
+import org.apache.uniffle.client.response.RssFinishShuffleResponse;
+import org.apache.uniffle.client.response.RssGetInMemoryShuffleDataResponse;
+import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
+import org.apache.uniffle.client.response.RssGetShuffleIndexResponse;
+import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
+import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
+import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
+import org.apache.uniffle.client.response.RssSendCommitResponse;
+import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.client.response.RssUnregisterAppResponse;
+import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 
 public interface ShuffleServerClient {
 
