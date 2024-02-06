@@ -60,6 +60,9 @@ pub enum WorkerError {
 
     #[error("Data should be read from hdfs in client side instead of from server side")]
     NOT_READ_HDFS_DATA_FROM_SERVER,
+
+    #[error("Spill event has been retried exceed the max limit for app: {0}")]
+    SPILL_EVENT_EXCEED_RETRY_MAX_LIMIT(String),
 }
 
 impl From<AcquireError> for WorkerError {

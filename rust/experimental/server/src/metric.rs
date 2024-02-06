@@ -248,7 +248,19 @@ pub static GAUGE_IN_SPILL_DATA_SIZE: Lazy<IntGauge> =
 pub static GAUGE_GRPC_REQUEST_QUEUE_SIZE: Lazy<IntGauge> =
     Lazy::new(|| IntGauge::new("grpc_request_queue_size", "grpc request queue size").unwrap());
 
+pub static TOTAL_SPILL_EVENTS_DROPPED: Lazy<IntCounter> = Lazy::new(|| {
+    IntCounter::new(
+        "total_spill_events_dropped",
+        "total spill events dropped number",
+    )
+    .expect("")
+});
+
 fn register_custom_metrics() {
+    REGISTRY
+        .register(Box::new(TOTAL_SPILL_EVENTS_DROPPED.clone()))
+        .expect("");
+
     REGISTRY
         .register(Box::new(GAUGE_TOPN_APP_RESIDENT_DATA_SIZE.clone()))
         .expect("");
