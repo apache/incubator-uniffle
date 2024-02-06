@@ -48,33 +48,8 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
-import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
-import org.apache.uniffle.client.request.RssApplicationInfoRequest;
-import org.apache.uniffle.client.request.RssFetchClientConfRequest;
-import org.apache.uniffle.client.request.RssFetchRemoteStorageRequest;
-import org.apache.uniffle.client.request.RssFinishShuffleRequest;
-import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
-import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
-import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
-import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
-import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
-import org.apache.uniffle.client.request.RssSendCommitRequest;
-import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
-import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
-import org.apache.uniffle.client.response.ClientResponse;
-import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
-import org.apache.uniffle.client.response.RssApplicationInfoResponse;
-import org.apache.uniffle.client.response.RssFetchClientConfResponse;
-import org.apache.uniffle.client.response.RssFetchRemoteStorageResponse;
-import org.apache.uniffle.client.response.RssFinishShuffleResponse;
-import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
-import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
-import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
-import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
-import org.apache.uniffle.client.response.RssSendCommitResponse;
-import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
-import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
-import org.apache.uniffle.client.response.SendShuffleDataResult;
+import org.apache.uniffle.client.request.*;
+import org.apache.uniffle.client.response.*;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
@@ -984,6 +959,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public void unregisterShuffle(String appId) {
+    RssUnregisterAppRequest request = new RssUnregisterAppRequest(appId);
+
     if (appId == null) {
       return;
     }
@@ -991,7 +968,40 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (appServerMap == null) {
       return;
     }
-    appServerMap.keySet().forEach(shuffleId -> unregisterShuffle(appId, shuffleId));
+    Set<ShuffleServerInfo> shuffleServerInfos = getAllShuffleServers(appId);
+
+    ExecutorService executorService = null;
+    try {
+      executorService =
+          ThreadUtils.getDaemonFixedThreadPool(
+              Math.min(unregisterThreadPoolSize, shuffleServerInfos.size()), "unregister-shuffle");
+
+      ThreadUtils.executeTasks(
+          executorService,
+          shuffleServerInfos,
+          shuffleServerInfo -> {
+            try {
+              ShuffleServerClient client =
+                  ShuffleServerClientFactory.getInstance()
+                      .getShuffleServerClient(clientType, shuffleServerInfo, rssConf);
+              RssUnregisterAppResponse response = client.unregisterApp(request);
+              if (response.getStatusCode() != StatusCode.SUCCESS) {
+                LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
+              }
+            } catch (Exception e) {
+              LOG.warn("Error happened when unregistering to " + shuffleServerInfo, e);
+            }
+            return null;
+          },
+          unregisterRequestTimeSec,
+          "unregister shuffle server");
+
+    } finally {
+      if (executorService != null) {
+        executorService.shutdownNow();
+      }
+      shuffleServerInfoMap.remove(appId);
+    }
   }
 
   private void throwExceptionIfNecessary(ClientResponse response, String errorMsg) {

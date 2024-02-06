@@ -34,29 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
-import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
-import org.apache.uniffle.client.request.RssFinishShuffleRequest;
-import org.apache.uniffle.client.request.RssGetInMemoryShuffleDataRequest;
-import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
-import org.apache.uniffle.client.request.RssGetShuffleIndexRequest;
-import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
-import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
-import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
-import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
-import org.apache.uniffle.client.request.RssSendCommitRequest;
-import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
-import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
-import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
-import org.apache.uniffle.client.response.RssFinishShuffleResponse;
-import org.apache.uniffle.client.response.RssGetInMemoryShuffleDataResponse;
-import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
-import org.apache.uniffle.client.response.RssGetShuffleIndexResponse;
-import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
-import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
-import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
-import org.apache.uniffle.client.response.RssSendCommitResponse;
-import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
-import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
+import org.apache.uniffle.client.request.*;
+import org.apache.uniffle.client.response.*;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -326,6 +305,35 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       throw new NotRetryException(msg);
     }
     return result;
+  }
+
+  private RssProtos.AppUnregisterResponse doUnregisterApp(String appId) {
+    RssProtos.AppUnregisterRequest request =
+        RssProtos.AppUnregisterRequest.newBuilder().setAppId(appId).build();
+    return blockingStub.unregisterApp(request);
+  }
+
+  @Override
+  public RssUnregisterAppResponse unregisterApp(RssUnregisterAppRequest request) {
+    RssProtos.AppUnregisterResponse rpcResponse = doUnregisterApp(request.getAppId());
+
+    RssUnregisterAppResponse response;
+    RssProtos.StatusCode statusCode = rpcResponse.getStatus();
+
+    switch (statusCode) {
+      case SUCCESS:
+        response = new RssUnregisterAppResponse(StatusCode.SUCCESS);
+        break;
+      default:
+        String msg =
+            String.format(
+                "Errors on unregister app to %s:%s for appId[%s], error: %s",
+                host, port, request.getAppId(), rpcResponse.getRetMsg());
+        LOG.error(msg);
+        throw new RssException(msg);
+    }
+
+    return response;
   }
 
   private RssProtos.ShuffleUnregisterResponse doUnregisterShuffle(String appId, int shuffleId) {
