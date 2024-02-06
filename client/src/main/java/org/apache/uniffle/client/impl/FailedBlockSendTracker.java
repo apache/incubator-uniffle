@@ -18,12 +18,13 @@
 package org.apache.uniffle.client.impl;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -31,7 +32,7 @@ import org.apache.uniffle.common.rpc.StatusCode;
 
 public class FailedBlockSendTracker {
 
-  private Map<Long, Set<TrackBlockStatus>> trackBlockStatusMap;
+  private Map<Long, List<TrackBlockStatus>> trackBlockStatusMap;
 
   public FailedBlockSendTracker() {
     this.trackBlockStatusMap = Maps.newConcurrentMap();
@@ -42,7 +43,7 @@ public class FailedBlockSendTracker {
       ShuffleServerInfo shuffleServerInfo,
       StatusCode statusCode) {
     trackBlockStatusMap
-        .computeIfAbsent(shuffleBlockInfo.getBlockId(), s -> Sets.newConcurrentHashSet())
+        .computeIfAbsent(shuffleBlockInfo.getBlockId(), s -> Lists.newLinkedList())
         .add(new TrackBlockStatus(shuffleBlockInfo, shuffleServerInfo, statusCode));
   }
 
@@ -62,7 +63,7 @@ public class FailedBlockSendTracker {
     return trackBlockStatusMap.keySet();
   }
 
-  public Set<TrackBlockStatus> getFailedBlockStatus(Long blockId) {
+  public List<TrackBlockStatus> getFailedBlockStatus(Long blockId) {
     return trackBlockStatusMap.get(blockId);
   }
 
