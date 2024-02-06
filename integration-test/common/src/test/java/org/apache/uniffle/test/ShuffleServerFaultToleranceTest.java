@@ -135,7 +135,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
   }
 
   private void testReadFaultTolerance(boolean isNettyMode) throws Exception {
-    String testAppId = "ShuffleServerFaultToleranceTest.testReadFaultTolerance";
+    String testAppId = "ShuffleServerFaultToleranceTest.testReadFaultTolerance" + "_isNettyMode_" + isNettyMode;
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr =

@@ -110,7 +110,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
   }
 
   private void memoryWriteReadTest(boolean isNettyMode) throws Exception {
-    String testAppId = "memoryWriteReadTest";
+    String testAppId = "memoryWriteReadTest" + "_isNettyMode_" + isNettyMode;
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr =
@@ -277,7 +277,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
   }
 
   private void memoryWriteReadWithMultiReplicaTest(boolean isNettyMode) throws Exception {
-    String testAppId = "memoryWriteReadWithMultiReplicaTest";
+    String testAppId = "memoryWriteReadWithMultiReplicaTest" + "_isNettyMode_" + isNettyMode;
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr =
@@ -371,7 +371,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
   }
 
   private void memoryAndLocalFileReadWithFilterTest(boolean isNettyMode) throws Exception {
-    String testAppId = "memoryAndLocalFileReadWithFilterTest";
+    String testAppId = "memoryAndLocalFileReadWithFilterTest" + "_isNettyMode_" + isNettyMode;
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr =

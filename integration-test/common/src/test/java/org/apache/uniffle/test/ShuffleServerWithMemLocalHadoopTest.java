@@ -140,7 +140,7 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
   }
 
   private void runTest(boolean checkSkippedMetrics, boolean isNettyMode) throws Exception {
-    String testAppId = "memoryLocalFileHDFSReadWithFilterTest_" + "ship_" + checkSkippedMetrics;
+    String testAppId = "memoryLocalFileHDFSReadWithFilterTest_" + "ship_" + checkSkippedMetrics + "_isNettyMode_" + isNettyMode;
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr =

@@ -106,7 +106,7 @@ public class ShuffleServerWithHadoopTest extends ShuffleReadWriteBase {
   }
 
   private void hadoopWriteReadTest(boolean isNettyMode) {
-    String appId = "app_hdfs_read_write";
+    String appId = "app_hdfs_read_write" + "_isNettyMode_" + isNettyMode;
     String dataBasePath = HDFS_URI + "rss/test";
     RssRegisterShuffleRequest rrsr =
         new RssRegisterShuffleRequest(

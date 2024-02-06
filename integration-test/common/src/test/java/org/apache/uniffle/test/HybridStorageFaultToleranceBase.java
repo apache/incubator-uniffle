@@ -81,7 +81,7 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
   }
 
   private void fallbackTest(boolean isNettyMode) throws Exception {
-    String appId = "fallback_test_" + this.getClass().getSimpleName();
+    String appId = "fallback_test_" + this.getClass().getSimpleName() + "_isNettyMode_" + isNettyMode;
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Map<Integer, List<Integer>> map = Maps.newHashMap();
     map.put(0, Lists.newArrayList(0));

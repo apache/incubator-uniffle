@@ -215,7 +215,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     String alexDir = kerberizedHadoop.getSchemeAndAuthorityPrefix() + "/alex/";
 
     String user = "alex";
-    String appId = "app_hdfs_read_write";
+    String appId = "app_hdfs_read_write" + "_isNettyMode_" + isNettyMode;
     String dataBasePath = alexDir + "rss/test";
 
     RemoteStorageInfo remoteStorageInfo =

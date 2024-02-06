@@ -111,7 +111,7 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
   }
 
   private void diskErrorTest(boolean isNettyMode) throws Exception {
-    String appId = "ap_disk_error_data";
+    String appId = "ap_disk_error_data" + "_isNettyMode_" + isNettyMode;
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Set<Long> expectedBlock1 = Sets.newHashSet();
     Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();

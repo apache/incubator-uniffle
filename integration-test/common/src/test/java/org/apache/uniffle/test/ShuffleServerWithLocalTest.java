@@ -105,7 +105,7 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
   }
 
   private void localWriteReadTest(boolean isNettyMode) throws Exception {
-    String testAppId = "localWriteReadTest";
+    String testAppId = "localWriteReadTest" + "_isNettyMode_" + isNettyMode;
     RssRegisterShuffleRequest rrsr =
         new RssRegisterShuffleRequest(
             testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), "");

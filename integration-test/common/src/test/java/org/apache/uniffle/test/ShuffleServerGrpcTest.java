@@ -460,12 +460,11 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
   @Test
   public void sendDataAndRequireBufferTest() throws IOException {
-    sendDataAndRequireBufferTest(true);
-    sendDataAndRequireBufferTest(false);
+    sendDataAndRequireBufferTest("sendDataAndRequireBufferTest_netty", true);
+    sendDataAndRequireBufferTest("sendDataAndRequireBufferTest_grpc", false);
   }
 
-  private void sendDataAndRequireBufferTest(boolean isNettyMode) throws IOException {
-    String appId = "sendDataAndRequireBufferTest";
+  private void sendDataAndRequireBufferTest(String appId, boolean isNettyMode) throws IOException {
     int shuffleId = 0;
     int partitionId = 0;
     // bigger than the config above: HUGE_PARTITION_SIZE_THRESHOLD : 1024 * 1024 * 10L
@@ -523,7 +522,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
       if (ShuffleServerMetrics.TOTAL_REQUIRE_BUFFER_FAILED_FOR_HUGE_PARTITION.equals(
           metricsName.textValue())) {
         double labelValues = mapper.convertValue(metricsNode.get(i).get("value"), Double.class);
-        assertEquals(4, labelValues); // There is retry in ShuffleServerGrpcClient
+        assertEquals(isNettyMode ? 4 : 8, labelValues); // There is retry in ShuffleServerGrpcClient
         checkSuccess = true;
         break;
       }
@@ -560,11 +559,11 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
 
   @Test
   public void sendDataWithoutRegisterTest() {
-    sendDataWithoutRegisterTest(true);
-    sendDataWithoutRegisterTest(false);
+    sendDataWithoutRegisterTest("sendDataWithoutRegisterTest_netty", true);
+    sendDataWithoutRegisterTest("sendDataWithoutRegisterTest_grpc", false);
   }
 
-  private void sendDataWithoutRegisterTest(boolean isNettyMode) {
+  private void sendDataWithoutRegisterTest(String appId, boolean isNettyMode) {
     List<ShuffleBlockInfo> blockInfos =
         Lists.newArrayList(
             new ShuffleBlockInfo(0, 0, 0, 100, 0, new byte[100], Lists.newArrayList(), 0, 100, 0));
@@ -574,7 +573,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     shuffleToBlocks.put(0, partitionToBlocks);
 
     RssSendShuffleDataRequest rssdr =
-        new RssSendShuffleDataRequest("sendDataWithoutRegisterTest", 3, 1000, shuffleToBlocks);
+        new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
     RssSendShuffleDataResponse response =
         isNettyMode
             ? shuffleServerNettyClient.sendShuffleData(rssdr)

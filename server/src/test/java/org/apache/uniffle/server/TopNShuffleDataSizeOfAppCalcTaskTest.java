@@ -192,12 +192,12 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
 
   private void testTopNShuffleDataSizeOfAppCalcTask(boolean isNettyMode) throws Exception {
     // Here is 6 app, but config max top n number is 5
-    registerAndRequireBuffer("application_id_1", 1000, isNettyMode);
-    registerAndRequireBuffer("application_id_2", 2000, isNettyMode);
-    registerAndRequireBuffer("application_id_3", 3000, isNettyMode);
-    registerAndRequireBuffer("application_id_4", 4000, isNettyMode);
-    registerAndRequireBuffer("application_id_5", 5000, isNettyMode);
-    registerAndRequireBuffer("application_id_6", 6000, isNettyMode);
+    registerAndRequireBuffer("application_id_1" + "_isNettyMode_" + isNettyMode, 1000, isNettyMode);
+    registerAndRequireBuffer("application_id_2" + "_isNettyMode_" + isNettyMode, 2000, isNettyMode);
+    registerAndRequireBuffer("application_id_3" + "_isNettyMode_" + isNettyMode, 3000, isNettyMode);
+    registerAndRequireBuffer("application_id_4" + "_isNettyMode_" + isNettyMode, 4000, isNettyMode);
+    registerAndRequireBuffer("application_id_5" + "_isNettyMode_" + isNettyMode, 5000, isNettyMode);
+    registerAndRequireBuffer("application_id_6" + "_isNettyMode_" + isNettyMode, 6000, isNettyMode);
 
     Thread.sleep(500);
     String content = TestUtils.httpGet("http://127.0.0.1:18080/metrics/server");

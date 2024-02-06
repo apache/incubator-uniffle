@@ -152,7 +152,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
   }
 
   private void testWriteAndReadWithSpecifiedMapRange(boolean isNettyMode) throws Exception {
-    String testAppId = "testWriteAndReadWithSpecifiedMapRange";
+    String testAppId = "testWriteAndReadWithSpecifiedMapRange" + "_isNettyMode_" + isNettyMode;
 
     for (int i = 0; i < 4; i++) {
       RssRegisterShuffleRequest rrsr =
