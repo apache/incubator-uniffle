@@ -64,6 +64,13 @@ public class RssSparkConfig {
           .withDescription(
               "The memory spill switch triggered by Spark TaskMemoryManager, default value is false.");
 
+  public static final ConfigOption<Boolean> RSS_TASK_FAILED_RETRY_ENABLED =
+      ConfigOptions.key("rss.task.failed.retry.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "Whether to support task write failed retry internal, default value is false.");
+
   public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
 
   public static final ConfigEntry<Integer> RSS_PARTITION_NUM_PER_RANGE =
@@ -346,13 +353,6 @@ public class RssSparkConfig {
                       "Whether to estimate the number of ShuffleServers to be allocated based on the number"
                           + " of concurrent tasks."))
           .createWithDefault(RssClientConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED_DEFAULT_VALUE);
-
-  public static final ConfigEntry<Boolean> RSS_TASK_FAILED_CALLBACK_ENABLED =
-      createBooleanBuilder(
-              new ConfigBuilder(
-                      SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_TASK_FAILED_CALLBACK_ENABLED)
-                  .doc("Whether to support task failed retry internal."))
-          .createWithDefault(false);
 
   public static final ConfigEntry<Integer> RSS_ESTIMATE_TASK_CONCURRENCY_PER_SERVER =
       createIntegerBuilder(
