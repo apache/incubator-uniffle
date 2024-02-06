@@ -24,6 +24,8 @@ import org.apache.spark.shuffle.ShuffleHandleInfo;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
 
+import static org.mockito.Mockito.mock;
+
 public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   public Set<Integer> unregisteredShuffleIds = new LinkedHashSet<>();
 
@@ -61,14 +63,14 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   public void addFailuresShuffleServerInfos(String shuffleServerId) {}
 
   @Override
-  public boolean reassignShuffleServers(
+  public boolean reassignAllShuffleServersForWholeStage(
       int stageId, int stageAttemptNumber, int shuffleId, int numMaps) {
     return false;
   }
 
   @Override
-  public ShuffleServerInfo reassignFaultyShuffleServer(
+  public ShuffleServerInfo reassignFaultyShuffleServerForTasks(
       int shuffleId, Set<String> partitionIds, String faultyShuffleServerId) {
-    return null;
+    return mock(ShuffleServerInfo.class);
   }
 }

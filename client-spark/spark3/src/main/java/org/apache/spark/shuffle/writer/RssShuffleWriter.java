@@ -189,8 +189,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.taskFailureCallback = taskFailureCallback;
     this.taskContext = context;
     this.sparkConf = sparkConf;
-    this.taskFailRetry = RssSparkConfig.toRssConf(sparkConf)
-        .getBoolean(RssSparkConfig.RSS_TASK_FAILED_RETRY_ENABLED);
+    this.taskFailRetry =
+        RssSparkConfig.toRssConf(sparkConf)
+            .getBoolean(RssSparkConfig.RSS_TASK_FAILED_RETRY_ENABLED);
   }
 
   public RssShuffleWriter(

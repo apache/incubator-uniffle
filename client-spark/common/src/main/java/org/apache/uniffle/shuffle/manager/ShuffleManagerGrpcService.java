@@ -240,7 +240,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     int shuffleId = request.getShuffleId();
     int numPartitions = request.getNumPartitions();
     boolean needReassign =
-        shuffleManager.reassignShuffleServers(
+        shuffleManager.reassignAllShuffleServersForWholeStage(
             stageId, stageAttemptNumber, shuffleId, numPartitions);
     RssProtos.StatusCode code = RssProtos.StatusCode.SUCCESS;
     RssProtos.ReassignServersReponse reply =
@@ -257,7 +257,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
       RssProtos.RssReassignFaultyShuffleServerRequest request,
       StreamObserver<RssProtos.RssReassignFaultyShuffleServerResponse> responseObserver) {
     ShuffleServerInfo shuffleServerInfo =
-        shuffleManager.reassignFaultyShuffleServer(
+        shuffleManager.reassignFaultyShuffleServerForTasks(
             request.getShuffleId(),
             Sets.newHashSet(request.getPartitionIdsList()),
             request.getFaultyShuffleServerId());

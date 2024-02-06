@@ -807,7 +807,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * @param numPartitions
    */
   @Override
-  public synchronized boolean reassignShuffleServers(
+  public synchronized boolean reassignAllShuffleServersForWholeStage(
       int stageId, int stageAttemptNumber, int shuffleId, int numPartitions) {
     String stageIdAndAttempt = stageId + "_" + stageAttemptNumber;
     Boolean needReassign = serverAssignedInfos.computeIfAbsent(stageIdAndAttempt, id -> false);
@@ -850,7 +850,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   }
 
   @Override
-  public ShuffleServerInfo reassignFaultyShuffleServer(
+  public ShuffleServerInfo reassignFaultyShuffleServerForTasks(
       int shuffleId, Set<String> partitionIds, String faultyShuffleServerId) {
     ShuffleServerInfo newShuffleServerInfo =
         reassignedFaultyServers.computeIfAbsent(
