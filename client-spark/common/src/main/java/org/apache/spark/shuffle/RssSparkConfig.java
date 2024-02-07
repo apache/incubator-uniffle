@@ -64,13 +64,6 @@ public class RssSparkConfig {
           .withDescription(
               "The memory spill switch triggered by Spark TaskMemoryManager, default value is false.");
 
-  public static final ConfigOption<Boolean> RSS_TASK_FAILED_RETRY_ENABLED =
-      ConfigOptions.key("rss.task.failed.retry.enabled")
-          .booleanType()
-          .defaultValue(false)
-          .withDescription(
-              "Whether to support task write failed retry internal, default value is false.");
-
   public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
 
   public static final ConfigEntry<Integer> RSS_PARTITION_NUM_PER_RANGE =
