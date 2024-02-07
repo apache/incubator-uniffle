@@ -18,7 +18,6 @@
 package org.apache.uniffle.server;
 
 import java.nio.ByteBuffer;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,7 +25,6 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
@@ -88,7 +86,6 @@ import org.apache.uniffle.proto.RssProtos.ShuffleRegisterRequest;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerImplBase;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
-import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -111,14 +108,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode result = StatusCode.SUCCESS;
     String responseMessage = "OK";
     try {
-      Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers =
-          shuffleServer.getShuffleBufferManager().getBufferPool().get(appId);
-      if (shuffleIdToBuffers != null) {
-        HashSet<Integer> shuffleIds = Sets.newHashSet(shuffleIdToBuffers.keySet());
-        shuffleIds.forEach(
-            shuffleId ->
-                shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId, shuffleId));
-      }
+      shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId);
 
     } catch (Exception e) {
       result = StatusCode.INTERNAL_ERROR;
