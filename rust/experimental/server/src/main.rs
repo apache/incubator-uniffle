@@ -240,12 +240,8 @@ fn main() -> Result<()> {
             .max_decoding_message_size(usize::MAX)
             .max_encoding_message_size(usize::MAX);
         let service_tx = tx.subscribe();
-        runtime_manager.grpc_runtime.spawn_blocking(move || {
-            tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap()
-                .block_on(grpc_serve(service, addr, service_tx));
+        runtime_manager.grpc_runtime.spawn(async move {
+            grpc_serve(service, addr, service_tx).await
         });
     }
 
