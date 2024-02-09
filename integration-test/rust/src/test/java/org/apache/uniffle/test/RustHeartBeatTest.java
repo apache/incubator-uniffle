@@ -17,7 +17,12 @@
 
 package org.apache.uniffle.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.common.collect.Lists;
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
@@ -33,13 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class HeartBeatTest extends RustIntegrationTestBase {
+public class RustHeartBeatTest extends RustIntegrationTestBase {
 
     private ShuffleServerGrpcClient shuffleServerClient;
 

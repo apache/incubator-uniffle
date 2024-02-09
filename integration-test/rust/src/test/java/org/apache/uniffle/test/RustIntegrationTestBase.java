@@ -18,6 +18,13 @@
 package org.apache.uniffle.test;
 
 import com.google.common.collect.Lists;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -28,21 +35,16 @@ import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 public abstract class RustIntegrationTestBase extends HadoopTestBase {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RustIntegrationTestBase.class);
-
     protected static final int SHUFFLE_SERVER_PORT = 19999;
-
     protected static final String LOCALHOST;
+    protected static final int COORDINATOR_PORT = 9999;
+    protected static final int JETTY_PORT = 9998;
+    private static final Logger LOG = LoggerFactory.getLogger(RustIntegrationTestBase.class);
+    protected static List<RustShuffleServer> shuffleServers = Lists.newArrayList();
+    protected static List<CoordinatorServer> coordinators = Lists.newArrayList();
+    static @TempDir File tempDir;
 
     static {
         try {
@@ -52,17 +54,7 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
         }
     }
 
-    protected static List<RustShuffleServer> shuffleServers = Lists.newArrayList();
-
-    protected static List<CoordinatorServer> coordinators = Lists.newArrayList();
-
-    protected static final int COORDINATOR_PORT = 9999;
-
-    protected static final int JETTY_PORT = 9998;
-
     protected static final String COORDINATOR_QUORUM = LOCALHOST + ":" + COORDINATOR_PORT;
-
-    static @TempDir File tempDir;
 
     public static void startServers() throws Exception {
         compileRustServer();
@@ -115,7 +107,8 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
         serverConf.generateTomlConf();
         shuffleServers.add(new RustShuffleServer(serverConf));
     }
-//
+
+    //
 //    protected static void createMockedShuffleServer(ShuffleServerConf serverConf) throws Exception {
 //        shuffleServers.add(new MockedShuffleServer(serverConf));
 //    }
@@ -124,8 +117,7 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
         coordinators.add(new CoordinatorServer(coordinatorConf));
     }
 
-    protected static void createAndStartServers(
-            RustShuffleServerConf shuffleServerConf) throws Exception {
+    protected static void createAndStartServers(RustShuffleServerConf shuffleServerConf) throws Exception {
         createShuffleServer(shuffleServerConf);
         startServers();
     }
@@ -159,8 +151,7 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
         Process process = builder.start();
 
         // Read output (and error) stream of the process
-        try (InputStreamReader isr = new InputStreamReader(process.getInputStream());
-             BufferedReader br = new BufferedReader(isr)) {
+        try (InputStreamReader isr = new InputStreamReader(process.getInputStream()); BufferedReader br = new BufferedReader(isr)) {
 
             String line;
             while ((line = br.readLine()) != null) {

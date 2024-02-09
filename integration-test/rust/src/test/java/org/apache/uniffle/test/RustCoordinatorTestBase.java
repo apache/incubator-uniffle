@@ -29,9 +29,7 @@ public class RustCoordinatorTestBase extends RustIntegrationTestBase {
 
     @BeforeEach
     public void createClient() {
-        coordinatorClient =
-                (CoordinatorGrpcClient)
-                        factory.createCoordinatorClient(ClientType.GRPC, LOCALHOST, COORDINATOR_PORT);
+        coordinatorClient = (CoordinatorGrpcClient) factory.createCoordinatorClient(ClientType.GRPC, LOCALHOST, COORDINATOR_PORT);
     }
 
     @AfterEach

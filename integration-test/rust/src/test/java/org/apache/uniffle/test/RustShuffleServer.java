@@ -17,9 +17,7 @@
 
 package org.apache.uniffle.test;
 
-import org.opentest4j.AssertionFailedError;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -29,8 +27,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.opentest4j.AssertionFailedError;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RustShuffleServer {
 
@@ -50,17 +49,11 @@ public class RustShuffleServer {
         long keepAliveTime = 60;
         int queueCapacity = 100;
 
-        this.executorService = new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
-                keepAliveTime, TimeUnit.SECONDS, new ArrayBlockingQueue<>(queueCapacity),
-                new ThreadPoolExecutor.CallerRunsPolicy());
+        this.executorService = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit.SECONDS, new ArrayBlockingQueue<>(queueCapacity), new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
     public void start() throws IOException, InterruptedException, RuntimeException {
-        String[] command = {
-                "../../rust/experimental/server/target/debug/uniffle-worker",
-                "--config",
-                rustShuffleServerConf.getTempFilePath()
-        };
+        String[] command = {"../../rust/experimental/server/target/debug/uniffle-worker", "--config", rustShuffleServerConf.getTempFilePath()};
         rustServer = Runtime.getRuntime().exec(command);
 
         Thread.sleep(1000);
