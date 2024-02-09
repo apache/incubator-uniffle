@@ -81,7 +81,6 @@ public class RustShuffleServer {
             }
           } catch (IOException e) {
             LOG.error("IOException occurred while reading the input stream", e);
-            System.exit(-1);
           }
         });
 
@@ -100,7 +99,6 @@ public class RustShuffleServer {
             assertEquals(errorMessage.toString(), "");
           } catch (IOException e) {
             LOG.error("IOException occurred while reading the error stream", e);
-            System.exit(-1);
           } catch (AssertionFailedError e) {
             shutdown();
             throw new RuntimeException("Server occurs error", e);
@@ -116,12 +114,10 @@ public class RustShuffleServer {
               LOG.info("Rust server stopped successfully.");
             } else {
               LOG.error("Rust server exited with error code: " + exitCode);
-              System.exit(-1);
             }
           } catch (InterruptedException e) {
             shutdown();
             LOG.error("Interrupted while waiting for the rust server process", e);
-            System.exit(-1);
           }
         });
   }
