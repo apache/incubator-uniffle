@@ -45,7 +45,6 @@ impl MemoryStoreConfig {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
 pub struct HdfsStoreConfig {
-    pub data_path: String,
     pub max_concurrency: Option<i32>,
 }
 

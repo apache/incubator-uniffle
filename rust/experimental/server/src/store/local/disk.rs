@@ -15,6 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
+use crate::metric::{
+    GAUGE_LOCAL_DISK_CAPACITY, GAUGE_LOCAL_DISK_IS_HEALTHY, GAUGE_LOCAL_DISK_USED,
+};
 use crate::runtime::manager::RuntimeManager;
 use anyhow::{anyhow, Result};
 use await_tree::InstrumentAwait;
@@ -63,6 +66,8 @@ pub struct LocalDisk {
     is_corrupted: AtomicBool,
     is_healthy: AtomicBool,
     config: LocalDiskConfig,
+
+    capacity: u64,
 }
 
 impl LocalDisk {
@@ -75,13 +80,17 @@ impl LocalDisk {
         builder.root(&root);
         let operator: Operator = Operator::new(builder).unwrap().finish();
 
+        let disk_capacity =
+            Self::get_disk_capacity(&root).expect("Errors on getting disk capacity");
+
         let instance = LocalDisk {
-            root,
+            root: root.to_string(),
             operator,
             concurrency_limiter: Semaphore::new(config.max_concurrency as usize),
             is_corrupted: AtomicBool::new(false),
             is_healthy: AtomicBool::new(true),
             config,
+            capacity: disk_capacity,
         };
         let instance = Arc::new(instance);
 
@@ -91,6 +100,10 @@ impl LocalDisk {
             info!("Starting the disk healthy check, root: {}", &cloned.root);
             LocalDisk::loop_check_disk(cloned).await;
         });
+
+        GAUGE_LOCAL_DISK_CAPACITY
+            .with_label_values(&[&root])
+            .set(disk_capacity as i64);
 
         instance
     }
@@ -124,31 +137,45 @@ impl LocalDisk {
                 return;
             }
 
+            let root_ref = &local_disk.root;
+
             let check_succeed: Result<()> = LocalDisk::write_read_check(local_disk.clone()).await;
             if check_succeed.is_err() {
                 local_disk.mark_corrupted();
+                GAUGE_LOCAL_DISK_IS_HEALTHY
+                    .with_label_values(&[root_ref])
+                    .set(1i64);
                 error!(
                     "Errors on checking local disk corruption. err: {:#?}",
                     check_succeed.err()
                 );
             }
 
-            // check the capacity
-            let used_ratio = local_disk.get_disk_used_ratio();
-            if used_ratio.is_err() {
+            // get the disk used ratio.
+            let disk_capacity = local_disk.capacity;
+            let disk_available = Self::get_disk_available(root_ref);
+            if disk_available.is_err() {
                 error!(
-                    "Errors on getting the used ratio of the disk capacity. err: {:?}",
-                    used_ratio.err()
+                    "Errors on getting the available of the local disk. err: {:?}",
+                    disk_available.err()
                 );
                 continue;
             }
+            let disk_available = disk_available.unwrap();
+            let used_ratio = 1.0 - (disk_available as f64 / disk_capacity as f64);
 
-            let used_ratio = used_ratio.unwrap();
+            GAUGE_LOCAL_DISK_USED
+                .with_label_values(&[root_ref])
+                .set((disk_capacity - disk_available) as i64);
+
             if local_disk.is_healthy().unwrap()
                 && used_ratio > local_disk.config.high_watermark as f64
             {
                 warn!("Disk={} has been unhealthy.", &local_disk.root);
                 local_disk.mark_unhealthy();
+                GAUGE_LOCAL_DISK_IS_HEALTHY
+                    .with_label_values(&[root_ref])
+                    .set(1i64);
                 continue;
             }
 
@@ -157,6 +184,9 @@ impl LocalDisk {
             {
                 warn!("Disk={} has been healthy.", &local_disk.root);
                 local_disk.mark_healthy();
+                GAUGE_LOCAL_DISK_IS_HEALTHY
+                    .with_label_values(&[root_ref])
+                    .set(0i64);
                 continue;
             }
         }
@@ -228,15 +258,15 @@ impl LocalDisk {
         Ok(())
     }
 
-    fn mark_corrupted(&self) {
+    pub fn mark_corrupted(&self) {
         self.is_corrupted.store(true, Ordering::SeqCst);
     }
 
-    fn mark_unhealthy(&self) {
+    pub fn mark_unhealthy(&self) {
         self.is_healthy.store(false, Ordering::SeqCst);
     }
 
-    fn mark_healthy(&self) {
+    pub fn mark_healthy(&self) {
         self.is_healthy.store(true, Ordering::SeqCst);
     }
 
@@ -248,11 +278,18 @@ impl LocalDisk {
         Ok(self.is_healthy.load(Ordering::SeqCst))
     }
 
-    fn get_disk_used_ratio(&self) -> Result<f64> {
+    fn get_disk_used_ratio(root: &str, capacity: u64) -> Result<f64> {
         // Get the total and available space in bytes
-        let available_space = fs2::available_space(&self.root)?;
-        let total_space = fs2::total_space(&self.root)?;
-        Ok(1.0 - (available_space as f64 / total_space as f64))
+        let available_space = fs2::available_space(root)?;
+        Ok(1.0 - (available_space as f64 / capacity as f64))
+    }
+
+    fn get_disk_capacity(root: &str) -> Result<u64> {
+        Ok(fs2::total_space(root)?)
+    }
+
+    fn get_disk_available(root: &str) -> Result<u64> {
+        Ok(fs2::available_space(root)?)
     }
 }
 

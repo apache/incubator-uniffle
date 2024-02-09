@@ -31,5 +31,5 @@ echo "BUILD_NEW_CLUSTER: $BUILD_NEW_CLUSTER"
 echo "BUILD_RSS_IMAGE: $BUILD_RSS_IMAGE"
 echo "BUILD_RSS_OPERATOR: $BUILD_RSS_OPERATOR"
 
-sh set-up-local-cluster.sh --registry "$TEST_REGISTRY" --build-kind-cluster "$BUILD_NEW_CLUSTER" \
+./set-up-local-cluster.sh --registry "$TEST_REGISTRY" --build-kind-cluster "$BUILD_NEW_CLUSTER" \
           --build-rss-image "$BUILD_RSS_IMAGE" --build-operator "$BUILD_RSS_OPERATOR"

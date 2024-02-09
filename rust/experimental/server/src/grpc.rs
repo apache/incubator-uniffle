@@ -16,8 +16,9 @@
 // under the License.
 
 use crate::app::{
-    AppManagerRef, GetBlocksContext, PartitionedUId, ReadingIndexViewContext, ReadingOptions,
-    ReadingViewContext, ReportBlocksContext, RequireBufferContext, WritingViewContext,
+    AppConfigOptions, AppManagerRef, DataDistribution, GetBlocksContext, PartitionedUId,
+    ReadingIndexViewContext, ReadingOptions, ReadingViewContext, RemoteStorageConfig,
+    ReportBlocksContext, RequireBufferContext, WritingViewContext,
 };
 use crate::proto::uniffle::shuffle_server_server::ShuffleServer;
 use crate::proto::uniffle::{
@@ -28,8 +29,8 @@ use crate::proto::uniffle::{
     GetShuffleResultRequest, GetShuffleResultResponse, ReportShuffleResultRequest,
     ReportShuffleResultResponse, RequireBufferRequest, RequireBufferResponse,
     SendShuffleDataRequest, SendShuffleDataResponse, ShuffleCommitRequest, ShuffleCommitResponse,
-    ShuffleRegisterRequest, ShuffleRegisterResponse, ShuffleUnregisterRequest,
-    ShuffleUnregisterResponse,
+    ShuffleRegisterRequest, ShuffleRegisterResponse, ShuffleUnregisterByAppIdRequest,
+    ShuffleUnregisterByAppIdResponse, ShuffleUnregisterRequest, ShuffleUnregisterResponse,
 };
 use crate::store::{PartitionedData, ResponseDataIndex};
 use await_tree::InstrumentAwait;
@@ -91,9 +92,17 @@ impl ShuffleServer for DefaultShuffleServer {
         request: Request<ShuffleRegisterRequest>,
     ) -> Result<Response<ShuffleRegisterResponse>, Status> {
         let inner = request.into_inner();
+        // todo: fast fail when hdfs is enabled but empty remote storage info.
+        let remote_storage_info = inner.remote_storage.map(|x| RemoteStorageConfig::from(x));
+        // todo: add more options: huge_partition_threshold. and so on...
+        let app_config_option = AppConfigOptions::new(
+            DataDistribution::LOCAL_ORDER,
+            inner.max_concurrency_per_partition_to_write,
+            remote_storage_info,
+        );
         let status = self
             .app_manager_ref
-            .register(inner.app_id, inner.shuffle_id)
+            .register(inner.app_id, inner.shuffle_id, app_config_option)
             .map_or(StatusCode::INTERNAL_ERROR, |_| StatusCode::SUCCESS)
             .into();
         Ok(Response::new(ShuffleRegisterResponse {
@@ -116,12 +125,34 @@ impl ShuffleServer for DefaultShuffleServer {
         );
         let status_code = self
             .app_manager_ref
-            .unregister(app_id, shuffle_id)
+            .unregister_shuffle(app_id, shuffle_id)
             .await
             .map_or_else(|_e| StatusCode::INTERNAL_ERROR, |_| StatusCode::SUCCESS);
 
         Ok(Response::new(ShuffleUnregisterResponse {
             status: status_code.into(),
+            ret_msg: "".to_string(),
+        }))
+    }
+
+    // Once unregister app accepted, the data could be purged.
+    async fn unregister_shuffle_by_app_id(
+        &self,
+        request: Request<ShuffleUnregisterByAppIdRequest>,
+    ) -> Result<Response<ShuffleUnregisterByAppIdResponse>, Status> {
+        let request = request.into_inner();
+        let app_id = request.app_id;
+
+        info!("Accepted unregister app rpc. app_id: {:?}", &app_id);
+
+        let code = self
+            .app_manager_ref
+            .unregister_app(app_id)
+            .await
+            .map_or_else(|_e| StatusCode::INTERNAL_ERROR, |_| StatusCode::SUCCESS);
+
+        Ok(Response::new(ShuffleUnregisterByAppIdResponse {
+            status: code.into(),
             ret_msg: "".to_string(),
         }))
     }
@@ -184,10 +215,7 @@ impl ShuffleServer for DefaultShuffleServer {
                 shuffle_id,
                 partition_id,
             };
-            let ctx = WritingViewContext {
-                uid: uid.clone(),
-                data_blocks: blocks,
-            };
+            let ctx = WritingViewContext::from(uid.clone(), blocks);
 
             let inserted = app
                 .insert(ctx)
@@ -692,6 +720,7 @@ impl ShuffleServer for DefaultShuffleServer {
 }
 
 pub mod metrics_middleware {
+    use crate::metric::GAUGE_GRPC_REQUEST_QUEUE_SIZE;
     use hyper::service::Service;
     use hyper::Body;
     use prometheus::HistogramVec;
@@ -740,6 +769,8 @@ pub mod metrics_middleware {
         }
 
         fn call(&mut self, req: hyper::Request<Body>) -> Self::Future {
+            GAUGE_GRPC_REQUEST_QUEUE_SIZE.inc();
+
             // This is necessary because tonic internally uses `tower::buffer::Buffer`.
             // See https://github.com/tower-rs/tower/issues/547#issuecomment-767629149
             // for details on why this is necessary
@@ -755,6 +786,8 @@ pub mod metrics_middleware {
                 let response = inner.call(req).await?;
 
                 timer.observe_duration();
+
+                GAUGE_GRPC_REQUEST_QUEUE_SIZE.inc();
 
                 Ok(response)
             })

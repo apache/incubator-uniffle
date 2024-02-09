@@ -24,10 +24,10 @@ pub mod mem;
 pub mod memory;
 
 use crate::app::{
-    PurgeDataContext, ReadingIndexViewContext, ReadingViewContext, ReleaseBufferContext,
-    RequireBufferContext, WritingViewContext,
+    PurgeDataContext, ReadingIndexViewContext, ReadingViewContext, RegisterAppContext,
+    ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
-use crate::config::Config;
+use crate::config::{Config, StorageType};
 use crate::error::WorkerError;
 use crate::proto::uniffle::{ShuffleData, ShuffleDataBlockSegment};
 use crate::store::hybrid::HybridStore;
@@ -168,7 +168,7 @@ pub trait Store {
         &self,
         ctx: ReadingIndexViewContext,
     ) -> Result<ResponseDataIndex, WorkerError>;
-    async fn purge(&self, ctx: PurgeDataContext) -> Result<()>;
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<i64>;
     async fn is_healthy(&self) -> Result<bool>;
 
     async fn require_buffer(
@@ -176,6 +176,9 @@ pub trait Store {
         ctx: RequireBufferContext,
     ) -> Result<RequireBufferResponse, WorkerError>;
     async fn release_buffer(&self, ctx: ReleaseBufferContext) -> Result<i64, WorkerError>;
+    async fn register_app(&self, ctx: RegisterAppContext) -> Result<()>;
+
+    async fn name(&self) -> StorageType;
 }
 
 pub trait Persistent {}

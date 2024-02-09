@@ -34,6 +34,9 @@ pub enum WorkerError {
     #[error("Partial data has been lost, corrupted path: {0}")]
     PARTIAL_DATA_LOST(String),
 
+    #[error("Local disk:[{0}] is not healthy")]
+    LOCAL_DISK_UNHEALTHY(String),
+
     #[error("Local disk:[{0}] owned by current partition has been corrupted")]
     LOCAL_DISK_OWNED_BY_PARTITION_CORRUPTED(String),
 
@@ -51,6 +54,15 @@ pub enum WorkerError {
 
     #[error("Ticket id: {0} not exist")]
     TICKET_ID_NOT_EXIST(i64),
+
+    #[error("Hdfs native client not found for app: {0}")]
+    HDFS_NATIVE_CLIENT_NOT_FOUND(String),
+
+    #[error("Data should be read from hdfs in client side instead of from server side")]
+    NOT_READ_HDFS_DATA_FROM_SERVER,
+
+    #[error("Spill event has been retried exceed the max limit for app: {0}")]
+    SPILL_EVENT_EXCEED_RETRY_MAX_LIMIT(String),
 }
 
 impl From<AcquireError> for WorkerError {

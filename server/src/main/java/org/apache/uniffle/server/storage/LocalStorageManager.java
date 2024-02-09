@@ -309,12 +309,12 @@ public class LocalStorageManager extends SingleStorageManager {
     Function<String, Boolean> deleteConditionFunc = null;
     String prefixKey = null;
     if (event instanceof AppPurgeEvent) {
-      prefixKey = UnionKey.buildKey(event.getAppId());
+      prefixKey = UnionKey.buildKey(event.getAppId(), "");
       deleteConditionFunc =
           partitionUnionKey -> UnionKey.startsWith(partitionUnionKey, event.getAppId());
     } else if (event instanceof ShufflePurgeEvent) {
       int shuffleId = event.getShuffleIds().get(0);
-      prefixKey = UnionKey.buildKey(event.getAppId(), shuffleId);
+      prefixKey = UnionKey.buildKey(event.getAppId(), shuffleId, "");
       deleteConditionFunc =
           partitionUnionKey -> UnionKey.startsWith(partitionUnionKey, event.getAppId(), shuffleId);
     }

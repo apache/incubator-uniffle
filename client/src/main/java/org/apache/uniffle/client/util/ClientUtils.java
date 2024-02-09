@@ -34,10 +34,11 @@ import org.apache.uniffle.storage.util.StorageType;
 
 public class ClientUtils {
 
-  // BlockId is long and composed of partitionId, executorId and AtomicInteger.
-  // AtomicInteger is first 19 bit, max value is 2^19 - 1
-  // partitionId is next 24 bit, max value is 2^24 - 1
-  // taskAttemptId is rest of 20 bit, max value is 2^20 - 1
+  // BlockId is positive long (63 bits) composed of partitionId, taskAttemptId and AtomicInteger.
+  // AtomicInteger is highest 18 bits, max value is 2^18 - 1
+  // partitionId is middle 24 bits, max value is 2^24 - 1
+  // taskAttemptId is lowest 21 bits, max value is 2^21 - 1
+  // Values of partitionId, taskAttemptId and AtomicInteger are always positive.
   public static Long getBlockId(long partitionId, long taskAttemptId, long atomicInt) {
     if (atomicInt < 0 || atomicInt > Constants.MAX_SEQUENCE_NO) {
       throw new IllegalArgumentException(

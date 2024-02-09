@@ -18,9 +18,9 @@
 use crate::app::ReadingOptions::MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE;
 use crate::app::{
     PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingViewContext,
-    ReleaseBufferContext, RequireBufferContext, WritingViewContext,
+    RegisterAppContext, ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
-use crate::config::MemoryStoreConfig;
+use crate::config::{MemoryStoreConfig, StorageType};
 use crate::error::WorkerError;
 use crate::metric::{
     GAUGE_MEMORY_ALLOCATED, GAUGE_MEMORY_CAPACITY, GAUGE_MEMORY_USED, TOTAL_MEMORY_USED,
@@ -387,7 +387,7 @@ impl Store for MemoryStore {
         panic!("It should not be invoked.")
     }
 
-    async fn purge(&self, ctx: PurgeDataContext) -> Result<()> {
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<i64> {
         let app_id = ctx.app_id;
         let shuffle_id_option = ctx.shuffle_id;
 
@@ -424,7 +424,7 @@ impl Store for MemoryStore {
             used, app_id, shuffle_id_option
         );
 
-        Ok(())
+        Ok(used)
     }
 
     async fn is_healthy(&self) -> Result<bool> {
@@ -454,6 +454,14 @@ impl Store for MemoryStore {
     async fn release_buffer(&self, ctx: ReleaseBufferContext) -> Result<i64, WorkerError> {
         let ticket_id = ctx.ticket_id;
         self.ticket_manager.delete(ticket_id)
+    }
+
+    async fn register_app(&self, _ctx: RegisterAppContext) -> Result<()> {
+        Ok(())
+    }
+
+    async fn name(&self) -> StorageType {
+        StorageType::MEMORY
     }
 }
 
@@ -882,7 +890,7 @@ mod test {
                 task_attempt_id: 0,
             });
         }
-        WritingViewContext { uid, data_blocks }
+        WritingViewContext::from(uid, data_blocks)
     }
 
     #[test]
@@ -927,9 +935,9 @@ mod test {
             .wait(store.require_buffer(RequireBufferContext::new(uid.clone(), 40)))
             .expect("");
 
-        let writing_ctx = WritingViewContext {
-            uid: uid.clone(),
-            data_blocks: vec![PartitionedDataBlock {
+        let writing_ctx = WritingViewContext::from(
+            uid.clone(),
+            vec![PartitionedDataBlock {
                 block_id: 0,
                 length: 10,
                 uncompress_length: 100,
@@ -937,7 +945,7 @@ mod test {
                 data: Default::default(),
                 task_attempt_id: 0,
             }],
-        };
+        );
         runtime.wait(store.insert(writing_ctx)).expect("");
 
         let reading_ctx = ReadingViewContext {
@@ -988,9 +996,9 @@ mod test {
         let store = MemoryStore::new(1024 * 1024 * 1024);
         let runtime = store.runtime_manager.clone();
 
-        let writing_ctx = WritingViewContext {
-            uid: Default::default(),
-            data_blocks: vec![
+        let writing_ctx = WritingViewContext::from(
+            Default::default(),
+            vec![
                 PartitionedDataBlock {
                     block_id: 0,
                     length: 10,
@@ -1008,7 +1016,7 @@ mod test {
                     task_attempt_id: 1,
                 },
             ],
-        };
+        );
         runtime.wait(store.insert(writing_ctx)).unwrap();
 
         let reading_ctx = ReadingViewContext {
@@ -1033,9 +1041,9 @@ mod test {
         let runtime = store.runtime_manager.clone();
 
         // 1. insert 2 block
-        let writing_ctx = WritingViewContext {
-            uid: Default::default(),
-            data_blocks: vec![
+        let writing_ctx = WritingViewContext::from(
+            Default::default(),
+            vec![
                 PartitionedDataBlock {
                     block_id: 0,
                     length: 10,
@@ -1053,7 +1061,7 @@ mod test {
                     task_attempt_id: 1,
                 },
             ],
-        };
+        );
         runtime.wait(store.insert(writing_ctx)).unwrap();
 
         // 2. block_ids_filter is empty, should return 2 blocks
