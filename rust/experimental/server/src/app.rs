@@ -726,10 +726,15 @@ impl AppManager {
         app_ref.register_shuffle(shuffle_id)
     }
 
-    pub async fn unregister(&self, app_id: String, shuffle_id: i32) -> Result<()> {
+    pub async fn unregister_shuffle(&self, app_id: String, shuffle_id: i32) -> Result<()> {
         self.sender
             .send(PurgeEvent::APP_PARTIAL_SHUFFLES_PURGE(app_id, shuffle_id))
             .await?;
+        Ok(())
+    }
+
+    pub async fn unregister_app(&self, app_id: String) -> Result<()> {
+        self.sender.send(PurgeEvent::APP_PURGE(app_id)).await?;
         Ok(())
     }
 }

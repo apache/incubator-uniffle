@@ -29,8 +29,8 @@ use crate::proto::uniffle::{
     GetShuffleResultRequest, GetShuffleResultResponse, ReportShuffleResultRequest,
     ReportShuffleResultResponse, RequireBufferRequest, RequireBufferResponse,
     SendShuffleDataRequest, SendShuffleDataResponse, ShuffleCommitRequest, ShuffleCommitResponse,
-    ShuffleRegisterRequest, ShuffleRegisterResponse, ShuffleUnregisterRequest,
-    ShuffleUnregisterResponse,
+    ShuffleRegisterRequest, ShuffleRegisterResponse, ShuffleUnregisterByAppIdRequest,
+    ShuffleUnregisterByAppIdResponse, ShuffleUnregisterRequest, ShuffleUnregisterResponse,
 };
 use crate::store::{PartitionedData, ResponseDataIndex};
 use await_tree::InstrumentAwait;
@@ -125,12 +125,34 @@ impl ShuffleServer for DefaultShuffleServer {
         );
         let status_code = self
             .app_manager_ref
-            .unregister(app_id, shuffle_id)
+            .unregister_shuffle(app_id, shuffle_id)
             .await
             .map_or_else(|_e| StatusCode::INTERNAL_ERROR, |_| StatusCode::SUCCESS);
 
         Ok(Response::new(ShuffleUnregisterResponse {
             status: status_code.into(),
+            ret_msg: "".to_string(),
+        }))
+    }
+
+    // Once unregister app accepted, the data could be purged.
+    async fn unregister_shuffle_by_app_id(
+        &self,
+        request: Request<ShuffleUnregisterByAppIdRequest>,
+    ) -> Result<Response<ShuffleUnregisterByAppIdResponse>, Status> {
+        let request = request.into_inner();
+        let app_id = request.app_id;
+
+        info!("Accepted unregister app rpc. app_id: {:?}", &app_id);
+
+        let code = self
+            .app_manager_ref
+            .unregister_app(app_id)
+            .await
+            .map_or_else(|_e| StatusCode::INTERNAL_ERROR, |_| StatusCode::SUCCESS);
+
+        Ok(Response::new(ShuffleUnregisterByAppIdResponse {
+            status: code.into(),
             ret_msg: "".to_string(),
         }))
     }
