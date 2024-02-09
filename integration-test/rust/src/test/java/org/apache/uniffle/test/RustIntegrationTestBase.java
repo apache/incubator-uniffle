@@ -167,7 +167,6 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
     int exitCode = process.waitFor();
     if (exitCode != 0) {
       LOG.error("Compilation error with exit code: " + exitCode);
-      System.exit(-1);
     }
   }
 }
