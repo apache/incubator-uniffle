@@ -24,6 +24,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.IdHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.LongIterator;
@@ -32,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.util.RssUtils;
 
 import static org.apache.uniffle.client.util.ClientUtils.waitUntilDoneOrFail;
@@ -42,6 +43,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ClientUtilsTest {
+
+  public static class TestIdHelper implements IdHelper {
+    @Override
+    public long getTaskAttemptId(long blockId) {
+      return blockId & Constants.MAX_TASK_ATTEMPT_ID;
+    }
+  }
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ClientUtilsTest.class);
 
   private ExecutorService executorService = Executors.newFixedThreadPool(10);
@@ -87,7 +96,7 @@ public class ClientUtilsTest {
       }
     }
     Roaring64NavigableMap taskIdBitMap =
-        RssUtils.generateTaskIdBitMap(blockIdMap, new DefaultIdHelper());
+        RssUtils.generateTaskIdBitMap(blockIdMap, new TestIdHelper());
     assertEquals(taskSize, taskIdBitMap.getLongCardinality());
     LongIterator longIterator = taskIdBitMap.getLongIterator();
     for (int i = 0; i < taskSize; i++) {

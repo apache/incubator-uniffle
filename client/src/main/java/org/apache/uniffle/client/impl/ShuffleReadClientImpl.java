@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
@@ -67,10 +66,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private IdHelper idHelper;
 
   public ShuffleReadClientImpl(ShuffleClientFactory.ReadClientBuilder builder) {
-    // add default value
-    if (builder.getIdHelper() == null) {
-      builder.idHelper(new DefaultIdHelper());
-    }
+    // add default values
     if (builder.getShuffleDataDistributionType() == null) {
       builder.shuffleDataDistributionType(ShuffleDataDistributionType.NORMAL);
     }
