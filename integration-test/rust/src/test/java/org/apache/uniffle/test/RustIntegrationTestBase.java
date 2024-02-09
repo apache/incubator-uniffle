@@ -109,12 +109,6 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
     shuffleServers.add(new RustShuffleServer(serverConf));
   }
 
-  //
-  //    protected static void createMockedShuffleServer(ShuffleServerConf serverConf) throws
-  // Exception {
-  //        shuffleServers.add(new MockedShuffleServer(serverConf));
-  //    }
-  //
   protected static void createCoordinatorServer(CoordinatorConf coordinatorConf) throws Exception {
     coordinators.add(new CoordinatorServer(coordinatorConf));
   }
@@ -124,26 +118,6 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
     createShuffleServer(shuffleServerConf);
     startServers();
   }
-  //
-  //    protected static File createDynamicConfFile(Map<String, String> dynamicConf) throws
-  // Exception {
-  //        File dynamicConfFile = Files.createTempFile("dynamicConf", "conf").toFile();
-  //        writeRemoteStorageConf(dynamicConfFile, dynamicConf);
-  //        return dynamicConfFile;
-  //    }
-  //
-  //    protected static void writeRemoteStorageConf(File cfgFile, Map<String, String> dynamicConf)
-  //            throws Exception {
-  //        // sleep 2 secs to make sure the modified time will be updated
-  //        Thread.sleep(2000);
-  //        FileWriter fileWriter = new FileWriter(cfgFile);
-  //        PrintWriter printWriter = new PrintWriter(fileWriter);
-  //        for (Map.Entry<String, String> entry : dynamicConf.entrySet()) {
-  //            printWriter.println(entry.getKey() + " " + entry.getValue());
-  //        }
-  //        printWriter.flush();
-  //        printWriter.close();
-  //    }
 
   protected static void compileRustServer() throws IOException, InterruptedException {
     ProcessBuilder builder = new ProcessBuilder("cargo", "build");
