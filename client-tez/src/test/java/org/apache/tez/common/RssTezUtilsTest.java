@@ -99,7 +99,7 @@ public class RssTezUtilsTest {
     long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
     for (int partitionId = 0; partitionId <= 3000; partitionId++) {
       for (int seqNo = 0; seqNo <= 10; seqNo++) {
-        long blockId = RssTezUtils.getBlockId(Long.valueOf(partitionId), taskAttemptId, seqNo);
+        long blockId = RssTezUtils.getBlockId(partitionId, taskAttemptId, seqNo);
         int newPartitionId =
             Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask);
         assertEquals(partitionId, newPartitionId);

@@ -58,7 +58,7 @@ public class BufferSegmentTest {
   public void testToString() {
     BufferSegment segment = new BufferSegment(0, 1, 2, 3, 4, 5);
     assertEquals(
-        "BufferSegment{blockId[0], taskAttemptId[5], offset[1], length[2], crc[4], uncompressLength[3]}",
+        "BufferSegment{blockId[0 (seq: 0, part: 0, task: 0)], taskAttemptId[5], offset[1], length[2], crc[4], uncompressLength[3]}",
         segment.toString());
   }
 

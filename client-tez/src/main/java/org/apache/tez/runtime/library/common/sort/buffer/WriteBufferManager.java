@@ -53,6 +53,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
@@ -362,8 +363,8 @@ public class WriteBufferManager<K, V> {
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     compressTime += System.currentTimeMillis() - start;
     final long blockId =
-        RssTezUtils.getBlockId((long) partitionId, taskAttemptId, getNextSeqNo(partitionId));
-    LOG.info("blockId is {}", blockId);
+        RssTezUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
+    LOG.info("blockId is {}", BlockId.fromLong(blockId));
     uncompressedDataLen += data.length;
     // add memory to indicate bytes which will be sent to shuffle server
     inSendListBytes.addAndGet(wb.getDataLength());

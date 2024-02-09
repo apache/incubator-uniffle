@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.ByteBufUtils;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -70,9 +71,9 @@ public class ShufflePartitionedBlockTest {
   public void testToString() {
     ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 2, 3, 4, 5, new byte[6]);
     assertEquals(
-        "ShufflePartitionedBlock{blockId["
-            + b1.getBlockId()
-            + "], length["
+        "ShufflePartitionedBlock{"
+            + BlockId.toString(b1.getBlockId())
+            + ", length["
             + b1.getLength()
             + "], uncompressLength["
             + b1.getUncompressLength()

@@ -229,10 +229,16 @@ public class RssUtilsTest {
   public void testShuffleBitmapToPartitionBitmap() {
     Roaring64NavigableMap partition1Bitmap =
         Roaring64NavigableMap.bitmapOf(
-            getBlockId(0, 0, 0), getBlockId(0, 0, 1), getBlockId(0, 1, 0), getBlockId(0, 1, 1));
+            BlockId.getBlockId(0, 0, 0),
+            BlockId.getBlockId(1, 0, 0),
+            BlockId.getBlockId(0, 0, 1),
+            BlockId.getBlockId(1, 0, 1));
     Roaring64NavigableMap partition2Bitmap =
         Roaring64NavigableMap.bitmapOf(
-            getBlockId(1, 0, 0), getBlockId(1, 0, 1), getBlockId(1, 1, 0), getBlockId(1, 1, 1));
+            BlockId.getBlockId(0, 1, 0),
+            BlockId.getBlockId(1, 1, 0),
+            BlockId.getBlockId(0, 1, 1),
+            BlockId.getBlockId(1, 1, 1));
     Roaring64NavigableMap shuffleBitmap = Roaring64NavigableMap.bitmapOf();
     shuffleBitmap.or(partition1Bitmap);
     shuffleBitmap.or(partition2Bitmap);
@@ -289,13 +295,6 @@ public class RssUtilsTest {
               assertEquals(
                   Arrays.asList("/path/a", "/path/b"), RssUtils.getConfiguredLocalDirs(conf));
             });
-  }
-
-  // Copy from ClientUtils
-  private Long getBlockId(long partitionId, long taskAttemptId, long atomicInt) {
-    return (atomicInt << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
-        + (partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH)
-        + taskAttemptId;
   }
 
   interface RssUtilTestDummy {

@@ -62,6 +62,7 @@ import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -573,11 +574,9 @@ public class ShuffleTaskManager {
       Set<Integer> requestPartitions,
       Roaring64NavigableMap bitmap,
       Roaring64NavigableMap resultBitmap) {
-    final long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
     bitmap.forEach(
         blockId -> {
-          int partitionId =
-              Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask);
+          int partitionId = BlockId.getPartitionId(blockId);
           if (requestPartitions.contains(partitionId)) {
             resultBitmap.addLong(blockId);
           }

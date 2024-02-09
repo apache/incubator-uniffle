@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -40,12 +40,12 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.segment.FixedSizeSegmentSplitter;
 import org.apache.uniffle.common.segment.SegmentSplitter;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.common.util.Constants;
 
 public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
 
-  private static AtomicLong ATOMIC_LONG = new AtomicLong(0L);
+  private static AtomicInteger ATOMIC_INT = new AtomicInteger(0);
   public static List<ShuffleServerInfo> mockSSI =
       Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
 
@@ -62,11 +62,9 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     for (int i = 0; i < blockNum; i++) {
       byte[] buf = new byte[length];
       new Random().nextBytes(buf);
-      long seqno = ATOMIC_LONG.getAndIncrement();
+      int seqno = ATOMIC_INT.getAndIncrement();
 
-      long blockId =
-          (seqno << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
-              + taskAttemptId;
+      long blockId = BlockId.getBlockId(seqno, 0, taskAttemptId);
       blockIdBitmap.addLong(blockId);
       dataMap.put(blockId, buf);
       shuffleBlockInfoList.add(

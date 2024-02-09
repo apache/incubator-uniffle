@@ -335,10 +335,9 @@ public class RssUtils {
       result.computeIfAbsent(partitionId, key -> Roaring64NavigableMap.bitmapOf());
     }
     Iterator<Long> it = shuffleBitmap.iterator();
-    long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
     while (it.hasNext()) {
       Long blockId = it.next();
-      int partitionId = Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask);
+      int partitionId = BlockId.getPartitionId(blockId);
       if (partitionId >= startPartition && partitionId < endPartition) {
         result.get(partitionId).add(blockId);
       }
