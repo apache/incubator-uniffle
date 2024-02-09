@@ -60,8 +60,6 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
 
     protected static final int JETTY_PORT = 9998;
 
-    protected static final String SHUFFLE_SERVER_METRICS_URL = "http://121.36.246.152:12345/metrics";
-
     protected static final String COORDINATOR_QUORUM = LOCALHOST + ":" + COORDINATOR_PORT;
 
     static @TempDir File tempDir;

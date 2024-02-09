@@ -21,6 +21,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.protobuf.UnsafeByteOperations;
+import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
@@ -31,8 +33,7 @@ import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.common.PartitionRange;
-import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.*;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -40,12 +41,9 @@ import org.apache.uniffle.proto.RssProtos;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,15 +53,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class RustShuffleServerGrpcTest extends RustIntegrationTestBase {
     private ShuffleServerGrpcClient shuffleServerClient;
+
     private final AtomicInteger atomicInteger = new AtomicInteger(0);
-    private static final Long EVENT_THRESHOLD_SIZE = 2048L;
-    private static final int GB = 1024 * 1024 * 1024;
+
     protected static final long FAILED_REQUIRE_ID = -1;
 
     @BeforeAll
-    public static void setupServers(@TempDir File tmpDir) throws Exception {
+    public static void setupServers() throws Exception {
         CoordinatorConf coordinatorConf = getCoordinatorConf();
-        coordinatorConf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2);
+        coordinatorConf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
         createCoordinatorServer(coordinatorConf);
         RustShuffleServerConf shuffleServerConf = getShuffleServerConf();
         shuffleServerConf.set("app_heartbeat_timeout_min", 1);
@@ -81,6 +79,95 @@ public class RustShuffleServerGrpcTest extends RustIntegrationTestBase {
 
     @Test
     public void clearResourceTest() throws Exception {
+        final ShuffleWriteClient shuffleWriteClient =
+                ShuffleClientFactory.getInstance()
+                        .createShuffleWriteClient(
+                                ShuffleClientFactory.newWriteBuilder()
+                                        .clientType("GRPC")
+                                        .retryMax(2)
+                                        .retryIntervalMax(10000L)
+                                        .heartBeatThreadNum(4)
+                                        .replica(1)
+                                        .replicaWrite(1)
+                                        .replicaRead(1)
+                                        .replicaSkipEnabled(true)
+                                        .dataTransferPoolSize(1)
+                                        .dataCommitPoolSize(1)
+                                        .unregisterThreadPoolSize(10)
+                                        .unregisterRequestTimeSec(10));
+        shuffleWriteClient.registerCoordinators("127.0.0.1:9999");
+        shuffleWriteClient.registerShuffle(
+                new ShuffleServerInfo("127.0.0.1-20001", "127.0.0.1", 19999),
+                "application_clearResourceTest1",
+                0,
+                Lists.newArrayList(new PartitionRange(0, 1)),
+                new RemoteStorageInfo(""),
+                ShuffleDataDistributionType.NORMAL,
+                -1);
+        shuffleWriteClient.registerApplicationInfo("application_clearResourceTest1", 500L, "user");
+        shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest1", 500L);
+        shuffleWriteClient.registerApplicationInfo("application_clearResourceTest2", 500L, "user");
+        shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest2", 500L);
+
+        RssRegisterShuffleRequest rrsr =
+                new RssRegisterShuffleRequest(
+                        "application_clearResourceTest1", 0, Lists.newArrayList(new PartitionRange(0, 1)), "");
+        shuffleServerClient.registerShuffle(rrsr);
+        rrsr =
+                new RssRegisterShuffleRequest(
+                        "application_clearResourceTest2", 0, Lists.newArrayList(new PartitionRange(0, 1)), "");
+        shuffleServerClient.registerShuffle(rrsr);
+
+        shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest1", 500L);
+        shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest2", 500L);
+
+        // Thread will keep refresh clearResourceTest1 in coordinator
+        Thread t =
+                new Thread(
+                        () -> {
+                            int i = 0;
+                            while (i < 20) {
+                                shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest1", 500L);
+                                i++;
+                                try {
+                                    Thread.sleep(1000);
+                                } catch (InterruptedException e) {
+                                    return;
+                                }
+                            }
+                        });
+        t.start();
+
+        // Heartbeat is sent to coordinator
+        Thread.sleep(3000);
+        shuffleServerClient.registerShuffle(
+                new RssRegisterShuffleRequest(
+                        "application_clearResourceTest1", 0, Lists.newArrayList(new PartitionRange(0, 1)), ""));
+        assertEquals(
+                Sets.newHashSet("application_clearResourceTest1"),
+                coordinators.get(0).getApplicationManager().getAppIds());
+        // clearResourceTest2 will be removed because of rss.server.app.expired.withoutHeartbeat
+        Thread.sleep(120000);
+
+
+        // clearResourceTest1 will be removed because of rss.server.app.expired.withoutHeartbeat
+        t.interrupt();
+
+        RssGetShuffleResultRequest req = new RssGetShuffleResultRequest("application_clearResourceTest1", 0, 1);
+        try {
+            shuffleServerClient.getShuffleResult(req);
+            fail("Exception should be thrown");
+        } catch (Exception e) {
+            assertTrue(e.getMessage().contains("Can't get shuffle result"));
+        }
+
+        req = new RssGetShuffleResultRequest("application_clearResourceTest2", 0, 1);
+        try {
+            shuffleServerClient.getShuffleResult(req);
+            fail("Exception should be thrown");
+        } catch (Exception e) {
+            assertTrue(e.getMessage().contains("Can't get shuffle result"));
+        }
     }
 
     @Test
