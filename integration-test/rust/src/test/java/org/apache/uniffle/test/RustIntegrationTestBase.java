@@ -17,10 +17,7 @@
 
 package org.apache.uniffle.test;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +43,7 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
   private static final Logger LOG = LoggerFactory.getLogger(RustIntegrationTestBase.class);
   protected static List<RustShuffleServer> shuffleServers = Lists.newArrayList();
   protected static List<CoordinatorServer> coordinators = Lists.newArrayList();
+
   static @TempDir File tempDir;
 
   static {
@@ -59,7 +57,7 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
   protected static final String COORDINATOR_QUORUM = LOCALHOST + ":" + COORDINATOR_PORT;
 
   public static void startServers() throws Exception {
-    compileRustServer();
+    RustShuffleServer.compileRustServer();
     for (CoordinatorServer coordinator : coordinators) {
       coordinator.start();
     }
@@ -117,33 +115,5 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
       throws Exception {
     createShuffleServer(shuffleServerConf);
     startServers();
-  }
-
-  protected static void compileRustServer() throws IOException, InterruptedException {
-    ProcessBuilder builder = new ProcessBuilder("cargo", "build");
-    builder.directory(new File("../../rust/experimental/server"));
-
-    // Redirect error stream to standard output stream
-    builder.redirectErrorStream(true);
-
-    Process process = builder.start();
-
-    // Read output (and error) stream of the process
-    try (InputStreamReader isr = new InputStreamReader(process.getInputStream());
-        BufferedReader br = new BufferedReader(isr)) {
-
-      String line;
-      while ((line = br.readLine()) != null) {
-        System.out.println(line);
-      }
-    }
-
-    int exitCode = process.waitFor();
-    if (exitCode != 0) {
-      LOG.error("Compilation error with exit code: " + exitCode);
-      throw new RuntimeException("Failed to compile rust server");
-    } else {
-      LOG.info("Complete compile rust server");
-    }
   }
 }

@@ -18,6 +18,7 @@
 package org.apache.uniffle.test;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
@@ -35,6 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class RustShuffleServer {
 
   private static final Logger LOG = LoggerFactory.getLogger(RustIntegrationTestBase.class);
+
+  private static final String PROJECT_ROOT = System.getProperty("user.dir");
 
   private final RustShuffleServerConf rustShuffleServerConf;
 
@@ -60,9 +63,37 @@ public class RustShuffleServer {
             new ThreadPoolExecutor.CallerRunsPolicy());
   }
 
+  public static void compileRustServer() throws IOException, InterruptedException {
+    ProcessBuilder builder = new ProcessBuilder("cargo", "build");
+    builder.directory(new File(PROJECT_ROOT + "/../../rust/experimental/server"));
+
+    // Redirect error stream to standard output stream
+    builder.redirectErrorStream(true);
+
+    Process process = builder.start();
+
+    // Read output (and error) stream of the process
+    try (InputStreamReader isr = new InputStreamReader(process.getInputStream());
+        BufferedReader br = new BufferedReader(isr)) {
+
+      String line;
+      while ((line = br.readLine()) != null) {
+        System.out.println(line);
+      }
+    }
+
+    int exitCode = process.waitFor();
+    if (exitCode != 0) {
+      LOG.error("Compilation error with exit code: " + exitCode);
+      throw new RuntimeException("Failed to compile rust server");
+    } else {
+      LOG.info("Complete compile rust server");
+    }
+  }
+
   public void start() throws IOException, InterruptedException, RuntimeException {
     String[] command = {
-      "../../rust/experimental/server/target/debug/uniffle-worker",
+      PROJECT_ROOT + "/../../rust/experimental/server/target/debug/uniffle-worker",
       "--config",
       rustShuffleServerConf.getTempFilePath()
     };
