@@ -72,10 +72,11 @@ public class RustShuffleServer {
 
     Process process = builder.start();
 
+    LOG.info("Started to compile rust server");
+
     // Read output (and error) stream of the process
     try (InputStreamReader isr = new InputStreamReader(process.getInputStream());
         BufferedReader br = new BufferedReader(isr)) {
-      LOG.info("Started to compile rust server");
 
       String line;
       while ((line = br.readLine()) != null) {
@@ -185,9 +186,5 @@ public class RustShuffleServer {
     } catch (InterruptedException e) {
       executorService.shutdownNow();
     }
-  }
-
-  private void handleTaskException(Throwable ex) {
-    LOG.error(ex.getMessage());
   }
 }

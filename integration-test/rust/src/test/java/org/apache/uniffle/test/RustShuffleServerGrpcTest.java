@@ -60,8 +60,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class RustShuffleServerGrpcTest extends RustIntegrationTestBase {
+
   protected static final long FAILED_REQUIRE_ID = -1;
+
   private final AtomicInteger atomicInteger = new AtomicInteger(0);
+
   private ShuffleServerGrpcClient shuffleServerClient;
 
   @BeforeAll

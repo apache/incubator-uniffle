@@ -25,7 +25,9 @@ import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
 import org.apache.uniffle.common.ClientType;
 
 public class RustCoordinatorTestBase extends RustIntegrationTestBase {
+
   protected CoordinatorClientFactory factory = CoordinatorClientFactory.getInstance();
+
   protected CoordinatorGrpcClient coordinatorClient;
 
   @BeforeEach

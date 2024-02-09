@@ -37,11 +37,17 @@ import org.apache.uniffle.storage.HadoopTestBase;
 public abstract class RustIntegrationTestBase extends HadoopTestBase {
 
   protected static final int SHUFFLE_SERVER_PORT = 19999;
+
   protected static final String LOCALHOST;
+
   protected static final int COORDINATOR_PORT = 9999;
+
   protected static final int JETTY_PORT = 9998;
+
   private static final Logger LOG = LoggerFactory.getLogger(RustIntegrationTestBase.class);
+
   protected static List<RustShuffleServer> shuffleServers = Lists.newArrayList();
+
   protected static List<CoordinatorServer> coordinators = Lists.newArrayList();
 
   static @TempDir File tempDir;
