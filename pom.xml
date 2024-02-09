@@ -2378,6 +2378,11 @@
             <type>test-jar</type>
             <scope>test</scope>
           </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-client-spark3</artifactId>
+            <version>${project.version}</version>
+          </dependency>
         </dependencies>
       </dependencyManagement>
     </profile>
