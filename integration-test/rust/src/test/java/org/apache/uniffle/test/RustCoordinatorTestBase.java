@@ -17,25 +17,28 @@
 
 package org.apache.uniffle.test;
 
-import org.apache.uniffle.client.factory.CoordinatorClientFactory;
-import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
-import org.apache.uniffle.common.ClientType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import org.apache.uniffle.client.factory.CoordinatorClientFactory;
+import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
+import org.apache.uniffle.common.ClientType;
+
 public class RustCoordinatorTestBase extends RustIntegrationTestBase {
-    protected CoordinatorClientFactory factory = CoordinatorClientFactory.getInstance();
-    protected CoordinatorGrpcClient coordinatorClient;
+  protected CoordinatorClientFactory factory = CoordinatorClientFactory.getInstance();
+  protected CoordinatorGrpcClient coordinatorClient;
 
-    @BeforeEach
-    public void createClient() {
-        coordinatorClient = (CoordinatorGrpcClient) factory.createCoordinatorClient(ClientType.GRPC, LOCALHOST, COORDINATOR_PORT);
-    }
+  @BeforeEach
+  public void createClient() {
+    coordinatorClient =
+        (CoordinatorGrpcClient)
+            factory.createCoordinatorClient(ClientType.GRPC, LOCALHOST, COORDINATOR_PORT);
+  }
 
-    @AfterEach
-    public void closeClient() {
-        if (coordinatorClient != null) {
-            coordinatorClient.close();
-        }
+  @AfterEach
+  public void closeClient() {
+    if (coordinatorClient != null) {
+      coordinatorClient.close();
     }
+  }
 }

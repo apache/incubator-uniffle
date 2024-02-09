@@ -25,45 +25,45 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class RustTestUtil {
-    private RustTestUtil() {}
+  private RustTestUtil() {}
 
-    public static String httpGet(String urlString) throws IOException {
-        URL url = new URL(urlString);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("GET");
-        StringBuilder content = new StringBuilder();
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream())); ) {
-            String inputLine;
-            while ((inputLine = in.readLine()) != null) {
-                content.append(inputLine);
-            }
+  public static String httpGet(String urlString) throws IOException {
+    URL url = new URL(urlString);
+    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+    con.setRequestMethod("GET");
+    StringBuilder content = new StringBuilder();
+    try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream())); ) {
+      String inputLine;
+      while ((inputLine = in.readLine()) != null) {
+        content.append(inputLine);
+      }
+    }
+    return content.toString();
+  }
+
+  public static String httpPost(String urlString) throws IOException {
+    return httpPost(urlString, null);
+  }
+
+  public static String httpPost(String urlString, String postData) throws IOException {
+    URL url = new URL(urlString);
+    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+    con.setDoOutput(true);
+    con.setRequestMethod("POST");
+    con.setRequestProperty("Content-type", "application/json");
+    StringBuilder content = new StringBuilder();
+    try (OutputStream outputStream = con.getOutputStream()) {
+      if (postData != null) {
+        outputStream.write(postData.getBytes());
+      }
+      try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream())); ) {
+        String inputLine;
+        while ((inputLine = in.readLine()) != null) {
+          content.append(inputLine);
         }
-        return content.toString();
+      }
     }
 
-    public static String httpPost(String urlString) throws IOException {
-        return httpPost(urlString, null);
-    }
-
-    public static String httpPost(String urlString, String postData) throws IOException {
-        URL url = new URL(urlString);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setDoOutput(true);
-        con.setRequestMethod("POST");
-        con.setRequestProperty("Content-type", "application/json");
-        StringBuilder content = new StringBuilder();
-        try (OutputStream outputStream = con.getOutputStream()) {
-            if (postData != null) {
-                outputStream.write(postData.getBytes());
-            }
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream())); ) {
-                String inputLine;
-                while ((inputLine = in.readLine()) != null) {
-                    content.append(inputLine);
-                }
-            }
-        }
-
-        return content.toString();
-    }
+    return content.toString();
+  }
 }
