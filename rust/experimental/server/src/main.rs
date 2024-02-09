@@ -240,9 +240,9 @@ fn main() -> Result<()> {
             .max_decoding_message_size(usize::MAX)
             .max_encoding_message_size(usize::MAX);
         let service_tx = tx.subscribe();
-        runtime_manager.grpc_runtime.spawn(async move {
-            grpc_serve(service, addr, service_tx).await
-        });
+        runtime_manager
+            .grpc_runtime
+            .spawn(async move { grpc_serve(service, addr, service_tx).await });
     }
 
     graceful_wait_for_signal(tx);
