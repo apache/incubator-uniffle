@@ -134,13 +134,16 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
 
       String line;
       while ((line = br.readLine()) != null) {
-        System.out.println(line); // Or use LOG.error(line) to log
+        System.out.println(line);
       }
     }
 
     int exitCode = process.waitFor();
     if (exitCode != 0) {
       LOG.error("Compilation error with exit code: " + exitCode);
+      throw new RuntimeException("Failed to compile rust server");
+    } else {
+      LOG.info("Complete compile rust server");
     }
   }
 }
