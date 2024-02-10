@@ -65,6 +65,8 @@ public class RustShuffleServer {
 
   public static void compileRustServer() throws IOException, InterruptedException {
     ProcessBuilder builder = new ProcessBuilder("cargo", "build");
+    LOG.info("Project root is: {}", PROJECT_ROOT);
+
     builder.directory(new File(PROJECT_ROOT + "/../../rust/experimental/server"));
 
     // Redirect error stream to standard output stream
@@ -87,7 +89,7 @@ public class RustShuffleServer {
     int exitCode = process.waitFor();
     if (exitCode != 0) {
       LOG.error("Compilation error with exit code: " + exitCode);
-      throw new RuntimeException("Failed to compile rust server");
+      throw new RuntimeException("Failed to compile rust server, exit code: " + exitCode);
     } else {
       LOG.info("Complete compile rust server");
     }
