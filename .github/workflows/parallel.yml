@@ -85,6 +85,10 @@ jobs:
         restore-keys: |
           mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-
           mvn-${{ inputs.java-version }}-package-
+    - name: Install Protoc
+      uses: arduino/setup-protoc@v2
+      with:
+        version: "23.2"
     - name: Execute `./mvnw ${{ inputs.maven-args }} -P${{ matrix.profile }} -Pdashboard`
       run: |
         PROFILES="${{ matrix.profile }}"
