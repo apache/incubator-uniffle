@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RustShuffleServer {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RustIntegrationTestBase.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RustShuffleServer.class);
 
   private static final String PROJECT_ROOT = System.getProperty("user.dir");
 
