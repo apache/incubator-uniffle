@@ -143,8 +143,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
         isNettyMode ? nettyShuffleServerClients.get(1) : grpcShuffleServerClients.get(1);
     List<ShuffleServerClient> shuffleServerClients =
         isNettyMode ? nettyShuffleServerClients : grpcShuffleServerClients;
-    String testAppId =
-        "ShuffleServerFaultToleranceTest.testReadFaultTolerance" + "_isNettyMode_" + isNettyMode;
+    String testAppId = "ShuffleServerFaultToleranceTest.testReadFaultTolerance";
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr =
@@ -342,7 +341,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     int retry = 0;
     while (true) {
       if (retry > 5) {
-        fail("Timeout for flush data");
+        fail(String.format("Timeout for flush data, isNettyMode=%s", isNettyMode));
       }
       ShuffleBuffer shuffleBuffer =
           shuffleServers.get(1).getShuffleBufferManager().getShuffleBuffer(appId, shuffleId, 0);

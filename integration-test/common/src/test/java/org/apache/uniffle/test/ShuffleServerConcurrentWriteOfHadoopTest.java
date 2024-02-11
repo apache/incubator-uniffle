@@ -106,8 +106,7 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
       throws Exception {
     ShuffleServerGrpcClient shuffleServerClient =
         isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
-    String appId =
-        "testConcurrentWrite2Hadoop_" + new Random().nextInt() + "_isNettyMode_" + isNettyMode;
+    String appId = "testConcurrentWrite2Hadoop_" + new Random().nextInt();
     String dataBasePath = HDFS_URI + "rss/test";
     RssRegisterShuffleRequest rrsr =
         new RssRegisterShuffleRequest(

@@ -30,6 +30,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -74,8 +75,8 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
   private List<ShuffleServerInfo> grpcShuffleServerInfoList;
   private List<ShuffleServerInfo> nettyShuffleServerInfoList;
 
-  @BeforeEach
-  public void createClient(@TempDir File serverTmpDir) throws Exception {
+  @BeforeAll
+  public static void setupServers(@TempDir File serverTmpDir) throws Exception {
     data1 = new File(serverTmpDir, "data1");
     data2 = new File(serverTmpDir, "data2");
     CoordinatorConf coordinatorConf = getCoordinatorConf();
@@ -91,7 +92,10 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
 
     grpcShuffleServerConfig = grpcShuffleServerConf;
     nettyShuffleServerConfig = nettyShuffleServerConf;
+  }
 
+  @BeforeEach
+  public void createClient(@TempDir File serverTmpDir) throws Exception {
     grpcShuffleServerClient =
         new ShuffleServerGrpcClient(
             LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
@@ -109,17 +113,17 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
             new ShuffleServerInfo(
                 String.format(
                     "127.0.0.1-%s",
-                    grpcShuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT)),
+                    grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT)),
                 LOCALHOST,
-                grpcShuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT)));
+                grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT)));
     nettyShuffleServerInfoList =
         Lists.newArrayList(
             new ShuffleServerInfo(
                 String.format(
                     "127.0.0.1-%s",
-                    grpcShuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT)),
+                    grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT)),
                 LOCALHOST,
-                grpcShuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT)));
+                grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT)));
   }
 
   private static ShuffleServerConf buildShuffleServerConf(ServerType serverType) throws Exception {
@@ -164,7 +168,7 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
   private void diskErrorTest(boolean isNettyMode) throws Exception {
     ShuffleServerGrpcClient shuffleServerClient =
         isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
-    String appId = "ap_disk_error_data" + "_isNettyMode_" + isNettyMode;
+    String appId = "ap_disk_error_data";
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Set<Long> expectedBlock1 = Sets.newHashSet();
     Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();

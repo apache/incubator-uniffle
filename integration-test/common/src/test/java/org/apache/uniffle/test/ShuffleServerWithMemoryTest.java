@@ -150,7 +150,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
   private void memoryWriteReadTestProvider(boolean isNettyMode) throws Exception {
     ShuffleServerGrpcClient shuffleServerClient =
         isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
-    String testAppId = "memoryWriteReadTest" + "_isNettyMode_" + isNettyMode;
+    String testAppId = "memoryWriteReadTest";
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr =
@@ -266,7 +266,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     int retry = 0;
     while (true) {
       if (retry > 5) {
-        fail("Timeout for flush data");
+        fail(String.format("Timeout for flush data, isNettyMode=%s", isNettyMode));
       }
       ShuffleBuffer shuffleBuffer =
           shuffleServers.get(0).getShuffleBufferManager().getShuffleBuffer(testAppId, shuffleId, 0);
@@ -311,7 +311,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
   private void memoryWriteReadWithMultiReplicaTest(boolean isNettyMode) throws Exception {
     ShuffleServerGrpcClient shuffleServerClient =
         isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
-    String testAppId = "memoryWriteReadWithMultiReplicaTest" + "_isNettyMode_" + isNettyMode;
+    String testAppId = "memoryWriteReadWithMultiReplicaTest";
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr =
@@ -396,7 +396,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     ShuffleServerGrpcClient shuffleServerClient =
         isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
     List<ShuffleServer> shuffleServers = isNettyMode ? nettyShuffleServers : grpcShuffleServers;
-    String testAppId = "memoryAndLocalFileReadWithFilterTest" + "_isNettyMode_" + isNettyMode;
+    String testAppId = "memoryAndLocalFileReadWithFilterTest";
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr =
@@ -476,7 +476,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     int retry = 0;
     while (true) {
       if (retry > 5) {
-        fail("Timeout for flush data");
+        fail(String.format("Timeout for flush data, isNettyMode=%s", isNettyMode));
       }
       ShuffleBuffer shuffleBuffer =
           shuffleServers.get(0).getShuffleBufferManager().getShuffleBuffer(testAppId, shuffleId, 0);

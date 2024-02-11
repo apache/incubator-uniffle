@@ -181,7 +181,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
   private void testWriteAndReadWithSpecifiedMapRange(boolean isNettyMode) throws Exception {
     ShuffleServerGrpcClient shuffleServerClient =
         isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
-    String testAppId = "testWriteAndReadWithSpecifiedMapRange" + "_isNettyMode_" + isNettyMode;
+    String testAppId = "testWriteAndReadWithSpecifiedMapRange";
 
     for (int i = 0; i < 4; i++) {
       RssRegisterShuffleRequest rrsr =

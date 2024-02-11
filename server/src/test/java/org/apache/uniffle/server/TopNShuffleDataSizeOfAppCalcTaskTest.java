@@ -226,12 +226,12 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
   @MethodSource("testTopNShuffleDataSizeOfAppCalcTaskProvider")
   private void testTopNShuffleDataSizeOfAppCalcTask(boolean isNettyMode) throws Exception {
     // Here is 6 app, but config max top n number is 5
-    registerAndRequireBuffer("application_id_1" + "_isNettyMode_" + isNettyMode, 1000, isNettyMode);
-    registerAndRequireBuffer("application_id_2" + "_isNettyMode_" + isNettyMode, 2000, isNettyMode);
-    registerAndRequireBuffer("application_id_3" + "_isNettyMode_" + isNettyMode, 3000, isNettyMode);
-    registerAndRequireBuffer("application_id_4" + "_isNettyMode_" + isNettyMode, 4000, isNettyMode);
-    registerAndRequireBuffer("application_id_5" + "_isNettyMode_" + isNettyMode, 5000, isNettyMode);
-    registerAndRequireBuffer("application_id_6" + "_isNettyMode_" + isNettyMode, 6000, isNettyMode);
+    registerAndRequireBuffer("application_id_1", 1000, isNettyMode);
+    registerAndRequireBuffer("application_id_2", 2000, isNettyMode);
+    registerAndRequireBuffer("application_id_3", 3000, isNettyMode);
+    registerAndRequireBuffer("application_id_4", 4000, isNettyMode);
+    registerAndRequireBuffer("application_id_5", 5000, isNettyMode);
+    registerAndRequireBuffer("application_id_6", 6000, isNettyMode);
 
     Thread.sleep(500);
     int jettyPort =
@@ -271,14 +271,11 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
 
     Set<String> expectedTopNApps =
         Sets.newHashSet(
-            "[\"application_id_6_isNettyMode_" + isNettyMode + "\"]",
-            "[\"application_id_5_isNettyMode_" + isNettyMode + "\"]",
-            "[\"application_id_4_isNettyMode_" + isNettyMode + "\"]",
-            "[\"application_id_3_isNettyMode_" + isNettyMode + "\"]",
-            "[\"application_id_2_isNettyMode_" + isNettyMode + "\"]");
-    if (!isNettyMode) {
-      Thread.sleep(1000 * 1000);
-    }
+            "[\"application_id_6\"]",
+            "[\"application_id_5\"]",
+            "[\"application_id_4\"]",
+            "[\"application_id_3\"]",
+            "[\"application_id_2\"]");
     assertTrue(
         expectedTopNApps.containsAll(topNTotalDataSizeApps)
             && expectedTopNApps.size() == topNTotalDataSizeApps.size());
@@ -298,5 +295,6 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
       shuffleServer.stopServer();
     }
     shuffleServers = Lists.newArrayList();
+    ShuffleServerMetrics.clear();
   }
 }
