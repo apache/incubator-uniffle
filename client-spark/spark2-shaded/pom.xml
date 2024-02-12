@@ -59,7 +59,7 @@
                   <include>io.grpc:*</include>
                   <include>com.google.android:annotations</include>
                   <include>io.perfmark:perfmark-api</include>
-                  <include>io.netty:netty-all</include>
+                  <include>io.netty:*</include>
                   <include>com.google.api.grpc:proto-google-common-protos</include>
                   <include>org.codehaus.mojo:animal-sniffer-annotations</include>
                   <include>com.google.guava:*</include>
@@ -176,6 +176,13 @@
                   <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
                   <mapper from="libnetty_transport_native_epoll_aarch_64.so"
                           to="lib${rss.shade.native.packageName}_netty_transport_native_epoll_aarch_64.so"
+                          type="glob"></mapper>
+                </move>
+                <move includeemptydirs="false"
+                      todir="${project.build.directory}/unpacked/META-INF/native">
+                  <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                  <mapper from="libnetty_transport_native_epoll_riscv64.so"
+                          to="lib${rss.shade.native.packageName}_netty_transport_native_epoll_riscv64.so"
                           type="glob"></mapper>
                 </move>
                 <move includeemptydirs="false"
