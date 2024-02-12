@@ -17,16 +17,21 @@
 
 package org.apache.uniffle.client.request;
 
+import org.apache.uniffle.common.util.BlockIdLayout;
+
 public class RssGetShuffleResultRequest {
 
   private String appId;
   private int shuffleId;
   private int partitionId;
+  private BlockIdLayout layout;
 
-  public RssGetShuffleResultRequest(String appId, int shuffleId, int partitionId) {
+  public RssGetShuffleResultRequest(
+      String appId, int shuffleId, int partitionId, BlockIdLayout layout) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
+    this.layout = layout;
   }
 
   public String getAppId() {
@@ -39,5 +44,9 @@ public class RssGetShuffleResultRequest {
 
   public int getPartitionId() {
     return partitionId;
+  }
+
+  public BlockIdLayout getBlockIdLayout() {
+    return layout;
   }
 }

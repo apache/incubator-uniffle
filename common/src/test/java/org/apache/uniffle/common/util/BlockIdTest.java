@@ -20,47 +20,20 @@ package org.apache.uniffle.common.util;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class BlockIdTest {
   @Test
-  public void test() {
-    // max value of blockId
-    assertEquals(854558029292503039L, BlockId.getBlockId(24287, 16777215, 1048575));
-    // just a random test
-    assertEquals(3518437418598500L, BlockId.getBlockId(100, 100, 100));
-    // min value of blockId
-    assertEquals(0L, BlockId.getBlockId(0, 0, 0));
+  public void toStringTest() {
+    BlockIdLayout layout1 = BlockIdLayout.DEFAULT;
+    BlockId blockId1 = layout1.asBlockId(1, 2, 3);
+    assertEquals("blockId[200000400003 (seq: 1, part: 2, task: 3)]", blockId1.toString());
+    BlockId blockId2 = layout1.asBlockId(15, 30, 63);
+    assertEquals("blockId[1e00003c0003f (seq: 15, part: 30, task: 63)]", blockId2.toString());
 
-    BlockId blockId = BlockId.fromIds(100, 100, 100);
-    assertEquals("blockId[c80000c800064 (seq: 100, part: 100, task: 100)]", blockId.toString());
-
-    final Throwable e1 =
-        assertThrows(IllegalArgumentException.class, () -> BlockId.getBlockId(262144, 0, 0));
-    assertEquals("Can't support sequence[262144], the max value should be 262143", e1.getMessage());
-
-    final Throwable e2 =
-        assertThrows(IllegalArgumentException.class, () -> BlockId.getBlockId(0, 16777216, 0));
-    assertEquals(
-        "Can't support partitionId[16777216], the max value should be 16777215", e2.getMessage());
-
-    final Throwable e3 =
-        assertThrows(IllegalArgumentException.class, () -> BlockId.getBlockId(0, 0, 2097152));
-    assertEquals(
-        "Can't support taskAttemptId[2097152], the max value should be 2097151", e3.getMessage());
-
-    final Throwable e4 =
-        assertThrows(IllegalArgumentException.class, () -> BlockId.getBlockId(-1, 0, 0));
-    assertEquals("Can't support sequence[-1], the max value should be 262143", e4.getMessage());
-
-    final Throwable e5 =
-        assertThrows(IllegalArgumentException.class, () -> BlockId.getBlockId(0, -1, 0));
-    assertEquals(
-        "Can't support partitionId[-1], the max value should be 16777215", e5.getMessage());
-
-    final Throwable e6 =
-        assertThrows(IllegalArgumentException.class, () -> BlockId.getBlockId(0, 0, -1));
-    assertEquals(
-        "Can't support taskAttemptId[-1], the max value should be 2097151", e6.getMessage());
+    BlockIdLayout layout2 = BlockIdLayout.from(31, 16, 16);
+    BlockId blockId3 = layout2.asBlockId(1, 2, 3);
+    assertEquals("blockId[100020003 (seq: 1, part: 2, task: 3)]", blockId3.toString());
+    BlockId blockId4 = layout2.asBlockId(15, 30, 63);
+    assertEquals("blockId[f001e003f (seq: 15, part: 30, task: 63)]", blockId4.toString());
   }
 }

@@ -18,11 +18,11 @@
 package org.apache.uniffle.common.util;
 
 /**
- * This represents a block id and all its constituents.
- * This is particularly useful for logging and debugging block ids.
+ * This represents a block id and all its constituents. This is particularly useful for logging and
+ * debugging block ids.
  *
- * BlockId is positive long (63 bits) composed of sequenceNo, partitionId and taskAttemptId
- * in that order from highest to lowest bits. The number of bits is defined by a {@link BlockIdLayout}.
+ * <p>BlockId is positive long (63 bits) composed of sequenceNo, partitionId and taskAttemptId in
+ * that order from highest to lowest bits. The number of bits is defined by a {@link BlockIdLayout}.
  * Values of partitionId, taskAttemptId and AtomicInteger are always positive.
  */
 public class BlockId {
@@ -32,7 +32,8 @@ public class BlockId {
   public final int partitionId;
   public final int taskAttemptId;
 
-  protected BlockId(long blockId, BlockIdLayout layout, int sequenceNo, int partitionId, int taskAttemptId) {
+  protected BlockId(
+      long blockId, BlockIdLayout layout, int sequenceNo, int partitionId, int taskAttemptId) {
     this.blockId = blockId;
     this.layout = layout;
     this.sequenceNo = sequenceNo;

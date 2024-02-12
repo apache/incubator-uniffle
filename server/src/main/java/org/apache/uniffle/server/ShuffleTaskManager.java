@@ -62,7 +62,7 @@ import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.util.BlockId;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -517,7 +517,8 @@ public class ShuffleTaskManager {
     return requireBuffer("EMPTY", requireSize);
   }
 
-  public byte[] getFinishedBlockIds(String appId, Integer shuffleId, Set<Integer> partitions)
+  public byte[] getFinishedBlockIds(
+      String appId, Integer shuffleId, Set<Integer> partitions, BlockIdLayout blockIdLayout)
       throws IOException {
     refreshAppId(appId);
     for (int partitionId : partitions) {
@@ -525,10 +526,11 @@ public class ShuffleTaskManager {
           shuffleBufferManager.getShuffleBufferEntry(appId, shuffleId, partitionId);
       if (entry == null) {
         LOG.error(
-            "The empty shuffle buffer, this should not happen. appId: {}, shuffleId: {}, partition: {}",
+            "The empty shuffle buffer, this should not happen. appId: {}, shuffleId: {}, partition: {}, layout: {}",
             appId,
             shuffleId,
-            partitionId);
+            partitionId,
+            blockIdLayout);
         continue;
       }
       Storage storage =
@@ -564,7 +566,7 @@ public class ShuffleTaskManager {
     for (Map.Entry<Integer, Set<Integer>> entry : bitmapIndexToPartitions.entrySet()) {
       Set<Integer> requestPartitions = entry.getValue();
       Roaring64NavigableMap bitmap = blockIds[entry.getKey()];
-      getBlockIdsByPartitionId(requestPartitions, bitmap, res);
+      getBlockIdsByPartitionId(requestPartitions, bitmap, res, blockIdLayout);
     }
     return RssUtils.serializeBitMap(res);
   }
@@ -573,10 +575,11 @@ public class ShuffleTaskManager {
   protected Roaring64NavigableMap getBlockIdsByPartitionId(
       Set<Integer> requestPartitions,
       Roaring64NavigableMap bitmap,
-      Roaring64NavigableMap resultBitmap) {
+      Roaring64NavigableMap resultBitmap,
+      BlockIdLayout blockIdLayout) {
     bitmap.forEach(
         blockId -> {
-          int partitionId = BlockId.getPartitionId(blockId);
+          int partitionId = blockIdLayout.getPartitionId(blockId);
           if (requestPartitions.contains(partitionId)) {
             resultBitmap.addLong(blockId);
           }

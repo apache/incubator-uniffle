@@ -724,6 +724,12 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setAppId(request.getAppId())
             .setShuffleId(request.getShuffleId())
             .setPartitionId(request.getPartitionId())
+            .setBlockIdLayout(
+                RssProtos.BlockIdLayout.newBuilder()
+                    .setSequenceIdLength(request.getBlockIdLayout().sequenceNoLength)
+                    .setPartitionIdLength(request.getBlockIdLayout().partitionIdLength)
+                    .setTaskAttemptIdLength(request.getBlockIdLayout().taskAttemptIdLength)
+                    .build())
             .build();
     GetShuffleResultResponse rpcResponse = getBlockingStub().getShuffleResult(rpcRequest);
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
@@ -766,6 +772,12 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setAppId(request.getAppId())
             .setShuffleId(request.getShuffleId())
             .addAllPartitions(request.getPartitions())
+            .setBlockIdLayout(
+                RssProtos.BlockIdLayout.newBuilder()
+                    .setSequenceIdLength(request.getBlockIdLayout().sequenceNoLength)
+                    .setPartitionIdLength(request.getBlockIdLayout().partitionIdLength)
+                    .setTaskAttemptIdLength(request.getBlockIdLayout().taskAttemptIdLength)
+                    .build())
             .build();
     GetShuffleResultForMultiPartResponse rpcResponse =
         getBlockingStub().getShuffleResultForMultiPart(rpcRequest);

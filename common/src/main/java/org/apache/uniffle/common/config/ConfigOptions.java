@@ -20,6 +20,7 @@ package org.apache.uniffle.common.config;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -81,6 +82,14 @@ public class ConfigOptions {
    * ConfigOptions#key(String)}.
    */
   public static final class OptionBuilder {
+    /**
+     * Workaround to reuse the {@link TypedConfigOptionBuilder} for a {@link Map Map&lt;String,
+     * String&gt;}.
+     */
+    @SuppressWarnings("unchecked")
+    private static final Class<Map<String, String>> PROPERTIES_MAP_CLASS =
+        (Class<Map<String, String>>) (Class<?>) Map.class;
+
     /** The key for the config option. */
     private final String key;
 
@@ -130,6 +139,14 @@ public class ConfigOptions {
      */
     public <T extends Enum<T>> TypedConfigOptionBuilder<T> enumType(Class<T> enumClass) {
       return new TypedConfigOptionBuilder<>(key, enumClass);
+    }
+
+    /**
+     * Defines that the value of the option should be a set of properties, which can be represented
+     * as {@code Map<String, String>}.
+     */
+    public TypedConfigOptionBuilder<Map<String, String>> mapType() {
+      return new TypedConfigOptionBuilder<>(key, PROPERTIES_MAP_CLASS);
     }
   }
 

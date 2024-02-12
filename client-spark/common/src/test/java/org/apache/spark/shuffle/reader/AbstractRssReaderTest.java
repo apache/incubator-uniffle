@@ -37,7 +37,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.util.BlockId;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -95,6 +95,7 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
       int partitionID,
       boolean compress)
       throws Exception {
+    BlockIdLayout layout = BlockIdLayout.DEFAULT;
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
     SerializerInstance serializerInstance = serializer.newInstance();
     for (int i = 0; i < blockNum; i++) {
@@ -106,7 +107,7 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
         expectedData.put(key, value);
         writeData(serializeStream, key, value);
       }
-      long blockId = BlockId.getBlockId(atomicInteger.getAndIncrement(), partitionID, 0);
+      long blockId = layout.getBlockId(atomicInteger.getAndIncrement(), partitionID, 0);
       blockIdBitmap.add(blockId);
       blocks.add(createShuffleBlock(output.toBytes(), blockId, compress));
       serializeStream.close();

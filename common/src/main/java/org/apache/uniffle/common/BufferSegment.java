@@ -20,7 +20,6 @@ package org.apache.uniffle.common;
 import java.util.Objects;
 
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.util.BlockId;
 
 public class BufferSegment {
 
@@ -61,9 +60,9 @@ public class BufferSegment {
 
   @Override
   public String toString() {
-    return "BufferSegment{"
-        + BlockId.toString(blockId)
-        + ", taskAttemptId["
+    return "BufferSegment{blockId["
+        + blockId
+        + "], taskAttemptId["
         + taskAttemptId
         + "], offset["
         + offset

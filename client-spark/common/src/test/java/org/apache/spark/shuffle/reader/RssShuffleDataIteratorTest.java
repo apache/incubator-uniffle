@@ -42,9 +42,8 @@ import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.util.BlockId;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.handler.impl.HadoopShuffleWriteHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -81,7 +80,8 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
 
     validateResult(rssShuffleDataIterator, expectedData, 10);
 
-    blockIdBitmap.add(BlockId.getBlockId(Constants.MAX_SEQUENCE_NO, 0, 0));
+    BlockIdLayout layout = BlockIdLayout.DEFAULT;
+    blockIdBitmap.add(layout.getBlockId(layout.maxSequenceNo, 0, 0));
     rssShuffleDataIterator =
         getDataIterator(basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1));
     int recNum = 0;

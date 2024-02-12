@@ -17,10 +17,13 @@
 
 package org.apache.uniffle.common.config;
 
+import java.util.Map;
+
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.netty.IOMode;
+import org.apache.uniffle.common.util.BlockIdLayoutConfig;
 
 import static org.apache.uniffle.common.compression.Codec.Type.LZ4;
 
@@ -56,6 +59,24 @@ public class RssClientConf {
           .withDescription(
               "The type of partition shuffle data distribution, including normal and local_order. "
                   + "The default value is normal. This config is only valid in Spark3.x");
+
+  public static final ConfigOption<Map<String, String>> BLOCKID_LAYOUT =
+      ConfigOptions.key("rss.client.BlockIdLayout")
+          .mapType()
+          .checkValue(BlockIdLayoutConfig::validate, "")
+          .defaultValue(BlockIdLayoutConfig.DEFAULT)
+          .withDescription(
+              "Block ids contain three fields: the partition id, "
+                  + "the task attempt id, and a sequence number. The block id has "
+                  + "63 bits to store these fields. Each field can at most have 31 bits "
+                  + "while all fields together can at most occupy 63 bits. To configure "
+                  + "the lengths of these fields, use "
+                  + BlockIdLayoutConfig.PARTITION_ID_LENGTH
+                  + " for the partition id, "
+                  + BlockIdLayoutConfig.TASK_ATTEMPT_ID_LENGTH
+                  + " for the task attempt id, and "
+                  + BlockIdLayoutConfig.SEQUENCE_ID_LENGTH
+                  + " for the sequence number.");
 
   public static final ConfigOption<Integer> MAX_CONCURRENCY_PER_PARTITION_TO_WRITE =
       ConfigOptions.key("rss.client.max.concurrency.of.per-partition.write")

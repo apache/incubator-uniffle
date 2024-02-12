@@ -58,6 +58,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.segment.LocalOrderSegmentSplitter;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -314,8 +315,9 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
             .filter(x -> expectedBlockIds4.contains(x.getKey()))
             .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
     taskIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdLayout layout = BlockIdLayout.DEFAULT;
     for (long blockId : expectedBlockIds4) {
-      taskIds.add(new DefaultIdHelper().getTaskAttemptId(blockId));
+      taskIds.add(new DefaultIdHelper(layout).getTaskAttemptId(blockId));
     }
     sdr =
         readShuffleData(

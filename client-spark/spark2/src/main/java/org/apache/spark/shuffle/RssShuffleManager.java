@@ -73,7 +73,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
-import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -109,6 +109,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private boolean dynamicConfEnabled = false;
   private final int maxFailures;
   private final boolean speculation;
+  private final BlockIdLayout blockIdLayout;
   private final String user;
   private final String uuid;
   private DataPusher dataPusher;
@@ -145,6 +146,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.sparkConf = sparkConf;
     this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
     this.speculation = sparkConf.getBoolean("spark.speculation", false);
+    this.blockIdLayout = BlockIdLayout.from(RssSparkConfig.toRssConf(sparkConf));
     this.user = sparkConf.get("spark.rss.quota.user", "user");
     this.uuid = sparkConf.get("spark.rss.quota.uuid", Long.toString(System.currentTimeMillis()));
     // set & check replica config
@@ -472,7 +474,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               context.attemptNumber(),
               maxFailures,
               speculation,
-              Constants.TASK_ATTEMPT_ID_MAX_LENGTH);
+              blockIdLayout.taskAttemptIdLength);
       return new RssShuffleWriter<>(
           rssHandle.getAppId(),
           shuffleId,

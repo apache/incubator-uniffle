@@ -40,11 +40,11 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.segment.FixedSizeSegmentSplitter;
 import org.apache.uniffle.common.segment.SegmentSplitter;
-import org.apache.uniffle.common.util.BlockId;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 
 public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
-
+  private static BlockIdLayout LAYOUT = BlockIdLayout.DEFAULT;
   private static AtomicInteger ATOMIC_INT = new AtomicInteger(0);
   public static List<ShuffleServerInfo> mockSSI =
       Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
@@ -64,7 +64,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       new Random().nextBytes(buf);
       int seqno = ATOMIC_INT.getAndIncrement();
 
-      long blockId = BlockId.getBlockId(seqno, 0, taskAttemptId);
+      long blockId = LAYOUT.getBlockId(seqno, 0, taskAttemptId);
       blockIdBitmap.addLong(blockId);
       dataMap.put(blockId, buf);
       shuffleBlockInfoList.add(

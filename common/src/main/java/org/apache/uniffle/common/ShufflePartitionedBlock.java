@@ -22,8 +22,6 @@ import java.util.Objects;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
-import org.apache.uniffle.common.util.BlockId;
-
 public class ShufflePartitionedBlock {
 
   private int length;
@@ -125,9 +123,9 @@ public class ShufflePartitionedBlock {
 
   @Override
   public String toString() {
-    return "ShufflePartitionedBlock{"
-        + BlockId.toString(blockId)
-        + ", length["
+    return "ShufflePartitionedBlock{blockId["
+        + blockId
+        + "], length["
         + length
         + "], uncompressLength["
         + uncompressLength

@@ -227,24 +227,25 @@ public class RssUtilsTest {
 
   @Test
   public void testShuffleBitmapToPartitionBitmap() {
+    BlockIdLayout layout = BlockIdLayout.DEFAULT;
     Roaring64NavigableMap partition1Bitmap =
         Roaring64NavigableMap.bitmapOf(
-            BlockId.getBlockId(0, 0, 0),
-            BlockId.getBlockId(1, 0, 0),
-            BlockId.getBlockId(0, 0, 1),
-            BlockId.getBlockId(1, 0, 1));
+            layout.getBlockId(0, 0, 0),
+            layout.getBlockId(1, 0, 0),
+            layout.getBlockId(0, 0, 1),
+            layout.getBlockId(1, 0, 1));
     Roaring64NavigableMap partition2Bitmap =
         Roaring64NavigableMap.bitmapOf(
-            BlockId.getBlockId(0, 1, 0),
-            BlockId.getBlockId(1, 1, 0),
-            BlockId.getBlockId(0, 1, 1),
-            BlockId.getBlockId(1, 1, 1));
+            layout.getBlockId(0, 1, 0),
+            layout.getBlockId(1, 1, 0),
+            layout.getBlockId(0, 1, 1),
+            layout.getBlockId(1, 1, 1));
     Roaring64NavigableMap shuffleBitmap = Roaring64NavigableMap.bitmapOf();
     shuffleBitmap.or(partition1Bitmap);
     shuffleBitmap.or(partition2Bitmap);
     assertEquals(8, shuffleBitmap.getLongCardinality());
     Map<Integer, Roaring64NavigableMap> toPartitionBitmap =
-        RssUtils.generatePartitionToBitmap(shuffleBitmap, 0, 2);
+        RssUtils.generatePartitionToBitmap(shuffleBitmap, 0, 2, layout);
     assertEquals(2, toPartitionBitmap.size());
     assertEquals(partition1Bitmap, toPartitionBitmap.get(0));
     assertEquals(partition2Bitmap, toPartitionBitmap.get(1));

@@ -51,6 +51,7 @@ import org.apache.uniffle.common.exception.NoBufferException;
 import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.proto.RssProtos;
@@ -528,6 +529,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String appId = request.getAppId();
     int shuffleId = request.getShuffleId();
     int partitionId = request.getPartitionId();
+    BlockIdLayout blockIdLayout =
+        BlockIdLayout.from(
+            request.getBlockIdLayout().getSequenceIdLength(),
+            request.getBlockIdLayout().getPartitionIdLength(),
+            request.getBlockIdLayout().getTaskAttemptIdLength());
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetShuffleResultResponse reply;
@@ -540,7 +546,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       serializedBlockIds =
           shuffleServer
               .getShuffleTaskManager()
-              .getFinishedBlockIds(appId, shuffleId, Sets.newHashSet(partitionId));
+              .getFinishedBlockIds(appId, shuffleId, Sets.newHashSet(partitionId), blockIdLayout);
       if (serializedBlockIds == null) {
         status = StatusCode.INTERNAL_ERROR;
         msg = "Can't get shuffle result for " + requestInfo;
@@ -571,6 +577,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String appId = request.getAppId();
     int shuffleId = request.getShuffleId();
     List<Integer> partitionsList = request.getPartitionsList();
+    BlockIdLayout blockIdLayout =
+        BlockIdLayout.from(
+            request.getBlockIdLayout().getSequenceIdLength(),
+            request.getBlockIdLayout().getPartitionIdLength(),
+            request.getBlockIdLayout().getTaskAttemptIdLength());
 
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
@@ -584,7 +595,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       serializedBlockIds =
           shuffleServer
               .getShuffleTaskManager()
-              .getFinishedBlockIds(appId, shuffleId, Sets.newHashSet(partitionsList));
+              .getFinishedBlockIds(
+                  appId, shuffleId, Sets.newHashSet(partitionsList), blockIdLayout);
       if (serializedBlockIds == null) {
         status = StatusCode.INTERNAL_ERROR;
         msg = "Can't get shuffle result for " + requestInfo;

@@ -51,6 +51,7 @@ import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.BlockId;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -157,12 +158,13 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
   @MethodSource("isNettyModeProvider")
   public void readTest1(boolean isNettyMode) {
     String testAppId = "localReadTest1";
+    BlockIdLayout layout = BlockIdLayout.DEFAULT;
     registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     createTestData(testAppId, expectedData, blockIdBitmap, taskIdBitmap, isNettyMode);
-    blockIdBitmap.addLong(BlockId.getBlockId(0, 1, 0));
+    blockIdBitmap.addLong(layout.getBlockId(0, 1, 0));
     ShuffleReadClientImpl readClient;
     readClient =
         baseReadBuilder(isNettyMode)
@@ -311,6 +313,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
   @MethodSource("isNettyModeProvider")
   public void readTest6(boolean isNettyMode) {
     String testAppId = "localReadTest6";
+    BlockIdLayout layout = BlockIdLayout.DEFAULT;
     registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -323,9 +326,9 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     Roaring64NavigableMap wrongBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
     LongIterator iter = blockIdBitmap.getLongIterator();
     while (iter.hasNext()) {
-      BlockId blockId = BlockId.fromLong(iter.next());
+      BlockId blockId = layout.asBlockId(iter.next());
       wrongBlockIdBitmap.addLong(
-          BlockId.getBlockId(blockId.sequenceNo, blockId.partitionId + 1, blockId.taskAttemptId));
+          layout.getBlockId(blockId.sequenceNo, blockId.partitionId + 1, blockId.taskAttemptId));
     }
 
     ShuffleReadClientImpl readClient =

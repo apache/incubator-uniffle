@@ -22,8 +22,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.common.util.BlockId;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ShuffleBlockInfoTest {
@@ -39,9 +37,9 @@ public class ShuffleBlockInfoTest {
             + info.getShuffleId()
             + "],partitionId["
             + info.getPartitionId()
-            + "],"
-            + BlockId.toString(info.getBlockId())
-            + ",length["
+            + "],blockId["
+            + info.getBlockId()
+            + "],length["
             + info.getLength()
             + "],uncompressLength["
             + info.getUncompressLength()
@@ -56,9 +54,9 @@ public class ShuffleBlockInfoTest {
             + info2.getShuffleId()
             + "],partitionId["
             + info2.getPartitionId()
-            + "],"
-            + BlockId.toString(info2.getBlockId())
-            + ",length["
+            + "],blockId["
+            + info2.getBlockId()
+            + "],length["
             + info2.getLength()
             + "],uncompressLength["
             + info2.getUncompressLength()
