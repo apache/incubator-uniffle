@@ -27,17 +27,6 @@ public final class Constants {
   public static final String COORDINATOR_TAG = "coordinator";
   public static final String SHUFFLE_DATA_FILE_SUFFIX = ".data";
   public static final String SHUFFLE_INDEX_FILE_SUFFIX = ".index";
-  // BlockId is long and consist of partitionId, taskAttemptId, atomicInt
-  // the length of them are ATOMIC_INT_MAX_LENGTH + PARTITION_ID_MAX_LENGTH +
-  // TASK_ATTEMPT_ID_MAX_LENGTH = 63, each of these lengths must be less than 32
-  // do not access the fields, no need to implement your own bit manipulation logic,
-  // better use methods provided by org.apache.uniffle.common.util.BlockId
-  public static final int PARTITION_ID_MAX_LENGTH = 24;
-  public static final int TASK_ATTEMPT_ID_MAX_LENGTH = 21;
-  public static final int ATOMIC_INT_MAX_LENGTH = 18;
-  public static final int MAX_SEQUENCE_NO = (1 << Constants.ATOMIC_INT_MAX_LENGTH) - 1;
-  public static final int MAX_PARTITION_ID = (1 << Constants.PARTITION_ID_MAX_LENGTH) - 1;
-  public static final int MAX_TASK_ATTEMPT_ID = (1 << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) - 1;
   public static final long INVALID_BLOCK_ID = -1L;
 
   public static final String KEY_SPLIT_CHAR = "/";
