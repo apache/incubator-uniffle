@@ -24,8 +24,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.common.util.IdHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.LongIterator;
@@ -34,6 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.IdHelper;
 import org.apache.uniffle.common.util.RssUtils;
 
 import static org.apache.uniffle.client.util.ClientUtils.waitUntilDoneOrFail;

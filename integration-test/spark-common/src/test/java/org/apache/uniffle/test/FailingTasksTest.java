@@ -79,9 +79,9 @@ public class FailingTasksTest extends SparkIntegrationTestBase {
                       Long next = it.next();
                       // the failing attempt returns only zeros
                       if (context.attemptNumber() == 0) {
-                          return 0L;
+                        return 0L;
                       } else {
-                          return next;
+                        return next;
                       }
                     } else {
                       throw new RuntimeException("let this task fail");
