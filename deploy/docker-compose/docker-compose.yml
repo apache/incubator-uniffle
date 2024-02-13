@@ -1,0 +1,62 @@
+version: "3"
+name: rss
+
+services:
+  coordinator:
+    image: rss-server:latest
+    deploy:
+      mode: replicated
+      replicas: 2
+    environment:
+      SERVICE_NAME: coordinator
+      COORDINATOR_RPC_PORT: 19999
+    expose:
+      - 19998
+      - 19999
+
+  shuffle-server:
+    image: rss-server:latest
+    environment:
+      SERVICE_NAME: server
+      SERVER_RPC_PORT: 19999
+      XMX_SIZE: 4g
+    deploy:
+      mode: replicated
+      replicas: 3
+    links:
+      - coordinator
+    expose:
+      - 19998
+      - 19999
+
+  spark-master:
+    image: rss-spark:latest
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master -h rss-spark-master-1
+    environment:
+      MASTER: spark://rss-spark-master-1:7077
+      SPARK_PUBLIC_DNS: localhost
+      SPARK_MASTER_WEBUI_PORT: 8080
+      PYSPARK_PYTHON: python${PYTHON_VERSION:-3.8}
+      PYSPARK_DRIVER_PYTHON: python${PYTHON_VERSION:-3.8}
+    expose:
+      - 7077
+    ports:
+      - 4040:4040
+      - 7077:7077
+      - 8080:8080
+
+  spark-worker:
+    image: rss-spark:latest
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://rss-spark-master-1:7077
+    environment:
+      SPARK_WORKER_CORES: 1
+      SPARK_WORKER_MEMORY: 1g
+      SPARK_WORKER_PORT: 8080
+      SPARK_WORKER_WEBUI_PORT: 8881
+      SPARK_PUBLIC_DNS: localhost
+    deploy:
+      mode: replicated
+      replicas: 2
+    links:
+      - spark-master
+
