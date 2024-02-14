@@ -17,6 +17,10 @@
 # limitations under the License.
 #
 
+set -o pipefail
+set -e
+set -u
+
 function exit_with_usage() {
   set +x
   echo "./build.sh - Tool for building docker images of Remote Shuffle Service"
