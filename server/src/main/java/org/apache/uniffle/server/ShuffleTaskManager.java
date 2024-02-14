@@ -70,6 +70,7 @@ import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.event.AppPurgeEvent;
+import org.apache.uniffle.server.event.AppUnregisterPurgeEvent;
 import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.server.event.ShufflePurgeEvent;
 import org.apache.uniffle.server.storage.StorageManager;
@@ -179,6 +180,12 @@ public class ShuffleTaskManager {
               long startTime = System.currentTimeMillis();
               if (event instanceof AppPurgeEvent) {
                 removeResources(event.getAppId(), true);
+                double usedTime =
+                    (System.currentTimeMillis() - startTime) / Constants.MILLION_SECONDS_PER_SECOND;
+                ShuffleServerMetrics.summaryTotalRemoveResourceTime.observe(usedTime);
+              }
+              if (event instanceof AppUnregisterPurgeEvent) {
+                removeResources(event.getAppId(), false);
                 double usedTime =
                     (System.currentTimeMillis() - startTime) / Constants.MILLION_SECONDS_PER_SECOND;
                 ShuffleServerMetrics.summaryTotalRemoveResourceTime.observe(usedTime);
@@ -840,6 +847,10 @@ public class ShuffleTaskManager {
   public void removeShuffleDataAsync(String appId, int shuffleId) {
     expiredAppIdQueue.add(
         new ShufflePurgeEvent(appId, getUserByAppId(appId), Arrays.asList(shuffleId)));
+  }
+
+  public void removeShuffleDataAsync(String appId) {
+    expiredAppIdQueue.add(new AppUnregisterPurgeEvent(appId, getUserByAppId(appId)));
   }
 
   @VisibleForTesting
