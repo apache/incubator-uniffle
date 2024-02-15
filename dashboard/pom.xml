@@ -26,6 +26,11 @@
 
     <artifactId>dashboard</artifactId>
     <name>Apache Uniffle Dashboard</name>
+    
+    <properties>
+        <nodeDownloadRoot>https://nodejs.org/dist/</nodeDownloadRoot>
+        <npmDownloadRoot>https://registry.npmjs.org/npm/-/</npmDownloadRoot>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -50,7 +55,8 @@
                         <configuration>
                             <nodeVersion>v14.21.3</nodeVersion>
                             <npmVersion>6.14.18</npmVersion>
-                            <nodeDownloadRoot>https://nodejs.org/dist/</nodeDownloadRoot>
+                            <nodeDownloadRoot>${nodeDownloadRoot}</nodeDownloadRoot>
+                            <npmDownloadRoot>${npmDownloadRoot}</npmDownloadRoot>
                         </configuration>
                     </execution>
                     <!-- Execute the script to remove node_modules and package-lock.json -->
