@@ -64,6 +64,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
@@ -112,6 +113,7 @@ public class ShuffleTaskManager {
   private Thread clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
   private final Cache<String, Lock> appLocks;
+  private boolean nettyServerEnabled;
 
   public ShuffleTaskManager(
       ShuffleServerConf conf,
@@ -126,6 +128,7 @@ public class ShuffleTaskManager {
     this.appExpiredWithoutHB = conf.getLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT);
     this.commitCheckIntervalMax = conf.getLong(ShuffleServerConf.SERVER_COMMIT_CHECK_INTERVAL_MAX);
     this.preAllocationExpired = conf.getLong(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED);
+    this.nettyServerEnabled = conf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
     this.leakShuffleDataCheckInterval =
         conf.getLong(ShuffleServerConf.SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL);
     this.triggerFlushInterval = conf.getLong(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL);
@@ -293,6 +296,17 @@ public class ShuffleTaskManager {
           conf.get(CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION));
     }
     return conf.get(SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION);
+  }
+
+  public StatusCode cacheShuffleData(
+      String appId,
+      int shuffleId,
+      boolean isPreAllocated,
+      ShufflePartitionedData spd,
+      int avgEstimatedSize) {
+    refreshAppId(appId);
+    return shuffleBufferManager.cacheShuffleData(
+        appId, shuffleId, isPreAllocated, spd, avgEstimatedSize);
   }
 
   public StatusCode cacheShuffleData(
@@ -499,6 +513,9 @@ public class ShuffleTaskManager {
   }
 
   public long requireBuffer(String appId, int requireSize) {
+    if (nettyServerEnabled) {
+      requireSize = NettyUtils.calculateEstimatedMemoryAllocationSize(requireSize);
+    }
     if (shuffleBufferManager.requireMemory(requireSize, true)) {
       long requireId = requireBufferId.incrementAndGet();
       requireBufferIds.put(

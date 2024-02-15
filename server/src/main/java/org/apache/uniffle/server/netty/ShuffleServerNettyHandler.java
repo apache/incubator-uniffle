@@ -24,6 +24,7 @@ import java.util.Map;
 
 import com.google.common.collect.Lists;
 import io.netty.buffer.Unpooled;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,6 +147,10 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
       long alreadyReleasedSize = 0;
       boolean isFailureOccurs = false;
+      int avgEstimatedSize =
+          CollectionUtils.isEmpty(shufflePartitionedData)
+              ? 0
+              : requireSize / shufflePartitionedData.size();
       for (ShufflePartitionedData spd : shufflePartitionedData) {
         String shuffleDataInfo =
             "appId["
@@ -159,7 +164,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           if (isFailureOccurs) {
             continue;
           }
-          ret = manager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
+          ret = manager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd, avgEstimatedSize);
           if (ret != StatusCode.SUCCESS) {
             String errorMsg =
                 "Error happened when shuffleEngine.write for "
@@ -170,7 +175,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             responseMessage = errorMsg;
             isFailureOccurs = true;
           } else {
-            long toReleasedSize = spd.getTotalBlockSize();
+            long toReleasedSize = avgEstimatedSize;
             // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
             manager.releasePreAllocatedSize(toReleasedSize);
             alreadyReleasedSize += toReleasedSize;

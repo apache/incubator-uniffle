@@ -135,6 +135,50 @@ public class NettyUtils {
         PooledByteBufAllocator.defaultUseCacheForAllThreads());
   }
 
+  /**
+   * Calculate the allocated direct memory size based on the requested size.
+   *
+   * @param requestedSize The requested size of the direct memory.
+   * @return The estimated allocated direct memory size.
+   */
+  public static int calculateEstimatedMemoryAllocationSize(int requestedSize) {
+    int chunkSize = getNettyBufferAllocator().metric().chunkSize();
+    int pageSize = PooledByteBufAllocator.defaultPageSize();
+
+    // If the requested size is less than or equal to the page size,
+    // return the page size as the allocated size.
+    if (requestedSize <= pageSize) {
+      return pageSize;
+    }
+
+    // If the requested size is greater than the chunk size, return the requested size
+    // as the allocated size, as PooledByteBufAllocator will directly allocate
+    // the required size in direct memory, not from the memory pool.
+    if (requestedSize > chunkSize) {
+      return requestedSize;
+    }
+
+    // If the requested size is greater than half of the chunk size,
+    // return the chunk size as the allocated size,
+    // as PooledByteBufAllocator will allocate a whole chunk to satisfy the memory request.
+    if (requestedSize > chunkSize / 2) {
+      return chunkSize;
+    }
+
+    // If the requested size is between the page size and half of the chunk size,
+    // use the Buddy algorithm to calculate the actual allocated memory size.
+    // Initialize allocatedSize as half of the chunk size, and keep dividing
+    // it by 2 until finding a memory block size that satisfies the requested size.
+    int maxBlockSize = chunkSize / 2;
+    int allocatedSize = maxBlockSize;
+
+    while (requestedSize <= allocatedSize / 2) {
+      allocatedSize /= 2;
+    }
+
+    return allocatedSize;
+  }
+
   public static long getMaxDirectMemory() {
     return MAX_DIRECT_MEMORY_IN_BYTES;
   }

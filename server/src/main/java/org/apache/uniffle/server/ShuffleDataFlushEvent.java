@@ -38,6 +38,7 @@ public class ShuffleDataFlushEvent {
   private final int startPartition;
   private final int endPartition;
   private final long size;
+  private final long estimatedSize;
   private final List<ShufflePartitionedBlock> shuffleBlocks;
   private final Supplier<Boolean> valid;
   private final ShuffleBuffer shuffleBuffer;
@@ -57,6 +58,7 @@ public class ShuffleDataFlushEvent {
       int startPartition,
       int endPartition,
       long size,
+      long estimatedSize,
       List<ShufflePartitionedBlock> shuffleBlocks,
       Supplier<Boolean> valid,
       ShuffleBuffer shuffleBuffer) {
@@ -66,10 +68,34 @@ public class ShuffleDataFlushEvent {
     this.startPartition = startPartition;
     this.endPartition = endPartition;
     this.size = size;
+    this.estimatedSize = estimatedSize;
     this.shuffleBlocks = shuffleBlocks;
     this.valid = valid;
     this.shuffleBuffer = shuffleBuffer;
     this.cleanupCallbackChains = new ArrayList<>();
+  }
+
+  public ShuffleDataFlushEvent(
+      long eventId,
+      String appId,
+      int shuffleId,
+      int startPartition,
+      int endPartition,
+      long size,
+      List<ShufflePartitionedBlock> shuffleBlocks,
+      Supplier<Boolean> valid,
+      ShuffleBuffer shuffleBuffer) {
+    this(
+        eventId,
+        appId,
+        shuffleId,
+        startPartition,
+        endPartition,
+        size,
+        0,
+        shuffleBlocks,
+        valid,
+        shuffleBuffer);
   }
 
   public List<ShufflePartitionedBlock> getShuffleBlocks() {
@@ -82,6 +108,10 @@ public class ShuffleDataFlushEvent {
 
   public long getSize() {
     return size;
+  }
+
+  public long getEstimatedSize() {
+    return estimatedSize;
   }
 
   public String getAppId() {
