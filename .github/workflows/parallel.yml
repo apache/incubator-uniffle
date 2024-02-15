@@ -64,6 +64,7 @@ jobs:
           - mr-hadoop3.2
           - tez
           - tez-hadoop3.2
+          - dashboard
       fail-fast: false
     name: -P${{ matrix.profile }}
     steps:
@@ -84,11 +85,11 @@ jobs:
         restore-keys: |
           mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-
           mvn-${{ inputs.java-version }}-package-
-    - name: Execute `./mvnw ${{ inputs.maven-args }} -P${{ matrix.profile }} -Pdashboard`
+    - name: Execute `./mvnw ${{ inputs.maven-args }} -P${{ matrix.profile }}`
       run: |
         PROFILES="${{ matrix.profile }}"
         PROFILES=${PROFILES/-/,}
-        ./mvnw -B -fae ${{ inputs.maven-args }} -P${PROFILES} -Pdashboard | tee /tmp/maven.log
+        ./mvnw -B -fae ${{ inputs.maven-args }} -P${PROFILES} | tee /tmp/maven.log
       shell: bash
     - name: Summary of failures
       if: failure() && inputs.summary != ''
