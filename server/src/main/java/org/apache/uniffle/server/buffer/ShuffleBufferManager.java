@@ -62,9 +62,7 @@ public class ShuffleBufferManager {
   private long readCapacity;
   private int retryNum;
   private long highWaterMark;
-  private long highWaterMarkForDirectMemory;
   private long lowWaterMark;
-  private long lowWaterMarkForDirectMemory;
   private boolean bufferFlushEnabled;
   private long bufferFlushThreshold;
   // when shuffle buffer manager flushes data, shuffles with data size < shuffleFlushThreshold is
@@ -77,9 +75,6 @@ public class ShuffleBufferManager {
 
   // vars for server_type: GRPC_NETTY
   private boolean nettyServerEnabled;
-  private long reservedOnHeapPreAllocatedBufferBytes;
-  private long reservedOffHeapPreAllocatedBufferBytes;
-  private long maxAvailableOffHeapBytes;
   private boolean testMode;
 
   protected long bufferSize = 0;
@@ -126,34 +121,7 @@ public class ShuffleBufferManager {
             (capacity
                 / 100.0
                 * conf.get(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE));
-    this.reservedOnHeapPreAllocatedBufferBytes =
-        conf.getSizeAsBytes(ShuffleServerConf.SERVER_PRE_ALLOCATION_RESERVED_ON_HEAP_SIZE);
-    this.reservedOffHeapPreAllocatedBufferBytes =
-        conf.getSizeAsBytes(ShuffleServerConf.SERVER_PRE_ALLOCATION_RESERVED_OFF_HEAP_SIZE);
     this.testMode = conf.getBoolean(RSS_TEST_MODE_ENABLE);
-    if (nettyServerEnabled) {
-      if (heapSize < this.reservedOnHeapPreAllocatedBufferBytes) {
-        throw new IllegalArgumentException(
-            "The reserved on-heap memory size for pre-allocated buffer "
-                + "should not be greater than the max value of heap memory");
-      }
-      if (capacity < this.reservedOffHeapPreAllocatedBufferBytes) {
-        throw new IllegalArgumentException(
-            "The reserved off-heap memory size for pre-allocated buffer "
-                + "should not be greater than the capacity of direct memory");
-      }
-    }
-    this.maxAvailableOffHeapBytes = capacity - this.reservedOffHeapPreAllocatedBufferBytes;
-    this.highWaterMarkForDirectMemory =
-        (long)
-            (this.maxAvailableOffHeapBytes
-                / 100.0
-                * conf.get(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE));
-    this.lowWaterMarkForDirectMemory =
-        (long)
-            (this.maxAvailableOffHeapBytes
-                / 100.0
-                * conf.get(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE));
     this.bufferFlushEnabled = conf.getBoolean(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED);
     this.bufferFlushThreshold =
         conf.getSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD);
@@ -311,7 +279,7 @@ public class ShuffleBufferManager {
     long usedHeapMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
     boolean needFlush;
     if (nettyServerEnabled) {
-      needFlush = pinnedDirectMemory > highWaterMarkForDirectMemory;
+      needFlush = pinnedDirectMemory > highWaterMark;
     } else {
       needFlush = usedMemory.get() - preAllocatedSize.get() - inFlushSize.get() > highWaterMark;
     }
@@ -384,23 +352,12 @@ public class ShuffleBufferManager {
   }
 
   public synchronized boolean requireMemory(long size, boolean isPreAllocated) {
-    long pinnedDirectMemory = getPinnedDirectMemory();
     long usedDirectMemory = PlatformDependent.usedDirectMemory();
     long usedHeapMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-    boolean canAllocate;
-    if (nettyServerEnabled) {
-      boolean canAllocateDirectBuffer = this.maxAvailableOffHeapBytes - pinnedDirectMemory >= size;
-      boolean isSufficientOnHeapMemory =
-          Runtime.getRuntime().maxMemory() - usedHeapMemory
-              >= reservedOnHeapPreAllocatedBufferBytes;
-      canAllocate = canAllocateDirectBuffer && isSufficientOnHeapMemory;
-    } else {
-      canAllocate = capacity - usedMemory.get() >= size;
-    }
+    boolean canAllocate = capacity - usedMemory.get() >= size;
+    ;
     if (canAllocate) {
-      if (nettyServerEnabled) {
-        usedMemory.lazySet(pinnedDirectMemory);
-      } else {
+      if (!nettyServerEnabled) {
         usedMemory.addAndGet(size);
       }
       ShuffleServerMetrics.gaugeUsedBufferSize.set(usedMemory.get());
@@ -446,9 +403,7 @@ public class ShuffleBufferManager {
 
   public void releaseMemory(
       long size, boolean isReleaseFlushMemory, boolean isReleasePreAllocation) {
-    if (nettyServerEnabled) {
-      usedMemory.lazySet(getPinnedDirectMemory());
-    } else {
+    if (!nettyServerEnabled) {
       if (usedMemory.get() >= size) {
         usedMemory.addAndGet(-size);
       } else {
@@ -564,9 +519,7 @@ public class ShuffleBufferManager {
   }
 
   public void updateUsedMemory(long delta) {
-    if (nettyServerEnabled) {
-      usedMemory.lazySet(getPinnedDirectMemory());
-    } else {
+    if (!nettyServerEnabled) {
       // add size if not allocated
       usedMemory.addAndGet(delta);
     }
@@ -584,7 +537,7 @@ public class ShuffleBufferManager {
   }
 
   boolean isFull() {
-    return nettyServerEnabled ? getPinnedDirectMemory() >= capacity : usedMemory.get() >= capacity;
+    return usedMemory.get() >= capacity;
   }
 
   @VisibleForTesting
@@ -599,6 +552,10 @@ public class ShuffleBufferManager {
 
   public long getUsedMemory() {
     return usedMemory.get();
+  }
+
+  public void setUsedMemory(long usedMemory) {
+    this.usedMemory.set(usedMemory);
   }
 
   public long getInFlushSize() {
@@ -657,10 +614,7 @@ public class ShuffleBufferManager {
     // The algorithm here is to flush data size > highWaterMark - lowWaterMark
     // the remaining data in buffer maybe more than lowWaterMark
     // because shuffle server is still receiving data, but it should be ok
-    long expectedFlushSize =
-        nettyServerEnabled
-            ? highWaterMarkForDirectMemory - lowWaterMarkForDirectMemory
-            : highWaterMark - lowWaterMark;
+    long expectedFlushSize = highWaterMark - lowWaterMark;
     long atLeastFlushSizeIgnoreThreshold = expectedFlushSize >>> 1;
     long pickedFlushSize = 0L;
     int printIndex = 0;

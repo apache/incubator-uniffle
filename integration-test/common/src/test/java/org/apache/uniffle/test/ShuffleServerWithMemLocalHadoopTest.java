@@ -33,8 +33,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +53,6 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
-import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -73,7 +70,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.mockStatic;
 
 public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
   private static final Logger LOG =
@@ -83,13 +79,9 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
   private static String REMOTE_STORAGE = HDFS_URI + "rss/test";
   private static ShuffleServerConf grpcShuffleServerConfig;
   private static ShuffleServerConf nettyShuffleServerConfig;
-  private static MockedStatic<NettyUtils> nettyUtils;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
-    nettyUtils = mockStatic(NettyUtils.class, Mockito.CALLS_REAL_METHODS);
-    nettyUtils.when(NettyUtils::getMaxDirectMemory).thenReturn(600L);
-
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
 
@@ -148,7 +140,6 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
 
   @AfterAll
   public static void tearDown() throws Exception {
-    nettyUtils.close();
     shutdownServers();
   }
 

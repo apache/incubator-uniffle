@@ -144,22 +144,6 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(20 * 1000L)
           .withDescription("Expired time (ms) for pre allocated buffer");
 
-  public static final ConfigOption<Long> SERVER_PRE_ALLOCATION_RESERVED_ON_HEAP_SIZE =
-      ConfigOptions.key("rss.server.preAllocation.reserved.onHeap.size")
-          .longType()
-          .defaultValue(1 * 1024 * 1024 * 1024L)
-          .withDescription(
-              "The reserved on-heap memory size which can be used for requiring pre-allocated buffer, "
-                  + "in bytes unless otherwise specified.");
-
-  public static final ConfigOption<Long> SERVER_PRE_ALLOCATION_RESERVED_OFF_HEAP_SIZE =
-      ConfigOptions.key("rss.server.preAllocation.reserved.offHeap.size")
-          .longType()
-          .defaultValue(1 * 1024 * 1024 * 1024L)
-          .withDescription(
-              "The reserved off-heap memory size which can be used for requiring pre-allocated buffer, "
-                  + "in bytes unless otherwise specified.");
-
   public static final ConfigOption<Long> SERVER_COMMIT_CHECK_INTERVAL_MAX =
       ConfigOptions.key("rss.server.commit.check.interval.max.ms")
           .longType()

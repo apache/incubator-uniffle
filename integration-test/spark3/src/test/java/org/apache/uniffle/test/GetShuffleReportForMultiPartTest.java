@@ -113,8 +113,6 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
     if (serverType == ServerType.GRPC_NETTY) {
       serverConf.setInteger(
           ShuffleServerConf.NETTY_SERVER_PORT, IntegrationTestBase.getNextNettyServerPort());
-      serverConf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_RESERVED_OFF_HEAP_SIZE, 0L);
-      serverConf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_RESERVED_ON_HEAP_SIZE, 0L);
     }
     return serverConf;
   }

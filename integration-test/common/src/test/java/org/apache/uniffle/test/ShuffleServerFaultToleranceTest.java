@@ -25,16 +25,12 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.TestUtils;
@@ -55,7 +51,6 @@ import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.ByteBufUtils;
-import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.server.MockedShuffleServer;
@@ -71,22 +66,14 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
 
   private List<ShuffleServerClient> grpcShuffleServerClients;
   private List<ShuffleServerClient> nettyShuffleServerClients;
-  private static MockedStatic<NettyUtils> nettyUtils;
 
   private String remoteStoragePath = HDFS_URI + "rss/test";
-
-  @BeforeAll
-  public static void setup() {
-    nettyUtils = mockStatic(NettyUtils.class, Mockito.CALLS_REAL_METHODS);
-    nettyUtils.when(NettyUtils::getMaxDirectMemory).thenReturn(600L);
-  }
 
   @BeforeEach
   public void setupServers(@TempDir File tmpDir) throws Exception {
@@ -125,11 +112,6 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
           client.close();
         });
     cleanCluster();
-  }
-
-  @AfterAll
-  public static void tearDown() {
-    nettyUtils.close();
   }
 
   private static Stream<Arguments> testReadFaultToleranceProvider() {
