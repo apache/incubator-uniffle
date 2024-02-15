@@ -112,6 +112,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private boolean dynamicConfEnabled = false;
   private final ShuffleDataDistributionType dataDistributionType;
   private final int maxConcurrencyPerPartitionToWrite;
+  private final int maxFailures;
   private String user;
   private String uuid;
   private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
@@ -182,6 +183,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.dataDistributionType = getDataDistributionType(sparkConf);
     this.maxConcurrencyPerPartitionToWrite =
         RssSparkConfig.toRssConf(sparkConf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
+    this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
     long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
     int heartBeatThreadNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
     this.dataTransferPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE);
@@ -307,6 +309,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         RssSparkConfig.toRssConf(sparkConf).get(RssClientConf.DATA_DISTRIBUTION_TYPE);
     this.maxConcurrencyPerPartitionToWrite =
         RssSparkConfig.toRssConf(sparkConf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
+    this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
     this.heartbeatInterval = sparkConf.get(RssSparkConfig.RSS_HEARTBEAT_INTERVAL);
     this.heartbeatTimeout =
         sparkConf.getLong(RssSparkConfig.RSS_HEARTBEAT_TIMEOUT.key(), heartbeatInterval / 2);
@@ -503,11 +506,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
+    long taskAttemptId =
+        getTaskAttemptId(context.partitionId(), context.attemptNumber(), maxFailures);
     return new RssShuffleWriter<>(
         rssHandle.getAppId(),
         shuffleId,
         taskId,
-        context.taskAttemptId(),
+        taskAttemptId,
         writeMetrics,
         this,
         sparkConf,
@@ -516,6 +521,33 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         this::markFailedTask,
         context,
         shuffleHandleInfo);
+  }
+
+  /**
+   * Provides a task attempt id that is unique for a shuffle stage.
+   *
+   * <p>We are not using context.taskAttemptId() here as this is a monotonically increasing number
+   * that is unique across the entire Spark app which can reach very large numbers, which can
+   * practically reach LONG.MAX_VALUE. That would overflow the bits in the block id.
+   *
+   * <p>Here we use the map index or task id, appended by the attempt number per task. The map index
+   * is limited by the number of partitions of a stage. The attempt number per task is limited /
+   * configured by spark.task.maxFailures (default: 4).
+   *
+   * @return a task attempt id unique for a shuffle stage
+   */
+  @VisibleForTesting
+  protected static long getTaskAttemptId(int mapIndex, int attemptNo, int maxFailures) {
+    int maxAttemptNo = maxFailures < 1 ? 0 : maxFailures - 1;
+    if (attemptNo > maxAttemptNo) {
+      throw new RssException(
+          "Observing attempt number "
+              + attemptNo
+              + " while spark.task.maxFailures is set to "
+              + maxFailures);
+    }
+    int attemptBits = 32 - Integer.numberOfLeadingZeros(maxAttemptNo);
+    return (long) mapIndex << attemptBits | attemptNo;
   }
 
   public void setPusherAppId(RssShuffleHandle rssShuffleHandle) {
