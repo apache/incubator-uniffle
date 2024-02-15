@@ -47,6 +47,8 @@ public class ShuffleBuffer {
 
   private final long capacity;
   private long size;
+  // for Netty mode
+  private long estimatedSize;
   // blocks will be added to inFlushBlockMap as <eventId, blocks> pair
   // it will be removed after flush to storage
   // the strategy ensure that shuffle is in memory or storage
@@ -56,11 +58,16 @@ public class ShuffleBuffer {
   public ShuffleBuffer(long capacity) {
     this.capacity = capacity;
     this.size = 0;
+    this.estimatedSize = 0;
     this.blocks = new LinkedList<>();
     this.inFlushBlockMap = JavaUtils.newConcurrentMap();
   }
 
   public long append(ShufflePartitionedData data) {
+    return append(data, 0);
+  }
+
+  public long append(ShufflePartitionedData data, int avgEstimatedSize) {
     long mSize = 0;
 
     synchronized (this) {
@@ -69,6 +76,7 @@ public class ShuffleBuffer {
         mSize += block.getSize();
       }
       size += mSize;
+      estimatedSize += avgEstimatedSize;
     }
 
     return mSize;
@@ -98,7 +106,16 @@ public class ShuffleBuffer {
     long eventId = ShuffleFlushManager.ATOMIC_EVENT_ID.getAndIncrement();
     final ShuffleDataFlushEvent event =
         new ShuffleDataFlushEvent(
-            eventId, appId, shuffleId, startPartition, endPartition, size, spBlocks, isValid, this);
+            eventId,
+            appId,
+            shuffleId,
+            startPartition,
+            endPartition,
+            size,
+            estimatedSize,
+            spBlocks,
+            isValid,
+            this);
     event.addCleanupCallback(
         () -> {
           this.clearInFlushBuffer(event.getEventId());
@@ -107,6 +124,7 @@ public class ShuffleBuffer {
     inFlushBlockMap.put(eventId, inFlushedQueueBlocks);
     blocks.clear();
     size = 0;
+    estimatedSize = 0;
     return event;
   }
 
@@ -134,6 +152,11 @@ public class ShuffleBuffer {
     return size;
   }
 
+  public long getEstimatedSize() {
+    return estimatedSize;
+  }
+
+  @VisibleForTesting
   public boolean isFull() {
     return size > capacity;
   }

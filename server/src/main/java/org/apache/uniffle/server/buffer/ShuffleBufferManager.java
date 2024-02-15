@@ -93,11 +93,16 @@ public class ShuffleBufferManager {
   protected Map<String, Map<Integer, AtomicLong>> shuffleSizeMap = JavaUtils.newConcurrentMap();
 
   public ShuffleBufferManager(ShuffleServerConf conf, ShuffleFlushManager shuffleFlushManager) {
+    this.nettyServerEnabled = conf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
     long heapSize = Runtime.getRuntime().maxMemory();
     this.capacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_BUFFER_CAPACITY);
     if (this.capacity < 0) {
       this.capacity =
-          (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO));
+          nettyServerEnabled
+              ? (long)
+                  (NettyUtils.getMaxDirectMemory()
+                      * conf.getDouble(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO))
+              : (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO));
     }
     this.readCapacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY);
     if (this.readCapacity < 0) {
@@ -126,21 +131,19 @@ public class ShuffleBufferManager {
     this.reservedOffHeapPreAllocatedBufferBytes =
         conf.getSizeAsBytes(ShuffleServerConf.SERVER_PRE_ALLOCATION_RESERVED_OFF_HEAP_SIZE);
     this.testMode = conf.getBoolean(RSS_TEST_MODE_ENABLE);
-    this.nettyServerEnabled = conf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
     if (nettyServerEnabled) {
       if (heapSize < this.reservedOnHeapPreAllocatedBufferBytes) {
         throw new IllegalArgumentException(
             "The reserved on-heap memory size for pre-allocated buffer "
                 + "should not be greater than the max value of heap memory");
       }
-      if (NettyUtils.getMaxDirectMemory() < this.reservedOffHeapPreAllocatedBufferBytes) {
+      if (capacity < this.reservedOffHeapPreAllocatedBufferBytes) {
         throw new IllegalArgumentException(
             "The reserved off-heap memory size for pre-allocated buffer "
-                + "should not be greater than the max value of direct memory");
+                + "should not be greater than the capacity of direct memory");
       }
     }
-    this.maxAvailableOffHeapBytes =
-        NettyUtils.getMaxDirectMemory() - this.reservedOffHeapPreAllocatedBufferBytes;
+    this.maxAvailableOffHeapBytes = capacity - this.reservedOffHeapPreAllocatedBufferBytes;
     this.highWaterMarkForDirectMemory =
         (long)
             (this.maxAvailableOffHeapBytes
@@ -195,6 +198,15 @@ public class ShuffleBufferManager {
 
   public StatusCode cacheShuffleData(
       String appId, int shuffleId, boolean isPreAllocated, ShufflePartitionedData spd) {
+    return cacheShuffleData(appId, shuffleId, isPreAllocated, spd, 0);
+  }
+
+  public StatusCode cacheShuffleData(
+      String appId,
+      int shuffleId,
+      boolean isPreAllocated,
+      ShufflePartitionedData spd,
+      int avgEstimatedSize) {
     if (!isPreAllocated && isFull()) {
       LOG.warn("Got unexpected data, can't cache it because the space is full");
       return StatusCode.NO_BUFFER;
@@ -207,11 +219,12 @@ public class ShuffleBufferManager {
     }
 
     ShuffleBuffer buffer = entry.getValue();
-    long size = buffer.append(spd);
+    long size = buffer.append(spd, avgEstimatedSize);
+    long bufferSize = nettyServerEnabled ? avgEstimatedSize : size;
     if (!isPreAllocated) {
-      updateUsedMemory(size);
+      updateUsedMemory(bufferSize);
     }
-    updateShuffleSize(appId, shuffleId, size);
+    updateShuffleSize(appId, shuffleId, bufferSize);
     synchronized (this) {
       flushSingleBufferIfNecessary(
           buffer,
@@ -284,8 +297,8 @@ public class ShuffleBufferManager {
     boolean isHugePartition = isHugePartition(appId, shuffleId, partitionId);
     // When we use multi storage and trigger single buffer flush, the buffer size should be bigger
     // than rss.server.flush.cold.storage.threshold.size, otherwise cold storage will be useless.
-    if ((isHugePartition || this.bufferFlushEnabled)
-        && buffer.getSize() > this.bufferFlushThreshold) {
+    long size = nettyServerEnabled ? buffer.getEstimatedSize() : buffer.getSize();
+    if ((isHugePartition || this.bufferFlushEnabled) && size > this.bufferFlushThreshold) {
       flushBuffer(buffer, appId, shuffleId, startPartition, endPartition, isHugePartition);
       return;
     }
@@ -348,9 +361,10 @@ public class ShuffleBufferManager {
             () -> bufferPool.containsKey(appId),
             shuffleFlushManager.getDataDistributionType(appId));
     if (event != null) {
-      event.addCleanupCallback(() -> releaseMemory(event.getSize(), true, false));
-      updateShuffleSize(appId, shuffleId, -event.getSize());
-      inFlushSize.addAndGet(event.getSize());
+      long eventSize = nettyServerEnabled ? event.getEstimatedSize() : event.getSize();
+      event.addCleanupCallback(() -> releaseMemory(eventSize, true, false));
+      updateShuffleSize(appId, shuffleId, -eventSize);
+      inFlushSize.addAndGet(eventSize);
       if (isHugePartition) {
         event.markOwnedByHugePartition();
       }
@@ -384,7 +398,11 @@ public class ShuffleBufferManager {
       canAllocate = capacity - usedMemory.get() >= size;
     }
     if (canAllocate) {
-      usedMemory.addAndGet(size);
+      if (nettyServerEnabled) {
+        usedMemory.lazySet(pinnedDirectMemory);
+      } else {
+        usedMemory.addAndGet(size);
+      }
       ShuffleServerMetrics.gaugeUsedBufferSize.set(usedMemory.get());
       if (isPreAllocated) {
         requirePreAllocatedSize(size);
@@ -403,8 +421,6 @@ public class ShuffleBufferManager {
                 + usedDirectMemory
                 + "], usedHeapMemory["
                 + usedHeapMemory
-                + "], pinnedDirectMemory["
-                + pinnedDirectMemory
                 + "]");
       }
       return true;
@@ -423,8 +439,6 @@ public class ShuffleBufferManager {
               + usedDirectMemory
               + "], usedHeapMemory["
               + usedHeapMemory
-              + "], pinnedDirectMemory["
-              + pinnedDirectMemory
               + "]");
     }
     return false;
@@ -432,16 +446,20 @@ public class ShuffleBufferManager {
 
   public void releaseMemory(
       long size, boolean isReleaseFlushMemory, boolean isReleasePreAllocation) {
-    if (usedMemory.get() >= size) {
-      usedMemory.addAndGet(-size);
+    if (nettyServerEnabled) {
+      usedMemory.lazySet(getPinnedDirectMemory());
     } else {
-      LOG.warn(
-          "Current allocated memory["
-              + usedMemory.get()
-              + "] is less than released["
-              + size
-              + "], set allocated memory to 0");
-      usedMemory.set(0L);
+      if (usedMemory.get() >= size) {
+        usedMemory.addAndGet(-size);
+      } else {
+        LOG.warn(
+            "Current allocated memory["
+                + usedMemory.get()
+                + "] is less than released["
+                + size
+                + "], set allocated memory to 0");
+        usedMemory.set(0L);
+      }
     }
 
     ShuffleServerMetrics.gaugeUsedBufferSize.set(usedMemory.get());
@@ -546,8 +564,12 @@ public class ShuffleBufferManager {
   }
 
   public void updateUsedMemory(long delta) {
-    // add size if not allocated
-    usedMemory.addAndGet(delta);
+    if (nettyServerEnabled) {
+      usedMemory.lazySet(getPinnedDirectMemory());
+    } else {
+      // add size if not allocated
+      usedMemory.addAndGet(delta);
+    }
     ShuffleServerMetrics.gaugeUsedBufferSize.set(usedMemory.get());
   }
 
@@ -562,7 +584,7 @@ public class ShuffleBufferManager {
   }
 
   boolean isFull() {
-    return usedMemory.get() >= capacity;
+    return nettyServerEnabled ? getPinnedDirectMemory() >= capacity : usedMemory.get() >= capacity;
   }
 
   @VisibleForTesting
@@ -729,7 +751,7 @@ public class ShuffleBufferManager {
         for (ShuffleBuffer buffer : buffers) {
           buffer.getBlocks().forEach(spb -> spb.getData().release());
           ShuffleServerMetrics.gaugeTotalPartitionNum.dec();
-          size += buffer.getSize();
+          size += nettyServerEnabled ? buffer.getEstimatedSize() : buffer.getSize();
         }
       }
       releaseMemory(size, false, false);
@@ -752,7 +774,9 @@ public class ShuffleBufferManager {
   public boolean limitHugePartition(
       String appId, int shuffleId, int partitionId, long usedPartitionDataSize) {
     if (usedPartitionDataSize > hugePartitionSizeThreshold) {
-      long memoryUsed = getShuffleBufferEntry(appId, shuffleId, partitionId).getValue().getSize();
+      ShuffleBuffer shuffleBuffer = getShuffleBufferEntry(appId, shuffleId, partitionId).getValue();
+      long memoryUsed =
+          nettyServerEnabled ? shuffleBuffer.getEstimatedSize() : shuffleBuffer.getSize();
       if (memoryUsed > hugePartitionMemoryLimitSize) {
         LOG.warn(
             "AppId: {}, shuffleId: {}, partitionId: {}, memory used: {}, "
