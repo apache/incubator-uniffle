@@ -113,6 +113,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final ShuffleDataDistributionType dataDistributionType;
   private final int maxConcurrencyPerPartitionToWrite;
   private final int maxFailures;
+  private final boolean speculation;
   private String user;
   private String uuid;
   private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
@@ -184,6 +185,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.maxConcurrencyPerPartitionToWrite =
         RssSparkConfig.toRssConf(sparkConf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
     this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
+    this.speculation = sparkConf.getBoolean("spark.speculation", false);
     long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
     int heartBeatThreadNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
     this.dataTransferPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE);
@@ -310,6 +312,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.maxConcurrencyPerPartitionToWrite =
         RssSparkConfig.toRssConf(sparkConf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
     this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
+    this.speculation = sparkConf.getBoolean("spark.speculation", false);
     this.heartbeatInterval = sparkConf.get(RssSparkConfig.RSS_HEARTBEAT_INTERVAL);
     this.heartbeatTimeout =
         sparkConf.getLong(RssSparkConfig.RSS_HEARTBEAT_TIMEOUT.key(), heartbeatInterval / 2);
@@ -507,7 +510,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
     long taskAttemptId =
-        getTaskAttemptId(context.partitionId(), context.attemptNumber(), maxFailures);
+        getTaskAttemptId(context.partitionId(), context.attemptNumber(), maxFailures, speculation);
     return new RssShuffleWriter<>(
         rssHandle.getAppId(),
         shuffleId,
@@ -537,8 +540,17 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * @return a task attempt id unique for a shuffle stage
    */
   @VisibleForTesting
-  protected static long getTaskAttemptId(int mapIndex, int attemptNo, int maxFailures) {
+  protected static long getTaskAttemptId(
+      int mapIndex, int attemptNo, int maxFailures, boolean speculationEnabled) {
+    // attempt number is zero based: 0, 1, …, maxFailures-1
+    // max maxFailures < 1 is not allowed but for safety, we interpret that as maxFailures == 1
     int maxAttemptNo = maxFailures < 1 ? 0 : maxFailures - 1;
+
+    // with speculative execution enabled we could observe maxFailures + 1 attempts
+    if (speculationEnabled) {
+      maxAttemptNo++;
+    }
+
     if (attemptNo > maxAttemptNo) {
       throw new RssException(
           "Observing attempt number "
@@ -546,6 +558,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               + " while spark.task.maxFailures is set to "
               + maxFailures);
     }
+
     int attemptBits = 32 - Integer.numberOfLeadingZeros(maxAttemptNo);
     return (long) mapIndex << attemptBits | attemptNo;
   }

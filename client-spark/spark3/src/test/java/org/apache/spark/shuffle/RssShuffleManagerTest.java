@@ -93,7 +93,7 @@ public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
   }
 
   @Test
-  public void testGetTaskAttemptId() {
+  public void testGetTaskAttemptIdWithoutSpeculation() {
     // the expected bits("xy|z") represents the expected Long in bit notation where | is used to
     // separate
     // map index from attempt number, so merely for visualization purposes
@@ -103,95 +103,196 @@ public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
     for (int maxFailures : Arrays.asList(-1, 0, 1)) {
       assertEquals(
           bits("0000|"),
-          RssShuffleManager.getTaskAttemptId(0, 0, maxFailures),
+          RssShuffleManager.getTaskAttemptId(0, 0, maxFailures, false),
           String.valueOf(maxFailures));
       assertEquals(
           bits("0001|"),
-          RssShuffleManager.getTaskAttemptId(1, 0, maxFailures),
+          RssShuffleManager.getTaskAttemptId(1, 0, maxFailures, false),
           String.valueOf(maxFailures));
       assertEquals(
           bits("0010|"),
-          RssShuffleManager.getTaskAttemptId(2, 0, maxFailures),
+          RssShuffleManager.getTaskAttemptId(2, 0, maxFailures, false),
           String.valueOf(maxFailures));
     }
 
     // maxFailures of 2
-    assertEquals(bits("000|0"), RssShuffleManager.getTaskAttemptId(0, 0, 2));
-    assertEquals(bits("000|1"), RssShuffleManager.getTaskAttemptId(0, 1, 2));
-    assertEquals(bits("001|0"), RssShuffleManager.getTaskAttemptId(1, 0, 2));
-    assertEquals(bits("001|1"), RssShuffleManager.getTaskAttemptId(1, 1, 2));
-    assertEquals(bits("010|0"), RssShuffleManager.getTaskAttemptId(2, 0, 2));
-    assertEquals(bits("010|1"), RssShuffleManager.getTaskAttemptId(2, 1, 2));
-    assertEquals(bits("011|0"), RssShuffleManager.getTaskAttemptId(3, 0, 2));
-    assertEquals(bits("011|1"), RssShuffleManager.getTaskAttemptId(3, 1, 2));
+    assertEquals(bits("000|0"), RssShuffleManager.getTaskAttemptId(0, 0, 2, false));
+    assertEquals(bits("000|1"), RssShuffleManager.getTaskAttemptId(0, 1, 2, false));
+    assertEquals(bits("001|0"), RssShuffleManager.getTaskAttemptId(1, 0, 2, false));
+    assertEquals(bits("001|1"), RssShuffleManager.getTaskAttemptId(1, 1, 2, false));
+    assertEquals(bits("010|0"), RssShuffleManager.getTaskAttemptId(2, 0, 2, false));
+    assertEquals(bits("010|1"), RssShuffleManager.getTaskAttemptId(2, 1, 2, false));
+    assertEquals(bits("011|0"), RssShuffleManager.getTaskAttemptId(3, 0, 2, false));
+    assertEquals(bits("011|1"), RssShuffleManager.getTaskAttemptId(3, 1, 2, false));
 
     // maxFailures of 3
-    assertEquals(bits("00|00"), RssShuffleManager.getTaskAttemptId(0, 0, 3));
-    assertEquals(bits("00|01"), RssShuffleManager.getTaskAttemptId(0, 1, 3));
-    assertEquals(bits("00|10"), RssShuffleManager.getTaskAttemptId(0, 2, 3));
-    assertEquals(bits("01|00"), RssShuffleManager.getTaskAttemptId(1, 0, 3));
-    assertEquals(bits("01|01"), RssShuffleManager.getTaskAttemptId(1, 1, 3));
-    assertEquals(bits("01|10"), RssShuffleManager.getTaskAttemptId(1, 2, 3));
-    assertEquals(bits("10|00"), RssShuffleManager.getTaskAttemptId(2, 0, 3));
-    assertEquals(bits("10|01"), RssShuffleManager.getTaskAttemptId(2, 1, 3));
-    assertEquals(bits("10|10"), RssShuffleManager.getTaskAttemptId(2, 2, 3));
-    assertEquals(bits("11|00"), RssShuffleManager.getTaskAttemptId(3, 0, 3));
-    assertEquals(bits("11|01"), RssShuffleManager.getTaskAttemptId(3, 1, 3));
-    assertEquals(bits("11|10"), RssShuffleManager.getTaskAttemptId(3, 2, 3));
+    assertEquals(bits("00|00"), RssShuffleManager.getTaskAttemptId(0, 0, 3, false));
+    assertEquals(bits("00|01"), RssShuffleManager.getTaskAttemptId(0, 1, 3, false));
+    assertEquals(bits("00|10"), RssShuffleManager.getTaskAttemptId(0, 2, 3, false));
+    assertEquals(bits("01|00"), RssShuffleManager.getTaskAttemptId(1, 0, 3, false));
+    assertEquals(bits("01|01"), RssShuffleManager.getTaskAttemptId(1, 1, 3, false));
+    assertEquals(bits("01|10"), RssShuffleManager.getTaskAttemptId(1, 2, 3, false));
+    assertEquals(bits("10|00"), RssShuffleManager.getTaskAttemptId(2, 0, 3, false));
+    assertEquals(bits("10|01"), RssShuffleManager.getTaskAttemptId(2, 1, 3, false));
+    assertEquals(bits("10|10"), RssShuffleManager.getTaskAttemptId(2, 2, 3, false));
+    assertEquals(bits("11|00"), RssShuffleManager.getTaskAttemptId(3, 0, 3, false));
+    assertEquals(bits("11|01"), RssShuffleManager.getTaskAttemptId(3, 1, 3, false));
+    assertEquals(bits("11|10"), RssShuffleManager.getTaskAttemptId(3, 2, 3, false));
 
     // maxFailures of 4
-    assertEquals(bits("00|00"), RssShuffleManager.getTaskAttemptId(0, 0, 4));
-    assertEquals(bits("00|01"), RssShuffleManager.getTaskAttemptId(0, 1, 4));
-    assertEquals(bits("00|10"), RssShuffleManager.getTaskAttemptId(0, 2, 4));
-    assertEquals(bits("00|11"), RssShuffleManager.getTaskAttemptId(0, 3, 4));
-    assertEquals(bits("01|00"), RssShuffleManager.getTaskAttemptId(1, 0, 4));
-    assertEquals(bits("01|01"), RssShuffleManager.getTaskAttemptId(1, 1, 4));
-    assertEquals(bits("01|10"), RssShuffleManager.getTaskAttemptId(1, 2, 4));
-    assertEquals(bits("01|11"), RssShuffleManager.getTaskAttemptId(1, 3, 4));
-    assertEquals(bits("10|00"), RssShuffleManager.getTaskAttemptId(2, 0, 4));
-    assertEquals(bits("10|01"), RssShuffleManager.getTaskAttemptId(2, 1, 4));
-    assertEquals(bits("10|10"), RssShuffleManager.getTaskAttemptId(2, 2, 4));
-    assertEquals(bits("10|11"), RssShuffleManager.getTaskAttemptId(2, 3, 4));
-    assertEquals(bits("11|00"), RssShuffleManager.getTaskAttemptId(3, 0, 4));
-    assertEquals(bits("11|01"), RssShuffleManager.getTaskAttemptId(3, 1, 4));
-    assertEquals(bits("11|10"), RssShuffleManager.getTaskAttemptId(3, 2, 4));
-    assertEquals(bits("11|11"), RssShuffleManager.getTaskAttemptId(3, 3, 4));
+    assertEquals(bits("00|00"), RssShuffleManager.getTaskAttemptId(0, 0, 4, false));
+    assertEquals(bits("00|01"), RssShuffleManager.getTaskAttemptId(0, 1, 4, false));
+    assertEquals(bits("00|10"), RssShuffleManager.getTaskAttemptId(0, 2, 4, false));
+    assertEquals(bits("00|11"), RssShuffleManager.getTaskAttemptId(0, 3, 4, false));
+    assertEquals(bits("01|00"), RssShuffleManager.getTaskAttemptId(1, 0, 4, false));
+    assertEquals(bits("01|01"), RssShuffleManager.getTaskAttemptId(1, 1, 4, false));
+    assertEquals(bits("01|10"), RssShuffleManager.getTaskAttemptId(1, 2, 4, false));
+    assertEquals(bits("01|11"), RssShuffleManager.getTaskAttemptId(1, 3, 4, false));
+    assertEquals(bits("10|00"), RssShuffleManager.getTaskAttemptId(2, 0, 4, false));
+    assertEquals(bits("10|01"), RssShuffleManager.getTaskAttemptId(2, 1, 4, false));
+    assertEquals(bits("10|10"), RssShuffleManager.getTaskAttemptId(2, 2, 4, false));
+    assertEquals(bits("10|11"), RssShuffleManager.getTaskAttemptId(2, 3, 4, false));
+    assertEquals(bits("11|00"), RssShuffleManager.getTaskAttemptId(3, 0, 4, false));
+    assertEquals(bits("11|01"), RssShuffleManager.getTaskAttemptId(3, 1, 4, false));
+    assertEquals(bits("11|10"), RssShuffleManager.getTaskAttemptId(3, 2, 4, false));
+    assertEquals(bits("11|11"), RssShuffleManager.getTaskAttemptId(3, 3, 4, false));
 
     // maxFailures of 5
-    assertEquals(bits("0|000"), RssShuffleManager.getTaskAttemptId(0, 0, 5));
-    assertEquals(bits("1|100"), RssShuffleManager.getTaskAttemptId(1, 4, 5));
+    assertEquals(bits("0|000"), RssShuffleManager.getTaskAttemptId(0, 0, 5, false));
+    assertEquals(bits("1|100"), RssShuffleManager.getTaskAttemptId(1, 4, 5, false));
 
     // test with ints that overflow into signed int and long
-    assertEquals(Integer.MAX_VALUE, RssShuffleManager.getTaskAttemptId(Integer.MAX_VALUE, 0, 1));
+    assertEquals(
+        Integer.MAX_VALUE, RssShuffleManager.getTaskAttemptId(Integer.MAX_VALUE, 0, 1, false));
     assertEquals(
         (long) Integer.MAX_VALUE << 1 | 1,
-        RssShuffleManager.getTaskAttemptId(Integer.MAX_VALUE, 1, 2));
+        RssShuffleManager.getTaskAttemptId(Integer.MAX_VALUE, 1, 2, false));
     assertEquals(
         (long) Integer.MAX_VALUE << 2 | 3,
-        RssShuffleManager.getTaskAttemptId(Integer.MAX_VALUE, 3, 4));
+        RssShuffleManager.getTaskAttemptId(Integer.MAX_VALUE, 3, 4, false));
     assertEquals(
         (long) Integer.MAX_VALUE << 3 | 7,
-        RssShuffleManager.getTaskAttemptId(Integer.MAX_VALUE, 7, 8));
+        RssShuffleManager.getTaskAttemptId(Integer.MAX_VALUE, 7, 8, false));
 
     // test with attemptNo >= maxFailures
-    assertThrowsExactly(RssException.class, () -> RssShuffleManager.getTaskAttemptId(0, 1, -1));
-    assertThrowsExactly(RssException.class, () -> RssShuffleManager.getTaskAttemptId(0, 1, 0));
+    assertThrowsExactly(
+        RssException.class, () -> RssShuffleManager.getTaskAttemptId(0, 1, -1, false));
+    assertThrowsExactly(
+        RssException.class, () -> RssShuffleManager.getTaskAttemptId(0, 1, 0, false));
     for (int maxFailures : Arrays.asList(1, 2, 3, 4, 8, 128)) {
       assertThrowsExactly(
           RssException.class,
-          () -> RssShuffleManager.getTaskAttemptId(0, maxFailures, maxFailures),
+          () -> RssShuffleManager.getTaskAttemptId(0, maxFailures, maxFailures, false),
           String.valueOf(maxFailures));
       assertThrowsExactly(
           RssException.class,
-          () -> RssShuffleManager.getTaskAttemptId(0, maxFailures + 1, maxFailures),
+          () -> RssShuffleManager.getTaskAttemptId(0, maxFailures + 1, maxFailures, false),
           String.valueOf(maxFailures));
       assertThrowsExactly(
           RssException.class,
-          () -> RssShuffleManager.getTaskAttemptId(0, maxFailures + 2, maxFailures),
+          () -> RssShuffleManager.getTaskAttemptId(0, maxFailures + 2, maxFailures, false),
           String.valueOf(maxFailures));
       assertThrowsExactly(
           RssException.class,
-          () -> RssShuffleManager.getTaskAttemptId(0, maxFailures + 128, maxFailures),
+          () -> RssShuffleManager.getTaskAttemptId(0, maxFailures + 128, maxFailures, false),
+          String.valueOf(maxFailures));
+    }
+  }
+
+  @Test
+  public void testGetTaskAttemptIdWithSpeculation() {
+    // with speculation, we expect maxFailures+1 attempts
+
+    // the expected bits("xy|z") represents the expected Long in bit notation where | is used to
+    // separate
+    // map index from attempt number, so merely for visualization purposes
+
+    // maxFailures < 1 not allowed, but we fall back to maxFailures=1 to be safe against that user
+    // input
+    for (int maxFailures : Arrays.asList(-1, 0, 1)) {
+      for (int attemptNo : Arrays.asList(0, 1)) {
+        assertEquals(
+            bits("0000|" + attemptNo),
+            RssShuffleManager.getTaskAttemptId(0, attemptNo, maxFailures, true),
+            "maxFailures=" + maxFailures + ", attemptNo=" + attemptNo);
+        assertEquals(
+            bits("0001|" + attemptNo),
+            RssShuffleManager.getTaskAttemptId(1, attemptNo, maxFailures, true),
+            "maxFailures=" + maxFailures + ", attemptNo=" + attemptNo);
+        assertEquals(
+            bits("0010|" + attemptNo),
+            RssShuffleManager.getTaskAttemptId(2, attemptNo, maxFailures, true),
+            "maxFailures=" + maxFailures + ", attemptNo=" + attemptNo);
+      }
+    }
+
+    // maxFailures of 2
+    assertEquals(bits("00|00"), RssShuffleManager.getTaskAttemptId(0, 0, 2, true));
+    assertEquals(bits("00|01"), RssShuffleManager.getTaskAttemptId(0, 1, 2, true));
+    assertEquals(bits("00|10"), RssShuffleManager.getTaskAttemptId(0, 2, 2, true));
+    assertEquals(bits("01|00"), RssShuffleManager.getTaskAttemptId(1, 0, 2, true));
+    assertEquals(bits("01|01"), RssShuffleManager.getTaskAttemptId(1, 1, 2, true));
+    assertEquals(bits("01|10"), RssShuffleManager.getTaskAttemptId(1, 2, 2, true));
+    assertEquals(bits("10|00"), RssShuffleManager.getTaskAttemptId(2, 0, 2, true));
+    assertEquals(bits("10|01"), RssShuffleManager.getTaskAttemptId(2, 1, 2, true));
+    assertEquals(bits("10|10"), RssShuffleManager.getTaskAttemptId(2, 2, 2, true));
+    assertEquals(bits("11|00"), RssShuffleManager.getTaskAttemptId(3, 0, 2, true));
+    assertEquals(bits("11|01"), RssShuffleManager.getTaskAttemptId(3, 1, 2, true));
+    assertEquals(bits("11|10"), RssShuffleManager.getTaskAttemptId(3, 2, 2, true));
+
+    // maxFailures of 3
+    assertEquals(bits("00|00"), RssShuffleManager.getTaskAttemptId(0, 0, 3, true));
+    assertEquals(bits("00|01"), RssShuffleManager.getTaskAttemptId(0, 1, 3, true));
+    assertEquals(bits("00|10"), RssShuffleManager.getTaskAttemptId(0, 2, 3, true));
+    assertEquals(bits("00|11"), RssShuffleManager.getTaskAttemptId(0, 3, 3, true));
+    assertEquals(bits("01|00"), RssShuffleManager.getTaskAttemptId(1, 0, 3, true));
+    assertEquals(bits("01|01"), RssShuffleManager.getTaskAttemptId(1, 1, 3, true));
+    assertEquals(bits("01|10"), RssShuffleManager.getTaskAttemptId(1, 2, 3, true));
+    assertEquals(bits("01|11"), RssShuffleManager.getTaskAttemptId(1, 3, 3, true));
+    assertEquals(bits("10|00"), RssShuffleManager.getTaskAttemptId(2, 0, 3, true));
+    assertEquals(bits("10|01"), RssShuffleManager.getTaskAttemptId(2, 1, 3, true));
+    assertEquals(bits("10|10"), RssShuffleManager.getTaskAttemptId(2, 2, 3, true));
+    assertEquals(bits("10|11"), RssShuffleManager.getTaskAttemptId(2, 3, 3, true));
+    assertEquals(bits("11|00"), RssShuffleManager.getTaskAttemptId(3, 0, 3, true));
+    assertEquals(bits("11|01"), RssShuffleManager.getTaskAttemptId(3, 1, 3, true));
+    assertEquals(bits("11|10"), RssShuffleManager.getTaskAttemptId(3, 2, 3, true));
+    assertEquals(bits("11|11"), RssShuffleManager.getTaskAttemptId(3, 3, 3, true));
+
+    // maxFailures of 4
+    assertEquals(bits("0|000"), RssShuffleManager.getTaskAttemptId(0, 0, 4, true));
+    assertEquals(bits("1|100"), RssShuffleManager.getTaskAttemptId(1, 4, 4, true));
+
+    // test with ints that overflow into signed int and long
+    assertEquals(
+        (long) Integer.MAX_VALUE << 1,
+        RssShuffleManager.getTaskAttemptId(Integer.MAX_VALUE, 0, 1, true));
+    assertEquals(
+        (long) Integer.MAX_VALUE << 1 | 1,
+        RssShuffleManager.getTaskAttemptId(Integer.MAX_VALUE, 1, 1, true));
+    assertEquals(
+        (long) Integer.MAX_VALUE << 2 | 3,
+        RssShuffleManager.getTaskAttemptId(Integer.MAX_VALUE, 3, 3, true));
+    assertEquals(
+        (long) Integer.MAX_VALUE << 3 | 7,
+        RssShuffleManager.getTaskAttemptId(Integer.MAX_VALUE, 7, 7, true));
+
+    // test with attemptNo > maxFailures (attemptNo == maxFailures allowed for speculation enabled)
+    assertThrowsExactly(
+        RssException.class, () -> RssShuffleManager.getTaskAttemptId(0, 2, -1, true));
+    assertThrowsExactly(
+        RssException.class, () -> RssShuffleManager.getTaskAttemptId(0, 2, 0, true));
+    for (int maxFailures : Arrays.asList(1, 2, 3, 4, 8, 128)) {
+      assertThrowsExactly(
+          RssException.class,
+          () -> RssShuffleManager.getTaskAttemptId(0, maxFailures + 1, maxFailures, true),
+          String.valueOf(maxFailures));
+      assertThrowsExactly(
+          RssException.class,
+          () -> RssShuffleManager.getTaskAttemptId(0, maxFailures + 2, maxFailures, true),
+          String.valueOf(maxFailures));
+      assertThrowsExactly(
+          RssException.class,
+          () -> RssShuffleManager.getTaskAttemptId(0, maxFailures + 128, maxFailures, true),
           String.valueOf(maxFailures));
     }
   }
