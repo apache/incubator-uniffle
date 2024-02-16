@@ -552,16 +552,18 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     // max maxFailures < 1 is not allowed but for safety, we interpret that as maxFailures == 1
     int maxAttemptNo = maxFailures < 1 ? 0 : maxFailures - 1;
 
-    // with speculative execution enabled we could observe maxFailures + 1 attempts
+    // with speculative execution enabled we could observe +1 attempts
     if (speculation) {
       maxAttemptNo++;
     }
 
     if (attemptNo > maxAttemptNo) {
+      // this should never happen, if it does, our assumptions are wrong,
+      // and we risk overflowing the attempt number bits
       throw new RssException(
           "Observing attempt number "
               + attemptNo
-              + " while spark.task.maxFailures is set to "
+              + " while maxFailures is set to "
               + maxFailures
               + (speculation ? " with speculation enabled" : "")
               + ".");
@@ -577,13 +579,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               + (mapIndexBits + attemptBits)
               + " bits which is larger than the allowed "
               + maxTaskAttemptIdBits
-              + " bits ("
-              + "maxFailures["
+              + " bits (maxFailures["
               + maxFailures
-              + "], "
-              + "speculation["
+              + "], speculation["
               + speculation
-              + "]).");
+              + "]). Please consider providing more bits for taskAttemptIds.");
     }
 
     return (long) mapIndex << attemptBits | attemptNo;

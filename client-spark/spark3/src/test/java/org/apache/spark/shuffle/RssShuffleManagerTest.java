@@ -95,11 +95,9 @@ public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
   @Test
   public void testGetTaskAttemptIdWithoutSpeculation() {
     // the expected bits("xy|z") represents the expected Long in bit notation where | is used to
-    // separate
-    // map index from attempt number, so merely for visualization purposes
+    // separate map index from attempt number, so merely for visualization purposes
 
-    // maxFailures < 1 not allowed, but we fall back to maxFailures=1 to be safe against that user
-    // input
+    // maxFailures < 1 not allowed, we fall back to maxFailures=1 to be robust
     for (int maxFailures : Arrays.asList(-1, 0, 1)) {
       assertEquals(
           bits("0000|"),
@@ -201,7 +199,7 @@ public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
       assertEquals(
           "Observing attempt number "
               + (maxFailures + 128)
-              + " while spark.task.maxFailures is set to "
+              + " while maxFailures is set to "
               + maxFailures
               + ".",
           e.getMessage());
@@ -213,7 +211,8 @@ public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
             RssException.class, () -> RssShuffleManager.getTaskAttemptId(256, 0, 3, true, 10));
     assertEquals(
         "Observing mapIndex[256] that would produce a taskAttemptId with 11 bits "
-            + "which is larger than the allowed 10 bits (maxFailures[3], speculation[true]).",
+            + "which is larger than the allowed 10 bits (maxFailures[3], speculation[true]). "
+            + "Please consider providing more bits for taskAttemptIds.",
         e.getMessage());
     // check that a lower mapIndex works as expected
     assertEquals(bits("11111111|00"), RssShuffleManager.getTaskAttemptId(255, 0, 3, true, 10));
@@ -224,11 +223,9 @@ public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
     // with speculation, we expect maxFailures+1 attempts
 
     // the expected bits("xy|z") represents the expected Long in bit notation where | is used to
-    // separate
-    // map index from attempt number, so merely for visualization purposes
+    // separate map index from attempt number, so merely for visualization purposes
 
-    // maxFailures < 1 not allowed, but we fall back to maxFailures=1 to be safe against that user
-    // input
+    // maxFailures < 1 not allowed, we fall back to maxFailures=1 to be robust
     for (int maxFailures : Arrays.asList(-1, 0, 1)) {
       for (int attemptNo : Arrays.asList(0, 1)) {
         assertEquals(
@@ -318,7 +315,7 @@ public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
       assertEquals(
           "Observing attempt number "
               + (maxFailures + 128)
-              + " while spark.task.maxFailures is set to "
+              + " while maxFailures is set to "
               + maxFailures
               + " with speculation enabled.",
           e.getMessage());
@@ -330,7 +327,8 @@ public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
             RssException.class, () -> RssShuffleManager.getTaskAttemptId(256, 0, 4, false, 10));
     assertEquals(
         "Observing mapIndex[256] that would produce a taskAttemptId with 11 bits "
-            + "which is larger than the allowed 10 bits (maxFailures[4], speculation[false]).",
+            + "which is larger than the allowed 10 bits (maxFailures[4], speculation[false]). "
+            + "Please consider providing more bits for taskAttemptIds.",
         e.getMessage());
     // check that a lower mapIndex works as expected
     assertEquals(bits("11111111|00"), RssShuffleManager.getTaskAttemptId(255, 0, 4, false, 10));
