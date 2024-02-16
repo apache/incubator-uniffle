@@ -78,6 +78,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -510,7 +511,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
     long taskAttemptId =
-        getTaskAttemptId(context.partitionId(), context.attemptNumber(), maxFailures, speculation);
+        getTaskAttemptId(
+            context.partitionId(),
+            context.attemptNumber(),
+            maxFailures,
+            speculation,
+            Constants.TASK_ATTEMPT_ID_MAX_LENGTH);
     return new RssShuffleWriter<>(
         rssHandle.getAppId(),
         shuffleId,
@@ -541,13 +547,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    */
   @VisibleForTesting
   protected static long getTaskAttemptId(
-      int mapIndex, int attemptNo, int maxFailures, boolean speculationEnabled) {
+      int mapIndex, int attemptNo, int maxFailures, boolean speculation, int maxTaskAttemptIdBits) {
     // attempt number is zero based: 0, 1, …, maxFailures-1
     // max maxFailures < 1 is not allowed but for safety, we interpret that as maxFailures == 1
     int maxAttemptNo = maxFailures < 1 ? 0 : maxFailures - 1;
 
     // with speculative execution enabled we could observe maxFailures + 1 attempts
-    if (speculationEnabled) {
+    if (speculation) {
       maxAttemptNo++;
     }
 
@@ -556,10 +562,30 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           "Observing attempt number "
               + attemptNo
               + " while spark.task.maxFailures is set to "
-              + maxFailures);
+              + maxFailures
+              + (speculation ? " with speculation enabled" : "")
+              + ".");
     }
 
     int attemptBits = 32 - Integer.numberOfLeadingZeros(maxAttemptNo);
+    int mapIndexBits = 32 - Integer.numberOfLeadingZeros(mapIndex);
+    if (mapIndexBits + attemptBits > maxTaskAttemptIdBits) {
+      throw new RssException(
+          "Observing mapIndex["
+              + mapIndex
+              + "] that would produce a taskAttemptId with "
+              + (mapIndexBits + attemptBits)
+              + " bits which is larger than the allowed "
+              + maxTaskAttemptIdBits
+              + " bits ("
+              + "maxFailures["
+              + maxFailures
+              + "], "
+              + "speculation["
+              + speculation
+              + "]).");
+    }
+
     return (long) mapIndex << attemptBits | attemptNo;
   }
 
