@@ -28,8 +28,8 @@
     <name>Apache Uniffle Dashboard</name>
     
     <properties>
-        <nodeDownloadRoot>https://nodejs.org/dist/</nodeDownloadRoot>
-        <npmDownloadRoot>https://registry.npmjs.org/npm/-/</npmDownloadRoot>
+        <nodeRepositoryUrl>https://nodejs.org/dist/</nodeRepositoryUrl>
+        <npmRepositoryUrl>https://registry.npmjs.org/npm/-/</npmRepositoryUrl>
     </properties>
 
     <dependencies>
