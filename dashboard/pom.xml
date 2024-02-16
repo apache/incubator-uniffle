@@ -55,8 +55,8 @@
                         <configuration>
                             <nodeVersion>v14.21.3</nodeVersion>
                             <npmVersion>6.14.18</npmVersion>
-                            <nodeDownloadRoot>${nodeDownloadRoot}</nodeDownloadRoot>
-                            <npmDownloadRoot>${npmDownloadRoot}</npmDownloadRoot>
+                            <nodeDownloadRoot>${nodeRepositoryUrl}</nodeDownloadRoot>
+                            <npmDownloadRoot>${npmRepositoryUrl}</npmDownloadRoot>
                         </configuration>
                     </execution>
                     <!-- Execute the script to remove node_modules and package-lock.json -->
