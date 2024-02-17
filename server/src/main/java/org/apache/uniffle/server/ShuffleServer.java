@@ -54,7 +54,8 @@ import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
-import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.buffer.AbstractShuffleBufferManager;
+import org.apache.uniffle.server.buffer.ShuffleBufferManagerFactory;
 import org.apache.uniffle.server.netty.StreamServer;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
@@ -86,7 +87,7 @@ public class ShuffleServer {
   private ShuffleTaskManager shuffleTaskManager;
   private ServerInterface server;
   private ShuffleFlushManager shuffleFlushManager;
-  private ShuffleBufferManager shuffleBufferManager;
+  private AbstractShuffleBufferManager shuffleBufferManager;
   private StorageManager storageManager;
   private HealthCheck healthCheck;
   private Set<String> tags = Sets.newHashSet();
@@ -279,7 +280,9 @@ public class ShuffleServer {
 
     registerHeartBeat = new RegisterHeartBeat(this);
     shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, this, storageManager);
-    shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
+    shuffleBufferManager =
+        ShuffleBufferManagerFactory.createShuffleBufferManager(
+            shuffleServerConf, shuffleFlushManager);
     shuffleTaskManager =
         new ShuffleTaskManager(
             shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
@@ -479,7 +482,7 @@ public class ShuffleServer {
     return shuffleFlushManager.getEventNumInFlush();
   }
 
-  public ShuffleBufferManager getShuffleBufferManager() {
+  public AbstractShuffleBufferManager getShuffleBufferManager() {
     return shuffleBufferManager;
   }
 

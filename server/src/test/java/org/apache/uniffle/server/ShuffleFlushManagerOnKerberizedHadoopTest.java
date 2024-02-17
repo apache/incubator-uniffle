@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.KerberizedHadoopBase;
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.buffer.AbstractShuffleBufferManager;
 import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.storage.HadoopStorageManager;
 import org.apache.uniffle.server.storage.StorageManager;
@@ -84,7 +84,7 @@ public class ShuffleFlushManagerOnKerberizedHadoopTest extends KerberizedHadoopB
     KerberizedHadoopBase.init();
 
     ShuffleTaskManager shuffleTaskManager = mock(ShuffleTaskManager.class);
-    ShuffleBufferManager shuffleBufferManager = mock(ShuffleBufferManager.class);
+    AbstractShuffleBufferManager shuffleBufferManager = mock(AbstractShuffleBufferManager.class);
 
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(shuffleTaskManager);
     when(mockShuffleServer.getShuffleBufferManager()).thenReturn(shuffleBufferManager);

@@ -53,7 +53,7 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.buffer.AbstractShuffleBufferManager;
 import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.event.ShufflePurgeEvent;
 import org.apache.uniffle.server.storage.HadoopStorageManager;
@@ -93,7 +93,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   @BeforeAll
   public static void beforeAll() throws Exception {
     ShuffleTaskManager shuffleTaskManager = mock(ShuffleTaskManager.class);
-    ShuffleBufferManager shuffleBufferManager = mock(ShuffleBufferManager.class);
+    AbstractShuffleBufferManager shuffleBufferManager = mock(AbstractShuffleBufferManager.class);
 
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(shuffleTaskManager);
     when(mockShuffleServer.getShuffleBufferManager()).thenReturn(shuffleBufferManager);

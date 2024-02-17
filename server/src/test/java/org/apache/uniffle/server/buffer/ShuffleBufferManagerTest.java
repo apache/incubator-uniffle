@@ -64,7 +64,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class ShuffleBufferManagerTest extends BufferTestBase {
-  private ShuffleBufferManager shuffleBufferManager;
+  private AbstractShuffleBufferManager shuffleBufferManager;
   private ShuffleFlushManager mockShuffleFlushManager;
   private ShuffleServer mockShuffleServer;
   private ShuffleTaskManager mockShuffleTaskManager;
@@ -84,7 +84,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     mockShuffleServer = mock(ShuffleServer.class);
     mockShuffleTaskManager = mock(ShuffleTaskManager.class);
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
-    shuffleBufferManager = new ShuffleBufferManager(conf, mockShuffleFlushManager);
+    shuffleBufferManager =
+        ShuffleBufferManagerFactory.createShuffleBufferManager(conf, mockShuffleFlushManager);
   }
 
   @Test
@@ -97,11 +98,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     sc = shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
     assertEquals(StatusCode.SUCCESS, sc);
 
-    Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
+    Map<String, Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>>> bufferPool =
         shuffleBufferManager.getBufferPool();
 
     assertNotNull(bufferPool.get(appId).get(shuffleId).get(0));
-    ShuffleBuffer buffer = bufferPool.get(appId).get(shuffleId).get(0);
+    AbstractShuffleBuffer buffer = bufferPool.get(appId).get(shuffleId).get(0);
     assertEquals(buffer, bufferPool.get(appId).get(shuffleId).get(1));
     assertNotNull(bufferPool.get(appId).get(shuffleId).get(2));
     assertEquals(
@@ -159,7 +160,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.cacheShuffleData(appId, 2, false, spd3);
     shuffleBufferManager.cacheShuffleData(appId, 3, false, spd4);
     // validate buffer, no flush happened
-    Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
+    Map<String, Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>>> bufferPool =
         shuffleBufferManager.getBufferPool();
     assertEquals(100, bufferPool.get(appId).get(1).get(0).getSize());
     assertEquals(200, bufferPool.get(appId).get(2).get(0).getSize());
@@ -274,9 +275,9 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     sc = shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 16));
     assertEquals(StatusCode.SUCCESS, sc);
 
-    Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
+    Map<String, Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>>> bufferPool =
         shuffleBufferManager.getBufferPool();
-    ShuffleBuffer buffer = bufferPool.get(appId).get(shuffleId).get(0);
+    AbstractShuffleBuffer buffer = bufferPool.get(appId).get(shuffleId).get(0);
     assertEquals(48, buffer.getSize());
     assertEquals(48, shuffleBufferManager.getUsedMemory());
 
@@ -308,9 +309,9 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 200));
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(1, 200));
     shuffleBufferManager.cacheShuffleData(appId, 2, false, createData(0, 32));
-    ShuffleBuffer buffer0 = bufferPool.get(appId).get(shuffleId).get(0);
-    ShuffleBuffer buffer1 = bufferPool.get(appId).get(shuffleId).get(1);
-    ShuffleBuffer buffer2 = bufferPool.get(appId).get(2).get(0);
+    AbstractShuffleBuffer buffer0 = bufferPool.get(appId).get(shuffleId).get(0);
+    AbstractShuffleBuffer buffer1 = bufferPool.get(appId).get(shuffleId).get(1);
+    AbstractShuffleBuffer buffer2 = bufferPool.get(appId).get(2).get(0);
     assertEquals(0, buffer0.getSize());
     assertEquals(0, buffer1.getSize());
     assertEquals(64, buffer2.getSize());
@@ -386,7 +387,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(conf);
     ShuffleFlushManager shuffleFlushManager =
         new ShuffleFlushManager(conf, mockShuffleServer, storageManager);
-    shuffleBufferManager = new ShuffleBufferManager(conf, shuffleFlushManager);
+    shuffleBufferManager =
+        ShuffleBufferManagerFactory.createShuffleBufferManager(conf, shuffleFlushManager);
 
     when(mockShuffleServer.getShuffleFlushManager()).thenReturn(shuffleFlushManager);
     when(mockShuffleServer.getShuffleBufferManager()).thenReturn(shuffleBufferManager);
@@ -456,7 +458,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
         StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
     ShuffleFlushManager shuffleFlushManager =
         new ShuffleFlushManager(shuffleConf, mockShuffleServer, storageManager);
-    shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager);
+    shuffleBufferManager =
+        ShuffleBufferManagerFactory.createShuffleBufferManager(shuffleConf, shuffleFlushManager);
     ShuffleTaskManager shuffleTaskManager =
         new ShuffleTaskManager(
             shuffleConf, shuffleFlushManager, shuffleBufferManager, storageManager);
@@ -516,7 +519,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
         StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
     ShuffleFlushManager shuffleFlushManager =
         new ShuffleFlushManager(shuffleConf, mockShuffleServer, storageManager);
-    shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager);
+    shuffleBufferManager =
+        ShuffleBufferManagerFactory.createShuffleBufferManager(shuffleConf, shuffleFlushManager);
 
     when(mockShuffleServer.getShuffleFlushManager()).thenReturn(shuffleFlushManager);
     when(mockShuffleServer.getShuffleBufferManager()).thenReturn(shuffleBufferManager);
@@ -552,7 +556,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(conf);
     ShuffleFlushManager shuffleFlushManager =
         new ShuffleFlushManager(conf, mockShuffleServer, storageManager);
-    shuffleBufferManager = new ShuffleBufferManager(serverConf, shuffleFlushManager);
+    shuffleBufferManager =
+        ShuffleBufferManagerFactory.createShuffleBufferManager(serverConf, shuffleFlushManager);
 
     String appId = "shuffleFlushTest";
     int shuffleId = 0;
@@ -621,7 +626,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   @Test
   public void bufferManagerInitTest() {
     ShuffleServerConf serverConf = new ShuffleServerConf();
-    shuffleBufferManager = new ShuffleBufferManager(serverConf, mockShuffleFlushManager);
+    shuffleBufferManager =
+        ShuffleBufferManagerFactory.createShuffleBufferManager(serverConf, mockShuffleFlushManager);
     double ratio = ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO.defaultValue();
     double readRatio = ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO.defaultValue();
     assertEquals(
@@ -633,7 +639,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     readRatio = 0.1;
     serverConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO, ratio);
     serverConf.set(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO, readRatio);
-    shuffleBufferManager = new ShuffleBufferManager(serverConf, mockShuffleFlushManager);
+    shuffleBufferManager =
+        ShuffleBufferManagerFactory.createShuffleBufferManager(serverConf, mockShuffleFlushManager);
     assertEquals(
         (long) (Runtime.getRuntime().maxMemory() * ratio), shuffleBufferManager.getCapacity());
     assertEquals(
@@ -669,7 +676,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
         StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
     ShuffleFlushManager shuffleFlushManager =
         new ShuffleFlushManager(shuffleConf, mockShuffleServer, storageManager);
-    shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager);
+    shuffleBufferManager =
+        ShuffleBufferManagerFactory.createShuffleBufferManager(shuffleConf, shuffleFlushManager);
 
     when(mockShuffleServer.getShuffleFlushManager()).thenReturn(shuffleFlushManager);
     when(mockShuffleServer.getShuffleBufferManager()).thenReturn(shuffleBufferManager);

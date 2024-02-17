@@ -56,7 +56,7 @@ import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.server.MockedShuffleServer;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.server.buffer.ShuffleBuffer;
+import org.apache.uniffle.server.buffer.AbstractShuffleBuffer;
 import org.apache.uniffle.storage.factory.ShuffleHandlerFactory;
 import org.apache.uniffle.storage.handler.ClientReadHandlerMetric;
 import org.apache.uniffle.storage.handler.impl.AbstractClientReadHandler;
@@ -325,7 +325,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
       if (retry > 5) {
         fail(String.format("Timeout for flush data, isNettyMode=%s", isNettyMode));
       }
-      ShuffleBuffer shuffleBuffer =
+      AbstractShuffleBuffer shuffleBuffer =
           shuffleServers.get(1).getShuffleBufferManager().getShuffleBuffer(appId, shuffleId, 0);
       if (shuffleBuffer.getBlocks().size() == 0 && shuffleBuffer.getInFlushBlockMap().size() == 0) {
         break;

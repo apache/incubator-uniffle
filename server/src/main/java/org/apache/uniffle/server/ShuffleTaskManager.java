@@ -67,9 +67,9 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.server.buffer.AbstractShuffleBuffer;
+import org.apache.uniffle.server.buffer.AbstractShuffleBufferManager;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
-import org.apache.uniffle.server.buffer.ShuffleBuffer;
-import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.event.AppUnregisterPurgeEvent;
 import org.apache.uniffle.server.event.PurgeEvent;
@@ -107,7 +107,7 @@ public class ShuffleTaskManager {
   // but when get blockId, performance will degrade a little which can be optimized by client
   // configuration
   private Map<String, Map<Integer, Roaring64NavigableMap[]>> partitionsToBlockIds;
-  private final ShuffleBufferManager shuffleBufferManager;
+  private final AbstractShuffleBufferManager shuffleBufferManager;
   private Map<String, ShuffleTaskInfo> shuffleTaskInfos = JavaUtils.newConcurrentMap();
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = JavaUtils.newConcurrentMap();
   private Thread clearResourceThread;
@@ -118,7 +118,7 @@ public class ShuffleTaskManager {
   public ShuffleTaskManager(
       ShuffleServerConf conf,
       ShuffleFlushManager shuffleFlushManager,
-      ShuffleBufferManager shuffleBufferManager,
+      AbstractShuffleBufferManager shuffleBufferManager,
       StorageManager storageManager) {
     this.conf = conf;
     this.shuffleFlushManager = shuffleFlushManager;
@@ -537,7 +537,7 @@ public class ShuffleTaskManager {
       throws IOException {
     refreshAppId(appId);
     for (int partitionId : partitions) {
-      Map.Entry<Range<Integer>, ShuffleBuffer> entry =
+      Map.Entry<Range<Integer>, AbstractShuffleBuffer> entry =
           shuffleBufferManager.getShuffleBufferEntry(appId, shuffleId, partitionId);
       if (entry == null) {
         LOG.error(

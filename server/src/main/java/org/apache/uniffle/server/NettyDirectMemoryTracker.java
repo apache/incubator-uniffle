@@ -27,13 +27,13 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
-import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.buffer.AbstractShuffleBufferManager;
 
 public class NettyDirectMemoryTracker {
 
   private static final Logger LOG = LoggerFactory.getLogger(NettyDirectMemoryTracker.class);
 
-  private ShuffleBufferManager shuffleBufferManager;
+  private AbstractShuffleBufferManager shuffleBufferManager;
   private final long reportInitialDelay;
   private final long reportInterval;
   private boolean nettyServerEnabled;
@@ -42,7 +42,7 @@ public class NettyDirectMemoryTracker {
           ThreadUtils.getThreadFactory("NettyDirectMemoryTracker"));
 
   public NettyDirectMemoryTracker(
-      ShuffleServerConf conf, ShuffleBufferManager shuffleBufferManager) {
+      ShuffleServerConf conf, AbstractShuffleBufferManager shuffleBufferManager) {
     this.nettyServerEnabled = conf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
     this.shuffleBufferManager = shuffleBufferManager;
     this.reportInitialDelay =
@@ -76,7 +76,6 @@ public class NettyDirectMemoryTracker {
             ShuffleServerMetrics.gaugePinnedDirectMemorySize.set(pinnedDirectMemory);
             if (nettyServerEnabled) {
               shuffleBufferManager.setUsedMemory(pinnedDirectMemory);
-              ShuffleServerMetrics.gaugeUsedBufferSize.set(pinnedDirectMemory);
             }
           } catch (Throwable t) {
             LOG.error("Failed to report direct memory.", t);

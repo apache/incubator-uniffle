@@ -41,46 +41,28 @@ import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleFlushManager;
 
-public class ShuffleBuffer {
+public abstract class AbstractShuffleBuffer {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ShuffleBuffer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractShuffleBuffer.class);
 
-  private final long capacity;
-  private long size;
-  // for Netty mode
-  private long estimatedSize;
+  protected final long capacity;
+  protected long size;
+  protected long occupiedMemorySize;
   // blocks will be added to inFlushBlockMap as <eventId, blocks> pair
   // it will be removed after flush to storage
   // the strategy ensure that shuffle is in memory or storage
-  private List<ShufflePartitionedBlock> blocks;
-  private Map<Long, List<ShufflePartitionedBlock>> inFlushBlockMap;
+  protected List<ShufflePartitionedBlock> blocks;
+  protected Map<Long, List<ShufflePartitionedBlock>> inFlushBlockMap;
 
-  public ShuffleBuffer(long capacity) {
+  public AbstractShuffleBuffer(long capacity) {
     this.capacity = capacity;
     this.size = 0;
-    this.estimatedSize = 0;
+    this.occupiedMemorySize = 0;
     this.blocks = new LinkedList<>();
     this.inFlushBlockMap = JavaUtils.newConcurrentMap();
   }
 
-  public long append(ShufflePartitionedData data) {
-    return append(data, 0);
-  }
-
-  public long append(ShufflePartitionedData data, int avgEstimatedSize) {
-    long mSize = 0;
-
-    synchronized (this) {
-      for (ShufflePartitionedBlock block : data.getBlockList()) {
-        blocks.add(block);
-        mSize += block.getSize();
-      }
-      size += mSize;
-      estimatedSize += avgEstimatedSize;
-    }
-
-    return mSize;
-  }
+  public abstract long append(ShufflePartitionedData data, int avgEstimatedSize);
 
   public synchronized ShuffleDataFlushEvent toFlushEvent(
       String appId,
@@ -112,7 +94,7 @@ public class ShuffleBuffer {
             startPartition,
             endPartition,
             size,
-            estimatedSize,
+            occupiedMemorySize,
             spBlocks,
             isValid,
             this);
@@ -124,7 +106,7 @@ public class ShuffleBuffer {
     inFlushBlockMap.put(eventId, inFlushedQueueBlocks);
     blocks.clear();
     size = 0;
-    estimatedSize = 0;
+    occupiedMemorySize = 0;
     return event;
   }
 
@@ -152,8 +134,12 @@ public class ShuffleBuffer {
     return size;
   }
 
-  public long getEstimatedSize() {
-    return estimatedSize;
+  public long getOccupiedMemorySize() {
+    return occupiedMemorySize;
+  }
+
+  public void setOccupiedMemorySize(long occupiedMemorySize) {
+    this.occupiedMemorySize = occupiedMemorySize;
   }
 
   @VisibleForTesting

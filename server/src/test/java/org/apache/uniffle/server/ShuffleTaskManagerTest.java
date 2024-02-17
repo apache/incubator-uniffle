@@ -57,9 +57,9 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.server.buffer.AbstractShuffleBuffer;
+import org.apache.uniffle.server.buffer.AbstractShuffleBufferManager;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
-import org.apache.uniffle.server.buffer.ShuffleBuffer;
-import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.storage.LocalStorageManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.HadoopTestBase;
@@ -242,11 +242,11 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
         RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
         StringUtils.EMPTY);
 
-    Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
+    Map<String, Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>>> bufferPool =
         shuffleServer.getShuffleBufferManager().getBufferPool();
 
     assertNotNull(bufferPool.get(appId).get(shuffleId).get(0));
-    ShuffleBuffer buffer = bufferPool.get(appId).get(shuffleId).get(0);
+    AbstractShuffleBuffer buffer = bufferPool.get(appId).get(shuffleId).get(0);
     assertEquals(buffer, bufferPool.get(appId).get(shuffleId).get(1));
     assertNotNull(bufferPool.get(appId).get(shuffleId).get(2));
     assertEquals(
@@ -453,8 +453,8 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
 
     assertEquals(1, shuffleTaskManager.getAppIds().size());
 
-    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
-    RangeMap<Integer, ShuffleBuffer> rangeMap =
+    AbstractShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
+    RangeMap<Integer, AbstractShuffleBuffer> rangeMap =
         shuffleBufferManager.getBufferPool().get(appId).get(0);
     assertFalse(rangeMap.asMapOfRanges().isEmpty());
     shuffleTaskManager.commitShuffle(appId, 0);
@@ -810,7 +810,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
     shuffleServer = new ShuffleServer(conf);
-    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
+    AbstractShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     StorageManager storageManager = shuffleServer.getStorageManager();
     ShuffleTaskManager shuffleTaskManager =
@@ -885,7 +885,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
     shuffleServer = new ShuffleServer(conf);
-    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
+    AbstractShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     StorageManager storageManager = shuffleServer.getStorageManager();
     ShuffleTaskManager shuffleTaskManager =
