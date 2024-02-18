@@ -3,7 +3,7 @@ name: rss
 
 services:
   coordinator:
-    image: rss-server:latest
+    image: rss-server-example:latest
     deploy:
       mode: replicated
       replicas: 2
@@ -15,7 +15,7 @@ services:
       - 19999
 
   shuffle-server:
-    image: rss-server:latest
+    image: rss-server-example:latest
     environment:
       SERVICE_NAME: server
       SERVER_RPC_PORT: 19999
@@ -30,7 +30,7 @@ services:
       - 19999
 
   spark-master:
-    image: rss-spark:latest
+    image: rss-spark-example:latest
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master -h rss-spark-master-1
     environment:
       MASTER: spark://rss-spark-master-1:7077
@@ -46,7 +46,7 @@ services:
       - 8080:8080
 
   spark-worker:
-    image: rss-spark:latest
+    image: rss-spark-example:latest
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://rss-spark-master-1:7077
     environment:
       SPARK_WORKER_CORES: 1
