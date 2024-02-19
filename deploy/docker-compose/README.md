@@ -167,11 +167,6 @@ docker compose -f deploy/docker-compose/docker-compose.yml down
  ✔ Network rss_default             Removed                                                     0.4s
 ```
 
-docker exec -it rss-spark-master-1 /opt/spark/bin/spark-shell \
---master spark://rss-spark-master-1:7077 \
---conf spark.serializer=org.apache.spark.serializer.KryoSerializer \
---conf spark.shuffle.manager=org.apache.spark.shuffle.RssShuffleManager \
---conf spark.rss.coordinator.quorum=rss-coordinator-1:19999,rss-coordinator-2:19999 \
---conf spark.rss.storage.type=MEMORY_LOCALFILE \
---conf spark.task.maxFailures=4 \
---conf spark.speculation=true
+## Dependence
+
+This example needs [docker](https://www.docker.com/get-started/) to be installed.
