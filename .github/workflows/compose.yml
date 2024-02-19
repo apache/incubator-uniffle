@@ -52,7 +52,6 @@ jobs:
         java-version: ${{ inputs.java-version }}
         distribution: ${{ inputs.jdk-distro }}
     - name: Cache local Maven repository
-      if: ${{ inputs.cache-key != '' }}
       uses: actions/cache@v3
       with:
         path: ~/.m2/repository
@@ -60,10 +59,21 @@ jobs:
         restore-keys: |
           mvn-${{ inputs.java-version }}-compose-
     - name: Build the docker images
+      id: up
       run: ./deploy/docker-compose/build.sh
       shell: bash
     - name: Start the docker cluster
       run: docker compose -f deploy/docker-compose/docker-compose.yml up --detach
+      shell: bash
+    - name: Inspect docker cluster
+      continue-on-error: true
+      run: |
+        docker container ls
+        docker network ls
+        docker network inspect rss_default
+        docker exec rss-spark-master-1 ls -lah /
+        sleep 10
+        docker compose -f deploy/docker-compose/docker-compose.yml logs
       shell: bash
     - name: Scale the docker cluster
       run: docker compose -f deploy/docker-compose/docker-compose.yml scale shuffle-server=4 spark-worker=5
@@ -73,6 +83,7 @@ jobs:
         cat << EOL > example.scala
 
         import org.apache.spark.TaskContext
+        import org.apache.spark.sql.SaveMode
 
         // fails iteration (at the end) or delays iteration (each element)
         case class FaultyIterator[T](it: Iterator[T], fail: Boolean, sleep: Option[Int]) extends Iterator[T] {
@@ -92,7 +103,7 @@ jobs:
           }
         }
 
-        val result = spark.range(0, 10000000, 1, 100) \
+        spark.range(0, 10000000, 1, 100) \
           .mapPartitions { it =>
             val ctx = TaskContext.get();
             // we fail task two 3 times
@@ -104,8 +115,9 @@ jobs:
           .as[Long, Long] \
           .mapGroups{(id, it) => (id, it.length)} \
           .sort("_1") \
-          .collect
-        assert(result.sameElements(Array((0,1000000), (1,1000000), (2,1000000), (3,1000000), (4,1000000), (5,1000000), (6,1000000), (7,1000000), (8,1000000), (9,1000000))))
+          .write \
+          .mode(SaveMode.Overwrite) \
+          .csv("/shared/result.csv")
         EOL
         docker cp example.scala rss-spark-master-1:/
       shell: bash
@@ -120,6 +132,23 @@ jobs:
           --conf spark.task.maxFailures=4 \
           --conf spark.speculation=true"
       shell: bash
+    - name: Assert result
+      run: |
+        docker exec rss-spark-master-1 bash -c "cat /shared/result.csv/*.csv" > ./result.csv
+        cat << EOL | diff - result.csv
+        0,1000000
+        1,1000000
+        2,1000000
+        3,1000000
+        4,1000000
+        5,1000000
+        6,1000000
+        7,1000000
+        8,1000000
+        9,1000000
+        EOL
+      shell: bash
     - name: Stop the docker cluster
+      if: always() && steps.id.outcome == 'success'
       run: docker compose -f deploy/docker-compose/docker-compose.yml down
       shell: bash

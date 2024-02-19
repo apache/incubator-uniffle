@@ -55,6 +55,8 @@ services:
       SPARK_MASTER_WEBUI_PORT: 8080
       PYSPARK_PYTHON: python${PYTHON_VERSION:-3.8}
       PYSPARK_DRIVER_PYTHON: python${PYTHON_VERSION:-3.8}
+    volumes:
+      - shared:/shared:rw
     expose:
       - 7077
     ports:
@@ -71,9 +73,13 @@ services:
       SPARK_WORKER_PORT: 8080
       SPARK_WORKER_WEBUI_PORT: 8881
       SPARK_PUBLIC_DNS: localhost
+    volumes:
+      - shared:/shared:rw
     deploy:
       mode: replicated
       replicas: 2
     links:
       - spark-master
 
+volumes:
+  shared:
