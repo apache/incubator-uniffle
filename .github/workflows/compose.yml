@@ -63,17 +63,7 @@ jobs:
       run: ./deploy/docker-compose/build.sh
       shell: bash
     - name: Start the docker cluster
-      run: docker compose -f deploy/docker-compose/docker-compose.yml up --detach
-      shell: bash
-    - name: Inspect docker cluster
-      continue-on-error: true
-      run: |
-        docker container ls
-        docker network ls
-        docker network inspect rss_default
-        docker exec rss-spark-master-1 ls -lah /
-        sleep 10
-        docker compose -f deploy/docker-compose/docker-compose.yml logs
+      run: docker compose -f deploy/docker-compose/docker-compose.yml up --detach && sleep 10
       shell: bash
     - name: Scale the docker cluster
       run: docker compose -f deploy/docker-compose/docker-compose.yml scale shuffle-server=4 spark-worker=5
@@ -135,7 +125,7 @@ jobs:
     - name: Assert result
       run: |
         docker exec rss-spark-master-1 bash -c "cat /shared/result.csv/*.csv" > ./result.csv
-        cat << EOL | diff - result.csv
+        cat << EOL | diff -y - result.csv
         0,1000000
         1,1000000
         2,1000000
@@ -149,6 +139,6 @@ jobs:
         EOL
       shell: bash
     - name: Stop the docker cluster
-      if: always() && steps.id.outcome == 'success'
+      if: always() && steps.up.outcome == 'success'
       run: docker compose -f deploy/docker-compose/docker-compose.yml down
       shell: bash
