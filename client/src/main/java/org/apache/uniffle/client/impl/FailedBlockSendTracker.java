@@ -32,43 +32,43 @@ import org.apache.uniffle.common.rpc.StatusCode;
 
 public class FailedBlockSendTracker {
 
-  private Map<Long, List<TrackBlockStatus>> trackBlockStatusMap;
+  private Map<Long, List<TrackingBlockStatus>> trackingBlockStatusMap;
 
   public FailedBlockSendTracker() {
-    this.trackBlockStatusMap = Maps.newConcurrentMap();
+    this.trackingBlockStatusMap = Maps.newConcurrentMap();
   }
 
   public void add(
       ShuffleBlockInfo shuffleBlockInfo,
       ShuffleServerInfo shuffleServerInfo,
       StatusCode statusCode) {
-    trackBlockStatusMap
+    trackingBlockStatusMap
         .computeIfAbsent(shuffleBlockInfo.getBlockId(), s -> Lists.newLinkedList())
-        .add(new TrackBlockStatus(shuffleBlockInfo, shuffleServerInfo, statusCode));
+        .add(new TrackingBlockStatus(shuffleBlockInfo, shuffleServerInfo, statusCode));
   }
 
   public void merge(FailedBlockSendTracker failedBlockSendTracker) {
-    this.trackBlockStatusMap.putAll(failedBlockSendTracker.trackBlockStatusMap);
+    this.trackingBlockStatusMap.putAll(failedBlockSendTracker.trackingBlockStatusMap);
   }
 
   public void remove(long blockId) {
-    trackBlockStatusMap.remove(blockId);
+    trackingBlockStatusMap.remove(blockId);
   }
 
   public void clear() {
-    trackBlockStatusMap.clear();
+    trackingBlockStatusMap.clear();
   }
 
   public Set<Long> getFailedBlockIds() {
-    return trackBlockStatusMap.keySet();
+    return trackingBlockStatusMap.keySet();
   }
 
-  public List<TrackBlockStatus> getFailedBlockStatus(Long blockId) {
-    return trackBlockStatusMap.get(blockId);
+  public List<TrackingBlockStatus> getFailedBlockStatus(Long blockId) {
+    return trackingBlockStatusMap.get(blockId);
   }
 
   public Set<ShuffleServerInfo> getFaultyShuffleServers() {
-    return trackBlockStatusMap.values().stream()
+    return trackingBlockStatusMap.values().stream()
         .flatMap(Collection::stream)
         .map(s -> s.getShuffleServerInfo())
         .collect(Collectors.toSet());

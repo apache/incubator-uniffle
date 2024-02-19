@@ -66,7 +66,7 @@ import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
-import org.apache.uniffle.client.impl.TrackBlockStatus;
+import org.apache.uniffle.client.impl.TrackingBlockStatus;
 import org.apache.uniffle.client.request.RssReassignFaultyShuffleServerRequest;
 import org.apache.uniffle.client.request.RssReassignServersRequest;
 import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
@@ -408,7 +408,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private void checkIfBlocksFailed() {
     Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
     if (taskFailRetry && !failedBlockIds.isEmpty()) {
-      Set<TrackBlockStatus> shouldResendBlockSet = shouldResendBlockStatusSet(failedBlockIds);
+      Set<TrackingBlockStatus> shouldResendBlockSet = shouldResendBlockStatusSet(failedBlockIds);
       try {
         reSendFailedBlockIds(shouldResendBlockSet);
       } catch (Exception e) {
@@ -430,22 +430,23 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
   }
 
-  private Set<TrackBlockStatus> shouldResendBlockStatusSet(Set<Long> failedBlockIds) {
+  private Set<TrackingBlockStatus> shouldResendBlockStatusSet(Set<Long> failedBlockIds) {
     FailedBlockSendTracker failedBlockTracker = shuffleManager.getBlockIdsFailedSendTracker(taskId);
-    Set<TrackBlockStatus> resendBlockStatusSet = Sets.newHashSet();
+    Set<TrackingBlockStatus> resendBlockStatusSet = Sets.newHashSet();
     for (Long failedBlockId : failedBlockIds) {
       failedBlockTracker.getFailedBlockStatus(failedBlockId).stream()
           // todo: more status need reassign
-          .filter(trackBlockStatus -> trackBlockStatus.getStatusCode() == StatusCode.NO_BUFFER)
-          .forEach(trackBlockStatus -> resendBlockStatusSet.add(trackBlockStatus));
+          .filter(
+              trackingBlockStatus -> trackingBlockStatus.getStatusCode() == StatusCode.NO_BUFFER)
+          .forEach(trackingBlockStatus -> resendBlockStatusSet.add(trackingBlockStatus));
     }
     return resendBlockStatusSet;
   }
 
-  private void reSendFailedBlockIds(Set<TrackBlockStatus> failedBlockStatusSet) {
+  private void reSendFailedBlockIds(Set<TrackingBlockStatus> failedBlockStatusSet) {
     List<ShuffleBlockInfo> reAssignSeverBlockInfoList = Lists.newArrayList();
     List<ShuffleBlockInfo> failedBlockInfoList = Lists.newArrayList();
-    Map<ShuffleServerInfo, List<TrackBlockStatus>> faultyServerToPartitions =
+    Map<ShuffleServerInfo, List<TrackingBlockStatus>> faultyServerToPartitions =
         failedBlockStatusSet.stream().collect(Collectors.groupingBy(d -> d.getShuffleServerInfo()));
     Map<String, ShuffleServerInfo> faultyServers = shuffleManager.getReassignedFaultyServers();
     faultyServerToPartitions.entrySet().stream()
@@ -464,8 +465,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
               ShuffleServerInfo finalDynamicShuffleServer = dynamicShuffleServer;
               failedBlockStatusSet.forEach(
-                  trackBlockStatus -> {
-                    ShuffleBlockInfo failedBlockInfo = trackBlockStatus.getShuffleBlockInfo();
+                  trackingBlockStatus -> {
+                    ShuffleBlockInfo failedBlockInfo = trackingBlockStatus.getShuffleBlockInfo();
                     failedBlockInfoList.add(failedBlockInfo);
                     reAssignSeverBlockInfoList.add(
                         new ShuffleBlockInfo(

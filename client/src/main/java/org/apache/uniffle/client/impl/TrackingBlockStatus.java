@@ -21,12 +21,12 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.StatusCode;
 
-public class TrackBlockStatus {
+public class TrackingBlockStatus {
   private ShuffleBlockInfo shuffleBlockInfo;
   private ShuffleServerInfo shuffleServerInfo;
   private StatusCode statusCode;
 
-  public TrackBlockStatus(
+  public TrackingBlockStatus(
       ShuffleBlockInfo shuffleBlockInfo,
       ShuffleServerInfo shuffleServerInfo,
       StatusCode statusCode) {
