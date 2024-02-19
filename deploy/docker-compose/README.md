@@ -91,16 +91,17 @@ docker exec -it rss-spark-master-1 /opt/spark/bin/spark-shell \
 You can view the Spark master UI at http://localhost:8080/
 
 The following example runs a job where
-- task two fail several times
-- task four that observes the execution of a speculative attempt
+- task two fails several times
+- task four observes the execution of a speculative attempt
 
 ```Scala
 import org.apache.spark.TaskContext
 
 // fails iteration (at the end) or delays iteration (each element)
-case class FaultyIterator[T](it: Iterator[T], fail: Boolean, sleep: Option[Int]) extends Iterator[T] {
+// failing tasks negates iterator values, shuffle data of failing task must not leak into next stage
+case class FaultyIterator(it: Iterator[java.lang.Long], fail: Boolean, sleep: Option[Int]) extends Iterator[java.lang.Long] {
   override def hasNext: Boolean = it.hasNext || fail
-  override def next(): T = {
+  override def next(): java.lang.Long = {
     // delay iteration if requested
     if (sleep.isDefined) {
       val start = System.nanoTime()
@@ -111,19 +112,37 @@ case class FaultyIterator[T](it: Iterator[T], fail: Boolean, sleep: Option[Int])
     if (fail && !it.hasNext) throw new RuntimeException()
 
     // just iterate
-    it.next()
+    if (fail) {
+      -it.next()
+    } else {
+      it.next()
+    }
   }
 }
 
 // we fail task two 3 times and delay task four so we see a speculative execution
-val result = spark.range(0, 10000000, 1, 100).mapPartitions { it => val ctx = TaskContext.get(); FaultyIterator(it, (ctx.partitionId == 2 && ctx.attemptNumber < 3), Some(ctx.partitionId == 4).filter(v => v).map(_ => 250000)) }.groupBy(($"value" / 1000000).cast("int")).as[Long, Long].mapGroups{(id, it) => (id, it.length)}.sort("_1").collect
+val result = (
+  spark.range(0, 10000000, 1, 100)
+       .mapPartitions { it => {
+         val ctx = TaskContext.get()
+         FaultyIterator(
+           it,
+           ctx.partitionId == 2 && ctx.attemptNumber < 3,
+           Some(ctx.partitionId == 4).filter(v => v).map(_ => 250000)
+         )
+       }}
+       .groupBy(($"value" / 1000000).cast("int"))
+       .as[Long, Long]
+       .mapGroups{(id, it) => (id, it.length)}
+       .sort("_1")
+       .collect
+  )
 ```
 
-compare
-
-result.sameElements(Array((0,1000000), (1,1000000), (2,1000000), (3,1000000), (4,1000000), (5,1000000), (6,1000000), (7,1000000), (8,1000000), (9,1000000)))
-
-
+We can compare the result with the expected outcome:
+```Scala
+assert(result.sameElements(Array((0,1000000), (1,1000000), (2,1000000), (3,1000000), (4,1000000), (5,1000000), (6,1000000), (7,1000000), (8,1000000), (9,1000000))))
+```
 
 ## Stop the docker cluster
 
@@ -148,3 +167,11 @@ docker compose -f deploy/docker-compose/docker-compose.yml down
  ✔ Network rss_default             Removed                                                                                                                                                             0.4s
 ```
 
+docker exec -it rss-spark-master-1 /opt/spark/bin/spark-shell \
+--master spark://rss-spark-master-1:7077 \
+--conf spark.serializer=org.apache.spark.serializer.KryoSerializer \
+--conf spark.shuffle.manager=org.apache.spark.shuffle.RssShuffleManager \
+--conf spark.rss.coordinator.quorum=rss-coordinator-1:19999,rss-coordinator-2:19999 \
+--conf spark.rss.storage.type=MEMORY_LOCALFILE \
+--conf spark.task.maxFailures=4 \
+--conf spark.speculation=true

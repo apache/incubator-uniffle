@@ -76,9 +76,10 @@ jobs:
         import org.apache.spark.sql.SaveMode
 
         // fails iteration (at the end) or delays iteration (each element)
-        case class FaultyIterator[T](it: Iterator[T], fail: Boolean, sleep: Option[Int]) extends Iterator[T] {
+        // failing tasks negates iterator values, shuffle data of failing task must not leak into next stage
+        case class FaultyIterator(it: Iterator[java.lang.Long], fail: Boolean, sleep: Option[Int]) extends Iterator[java.lang.Long] {
           override def hasNext: Boolean = it.hasNext || fail
-          override def next(): T = {
+          override def next(): java.lang.Long = {
             // delay iteration if requested
             if (sleep.isDefined) {
               val start = System.nanoTime()
@@ -89,17 +90,24 @@ jobs:
             if (fail && !it.hasNext) throw new RuntimeException()
 
             // just iterate
-            it.next()
+            if (fail) {
+              -it.next()
+            } else {
+              it.next()
+            }
           }
         }
 
         spark.range(0, 10000000, 1, 100) \
           .mapPartitions { it =>
             val ctx = TaskContext.get();
-            // we fail task two 3 times
-            FaultyIterator(it, (ctx.partitionId == 2 && ctx.attemptNumber < 3),
-            // and delay attempt 4 so we see a speculative execution
-            Some(ctx.partitionId == 2 && ctx.attemptNumber >= 3).filter(v => v).map(_ => 250000))
+            FaultyIterator(
+              it,
+              // we fail task two 3 times
+              (ctx.partitionId == 2 && ctx.attemptNumber < 3),
+              // and delay attempt 4 so we see a speculative execution
+              Some(ctx.partitionId == 2 && ctx.attemptNumber >= 3).filter(v => v).map(_ => 250000)
+            )
           } \
           .groupBy(($"value" / 1000000).cast("int")) \
           .as[Long, Long] \
