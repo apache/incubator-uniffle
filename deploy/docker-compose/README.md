@@ -40,14 +40,14 @@ docker compose -f deploy/docker-compose/docker-compose.yml up
 ```
 ```
 [+] Running 8/0
- ✔ Container rss-coordinator-1     Created                                                                                                                                                             0.0s
- ✔ Container rss-coordinator-2     Created                                                                                                                                                             0.0s
- ✔ Container rss-shuffle-server-1  Created                                                                                                                                                             0.0s
- ✔ Container rss-shuffle-server-2  Created                                                                                                                                                             0.0s
- ✔ Container rss-shuffle-server-3  Created                                                                                                                                                             0.0s
- ✔ Container rss-spark-master-1    Created                                                                                                                                                             0.0s
- ✔ Container rss-spark-worker-1    Created                                                                                                                                                             0.0s
- ✔ Container rss-spark-worker-2    Created                                                                                                                                                             0.0s
+ ✔ Container rss-coordinator-1     Created                                                     0.0s
+ ✔ Container rss-coordinator-2     Created                                                     0.0s
+ ✔ Container rss-shuffle-server-1  Created                                                     0.0s
+ ✔ Container rss-shuffle-server-2  Created                                                     0.0s
+ ✔ Container rss-shuffle-server-3  Created                                                     0.0s
+ ✔ Container rss-spark-master-1    Created                                                     0.0s
+ ✔ Container rss-spark-worker-1    Created                                                     0.0s
+ ✔ Container rss-spark-worker-2    Created                                                     0.0s
 ```
 
 ## Scale the docker cluster
@@ -61,17 +61,17 @@ docker compose -f deploy/docker-compose/docker-compose.yml scale shuffle-server=
 ```
 ```
 [+] Running 11/11
- ✔ Container rss-coordinator-1     Running                                                                                                                                                             0.0s
- ✔ Container rss-coordinator-2     Running                                                                                                                                                             0.0s
- ✔ Container rss-shuffle-server-1  Running                                                                                                                                                             0.0s
- ✔ Container rss-shuffle-server-2  Running                                                                                                                                                             0.0s
- ✔ Container rss-shuffle-server-3  Running                                                                                                                                                             0.0s
- ✔ Container rss-shuffle-server-4  Started                                                                                                                                                             0.0s
- ✔ Container rss-spark-master-1    Running                                                                                                                                                             0.0s
- ✔ Container rss-spark-worker-1    Running                                                                                                                                                             0.0s
- ✔ Container rss-spark-worker-2    Running                                                                                                                                                             0.0s
- ✔ Container rss-spark-worker-3    Started                                                                                                                                                             0.0s
- ✔ Container rss-spark-worker-4    Started                                                                                                                                                             0.0s
+ ✔ Container rss-coordinator-1     Running                                                     0.0s
+ ✔ Container rss-coordinator-2     Running                                                     0.0s
+ ✔ Container rss-shuffle-server-1  Running                                                     0.0s
+ ✔ Container rss-shuffle-server-2  Running                                                     0.0s
+ ✔ Container rss-shuffle-server-3  Running                                                     0.0s
+ ✔ Container rss-shuffle-server-4  Started                                                     0.0s
+ ✔ Container rss-spark-master-1    Running                                                     0.0s
+ ✔ Container rss-spark-worker-1    Running                                                     0.0s
+ ✔ Container rss-spark-worker-2    Running                                                     0.0s
+ ✔ Container rss-spark-worker-3    Started                                                     0.0s
+ ✔ Container rss-spark-worker-4    Started                                                     0.0s
 ```
 
 ## Use the Spark cluster
@@ -153,18 +153,18 @@ docker compose -f deploy/docker-compose/docker-compose.yml down
 ```
 ```
 [+] Running 12/12
- ✔ Container rss-shuffle-server-1  Removed                                                                                                                                                            10.5s
- ✔ Container rss-shuffle-server-2  Removed                                                                                                                                                            10.7s
- ✔ Container rss-shuffle-server-3  Removed                                                                                                                                                            10.5s
- ✔ Container rss-shuffle-server-4  Removed                                                                                                                                                            10.6s
- ✔ Container rss-spark-worker-1    Removed                                                                                                                                                             0.8s
- ✔ Container rss-spark-worker-2    Removed                                                                                                                                                             1.0s
- ✔ Container rss-spark-worker-3    Removed                                                                                                                                                             0.9s
- ✔ Container rss-spark-worker-4    Removed                                                                                                                                                             1.1s
- ✔ Container rss-spark-master-1    Removed                                                                                                                                                             1.6s
- ✔ Container rss-coordinator-1     Removed                                                                                                                                                            10.4s
- ✔ Container rss-coordinator-2     Removed                                                                                                                                                            10.5s
- ✔ Network rss_default             Removed                                                                                                                                                             0.4s
+ ✔ Container rss-shuffle-server-1  Removed                                                    10.5s
+ ✔ Container rss-shuffle-server-2  Removed                                                    10.7s
+ ✔ Container rss-shuffle-server-3  Removed                                                    10.5s
+ ✔ Container rss-shuffle-server-4  Removed                                                    10.6s
+ ✔ Container rss-spark-worker-1    Removed                                                     0.8s
+ ✔ Container rss-spark-worker-2    Removed                                                     1.0s
+ ✔ Container rss-spark-worker-3    Removed                                                     0.9s
+ ✔ Container rss-spark-worker-4    Removed                                                     1.1s
+ ✔ Container rss-spark-master-1    Removed                                                     1.6s
+ ✔ Container rss-coordinator-1     Removed                                                    10.4s
+ ✔ Container rss-coordinator-2     Removed                                                    10.5s
+ ✔ Network rss_default             Removed                                                     0.4s
 ```
 
 docker exec -it rss-spark-master-1 /opt/spark/bin/spark-shell \
