@@ -105,7 +105,6 @@ jobs:
       go-version: '1.17'
 
   compose:
-    needs: [integration]
     uses: ./.github/workflows/compose.yml
 
   event_file:
