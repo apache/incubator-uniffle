@@ -516,7 +516,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             context.attemptNumber(),
             maxFailures,
             speculation,
-            Constants.TASK_ATTEMPT_ID_MAX_LENGTH);
+            blockIdLayout.taskAttemptIdBits);
     return new RssShuffleWriter<>(
         rssHandle.getAppId(),
         shuffleId,
