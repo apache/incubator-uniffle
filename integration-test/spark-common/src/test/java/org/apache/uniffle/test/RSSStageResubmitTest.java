@@ -35,9 +35,7 @@ import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-public class RSSStageResubmitTest extends SparkIntegrationTestBase {
-
-  private static int maxTaskFailures = 3;
+public class RSSStageResubmitTest extends SparkTaskFailureIntegrationTestBase {
 
   @BeforeAll
   public static void setupServers() throws Exception {
@@ -74,17 +72,10 @@ public class RSSStageResubmitTest extends SparkIntegrationTestBase {
   }
 
   @Override
-  protected SparkConf createSparkConf() {
-    return new SparkConf()
-        .setAppName(this.getClass().getSimpleName())
-        .setMaster(String.format("local[4,%d]", maxTaskFailures));
-  }
-
-  @Override
   public void updateSparkConfCustomer(SparkConf sparkConf) {
+    super.updateSparkConfCustomer(sparkConf);
     sparkConf.set(
         RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_RESUBMIT_STAGE, "true");
-    sparkConf.set("spark.task.maxFailures", String.valueOf(maxTaskFailures));
   }
 
   @Test
