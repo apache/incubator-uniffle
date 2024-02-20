@@ -17,8 +17,7 @@
 
 package org.apache.uniffle.common.util;
 
-import java.util.Map;
-
+import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 
 /**
@@ -29,7 +28,14 @@ import org.apache.uniffle.common.config.RssConf;
  * Values of partitionId, taskAttemptId and AtomicInteger are always positive.
  */
 public class BlockIdLayout {
-  public static BlockIdLayout DEFAULT = BlockIdLayoutConfig.apply(BlockIdLayoutConfig.DEFAULT);
+
+  public static final int DEFAULT_SEQUENCE_NO_BITS = 18;
+  public static final int DEFAULT_PARTITION_ID_BITS = 24;
+  public static final int DEFAULT_TASK_ATTEMPT_ID_BITS = 21;
+
+  public static final BlockIdLayout DEFAULT =
+      BlockIdLayout.from(
+          DEFAULT_SEQUENCE_NO_BITS, DEFAULT_PARTITION_ID_BITS, DEFAULT_TASK_ATTEMPT_ID_BITS);
 
   public final int sequenceNoBits;
   public final int partitionIdBits;
@@ -166,12 +172,11 @@ public class BlockIdLayout {
         taskAttemptId);
   }
 
-  public static BlockIdLayout from(RssConf config) {
-    return BlockIdLayoutConfig.apply(config);
-  }
-
-  public static BlockIdLayout from(Map<String, String> config) {
-    return BlockIdLayoutConfig.apply(config);
+  public static BlockIdLayout from(RssConf rssConf) {
+    int sequenceBits = rssConf.get(RssClientConf.BLOCKID_SEQUENCE_NO_BITS);
+    int partitionBits = rssConf.get(RssClientConf.BLOCKID_PARTITION_ID_BITS);
+    int attemptBits = rssConf.get(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS);
+    return BlockIdLayout.from(sequenceBits, partitionBits, attemptBits);
   }
 
   public static BlockIdLayout from(int sequenceNoBits, int partitionIdBits, int taskAttemptIdBits) {
