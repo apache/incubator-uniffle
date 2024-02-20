@@ -27,9 +27,9 @@ public class BlockIdLayoutTest {
   public void testFromLengths() {
     BlockIdLayout layout = BlockIdLayout.from(20, 21, 22);
 
-    assertEquals(20, layout.sequenceNoLength);
-    assertEquals(21, layout.partitionIdLength);
-    assertEquals(22, layout.taskAttemptIdLength);
+    assertEquals(20, layout.sequenceNoBits);
+    assertEquals(21, layout.partitionIdBits);
+    assertEquals(22, layout.taskAttemptIdBits);
 
     assertEquals(43, layout.sequenceNoOffset);
     assertEquals(22, layout.partitionIdOffset);
@@ -61,19 +61,19 @@ public class BlockIdLayoutTest {
         assertThrows(IllegalArgumentException.class, () -> BlockIdLayout.from(32, 16, 16));
     assertEquals(
         "Don't support given lengths, individual lengths must be less that 32: "
-            + "given sequenceNoLength=32, partitionIdLength=16, taskAttemptIdLength=16",
+            + "given sequenceNoBits=32, partitionIdBits=16, taskAttemptIdBits=16",
         e3.getMessage());
     final Throwable e4 =
         assertThrows(IllegalArgumentException.class, () -> BlockIdLayout.from(16, 32, 16));
     assertEquals(
         "Don't support given lengths, individual lengths must be less that 32: "
-            + "given sequenceNoLength=16, partitionIdLength=32, taskAttemptIdLength=16",
+            + "given sequenceNoBits=16, partitionIdBits=32, taskAttemptIdBits=16",
         e4.getMessage());
     final Throwable e5 =
         assertThrows(IllegalArgumentException.class, () -> BlockIdLayout.from(16, 16, 32));
     assertEquals(
         "Don't support given lengths, individual lengths must be less that 32: "
-            + "given sequenceNoLength=16, partitionIdLength=16, taskAttemptIdLength=32",
+            + "given sequenceNoBits=16, partitionIdBits=16, taskAttemptIdBits=32",
         e5.getMessage());
 
     final Throwable e6 =
@@ -115,9 +115,7 @@ public class BlockIdLayoutTest {
       assertEquals(0L, layout.getBlockId(0, 0, 0), layout.toString());
 
       // just a random test
-      if (layout.sequenceNoLength > 7
-          && layout.partitionIdLength > 6
-          && layout.taskAttemptIdLength > 7) {
+      if (layout.sequenceNoBits > 7 && layout.partitionIdBits > 6 && layout.taskAttemptIdBits > 7) {
         long blockId = layout.getBlockId(123, 45, 67);
         assertEquals(
             123L << layout.sequenceNoOffset
@@ -142,7 +140,7 @@ public class BlockIdLayoutTest {
               IllegalArgumentException.class,
               () -> layout.getBlockId(layout.maxSequenceNo + 1, 0, 0));
       assertEquals(
-          "Don't support sequence["
+          "Don't support sequenceNo["
               + (layout.maxSequenceNo + 1)
               + "], "
               + "the max value should be "

@@ -71,11 +71,11 @@ public class RssClientConf {
                   + "63 bits to store these fields. Each field can at most have 31 bits "
                   + "while all fields together can at most occupy 63 bits. To configure "
                   + "the lengths of these fields, use "
-                  + BlockIdLayoutConfig.PARTITION_ID_LENGTH
+                  + BlockIdLayoutConfig.PARTITION_ID_BITS
                   + " for the partition id, "
-                  + BlockIdLayoutConfig.TASK_ATTEMPT_ID_LENGTH
+                  + BlockIdLayoutConfig.TASK_ATTEMPT_ID_BITS
                   + " for the task attempt id, and "
-                  + BlockIdLayoutConfig.SEQUENCE_ID_LENGTH
+                  + BlockIdLayoutConfig.SEQUENCE_NO_BITS
                   + " for the sequence number.");
 
   public static final ConfigOption<Integer> MAX_CONCURRENCY_PER_PARTITION_TO_WRITE =

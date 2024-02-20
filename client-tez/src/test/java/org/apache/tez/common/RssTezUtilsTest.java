@@ -98,11 +98,11 @@ public class RssTezUtilsTest {
     TezTaskID tId = TezTaskID.getInstance(vId, 389);
     TezTaskAttemptID tezTaskAttemptId = TezTaskAttemptID.getInstance(tId, 2);
     long taskAttemptId = RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId);
-    long mask = (1L << layout.partitionIdLength) - 1;
+    long mask = (1L << layout.partitionIdBits) - 1;
     for (int partitionId = 0; partitionId <= 3000; partitionId++) {
       for (int seqNo = 0; seqNo <= 10; seqNo++) {
         long blockId = RssTezUtils.getBlockId(partitionId, taskAttemptId, seqNo);
-        int newPartitionId = Math.toIntExact((blockId >> layout.taskAttemptIdLength) & mask);
+        int newPartitionId = Math.toIntExact((blockId >> layout.taskAttemptIdBits) & mask);
         assertEquals(partitionId, newPartitionId);
       }
     }

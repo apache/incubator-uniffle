@@ -30,23 +30,23 @@ import org.apache.uniffle.common.config.RssConf;
 /** Class to create {@link BlockIdLayout} from any kinds of config. */
 public class BlockIdLayoutConfig {
   /** The keys are configured in the config of BLOCKID_LAYOUT. */
-  public static final String SEQUENCE_ID_LENGTH = "sequenceIdLength";
+  public static final String SEQUENCE_NO_BITS = "sequenceNoBits";
 
-  public static final String PARTITION_ID_LENGTH = "partitionIdLength";
-  public static final String TASK_ATTEMPT_ID_LENGTH = "taskAttemptIdLength";
+  public static final String PARTITION_ID_BITS = "partitionIdBits";
+  public static final String TASK_ATTEMPT_ID_BITS = "taskAttemptIdBits";
 
   /** The default configuration. */
   public static Map<String, String> DEFAULT;
 
   static {
     DEFAULT = Maps.newHashMap();
-    DEFAULT.put(SEQUENCE_ID_LENGTH, "18");
-    DEFAULT.put(PARTITION_ID_LENGTH, "24");
-    DEFAULT.put(TASK_ATTEMPT_ID_LENGTH, "21");
+    DEFAULT.put(SEQUENCE_NO_BITS, "18");
+    DEFAULT.put(PARTITION_ID_BITS, "24");
+    DEFAULT.put(TASK_ATTEMPT_ID_BITS, "21");
   }
 
   public static boolean validate(Map<String, String> config) {
-    return Stream.of(SEQUENCE_ID_LENGTH, PARTITION_ID_LENGTH, TASK_ATTEMPT_ID_LENGTH)
+    return Stream.of(SEQUENCE_NO_BITS, PARTITION_ID_BITS, TASK_ATTEMPT_ID_BITS)
         .allMatch(key -> config.containsKey(key) && config.get(key).matches("^[0-9]+$"));
   }
 
@@ -75,7 +75,7 @@ public class BlockIdLayoutConfig {
 
   public static BlockIdLayout apply(Map<String, String> config) {
     List<Integer> fieldLengths =
-        Stream.of(SEQUENCE_ID_LENGTH, PARTITION_ID_LENGTH, TASK_ATTEMPT_ID_LENGTH)
+        Stream.of(SEQUENCE_NO_BITS, PARTITION_ID_BITS, TASK_ATTEMPT_ID_BITS)
             .map(key -> parseFieldLength(key, config))
             .collect(Collectors.toList());
     return BlockIdLayout.from(fieldLengths.get(0), fieldLengths.get(1), fieldLengths.get(2));

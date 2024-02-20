@@ -147,9 +147,9 @@ message GetShuffleResultRequest {
 }
 
 message BlockIdLayout {
-  int32 partitionIdLength = 1;
-  int32 taskAttemptIdLength = 2;
-  int32 sequenceIdLength = 3;
+  int32 sequenceNoBits = 1;
+  int32 partitionIdBits = 2;
+  int32 taskAttemptIdBits = 3;
 }
 
 message GetShuffleResultResponse {

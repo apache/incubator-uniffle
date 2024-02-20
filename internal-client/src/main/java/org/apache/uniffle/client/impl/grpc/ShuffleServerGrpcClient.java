@@ -726,9 +726,9 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setPartitionId(request.getPartitionId())
             .setBlockIdLayout(
                 RssProtos.BlockIdLayout.newBuilder()
-                    .setSequenceIdLength(request.getBlockIdLayout().sequenceNoLength)
-                    .setPartitionIdLength(request.getBlockIdLayout().partitionIdLength)
-                    .setTaskAttemptIdLength(request.getBlockIdLayout().taskAttemptIdLength)
+                    .setSequenceNoBits(request.getBlockIdLayout().sequenceNoBits)
+                    .setPartitionIdBits(request.getBlockIdLayout().partitionIdBits)
+                    .setTaskAttemptIdBits(request.getBlockIdLayout().taskAttemptIdBits)
                     .build())
             .build();
     GetShuffleResultResponse rpcResponse = getBlockingStub().getShuffleResult(rpcRequest);
@@ -774,9 +774,9 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .addAllPartitions(request.getPartitions())
             .setBlockIdLayout(
                 RssProtos.BlockIdLayout.newBuilder()
-                    .setSequenceIdLength(request.getBlockIdLayout().sequenceNoLength)
-                    .setPartitionIdLength(request.getBlockIdLayout().partitionIdLength)
-                    .setTaskAttemptIdLength(request.getBlockIdLayout().taskAttemptIdLength)
+                    .setSequenceNoBits(request.getBlockIdLayout().sequenceNoBits)
+                    .setPartitionIdBits(request.getBlockIdLayout().partitionIdBits)
+                    .setTaskAttemptIdBits(request.getBlockIdLayout().taskAttemptIdBits)
                     .build())
             .build();
     GetShuffleResultForMultiPartResponse rpcResponse =

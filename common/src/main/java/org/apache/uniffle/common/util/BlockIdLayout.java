@@ -31,9 +31,9 @@ import org.apache.uniffle.common.config.RssConf;
 public class BlockIdLayout {
   public static BlockIdLayout DEFAULT = BlockIdLayoutConfig.apply(BlockIdLayoutConfig.DEFAULT);
 
-  public final int sequenceNoLength;
-  public final int partitionIdLength;
-  public final int taskAttemptIdLength;
+  public final int sequenceNoBits;
+  public final int partitionIdBits;
+  public final int taskAttemptIdBits;
 
   public final int sequenceNoOffset;
   public final int partitionIdOffset;
@@ -47,59 +47,55 @@ public class BlockIdLayout {
   public final int maxPartitionId;
   public final int maxTaskAttemptId;
 
-  private BlockIdLayout(int sequenceNoLength, int partitionIdLength, int taskAttemptIdLength) {
+  private BlockIdLayout(int sequenceNoBits, int partitionIdBits, int taskAttemptIdBits) {
     // individual lengths must be lager than 0
-    if (sequenceNoLength <= 0 || partitionIdLength <= 0 || taskAttemptIdLength <= 0) {
+    if (sequenceNoBits <= 0 || partitionIdBits <= 0 || taskAttemptIdBits <= 0) {
       throw new IllegalArgumentException(
           "Don't support given lengths, individual lengths must be larger than 0: given "
-              + "sequenceNoLength="
-              + sequenceNoLength
-              + ", "
-              + "partitionIdLength="
-              + partitionIdLength
-              + ", "
-              + "taskAttemptIdLength="
-              + taskAttemptIdLength);
+              + "sequenceNoBits="
+              + sequenceNoBits
+              + ", partitionIdBits="
+              + partitionIdBits
+              + ", taskAttemptIdBits="
+              + taskAttemptIdBits);
     }
     // individual lengths must be less than 32
-    if (sequenceNoLength >= 32 || partitionIdLength >= 32 || taskAttemptIdLength >= 32) {
+    if (sequenceNoBits >= 32 || partitionIdBits >= 32 || taskAttemptIdBits >= 32) {
       throw new IllegalArgumentException(
           "Don't support given lengths, individual lengths must be less that 32: given "
-              + "sequenceNoLength="
-              + sequenceNoLength
-              + ", "
-              + "partitionIdLength="
-              + partitionIdLength
-              + ", "
-              + "taskAttemptIdLength="
-              + taskAttemptIdLength);
+              + "sequenceNoBits="
+              + sequenceNoBits
+              + ", partitionIdBits="
+              + partitionIdBits
+              + ", taskAttemptIdBits="
+              + taskAttemptIdBits);
     }
     // sum of individual lengths must 63, otherwise we waste bits and risk overflow
-    if (sequenceNoLength + partitionIdLength + taskAttemptIdLength != 63) {
+    if (sequenceNoBits + partitionIdBits + taskAttemptIdBits != 63) {
       throw new IllegalArgumentException(
           "Don't support given lengths, sum must be exactly 63: "
-              + sequenceNoLength
+              + sequenceNoBits
               + " + "
-              + partitionIdLength
+              + partitionIdBits
               + " + "
-              + taskAttemptIdLength
+              + taskAttemptIdBits
               + " = "
-              + (sequenceNoLength + partitionIdLength + taskAttemptIdLength));
+              + (sequenceNoBits + partitionIdBits + taskAttemptIdBits));
     }
 
-    this.sequenceNoLength = sequenceNoLength;
-    this.partitionIdLength = partitionIdLength;
-    this.taskAttemptIdLength = taskAttemptIdLength;
+    this.sequenceNoBits = sequenceNoBits;
+    this.partitionIdBits = partitionIdBits;
+    this.taskAttemptIdBits = taskAttemptIdBits;
 
     // fields are right-aligned
-    this.sequenceNoOffset = partitionIdLength + taskAttemptIdLength;
-    this.partitionIdOffset = taskAttemptIdLength;
+    this.sequenceNoOffset = partitionIdBits + taskAttemptIdBits;
+    this.partitionIdOffset = taskAttemptIdBits;
     this.taskAttemptIdOffset = 0;
 
     // compute max ids
-    this.maxSequenceNo = (1 << sequenceNoLength) - 1;
-    this.maxPartitionId = (1 << partitionIdLength) - 1;
-    this.maxTaskAttemptId = (1 << taskAttemptIdLength) - 1;
+    this.maxSequenceNo = (1 << sequenceNoBits) - 1;
+    this.maxPartitionId = (1 << partitionIdBits) - 1;
+    this.maxTaskAttemptId = (1 << taskAttemptIdBits) - 1;
 
     // compute masks to simplify bit logic in BlockId methods
     this.sequenceNoMask = (long) maxSequenceNo << sequenceNoOffset;
@@ -111,18 +107,18 @@ public class BlockIdLayout {
   public String toString() {
     return "blockIdLayout["
         + "seq: "
-        + sequenceNoLength
+        + sequenceNoBits
         + " bits, part: "
-        + partitionIdLength
+        + partitionIdBits
         + " bits, task: "
-        + taskAttemptIdLength
+        + taskAttemptIdBits
         + " bits]";
   }
 
   public long getBlockId(int sequenceNo, int partitionId, long taskAttemptId) {
     if (sequenceNo < 0 || sequenceNo > maxSequenceNo) {
       throw new IllegalArgumentException(
-          "Don't support sequence[" + sequenceNo + "], the max value should be " + maxSequenceNo);
+          "Don't support sequenceNo[" + sequenceNo + "], the max value should be " + maxSequenceNo);
     }
     if (partitionId < 0 || partitionId > maxPartitionId) {
       throw new IllegalArgumentException(
@@ -178,8 +174,7 @@ public class BlockIdLayout {
     return BlockIdLayoutConfig.apply(config);
   }
 
-  public static BlockIdLayout from(
-      int sequenceNoLength, int partitionIdLength, int taskAttemptIdLength) {
-    return new BlockIdLayout(sequenceNoLength, partitionIdLength, taskAttemptIdLength);
+  public static BlockIdLayout from(int sequenceNoBits, int partitionIdBits, int taskAttemptIdBits) {
+    return new BlockIdLayout(sequenceNoBits, partitionIdBits, taskAttemptIdBits);
   }
 }

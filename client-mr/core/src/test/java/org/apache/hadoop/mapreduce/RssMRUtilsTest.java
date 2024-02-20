@@ -86,11 +86,11 @@ public class RssMRUtilsTest {
     TaskID taskId = new TaskID(jobID, TaskType.MAP, 233);
     TaskAttemptID taskAttemptID = new TaskAttemptID(taskId, 1);
     long taskAttemptId = RssMRUtils.convertTaskAttemptIdToLong(taskAttemptID, 1);
-    long mask = (1L << layout.partitionIdLength) - 1;
+    long mask = (1L << layout.partitionIdBits) - 1;
     for (int partitionId = 0; partitionId <= 3000; partitionId++) {
       for (int seqNo = 0; seqNo <= 10; seqNo++) {
         long blockId = RssMRUtils.getBlockId(partitionId, taskAttemptId, seqNo);
-        int newPartitionId = Math.toIntExact((blockId >> layout.taskAttemptIdLength) & mask);
+        int newPartitionId = Math.toIntExact((blockId >> layout.taskAttemptIdBits) & mask);
         assertEquals(partitionId, newPartitionId);
       }
     }

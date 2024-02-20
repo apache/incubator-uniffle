@@ -531,9 +531,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int partitionId = request.getPartitionId();
     BlockIdLayout blockIdLayout =
         BlockIdLayout.from(
-            request.getBlockIdLayout().getSequenceIdLength(),
-            request.getBlockIdLayout().getPartitionIdLength(),
-            request.getBlockIdLayout().getTaskAttemptIdLength());
+            request.getBlockIdLayout().getSequenceNoBits(),
+            request.getBlockIdLayout().getPartitionIdBits(),
+            request.getBlockIdLayout().getTaskAttemptIdBits());
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetShuffleResultResponse reply;
@@ -579,9 +579,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     List<Integer> partitionsList = request.getPartitionsList();
     BlockIdLayout blockIdLayout =
         BlockIdLayout.from(
-            request.getBlockIdLayout().getSequenceIdLength(),
-            request.getBlockIdLayout().getPartitionIdLength(),
-            request.getBlockIdLayout().getTaskAttemptIdLength());
+            request.getBlockIdLayout().getSequenceNoBits(),
+            request.getBlockIdLayout().getPartitionIdBits(),
+            request.getBlockIdLayout().getTaskAttemptIdBits());
 
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";

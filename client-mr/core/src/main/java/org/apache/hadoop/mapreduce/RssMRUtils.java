@@ -47,7 +47,7 @@ public class RssMRUtils {
   private static final int MAX_ATTEMPT_LENGTH = 6;
   private static final int MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
   private static final int MAX_SEQUENCE_NO =
-      (1 << (LAYOUT.sequenceNoLength - MAX_ATTEMPT_LENGTH)) - 1;
+      (1 << (LAYOUT.sequenceNoBits - MAX_ATTEMPT_LENGTH)) - 1;
 
   // Class TaskAttemptId have two field id and mapId, rss taskAttemptID have 21 bits,
   // mapId is 19 bits, id is 2 bits. MR have a trick logic, taskAttemptId will increase
@@ -228,7 +228,7 @@ public class RssMRUtils {
   }
 
   public static long getBlockId(int partitionId, long taskAttemptId, int nextSeqNo) {
-    long attemptId = taskAttemptId >> (LAYOUT.partitionIdLength + LAYOUT.taskAttemptIdLength);
+    long attemptId = taskAttemptId >> (LAYOUT.partitionIdBits + LAYOUT.taskAttemptIdBits);
     if (attemptId < 0 || attemptId > MAX_ATTEMPT_ID) {
       throw new RssException(
           "Can't support attemptId [" + attemptId + "], the max value should be " + MAX_ATTEMPT_ID);
@@ -240,7 +240,7 @@ public class RssMRUtils {
 
     int atomicInt = (int) ((nextSeqNo << MAX_ATTEMPT_LENGTH) + attemptId);
     long taskId =
-        taskAttemptId - (attemptId << (LAYOUT.partitionIdLength + LAYOUT.taskAttemptIdLength));
+        taskAttemptId - (attemptId << (LAYOUT.partitionIdBits + LAYOUT.taskAttemptIdBits));
 
     return LAYOUT.getBlockId(atomicInt, partitionId, taskId);
   }

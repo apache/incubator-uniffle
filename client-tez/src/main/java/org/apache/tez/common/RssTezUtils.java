@@ -63,7 +63,7 @@ public class RssTezUtils {
   private static final int MAX_ATTEMPT_LENGTH = 6;
   private static final int MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
   private static final int MAX_SEQUENCE_NO =
-      (1 << (LAYOUT.sequenceNoLength - MAX_ATTEMPT_LENGTH)) - 1;
+      (1 << (LAYOUT.sequenceNoBits - MAX_ATTEMPT_LENGTH)) - 1;
 
   public static final String HOST_NAME = "hostname";
 
@@ -164,7 +164,7 @@ public class RssTezUtils {
         partitionId,
         taskAttemptId,
         nextSeqNo);
-    long attemptId = taskAttemptId >> (LAYOUT.partitionIdLength + LAYOUT.taskAttemptIdLength);
+    long attemptId = taskAttemptId >> (LAYOUT.partitionIdBits + LAYOUT.taskAttemptIdBits);
     if (attemptId < 0 || attemptId > MAX_ATTEMPT_ID) {
       throw new RssException(
           "Can't support attemptId [" + attemptId + "], the max value should be " + MAX_ATTEMPT_ID);
@@ -176,7 +176,7 @@ public class RssTezUtils {
 
     int atomicInt = (int) ((nextSeqNo << MAX_ATTEMPT_LENGTH) + attemptId);
     long taskId =
-        taskAttemptId - (attemptId << (LAYOUT.partitionIdLength + LAYOUT.taskAttemptIdLength));
+        taskAttemptId - (attemptId << (LAYOUT.partitionIdBits + LAYOUT.taskAttemptIdBits));
 
     return LAYOUT.getBlockId(atomicInt, partitionId, taskId);
   }
