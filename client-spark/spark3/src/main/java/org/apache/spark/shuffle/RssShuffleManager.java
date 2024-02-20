@@ -91,7 +91,6 @@ import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;
 import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
 
 public class RssShuffleManager extends RssShuffleManagerBase {
-
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleManager.class);
   private final String clientType;
   private final long heartbeatInterval;
@@ -770,32 +769,59 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       int shuffleId, int startPartition, int endPartition, int startMapIndex, int endMapIndex) {
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf();
     Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>> mapStatusIter = null;
-    // Since Spark 3.1 refactors the interface of getMapSizesByExecutorId,
-    // we use reflection and catch for the compatibility with 3.0 & 3.1 & 3.2
     try {
-      // attempt to use Spark 3.1's API
-      mapStatusIter =
-          (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
-              SparkEnv.get()
-                  .mapOutputTracker()
-                  .getClass()
-                  .getDeclaredMethod(
-                      "getMapSizesByExecutorId",
-                      int.class,
-                      int.class,
-                      int.class,
-                      int.class,
-                      int.class)
-                  .invoke(
-                      SparkEnv.get().mapOutputTracker(),
-                      shuffleId,
-                      startMapIndex,
-                      endMapIndex,
-                      startPartition,
-                      endPartition);
-    } catch (Exception ignored) {
-      // fallback and attempt to use Spark 3.0's API
-      try {
+      // Since Spark 3.1 refactors the interface of getMapSizesByExecutorId,
+      // we use reflection and catch for the compatibility with 3.0 & 3.1 & 3.2
+      if (Spark3VersionUtils.MAJOR_VERSION > 3
+          || Spark3VersionUtils.MINOR_VERSION > 2
+          || Spark3VersionUtils.MINOR_VERSION == 2 && !Spark3VersionUtils.isSpark320()
+          || Spark3VersionUtils.MINOR_VERSION == 1) {
+        // use Spark 3.1's API
+        mapStatusIter =
+            (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
+                SparkEnv.get()
+                    .mapOutputTracker()
+                    .getClass()
+                    .getDeclaredMethod(
+                        "getMapSizesByExecutorId",
+                        int.class,
+                        int.class,
+                        int.class,
+                        int.class,
+                        int.class)
+                    .invoke(
+                        SparkEnv.get().mapOutputTracker(),
+                        shuffleId,
+                        startMapIndex,
+                        endMapIndex,
+                        startPartition,
+                        endPartition);
+      } else if (Spark3VersionUtils.isSpark320()) {
+        // use Spark 3.2.0's API
+        // Each Spark release will be versioned: [MAJOR].[FEATURE].[MAINTENANCE].
+        // Usually we only need to adapt [MAJOR].[FEATURE] . Unfortunately,
+        // some interfaces were removed wrongly in Spark 3.2.0. And they were added by Spark
+        // 3.2.1.
+        // So we need to adapt Spark 3.2.0 here
+        mapStatusIter =
+            (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
+                MapOutputTracker.class
+                    .getDeclaredMethod(
+                        "getMapSizesByExecutorId",
+                        int.class,
+                        int.class,
+                        int.class,
+                        int.class,
+                        int.class)
+                    .invoke(
+                        SparkEnv.get().mapOutputTracker(),
+                        shuffleId,
+                        startMapIndex,
+                        endMapIndex,
+                        startPartition,
+                        endPartition);
+      } else {
+        // use Spark 3.0's API
         mapStatusIter =
             (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
                 SparkEnv.get()
@@ -804,35 +830,9 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     .getDeclaredMethod("getMapSizesByExecutorId", int.class, int.class, int.class)
                     .invoke(
                         SparkEnv.get().mapOutputTracker(), shuffleId, startPartition, endPartition);
-      } catch (Exception ignored1) {
-        try {
-          // attempt to use Spark 3.2.0's API
-          // Each Spark release will be versioned: [MAJOR].[FEATURE].[MAINTENANCE].
-          // Usually we only need to adapt [MAJOR].[FEATURE] . Unfortunately,
-          // some interfaces were removed wrongly in Spark 3.2.0. And they were added by Spark
-          // 3.2.1.
-          // So we need to adapt Spark 3.2.0 here
-          mapStatusIter =
-              (Iterator<Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>>>)
-                  MapOutputTracker.class
-                      .getDeclaredMethod(
-                          "getMapSizesByExecutorId",
-                          int.class,
-                          int.class,
-                          int.class,
-                          int.class,
-                          int.class)
-                      .invoke(
-                          SparkEnv.get().mapOutputTracker(),
-                          shuffleId,
-                          startMapIndex,
-                          endMapIndex,
-                          startPartition,
-                          endPartition);
-        } catch (Exception e) {
-          throw new RssException(e);
-        }
       }
+    } catch (Exception e) {
+      throw new RssException(e);
     }
     while (mapStatusIter.hasNext()) {
       Tuple2<BlockManagerId, Seq<Tuple3<BlockId, Object, Object>>> tuple2 = mapStatusIter.next();
