@@ -16,7 +16,6 @@
 // under the License.
 
 use anyhow::Error;
-
 use log::error;
 use poem::error::ParseQueryError;
 use thiserror::Error;
@@ -63,6 +62,9 @@ pub enum WorkerError {
 
     #[error("Spill event has been retried exceed the max limit for app: {0}")]
     SPILL_EVENT_EXCEED_RETRY_MAX_LIMIT(String),
+
+    #[error("Failed to writing data to channel.")]
+    WRITING_TO_CHANNEL_FAIL,
 }
 
 impl From<AcquireError> for WorkerError {

@@ -31,6 +31,7 @@ pub mod runtime;
 pub mod signal;
 pub mod store;
 pub mod util;
+pub mod channel;
 
 use crate::app::AppManager;
 use crate::grpc::DefaultShuffleServer;
@@ -69,14 +70,16 @@ pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
     HTTP_SERVICE.start(runtime_manager.clone(), http_port);
 
     let (tx, rx) = oneshot::channel::<()>();
+    let cloned_runtime_manager = runtime_manager.clone();
+    let app_manager_ref = AppManager::get_ref(cloned_runtime_manager, config.clone());
+
+    let writing_channel = channel::Channel::new(app_manager_ref.clone(), runtime_manager.clone());
 
     // implement server startup
-    let cloned_runtime_manager = runtime_manager.clone();
     runtime_manager.grpc_runtime.spawn(async move {
-        let app_manager_ref = AppManager::get_ref(cloned_runtime_manager, config.clone());
         let rpc_port = config.grpc_port.unwrap_or(19999);
         info!("Starting GRpc server with port:[{}] ......", rpc_port);
-        let shuffle_server = DefaultShuffleServer::from(app_manager_ref);
+        let shuffle_server = DefaultShuffleServer::from(app_manager_ref, writing_channel.clone());
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), rpc_port as u16);
         let service = ShuffleServerServer::new(shuffle_server)
             .max_decoding_message_size(usize::MAX)

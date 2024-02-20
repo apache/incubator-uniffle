@@ -62,6 +62,7 @@ pub mod runtime;
 pub mod signal;
 pub mod store;
 mod util;
+pub mod channel;
 
 const MAX_MEMORY_ALLOCATION_SIZE_ENV_KEY: &str = "MAX_MEMORY_ALLOCATION_SIZE";
 const DEFAULT_SHUFFLE_SERVER_TAG: &str = "ss_v4";
@@ -233,8 +234,10 @@ fn main() -> Result<()> {
     let available_cores = std::thread::available_parallelism()?;
     debug!("GRpc service with parallelism: [{}]", &available_cores);
 
+    let writing_channel = channel::Channel::new(app_manager_ref.clone(), runtime_manager.clone());
+
     for _ in 0..available_cores.into() {
-        let shuffle_server = DefaultShuffleServer::from(app_manager_ref.clone());
+        let shuffle_server = DefaultShuffleServer::from(app_manager_ref.clone(), writing_channel.clone());
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), rpc_port as u16);
         let service = ShuffleServerServer::new(shuffle_server)
             .max_decoding_message_size(usize::MAX)

@@ -48,6 +48,7 @@ use crate::metric::{
 };
 use crate::util;
 use tonic::{Request, Response, Status};
+use crate::channel::Channel;
 
 /// Use the maximum value for HTTP/2 connection window size to avoid deadlock among multiplexed
 /// streams on the same connection.
@@ -77,11 +78,12 @@ impl Into<i32> for StatusCode {
 
 pub struct DefaultShuffleServer {
     app_manager_ref: AppManagerRef,
+    writing_channel: Channel,
 }
 
 impl DefaultShuffleServer {
-    pub fn from(app_manager_ref: AppManagerRef) -> DefaultShuffleServer {
-        DefaultShuffleServer { app_manager_ref }
+    pub fn from(app_manager_ref: AppManagerRef, writing_channel: Channel) -> DefaultShuffleServer {
+        DefaultShuffleServer { app_manager_ref, writing_channel }
     }
 }
 
@@ -217,10 +219,12 @@ impl ShuffleServer for DefaultShuffleServer {
             };
             let ctx = WritingViewContext::from(uid.clone(), blocks);
 
-            let inserted = app
-                .insert(ctx)
-                .instrument_await(format!("insert data for app. uid: {:?}", &uid))
-                .await;
+            let inserted = self.writing_channel.send(ctx);
+
+            // let inserted = app
+            //     .insert(ctx)
+            //     .instrument_await(format!("insert data for app. uid: {:?}", &uid))
+            //     .await;
             if inserted.is_err() {
                 let err = format!(
                     "Errors on putting data. app_id: {}, err: {:?}",

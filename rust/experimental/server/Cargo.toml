@@ -67,7 +67,6 @@ dashmap = "5.4.0"
 log = "0.4.17"
 env_logger = "0.10.0"
 crossbeam = "0.8.2"
-crossbeam-channel = "0.5"
 tempdir = "0.3.7"
 async-trait = "0.1.68"
 futures = "0.3"
@@ -98,6 +97,7 @@ socket2 = { version="0.4", features = ["all"]}
 cap = "0.1.2"
 spin = "0.9.8"
 opendal = { version = "0.44.0", features = ["services-fs"]}
+crossbeam-channel = "0.5.8"
 
 [dependencies.hdfs-native]
 version = "0.7.0"
