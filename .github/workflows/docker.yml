@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-name: Docker compose example
+name: Docker example
 
 on:
   workflow_call:
@@ -40,7 +40,7 @@ on:
         type: string
 
 jobs:
-  compose:
+  docker:
     runs-on: ubuntu-20.04
     name: speculate fail tasks
     steps:
@@ -55,18 +55,18 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.m2/repository
-        key: mvn-${{ inputs.java-version }}-compose-${{ hashFiles('**/pom.xml') }}
+        key: mvn-${{ inputs.java-version }}-docker-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
-          mvn-${{ inputs.java-version }}-compose-
+          mvn-${{ inputs.java-version }}-docker-
     - name: Build the docker images
       id: up
-      run: ./deploy/docker-compose/build.sh
+      run: ./deploy/docker/build.sh
       shell: bash
     - name: Start the docker cluster
-      run: docker compose -f deploy/docker-compose/docker-compose.yml up --detach && sleep 10
+      run: docker compose -f deploy/docker/docker-compose.yml up --detach && sleep 10
       shell: bash
     - name: Scale the docker cluster
-      run: docker compose -f deploy/docker-compose/docker-compose.yml scale shuffle-server=4 spark-worker=5
+      run: docker compose -f deploy/docker/docker-compose.yml scale shuffle-server=4 spark-worker=5
       shell: bash
     - name: Prepare example Spark app
       run: |
@@ -148,5 +148,5 @@ jobs:
       shell: bash
     - name: Stop the docker cluster
       if: always() && steps.up.outcome == 'success'
-      run: docker compose -f deploy/docker-compose/docker-compose.yml down
+      run: docker compose -f deploy/docker/docker-compose.yml down
       shell: bash

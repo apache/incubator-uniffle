@@ -95,6 +95,10 @@ jobs:
         **/target/surefire-reports/*.txt
         **/target/surefire-reports/*.xml
 
+  docker:
+    needs: [integration]
+    uses: ./.github/workflows/docker.yml
+
   kubernetes:
     needs: [checkstyle, license, changes] # delay execution
     if: needs.changes.outputs.kubernetes == 'true' ||  github.event_name == 'push'
@@ -103,10 +107,6 @@ jobs:
       maven-args: package -Pkubernetes -DskipUTs -DskipITs -DskipBuildImage=${{ needs.changes.outputs.rss_server_docker == 'false' }}
       cache-key: package
       go-version: '1.17'
-
-  compose:
-    needs: [integration]
-    uses: ./.github/workflows/compose.yml
 
   event_file:
     name: "Event File"

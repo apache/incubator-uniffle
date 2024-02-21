@@ -28,7 +28,7 @@ This example creates a docker cluster consisting of
 First build the needed docker images:
 
 ```bash
-./deploy/docker-compose/build.sh
+./deploy/docker/build.sh
 ```
 
 ## Start the docker cluster
@@ -36,7 +36,7 @@ First build the needed docker images:
 Then start the cluster:
 
 ```bash
-docker compose -f deploy/docker-compose/docker-compose.yml up
+docker compose -f deploy/docker/docker-compose.yml up
 ```
 ```
 [+] Running 8/0
@@ -57,7 +57,7 @@ You can scale up and down this cluster, easily.
 Let's scale the shuffle servers up from 3 to 4, and the Spark workers from 2 to 4:
 
 ```bash
-docker compose -f deploy/docker-compose/docker-compose.yml scale shuffle-server=4 spark-worker=4
+docker compose -f deploy/docker/docker-compose.yml scale shuffle-server=4 spark-worker=4
 ```
 ```
 [+] Running 11/11
@@ -149,7 +149,7 @@ assert(result.sameElements(Array((0,1000000), (1,1000000), (2,1000000), (3,10000
 Finally, stop the cluster:
 
 ```bash
-docker compose -f deploy/docker-compose/docker-compose.yml down
+docker compose -f deploy/docker/docker-compose.yml down
 ```
 ```
 [+] Running 12/12
