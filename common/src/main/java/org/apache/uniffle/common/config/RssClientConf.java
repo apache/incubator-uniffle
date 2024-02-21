@@ -171,4 +171,11 @@ public class RssClientConf {
           .withDescription(
               "This option is only valid when the remote storage path is specified. If ture, "
                   + "the remote storage conf will use the client side hadoop configuration loaded from the classpath.");
+
+  public static final ConfigOption<Boolean> RSS_TASK_FAILED_RETRY_ENABLED =
+      ConfigOptions.key("rss.task.failed.retry.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "Whether to support task write failed retry internal, default value is false.");
 }

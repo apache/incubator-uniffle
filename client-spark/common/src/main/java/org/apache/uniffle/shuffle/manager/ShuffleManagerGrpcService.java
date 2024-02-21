@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
+import com.google.common.collect.Sets;
 import io.grpc.stub.StreamObserver;
 import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.slf4j.Logger;
@@ -239,13 +240,32 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     int shuffleId = request.getShuffleId();
     int numPartitions = request.getNumPartitions();
     boolean needReassign =
-        shuffleManager.reassignShuffleServers(
+        shuffleManager.reassignAllShuffleServersForWholeStage(
             stageId, stageAttemptNumber, shuffleId, numPartitions);
     RssProtos.StatusCode code = RssProtos.StatusCode.SUCCESS;
     RssProtos.ReassignServersReponse reply =
         RssProtos.ReassignServersReponse.newBuilder()
             .setStatus(code)
             .setNeedReassign(needReassign)
+            .build();
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void reassignFaultyShuffleServer(
+      RssProtos.RssReassignFaultyShuffleServerRequest request,
+      StreamObserver<RssProtos.RssReassignFaultyShuffleServerResponse> responseObserver) {
+    ShuffleServerInfo shuffleServerInfo =
+        shuffleManager.reassignFaultyShuffleServerForTasks(
+            request.getShuffleId(),
+            Sets.newHashSet(request.getPartitionIdsList()),
+            request.getFaultyShuffleServerId());
+    RssProtos.StatusCode code = RssProtos.StatusCode.SUCCESS;
+    RssProtos.RssReassignFaultyShuffleServerResponse reply =
+        RssProtos.RssReassignFaultyShuffleServerResponse.newBuilder()
+            .setStatus(code)
+            .setServer(ShuffleServerInfo.convertToShuffleServerId(shuffleServerInfo))
             .build();
     responseObserver.onNext(reply);
     responseObserver.onCompleted();

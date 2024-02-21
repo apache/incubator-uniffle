@@ -17,8 +17,12 @@
 
 package org.apache.uniffle.shuffle.manager;
 
+import java.util.Set;
+
 import org.apache.spark.SparkException;
 import org.apache.spark.shuffle.ShuffleHandleInfo;
+
+import org.apache.uniffle.common.ShuffleServerInfo;
 
 /**
  * This is a proxy interface that mainly delegates the un-registration of shuffles to the
@@ -71,5 +75,9 @@ public interface RssShuffleManagerInterface {
    */
   void addFailuresShuffleServerInfos(String shuffleServerId);
 
-  boolean reassignShuffleServers(int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
+  boolean reassignAllShuffleServersForWholeStage(
+      int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
+
+  ShuffleServerInfo reassignFaultyShuffleServerForTasks(
+      int shuffleId, Set<String> partitionIds, String faultyShuffleServerId);
 }

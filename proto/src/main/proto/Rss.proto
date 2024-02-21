@@ -515,6 +515,8 @@ service ShuffleManager {
   rpc reportShuffleWriteFailure (ReportShuffleWriteFailureRequest) returns (ReportShuffleWriteFailureResponse);
   // Reassign the RPC interface of the ShuffleServer list
   rpc reassignShuffleServers(ReassignServersRequest) returns (ReassignServersReponse);
+  // Reassign a new server instead a faulty server the RPC interface
+  rpc reassignFaultyShuffleServer(RssReassignFaultyShuffleServerRequest) returns (RssReassignFaultyShuffleServerResponse);
 }
 
 message ReportShuffleFetchFailureRequest {
@@ -577,3 +579,17 @@ message ReassignServersReponse{
   bool needReassign = 2;
   string msg = 3;
 }
+
+message RssReassignFaultyShuffleServerRequest{
+  int32 shuffleId  = 1;
+  repeated string partitionIds = 2;
+  string faultyShuffleServerId = 3;
+}
+
+message RssReassignFaultyShuffleServerResponse{
+  StatusCode status = 1;
+  ShuffleServerId server = 2;
+  string msg = 3;
+}
+
+
