@@ -28,6 +28,7 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.ByteBufUtils;
+import org.apache.uniffle.common.util.NettyUtils;
 
 public class Decoders {
   public static ShuffleServerInfo decodeShuffleServerInfo(ByteBuf byteBuf) {
@@ -46,7 +47,8 @@ public class Decoders {
     long crc = byteBuf.readLong();
     long taskAttemptId = byteBuf.readLong();
     int dataLength = byteBuf.readInt();
-    ByteBuf data = byteBuf.retain().readSlice(dataLength);
+    ByteBuf data = NettyUtils.getNettyBufferAllocator().directBuffer(dataLength);
+    data.writeBytes(byteBuf, dataLength);
     int lengthOfShuffleServers = byteBuf.readInt();
     List<ShuffleServerInfo> serverInfos = Lists.newArrayList();
     for (int k = 0; k < lengthOfShuffleServers; k++) {

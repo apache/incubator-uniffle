@@ -56,6 +56,7 @@ import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.ShuffleTaskManager;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
+import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -114,11 +115,13 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       }
     }
     int requireSize = shuffleServer.getShuffleTaskManager().getRequireBufferSize(requireBufferId);
+    int requireBlocksSize =
+        requireSize - req.encodedLength() < 0 ? 0 : requireSize - req.encodedLength();
 
     StatusCode ret = StatusCode.SUCCESS;
     String responseMessage = "OK";
     if (req.getPartitionToBlocks().size() > 0) {
-      ShuffleServerMetrics.counterTotalReceivedDataSize.inc(requireSize);
+      ShuffleServerMetrics.counterTotalReceivedDataSize.inc(requireBlocksSize);
       ShuffleTaskManager manager = shuffleServer.getShuffleTaskManager();
       PreAllocatedBufferInfo info = manager.getAndRemovePreAllocatedBuffer(requireBufferId);
       boolean isPreAllocated = info != null;
@@ -134,18 +137,21 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 + appId
                 + "], shuffleId["
                 + shuffleId
-                + "]";
+                + "], probably due to the pre-allocated buffer has expired. "
+                + "Please increase the expiration time using "
+                + ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED.key()
+                + " in ShuffleServer's configuration";
         LOG.warn(errorMsg);
-        responseMessage = errorMsg;
-        rpcResponse =
-            new RpcResponse(req.getRequestId(), StatusCode.INTERNAL_ERROR, responseMessage);
+        rpcResponse = new RpcResponse(req.getRequestId(), StatusCode.INTERNAL_ERROR, errorMsg);
         client.getChannel().writeAndFlush(rpcResponse);
         return;
       }
       final long start = System.currentTimeMillis();
+      ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
+      shuffleBufferManager.releaseMemory(req.encodedLength(), false, true);
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
       long alreadyReleasedSize = 0;
-      boolean isFailureOccurs = false;
+      boolean hasFailureOccurred = false;
       for (ShufflePartitionedData spd : shufflePartitionedData) {
         String shuffleDataInfo =
             "appId["
@@ -156,7 +162,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 + spd.getPartitionId()
                 + "]";
         try {
-          if (isFailureOccurs) {
+          if (hasFailureOccurred) {
             continue;
           }
           ret = manager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
@@ -168,7 +174,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                     + ret;
             LOG.error(errorMsg);
             responseMessage = errorMsg;
-            isFailureOccurs = true;
+            hasFailureOccurred = true;
           } else {
             long toReleasedSize = spd.getTotalBlockSize();
             // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
@@ -186,11 +192,12 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           ret = StatusCode.INTERNAL_ERROR;
           responseMessage = errorMsg;
           LOG.error(errorMsg);
-          isFailureOccurs = true;
+          hasFailureOccurred = true;
         } finally {
           // Once the cache failure occurs, we should explicitly release data held by byteBuf
-          if (isFailureOccurs) {
+          if (hasFailureOccurred) {
             Arrays.stream(spd.getBlockList()).forEach(block -> block.getData().release());
+            shuffleBufferManager.releaseMemory(spd.getTotalBlockSize(), false, false);
           }
         }
       }
@@ -199,8 +206,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       // current connection succeeded or not. Therefore, the preAllocatedBuffer is first get and
       // removed, then after
       // cacheShuffleData finishes, the preAllocatedSize should be updated accordingly.
-      if (info.getRequireSize() > alreadyReleasedSize) {
-        manager.releasePreAllocatedSize(info.getRequireSize() - alreadyReleasedSize);
+      if (requireBlocksSize > alreadyReleasedSize) {
+        manager.releasePreAllocatedSize(requireBlocksSize - alreadyReleasedSize);
       }
       rpcResponse = new RpcResponse(req.getRequestId(), ret, responseMessage);
       long costTime = System.currentTimeMillis() - start;
@@ -218,7 +225,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 + " ms with "
                 + shufflePartitionedData.size()
                 + " blocks and "
-                + requireSize
+                + requireBlocksSize
                 + " bytes");
       }
     } else {

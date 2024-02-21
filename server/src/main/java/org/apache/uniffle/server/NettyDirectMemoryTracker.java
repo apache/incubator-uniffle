@@ -25,7 +25,6 @@ import io.netty.util.internal.PlatformDependent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 public class NettyDirectMemoryTracker {
@@ -55,19 +54,10 @@ public class NettyDirectMemoryTracker {
         () -> {
           try {
             long usedDirectMemory = PlatformDependent.usedDirectMemory();
-            long allocatedDirectMemory =
-                NettyUtils.getNettyBufferAllocator().metric().usedDirectMemory();
-            long pinnedDirectMemory = NettyUtils.getNettyBufferAllocator().pinnedDirectMemory();
             if (LOG.isDebugEnabled()) {
-              LOG.debug(
-                  "Current usedDirectMemory:{}, allocatedDirectMemory:{}, pinnedDirectMemory:{}",
-                  usedDirectMemory,
-                  allocatedDirectMemory,
-                  pinnedDirectMemory);
+              LOG.debug("Current usedDirectMemory:{}", usedDirectMemory);
             }
             ShuffleServerMetrics.gaugeUsedDirectMemorySize.set(usedDirectMemory);
-            ShuffleServerMetrics.gaugeAllocatedDirectMemorySize.set(allocatedDirectMemory);
-            ShuffleServerMetrics.gaugePinnedDirectMemorySize.set(pinnedDirectMemory);
           } catch (Throwable t) {
             LOG.error("Failed to report direct memory.", t);
           }

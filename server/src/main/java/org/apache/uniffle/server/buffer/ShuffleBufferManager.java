@@ -32,6 +32,7 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeRangeMap;
+import io.netty.util.internal.PlatformDependent;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,7 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleFlushManager;
@@ -68,6 +70,7 @@ public class ShuffleBufferManager {
   // Huge partition vars
   private long hugePartitionSizeThreshold;
   private long hugePartitionMemoryLimitSize;
+  private boolean nettyServerEnabled;
 
   protected long bufferSize = 0;
   protected AtomicLong preAllocatedSize = new AtomicLong(0L);
@@ -80,11 +83,16 @@ public class ShuffleBufferManager {
   protected Map<String, Map<Integer, AtomicLong>> shuffleSizeMap = JavaUtils.newConcurrentMap();
 
   public ShuffleBufferManager(ShuffleServerConf conf, ShuffleFlushManager shuffleFlushManager) {
+    this.nettyServerEnabled = conf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
     long heapSize = Runtime.getRuntime().maxMemory();
     this.capacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_BUFFER_CAPACITY);
     if (this.capacity < 0) {
       this.capacity =
-          (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO));
+          nettyServerEnabled
+              ? (long)
+                  (NettyUtils.getMaxDirectMemory()
+                      * conf.getDouble(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO))
+              : (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO));
     }
     this.readCapacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY);
     if (this.readCapacity < 0) {
@@ -321,6 +329,25 @@ public class ShuffleBufferManager {
       if (isPreAllocated) {
         requirePreAllocatedSize(size);
       }
+      if (LOG.isDebugEnabled()) {
+        long usedDirectMemory = PlatformDependent.usedDirectMemory();
+        long usedHeapMemory =
+            Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        LOG.debug(
+            "Require memory succeeded with "
+                + size
+                + " bytes, usedMemory["
+                + usedMemory.get()
+                + "] include preAllocation["
+                + preAllocatedSize.get()
+                + "], inFlushSize["
+                + inFlushSize.get()
+                + "], usedDirectMemory["
+                + usedDirectMemory
+                + "], usedHeapMemory["
+                + usedHeapMemory
+                + "]");
+      }
       return true;
     }
     if (LOG.isDebugEnabled()) {
@@ -372,7 +399,7 @@ public class ShuffleBufferManager {
               + inFlushSize.get()
               + "] is less than released["
               + size
-              + "], set allocated memory to 0");
+              + "], set in flush memory to 0");
       inFlushSize.set(0L);
     }
     ShuffleServerMetrics.gaugeInFlushBufferSize.set(inFlushSize.get());
@@ -465,7 +492,17 @@ public class ShuffleBufferManager {
   }
 
   public void releasePreAllocatedSize(long delta) {
-    preAllocatedSize.addAndGet(-delta);
+    if (preAllocatedSize.get() >= delta) {
+      preAllocatedSize.addAndGet(-delta);
+    } else {
+      LOG.warn(
+          "Current pre-allocated memory["
+              + preAllocatedSize.get()
+              + "] is less than released["
+              + delta
+              + "], set pre-allocated memory to 0");
+      preAllocatedSize.set(0L);
+    }
     ShuffleServerMetrics.gaugeAllocatedBufferSize.set(preAllocatedSize.get());
   }
 
