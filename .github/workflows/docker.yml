@@ -66,11 +66,15 @@ jobs:
       run: |
         for attempt in {1..3}
         do
-          docker compose -f deploy/docker/docker-compose.yml up --detach
+          docker compose -f deploy/docker/docker-compose.yml up --detach --scale shuffle-server=4 --scale spark-worker=5
           for i in {1..30}
           do
             sleep 1
-            if docker exec rss-spark-master-1 /usr/bin/getent hosts rss-coordinator-1 rss-coordinator-2 rss-shuffle-server-1 rss-shuffle-server-2 rss-shuffle-server-3
+            if docker exec rss-spark-master-1 /usr/bin/getent hosts \
+              rss-coordinator-1 rss-coordinator-2 \
+              rss-shuffle-server-1 rss-shuffle-server-2 rss-shuffle-server-3 rss-shuffle-server-4 \
+              rss-spark-master-1 \
+              rss-spark-worker-1 rss-spark-worker-2 rss-spark-worker-3 rss-spark-worker-4 rss-spark-worker-5
             then
               echo "docker cluster is up"
               exit 0
@@ -81,9 +85,6 @@ jobs:
 
         echo "::error::Could not bring up Docker cluster"
         exit 1
-      shell: bash
-    - name: Scale the docker cluster
-      run: docker compose -f deploy/docker/docker-compose.yml scale shuffle-server=4 spark-worker=5
       shell: bash
     - name: Prepare example Spark app
       run: |
