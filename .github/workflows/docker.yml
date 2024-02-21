@@ -77,6 +77,10 @@ jobs:
               rss-spark-worker-1 rss-spark-worker-2 rss-spark-worker-3 rss-spark-worker-4 rss-spark-worker-5
             then
               echo "docker cluster is up"
+              docker network ls
+              docker network inspect rss_default
+              sleep 10
+              docker compose -f deploy/docker/docker-compose.yml logs
               exit 0
             fi
           done
