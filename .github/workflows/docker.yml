@@ -66,7 +66,7 @@ jobs:
       run: |
         for attempt in {1..3}
         do
-          docker compose -f deploy/docker/docker-compose.yml up --detach --scale shuffle-server=4 --scale spark-worker=5
+          docker compose -f deploy/docker/docker-compose.yml up --scale shuffle-server=4 --scale spark-worker=5
           for i in {1..30}
           do
             sleep 1
@@ -77,8 +77,10 @@ jobs:
               rss-spark-worker-1 rss-spark-worker-2 rss-spark-worker-3 rss-spark-worker-4 rss-spark-worker-5
             then
               echo "docker cluster is up"
+              docker container ls -a
               docker network ls
               docker network inspect rss_default
+              docker exec rss-coordinator-1 cat /data/rssadmin/rss/bin/start.sh
               sleep 10
               docker compose -f deploy/docker/docker-compose.yml logs
               exit 0
@@ -154,7 +156,7 @@ jobs:
       shell: bash
     - name: Check cluster
       run: |
-        docker container ls
+        docker container ls -a
         docker compose -f deploy/docker/docker-compose.yml logs
         docker network ls
         docker network inspect rss_default
