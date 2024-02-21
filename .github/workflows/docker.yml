@@ -152,6 +152,12 @@ jobs:
           --conf spark.task.maxFailures=4 \
           --conf spark.speculation=true"
       shell: bash
+    - name: Check cluster
+      run: |
+        docker container ls
+        docker compose -f deploy/docker/docker-compose.yml logs
+        docker network ls
+        docker network inspect rss_default
     - name: Assert result
       run: |
         docker exec rss-spark-master-1 bash -c "cat /shared/result.csv/*.csv" > ./result.csv
