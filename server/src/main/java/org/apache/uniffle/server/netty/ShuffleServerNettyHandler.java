@@ -137,7 +137,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 + appId
                 + "], shuffleId["
                 + shuffleId
-                + "], probably due to the pre-allocated buffer has expired. "
+                + "], probably because the pre-allocated buffer has expired. "
                 + "Please increase the expiration time using "
                 + ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED.key()
                 + " in ShuffleServer's configuration";
