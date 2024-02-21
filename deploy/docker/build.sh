@@ -33,8 +33,8 @@ cp "$RSS_DIR/conf/server.conf" "$EXAMPLE_DIR/uniffle/"
 sed -i -e "s%rss.storage.basePath .*%rss.storage.basePath /tmp/rss%" "$EXAMPLE_DIR/uniffle/server.conf"
 sed -i -e "s/rss.storage.type .*/rss.storage.type MEMORY_LOCALFILE/" "$EXAMPLE_DIR/uniffle/server.conf"
 sed -i -e "s/rss.coordinator.quorum .*/rss.coordinator.quorum rss-coordinator-1:19999,rss-coordinator-2:19999/" "$EXAMPLE_DIR/uniffle/server.conf"
-sed -i -e "s/rss.server.buffer.capacity .*/rss.server.buffer.capacity 2gb/" "$EXAMPLE_DIR/uniffle/server.conf"
-sed -i -e "s/rss.server.read.buffer.capacity .*/rss.server.read.buffer.capacity 100m/" "$EXAMPLE_DIR/uniffle/server.conf"
+sed -i -e "s/rss.server.buffer.capacity .*/rss.server.buffer.capacity 200mb/" "$EXAMPLE_DIR/uniffle/server.conf"
+sed -i -e "s/rss.server.read.buffer.capacity .*/rss.server.read.buffer.capacity 100mb/" "$EXAMPLE_DIR/uniffle/server.conf"
 sed -i -e "s/rss.server.disk.capacity .*/rss.server.disk.capacity 100m/" "$EXAMPLE_DIR/uniffle/server.conf"
 
 # build RSS example docker image
