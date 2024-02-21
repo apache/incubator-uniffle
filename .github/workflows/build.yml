@@ -32,81 +32,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  changes:
-    uses: ./.github/workflows/changes.yml
-
-  spotless:
-    uses: ./.github/workflows/sequential.yml
-    with:
-      maven-args: spotless:check
-      cache-key: spotless
-
-  checkstyle:
-    uses: ./.github/workflows/sequential.yml
-    with:
-      maven-args: checkstyle:check
-      cache-key: checkstyle
-
-  license:
-    uses: ./.github/workflows/sequential.yml
-    with:
-      maven-args: apache-rat:check
-      cache-key: license
-      summary: "grep -r '!?????' --include='rat.txt' | awk '{print $3}'"
-
-  spotbugs:
-    needs: [checkstyle, license] # delay execution
-    uses: ./.github/workflows/sequential.yml
-    with:
-      maven-args: test-compile spotbugs:check
-      cache-key: spotbugs
-
-  java-11:
-    needs: [spotbugs] # delay execution
-    name: 'compile'
-    uses: ./.github/workflows/sequential.yml
-    with:
-      maven-args: package -DskipTests -Djava.version=11
-      cache-key: package
-      java-version: '11'
-
-  java-17:
-    needs: [spotbugs] # delay execution
-    name: 'compile'
-    uses: ./.github/workflows/sequential.yml
-    with:
-      maven-args: package -DskipTests -Djava.version=17
-      cache-key: package
-      java-version: '17'
-
-  unit:
-    uses: ./.github/workflows/parallel.yml
-    with:
-      maven-args: package -Dtest=!org.apache.uniffle.test.**
-      reports-path: |
-        **/target/surefire-reports/*.txt
-        **/target/surefire-reports/*.xml
-
-  integration:
-    uses: ./.github/workflows/parallel.yml
-    with:
-      maven-args: package -Dtest=org.apache.uniffle.test.**
-      reports-path: |
-        **/target/surefire-reports/*.txt
-        **/target/surefire-reports/*.xml
-
   docker:
-    needs: [integration]
     uses: ./.github/workflows/docker.yml
-
-  kubernetes:
-    needs: [checkstyle, license, changes] # delay execution
-    if: needs.changes.outputs.kubernetes == 'true' ||  github.event_name == 'push'
-    uses: ./.github/workflows/single.yml
-    with:
-      maven-args: package -Pkubernetes -DskipUTs -DskipITs -DskipBuildImage=${{ needs.changes.outputs.rss_server_docker == 'false' }}
-      cache-key: package
-      go-version: '1.17'
 
   event_file:
     name: "Event File"
