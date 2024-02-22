@@ -269,6 +269,10 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     // because PlatformDependent.freeDirectBuffer can only release the ByteBuffer with cleaner.
     if (sdr != null) {
       sdr.release();
+      // We set sdr to null here to prevent IllegalReferenceCountException that could occur
+      // if sdr.release() is called multiple times in the close() method,
+      // when an exception is thrown by clientReadHandler.readShuffleData().
+      sdr = null;
     }
     sdr = clientReadHandler.readShuffleData();
     readDataTime.addAndGet(System.currentTimeMillis() - start);
