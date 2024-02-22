@@ -48,9 +48,4 @@ fi
 
 echo "$lsof"
 hostname
-
-while true; do
-  tail -f ${log_file}
-  sleep 1
-  echo
-done
+tail -f ${log_file}
