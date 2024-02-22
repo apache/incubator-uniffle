@@ -18,8 +18,8 @@
 #
 
 set -o pipefail
-set -e
-set -u
+set -o nounset   # exit the script if you try to use an uninitialised variable
+set -o errexit   # exit the script if any statement returns a non-true return value
 
 function exit_with_usage() {
   set +x
