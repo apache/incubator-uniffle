@@ -59,44 +59,30 @@ jobs:
         restore-keys: |
           mvn-${{ inputs.java-version }}-docker-
     - name: Build the docker images
-      id: up
       run: ./deploy/docker/build.sh
       shell: bash
     - name: Start the docker cluster
+      id: up
       run: |
-        for attempt in {1..3}
-        do
-          docker compose -f deploy/docker/docker-compose.yml up --detach --scale shuffle-server=4 --scale spark-worker=5
-          for i in {1..30}
-          do
-            sleep 1
-            if docker exec rss-spark-master-1 /usr/bin/getent hosts \
-              rss-coordinator-1 rss-coordinator-2 \
-              rss-shuffle-server-1 rss-shuffle-server-2 rss-shuffle-server-3 rss-shuffle-server-4 \
-              rss-spark-master-1 \
-              rss-spark-worker-1 rss-spark-worker-2 rss-spark-worker-3 rss-spark-worker-4 rss-spark-worker-5
-            then
-              echo "docker cluster is up"
-              docker container ls -a
-              docker network ls
-              docker network inspect rss_default
-              docker exec rss-coordinator-1 cat /data/rssadmin/rss/bin/start.sh
-              sleep 15
-              docker compose -f deploy/docker/docker-compose.yml logs
+        docker compose -f deploy/docker/docker-compose.yml up --detach --scale shuffle-server=4 --scale spark-worker=5
 
-              if docker exec rss-spark-master-1 /usr/bin/getent hosts \
-                rss-coordinator-1 rss-coordinator-2 \
-                rss-shuffle-server-1 rss-shuffle-server-2 rss-shuffle-server-3 rss-shuffle-server-4 \
-                rss-spark-master-1 \
-                rss-spark-worker-1 rss-spark-worker-2 rss-spark-worker-3 rss-spark-worker-4 rss-spark-worker-5
-              then
-                echo "cluster is still up"
-                if [ $i == 3 ]; then exit 0; fi
-              else
-                echo "cluster is unhealthy"
-              fi
-            fi
-          done
+        # for some reason, the uniffle containers terminate after first creation
+        # so we call docker compose up multiple times and wait a bit until they stay up
+        for i in {1..10}
+        do
+          sleep 5
+          if docker exec rss-spark-master-1 /usr/bin/getent hosts \
+            rss-coordinator-1 rss-coordinator-2 \
+            rss-shuffle-server-1 rss-shuffle-server-2 rss-shuffle-server-3 rss-shuffle-server-4 \
+            rss-spark-master-1 \
+            rss-spark-worker-1 rss-spark-worker-2 rss-spark-worker-3 rss-spark-worker-4 rss-spark-worker-5 >/dev/null 2>&1
+          then
+            echo "docker cluster is up"
+            if [ $i -eq 10 ]; then exit 0; fi
+          else
+            echo "docker cluster is down"
+            docker compose -f deploy/docker/docker-compose.yml up --detach --scale shuffle-server=4 --scale spark-worker=5
+          fi
         done
 
         echo "::error::Could not bring up Docker cluster"
@@ -164,12 +150,6 @@ jobs:
           --conf spark.task.maxFailures=4 \
           --conf spark.speculation=true"
       shell: bash
-    - name: Check cluster
-      run: |
-        docker container ls -a
-        docker compose -f deploy/docker/docker-compose.yml logs
-        docker network ls
-        docker network inspect rss_default
     - name: Assert result
       run: |
         docker exec rss-spark-master-1 bash -c "cat /shared/result.csv/*.csv" > ./result.csv
