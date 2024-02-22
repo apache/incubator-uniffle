@@ -28,16 +28,6 @@ on:
         default: 'temurin'
         required: false
         type: string
-  workflow_dispatch:
-    inputs:
-      java-version:
-        default: '8'
-        required: false
-        type: string
-      jdk-distro:
-        default: 'temurin'
-        required: false
-        type: string
 
 jobs:
   docker:
