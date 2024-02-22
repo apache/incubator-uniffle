@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -437,6 +438,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         request.getShuffleIdToBlocks();
 
     boolean isSuccessful = true;
+    AtomicReference<StatusCode> failedStatusCode = new AtomicReference<>(StatusCode.INTERNAL_ERROR);
 
     // prepare rpc request based on shuffleId -> partitionId -> blocks
     for (Map.Entry<Integer, Map<Integer, List<ShuffleBlockInfo>>> stb :
@@ -523,6 +525,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                         + response.getStatus()
                         + ", errorMsg:"
                         + response.getRetMsg();
+                failedStatusCode.set(StatusCode.fromCode(response.getStatus().getNumber()));
                 if (response.getStatus() == RssProtos.StatusCode.NO_REGISTER) {
                   throw new NotRetryException(msg);
                 } else {
@@ -546,7 +549,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     if (isSuccessful) {
       response = new RssSendShuffleDataResponse(StatusCode.SUCCESS);
     } else {
-      response = new RssSendShuffleDataResponse(StatusCode.INTERNAL_ERROR);
+      response = new RssSendShuffleDataResponse(failedStatusCode.get());
     }
     return response;
   }

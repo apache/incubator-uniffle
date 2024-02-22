@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -38,6 +39,9 @@ public class ShuffleHandleInfo implements Serializable {
   private int shuffleId;
 
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
+
+  // partitionId -> replica -> failover servers
+  private Map<Integer, Map<Integer, List<ShuffleServerInfo>>> failoverPartitionServers;
   // shuffle servers which is for store shuffle data
   private Set<ShuffleServerInfo> shuffleServersForData;
   // remoteStorage used for this job
@@ -53,6 +57,7 @@ public class ShuffleHandleInfo implements Serializable {
     this.shuffleId = shuffleId;
     this.partitionToServers = partitionToServers;
     this.shuffleServersForData = Sets.newHashSet();
+    this.failoverPartitionServers = Maps.newConcurrentMap();
     for (List<ShuffleServerInfo> ssis : partitionToServers.values()) {
       this.shuffleServersForData.addAll(ssis);
     }
@@ -61,6 +66,10 @@ public class ShuffleHandleInfo implements Serializable {
 
   public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
     return partitionToServers;
+  }
+
+  public Map<Integer, Map<Integer, List<ShuffleServerInfo>>> getFailoverPartitionServers() {
+    return failoverPartitionServers;
   }
 
   public Set<ShuffleServerInfo> getShuffleServersForData() {

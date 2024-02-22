@@ -15,18 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.spark.shuffle;
+package org.apache.uniffle.test;
 
-import org.junit.jupiter.api.Test;
+import org.apache.spark.SparkConf;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+public abstract class SparkTaskFailureIntegrationTestBase extends SparkIntegrationTestBase {
 
-public class SparkVersionUtilsTest {
-  @Test
-  public void testSparkVersion() {
-    assertTrue(SparkVersionUtils.isSpark2());
-    assertFalse(SparkVersionUtils.isSpark3());
-    assertFalse(SparkVersionUtils.isSpark320());
+  protected static final int maxTaskFailures = 3;
+
+  @Override
+  protected SparkConf createSparkConf() {
+    return new SparkConf()
+        .setAppName(this.getClass().getSimpleName())
+        .setMaster(String.format("local[4,%d]", maxTaskFailures));
+  }
+
+  @Override
+  public void updateSparkConfCustomer(SparkConf sparkConf) {
+    sparkConf.set("spark.task.maxFailures", String.valueOf(maxTaskFailures));
   }
 }

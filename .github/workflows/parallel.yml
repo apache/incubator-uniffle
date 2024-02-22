@@ -64,6 +64,7 @@ jobs:
           - mr-hadoop3.2
           - tez
           - tez-hadoop3.2
+          - dashboard
           - rust
       fail-fast: false
     name: -P${{ matrix.profile }}
@@ -93,7 +94,7 @@ jobs:
       run: |
         PROFILES="${{ matrix.profile }}"
         PROFILES=${PROFILES/-/,}
-        ./mvnw -B -fae ${{ inputs.maven-args }} -P${PROFILES} -Pdashboard | tee /tmp/maven.log
+        ./mvnw -B -fae ${{ inputs.maven-args }} -P${PROFILES} | tee /tmp/maven.log
       shell: bash
     - name: Summary of failures
       if: failure() && inputs.summary != ''

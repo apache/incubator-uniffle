@@ -170,3 +170,19 @@ HADOOP_CONF_DIR=/etc/hadoop/conf KRB5_CONFIG=/etc/krb5.conf KRB5CCNAME=/tmp/krb5
     ```shell
     _RJEM_MALLOC_CONF=prof:true,prof_prefix:jeprof.out ./uniffle-worker
     ```
+   
+### CPU Profiling
+1. build with jemalloc feature
+    ```shell
+    cargo build --release --features jemalloc
+    ```
+2. Paste following command to get cpu profile flamegraph
+    ```shell
+    go tool pprof -http="0.0.0.0:8081" http://{remote_ip}:8080/debug/pprof/profile?seconds=30
+    ```
+   - localhost:8080: riffle server.
+   - remote_ip: pprof server address.
+   - seconds=30: Profiling lasts for 30 seconds.
+   
+   Then open the URL <your-ip>:8081/ui/flamegraph in your browser to view the flamegraph:
+   

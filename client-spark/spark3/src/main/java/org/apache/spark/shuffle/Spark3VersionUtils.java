@@ -17,16 +17,12 @@
 
 package org.apache.spark.shuffle;
 
-import org.junit.jupiter.api.Test;
+import org.apache.spark.package$;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+public class Spark3VersionUtils extends SparkVersionUtils {
+  public static final String SPARK_VERSION_SHORT = package$.MODULE$.SPARK_VERSION_SHORT();
 
-public class SparkVersionUtilsTest {
-  @Test
-  public void testSparkVersion() {
-    assertTrue(SparkVersionUtils.isSpark2());
-    assertFalse(SparkVersionUtils.isSpark3());
-    assertFalse(SparkVersionUtils.isSpark320());
+  public static boolean isSpark320() {
+    return SPARK_VERSION_SHORT.equals("3.2.0");
   }
 }

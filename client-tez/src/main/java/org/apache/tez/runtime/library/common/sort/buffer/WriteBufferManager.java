@@ -86,7 +86,9 @@ public class WriteBufferManager<K, V> {
   private final Codec codec;
   private final Map<Integer, List<ShuffleServerInfo>> partitionToServers;
   private final Set<Long> allBlockIds = Sets.newConcurrentHashSet();
-  private final Map<Integer, List<Long>> partitionToBlocks = Maps.newConcurrentMap();
+  // server -> partitionId -> blockIds
+  private Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds =
+      Maps.newConcurrentMap();
   private final int numMaps;
   private final boolean isMemoryShuffleEnabled;
   private final long sendCheckInterval;
@@ -246,10 +248,17 @@ public class WriteBufferManager<K, V> {
     buffer.clear();
     shuffleBlocks.add(block);
     allBlockIds.add(block.getBlockId());
-    if (!partitionToBlocks.containsKey(block.getPartitionId())) {
-      partitionToBlocks.putIfAbsent(block.getPartitionId(), Lists.newArrayList());
-    }
-    partitionToBlocks.get(block.getPartitionId()).add(block.getBlockId());
+    block
+        .getShuffleServerInfos()
+        .forEach(
+            shuffleServerInfo -> {
+              Map<Integer, Set<Long>> pToBlockIds =
+                  serverToPartitionToBlockIds.computeIfAbsent(
+                      shuffleServerInfo, k -> Maps.newHashMap());
+              pToBlockIds
+                  .computeIfAbsent(block.getPartitionId(), v -> Sets.newHashSet())
+                  .add(block.getBlockId());
+            });
   }
 
   private void sendShuffleBlocks(List<ShuffleBlockInfo> shuffleBlocks) {
@@ -322,7 +331,7 @@ public class WriteBufferManager<K, V> {
     LOG.info(
         "tezVertexID is {}, tezDAGID is {}, shuffleId is {}", tezVertexID, tezDAGID, shuffleId);
     shuffleWriteClient.reportShuffleResult(
-        partitionToServers, appId, shuffleId, taskAttemptId, partitionToBlocks, bitmapSplitNum);
+        serverToPartitionToBlockIds, appId, shuffleId, taskAttemptId, bitmapSplitNum);
     LOG.info(
         "Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
         taskAttemptId,

@@ -19,13 +19,13 @@ package org.apache.spark.shuffle;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.writer.DataPusher;
 
-import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
+import org.apache.uniffle.common.ShuffleBlockInfo;
 
 public class TestUtils {
 
@@ -36,13 +36,16 @@ public class TestUtils {
       Boolean isDriver,
       DataPusher dataPusher,
       Map<String, Set<Long>> successBlockIds,
-      Map<String, Set<Long>> failBlockIds,
-      Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer) {
+      Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker) {
     return new RssShuffleManager(
-        conf, isDriver, dataPusher, successBlockIds, failBlockIds, taskToFailedBlockIdsAndServer);
+        conf, isDriver, dataPusher, successBlockIds, taskToFailedBlockSendTracker);
   }
 
   public static boolean isMacOnAppleSilicon() {
     return SystemUtils.IS_OS_MAC_OSX && SystemUtils.OS_ARCH.equals("aarch64");
+  }
+
+  public static ShuffleBlockInfo createMockBlockOnlyBlockId(long blockId) {
+    return new ShuffleBlockInfo(1, 1, blockId, 1, 1, new byte[1], null, 1, 100, 1);
   }
 }
