@@ -27,6 +27,7 @@ services:
     environment:
       SERVICE_NAME: coordinator
       COORDINATOR_RPC_PORT: 19999
+      XMX_SIZE: 1g
     expose:
       - 19998
       - 19999
@@ -36,7 +37,7 @@ services:
     environment:
       SERVICE_NAME: server
       SERVER_RPC_PORT: 19999
-      XMX_SIZE: 4g
+      XMX_SIZE: 1g
     deploy:
       mode: replicated
       replicas: 3
