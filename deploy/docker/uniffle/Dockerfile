@@ -20,3 +20,4 @@ FROM rss-server:head
 COPY start.sh /data/rssadmin/rss/bin
 COPY server.conf /data/rssadmin/rss/conf
 
+HEALTHCHECK --interval=3s --timeout=3s --start-period=60s CMD lsof -i:"${RPC_PORT}" -sTCP:LISTEN

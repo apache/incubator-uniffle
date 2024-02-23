@@ -54,29 +54,18 @@ jobs:
     - name: Start the docker cluster
       id: up
       run: |
-        docker compose -f deploy/docker/docker-compose.yml up --detach --scale shuffle-server=4 --scale spark-worker=5
+        docker compose -f deploy/docker/docker-compose.yml up --wait --wait-timeout 60 \
+          --scale coordinator=2 --scale shuffle-server=4 --scale spark-worker=5
 
-        # for some reason, the uniffle containers terminate after first creation
-        # so we call docker compose up multiple times and wait a bit until they stay up
-        for i in {1..10}
-        do
-          sleep 5
-          if docker exec rss-spark-master-1 /usr/bin/getent hosts \
-            rss-coordinator-1 rss-coordinator-2 \
-            rss-shuffle-server-1 rss-shuffle-server-2 rss-shuffle-server-3 rss-shuffle-server-4 \
-            rss-spark-master-1 \
-            rss-spark-worker-1 rss-spark-worker-2 rss-spark-worker-3 rss-spark-worker-4 rss-spark-worker-5 >/dev/null 2>&1
-          then
-            echo "docker cluster is up"
-            if [ $i -eq 10 ]; then exit 0; fi
-          else
-            echo "docker cluster is down"
-            docker compose -f deploy/docker/docker-compose.yml up --detach --scale shuffle-server=4 --scale spark-worker=5
-          fi
-        done
-
-        echo "::error::Could not bring up Docker cluster"
-        exit 1
+        # check all rss containers are up
+        healthy="$(docker container ls | grep rss-server-example | grep "(healthy)" | wc -l)"
+        if [ "$healthy" == "6" ]
+        then
+          echo "All RSS containers up"
+        else
+          echo "::error::Could not bring up Docker cluster"
+          exit 1
+        fi
       shell: bash
     - name: Prepare example Spark app
       run: |

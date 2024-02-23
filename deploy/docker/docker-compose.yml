@@ -26,7 +26,7 @@ services:
       replicas: 2
     environment:
       SERVICE_NAME: coordinator
-      COORDINATOR_RPC_PORT: 19999
+      RPC_PORT: 19999
       XMX_SIZE: 1g
     expose:
       - 19998
@@ -34,13 +34,13 @@ services:
 
   shuffle-server:
     image: rss-server-example:latest
-    environment:
-      SERVICE_NAME: server
-      SERVER_RPC_PORT: 19999
-      XMX_SIZE: 1g
     deploy:
       mode: replicated
       replicas: 3
+    environment:
+      SERVICE_NAME: server
+      RPC_PORT: 19999
+      XMX_SIZE: 1g
     links:
       - coordinator
     expose:
