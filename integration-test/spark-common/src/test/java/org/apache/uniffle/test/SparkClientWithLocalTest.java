@@ -42,7 +42,7 @@ import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -105,7 +105,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     createTestData(testAppId, expectedData, blockIdBitmap, taskIdBitmap);
-    blockIdBitmap.addLong((1 << Constants.TASK_ATTEMPT_ID_MAX_LENGTH));
+    blockIdBitmap.addLong(BlockId.getBlockId(0, 1, 0));
     ShuffleReadClientImpl readClient;
     readClient =
         baseReadBuilder()
@@ -252,7 +252,9 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     Roaring64NavigableMap wrongBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
     LongIterator iter = blockIdBitmap.getLongIterator();
     while (iter.hasNext()) {
-      wrongBlockIdBitmap.addLong(iter.next() + (1 << Constants.TASK_ATTEMPT_ID_MAX_LENGTH));
+      BlockId blockId = BlockId.fromLong(iter.next());
+      wrongBlockIdBitmap.addLong(
+          BlockId.getBlockId(blockId.sequenceNo, blockId.partitionId + 1, blockId.taskAttemptId));
     }
 
     ShuffleReadClientImpl readClient =

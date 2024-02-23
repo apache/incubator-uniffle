@@ -19,6 +19,8 @@ package org.apache.uniffle.storage.common;
 
 import java.util.Objects;
 
+import org.apache.uniffle.common.util.BlockId;
+
 public class FileBasedShuffleSegment extends ShuffleSegment
     implements Comparable<FileBasedShuffleSegment> {
 
@@ -119,9 +121,9 @@ public class FileBasedShuffleSegment extends ShuffleSegment
         + uncompressLength
         + "], crc["
         + crc
-        + "], blockId["
-        + blockId
-        + "], taskAttemptId["
+        + "], "
+        + BlockId.toString(blockId)
+        + ", taskAttemptId["
         + taskAttemptId
         + "]}";
   }

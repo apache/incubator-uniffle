@@ -31,7 +31,7 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.BlockId;
 
 /**
  * {@class LocalOrderSegmentSplitter} will be initialized only when the {@class
@@ -104,14 +104,13 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
         // than the length in the actual data file, and it needs to be returned at this time to
         // avoid EOFException
         if (dataFileLen != -1 && totalLen > dataFileLen) {
-          long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
           LOGGER.info(
               "Abort inconsistent data, the data length: {}(bytes) recorded in index file is greater than "
                   + "the real data file length: {}(bytes). Partition id: {}. This should not happen. "
                   + "This may happen when the data is flushing, please ignore.",
               totalLen,
               dataFileLen,
-              Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask));
+              BlockId.getPartitionId(blockId));
           break;
         }
 

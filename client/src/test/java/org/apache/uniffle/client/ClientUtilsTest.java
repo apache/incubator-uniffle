@@ -33,45 +33,17 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.client.util.DefaultIdHelper;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.RssUtils;
 
 import static org.apache.uniffle.client.util.ClientUtils.waitUntilDoneOrFail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ClientUtilsTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClientUtilsTest.class);
 
   private ExecutorService executorService = Executors.newFixedThreadPool(10);
-
-  @Test
-  public void getBlockIdTest() {
-    // max value of blockId
-    assertEquals(new Long(854558029292503039L), ClientUtils.getBlockId(16777215, 1048575, 24287));
-    // just a random test
-    assertEquals(new Long(3518437418598500L), ClientUtils.getBlockId(100, 100, 100));
-    // min value of blockId
-    assertEquals(new Long(0L), ClientUtils.getBlockId(0, 0, 0));
-
-    final Throwable e1 =
-        assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(16777216, 0, 0));
-    assertTrue(
-        e1.getMessage()
-            .contains("Can't support partitionId[16777216], the max value should be 16777215"));
-
-    final Throwable e2 =
-        assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(0, 2097152, 0));
-    assertTrue(
-        e2.getMessage()
-            .contains("Can't support taskAttemptId[2097152], the max value should be 2097151"));
-
-    final Throwable e3 =
-        assertThrows(IllegalArgumentException.class, () -> ClientUtils.getBlockId(0, 0, 262144));
-    assertTrue(
-        e3.getMessage().contains("Can't support sequence[262144], the max value should be 262143"));
-  }
 
   @Test
   public void testGenerateTaskIdBitMap() {
@@ -82,7 +54,7 @@ public class ClientUtilsTest {
     for (int i = 0; i < taskSize; i++) {
       except[i] = i;
       for (int j = 0; j < 100; j++) {
-        Long blockId = ClientUtils.getBlockId(partitionId, i, j);
+        long blockId = BlockId.getBlockId(j, partitionId, i);
         blockIdMap.addLong(blockId);
       }
     }

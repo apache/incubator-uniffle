@@ -37,7 +37,6 @@ import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
-import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -45,6 +44,7 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -203,7 +203,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     Set<Long> blockIds = Sets.newHashSet();
     int partitionIdx = 1;
     for (int i = 0; i < 5; i++) {
-      blockIds.add(ClientUtils.getBlockId(partitionIdx, 0, i));
+      blockIds.add(BlockId.getBlockId(i, partitionIdx, 0));
     }
     partitionToBlocks.put(partitionIdx, blockIds);
     serverToPartitionToBlockIds.put(shuffleServerInfo1, partitionToBlocks);
@@ -251,7 +251,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     Map<Integer, Set<Long>> partitionToBlocks1 = Maps.newHashMap();
     Set<Long> blockIds = Sets.newHashSet();
     for (int i = 0; i < 5; i++) {
-      blockIds.add(ClientUtils.getBlockId(1, 0, i));
+      blockIds.add(BlockId.getBlockId(i, 1, 0));
     }
     partitionToBlocks1.put(1, blockIds);
     Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds = Maps.newHashMap();
@@ -260,7 +260,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     Map<Integer, Set<Long>> partitionToBlocks2 = Maps.newHashMap();
     blockIds = Sets.newHashSet();
     for (int i = 0; i < 7; i++) {
-      blockIds.add(ClientUtils.getBlockId(2, 0, i));
+      blockIds.add(BlockId.getBlockId(i, 2, 0));
     }
     partitionToBlocks2.put(2, blockIds);
     serverToPartitionToBlockIds.put(shuffleServerInfo2, partitionToBlocks2);

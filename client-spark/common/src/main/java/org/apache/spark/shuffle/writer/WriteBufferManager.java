@@ -46,12 +46,12 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.ChecksumUtils;
 
 public class WriteBufferManager extends MemoryConsumer {
@@ -325,8 +325,7 @@ public class WriteBufferManager extends MemoryConsumer {
       compressTime += System.currentTimeMillis() - start;
     }
     final long crc32 = ChecksumUtils.getCrc32(compressed);
-    final long blockId =
-        ClientUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
+    final long blockId = BlockId.getBlockId(getNextSeqNo(partitionId), partitionId, taskAttemptId);
     uncompressedDataLen += data.length;
     shuffleWriteMetrics.incBytesWritten(compressed.length);
     // add memory to indicate bytes which will be sent to shuffle server

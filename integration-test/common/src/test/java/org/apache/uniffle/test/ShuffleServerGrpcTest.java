@@ -56,7 +56,6 @@ import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
-import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -65,6 +64,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.metrics.TestUtils;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.proto.RssProtos;
@@ -338,17 +338,17 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     assertEquals(expectedP3, blockIdBitmap);
 
     partitionToBlockIds = Maps.newHashMap();
-    blockIds1 = getBlockIdList((int) Constants.MAX_PARTITION_ID, 3);
+    blockIds1 = getBlockIdList(Constants.MAX_PARTITION_ID, 3);
     blockIds2 = getBlockIdList(2, 2);
     blockIds3 = getBlockIdList(3, 1);
-    partitionToBlockIds.put((int) Constants.MAX_PARTITION_ID, blockIds1);
+    partitionToBlockIds.put(Constants.MAX_PARTITION_ID, blockIds1);
     partitionToBlockIds.put(2, blockIds2);
     partitionToBlockIds.put(3, blockIds3);
     // bimapNum = 2
     request = new RssReportShuffleResultRequest("shuffleResultTest", 4, 1L, partitionToBlockIds, 2);
     shuffleServerClient.reportShuffleResult(request);
 
-    req = new RssGetShuffleResultRequest("shuffleResultTest", 4, (int) Constants.MAX_PARTITION_ID);
+    req = new RssGetShuffleResultRequest("shuffleResultTest", 4, Constants.MAX_PARTITION_ID);
     result = shuffleServerClient.getShuffleResult(req);
     blockIdBitmap = result.getBlockIdBitmap();
     expectedP1 = Roaring64NavigableMap.bitmapOf();
@@ -610,7 +610,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
           for (int i = 0; i < 100; i++) {
             Map<Integer, List<Long>> ptbs = Maps.newHashMap();
             List<Long> blockIds = Lists.newArrayList();
-            Long blockId = ClientUtils.getBlockId(1, 0, i);
+            Long blockId = BlockId.getBlockId(i, 1, 0);
             expectedBlockIds.add(blockId);
             blockIds.add(blockId);
             ptbs.put(1, blockIds);
@@ -624,7 +624,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
           for (int i = 100; i < 200; i++) {
             Map<Integer, List<Long>> ptbs = Maps.newHashMap();
             List<Long> blockIds = Lists.newArrayList();
-            Long blockId = ClientUtils.getBlockId(1, 1, i);
+            Long blockId = BlockId.getBlockId(i, 1, 1);
             expectedBlockIds.add(blockId);
             blockIds.add(blockId);
             ptbs.put(1, blockIds);
@@ -638,7 +638,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
           for (int i = 200; i < 300; i++) {
             Map<Integer, List<Long>> ptbs = Maps.newHashMap();
             List<Long> blockIds = Lists.newArrayList();
-            Long blockId = ClientUtils.getBlockId(1, 2, i);
+            Long blockId = BlockId.getBlockId(i, 1, 2);
             expectedBlockIds.add(blockId);
             blockIds.add(blockId);
             ptbs.put(1, blockIds);
@@ -984,7 +984,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
   private List<Long> getBlockIdList(int partitionId, int blockNum) {
     List<Long> blockIds = Lists.newArrayList();
     for (int i = 0; i < blockNum; i++) {
-      blockIds.add(ClientUtils.getBlockId(partitionId, 0, atomicInteger.getAndIncrement()));
+      blockIds.add(BlockId.getBlockId(atomicInteger.getAndIncrement(), partitionId, 0));
     }
     return blockIds;
   }

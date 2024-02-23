@@ -41,6 +41,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.IdHelper;
 import org.apache.uniffle.common.util.RssUtils;
@@ -211,14 +212,14 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
             actualCrc = ChecksumUtils.getCrc32(readBuffer, bs.getOffset(), bs.getLength());
             crcCheckTime.addAndGet(System.currentTimeMillis() - start);
           } catch (Exception e) {
-            LOG.warn("Can't read data for blockId[" + bs.getBlockId() + "]", e);
+            LOG.warn("Can't read data for " + BlockId.toString(bs.getBlockId()), e);
           }
 
           if (expectedCrc != actualCrc) {
             String errMsg =
-                "Unexpected crc value for blockId["
-                    + bs.getBlockId()
-                    + "], expected:"
+                "Unexpected crc value for "
+                    + BlockId.toString(bs.getBlockId())
+                    + ", expected:"
                     + expectedCrc
                     + ", actual:"
                     + actualCrc;

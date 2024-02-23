@@ -36,8 +36,8 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.HadoopShuffleHandlerTestBase;
 import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
@@ -118,10 +118,7 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
     byte[] buf = new byte[blockSize];
     new Random().nextBytes(buf);
-    long blockId =
-        (expectTotalBlockNum
-                << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
-            + taskAttemptId;
+    long blockId = BlockId.getBlockId(expectTotalBlockNum, 0, taskAttemptId);
     blocks.add(
         new ShufflePartitionedBlock(
             blockSize, blockSize, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf));
