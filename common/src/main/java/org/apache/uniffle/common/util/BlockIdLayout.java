@@ -76,7 +76,7 @@ public class BlockIdLayout {
               + ", taskAttemptIdBits="
               + taskAttemptIdBits);
     }
-    // sum of individual lengths must 63, otherwise we waste bits and risk overflow
+    // sum of individual lengths must be 63, otherwise we waste bits and risk overflow
     if (sequenceNoBits + partitionIdBits + taskAttemptIdBits != 63) {
       throw new IllegalArgumentException(
           "Don't support given lengths, sum must be exactly 63: "

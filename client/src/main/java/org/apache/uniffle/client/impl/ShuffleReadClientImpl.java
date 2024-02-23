@@ -26,6 +26,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +67,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private AtomicLong crcCheckTime = new AtomicLong(0);
   private ClientReadHandler clientReadHandler;
   private IdHelper idHelper;
+  private BlockIdLayout blockIdLayout;
 
   public ShuffleReadClientImpl(ShuffleClientFactory.ReadClientBuilder builder) {
     // add default value
@@ -122,6 +124,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     this.taskIdBitmap = builder.getTaskIdBitmap();
     this.idHelper = builder.getIdHelper();
     this.shuffleServerInfoList = builder.getShuffleServerInfoList();
+    this.blockIdLayout = builder.getBlockIdLayout();
 
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
     request.setStorageType(builder.getStorageType());
@@ -211,14 +214,14 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
             actualCrc = ChecksumUtils.getCrc32(readBuffer, bs.getOffset(), bs.getLength());
             crcCheckTime.addAndGet(System.currentTimeMillis() - start);
           } catch (Exception e) {
-            LOG.warn("Can't read data for blockid[" + bs.getBlockId() + "]", e);
+            LOG.warn("Can't read data for " + blockIdLayout.asBlockId(bs.getBlockId()), e);
           }
 
           if (expectedCrc != actualCrc) {
             String errMsg =
-                "Unexpected crc value for blockid["
-                    + bs.getBlockId()
-                    + "], expected:"
+                "Unexpected crc value for "
+                    + blockIdLayout.asBlockId(bs.getBlockId())
+                    + ", expected:"
                     + expectedCrc
                     + ", actual:"
                     + actualCrc;
