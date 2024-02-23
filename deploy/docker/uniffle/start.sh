@@ -39,7 +39,7 @@ if [ "$SERVICE_NAME" == "server" ];then
 fi
 
 (bash ${start_script} | grep -v "class path is") &
-sleep 10
+sleep 30
 lsof=$(lsof -i:"${rpc_port}" -sTCP:LISTEN)
 if [ "$lsof" = "" ]; then
   cat ${log_file}
