@@ -186,8 +186,6 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeUsedBufferSize;
   public static Gauge.Child gaugeReadBufferUsedSize;
   public static Gauge.Child gaugeUsedDirectMemorySize;
-  public static Gauge.Child gaugeAllocatedDirectMemorySize;
-  public static Gauge.Child gaugePinnedDirectMemorySize;
   public static Gauge.Child gaugeWriteHandler;
   public static Gauge.Child gaugeEventQueueSize;
   public static Gauge.Child gaugeHadoopFlushThreadPoolQueueSize;
@@ -384,8 +382,6 @@ public class ShuffleServerMetrics {
     gaugeUsedBufferSize = metricsManager.addLabeledGauge(USED_BUFFER_SIZE);
     gaugeReadBufferUsedSize = metricsManager.addLabeledGauge(READ_USED_BUFFER_SIZE);
     gaugeUsedDirectMemorySize = metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE);
-    gaugeAllocatedDirectMemorySize = metricsManager.addLabeledGauge(ALLOCATED_DIRECT_MEMORY_SIZE);
-    gaugePinnedDirectMemorySize = metricsManager.addLabeledGauge(PINNED_DIRECT_MEMORY_SIZE);
     gaugeWriteHandler = metricsManager.addLabeledGauge(TOTAL_WRITE_HANDLER);
     gaugeEventQueueSize = metricsManager.addLabeledGauge(EVENT_QUEUE_SIZE);
     gaugeHadoopFlushThreadPoolQueueSize =

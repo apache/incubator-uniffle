@@ -256,6 +256,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       final long start = System.currentTimeMillis();
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
       long alreadyReleasedSize = 0;
+      boolean hasFailureOccurred = false;
       for (ShufflePartitionedData spd : shufflePartitionedData) {
         String shuffleDataInfo =
             "appId["
@@ -275,6 +276,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                     + ret;
             LOG.error(errorMsg);
             responseMessage = errorMsg;
+            hasFailureOccurred = true;
             break;
           } else {
             long toReleasedSize = spd.getTotalBlockSize();
@@ -293,8 +295,12 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           ret = StatusCode.INTERNAL_ERROR;
           responseMessage = errorMsg;
           LOG.error(errorMsg);
+          hasFailureOccurred = true;
           break;
         }
+      }
+      if (hasFailureOccurred) {
+        shuffleServer.getShuffleBufferManager().releaseMemory(info.getRequireSize(), false, false);
       }
       // since the required buffer id is only used once, the shuffle client would try to require
       // another buffer whether

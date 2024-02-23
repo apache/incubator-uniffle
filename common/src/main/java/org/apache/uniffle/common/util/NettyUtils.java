@@ -19,8 +19,10 @@ package org.apache.uniffle.common.util;
 
 import java.util.concurrent.ThreadFactory;
 
+import io.netty.buffer.AbstractByteBufAllocator;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -38,6 +40,8 @@ import org.apache.uniffle.common.netty.protocol.Message;
 
 public class NettyUtils {
   private static final Logger logger = LoggerFactory.getLogger(NettyUtils.class);
+
+  private static final long MAX_DIRECT_MEMORY_IN_BYTES = PlatformDependent.maxDirectMemory();
 
   /** Creates a Netty EventLoopGroup based on the IOMode. */
   public static EventLoopGroup createEventLoop(IOMode mode, int numThreads, String threadPrefix) {
@@ -114,22 +118,18 @@ public class NettyUtils {
   }
 
   private static class AllocatorHolder {
-    private static final PooledByteBufAllocator INSTANCE = createAllocator();
+    private static final AbstractByteBufAllocator INSTANCE = createUnpooledByteBufAllocator(true);
   }
 
-  public static PooledByteBufAllocator getNettyBufferAllocator() {
+  public static AbstractByteBufAllocator getNettyBufferAllocator() {
     return AllocatorHolder.INSTANCE;
   }
 
-  private static PooledByteBufAllocator createAllocator() {
-    return new PooledByteBufAllocator(
-        true,
-        PooledByteBufAllocator.defaultNumHeapArena(),
-        PooledByteBufAllocator.defaultNumDirectArena(),
-        PooledByteBufAllocator.defaultPageSize(),
-        PooledByteBufAllocator.defaultMaxOrder(),
-        0,
-        0,
-        PooledByteBufAllocator.defaultUseCacheForAllThreads());
+  public static UnpooledByteBufAllocator createUnpooledByteBufAllocator(boolean preferDirect) {
+    return new UnpooledByteBufAllocator(preferDirect);
+  }
+
+  public static long getMaxDirectMemory() {
+    return MAX_DIRECT_MEMORY_IN_BYTES;
   }
 }

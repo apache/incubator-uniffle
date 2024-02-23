@@ -103,7 +103,15 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
         }
       }
 
-      int allocateSize = size;
+      SendShuffleDataRequest sendShuffleDataRequest =
+          new SendShuffleDataRequest(
+              requestId(),
+              request.getAppId(),
+              shuffleId,
+              0L,
+              stb.getValue(),
+              System.currentTimeMillis());
+      int allocateSize = size + sendShuffleDataRequest.encodedLength();
       int finalBlockNum = blockNum;
       try {
         RetryUtils.retryWithCondition(
@@ -122,14 +130,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
                         allocateSize, host, port));
               }
 
-              SendShuffleDataRequest sendShuffleDataRequest =
-                  new SendShuffleDataRequest(
-                      requestId(),
-                      request.getAppId(),
-                      shuffleId,
-                      requireId,
-                      stb.getValue(),
-                      System.currentTimeMillis());
+              sendShuffleDataRequest.setRequireId(requireId);
               long start = System.currentTimeMillis();
               RpcResponse rpcResponse =
                   transportClient.sendRpcSync(sendShuffleDataRequest, rpcTimeout);
