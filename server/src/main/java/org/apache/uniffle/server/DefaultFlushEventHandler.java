@@ -124,6 +124,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       }
 
       if (e instanceof EventInvalidException) {
+        // invalid events have already been released / cleaned up so no need to call event.doCleanup() here
         return;
       }
 
