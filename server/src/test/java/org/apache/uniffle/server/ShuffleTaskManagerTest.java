@@ -102,6 +102,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
       shuffleServer.stopServer();
       shuffleServer = null;
     }
+    ShuffleServerMetrics.clear();
   }
 
   @Test

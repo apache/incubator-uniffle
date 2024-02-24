@@ -83,7 +83,7 @@ public class ShuffleWriteClientImplTest {
     List<ShuffleBlockInfo> shuffleBlockInfoList =
         Lists.newArrayList(
             new ShuffleBlockInfo(
-                0, 0, 10, 10, 10, new byte[] {1}, shuffleServerInfoList, 10, 100, 0));
+                0, 0, 10, 10, 10, new byte[] {10}, shuffleServerInfoList, 10, 100, 0));
 
     // It should directly exit and wont do rpc request.
     Awaitility.await()
@@ -123,7 +123,7 @@ public class ShuffleWriteClientImplTest {
     List<ShuffleBlockInfo> shuffleBlockInfoList =
         Lists.newArrayList(
             new ShuffleBlockInfo(
-                0, 0, 10, 10, 10, new byte[] {1}, shuffleServerInfoList, 10, 100, 0));
+                0, 0, 10, 10, 10, new byte[] {10}, shuffleServerInfoList, 10, 100, 0));
     SendShuffleDataResult result =
         spyClient.sendShuffleData("appId", shuffleBlockInfoList, () -> false);
 
@@ -202,7 +202,7 @@ public class ShuffleWriteClientImplTest {
     List<ShuffleBlockInfo> shuffleBlockInfoList =
         Lists.newArrayList(
             new ShuffleBlockInfo(
-                0, 0, 10, 10, 10, new byte[] {1}, shuffleServerInfoList, 10, 100, 0));
+                0, 0, 10, 10, 10, new byte[] {10}, shuffleServerInfoList, 10, 100, 0));
     SendShuffleDataResult result =
         spyClient.sendShuffleData(appId, shuffleBlockInfoList, () -> false);
     assertEquals(0, result.getFailedBlockIds().size());
@@ -248,7 +248,7 @@ public class ShuffleWriteClientImplTest {
     List<ShuffleBlockInfo> shuffleBlockInfoList2 =
         Lists.newArrayList(
             new ShuffleBlockInfo(
-                0, 0, 10, 10, 10, new byte[] {1}, shuffleServerInfoList2, 10, 100, 0));
+                0, 0, 10, 10, 10, new byte[] {10}, shuffleServerInfoList2, 10, 100, 0));
     result = spyClient.sendShuffleData(appId, shuffleBlockInfoList2, () -> false);
     assertEquals(0, result.getFailedBlockIds().size());
     assertEquals(1, spyClient.getDefectiveServers().size());

@@ -33,9 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.util.RssClientConfig;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.MockedGrpcServer;
-import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -51,32 +51,45 @@ public class RSSStageDynamicServerReWriteTest extends SparkTaskFailureIntegratio
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
-    createServer(0, tmpDir, true);
-    createServer(1, tmpDir, false);
-    createServer(2, tmpDir, false);
+    createServer(0, tmpDir, true, ServerType.GRPC);
+    createServer(1, tmpDir, false, ServerType.GRPC);
+    createServer(2, tmpDir, false, ServerType.GRPC);
+    createServer(3, tmpDir, true, ServerType.GRPC_NETTY);
+    createServer(4, tmpDir, false, ServerType.GRPC_NETTY);
+    createServer(5, tmpDir, false, ServerType.GRPC_NETTY);
     startServers();
   }
 
-  public static void createServer(int id, File tmpDir, boolean abnormalFlag) throws Exception {
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+  public static void createServer(int id, File tmpDir, boolean abnormalFlag, ServerType serverType)
+      throws Exception {
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType);
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 8000);
     shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
     File dataDir1 = new File(tmpDir, id + "_1");
     File dataDir2 = new File(tmpDir, id + "_2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     shuffleServerConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE.name());
-    shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + id);
+    shuffleServerConf.setInteger(
+        "rss.rpc.server.port",
+        shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT) + id);
     shuffleServerConf.setInteger("rss.jetty.http.port", 19081 + id * 100);
     shuffleServerConf.setString("rss.storage.basePath", basePath);
     if (abnormalFlag) {
       createMockedShuffleServer(shuffleServerConf);
-      for (ShuffleServer shuffleServer : shuffleServers) {
-        // Set the sending block data timeout for the first shuffleServer
-        if (shuffleServer.getGrpcPort() == SHUFFLE_SERVER_PORT) {
-          ((MockedGrpcServer) shuffleServer.getServer())
+      // Set the sending block data timeout for the first shuffleServer
+      switch (serverType) {
+        case GRPC:
+          ((MockedGrpcServer) grpcShuffleServers.get(0).getServer())
               .getService()
               .enableMockSendDataFailed(true);
-        }
+          break;
+        case GRPC_NETTY:
+          ((MockedGrpcServer) nettyShuffleServers.get(0).getServer())
+              .getService()
+              .enableMockSendDataFailed(true);
+          break;
+        default:
+          throw new UnsupportedOperationException("Unsupported server type " + serverType);
       }
     } else {
       createShuffleServer(shuffleServerConf);
