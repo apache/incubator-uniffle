@@ -278,21 +278,22 @@ public class ShuffleServer {
       healthCheck.start();
     }
 
-    registerHeartBeat = new RegisterHeartBeat(this);
-    directMemoryUsageReporter = new NettyDirectMemoryTracker(shuffleServerConf);
-    shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, this, storageManager);
-    shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
-    shuffleTaskManager =
-        new ShuffleTaskManager(
-            shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
-    shuffleTaskManager.start();
-
     nettyServerEnabled =
         shuffleServerConf.get(ShuffleServerConf.RPC_SERVER_TYPE) == ServerType.GRPC_NETTY;
     if (nettyServerEnabled) {
       assert nettyPort >= 0;
       streamServer = new StreamServer(this);
     }
+
+    registerHeartBeat = new RegisterHeartBeat(this);
+    directMemoryUsageReporter = new NettyDirectMemoryTracker(shuffleServerConf);
+    shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, this, storageManager);
+    shuffleBufferManager =
+        new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager, nettyServerEnabled);
+    shuffleTaskManager =
+        new ShuffleTaskManager(
+            shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
+    shuffleTaskManager.start();
 
     setServer();
   }
