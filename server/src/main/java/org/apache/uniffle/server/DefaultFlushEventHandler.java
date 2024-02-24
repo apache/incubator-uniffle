@@ -124,8 +124,15 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       }
 
       if (e instanceof EventInvalidException) {
+        // Invalid events have already been released / cleaned up
+        // so no need to call event.doCleanup() here
         return;
       }
+
+      LOG.error(
+          "Unexpected exceptions happened when handling the flush event: {}, due to ", event, e);
+      // We need to release the memory when unexpected exceptions happened
+      event.doCleanup();
     } finally {
       if (storage != null) {
         if (storage instanceof HadoopStorage) {
