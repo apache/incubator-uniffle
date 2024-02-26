@@ -68,6 +68,7 @@
         <dependency>
             <groupId>com.moandjiezana.toml</groupId>
             <artifactId>toml4j</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
