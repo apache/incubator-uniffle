@@ -20,56 +20,93 @@ package org.apache.uniffle.test;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
+import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShuffleServerWithHadoopTest extends ShuffleReadWriteBase {
 
-  protected ShuffleServerGrpcClient shuffleServerClient;
+  protected ShuffleServerGrpcClient grpcShuffleServerClient;
+  protected ShuffleServerGrpcNettyClient nettyShuffleServerClient;
+  protected static ShuffleServerConf grpcShuffleServerConfig;
+  protected static ShuffleServerConf nettyShuffleServerConfig;
 
   @BeforeAll
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
-    createShuffleServer(shuffleServerConf);
+
+    ShuffleServerConf grpcShuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+    grpcShuffleServerConf.setString(
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
+    createShuffleServer(grpcShuffleServerConf);
+
+    ShuffleServerConf nettyShuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
+    nettyShuffleServerConf.setString(
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
+    createShuffleServer(nettyShuffleServerConf);
+
     startServers();
+
+    grpcShuffleServerConfig = grpcShuffleServerConf;
+    nettyShuffleServerConfig = nettyShuffleServerConf;
   }
 
   @BeforeEach
-  public void createClient() {
-    shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+  public void createClient() throws Exception {
+    grpcShuffleServerClient =
+        new ShuffleServerGrpcClient(
+            LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
+    nettyShuffleServerClient =
+        new ShuffleServerGrpcNettyClient(
+            rssConf,
+            LOCALHOST,
+            nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
+            nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
   }
 
   @AfterEach
   public void closeClient() {
-    shuffleServerClient.close();
+    grpcShuffleServerClient.close();
+    nettyShuffleServerClient.close();
   }
 
   private ShuffleClientFactory.ReadClientBuilder baseReadBuilder() {
@@ -83,8 +120,16 @@ public class ShuffleServerWithHadoopTest extends ShuffleReadWriteBase {
         .readBufferSize(1000);
   }
 
-  @Test
-  public void hadoopWriteReadTest() {
+  private static Stream<Arguments> hadoopWriteReadTestProvider() {
+    return Stream.of(Arguments.of(true), Arguments.of(false));
+  }
+
+  @ParameterizedTest
+  @MethodSource("hadoopWriteReadTestProvider")
+  private void hadoopWriteReadTest(boolean isNettyMode) {
+    ShuffleServerGrpcClient shuffleServerClient =
+        isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
+
     String appId = "app_hdfs_read_write";
     String dataBasePath = HDFS_URI + "rss/test";
     RssRegisterShuffleRequest rrsr =
@@ -108,14 +153,23 @@ public class ShuffleServerWithHadoopTest extends ShuffleReadWriteBase {
 
     RssSendShuffleDataRequest rssdr =
         new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    RssSendShuffleDataResponse response = shuffleServerClient.sendShuffleData(rssdr);
+    List<ShuffleServer> shuffleServers = isNettyMode ? nettyShuffleServers : grpcShuffleServers;
+    assertSame(StatusCode.SUCCESS, response.getStatusCode());
     assertEquals(456, shuffleServers.get(0).getShuffleBufferManager().getUsedMemory());
     assertEquals(0, shuffleServers.get(0).getShuffleBufferManager().getPreAllocatedSize());
     RssSendCommitRequest rscr = new RssSendCommitRequest(appId, 0);
     shuffleServerClient.sendCommit(rscr);
     RssFinishShuffleRequest rfsr = new RssFinishShuffleRequest(appId, 0);
 
-    ShuffleServerInfo ssi = new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT);
+    ShuffleServerInfo ssi =
+        isNettyMode
+            ? new ShuffleServerInfo(
+                LOCALHOST,
+                nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
+                nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT))
+            : new ShuffleServerInfo(
+                LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
 
     ShuffleReadClientImpl readClient =
         baseReadBuilder()
@@ -133,7 +187,8 @@ public class ShuffleServerWithHadoopTest extends ShuffleReadWriteBase {
     shuffleToBlocks.clear();
     shuffleToBlocks.put(0, partitionToBlocks);
     rssdr = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    response = shuffleServerClient.sendShuffleData(rssdr);
+    assertSame(StatusCode.SUCCESS, response.getStatusCode());
     assertEquals(0, shuffleServers.get(0).getShuffleBufferManager().getPreAllocatedSize());
     rscr = new RssSendCommitRequest(appId, 0);
     shuffleServerClient.sendCommit(rscr);
@@ -145,7 +200,8 @@ public class ShuffleServerWithHadoopTest extends ShuffleReadWriteBase {
     shuffleToBlocks.clear();
     shuffleToBlocks.put(0, partitionToBlocks);
     rssdr = new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    response = shuffleServerClient.sendShuffleData(rssdr);
+    assertSame(StatusCode.SUCCESS, response.getStatusCode());
     rscr = new RssSendCommitRequest(appId, 0);
     shuffleServerClient.sendCommit(rscr);
     rfsr = new RssFinishShuffleRequest(appId, 0);

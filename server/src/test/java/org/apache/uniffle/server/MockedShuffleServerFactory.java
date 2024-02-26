@@ -35,7 +35,7 @@ public class MockedShuffleServerFactory extends ShuffleServerFactory {
     ShuffleServerConf conf = getConf();
     ShuffleServer shuffleServer = getShuffleServer();
     ServerType type = conf.get(ShuffleServerConf.RPC_SERVER_TYPE);
-    if (type == ServerType.GRPC) {
+    if (type == ServerType.GRPC || type == ServerType.GRPC_NETTY) {
       return new MockedGrpcServer(
           conf, new MockedShuffleServerGrpcService(shuffleServer), shuffleServer.getGrpcMetrics());
     } else {

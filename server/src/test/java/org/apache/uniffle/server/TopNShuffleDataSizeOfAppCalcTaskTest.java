@@ -24,6 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,21 +33,28 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
-import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.metrics.TestUtils;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.util.StorageType;
@@ -58,8 +67,15 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
       LoggerFactory.getLogger(TopNShuffleDataSizeOfAppCalcTaskTest.class);
 
   protected static List<ShuffleServer> shuffleServers = Lists.newArrayList();
+  private static ShuffleServerConf grpcShuffleServerConfig;
+  private static ShuffleServerConf nettyShuffleServerConfig;
   private static final Long EVENT_THRESHOLD_SIZE = 2048L;
   protected static final int SHUFFLE_SERVER_PORT = 20001;
+
+  private static AtomicInteger serverRpcPortCounter = new AtomicInteger();
+  private static AtomicInteger nettyPortCounter = new AtomicInteger();
+  private static AtomicInteger jettyPortCounter = new AtomicInteger();
+
   static @TempDir File tempDir;
 
   protected static final String LOCALHOST;
@@ -76,9 +92,45 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
   protected static final int NETTY_PORT = 21000;
   protected static final String COORDINATOR_QUORUM = LOCALHOST + ":" + COORDINATOR_PORT_1;
 
-  protected static ShuffleServerConf getShuffleServerConf() throws Exception {
+  @BeforeAll
+  public static void setupServers(@TempDir File tmpDir) throws Exception {
+    File dataDir1 = new File(tmpDir, "data1");
+    String grpcBasePath = dataDir1.getAbsolutePath();
+    ShuffleServerConf grpcShuffleServerConf = buildShuffleServerConf(ServerType.GRPC, grpcBasePath);
+    createShuffleServer(grpcShuffleServerConf);
+
+    File dataDir2 = new File(tmpDir, "data2");
+    String nettyBasePath = dataDir2.getAbsolutePath();
+    ShuffleServerConf nettyShuffleServerConf =
+        buildShuffleServerConf(ServerType.GRPC_NETTY, nettyBasePath);
+    createShuffleServer(nettyShuffleServerConf);
+
+    startServers();
+    grpcShuffleServerConfig = grpcShuffleServerConf;
+    nettyShuffleServerConfig = nettyShuffleServerConf;
+  }
+
+  private static ShuffleServerConf buildShuffleServerConf(ServerType serverType, String basePath)
+      throws Exception {
+    ShuffleServerConf shuffleServerConf = buildShuffleServerConf(serverType);
+    shuffleServerConf.setString(
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
+    shuffleServerConf.set(
+        ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, EVENT_THRESHOLD_SIZE);
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
+    shuffleServerConf.set(ShuffleServerConf.RPC_METRICS_ENABLED, true);
+    shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
+    shuffleServerConf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 5000L);
+    shuffleServerConf.set(ShuffleServerConf.TOP_N_APP_SHUFFLE_DATA_REFRESH_INTERVAL, 700);
+    shuffleServerConf.set(ShuffleServerConf.TOP_N_APP_SHUFFLE_DATA_SIZE_NUMBER, 5);
+    return shuffleServerConf;
+  }
+
+  protected static ShuffleServerConf buildShuffleServerConf(ServerType serverType)
+      throws Exception {
     ShuffleServerConf serverConf = new ShuffleServerConf();
-    serverConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT);
+    serverConf.setInteger(
+        "rss.rpc.server.port", SHUFFLE_SERVER_PORT + serverRpcPortCounter.getAndIncrement());
     serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
     serverConf.setString("rss.storage.basePath", tempDir.getAbsolutePath());
     serverConf.setString("rss.server.buffer.capacity", "671088640");
@@ -88,7 +140,7 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
     serverConf.setString("rss.coordinator.quorum", COORDINATOR_QUORUM);
     serverConf.setString("rss.server.heartbeat.delay", "1000");
     serverConf.setString("rss.server.heartbeat.interval", "1000");
-    serverConf.setInteger("rss.jetty.http.port", 18080);
+    serverConf.setInteger("rss.jetty.http.port", 18080 + jettyPortCounter.getAndIncrement());
     serverConf.setInteger("rss.jetty.corePool.size", 64);
     serverConf.setInteger("rss.rpc.executor.size", 10);
     serverConf.setString("rss.server.hadoop.dfs.replication", "2");
@@ -96,29 +148,12 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
     serverConf.setBoolean("rss.server.health.check.enable", false);
     serverConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     serverConf.set(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL, 500L);
-    serverConf.setInteger(ShuffleServerConf.NETTY_SERVER_PORT, NETTY_PORT);
-    serverConf.setString("rss.server.tags", "GRPC,GRPC_NETTY");
+    serverConf.set(ShuffleServerConf.RPC_SERVER_TYPE, serverType);
+    if (serverType == ServerType.GRPC_NETTY) {
+      serverConf.setInteger(
+          ShuffleServerConf.NETTY_SERVER_PORT, NETTY_PORT + nettyPortCounter.getAndIncrement());
+    }
     return serverConf;
-  }
-
-  @BeforeAll
-  public static void setupServers(@TempDir File tmpDir) throws Exception {
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    File dataDir1 = new File(tmpDir, "data1");
-    String basePath = dataDir1.getAbsolutePath();
-    shuffleServerConf.setString(
-        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
-    shuffleServerConf.set(
-        ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, EVENT_THRESHOLD_SIZE);
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
-    shuffleServerConf.set(RssBaseConf.RPC_METRICS_ENABLED, true);
-    shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 2000L);
-    shuffleServerConf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 5000L);
-    shuffleServerConf.set(ShuffleServerConf.TOP_N_APP_SHUFFLE_DATA_REFRESH_INTERVAL, 700);
-    shuffleServerConf.set(ShuffleServerConf.TOP_N_APP_SHUFFLE_DATA_SIZE_NUMBER, 5);
-
-    createShuffleServer(shuffleServerConf);
-    startServers();
   }
 
   protected static void createShuffleServer(ShuffleServerConf serverConf) throws Exception {
@@ -131,9 +166,19 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
     }
   }
 
-  private void registerAndRequireBuffer(String appId, int length) {
+  private void registerAndRequireBuffer(String appId, int length, boolean isNettyMode)
+      throws Exception {
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
     ShuffleServerGrpcClient shuffleServerClient =
-        new ShuffleServerGrpcClient("localhost", SHUFFLE_SERVER_PORT);
+        isNettyMode
+            ? new ShuffleServerGrpcNettyClient(
+                rssConf,
+                LOCALHOST,
+                nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
+                nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT))
+            : new ShuffleServerGrpcClient(
+                LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
     int shuffleId = 0;
     int partitionId = 0;
     List<PartitionRange> partitionIds = Lists.newArrayList(new PartitionRange(0, 3));
@@ -152,7 +197,7 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
                 0,
                 length,
                 0,
-                new byte[] {},
+                new byte[length],
                 Lists.newArrayList(),
                 0,
                 100,
@@ -168,20 +213,31 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
     RssSendShuffleDataResponse response =
         shuffleServerClient.sendShuffleData(sendShuffleDataRequest);
     assertSame(StatusCode.SUCCESS, response.getStatusCode());
+    shuffleServerClient.close();
   }
 
-  @Test
-  public void testTopNShuffleDataSizeOfAppCalcTask() throws Exception {
+  private static Stream<Arguments> testTopNShuffleDataSizeOfAppCalcTaskProvider() {
+    return Stream.of(Arguments.of(true), Arguments.of(false));
+  }
+
+  @ParameterizedTest
+  @MethodSource("testTopNShuffleDataSizeOfAppCalcTaskProvider")
+  private void testTopNShuffleDataSizeOfAppCalcTask(boolean isNettyMode) throws Exception {
     // Here is 6 app, but config max top n number is 5
-    registerAndRequireBuffer("application_id_1", 1000);
-    registerAndRequireBuffer("application_id_2", 2000);
-    registerAndRequireBuffer("application_id_3", 3000);
-    registerAndRequireBuffer("application_id_4", 4000);
-    registerAndRequireBuffer("application_id_5", 5000);
-    registerAndRequireBuffer("application_id_6", 6000);
+    registerAndRequireBuffer("application_id_1", 1000, isNettyMode);
+    registerAndRequireBuffer("application_id_2", 2000, isNettyMode);
+    registerAndRequireBuffer("application_id_3", 3000, isNettyMode);
+    registerAndRequireBuffer("application_id_4", 4000, isNettyMode);
+    registerAndRequireBuffer("application_id_5", 5000, isNettyMode);
+    registerAndRequireBuffer("application_id_6", 6000, isNettyMode);
 
     Thread.sleep(500);
-    String content = TestUtils.httpGet("http://127.0.0.1:18080/metrics/server");
+    int jettyPort =
+        isNettyMode
+            ? nettyShuffleServerConfig.getInteger(ShuffleServerConf.JETTY_HTTP_PORT)
+            : grpcShuffleServerConfig.getInteger(ShuffleServerConf.JETTY_HTTP_PORT);
+    String content =
+        TestUtils.httpGet(String.format("http://127.0.0.1:%s/metrics/server", jettyPort));
     LOG.info(content);
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
@@ -226,9 +282,13 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
             && expectedTopNApps.size() == topNInMemoryDataSizeApps.size());
   }
 
+  @AfterEach
+  public void cleanMetrics() throws Exception {
+    ShuffleServerMetrics.clear();
+  }
+
   @AfterAll
   public static void shutdownServers() throws Exception {
-
     for (ShuffleServer shuffleServer : shuffleServers) {
       shuffleServer.stopServer();
     }

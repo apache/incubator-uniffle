@@ -43,6 +43,7 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.ReconfigurableBase;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.SimpleClusterManager;
 import org.apache.uniffle.server.ShuffleServer;
@@ -83,9 +84,9 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     createCoordinatorServer(coordinatorConf2);
 
     for (int i = 0; i < SERVER_NUM; i++) {
-      ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-      File dataDir1 = new File(tmpDir, "data1");
-      String basePath = dataDir1.getAbsolutePath();
+      ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+      File dataDir = new File(tmpDir, "data" + i);
+      String basePath = dataDir.getAbsolutePath();
       shuffleServerConf.setString(
           ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
       shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
@@ -252,7 +253,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
     Set<String> excludeServer = Sets.newConcurrentHashSet();
     List<ShuffleServer> excludeShuffleServer =
-        shuffleServers.stream().limit(3).collect(Collectors.toList());
+        grpcShuffleServers.stream().limit(3).collect(Collectors.toList());
     excludeShuffleServer.stream().map(ss -> ss.getId()).peek(excludeServer::add);
     ShuffleAssignmentsInfo shuffleAssignmentsInfo =
         shuffleWriteClient.getShuffleAssignments(

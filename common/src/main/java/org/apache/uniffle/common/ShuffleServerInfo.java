@@ -21,6 +21,8 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.uniffle.proto.RssProtos;
 
 public class ShuffleServerInfo implements Serializable {
@@ -33,11 +35,19 @@ public class ShuffleServerInfo implements Serializable {
 
   private int nettyPort = -1;
 
-  // Only for test
+  @VisibleForTesting
   public ShuffleServerInfo(String host, int port) {
     this.id = host + "-" + port;
     this.host = host;
     this.grpcPort = port;
+  }
+
+  @VisibleForTesting
+  public ShuffleServerInfo(String host, int grpcPort, int nettyPort) {
+    this.id = host + "-" + grpcPort + "-" + nettyPort;
+    this.host = host;
+    this.grpcPort = grpcPort;
+    this.nettyPort = nettyPort;
   }
 
   public ShuffleServerInfo(String id, String host, int port) {

@@ -47,6 +47,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -193,7 +194,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     createShuffleServer(shuffleServerConf);
     startServers();
   }

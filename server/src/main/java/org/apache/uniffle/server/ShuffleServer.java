@@ -45,6 +45,7 @@ import org.apache.uniffle.common.metrics.MetricReporter;
 import org.apache.uniffle.common.metrics.MetricReporterFactory;
 import org.apache.uniffle.common.metrics.NettyMetrics;
 import org.apache.uniffle.common.rpc.ServerInterface;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.security.SecurityConfig;
 import org.apache.uniffle.common.security.SecurityContextFactory;
 import org.apache.uniffle.common.util.Constants;
@@ -277,19 +278,22 @@ public class ShuffleServer {
       healthCheck.start();
     }
 
+    nettyServerEnabled =
+        shuffleServerConf.get(ShuffleServerConf.RPC_SERVER_TYPE) == ServerType.GRPC_NETTY;
+    if (nettyServerEnabled) {
+      assert nettyPort >= 0;
+      streamServer = new StreamServer(this);
+    }
+
     registerHeartBeat = new RegisterHeartBeat(this);
     directMemoryUsageReporter = new NettyDirectMemoryTracker(shuffleServerConf);
     shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, this, storageManager);
-    shuffleBufferManager = new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager);
+    shuffleBufferManager =
+        new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager, nettyServerEnabled);
     shuffleTaskManager =
         new ShuffleTaskManager(
             shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
     shuffleTaskManager.start();
-
-    nettyServerEnabled = shuffleServerConf.get(ShuffleServerConf.NETTY_SERVER_PORT) >= 0;
-    if (nettyServerEnabled) {
-      streamServer = new StreamServer(this);
-    }
 
     setServer();
   }

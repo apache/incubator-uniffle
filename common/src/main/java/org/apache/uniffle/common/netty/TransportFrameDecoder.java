@@ -19,6 +19,7 @@ package org.apache.uniffle.common.netty;
 
 import java.util.LinkedList;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
@@ -81,6 +82,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
     }
   }
 
+  @VisibleForTesting
   static boolean shouldRelease(Message msg) {
     if (msg == null || msg.body() == null || msg.body().byteBuf() == null) {
       return true;
