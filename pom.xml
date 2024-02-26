@@ -739,6 +739,11 @@
         <artifactId>snakeyaml</artifactId>
         <version>${snakeyaml.version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.moandjiezana.toml</groupId>
+        <artifactId>toml4j</artifactId>
+        <version>${toml4j.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
