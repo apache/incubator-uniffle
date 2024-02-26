@@ -66,15 +66,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.uniffle</groupId>
-            <artifactId>shuffle-server</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.uniffle</groupId>
-            <artifactId>rss-client</artifactId>
-            <scope>test</scope>
-            <type>test-jar</type>
+            <groupId>com.moandjiezana.toml</groupId>
+            <artifactId>toml4j</artifactId>
         </dependency>
     </dependencies>
 

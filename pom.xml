@@ -105,6 +105,7 @@
     <skipITs>${skipTests}</skipITs>
     <skipBuildImage>true</skipBuildImage>
     <snakeyaml.version>2.2</snakeyaml.version>
+    <toml4j.version>0.7.2</toml4j.version>
   </properties>
 
   <repositories>
@@ -2360,13 +2361,6 @@
           </dependency>
           <dependency>
             <groupId>org.apache.uniffle</groupId>
-            <artifactId>shuffle-server</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-          </dependency>
-          <dependency>
-            <groupId>org.apache.uniffle</groupId>
             <artifactId>rss-client</artifactId>
             <version>${project.version}</version>
           </dependency>
@@ -2376,6 +2370,11 @@
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>com.moandjiezana.toml</groupId>
+            <artifactId>toml4j</artifactId>
+            <version>${toml4j.version}</version>
           </dependency>
         </dependencies>
       </dependencyManagement>
