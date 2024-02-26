@@ -2380,6 +2380,7 @@
             <groupId>com.moandjiezana.toml</groupId>
             <artifactId>toml4j</artifactId>
             <version>${toml4j.version}</version>
+            <scope>test</scope>
           </dependency>
         </dependencies>
       </dependencyManagement>
