@@ -33,20 +33,20 @@ import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RustShuffleServer {
+public class RiffleShuffleServer {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RustShuffleServer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RiffleShuffleServer.class);
 
   private static final String PROJECT_ROOT = System.getProperty("user.dir");
 
-  private final RustShuffleServerConf rustShuffleServerConf;
+  private final RiffleShuffleServerConf riffleShuffleServerConf;
 
   private final ExecutorService executorService;
 
   private Process rustServer;
 
-  public RustShuffleServer(RustShuffleServerConf rustShuffleServerConf) {
-    this.rustShuffleServerConf = rustShuffleServerConf;
+  public RiffleShuffleServer(RiffleShuffleServerConf riffleShuffleServerConf) {
+    this.riffleShuffleServerConf = riffleShuffleServerConf;
 
     int corePoolSize = 10;
     int maximumPoolSize = 20;
@@ -99,7 +99,7 @@ public class RustShuffleServer {
     String[] command = {
       PROJECT_ROOT + "/../../rust/experimental/server/target/debug/uniffle-worker",
       "--config",
-      rustShuffleServerConf.getTempFilePath()
+      riffleShuffleServerConf.getTempFilePath()
     };
     rustServer = Runtime.getRuntime().exec(command);
 

@@ -59,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class RustShuffleServerGrpcTest extends RustIntegrationTestBase {
+public class RiffleShuffleServerGrpcTest extends RiffleIntegrationTestBase {
 
   protected static final long FAILED_REQUIRE_ID = -1;
 
@@ -72,7 +72,7 @@ public class RustShuffleServerGrpcTest extends RustIntegrationTestBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
     createCoordinatorServer(coordinatorConf);
-    RustShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    RiffleShuffleServerConf shuffleServerConf = getShuffleServerConf();
     shuffleServerConf.set("app_heartbeat_timeout_min", 1);
     shuffleServerConf.set("huge_partition_marked_threshold", "10485760");
     shuffleServerConf.set("huge_partition_memory_max_used_percent", 0.15f);

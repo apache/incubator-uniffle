@@ -24,7 +24,7 @@ import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
 import org.apache.uniffle.common.ClientType;
 
-public class RustCoordinatorTestBase extends RustIntegrationTestBase {
+public class RiffleCoordinatorTestBase extends RiffleIntegrationTestBase {
 
   protected CoordinatorClientFactory factory = CoordinatorClientFactory.getInstance();
 

@@ -25,13 +25,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RustShuffleServerConf {
+public class RiffleShuffleServerConf {
 
   private final Map<String, Object> conf;
   private final File tempDir;
   private final File tempFile;
 
-  public RustShuffleServerConf(File tempDir) {
+  public RiffleShuffleServerConf(File tempDir) {
     this.tempDir = tempDir;
     this.tempFile = new File(tempDir, "config.toml");
     conf = new HashMap<>();

@@ -65,7 +65,7 @@ jobs:
           - tez
           - tez-hadoop3.2
           - dashboard
-          - rust
+          - riffle
       fail-fast: false
     name: -P${{ matrix.profile }}
     steps:

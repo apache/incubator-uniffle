@@ -40,7 +40,7 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RustHeartBeatTest extends RustIntegrationTestBase {
+public class RiffleHeartBeatTest extends RiffleIntegrationTestBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
 
@@ -49,7 +49,7 @@ public class RustHeartBeatTest extends RustIntegrationTestBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
     createCoordinatorServer(coordinatorConf);
-    RustShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    RiffleShuffleServerConf shuffleServerConf = getShuffleServerConf();
     Map<String, Object> conf = new HashMap<>();
     conf.put("grpc_port", 8888);
 

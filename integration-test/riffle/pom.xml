@@ -27,10 +27,10 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>rss-integration-rust-test</artifactId>
+    <artifactId>rss-integration-riffle-test</artifactId>
     <version>0.9.0-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>Apache Uniffle Integration Test (Rust)</name>
+    <name>Apache Uniffle Integration Test (Riffle)</name>
 
     <dependencies>
         <dependency>

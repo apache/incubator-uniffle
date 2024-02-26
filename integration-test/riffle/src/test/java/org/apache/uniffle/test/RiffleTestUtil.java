@@ -24,8 +24,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class RustTestUtil {
-  private RustTestUtil() {}
+public class RiffleTestUtil {
+  private RiffleTestUtil() {}
 
   public static String httpGet(String urlString) throws IOException {
     URL url = new URL(urlString);

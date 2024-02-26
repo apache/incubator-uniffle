@@ -34,7 +34,7 @@ import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.storage.HadoopTestBase;
 
-public abstract class RustIntegrationTestBase extends HadoopTestBase {
+public abstract class RiffleIntegrationTestBase extends HadoopTestBase {
 
   protected static final int SHUFFLE_SERVER_PORT = 19999;
 
@@ -44,9 +44,9 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
 
   protected static final int JETTY_PORT = 9998;
 
-  private static final Logger LOG = LoggerFactory.getLogger(RustIntegrationTestBase.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RiffleIntegrationTestBase.class);
 
-  protected static List<RustShuffleServer> shuffleServers = Lists.newArrayList();
+  protected static List<RiffleShuffleServer> shuffleServers = Lists.newArrayList();
 
   protected static List<CoordinatorServer> coordinators = Lists.newArrayList();
 
@@ -63,11 +63,11 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
   protected static final String COORDINATOR_QUORUM = LOCALHOST + ":" + COORDINATOR_PORT;
 
   public static void startServers() throws Exception {
-    RustShuffleServer.compileRustServer();
+    RiffleShuffleServer.compileRustServer();
     for (CoordinatorServer coordinator : coordinators) {
       coordinator.start();
     }
-    for (RustShuffleServer shuffleServer : shuffleServers) {
+    for (RiffleShuffleServer shuffleServer : shuffleServers) {
       shuffleServer.start();
     }
   }
@@ -77,7 +77,7 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
     for (CoordinatorServer coordinator : coordinators) {
       coordinator.stopServer();
     }
-    for (RustShuffleServer shuffleServer : shuffleServers) {
+    for (RiffleShuffleServer shuffleServer : shuffleServers) {
       shuffleServer.stopServer();
     }
     shuffleServers = Lists.newArrayList();
@@ -85,7 +85,7 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
     CoordinatorMetrics.clear();
   }
 
-  protected static RustShuffleServerConf getShuffleServerConf() throws Exception {
+  protected static RiffleShuffleServerConf getShuffleServerConf() throws Exception {
     Map<String, Object> hybridStore = new HashMap<>();
     hybridStore.put("memory_spill_high_watermark", 0.9);
     hybridStore.put("memory_spill_low_watermark", 0.5);
@@ -93,7 +93,7 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
     Map<String, Object> memoryStore = new HashMap<>();
     memoryStore.put("capacity", "50MB");
 
-    RustShuffleServerConf serverConf = new RustShuffleServerConf(tempDir);
+    RiffleShuffleServerConf serverConf = new RiffleShuffleServerConf(tempDir);
     serverConf.set("coordinator_quorum", Lists.newArrayList(COORDINATOR_QUORUM));
     serverConf.set("hybrid_store", hybridStore);
     serverConf.set("memory_store", memoryStore);
@@ -108,16 +108,16 @@ public abstract class RustIntegrationTestBase extends HadoopTestBase {
     return coordinatorConf;
   }
 
-  protected static void createShuffleServer(RustShuffleServerConf serverConf) throws Exception {
+  protected static void createShuffleServer(RiffleShuffleServerConf serverConf) throws Exception {
     serverConf.generateTomlConf();
-    shuffleServers.add(new RustShuffleServer(serverConf));
+    shuffleServers.add(new RiffleShuffleServer(serverConf));
   }
 
   protected static void createCoordinatorServer(CoordinatorConf coordinatorConf) throws Exception {
     coordinators.add(new CoordinatorServer(coordinatorConf));
   }
 
-  protected static void createAndStartServers(RustShuffleServerConf shuffleServerConf)
+  protected static void createAndStartServers(RiffleShuffleServerConf shuffleServerConf)
       throws Exception {
     createShuffleServer(shuffleServerConf);
     startServers();
