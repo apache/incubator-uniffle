@@ -270,7 +270,9 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
         }
         fail(EXPECTED_EXCEPTION_MESSAGE);
       } catch (Exception e) {
-        assertTrue(e.getMessage().startsWith("Unexpected crc value"));
+        assertTrue(
+            e.getMessage()
+                .startsWith("Unexpected crc value for blockId[0 (seq: 0, part: 0, task: 0)]"));
       }
 
       try {

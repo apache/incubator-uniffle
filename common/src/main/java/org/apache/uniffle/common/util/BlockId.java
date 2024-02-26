@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.common.util;
 
+import java.util.Objects;
+
 /**
  * This represents a block id and all its constituents. This is particularly useful for logging and
  * debugging block ids.
@@ -52,5 +54,22 @@ public class BlockId {
         + ", task: "
         + taskAttemptId
         + ")]";
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    BlockId blockId1 = (BlockId) o;
+    return blockId == blockId1.blockId && Objects.equals(layout, blockId1.layout);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(blockId, layout);
   }
 }

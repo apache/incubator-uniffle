@@ -20,6 +20,7 @@ package org.apache.uniffle.common.util;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class BlockIdLayoutTest {
@@ -92,7 +93,7 @@ public class BlockIdLayoutTest {
 
   @Test
   public void testLayoutGetBlockId() {
-    BlockIdLayout[] layouts =
+    for (BlockIdLayout layout :
         new BlockIdLayout[] {
           BlockIdLayout.DEFAULT,
           BlockIdLayout.from(21, 21, 21),
@@ -100,9 +101,7 @@ public class BlockIdLayoutTest {
           BlockIdLayout.from(1, 31, 31),
           BlockIdLayout.from(31, 1, 31),
           BlockIdLayout.from(31, 31, 1),
-        };
-
-    for (BlockIdLayout layout : layouts) {
+        }) {
       // max value of blockId
       assertEquals(
           (long) layout.maxSequenceNo << layout.sequenceNoOffset
@@ -171,5 +170,20 @@ public class BlockIdLayoutTest {
               + layout.maxTaskAttemptId,
           e3.getMessage());
     }
+  }
+
+  @Test
+  public void testEquals() {
+    BlockIdLayout layout1 = BlockIdLayout.from(20, 21, 22);
+    BlockIdLayout layout2 = BlockIdLayout.from(20, 21, 22);
+    BlockIdLayout layout3 = BlockIdLayout.from(18, 22, 23);
+
+    assertEquals(layout1, layout1);
+    assertEquals(layout1, layout2);
+    assertNotEquals(layout1, layout3);
+
+    BlockIdLayout layout4 = BlockIdLayout.from(18, 24, 21);
+    assertNotEquals(layout1, layout4);
+    assertEquals(layout4, BlockIdLayout.DEFAULT);
   }
 }

@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.common.util;
 
+import java.util.Objects;
+
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 
@@ -121,6 +123,25 @@ public class BlockIdLayout {
         + " bits]";
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    BlockIdLayout that = (BlockIdLayout) o;
+    return sequenceNoBits == that.sequenceNoBits
+        && partitionIdBits == that.partitionIdBits
+        && taskAttemptIdBits == that.taskAttemptIdBits;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(sequenceNoBits, partitionIdBits, taskAttemptIdBits);
+  }
+
   public long getBlockId(int sequenceNo, int partitionId, long taskAttemptId) {
     if (sequenceNo < 0 || sequenceNo > maxSequenceNo) {
       throw new IllegalArgumentException(
@@ -163,13 +184,13 @@ public class BlockIdLayout {
         blockId, this, getSequenceNo(blockId), getPartitionId(blockId), getTaskAttemptId(blockId));
   }
 
-  public BlockId asBlockId(int sequenceNo, int partitionId, int taskAttemptId) {
+  public BlockId asBlockId(int sequenceNo, int partitionId, long taskAttemptId) {
     return new BlockId(
         getBlockId(sequenceNo, partitionId, taskAttemptId),
         this,
         sequenceNo,
         partitionId,
-        taskAttemptId);
+        (int) taskAttemptId);
   }
 
   public static BlockIdLayout from(RssConf rssConf) {

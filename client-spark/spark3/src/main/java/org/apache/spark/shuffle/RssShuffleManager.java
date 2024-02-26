@@ -510,18 +510,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
-    long taskAttemptId =
-        getTaskAttemptId(
-            context.partitionId(),
-            context.attemptNumber(),
-            maxFailures,
-            speculation,
-            blockIdLayout.taskAttemptIdBits);
     return new RssShuffleWriter<>(
         rssHandle.getAppId(),
         shuffleId,
         taskId,
-        taskAttemptId,
+        getTaskAttemptId(context.partitionId(), context.attemptNumber()),
         writeMetrics,
         this,
         sparkConf,
@@ -530,6 +523,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         this::markFailedTask,
         context,
         shuffleHandleInfo);
+  }
+
+  @VisibleForTesting
+  public long getTaskAttemptId(int mapIndex, int attemptNo) {
+    return getTaskAttemptId(
+        mapIndex, attemptNo, maxFailures, speculation, blockIdLayout.taskAttemptIdBits);
   }
 
   public void setPusherAppId(RssShuffleHandle rssShuffleHandle) {

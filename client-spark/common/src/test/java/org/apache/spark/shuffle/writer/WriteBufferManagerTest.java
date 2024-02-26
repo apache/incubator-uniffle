@@ -42,9 +42,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.BlockIdLayout;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
@@ -53,6 +56,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 public class WriteBufferManagerTest {
+  // test blockid config is considered
 
   private WriteBufferManager createManager(SparkConf conf) {
     Serializer kryoSerializer = new KryoSerializer(conf);
@@ -95,72 +99,96 @@ public class WriteBufferManagerTest {
   }
 
   private void addRecord(boolean compress) throws IllegalAccessException {
-    SparkConf conf = getConf();
-    if (!compress) {
-      conf.set(RssSparkConfig.SPARK_SHUFFLE_COMPRESS_KEY, String.valueOf(false));
-    }
-    WriteBufferManager wbm = createManager(conf);
-    Object codec = FieldUtils.readField(wbm, "codec", true);
-    if (compress) {
-      Assertions.assertNotNull(codec);
-    } else {
-      Assertions.assertNull(codec);
-    }
-    wbm.setShuffleWriteMetrics(new ShuffleWriteMetrics());
-    String testKey = "Key";
-    String testValue = "Value";
-    List<ShuffleBlockInfo> result = wbm.addRecord(0, testKey, testValue);
-    // single buffer is not full, there is no data return
-    assertEquals(0, result.size());
-    assertEquals(512, wbm.getAllocatedBytes());
-    assertEquals(32, wbm.getUsedBytes());
-    assertEquals(0, wbm.getInSendListBytes());
-    assertEquals(1, wbm.getBuffers().size());
-    wbm.addRecord(0, testKey, testValue);
-    wbm.addRecord(0, testKey, testValue);
-    wbm.addRecord(0, testKey, testValue);
-    result = wbm.addRecord(0, testKey, testValue);
-    // single buffer is full
-    assertEquals(1, result.size());
-    assertEquals(512, wbm.getAllocatedBytes());
-    assertEquals(96, wbm.getUsedBytes());
-    assertEquals(96, wbm.getInSendListBytes());
-    assertEquals(0, wbm.getBuffers().size());
-    wbm.addRecord(0, testKey, testValue);
-    wbm.addRecord(1, testKey, testValue);
-    wbm.addRecord(2, testKey, testValue);
-    // single buffer is not full, and less than spill size
-    assertEquals(512, wbm.getAllocatedBytes());
-    assertEquals(192, wbm.getUsedBytes());
-    assertEquals(96, wbm.getInSendListBytes());
-    assertEquals(3, wbm.getBuffers().size());
-    // all buffer size > spill size
-    wbm.addRecord(3, testKey, testValue);
-    wbm.addRecord(4, testKey, testValue);
-    result = wbm.addRecord(5, testKey, testValue);
-    assertEquals(6, result.size());
-    assertEquals(512, wbm.getAllocatedBytes());
-    assertEquals(288, wbm.getUsedBytes());
-    assertEquals(288, wbm.getInSendListBytes());
-    assertEquals(0, wbm.getBuffers().size());
-    // free memory
-    wbm.freeAllocatedMemory(96);
-    assertEquals(416, wbm.getAllocatedBytes());
-    assertEquals(192, wbm.getUsedBytes());
-    assertEquals(192, wbm.getInSendListBytes());
+    // test with different block id layouts
+    for (BlockIdLayout layout :
+        new BlockIdLayout[] {BlockIdLayout.DEFAULT, BlockIdLayout.from(20, 21, 22)}) {
+      // we should also test layouts that are different to the default
+      if (layout != BlockIdLayout.DEFAULT) {
+        assertNotEquals(layout, BlockIdLayout.DEFAULT);
+      }
+      SparkConf conf = getConf();
+      conf.set(
+          RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key(),
+          String.valueOf(layout.sequenceNoBits));
+      conf.set(
+          RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_PARTITION_ID_BITS.key(),
+          String.valueOf(layout.partitionIdBits));
+      conf.set(
+          RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key(),
+          String.valueOf(layout.taskAttemptIdBits));
+      if (!compress) {
+        conf.set(RssSparkConfig.SPARK_SHUFFLE_COMPRESS_KEY, String.valueOf(false));
+      }
+      WriteBufferManager wbm = createManager(conf);
+      Object codec = FieldUtils.readField(wbm, "codec", true);
+      if (compress) {
+        Assertions.assertNotNull(codec);
+      } else {
+        Assertions.assertNull(codec);
+      }
+      wbm.setShuffleWriteMetrics(new ShuffleWriteMetrics());
+      String testKey = "Key";
+      String testValue = "Value";
+      List<ShuffleBlockInfo> result = wbm.addRecord(0, testKey, testValue);
+      // single buffer is not full, there is no data return
+      assertEquals(0, result.size());
+      assertEquals(512, wbm.getAllocatedBytes());
+      assertEquals(32, wbm.getUsedBytes());
+      assertEquals(0, wbm.getInSendListBytes());
+      assertEquals(1, wbm.getBuffers().size());
+      wbm.addRecord(0, testKey, testValue);
+      wbm.addRecord(0, testKey, testValue);
+      wbm.addRecord(0, testKey, testValue);
+      result = wbm.addRecord(0, testKey, testValue);
+      // single buffer is full
+      assertEquals(1, result.size());
+      assertEquals(layout.asBlockId(0, 0, 0), layout.asBlockId(result.get(0).getBlockId()));
+      assertEquals(512, wbm.getAllocatedBytes());
+      assertEquals(96, wbm.getUsedBytes());
+      assertEquals(96, wbm.getInSendListBytes());
+      assertEquals(0, wbm.getBuffers().size());
+      wbm.addRecord(0, testKey, testValue);
+      wbm.addRecord(1, testKey, testValue);
+      wbm.addRecord(2, testKey, testValue);
+      // single buffer is not full, and less than spill size
+      assertEquals(512, wbm.getAllocatedBytes());
+      assertEquals(192, wbm.getUsedBytes());
+      assertEquals(96, wbm.getInSendListBytes());
+      assertEquals(3, wbm.getBuffers().size());
+      // all buffer size > spill size
+      wbm.addRecord(3, testKey, testValue);
+      wbm.addRecord(4, testKey, testValue);
+      result = wbm.addRecord(5, testKey, testValue);
+      assertEquals(6, result.size());
+      assertEquals(layout.asBlockId(1, 0, 0), layout.asBlockId(result.get(0).getBlockId()));
+      assertEquals(layout.asBlockId(0, 1, 0), layout.asBlockId(result.get(1).getBlockId()));
+      assertEquals(layout.asBlockId(0, 2, 0), layout.asBlockId(result.get(2).getBlockId()));
+      assertEquals(layout.asBlockId(0, 3, 0), layout.asBlockId(result.get(3).getBlockId()));
+      assertEquals(layout.asBlockId(0, 4, 0), layout.asBlockId(result.get(4).getBlockId()));
+      assertEquals(layout.asBlockId(0, 5, 0), layout.asBlockId(result.get(5).getBlockId()));
+      assertEquals(512, wbm.getAllocatedBytes());
+      assertEquals(288, wbm.getUsedBytes());
+      assertEquals(288, wbm.getInSendListBytes());
+      assertEquals(0, wbm.getBuffers().size());
+      // free memory
+      wbm.freeAllocatedMemory(96);
+      assertEquals(416, wbm.getAllocatedBytes());
+      assertEquals(192, wbm.getUsedBytes());
+      assertEquals(192, wbm.getInSendListBytes());
 
-    assertEquals(11, wbm.getShuffleWriteMetrics().recordsWritten());
-    assertTrue(wbm.getShuffleWriteMetrics().bytesWritten() > 0);
+      assertEquals(11, wbm.getShuffleWriteMetrics().recordsWritten());
+      assertTrue(wbm.getShuffleWriteMetrics().bytesWritten() > 0);
 
-    wbm.freeAllocatedMemory(192);
-    wbm.addRecord(0, testKey, testValue);
-    wbm.addRecord(1, testKey, testValue);
-    wbm.addRecord(2, testKey, testValue);
-    result = wbm.clear();
-    assertEquals(3, result.size());
-    assertEquals(224, wbm.getAllocatedBytes());
-    assertEquals(96, wbm.getUsedBytes());
-    assertEquals(96, wbm.getInSendListBytes());
+      wbm.freeAllocatedMemory(192);
+      wbm.addRecord(0, testKey, testValue);
+      wbm.addRecord(1, testKey, testValue);
+      wbm.addRecord(2, testKey, testValue);
+      result = wbm.clear();
+      assertEquals(3, result.size());
+      assertEquals(224, wbm.getAllocatedBytes());
+      assertEquals(96, wbm.getUsedBytes());
+      assertEquals(96, wbm.getInSendListBytes());
+    }
   }
 
   @Test
@@ -223,26 +251,47 @@ public class WriteBufferManagerTest {
 
   @Test
   public void createBlockIdTest() {
-    SparkConf conf = getConf();
-    WriteBufferManager wbm = createManager(conf);
-    WriterBuffer mockWriterBuffer = mock(WriterBuffer.class);
-    when(mockWriterBuffer.getData()).thenReturn(new byte[] {});
-    when(mockWriterBuffer.getMemoryUsed()).thenReturn(0);
-    ShuffleBlockInfo sbi = wbm.createShuffleBlock(0, mockWriterBuffer);
-    // seqNo = 0, partitionId = 0, taskId = 0
-    assertEquals(0L, sbi.getBlockId());
+    // test with different block id layouts
+    for (BlockIdLayout layout :
+        new BlockIdLayout[] {BlockIdLayout.DEFAULT, BlockIdLayout.from(20, 21, 22)}) {
+      // we should also test layouts that are different to the default
+      if (layout != BlockIdLayout.DEFAULT) {
+        assertNotEquals(layout, BlockIdLayout.DEFAULT);
+      }
+      SparkConf conf = getConf();
+      conf.set(
+          RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key(),
+          String.valueOf(layout.sequenceNoBits));
+      conf.set(
+          RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_PARTITION_ID_BITS.key(),
+          String.valueOf(layout.partitionIdBits));
+      conf.set(
+          RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key(),
+          String.valueOf(layout.taskAttemptIdBits));
 
-    // seqNo = 1, partitionId = 0, taskId = 0
-    sbi = wbm.createShuffleBlock(0, mockWriterBuffer);
-    assertEquals(35184372088832L, sbi.getBlockId());
+      WriteBufferManager wbm = createManager(conf);
+      WriterBuffer mockWriterBuffer = mock(WriterBuffer.class);
+      when(mockWriterBuffer.getData()).thenReturn(new byte[] {});
+      when(mockWriterBuffer.getMemoryUsed()).thenReturn(0);
+      ShuffleBlockInfo sbi = wbm.createShuffleBlock(0, mockWriterBuffer);
 
-    // seqNo = 0, partitionId = 1, taskId = 0
-    sbi = wbm.createShuffleBlock(1, mockWriterBuffer);
-    assertEquals(2097152L, sbi.getBlockId());
+      String layoutString = layout.toString();
 
-    // seqNo = 1, partitionId = 1, taskId = 0
-    sbi = wbm.createShuffleBlock(1, mockWriterBuffer);
-    assertEquals(35184374185984L, sbi.getBlockId());
+      // seqNo = 0, partitionId = 0, taskId = 0
+      assertEquals(layout.asBlockId(0, 0, 0), layout.asBlockId(sbi.getBlockId()), layoutString);
+
+      // seqNo = 1, partitionId = 0, taskId = 0
+      sbi = wbm.createShuffleBlock(0, mockWriterBuffer);
+      assertEquals(layout.asBlockId(1, 0, 0), layout.asBlockId(sbi.getBlockId()), layoutString);
+
+      // seqNo = 0, partitionId = 1, taskId = 0
+      sbi = wbm.createShuffleBlock(1, mockWriterBuffer);
+      assertEquals(layout.asBlockId(0, 1, 0), layout.asBlockId(sbi.getBlockId()), layoutString);
+
+      // seqNo = 1, partitionId = 1, taskId = 0
+      sbi = wbm.createShuffleBlock(1, mockWriterBuffer);
+      assertEquals(layout.asBlockId(1, 1, 0), layout.asBlockId(sbi.getBlockId()), layoutString);
+    }
   }
 
   @Test
