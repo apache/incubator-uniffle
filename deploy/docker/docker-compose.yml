@@ -1,0 +1,86 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+version: "3"
+name: rss
+
+services:
+  coordinator:
+    image: rss-server-example:latest
+    deploy:
+      mode: replicated
+      replicas: 2
+    environment:
+      SERVICE_NAME: coordinator
+      RPC_PORT: 19999
+      XMX_SIZE: 1g
+    expose:
+      - 19998
+      - 19999
+
+  shuffle-server:
+    image: rss-server-example:latest
+    deploy:
+      mode: replicated
+      replicas: 3
+    environment:
+      SERVICE_NAME: server
+      RPC_PORT: 19999
+      XMX_SIZE: 1g
+    links:
+      - coordinator
+    expose:
+      - 19998
+      - 19999
+
+  spark-master:
+    image: rss-spark-example:latest
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master -h rss-spark-master-1
+    environment:
+      MASTER: spark://rss-spark-master-1:7077
+      SPARK_PUBLIC_DNS: localhost
+      SPARK_MASTER_WEBUI_PORT: 8080
+      PYSPARK_PYTHON: python${PYTHON_VERSION:-3.8}
+      PYSPARK_DRIVER_PYTHON: python${PYTHON_VERSION:-3.8}
+    volumes:
+      - shared:/shared:rw
+    expose:
+      - 7077
+    ports:
+      - 4040:4040
+      - 7077:7077
+      - 8080:8080
+
+  spark-worker:
+    image: rss-spark-example:latest
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://rss-spark-master-1:7077
+    environment:
+      SPARK_WORKER_CORES: 1
+      SPARK_WORKER_MEMORY: 1g
+      SPARK_WORKER_PORT: 8080
+      SPARK_WORKER_WEBUI_PORT: 8881
+      SPARK_PUBLIC_DNS: localhost
+    volumes:
+      - shared:/shared:rw
+    deploy:
+      mode: replicated
+      replicas: 2
+    links:
+      - spark-master
+
+volumes:
+  shared:

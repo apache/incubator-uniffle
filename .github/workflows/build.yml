@@ -95,6 +95,10 @@ jobs:
         **/target/surefire-reports/*.txt
         **/target/surefire-reports/*.xml
 
+  docker:
+    needs: [integration]
+    uses: ./.github/workflows/docker.yml
+
   kubernetes:
     needs: [checkstyle, license, changes] # delay execution
     if: needs.changes.outputs.kubernetes == 'true' ||  github.event_name == 'push'
