@@ -592,6 +592,48 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     readClient.close();
   }
 
+  @Test
+  public void readTest16() throws Exception {
+    String basePath = HDFS_URI + "clientReadTest16";
+    HadoopShuffleWriteHandler writeHandler0 =
+        new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
+    HadoopShuffleWriteHandler writeHandler1 =
+        new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi2.getId(), conf);
+
+    Map<Long, byte[]> expectedData0 = Maps.newHashMap();
+    Map<Long, byte[]> expectedData1 = Maps.newHashMap();
+    Roaring64NavigableMap blockIdBitmap0 = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();
+    writeTestData(writeHandler0, 2, 30, 0, 0, expectedData0, blockIdBitmap0);
+    writeTestData(writeHandler1, 2, 30, 1, 1, expectedData1, blockIdBitmap1);
+
+    ShuffleReadClientImpl readClient =
+        baseReadBuilder()
+            .partitionId(0)
+            .partitionNumPerRange(2)
+            .basePath(basePath)
+            .blockIdBitmap(blockIdBitmap0)
+            .taskIdBitmap(Roaring64NavigableMap.bitmapOf(0))
+            .shuffleServerInfoList(Lists.newArrayList(ssi1, ssi2))
+            .build();
+    TestUtils.validateResult(readClient, expectedData0);
+    readClient.checkProcessedBlockIds();
+    readClient.close();
+
+    readClient =
+        baseReadBuilder()
+            .partitionId(1)
+            .partitionNumPerRange(2)
+            .basePath(basePath)
+            .blockIdBitmap(blockIdBitmap1)
+            .taskIdBitmap(Roaring64NavigableMap.bitmapOf(1))
+            .shuffleServerInfoList(Lists.newArrayList(ssi1, ssi2))
+            .build();
+    TestUtils.validateResult(readClient, expectedData1);
+    readClient.checkProcessedBlockIds();
+    readClient.close();
+  }
+
   private void writeTestData(
       HadoopShuffleWriteHandler writeHandler,
       int num,
