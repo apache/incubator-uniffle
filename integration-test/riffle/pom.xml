@@ -56,12 +56,13 @@
         </dependency>
         <dependency>
             <groupId>org.apache.uniffle</groupId>
-            <artifactId>rss-client</artifactId>
+            <artifactId>rss-common</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.uniffle</groupId>
-            <artifactId>rss-common</artifactId>
-            <type>test-jar</type>
+            <artifactId>rss-client</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
