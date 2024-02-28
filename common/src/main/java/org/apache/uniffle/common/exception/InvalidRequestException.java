@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.common.exception;
 
-public class InvalidRequestException extends RuntimeException {
+public class InvalidRequestException extends RssException {
 
   public InvalidRequestException(String message) {
     super(message);

@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.common.exception;
 
-public class NoBufferException extends RuntimeException {
+public class NoBufferException extends RssException {
   public NoBufferException(String message) {
     super(message);
   }
