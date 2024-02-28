@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.common.exception;
 
-public class RssWaitFailedException extends RuntimeException {
+public class RssWaitFailedException extends RssException {
   public RssWaitFailedException(String message) {
     super(message);
   }

@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.common.exception;
 
-public class NoRegisterException extends RuntimeException {
+public class NoRegisterException extends RssException {
   public NoRegisterException(String message) {
     super(message);
   }

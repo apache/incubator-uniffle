@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.common.exception;
 
-public class NoBufferForHugePartitionException extends RuntimeException {
+public class NoBufferForHugePartitionException extends RssException {
   public NoBufferForHugePartitionException(String message) {
     super(message);
   }
