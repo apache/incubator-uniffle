@@ -706,6 +706,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
       HadoopShuffleWriteHandler writeHandler,
       int num,
       int length,
+      int partitionId,
       long taskAttemptId,
       Map<Long, byte[]> expectedData,
       Roaring64NavigableMap blockIdBitmap)
@@ -714,7 +715,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
         writeHandler,
         num,
         length,
-        0,
+        partitionId,
         taskAttemptId,
         expectedData,
         blockIdBitmap,
