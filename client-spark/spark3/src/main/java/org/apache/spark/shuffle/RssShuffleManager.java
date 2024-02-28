@@ -184,11 +184,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     this.dynamicConfEnabled = sparkConf.get(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED);
     this.dataDistributionType = getDataDistributionType(sparkConf);
-    this.blockIdLayout = BlockIdLayout.from(RssSparkConfig.toRssConf(sparkConf));
-    this.maxConcurrencyPerPartitionToWrite =
-        RssSparkConfig.toRssConf(sparkConf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+    this.maxConcurrencyPerPartitionToWrite = rssConf.get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
     this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
     this.speculation = sparkConf.getBoolean("spark.speculation", false);
+    // configureBlockIdLayout requires maxFailures and speculation to be initialized
+    configureBlockIdLayout(sparkConf, rssConf);
+    this.blockIdLayout = BlockIdLayout.from(rssConf);
     long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
     int heartBeatThreadNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
     this.dataTransferPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE);
@@ -197,7 +199,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
     int unregisterRequestTimeoutSec =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC);
-    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     shuffleWriteClient =
         ShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
@@ -308,13 +309,14 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker) {
     this.sparkConf = conf;
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
-    this.dataDistributionType =
-        RssSparkConfig.toRssConf(sparkConf).get(RssClientConf.DATA_DISTRIBUTION_TYPE);
-    this.blockIdLayout = BlockIdLayout.from(RssSparkConfig.toRssConf(sparkConf));
-    this.maxConcurrencyPerPartitionToWrite =
-        RssSparkConfig.toRssConf(sparkConf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+    this.dataDistributionType = rssConf.get(RssClientConf.DATA_DISTRIBUTION_TYPE);
+    this.blockIdLayout = BlockIdLayout.from(rssConf);
+    this.maxConcurrencyPerPartitionToWrite = rssConf.get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
     this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
     this.speculation = sparkConf.getBoolean("spark.speculation", false);
+    // configureBlockIdLayout requires maxFailures and speculation to be initialized
+    configureBlockIdLayout(sparkConf, rssConf);
     this.heartbeatInterval = sparkConf.get(RssSparkConfig.RSS_HEARTBEAT_INTERVAL);
     this.heartbeatTimeout =
         sparkConf.getLong(RssSparkConfig.RSS_HEARTBEAT_TIMEOUT.key(), heartbeatInterval / 2);
@@ -359,7 +361,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     .dataCommitPoolSize(dataCommitPoolSize)
                     .unregisterThreadPoolSize(unregisterThreadPoolSize)
                     .unregisterRequestTimeSec(unregisterRequestTimeoutSec)
-                    .rssConf(RssSparkConfig.toRssConf(sparkConf)));
+                    .rssConf(rssConf));
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
     this.heartBeatScheduledExecutorService = null;
     this.taskToFailedBlockSendTracker = taskToFailedBlockSendTracker;
@@ -533,6 +535,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         this::markFailedTask,
         context,
         shuffleHandleInfo);
+  }
+
+  @Override
+  public void configureBlockIdLayout(SparkConf sparkConf, RssConf rssConf) {
+    configureBlockIdLayout(sparkConf, rssConf, maxFailures, speculation);
   }
 
   @Override

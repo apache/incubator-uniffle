@@ -373,6 +373,15 @@ public class RssSparkConfig {
                   .doc("Whether to enable the resubmit stage."))
           .createWithDefault(false);
 
+  public static final ConfigEntry<Integer> RSS_MAX_PARTITIONS =
+      createIntegerBuilder(
+              new ConfigBuilder("spark.rss.blockId.maxPartitions")
+                  .doc(
+                      "Sets the maximum number of partitions to be supported by block ids. "
+                          + "This determines the bits reserved in block ids for the "
+                          + "sequence number, the partition id and the task attempt id."))
+          .createWithDefault(1048576);
+
   // spark2 doesn't have this key defined
   public static final String SPARK_SHUFFLE_COMPRESS_KEY = "spark.shuffle.compress";
 

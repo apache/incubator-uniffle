@@ -146,7 +146,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.sparkConf = sparkConf;
     this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
     this.speculation = sparkConf.getBoolean("spark.speculation", false);
-    this.blockIdLayout = BlockIdLayout.from(RssSparkConfig.toRssConf(sparkConf));
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+    // configureBlockIdLayout requires maxFailures and speculation to be initialized
+    configureBlockIdLayout(sparkConf, rssConf);
+    this.blockIdLayout = BlockIdLayout.from(rssConf);
     this.user = sparkConf.get("spark.rss.quota.user", "user");
     this.uuid = sparkConf.get("spark.rss.quota.uuid", Long.toString(System.currentTimeMillis()));
     // set & check replica config
@@ -182,7 +185,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
     int unregisterRequestTimeoutSec =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC);
-    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     this.shuffleWriteClient =
         ShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
@@ -494,6 +496,18 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     } else {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
+  }
+
+  /**
+   * Derives block id layout config from maximum number of allowed partitions. Computes the number
+   * of required bits for partition id and task attempt id and reserves remaining bits for sequence
+   * number.
+   *
+   * @param sparkConf Spark config providing max partitions
+   * @param rssConf Rss config to amend
+   */
+  public void configureBlockIdLayout(SparkConf sparkConf, RssConf rssConf) {
+    configureBlockIdLayout(sparkConf, rssConf, maxFailures, speculation);
   }
 
   @Override

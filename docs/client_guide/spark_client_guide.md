@@ -90,7 +90,8 @@ The important configuration is listed as following.
 
 ### Block id bits
 
-If you observe an error like
+The default bits reserved in the block id are client-type agnostic. To maximize the bit utilization for Spark3 clients,
+adopt the following considerations. Also, if you observe an error like
 
     Don't support sequenceNo[…], the max value should be …
     Don't support partitionId[…], the max value should be …

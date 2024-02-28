@@ -22,7 +22,9 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.MapOutputTracker;
@@ -38,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 
@@ -49,6 +52,180 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   private AtomicBoolean isInitialized = new AtomicBoolean(false);
   private Method unregisterAllMapOutputMethod;
   private Method registerShuffleMethod;
+
+  /** See static overload of this method. */
+  public abstract void configureBlockIdLayout(SparkConf sparkConf, RssConf rssConf);
+
+  /**
+   * Derives block id layout config from maximum number of allowed partitions. This value can be set
+   * in either of SparkConf or RssConf via RssSparkConfig.RSS_MAX_PARTITIONS, where SparkConf has
+   * precedence.
+   *
+   * <p>Computes the number of required bits for partition id and task attempt id and reserves
+   * remaining bits for sequence number. Adds RssClientConf.BLOCKID_SEQUENCE_NO_BITS,
+   * RssClientConf.BLOCKID_PARTITION_ID_BITS, and RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS to the
+   * given RssConf and adds them prefixed with "spark." to the given SparkConf.
+   *
+   * <p>If RssSparkConfig.RSS_MAX_PARTITIONS is not set, given values for
+   * RssClientConf.BLOCKID_SEQUENCE_NO_BITS, RssClientConf.BLOCKID_PARTITION_ID_BITS, and
+   * RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS are copied
+   *
+   * <p>Then, BlockIdLayout can consistently be created from both configs:
+   *
+   * <p>BlockIdLayout.from(rssConf) BlockIdLayout.from(RssSparkConfig.toRssConf(sparkConf))
+   *
+   * @param sparkConf Spark config providing max partitions
+   * @param rssConf Rss config to amend
+   * @param maxFailures Spark max failures
+   * @param speculation Spark speculative execution
+   */
+  @VisibleForTesting
+  protected static void configureBlockIdLayout(
+      SparkConf sparkConf, RssConf rssConf, int maxFailures, boolean speculation) {
+    if (sparkConf.contains(RssSparkConfig.RSS_MAX_PARTITIONS.key())) {
+      configureBlockIdLayoutFromMaxPartitions(sparkConf, rssConf, maxFailures, speculation);
+    } else {
+      configureBlockIdLayoutFromLayoutConfig(sparkConf, rssConf, maxFailures, speculation);
+    }
+  }
+
+  private static void configureBlockIdLayoutFromMaxPartitions(
+      SparkConf sparkConf, RssConf rssConf, int maxFailures, boolean speculation) {
+    int maxPartitions =
+        sparkConf.getInt(
+            RssSparkConfig.RSS_MAX_PARTITIONS.key(),
+            RssSparkConfig.RSS_MAX_PARTITIONS.defaultValue().get());
+    if (maxPartitions <= 1) {
+      throw new IllegalArgumentException(
+          "Value of "
+              + RssSparkConfig.RSS_MAX_PARTITIONS.key()
+              + " must be larger than 1: "
+              + maxPartitions);
+    }
+
+    int attemptIdBits = getAttemptIdBits(getMaxAttemptNo(maxFailures, speculation));
+    int partitionIdBits = 32 - Integer.numberOfLeadingZeros(maxPartitions - 1); // [1..31]
+    int taskAttemptIdBits = partitionIdBits + attemptIdBits; // [1+attemptIdBits..31+attemptIdBits]
+    int sequenceNoBits = 63 - partitionIdBits - taskAttemptIdBits; // [1-attemptIdBits..61]
+
+    if (taskAttemptIdBits > 31) {
+      throw new IllegalArgumentException(
+          "Cannot support "
+              + RssSparkConfig.RSS_MAX_PARTITIONS.key()
+              + "="
+              + maxPartitions
+              + " partitions, "
+              + "as this would require to reserve more than 31 bits "
+              + "in the block id for task attempt ids. "
+              + "With spark.maxFailures="
+              + maxFailures
+              + " and spark.speculation="
+              + (speculation ? "true" : "false")
+              + " at most "
+              + (1 << (31 - attemptIdBits))
+              + " partitions can be supported.");
+    }
+
+    // we have to cap the sequence number bits at 31 bits,
+    // because BlockIdLayout imposes an upper bound of 31 bits
+    // which is fine as this allows for over 2bn sequence ids
+    if (sequenceNoBits > 31) {
+      // move spare bits (bits over 31) from sequence number to partition id and task attempt id
+      int spareBits = sequenceNoBits - 31;
+
+      // make spareBits even, so we add same number of bits to partitionIdBits and taskAttemptIdBits
+      spareBits += spareBits % 2;
+
+      // move spare bits over
+      partitionIdBits += spareBits / 2;
+      taskAttemptIdBits += spareBits / 2;
+      maxPartitions = (1 << partitionIdBits);
+
+      // log with original sequenceNoBits
+      if (LOG.isInfoEnabled()) {
+        LOG.info(
+            "Increasing "
+                + RssSparkConfig.RSS_MAX_PARTITIONS.key()
+                + " to "
+                + maxPartitions
+                + ", "
+                + "otherwise we would have to support 2^"
+                + sequenceNoBits
+                + " (more than 2^31) sequence numbers.");
+      }
+
+      // remove spare bits
+      sequenceNoBits -= spareBits;
+
+      // propagate the change value back to SparkConf
+      sparkConf.set(RssSparkConfig.RSS_MAX_PARTITIONS.key(), String.valueOf(maxPartitions));
+    }
+
+    // set block id layout config in RssConf
+    rssConf.set(RssClientConf.BLOCKID_SEQUENCE_NO_BITS, sequenceNoBits);
+    rssConf.set(RssClientConf.BLOCKID_PARTITION_ID_BITS, partitionIdBits);
+    rssConf.set(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS, taskAttemptIdBits);
+
+    // materialize these RssConf settings in sparkConf as well
+    // so that RssSparkConfig.toRssConf(sparkConf) provides this configuration
+    sparkConf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key(),
+        String.valueOf(sequenceNoBits));
+    sparkConf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_PARTITION_ID_BITS.key(),
+        String.valueOf(partitionIdBits));
+    sparkConf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key(),
+        String.valueOf(taskAttemptIdBits));
+  }
+
+  private static void configureBlockIdLayoutFromLayoutConfig(
+      SparkConf sparkConf, RssConf rssConf, int maxFailures, boolean speculation) {
+    String sparkPrefix = RssSparkConfig.SPARK_RSS_CONFIG_PREFIX;
+    String sparkSeqNoBitsKey = sparkPrefix + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key();
+    String sparkPartIdBitsKey = sparkPrefix + RssClientConf.BLOCKID_PARTITION_ID_BITS.key();
+    String sparkTaskIdBitsKey = sparkPrefix + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key();
+
+    if (Stream.of(sparkSeqNoBitsKey, sparkPartIdBitsKey, sparkTaskIdBitsKey)
+        .allMatch(sparkConf::contains)) {
+      rssConf.set(RssClientConf.BLOCKID_SEQUENCE_NO_BITS, sparkConf.getInt(sparkSeqNoBitsKey, 0));
+      rssConf.set(RssClientConf.BLOCKID_PARTITION_ID_BITS, sparkConf.getInt(sparkPartIdBitsKey, 0));
+      rssConf.set(
+          RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS, sparkConf.getInt(sparkTaskIdBitsKey, 0));
+    } else if (Stream.of(
+            RssClientConf.BLOCKID_SEQUENCE_NO_BITS,
+            RssClientConf.BLOCKID_PARTITION_ID_BITS,
+            RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS)
+        .allMatch(rssConf::contains)) {
+      sparkConf.set(sparkSeqNoBitsKey, rssConf.getValue(RssClientConf.BLOCKID_SEQUENCE_NO_BITS));
+      sparkConf.set(sparkPartIdBitsKey, rssConf.getValue(RssClientConf.BLOCKID_PARTITION_ID_BITS));
+      sparkConf.set(
+          sparkTaskIdBitsKey, rssConf.getValue(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS));
+    } else {
+      // use default max partitions
+      sparkConf.set(
+          RssSparkConfig.RSS_MAX_PARTITIONS.key(),
+          RssSparkConfig.RSS_MAX_PARTITIONS.defaultValueString());
+      configureBlockIdLayoutFromMaxPartitions(sparkConf, rssConf, maxFailures, speculation);
+    }
+  }
+
+  protected static int getMaxAttemptNo(int maxFailures, boolean speculation) {
+    // attempt number is zero based: 0, 1, …, maxFailures-1
+    // max maxFailures < 1 is not allowed but for safety, we interpret that as maxFailures == 1
+    int maxAttemptNo = maxFailures < 1 ? 0 : maxFailures - 1;
+
+    // with speculative execution enabled we could observe +1 attempts
+    if (speculation) {
+      maxAttemptNo++;
+    }
+
+    return maxAttemptNo;
+  }
+
+  protected static int getAttemptIdBits(int maxAttemptNo) {
+    return 32 - Integer.numberOfLeadingZeros(maxAttemptNo);
+  }
 
   /** See static overload of this method. */
   public abstract long getTaskAttemptIdForBlockId(int mapIndex, int attemptNo);
@@ -68,14 +245,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
    */
   protected static long getTaskAttemptIdForBlockId(
       int mapIndex, int attemptNo, int maxFailures, boolean speculation, int maxTaskAttemptIdBits) {
-    // attempt number is zero based: 0, 1, …, maxFailures-1
-    // max maxFailures < 1 is not allowed but for safety, we interpret that as maxFailures == 1
-    int maxAttemptNo = maxFailures < 1 ? 0 : maxFailures - 1;
-
-    // with speculative execution enabled we could observe +1 attempts
-    if (speculation) {
-      maxAttemptNo++;
-    }
+    int maxAttemptNo = getMaxAttemptNo(maxFailures, speculation);
+    int attemptBits = getAttemptIdBits(maxAttemptNo);
 
     if (attemptNo > maxAttemptNo) {
       // this should never happen, if it does, our assumptions are wrong,
@@ -89,7 +260,6 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
               + ".");
     }
 
-    int attemptBits = 32 - Integer.numberOfLeadingZeros(maxAttemptNo);
     int mapIndexBits = 32 - Integer.numberOfLeadingZeros(mapIndex);
     if (mapIndexBits + attemptBits > maxTaskAttemptIdBits) {
       throw new RssException(

@@ -18,15 +18,24 @@
 package org.apache.uniffle.shuffle.manager;
 
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 import org.apache.spark.SparkConf;
+import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 
 import static org.apache.uniffle.shuffle.manager.RssShuffleManagerBase.getTaskAttemptIdForBlockId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,6 +52,283 @@ public class RssShuffleManagerBaseTest {
     remoteStorageInfo = RssShuffleManagerBase.getDefaultRemoteStorageInfo(sparkConf);
     assertEquals(remoteStorageInfo.getConfItems().size(), 1);
     assertEquals(remoteStorageInfo.getConfItems().get("fs.defaultFs"), "hdfs://rbf-xxx/foo");
+  }
+
+  private static Stream<Arguments> testConfigureBlockIdLayoutSource() {
+    // test arguments are
+    // - maxPartitions
+    // - maxFailure
+    // - speculation
+    // - expected maxPartitions
+    // - expected sequence number bits
+    // - expected partition id bits
+    // - expected task attempt id bits
+    return Stream.of(
+        // default config values
+        Arguments.of(null, 4, false, "1048576", 21, 20, 22),
+
+        // without speculation
+        Arguments.of("2", 0, false, "65536", 31, 16, 16),
+        Arguments.of("2147483647", 0, false, "2147483647", 1, 31, 31),
+        Arguments.of("1024", 3, false, "32768", 31, 15, 17),
+        Arguments.of("131072", 3, false, "131072", 27, 17, 19),
+        Arguments.of("1048576", 3, false, "1048576", 21, 20, 22),
+        Arguments.of("1048577", 3, false, "1048577", 19, 21, 23),
+        Arguments.of("1024", 4, false, "32768", 31, 15, 17),
+        Arguments.of("131072", 4, false, "131072", 27, 17, 19),
+        Arguments.of("1048576", 4, false, "1048576", 21, 20, 22),
+        Arguments.of("1048577", 4, false, "1048577", 19, 21, 23),
+        Arguments.of("1024", 5, false, "32768", 30, 15, 18),
+        Arguments.of("131072", 5, false, "131072", 26, 17, 20),
+        Arguments.of("1048576", 5, false, "1048576", 20, 20, 23),
+        Arguments.of("1048577", 5, false, "1048577", 18, 21, 24),
+        Arguments.of("2", 1073741824, false, "2", 31, 1, 31),
+
+        // with speculation
+        Arguments.of("2", 0, true, "65536", 30, 16, 17),
+        Arguments.of("1073741824", 0, true, "1073741824", 2, 30, 31),
+        Arguments.of("1024", 3, true, "32768", 31, 15, 17),
+        Arguments.of("131072", 3, true, "131072", 27, 17, 19),
+        Arguments.of("1048576", 3, true, "1048576", 21, 20, 22),
+        Arguments.of("1048577", 3, true, "1048577", 19, 21, 23),
+        Arguments.of("1024", 4, true, "32768", 30, 15, 18),
+        Arguments.of("131072", 4, true, "131072", 26, 17, 20),
+        Arguments.of("1048576", 4, true, "1048576", 20, 20, 23),
+        Arguments.of("1048577", 4, true, "1048577", 18, 21, 24),
+        Arguments.of("1024", 5, true, "32768", 30, 15, 18),
+        Arguments.of("131072", 5, true, "131072", 26, 17, 20),
+        Arguments.of("1048576", 5, true, "1048576", 20, 20, 23),
+        Arguments.of("1048577", 5, true, "1048577", 18, 21, 24),
+        Arguments.of("2", 1073741823, true, "2", 31, 1, 31));
+  }
+
+  @ParameterizedTest
+  @MethodSource("testConfigureBlockIdLayoutSource")
+  public void testConfigureBlockIdLayout(
+      String setMaxPartitions,
+      Integer setMaxFailure,
+      Boolean setSpeculation,
+      String expectedMaxPartitions,
+      int expectedSequenceNoBits,
+      int expectedPartitionIdBits,
+      int expectedTaskAttemptIdBits) {
+    SparkConf sparkConf = new SparkConf();
+    if (setMaxPartitions != null) {
+      sparkConf.set(RssSparkConfig.RSS_MAX_PARTITIONS.key(), setMaxPartitions);
+    }
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+
+    RssShuffleManagerBase.configureBlockIdLayout(sparkConf, rssConf, setMaxFailure, setSpeculation);
+
+    if (expectedMaxPartitions == null) {
+      assertFalse(sparkConf.contains(RssSparkConfig.RSS_MAX_PARTITIONS.key()));
+    } else {
+      assertTrue(sparkConf.contains(RssSparkConfig.RSS_MAX_PARTITIONS.key()));
+      assertEquals(expectedMaxPartitions, sparkConf.get(RssSparkConfig.RSS_MAX_PARTITIONS.key()));
+    }
+
+    String key;
+    key = RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key();
+    assertTrue(sparkConf.contains(key));
+    assertEquals(String.valueOf(expectedSequenceNoBits), sparkConf.get(key));
+    assertEquals(expectedSequenceNoBits, rssConf.get(RssClientConf.BLOCKID_SEQUENCE_NO_BITS));
+
+    key = RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_PARTITION_ID_BITS.key();
+    assertTrue(sparkConf.contains(key));
+    assertEquals(String.valueOf(expectedPartitionIdBits), sparkConf.get(key));
+    assertEquals(expectedPartitionIdBits, rssConf.get(RssClientConf.BLOCKID_PARTITION_ID_BITS));
+
+    key = RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key();
+    assertTrue(sparkConf.contains(key));
+    assertEquals(String.valueOf(expectedTaskAttemptIdBits), sparkConf.get(key));
+    assertEquals(
+        expectedTaskAttemptIdBits, rssConf.get(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS));
+  }
+
+  @Test
+  public void testConfigureBlockIdLayoutOverrides() {
+    SparkConf sparkConf = new SparkConf();
+    RssConf rssConf = new RssConf();
+    int maxFailures = 4;
+    boolean speculation = false;
+
+    String sparkPrefix = RssSparkConfig.SPARK_RSS_CONFIG_PREFIX;
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
+    String sparkSeqNoBitsKey = sparkPrefix + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key();
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
+    String sparkPartIdBitsKey = sparkPrefix + RssClientConf.BLOCKID_PARTITION_ID_BITS.key();
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
+    String sparkTaskIdBitsKey = sparkPrefix + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key();
+
+    // SparkConf populates RssConf
+    sparkConf.set(RssSparkConfig.RSS_MAX_PARTITIONS.key(), "131072");
+    RssShuffleManagerBase.configureBlockIdLayout(sparkConf, rssConf, maxFailures, speculation);
+    assertEquals(27, rssConf.get(RssClientConf.BLOCKID_SEQUENCE_NO_BITS));
+    assertEquals(17, rssConf.get(RssClientConf.BLOCKID_PARTITION_ID_BITS));
+    assertEquals(19, rssConf.get(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS));
+    assertEquals(131072, sparkConf.getInt(RssSparkConfig.RSS_MAX_PARTITIONS.key(), -1));
+    assertEquals(27, sparkConf.getInt(sparkSeqNoBitsKey, -1));
+    assertEquals(17, sparkConf.getInt(sparkPartIdBitsKey, -1));
+    assertEquals(19, sparkConf.getInt(sparkTaskIdBitsKey, -1));
+
+    // SparkConf overrides RssConf
+    sparkConf.set(RssSparkConfig.RSS_MAX_PARTITIONS.key(), "131073");
+    RssShuffleManagerBase.configureBlockIdLayout(sparkConf, rssConf, maxFailures, speculation);
+    assertEquals(25, rssConf.get(RssClientConf.BLOCKID_SEQUENCE_NO_BITS));
+    assertEquals(18, rssConf.get(RssClientConf.BLOCKID_PARTITION_ID_BITS));
+    assertEquals(20, rssConf.get(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS));
+    assertEquals(131073, sparkConf.getInt(RssSparkConfig.RSS_MAX_PARTITIONS.key(), -1));
+    assertEquals(25, sparkConf.getInt(sparkSeqNoBitsKey, -1));
+    assertEquals(18, sparkConf.getInt(sparkPartIdBitsKey, -1));
+    assertEquals(20, sparkConf.getInt(sparkTaskIdBitsKey, -1));
+
+    // SparkConf block id config overrides RssConf
+    sparkConf.remove(RssSparkConfig.RSS_MAX_PARTITIONS.key());
+    sparkConf.set(sparkSeqNoBitsKey, "22");
+    sparkConf.set(sparkPartIdBitsKey, "21");
+    sparkConf.set(sparkTaskIdBitsKey, "20");
+    RssShuffleManagerBase.configureBlockIdLayout(sparkConf, rssConf, maxFailures, speculation);
+    assertEquals(22, rssConf.get(RssClientConf.BLOCKID_SEQUENCE_NO_BITS));
+    assertEquals(21, rssConf.get(RssClientConf.BLOCKID_PARTITION_ID_BITS));
+    assertEquals(20, rssConf.get(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS));
+    assertFalse(sparkConf.contains(RssSparkConfig.RSS_MAX_PARTITIONS.key()));
+    assertEquals(22, sparkConf.getInt(sparkSeqNoBitsKey, -1));
+    assertEquals(21, sparkConf.getInt(sparkPartIdBitsKey, -1));
+    assertEquals(20, sparkConf.getInt(sparkTaskIdBitsKey, -1));
+
+    // empty SparkConf preserves RssConf
+    sparkConf = new SparkConf();
+    RssShuffleManagerBase.configureBlockIdLayout(sparkConf, rssConf, maxFailures, speculation);
+    assertEquals(22, rssConf.get(RssClientConf.BLOCKID_SEQUENCE_NO_BITS));
+    assertEquals(21, rssConf.get(RssClientConf.BLOCKID_PARTITION_ID_BITS));
+    assertEquals(20, rssConf.get(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS));
+    assertFalse(sparkConf.contains(RssSparkConfig.RSS_MAX_PARTITIONS.key()));
+    assertEquals(22, sparkConf.getInt(sparkSeqNoBitsKey, -1));
+    assertEquals(21, sparkConf.getInt(sparkPartIdBitsKey, -1));
+    assertEquals(20, sparkConf.getInt(sparkTaskIdBitsKey, -1));
+  }
+
+  private static Stream<Arguments> testConfigureBlockIdLayoutMaxPartitionsValueExceptionSource() {
+    // test arguments are
+    // - maxPartitions
+    // - maxFailure
+    // - speculation
+    return Stream.of(
+        // without speculation
+        Arguments.of("-1", 4, false),
+        Arguments.of("0", 4, false),
+
+        // with speculation
+        Arguments.of("-1", 4, true),
+        Arguments.of("0", 4, true),
+        Arguments.of("1", 4, true));
+  }
+
+  @ParameterizedTest
+  @MethodSource("testConfigureBlockIdLayoutMaxPartitionsValueExceptionSource")
+  public void testConfigureBlockIdLayoutMaxPartitionsValueException(
+      String setMaxPartitions, int setMaxFailure, boolean setSpeculation) {
+    SparkConf sparkConf = new SparkConf();
+    if (setMaxPartitions != null) {
+      sparkConf.set(RssSparkConfig.RSS_MAX_PARTITIONS.key(), setMaxPartitions);
+    }
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+
+    Executable call =
+        () ->
+            RssShuffleManagerBase.configureBlockIdLayout(
+                sparkConf, rssConf, setMaxFailure, setSpeculation);
+    Exception e = assertThrowsExactly(IllegalArgumentException.class, call);
+
+    String expectedMessage =
+        "Value of spark.rss.blockId.maxPartitions must be larger than 1: " + setMaxPartitions;
+    assertEquals(expectedMessage, e.getMessage());
+  }
+
+  private static Stream<Arguments> testConfigureBlockIdLayoutUnsupportedMaxPartitionsSource() {
+    // test arguments are
+    // - maxPartitions
+    // - maxFailure
+    // - speculation
+    // - expected message
+    return Stream.of(
+        // without speculation
+        Arguments.of("2097152", 2048, false, "1048576"),
+        Arguments.of("536870913", 3, false, "536870912"),
+        Arguments.of("1073741825", 2, false, "1073741824"),
+
+        // with speculation
+        Arguments.of("2097152", 2048, true, "524288"),
+        Arguments.of("536870913", 3, true, "536870912"),
+        Arguments.of("1073741824", 2, true, "536870912"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("testConfigureBlockIdLayoutUnsupportedMaxPartitionsSource")
+  public void testConfigureBlockIdLayoutUnsupportedMaxPartitions(
+      String setMaxPartitions, int setMaxFailure, boolean setSpeculation, String atMost) {
+    SparkConf sparkConf = new SparkConf();
+    if (setMaxPartitions != null) {
+      sparkConf.set(RssSparkConfig.RSS_MAX_PARTITIONS.key(), setMaxPartitions);
+    }
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+
+    String expectedMessage =
+        "Cannot support spark.rss.blockId.maxPartitions="
+            + setMaxPartitions
+            + " partitions, as this would require to reserve more than 31 bits in the block id for task attempt ids. With spark.maxFailures="
+            + setMaxFailure
+            + " and spark.speculation="
+            + setSpeculation
+            + " at most "
+            + atMost
+            + " partitions can be supported.";
+    Executable call =
+        () ->
+            RssShuffleManagerBase.configureBlockIdLayout(
+                sparkConf, rssConf, setMaxFailure, setSpeculation);
+    Exception e = assertThrowsExactly(IllegalArgumentException.class, call);
+    assertEquals(expectedMessage, e.getMessage());
+  }
+
+  @Test
+  public void testGetMaxAttemptNo() {
+    // without speculation
+    assertEquals(0, RssShuffleManagerBase.getMaxAttemptNo(-1, false));
+    assertEquals(0, RssShuffleManagerBase.getMaxAttemptNo(0, false));
+    assertEquals(0, RssShuffleManagerBase.getMaxAttemptNo(1, false));
+    assertEquals(1, RssShuffleManagerBase.getMaxAttemptNo(2, false));
+    assertEquals(2, RssShuffleManagerBase.getMaxAttemptNo(3, false));
+    assertEquals(3, RssShuffleManagerBase.getMaxAttemptNo(4, false));
+    assertEquals(4, RssShuffleManagerBase.getMaxAttemptNo(5, false));
+    assertEquals(1023, RssShuffleManagerBase.getMaxAttemptNo(1024, false));
+
+    // with speculation
+    assertEquals(1, RssShuffleManagerBase.getMaxAttemptNo(-1, true));
+    assertEquals(1, RssShuffleManagerBase.getMaxAttemptNo(0, true));
+    assertEquals(1, RssShuffleManagerBase.getMaxAttemptNo(1, true));
+    assertEquals(2, RssShuffleManagerBase.getMaxAttemptNo(2, true));
+    assertEquals(3, RssShuffleManagerBase.getMaxAttemptNo(3, true));
+    assertEquals(4, RssShuffleManagerBase.getMaxAttemptNo(4, true));
+    assertEquals(5, RssShuffleManagerBase.getMaxAttemptNo(5, true));
+    assertEquals(1024, RssShuffleManagerBase.getMaxAttemptNo(1024, true));
+  }
+
+  @Test
+  public void testGetAttemptIdBits() {
+    assertEquals(0, RssShuffleManagerBase.getAttemptIdBits(0));
+    assertEquals(1, RssShuffleManagerBase.getAttemptIdBits(1));
+    assertEquals(2, RssShuffleManagerBase.getAttemptIdBits(2));
+    assertEquals(2, RssShuffleManagerBase.getAttemptIdBits(3));
+    assertEquals(3, RssShuffleManagerBase.getAttemptIdBits(4));
+    assertEquals(3, RssShuffleManagerBase.getAttemptIdBits(5));
+    assertEquals(3, RssShuffleManagerBase.getAttemptIdBits(6));
+    assertEquals(3, RssShuffleManagerBase.getAttemptIdBits(7));
+    assertEquals(4, RssShuffleManagerBase.getAttemptIdBits(8));
+    assertEquals(4, RssShuffleManagerBase.getAttemptIdBits(9));
+    assertEquals(10, RssShuffleManagerBase.getAttemptIdBits(1023));
+    assertEquals(11, RssShuffleManagerBase.getAttemptIdBits(1024));
+    assertEquals(11, RssShuffleManagerBase.getAttemptIdBits(1025));
   }
 
   private long bits(String string) {
