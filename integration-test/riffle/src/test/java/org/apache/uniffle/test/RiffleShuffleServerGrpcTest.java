@@ -547,7 +547,7 @@ public class RiffleShuffleServerGrpcTest extends RiffleIntegrationTestBase {
           for (int i = 0; i < 100; i++) {
             Map<Integer, List<Long>> ptbs = Maps.newHashMap();
             List<Long> blockIds = Lists.newArrayList();
-            Long blockId = ClientUtils.getBlockId(1L, 0L, (long)i);
+            Long blockId = ClientUtils.getBlockId(1L, 0L, (long) i);
             expectedBlockIds.add(blockId);
             blockIds.add(blockId);
             ptbs.put(1, blockIds);
@@ -561,7 +561,7 @@ public class RiffleShuffleServerGrpcTest extends RiffleIntegrationTestBase {
           for (int i = 100; i < 200; i++) {
             Map<Integer, List<Long>> ptbs = Maps.newHashMap();
             List<Long> blockIds = Lists.newArrayList();
-            Long blockId = ClientUtils.getBlockId(1L, 1L, (long)i);
+            Long blockId = ClientUtils.getBlockId(1L, 1L, (long) i);
             expectedBlockIds.add(blockId);
             blockIds.add(blockId);
             ptbs.put(1, blockIds);
@@ -575,7 +575,7 @@ public class RiffleShuffleServerGrpcTest extends RiffleIntegrationTestBase {
           for (int i = 200; i < 300; i++) {
             Map<Integer, List<Long>> ptbs = Maps.newHashMap();
             List<Long> blockIds = Lists.newArrayList();
-            Long blockId = ClientUtils.getBlockId(1L, 2L, (long)i);
+            Long blockId = ClientUtils.getBlockId(1L, 2L, (long) i);
             expectedBlockIds.add(blockId);
             blockIds.add(blockId);
             ptbs.put(1, blockIds);
@@ -609,7 +609,8 @@ public class RiffleShuffleServerGrpcTest extends RiffleIntegrationTestBase {
   private List<Long> getBlockIdList(int partitionId, int blockNum) {
     List<Long> blockIds = Lists.newArrayList();
     for (int i = 0; i < blockNum; i++) {
-      blockIds.add(ClientUtils.getBlockId((long)partitionId, 0L, (long)atomicInteger.getAndIncrement()));
+      blockIds.add(
+          ClientUtils.getBlockId((long) partitionId, 0L, (long) atomicInteger.getAndIncrement()));
     }
     return blockIds;
   }
