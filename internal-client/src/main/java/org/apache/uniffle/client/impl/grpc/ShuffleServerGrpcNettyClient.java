@@ -131,6 +131,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
               }
 
               sendShuffleDataRequest.setRequireId(requireId);
+              sendShuffleDataRequest.setTimestamp(System.currentTimeMillis());
               long start = System.currentTimeMillis();
               RpcResponse rpcResponse =
                   transportClient.sendRpcSync(sendShuffleDataRequest, rpcTimeout);
