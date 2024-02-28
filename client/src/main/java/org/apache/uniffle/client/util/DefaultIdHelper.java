@@ -24,11 +24,7 @@ public class DefaultIdHelper implements IdHelper {
   private final BlockIdLayout layout;
 
   public DefaultIdHelper(BlockIdLayout layout) {
-    if (layout == null) {
-      this.layout = BlockIdLayout.DEFAULT;
-    } else {
-      this.layout = layout;
-    }
+    this.layout = layout;
   }
 
   @Override

@@ -89,6 +89,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     TestUtils.validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
@@ -103,6 +104,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     TestUtils.validateResult(readClient, expectedData);
     try {
@@ -138,6 +140,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
             .shuffleServerInfoList(Lists.newArrayList(ssi1, ssi2))
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     TestUtils.validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
@@ -197,6 +200,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
             .shuffleServerInfoList(Lists.newArrayList(ssi1, ssi2))
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     TestUtils.validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
@@ -221,6 +225,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     Path dataFile = new Path(basePath + "/appId/0/0-1/" + ssi1.getId() + "_0.data");
     // data file is deleted after readClient checkExpectedBlockIds
@@ -260,6 +265,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     // index file is deleted after iterator initialization, it should be ok, all index infos are
     // read already
@@ -293,6 +299,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap1)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
 
     final ShuffleReadClientImpl readClient2 =
@@ -302,6 +309,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap2)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     TestUtils.validateResult(readClient1, expectedData1);
     readClient1.checkProcessedBlockIds();
@@ -375,6 +383,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath("basePath")
             .blockIdBitmap(Roaring64NavigableMap.bitmapOf())
             .taskIdBitmap(Roaring64NavigableMap.bitmapOf())
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     assertNull(readClient.readShuffleBlockData());
     readClient.checkProcessedBlockIds();
@@ -406,6 +415,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(wrongBlockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     assertNull(readClient.readShuffleBlockData());
     try {
@@ -434,6 +444,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     TestUtils.validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
@@ -446,6 +457,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     TestUtils.validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
@@ -458,6 +470,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     TestUtils.validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
@@ -470,6 +483,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     TestUtils.validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
@@ -482,6 +496,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     TestUtils.validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
@@ -508,6 +523,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     TestUtils.validateResult(readClient, expectedData);
     assertEquals(15, readClient.getProcessedBlockIds().getLongCardinality());
@@ -603,6 +619,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     TestUtils.validateResult(readClient, expectedData);
     assertEquals(15, readClient.getProcessedBlockIds().getLongCardinality());
@@ -632,6 +649,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .basePath(basePath)
             .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
+            .blockIdLayout(BlockIdLayout.DEFAULT)
             .build();
     TestUtils.validateResult(readClient, expectedData);
     assertEquals(25, readClient.getProcessedBlockIds().getLongCardinality());
