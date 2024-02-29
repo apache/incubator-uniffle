@@ -105,6 +105,7 @@
     <skipITs>${skipTests}</skipITs>
     <skipBuildImage>true</skipBuildImage>
     <snakeyaml.version>2.2</snakeyaml.version>
+    <toml4j.version>0.7.2</toml4j.version>
   </properties>
 
   <repositories>
@@ -142,6 +143,7 @@
     <module>client</module>
     <module>integration-test/common</module>
     <module>cli</module>
+    <module>integration-test/riffle</module>
   </modules>
 
   <dependencies>
@@ -736,6 +738,11 @@
         <groupId>org.yaml</groupId>
         <artifactId>snakeyaml</artifactId>
         <version>${snakeyaml.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.moandjiezana.toml</groupId>
+        <artifactId>toml4j</artifactId>
+        <version>${toml4j.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -2321,6 +2328,55 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>riffle</id>
+      <modules>
+        <module>integration-test/riffle</module>
+      </modules>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>shuffle-storage</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>coordinator</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-common</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-client</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-minicluster</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+          </dependency>
+          <dependency>
+            <groupId>com.moandjiezana.toml</groupId>
+            <artifactId>toml4j</artifactId>
+            <version>${toml4j.version}</version>
+            <scope>test</scope>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
     </profile>
   </profiles>
 </project>
