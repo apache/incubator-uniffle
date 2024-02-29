@@ -116,7 +116,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
       try {
         RetryUtils.retryWithCondition(
             () -> {
-              TransportClient transportClient = getTransportClient();
+              final TransportClient transportClient = getTransportClient();
               long requireId =
                   requirePreAllocation(
                       request.getAppId(),
@@ -129,8 +129,8 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
                         "requirePreAllocation failed! size[%s], host[%s], port[%s]",
                         allocateSize, host, port));
               }
-
               sendShuffleDataRequest.setRequireId(requireId);
+              sendShuffleDataRequest.setTimestamp(System.currentTimeMillis());
               long start = System.currentTimeMillis();
               RpcResponse rpcResponse =
                   transportClient.sendRpcSync(sendShuffleDataRequest, rpcTimeout);
