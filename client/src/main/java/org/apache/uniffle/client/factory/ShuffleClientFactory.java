@@ -205,7 +205,6 @@ public class ShuffleClientFactory {
     private List<ShuffleServerInfo> shuffleServerInfoList;
     private Configuration hadoopConf;
     private IdHelper idHelper;
-    private BlockIdLayout blockIdLayout;
     private ShuffleDataDistributionType shuffleDataDistributionType;
     private boolean expectedTaskIdsBitmapFilterEnable;
     private RssConf rssConf;
@@ -267,11 +266,6 @@ public class ShuffleClientFactory {
 
     public ReadClientBuilder idHelper(IdHelper idHelper) {
       this.idHelper = idHelper;
-      return this;
-    }
-
-    public ReadClientBuilder blockIdLayout(BlockIdLayout layout) {
-      this.blockIdLayout = layout;
       return this;
     }
 
@@ -361,10 +355,6 @@ public class ShuffleClientFactory {
 
     public IdHelper getIdHelper() {
       return idHelper;
-    }
-
-    public BlockIdLayout getBlockIdLayout() {
-      return blockIdLayout;
     }
 
     public ShuffleDataDistributionType getShuffleDataDistributionType() {

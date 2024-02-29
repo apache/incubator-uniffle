@@ -71,9 +71,6 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
 
   public ShuffleReadClientImpl(ShuffleClientFactory.ReadClientBuilder builder) {
     // add default value
-    if (builder.getIdHelper() == null) {
-      builder.idHelper(new DefaultIdHelper(builder.getBlockIdLayout()));
-    }
     if (builder.getShuffleDataDistributionType() == null) {
       builder.shuffleDataDistributionType(ShuffleDataDistributionType.NORMAL);
     }
@@ -107,11 +104,17 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, builder.getIndexReadLimit());
       rssConf.set(
           RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, String.valueOf(builder.getReadBufferSize()));
+      rssConf.setInteger(RssClientConf.BLOCKID_SEQUENCE_NO_BITS, BlockIdLayout.DEFAULT_SEQUENCE_NO_BITS);
+      rssConf.setInteger(RssClientConf.BLOCKID_PARTITION_ID_BITS, BlockIdLayout.DEFAULT_PARTITION_ID_BITS);
+      rssConf.setInteger(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS, BlockIdLayout.DEFAULT_TASK_ATTEMPT_ID_BITS);
 
       builder.rssConf(rssConf);
       builder.offHeapEnable(false);
       builder.expectedTaskIdsBitmapFilterEnable(false);
       builder.clientType(rssConf.get(RssClientConf.RSS_CLIENT_TYPE));
+    }
+    if (builder.getIdHelper() == null) {
+      builder.idHelper(new DefaultIdHelper(BlockIdLayout.from(builder.getRssConf())));
     }
 
     init(builder);
@@ -124,7 +127,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     this.taskIdBitmap = builder.getTaskIdBitmap();
     this.idHelper = builder.getIdHelper();
     this.shuffleServerInfoList = builder.getShuffleServerInfoList();
-    this.blockIdLayout = builder.getBlockIdLayout();
+    this.blockIdLayout = BlockIdLayout.from(builder.getRssConf());
 
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
     request.setStorageType(builder.getStorageType());
