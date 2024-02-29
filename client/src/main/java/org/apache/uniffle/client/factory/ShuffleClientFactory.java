@@ -30,7 +30,6 @@ import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.IdHelper;
 
 public class ShuffleClientFactory {

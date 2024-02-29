@@ -59,7 +59,6 @@ import org.apache.uniffle.common.util.ThreadUtils;
 
 public class WriteBufferManager<K, V> {
   private static final Logger LOG = LoggerFactory.getLogger(WriteBufferManager.class);
-  private static final BlockIdLayout LAYOUT = BlockIdLayout.DEFAULT;
   private long copyTime = 0;
   private long sortTime = 0;
   private long compressTime = 0;
@@ -97,6 +96,7 @@ public class WriteBufferManager<K, V> {
   private final long sendCheckTimeout;
   private final int bitmapSplitNum;
   private final long taskAttemptId;
+  private final BlockIdLayout blockIdLayout;
   private TezTaskAttemptID tezTaskAttemptID;
   private final RssConf rssConf;
   private final int shuffleId;
@@ -137,6 +137,7 @@ public class WriteBufferManager<K, V> {
     this.maxMemSize = maxMemSize;
     this.appId = appId;
     this.taskAttemptId = taskAttemptId;
+    this.blockIdLayout = BlockIdLayout.from(rssConf);
     this.successBlockIds = successBlockIds;
     this.failedBlockIds = failedBlockIds;
     this.shuffleWriteClient = shuffleWriteClient;
@@ -374,7 +375,7 @@ public class WriteBufferManager<K, V> {
     compressTime += System.currentTimeMillis() - start;
     final long blockId =
         RssTezUtils.getBlockId(partitionId, taskAttemptId, getNextSeqNo(partitionId));
-    LOG.info("blockId is {}", LAYOUT.asBlockId(blockId));
+    LOG.info("blockId is {}", blockIdLayout.asBlockId(blockId));
     uncompressedDataLen += data.length;
     // add memory to indicate bytes which will be sent to shuffle server
     inSendListBytes.addAndGet(wb.getDataLength());

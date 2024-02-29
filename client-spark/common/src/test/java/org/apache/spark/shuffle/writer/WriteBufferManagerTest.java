@@ -56,7 +56,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 public class WriteBufferManagerTest {
-  // test blockid config is considered
 
   private WriteBufferManager createManager(SparkConf conf) {
     Serializer kryoSerializer = new KryoSerializer(conf);
