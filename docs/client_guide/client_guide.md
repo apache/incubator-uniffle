@@ -62,23 +62,6 @@ Notice:
 
 2. `<client_type>.rss.coordinator.quorum` is compulsory, and other configurations are optional when coordinator dynamic configuration is enabled.
 
-
-### Block id bits
-
-If you observe an error like
-
-    Don't support sequenceNo[…], the max value should be …
-    Don't support partitionId[…], the max value should be …
-    Don't support taskAttemptId[…], the max value should be …
-
-you should consider increasing the bits reserved in the blockId for that number / id (while decreasing the other number of bits).
-
-| Property Name                             | Default | Description                                                                                                                                             |
-|-------------------------------------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
-|<client_type>.rss.blockId.sequenceNoBits   | 18      | Number of bits reserved in the blockId for the sequence number. Note that `sequenceNoBits + partitionIdBits + taskAttemptIdBits` has to sum up to `63`. |
-|<client_type>.rss.blockId.partitionIdBits  | 24      | Number of bits reserved in the blockId for the partition id. Note that `sequenceNoBits + partitionIdBits + taskAttemptIdBits` has to sum up to `63`.    |
-|<client_type>.rss.blockId.taskAttemptIdBits| 21      | Number of bits reserved in the blockId for the task attempt id. Note that `sequenceNoBits + partitionIdBits + taskAttemptIdBits` has to sum up to `63`. |
-
 ### Client Quorum Setting 
 
 Uniffle supports client-side quorum protocol to tolerant shuffle server crash. 

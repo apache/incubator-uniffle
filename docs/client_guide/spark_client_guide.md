@@ -88,6 +88,22 @@ The important configuration is listed as following.
 | spark.rss.client.remote.storage.useLocalConfAsDefault | false   | This option is only valid when the remote storage path is specified. If ture, the remote storage conf will use the client side hadoop configuration loaded from the classpath |
 | spark.rss.hadoop.*                                    | -       | The prefix key for Hadoop conf. For Spark like that: `spark.rss.hadoop.fs.defaultFS=hdfs://rbf-x1`, this will be as `fs.defaultFS=hdfs://rbf-x1` for Hadoop storage           |
 
+### Block id bits
+
+If you observe an error like
+
+    Don't support sequenceNo[…], the max value should be …
+    Don't support partitionId[…], the max value should be …
+    Don't support taskAttemptId[…], the max value should be …
+
+you should consider increasing the bits reserved in the blockId for that number / id (while decreasing the other number of bits).
+
+| Property Name                     | Default | Description                                                                                                                                             |
+|-----------------------------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+|spark.rss.blockId.sequenceNoBits   | 18      | Number of bits reserved in the blockId for the sequence number. Note that `sequenceNoBits + partitionIdBits + taskAttemptIdBits` has to sum up to `63`. |
+|spark.rss.blockId.partitionIdBits  | 24      | Number of bits reserved in the blockId for the partition id. Note that `sequenceNoBits + partitionIdBits + taskAttemptIdBits` has to sum up to `63`.    |
+|spark.rss.blockId.taskAttemptIdBits| 21      | Number of bits reserved in the blockId for the task attempt id. Note that `sequenceNoBits + partitionIdBits + taskAttemptIdBits` has to sum up to `63`. |
+
 ### Adaptive Remote Shuffle Enabling 
 Currently, this feature only supports Spark. 
 
