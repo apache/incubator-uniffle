@@ -38,6 +38,8 @@ import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
@@ -545,6 +547,12 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     writeTestData(writeHandler, 5, 30, 1, 2, Maps.newHashMap(), blockIdBitmap, layout);
     writeTestData(writeHandler, 5, 30, 1, 3, expectedData, blockIdBitmap, layout);
 
+    // we need to tell the read client about the blockId layout
+    RssConf rssConf = new RssConf();
+    rssConf.setInteger(RssClientConf.BLOCKID_SEQUENCE_NO_BITS, layout.sequenceNoBits);
+    rssConf.setInteger(RssClientConf.BLOCKID_PARTITION_ID_BITS, layout.partitionIdBits);
+    rssConf.setInteger(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS, layout.taskAttemptIdBits);
+
     // unexpected taskAttemptId should be filtered
     assertEquals(15, blockIdBitmap.getIntCardinality());
     ShuffleReadClientImpl readClient =
@@ -554,6 +562,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
             .blockIdBitmap(blockIdBitmap)
             .partitionId(1)
             .taskIdBitmap(taskIdBitmap)
+            .rssConf(rssConf)
             .build();
     // note that skipped block ids in blockIdBitmap will be removed by `build()`
     assertEquals(10, blockIdBitmap.getIntCardinality());

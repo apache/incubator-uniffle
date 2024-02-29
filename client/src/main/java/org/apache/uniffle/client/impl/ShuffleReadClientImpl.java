@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -77,7 +78,17 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     if (builder.getHadoopConf() == null) {
       builder.hadoopConf(new Configuration());
     }
-    if (builder.getRssConf() != null) {
+    if (builder.getRssConf() != null
+        &&
+        // if rssConf contains only block id config, consider this as test mode as well
+        !builder
+            .getRssConf()
+            .getKeySet()
+            .equals(
+                Sets.newHashSet(
+                    RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key(),
+                    RssClientConf.BLOCKID_PARTITION_ID_BITS.key(),
+                    RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key()))) {
       final int indexReadLimit = builder.getRssConf().get(RssClientConf.RSS_INDEX_READ_LIMIT);
       final String storageType = builder.getRssConf().get(RssClientConf.RSS_STORAGE_TYPE);
       long readBufferSize =
@@ -99,17 +110,23 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       builder.clientType(builder.getRssConf().get(RssClientConf.RSS_CLIENT_TYPE));
     } else {
       // most for test
-      RssConf rssConf = new RssConf();
+      RssConf rssConf = (builder.getRssConf() == null) ? new RssConf() : builder.getRssConf();
       rssConf.set(RssClientConf.RSS_STORAGE_TYPE, builder.getStorageType());
       rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, builder.getIndexReadLimit());
       rssConf.set(
           RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, String.valueOf(builder.getReadBufferSize()));
-      rssConf.setInteger(
-          RssClientConf.BLOCKID_SEQUENCE_NO_BITS, BlockIdLayout.DEFAULT_SEQUENCE_NO_BITS);
-      rssConf.setInteger(
-          RssClientConf.BLOCKID_PARTITION_ID_BITS, BlockIdLayout.DEFAULT_PARTITION_ID_BITS);
-      rssConf.setInteger(
-          RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS, BlockIdLayout.DEFAULT_TASK_ATTEMPT_ID_BITS);
+      if (!rssConf.contains(RssClientConf.BLOCKID_SEQUENCE_NO_BITS)) {
+        rssConf.setInteger(
+            RssClientConf.BLOCKID_SEQUENCE_NO_BITS, BlockIdLayout.DEFAULT_SEQUENCE_NO_BITS);
+      }
+      if (!rssConf.contains(RssClientConf.BLOCKID_PARTITION_ID_BITS)) {
+        rssConf.setInteger(
+            RssClientConf.BLOCKID_PARTITION_ID_BITS, BlockIdLayout.DEFAULT_PARTITION_ID_BITS);
+      }
+      if (!rssConf.contains(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS)) {
+        rssConf.setInteger(
+            RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS, BlockIdLayout.DEFAULT_TASK_ATTEMPT_ID_BITS);
+      }
 
       builder.rssConf(rssConf);
       builder.offHeapEnable(false);
