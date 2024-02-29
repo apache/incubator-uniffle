@@ -73,6 +73,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -106,6 +107,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
+  private final int maxFailures;
+  private final boolean speculation;
   private final String user;
   private final String uuid;
   private DataPusher dataPusher;
@@ -140,6 +143,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           "Spark2 doesn't support AQE, spark.sql.adaptive.enabled should be false.");
     }
     this.sparkConf = sparkConf;
+    this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
+    this.speculation = sparkConf.getBoolean("spark.speculation", false);
     this.user = sparkConf.get("spark.rss.quota.user", "user");
     this.uuid = sparkConf.get("spark.rss.quota.uuid", Long.toString(System.currentTimeMillis()));
     // set & check replica config
@@ -461,11 +466,18 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                 shuffleId, rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
       }
       ShuffleWriteMetrics writeMetrics = context.taskMetrics().shuffleWriteMetrics();
+      long taskAttemptId =
+          getTaskAttemptId(
+              context.partitionId(),
+              context.attemptNumber(),
+              maxFailures,
+              speculation,
+              Constants.TASK_ATTEMPT_ID_MAX_LENGTH);
       return new RssShuffleWriter<>(
           rssHandle.getAppId(),
           shuffleId,
           taskId,
-          context.taskAttemptId(),
+          taskAttemptId,
           writeMetrics,
           this,
           sparkConf,

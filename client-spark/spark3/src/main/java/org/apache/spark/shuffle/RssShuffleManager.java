@@ -529,63 +529,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         shuffleHandleInfo);
   }
 
-  /**
-   * Provides a task attempt id that is unique for a shuffle stage.
-   *
-   * <p>We are not using context.taskAttemptId() here as this is a monotonically increasing number
-   * that is unique across the entire Spark app which can reach very large numbers, which can
-   * practically reach LONG.MAX_VALUE. That would overflow the bits in the block id.
-   *
-   * <p>Here we use the map index or task id, appended by the attempt number per task. The map index
-   * is limited by the number of partitions of a stage. The attempt number per task is limited /
-   * configured by spark.task.maxFailures (default: 4).
-   *
-   * @return a task attempt id unique for a shuffle stage
-   */
-  @VisibleForTesting
-  protected static long getTaskAttemptId(
-      int mapIndex, int attemptNo, int maxFailures, boolean speculation, int maxTaskAttemptIdBits) {
-    // attempt number is zero based: 0, 1, …, maxFailures-1
-    // max maxFailures < 1 is not allowed but for safety, we interpret that as maxFailures == 1
-    int maxAttemptNo = maxFailures < 1 ? 0 : maxFailures - 1;
-
-    // with speculative execution enabled we could observe +1 attempts
-    if (speculation) {
-      maxAttemptNo++;
-    }
-
-    if (attemptNo > maxAttemptNo) {
-      // this should never happen, if it does, our assumptions are wrong,
-      // and we risk overflowing the attempt number bits
-      throw new RssException(
-          "Observing attempt number "
-              + attemptNo
-              + " while maxFailures is set to "
-              + maxFailures
-              + (speculation ? " with speculation enabled" : "")
-              + ".");
-    }
-
-    int attemptBits = 32 - Integer.numberOfLeadingZeros(maxAttemptNo);
-    int mapIndexBits = 32 - Integer.numberOfLeadingZeros(mapIndex);
-    if (mapIndexBits + attemptBits > maxTaskAttemptIdBits) {
-      throw new RssException(
-          "Observing mapIndex["
-              + mapIndex
-              + "] that would produce a taskAttemptId with "
-              + (mapIndexBits + attemptBits)
-              + " bits which is larger than the allowed "
-              + maxTaskAttemptIdBits
-              + " bits (maxFailures["
-              + maxFailures
-              + "], speculation["
-              + speculation
-              + "]). Please consider providing more bits for taskAttemptIds.");
-    }
-
-    return (long) mapIndex << attemptBits | attemptNo;
-  }
-
   public void setPusherAppId(RssShuffleHandle rssShuffleHandle) {
     // todo: this implement is tricky, we should refactor it
     if (id.get() == null) {
