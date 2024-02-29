@@ -1654,6 +1654,7 @@
         <client.type>3</client.type>
         <jackson.version>2.14.2</jackson.version>
         <log4j.version>2.19.0</log4j.version>
+        <slf4j.version>2.0.6</slf4j.version>
       </properties>
       <modules>
         <module>client-spark/common</module>
@@ -1744,7 +1745,8 @@
         <spark.version>3.5.0</spark.version>
         <client.type>3</client.type>
         <jackson.version>2.15.2</jackson.version>
-        <log4j.version>2.19.0</log4j.version>
+        <log4j.version>2.20.0</log4j.version>
+        <slf4j.version>2.0.7</slf4j.version>
       </properties>
       <modules>
         <module>client-spark/common</module>
