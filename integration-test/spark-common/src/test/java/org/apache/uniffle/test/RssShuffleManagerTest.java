@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import scala.Option;
 
@@ -35,8 +36,13 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.apache.spark.sql.SparkSession;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
@@ -59,13 +65,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class RssShuffleManagerTest extends SparkIntegrationTestBase {
 
   @BeforeAll
-  public static void setupServers() throws Exception {
+  public static void beforeAll() throws Exception {
     shutdownServers();
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
+  }
+
+  @AfterEach
+  public void after() throws Exception {
+    shutdownServers();
+  }
+
+  public static void startServers(BlockIdLayout dynamicConfLayout) throws Exception {
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(
-        RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
+    dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
+    // configure block id layout (if set)
+    if (dynamicConfLayout != null) {
+      dynamicConf.put(
+          RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key(),
+          String.valueOf(dynamicConfLayout.sequenceNoBits));
+      dynamicConf.put(
+          RssClientConf.BLOCKID_PARTITION_ID_BITS.key(),
+          String.valueOf(dynamicConfLayout.partitionIdBits));
+      dynamicConf.put(
+          RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key(),
+          String.valueOf(dynamicConfLayout.taskAttemptIdBits));
+    }
+    CoordinatorConf coordinatorConf = getCoordinatorConf();
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     createShuffleServer(getShuffleServerConf(ServerType.GRPC));
@@ -78,26 +103,73 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
     return new HashMap();
   }
 
-  @Test
-  public void testRssShuffleManager() throws Exception {
-    BlockIdLayout layout = BlockIdLayout.DEFAULT;
+  private static final BlockIdLayout CUSTOM1 = BlockIdLayout.from(20, 21, 22);
+  private static final BlockIdLayout CUSTOM2 = BlockIdLayout.from(22, 18, 23);
+
+  public static Stream<Arguments> testBlockIdLayouts() {
+    return Stream.of(Arguments.of(CUSTOM1), Arguments.of(CUSTOM2));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  public void testRssShuffleManager(boolean enableDynamicCLientConf) throws Exception {
+    doTestRssShuffleManager(null, null, BlockIdLayout.DEFAULT, enableDynamicCLientConf);
+  }
+
+  @ParameterizedTest
+  @MethodSource("testBlockIdLayouts")
+  public void testRssShuffleManagerClientConf(BlockIdLayout layout) throws Exception {
+    doTestRssShuffleManager(layout, null, layout, true);
+  }
+
+  @ParameterizedTest
+  @MethodSource("testBlockIdLayouts")
+  @Disabled(
+      "Dynamic client conf not working for arguments used to create ShuffleWriteClient: issue #1554")
+  public void testRssShuffleManagerDynamicClientConf(BlockIdLayout layout) throws Exception {
+    doTestRssShuffleManager(null, layout, layout, true);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  public void testRssShuffleManagerClientConfOverride(boolean enableDynamicCLientConf)
+      throws Exception {
+    doTestRssShuffleManager(CUSTOM1, CUSTOM2, CUSTOM1, enableDynamicCLientConf);
+  }
+
+  private void doTestRssShuffleManager(
+      BlockIdLayout clientConfLayout,
+      BlockIdLayout dynamicConfLayout,
+      BlockIdLayout expectedLayout,
+      boolean enableDynamicCLientConf)
+      throws Exception {
+    startServers(dynamicConfLayout);
+
     SparkConf conf = createSparkConf();
     updateSparkConfWithRss(conf);
     // enable stage recompute
     conf.set("spark." + RssClientConfig.RSS_RESUBMIT_STAGE, "true");
-    // disable remote storage fetch
-    conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED, false);
+    // enable dynamic client conf
+    conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED, enableDynamicCLientConf);
+    // configure storage type
     conf.set("spark." + RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
-    // configure block id layout
-    conf.set(
-        "spark." + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key(),
-        String.valueOf(layout.sequenceNoBits));
-    conf.set(
-        "spark." + RssClientConf.BLOCKID_PARTITION_ID_BITS.key(),
-        String.valueOf(layout.partitionIdBits));
-    conf.set(
-        "spark." + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key(),
-        String.valueOf(layout.taskAttemptIdBits));
+    // restarting the coordinator may cause RssException: There isn't enough shuffle servers
+    // retry quickly (default is 65s interval)
+    conf.set("spark." + RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL, "1000");
+    conf.set("spark." + RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES, "10");
+
+    // configure block id layout (if set)
+    if (clientConfLayout != null) {
+      conf.set(
+          "spark." + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key(),
+          String.valueOf(clientConfLayout.sequenceNoBits));
+      conf.set(
+          "spark." + RssClientConf.BLOCKID_PARTITION_ID_BITS.key(),
+          String.valueOf(clientConfLayout.partitionIdBits));
+      conf.set(
+          "spark." + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key(),
+          String.valueOf(clientConfLayout.taskAttemptIdBits));
+    }
 
     JavaSparkContext sc = null;
     try {
@@ -142,12 +214,15 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
             shuffleWriteClient.getShuffleResult(
                 ClientType.GRPC.name(), servers, shuffleManager.getAppId(), 0, partitionId);
         List<BlockId> blockIds =
-            blockIdLongs.stream().sorted().mapToObj(layout::asBlockId).collect(Collectors.toList());
+            blockIdLongs.stream()
+                .sorted()
+                .mapToObj(expectedLayout::asBlockId)
+                .collect(Collectors.toList());
         assertEquals(2, blockIds.size());
         long taskAttemptId0 = shuffleManager.getTaskAttemptIdForBlockId(0, 0);
         long taskAttemptId1 = shuffleManager.getTaskAttemptIdForBlockId(1, 0);
-        assertEquals(layout.asBlockId(0, partitionId, taskAttemptId0), blockIds.get(0));
-        assertEquals(layout.asBlockId(0, partitionId, taskAttemptId1), blockIds.get(1));
+        assertEquals(expectedLayout.asBlockId(0, partitionId, taskAttemptId0), blockIds.get(0));
+        assertEquals(expectedLayout.asBlockId(0, partitionId, taskAttemptId1), blockIds.get(1));
       }
 
       shuffleManager.unregisterAllMapOutput(0);
