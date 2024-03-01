@@ -79,7 +79,6 @@
     <junit.platform.version>1.8.2</junit.platform.version>
     <system.stubs.version>2.0.1</system.stubs.version>
     <log4j.version>2.23.0</log4j.version>
-    <log4j.slf4j.impl>log4j-slf4j-impl</log4j.slf4j.impl>
     <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -188,9 +187,10 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
+    <!-- Use log4j-slf4j-impl by default -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>${log4j.slf4j.impl}</artifactId>
+      <artifactId>log4j-slf4j-impl</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
@@ -756,7 +756,7 @@
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>${log4j.slf4j.impl}</artifactId>
+        <artifactId>log4j-slf4j-impl</artifactId>
         <version>${log4j.version}</version>
       </dependency>
       <dependency>
@@ -1661,7 +1661,6 @@
         <jackson.version>2.14.2</jackson.version>
         <log4j.version>2.19.0</log4j.version>
         <slf4j.version>2.0.6</slf4j.version>
-        <log4j.slf4j.impl>log4j-slf4j2-impl</log4j.slf4j.impl>
       </properties>
       <modules>
         <module>client-spark/common</module>
@@ -1743,6 +1742,19 @@
           </dependency>
         </dependencies>
       </dependencyManagement>
+      <dependencies>
+        <!-- Remove log4j-slf4j-impl dependency -->
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-slf4j-impl</artifactId>
+          <scope>provided</scope>
+        </dependency>
+        <!-- Add log4j-slf4j2-impl dependency -->
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-slf4j2-impl</artifactId>
+        </dependency>
+      </dependencies>
     </profile>
 
     <profile>
@@ -1754,7 +1766,6 @@
         <jackson.version>2.15.2</jackson.version>
         <log4j.version>2.20.0</log4j.version>
         <slf4j.version>2.0.7</slf4j.version>
-        <log4j.slf4j.impl>log4j-slf4j2-impl</log4j.slf4j.impl>
       </properties>
       <modules>
         <module>client-spark/common</module>
@@ -1836,6 +1847,19 @@
           </dependency>
         </dependencies>
       </dependencyManagement>
+      <dependencies>
+        <!-- Remove log4j-slf4j-impl dependency -->
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-slf4j-impl</artifactId>
+          <scope>provided</scope>
+        </dependency>
+        <!-- Add log4j-slf4j2-impl dependency -->
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-slf4j2-impl</artifactId>
+        </dependency>
+      </dependencies>
     </profile>
 
     <profile>
