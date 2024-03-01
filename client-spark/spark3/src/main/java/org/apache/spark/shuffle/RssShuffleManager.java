@@ -514,7 +514,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         rssHandle.getAppId(),
         shuffleId,
         taskId,
-        getTaskAttemptId(context.partitionId(), context.attemptNumber()),
+        getTaskAttemptIdForBlockId(context.partitionId(), context.attemptNumber()),
         writeMetrics,
         this,
         sparkConf,
@@ -525,9 +525,9 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         shuffleHandleInfo);
   }
 
-  @VisibleForTesting
-  public long getTaskAttemptId(int mapIndex, int attemptNo) {
-    return getTaskAttemptId(
+  @Override
+  public long getTaskAttemptIdForBlockId(int mapIndex, int attemptNo) {
+    return getTaskAttemptIdForBlockId(
         mapIndex, attemptNo, maxFailures, speculation, blockIdLayout.taskAttemptIdBits);
   }
 

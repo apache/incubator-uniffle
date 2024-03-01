@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.MapOutputTracker;
@@ -52,7 +51,12 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   private Method registerShuffleMethod;
 
   /**
-   * Provides a task attempt id that is unique for a shuffle stage.
+   * See static overload of this method.
+   */
+  public abstract long getTaskAttemptIdForBlockId(int mapIndex, int attemptNo);
+
+  /**
+   * Provides a task attempt id to be used in the block id, that is unique for a shuffle stage.
    *
    * <p>We are not using context.taskAttemptId() here as this is a monotonically increasing number
    * that is unique across the entire Spark app which can reach very large numbers, which can
@@ -64,8 +68,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
    *
    * @return a task attempt id unique for a shuffle stage
    */
-  @VisibleForTesting
-  protected static long getTaskAttemptId(
+  protected static long getTaskAttemptIdForBlockId(
       int mapIndex, int attemptNo, int maxFailures, boolean speculation, int maxTaskAttemptIdBits) {
     // attempt number is zero based: 0, 1, …, maxFailures-1
     // max maxFailures < 1 is not allowed but for safety, we interpret that as maxFailures == 1

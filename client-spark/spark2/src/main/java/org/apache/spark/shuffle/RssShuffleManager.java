@@ -468,18 +468,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                 shuffleId, rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
       }
       ShuffleWriteMetrics writeMetrics = context.taskMetrics().shuffleWriteMetrics();
-      long taskAttemptId =
-          getTaskAttemptId(
-              context.partitionId(),
-              context.attemptNumber(),
-              maxFailures,
-              speculation,
-              blockIdLayout.taskAttemptIdLength);
       return new RssShuffleWriter<>(
           rssHandle.getAppId(),
           shuffleId,
           taskId,
-          taskAttemptId,
+          getTaskAttemptIdForBlockId(context.partitionId(), context.attemptNumber()),
           writeMetrics,
           this,
           sparkConf,
@@ -491,6 +484,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     } else {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
+  }
+
+  @Override
+  public long getTaskAttemptIdForBlockId(int mapIndex, int attemptNo) {
+    return getTaskAttemptIdForBlockId(
+        mapIndex, attemptNo, maxFailures, speculation, blockIdLayout.taskAttemptIdBits);
   }
 
   // This method is called in Spark executor,
