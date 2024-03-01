@@ -29,6 +29,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import org.apache.uniffle.client.api.CoordinatorClient;
+import org.apache.uniffle.client.factory.CoordinatorClientFactory;
+import org.apache.uniffle.client.request.RssFetchClientConfRequest;
+import org.apache.uniffle.client.response.RssFetchClientConfResponse;
+import org.apache.uniffle.common.rpc.StatusCode;
 import scala.Tuple2;
 import scala.Tuple3;
 import scala.collection.Iterator;
@@ -160,6 +165,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
     this.user = sparkConf.get("spark.rss.quota.user", "user");
     this.uuid = sparkConf.get("spark.rss.quota.uuid", Long.toString(System.currentTimeMillis()));
+
+    // fetch client conf and apply them if necessary
+    if (isDriver && sparkConf.get(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED)) {
+      fetchAndApplyDynamicConf(sparkConf);
+    }
+    RssSparkShuffleUtils.validateRssClientConf(sparkConf);
+
     // set & check replica config
     this.dataReplica = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA);
     this.dataReplicaWrite = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE);
@@ -217,16 +229,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     .unregisterRequestTimeSec(unregisterRequestTimeoutSec)
                     .rssConf(rssConf));
     registerCoordinator();
-    // fetch client conf and apply them if necessary and disable ESS
-    if (isDriver && dynamicConfEnabled) {
-      Map<String, String> clusterClientConf =
-          shuffleWriteClient.fetchClientConf(
-              sparkConf.getInt(
-                  RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.key(),
-                  RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.defaultValue().get()));
-      RssSparkShuffleUtils.applyDynamicClientConf(sparkConf, clusterClientConf);
-    }
-    RssSparkShuffleUtils.validateRssClientConf(sparkConf);
     // External shuffle service is not supported when using remote shuffle service
     sparkConf.set("spark.shuffle.service.enabled", "false");
     sparkConf.set("spark.dynamicAllocation.shuffleTracking.enabled", "false");
@@ -279,6 +281,30 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.failuresShuffleServerIds = Sets.newHashSet();
     this.serverAssignedInfos = JavaUtils.newConcurrentMap();
     this.reassignedFaultyServers = JavaUtils.newConcurrentMap();
+  }
+
+  private static void fetchAndApplyDynamicConf(SparkConf sparkConf) {
+    String clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
+    String coordinators = sparkConf.get(RssSparkConfig.RSS_COORDINATOR_QUORUM.key());
+    CoordinatorClientFactory coordinatorClientFactory = CoordinatorClientFactory.getInstance();
+    List<CoordinatorClient> coordinatorClients =
+        coordinatorClientFactory.createCoordinatorClient(
+            ClientType.valueOf(clientType), coordinators);
+
+    int timeoutMs = sparkConf.getInt(
+        RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.key(),
+        RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.defaultValue().get());
+    for (CoordinatorClient client: coordinatorClients) {
+      RssFetchClientConfResponse response = client.fetchClientConf(new RssFetchClientConfRequest(timeoutMs));
+      if (response.getStatusCode() == StatusCode.SUCCESS) {
+        LOG.info("Success to get conf from {}", client.getDesc());
+        RssSparkShuffleUtils.applyDynamicClientConf(sparkConf, response.getClientConf());
+        break;
+      } else {
+        LOG.warn("Fail to get conf from {}", client.getDesc());
+      }
+    }
+    coordinatorClients.forEach(CoordinatorClient::close);
   }
 
   public CompletableFuture<Long> sendData(AddBlockEvent event) {
