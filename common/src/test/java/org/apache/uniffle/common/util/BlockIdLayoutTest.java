@@ -17,7 +17,12 @@
 
 package org.apache.uniffle.common.util;
 
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -91,85 +96,84 @@ public class BlockIdLayoutTest {
         "Don't support given lengths, sum must be exactly 63: 21 + 21 + 22 = 64", e8.getMessage());
   }
 
-  @Test
-  public void testLayoutGetBlockId() {
-    for (BlockIdLayout layout :
-        new BlockIdLayout[] {
-          BlockIdLayout.DEFAULT,
-          BlockIdLayout.from(21, 21, 21),
-          BlockIdLayout.from(12, 24, 27),
-          BlockIdLayout.from(1, 31, 31),
-          BlockIdLayout.from(31, 1, 31),
-          BlockIdLayout.from(31, 31, 1),
-        }) {
-      // max value of blockId
+  public static Stream<Arguments> testBlockIdLayouts() {
+    return Stream.of(
+        Arguments.of(BlockIdLayout.DEFAULT),
+        Arguments.of(BlockIdLayout.from(21, 21, 21)),
+        Arguments.of(BlockIdLayout.from(12, 24, 27)),
+        Arguments.of(BlockIdLayout.from(1, 31, 31)),
+        Arguments.of(BlockIdLayout.from(31, 1, 31)),
+        Arguments.of(BlockIdLayout.from(31, 31, 1)));
+  }
+
+  @ParameterizedTest
+  @MethodSource("testBlockIdLayouts")
+  public void testLayoutGetBlockId(BlockIdLayout layout) {
+    // max value of blockId
+    assertEquals(
+        (long) layout.maxSequenceNo << layout.sequenceNoOffset
+            | (long) layout.maxPartitionId << layout.partitionIdOffset
+            | (long) layout.maxTaskAttemptId << layout.taskAttemptIdOffset,
+        layout.getBlockId(layout.maxSequenceNo, layout.maxPartitionId, layout.maxTaskAttemptId));
+
+    // min value of blockId
+    assertEquals(0L, layout.getBlockId(0, 0, 0));
+
+    // just a random test
+    if (layout.sequenceNoBits > 7 && layout.partitionIdBits > 6 && layout.taskAttemptIdBits > 7) {
+      long blockId = layout.getBlockId(123, 45, 67);
       assertEquals(
-          (long) layout.maxSequenceNo << layout.sequenceNoOffset
-              | (long) layout.maxPartitionId << layout.partitionIdOffset
-              | (long) layout.maxTaskAttemptId << layout.taskAttemptIdOffset,
-          layout.getBlockId(layout.maxSequenceNo, layout.maxPartitionId, layout.maxTaskAttemptId),
-          layout.toString());
+          123L << layout.sequenceNoOffset
+              | 45L << layout.partitionIdOffset
+              | 67L << layout.taskAttemptIdOffset,
+          blockId);
 
-      // min value of blockId
-      assertEquals(0L, layout.getBlockId(0, 0, 0), layout.toString());
+      assertEquals(123, layout.getSequenceNo(blockId));
+      assertEquals(45, layout.getPartitionId(blockId));
+      assertEquals(67, layout.getTaskAttemptId(blockId));
 
-      // just a random test
-      if (layout.sequenceNoBits > 7 && layout.partitionIdBits > 6 && layout.taskAttemptIdBits > 7) {
-        long blockId = layout.getBlockId(123, 45, 67);
-        assertEquals(
-            123L << layout.sequenceNoOffset
-                | 45L << layout.partitionIdOffset
-                | 67L << layout.taskAttemptIdOffset,
-            blockId,
-            layout.toString());
-
-        assertEquals(123, layout.getSequenceNo(blockId), layout.toString());
-        assertEquals(45, layout.getPartitionId(blockId), layout.toString());
-        assertEquals(67, layout.getTaskAttemptId(blockId), layout.toString());
-
-        assertEquals(blockId, layout.asBlockId(blockId).blockId, layout.toString());
-        assertEquals(123, layout.asBlockId(blockId).sequenceNo, layout.toString());
-        assertEquals(45, layout.asBlockId(blockId).partitionId, layout.toString());
-        assertEquals(67, layout.asBlockId(blockId).taskAttemptId, layout.toString());
-        assertEquals(layout, layout.asBlockId(blockId).layout, layout.toString());
-      }
-
-      final Throwable e1 =
-          assertThrows(
-              IllegalArgumentException.class,
-              () -> layout.getBlockId(layout.maxSequenceNo + 1, 0, 0));
-      assertEquals(
-          "Don't support sequenceNo["
-              + (layout.maxSequenceNo + 1)
-              + "], "
-              + "the max value should be "
-              + layout.maxSequenceNo,
-          e1.getMessage());
-
-      final Throwable e2 =
-          assertThrows(
-              IllegalArgumentException.class,
-              () -> layout.getBlockId(0, layout.maxPartitionId + 1, 0));
-      assertEquals(
-          "Don't support partitionId["
-              + (layout.maxPartitionId + 1)
-              + "], "
-              + "the max value should be "
-              + layout.maxPartitionId,
-          e2.getMessage());
-
-      final Throwable e3 =
-          assertThrows(
-              IllegalArgumentException.class,
-              () -> layout.getBlockId(0, 0, layout.maxTaskAttemptId + 1));
-      assertEquals(
-          "Don't support taskAttemptId["
-              + (layout.maxTaskAttemptId + 1)
-              + "], "
-              + "the max value should be "
-              + layout.maxTaskAttemptId,
-          e3.getMessage());
+      assertEquals(blockId, layout.asBlockId(blockId).blockId);
+      assertEquals(123, layout.asBlockId(blockId).sequenceNo);
+      assertEquals(45, layout.asBlockId(blockId).partitionId);
+      assertEquals(67, layout.asBlockId(blockId).taskAttemptId);
+      assertEquals(layout, layout.asBlockId(blockId).layout);
     }
+
+    final Throwable e1 =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> layout.getBlockId(layout.maxSequenceNo + 1, 0, 0));
+    assertEquals(
+        "Don't support sequenceNo["
+            + (layout.maxSequenceNo + 1)
+            + "], "
+            + "the max value should be "
+            + layout.maxSequenceNo,
+        e1.getMessage());
+
+    final Throwable e2 =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> layout.getBlockId(0, layout.maxPartitionId + 1, 0));
+    assertEquals(
+        "Don't support partitionId["
+            + (layout.maxPartitionId + 1)
+            + "], "
+            + "the max value should be "
+            + layout.maxPartitionId,
+        e2.getMessage());
+
+    final Throwable e3 =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> layout.getBlockId(0, 0, layout.maxTaskAttemptId + 1));
+    assertEquals(
+        "Don't support taskAttemptId["
+            + (layout.maxTaskAttemptId + 1)
+            + "], "
+            + "the max value should be "
+            + layout.maxTaskAttemptId,
+        e3.getMessage());
   }
 
   @Test

@@ -44,6 +44,7 @@ import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.BlockId;
@@ -80,7 +81,6 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
   @Test
   public void testRssShuffleManager() throws Exception {
     BlockIdLayout layout = BlockIdLayout.DEFAULT;
-
     SparkConf conf = createSparkConf();
     updateSparkConfWithRss(conf);
     // enable stage recompute
@@ -88,6 +88,16 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
     // disable remote storage fetch
     conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED, false);
     conf.set("spark." + RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
+    // configure block id layout
+    conf.set(
+        "spark." + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key(),
+        String.valueOf(layout.sequenceNoBits));
+    conf.set(
+        "spark." + RssClientConf.BLOCKID_PARTITION_ID_BITS.key(),
+        String.valueOf(layout.partitionIdBits));
+    conf.set(
+        "spark." + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key(),
+        String.valueOf(layout.taskAttemptIdBits));
 
     JavaSparkContext sc = null;
     try {
@@ -136,10 +146,8 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
         assertEquals(2, blockIds.size());
         long taskAttemptId0 = shuffleManager.getTaskAttemptIdForBlockId(0, 0);
         long taskAttemptId1 = shuffleManager.getTaskAttemptIdForBlockId(1, 0);
-        assertEquals(
-            layout.asBlockId(0, partitionId, taskAttemptId0), blockIds.get(0), layout.toString());
-        assertEquals(
-            layout.asBlockId(0, partitionId, taskAttemptId1), blockIds.get(1), layout.toString());
+        assertEquals(layout.asBlockId(0, partitionId, taskAttemptId0), blockIds.get(0));
+        assertEquals(layout.asBlockId(0, partitionId, taskAttemptId1), blockIds.get(1));
       }
 
       shuffleManager.unregisterAllMapOutput(0);
