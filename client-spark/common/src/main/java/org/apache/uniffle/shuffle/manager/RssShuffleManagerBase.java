@@ -50,9 +50,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   private Method unregisterAllMapOutputMethod;
   private Method registerShuffleMethod;
 
-  /**
-   * See static overload of this method.
-   */
+  /** See static overload of this method. */
   public abstract long getTaskAttemptIdForBlockId(int mapIndex, int attemptNo);
 
   /**
