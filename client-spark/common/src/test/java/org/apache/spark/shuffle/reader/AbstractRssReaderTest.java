@@ -76,6 +76,31 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
         handler,
         blockNum,
         recordNum,
+        BlockIdLayout.DEFAULT,
+        expectedData,
+        blockIdBitmap,
+        keyPrefix,
+        serializer,
+        partitionID,
+        true);
+  }
+
+  protected void writeTestData(
+      ShuffleWriteHandler handler,
+      int blockNum,
+      int recordNum,
+      BlockIdLayout layout,
+      Map<String, String> expectedData,
+      Roaring64NavigableMap blockIdBitmap,
+      String keyPrefix,
+      Serializer serializer,
+      int partitionID)
+      throws Exception {
+    writeTestData(
+        handler,
+        blockNum,
+        recordNum,
+        layout,
         expectedData,
         blockIdBitmap,
         keyPrefix,
@@ -95,7 +120,31 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
       int partitionID,
       boolean compress)
       throws Exception {
-    BlockIdLayout layout = BlockIdLayout.DEFAULT;
+    writeTestData(
+        handler,
+        blockNum,
+        recordNum,
+        BlockIdLayout.DEFAULT,
+        expectedData,
+        blockIdBitmap,
+        keyPrefix,
+        serializer,
+        partitionID,
+        compress);
+  }
+
+  protected void writeTestData(
+      ShuffleWriteHandler handler,
+      int blockNum,
+      int recordNum,
+      BlockIdLayout layout,
+      Map<String, String> expectedData,
+      Roaring64NavigableMap blockIdBitmap,
+      String keyPrefix,
+      Serializer serializer,
+      int partitionID,
+      boolean compress)
+      throws Exception {
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
     SerializerInstance serializerInstance = serializer.newInstance();
     for (int i = 0; i < blockNum; i++) {
