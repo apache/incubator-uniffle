@@ -130,9 +130,13 @@ public class RssSparkShuffleUtils {
         sparkConfKey = RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + sparkConfKey;
       }
       String confVal = kv.getValue();
-      if (!sparkConf.contains(sparkConfKey)
-          || RssSparkConfig.RSS_MANDATORY_CLUSTER_CONF.contains(sparkConfKey)) {
-        LOG.warn("Use conf dynamic conf {} = {}", sparkConfKey, confVal);
+      boolean isMandatory = RssSparkConfig.RSS_MANDATORY_CLUSTER_CONF.contains(sparkConfKey);
+      if (!sparkConf.contains(sparkConfKey) || isMandatory) {
+        if (sparkConf.contains(sparkConfKey) && isMandatory) {
+          LOG.warn("Override with mandatory dynamic conf {} = {}", sparkConfKey, confVal);
+        } else {
+          LOG.info("Use dynamic conf {} = {}", sparkConfKey, confVal);
+        }
         sparkConf.set(sparkConfKey, confVal);
       }
     }
