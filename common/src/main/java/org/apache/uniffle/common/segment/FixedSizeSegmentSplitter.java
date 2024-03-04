@@ -83,10 +83,11 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
         if (dataFileLen != -1 && totalLength > dataFileLen) {
           LOGGER.info(
               "Abort inconsistent data, the data length: {}(bytes) recorded in index file is greater than "
-                  + "the real data file length: {}(bytes). "
+                  + "the real data file length: {}(bytes). Block id: {}"
                   + "This may happen when the data is flushing, please ignore.",
               totalLength,
-              dataFileLen);
+              dataFileLen,
+              blockId);
           break;
         }
 
