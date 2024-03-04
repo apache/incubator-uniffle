@@ -75,6 +75,7 @@ import org.apache.uniffle.common.metrics.TestUtils;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
@@ -417,6 +418,20 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     blockIdBitmap = result.getBlockIdBitmap();
     expectedP3 = Roaring64NavigableMap.bitmapOf();
     addExpectedBlockIds(expectedP3, blockIds3);
+    assertEquals(expectedP3, blockIdBitmap);
+
+    // get same shuffle result without block id layout (legacy clients)
+    RssProtos.GetShuffleResultRequest rpcRequest =
+        RssProtos.GetShuffleResultRequest.newBuilder()
+            .setAppId("shuffleResultTest")
+            .setShuffleId(4)
+            .setPartitionId(3)
+            // deliberately not setting block id layout through .setBlockIdLayout
+            .build();
+    RssProtos.GetShuffleResultResponse rpcResponse =
+        grpcShuffleServerClient.getBlockingStub().getShuffleResult(rpcRequest);
+    assertEquals(RssProtos.StatusCode.SUCCESS, rpcResponse.getStatus());
+    blockIdBitmap = RssUtils.deserializeBitMap(rpcResponse.getSerializedBitmap().toByteArray());
     assertEquals(expectedP3, blockIdBitmap);
 
     // wait resources are deleted
