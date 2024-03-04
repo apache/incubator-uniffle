@@ -62,6 +62,7 @@ Notice:
 
 2. `<client_type>.rss.coordinator.quorum` is compulsory, and other configurations are optional when coordinator dynamic configuration is enabled.
 
+
 ### Client Quorum Setting 
 
 Uniffle supports client-side quorum protocol to tolerant shuffle server crash. 
