@@ -291,6 +291,64 @@ public class RssShuffleManagerBaseTest {
     assertEquals(expectedMessage, e.getMessage());
   }
 
+  private static Stream<Arguments> testConfigureBlockIdLayoutInsufficientConfigExceptionSource() {
+    // test arguments are
+    // - sequenceNoBits
+    // - partitionIdBits
+    // - taskAttemptIdBits
+    // - config
+    return Stream.of("spark", "rss")
+        .flatMap(
+            config ->
+                Stream.of(
+                    Arguments.of(null, 21, 22, config),
+                    Arguments.of(20, null, 22, config),
+                    Arguments.of(20, 21, null, config)));
+  }
+
+  @ParameterizedTest
+  @MethodSource("testConfigureBlockIdLayoutInsufficientConfigExceptionSource")
+  public void testConfigureBlockIdLayoutInsufficientConfigException(
+      Integer sequenceNoBits, Integer partitionIdBits, Integer taskAttemptIdBits, String config) {
+    SparkConf sparkConf = new SparkConf();
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+
+    if (config.equals("spark")) {
+      String sparkPrefix = RssSparkConfig.SPARK_RSS_CONFIG_PREFIX;
+      String sparkSeqNoBitsKey = sparkPrefix + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key();
+      String sparkPartIdBitsKey = sparkPrefix + RssClientConf.BLOCKID_PARTITION_ID_BITS.key();
+      String sparkTaskIdBitsKey = sparkPrefix + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key();
+
+      if (sequenceNoBits != null) {
+        sparkConf.set(sparkSeqNoBitsKey, sequenceNoBits.toString());
+      }
+      if (partitionIdBits != null) {
+        sparkConf.set(sparkPartIdBitsKey, partitionIdBits.toString());
+      }
+      if (taskAttemptIdBits != null) {
+        sparkConf.set(sparkTaskIdBitsKey, taskAttemptIdBits.toString());
+      }
+    } else if (config.equals("rss")) {
+      if (sequenceNoBits != null) {
+        rssConf.set(RssClientConf.BLOCKID_SEQUENCE_NO_BITS, sequenceNoBits);
+      }
+      if (partitionIdBits != null) {
+        rssConf.set(RssClientConf.BLOCKID_PARTITION_ID_BITS, partitionIdBits);
+      }
+      if (taskAttemptIdBits != null) {
+        rssConf.set(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS, taskAttemptIdBits);
+      }
+    } else {
+      throw new IllegalArgumentException(config);
+    }
+
+    Executable call =
+        () -> RssShuffleManagerBase.configureBlockIdLayout(sparkConf, rssConf, 4, false);
+    Exception e = assertThrowsExactly(IllegalArgumentException.class, call);
+
+    assertTrue(e.getMessage().startsWith("All block id bit config keys must be provided "));
+  }
+
   @Test
   public void testGetMaxAttemptNo() {
     // without speculation

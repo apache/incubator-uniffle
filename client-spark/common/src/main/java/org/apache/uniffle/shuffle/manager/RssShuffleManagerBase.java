@@ -19,10 +19,12 @@ package org.apache.uniffle.shuffle.manager;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -40,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.config.ConfigOption;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
@@ -186,17 +189,50 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     String sparkPartIdBitsKey = sparkPrefix + RssClientConf.BLOCKID_PARTITION_ID_BITS.key();
     String sparkTaskIdBitsKey = sparkPrefix + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key();
 
-    if (Stream.of(sparkSeqNoBitsKey, sparkPartIdBitsKey, sparkTaskIdBitsKey)
-        .allMatch(sparkConf::contains)) {
+    // if one bit field is configured, all three must be given
+    List<String> sparkKeys =
+        Arrays.asList(sparkSeqNoBitsKey, sparkPartIdBitsKey, sparkTaskIdBitsKey);
+    if (sparkKeys.stream().anyMatch(sparkConf::contains)
+        && !sparkKeys.stream().allMatch(sparkConf::contains)) {
+      String allKeys = sparkKeys.stream().collect(Collectors.joining(", "));
+      String existingKeys =
+          Arrays.stream(sparkConf.getAll())
+              .map(t -> t._1)
+              .filter(sparkKeys.stream().collect(Collectors.toSet())::contains)
+              .collect(Collectors.joining(", "));
+      throw new IllegalArgumentException(
+          "All block id bit config keys must be provided ("
+              + allKeys
+              + "), not just a sub-set: "
+              + existingKeys);
+    }
+
+    // if one bit field is configured, all three must be given
+    List<ConfigOption<Integer>> rssKeys =
+        Arrays.asList(
+            RssClientConf.BLOCKID_SEQUENCE_NO_BITS,
+            RssClientConf.BLOCKID_PARTITION_ID_BITS,
+            RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS);
+    if (rssKeys.stream().anyMatch(rssConf::contains)
+        && !rssKeys.stream().allMatch(rssConf::contains)) {
+      String allKeys = rssKeys.stream().map(ConfigOption::key).collect(Collectors.joining(", "));
+      String existingKeys =
+          rssConf.getKeySet().stream()
+              .filter(rssKeys.stream().map(ConfigOption::key).collect(Collectors.toSet())::contains)
+              .collect(Collectors.joining(", "));
+      throw new IllegalArgumentException(
+          "All block id bit config keys must be provided ("
+              + allKeys
+              + "), not just a sub-set: "
+              + existingKeys);
+    }
+
+    if (sparkKeys.stream().allMatch(sparkConf::contains)) {
       rssConf.set(RssClientConf.BLOCKID_SEQUENCE_NO_BITS, sparkConf.getInt(sparkSeqNoBitsKey, 0));
       rssConf.set(RssClientConf.BLOCKID_PARTITION_ID_BITS, sparkConf.getInt(sparkPartIdBitsKey, 0));
       rssConf.set(
           RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS, sparkConf.getInt(sparkTaskIdBitsKey, 0));
-    } else if (Stream.of(
-            RssClientConf.BLOCKID_SEQUENCE_NO_BITS,
-            RssClientConf.BLOCKID_PARTITION_ID_BITS,
-            RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS)
-        .allMatch(rssConf::contains)) {
+    } else if (rssKeys.stream().allMatch(rssConf::contains)) {
       sparkConf.set(sparkSeqNoBitsKey, rssConf.getValue(RssClientConf.BLOCKID_SEQUENCE_NO_BITS));
       sparkConf.set(sparkPartIdBitsKey, rssConf.getValue(RssClientConf.BLOCKID_PARTITION_ID_BITS));
       sparkConf.set(
