@@ -28,9 +28,8 @@ cd "$RSS_HOME"
 
 SHUFFLE_SERVER_CONF_FILE="${RSS_CONF_DIR}/server.conf"
 JAR_DIR="${RSS_HOME}/jars"
-LOG_CONF_FILE="${RSS_CONF_DIR}/log4j.properties"
+LOG_CONF_FILE="${RSS_CONF_DIR}/log4j2.xml"
 LOG_PATH="${RSS_LOG_DIR}/shuffle_server.log"
-OUT_PATH="${RSS_LOG_DIR}/shuffle_server.out"
 
 if [ -z "${XMX_SIZE:-}" ]; then
   echo "No env XMX_SIZE."
@@ -124,13 +123,13 @@ JAVA11_EXTRA_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
 ARGS=""
 
 if [ -f ${LOG_CONF_FILE} ]; then
-  ARGS="$ARGS -Dlog4j.configuration=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH}"
+  ARGS="$ARGS -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH}"
 else
   echo "Exit with error: ${LOG_CONF_FILE} file doesn't exist."
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS $JAVA11_EXTRA_ARGS $JAVA_LIB_PATH -cp $CLASSPATH $MAIN_CLASS --conf "$SHUFFLE_SERVER_CONF_FILE" $@ &> $OUT_PATH &
+$RUNNER $ARGS $JVM_ARGS $JAVA11_EXTRA_ARGS $JAVA_LIB_PATH -cp $CLASSPATH $MAIN_CLASS --conf "$SHUFFLE_SERVER_CONF_FILE" $@ &
 
 get_pid_file_name shuffle-server
 echo $! >${RSS_PID_DIR}/${pid_file}

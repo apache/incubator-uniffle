@@ -28,9 +28,8 @@ cd "$RSS_HOME"
 
 COORDINATOR_CONF_FILE="${RSS_CONF_DIR}/coordinator.conf"
 JAR_DIR="${RSS_HOME}/jars"
-LOG_CONF_FILE="${RSS_CONF_DIR}/log4j.properties"
+LOG_CONF_FILE="${RSS_CONF_DIR}/log4j2.xml"
 LOG_PATH="${RSS_LOG_DIR}/coordinator.log"
-OUT_PATH="${RSS_LOG_DIR}/coordinator.out"
 
 MAIN_CLASS="org.apache.uniffle.coordinator.CoordinatorServer"
 
@@ -87,13 +86,13 @@ JAVA11_EXTRA_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
 ARGS=""
 
 if [ -f ${LOG_CONF_FILE} ]; then
-  ARGS="$ARGS -Dlog4j.configuration=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH}"
+  ARGS="$ARGS -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH}"
 else
   echo "Exit with error: ${LOG_CONF_FILE} file doesn't exist."
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS $JAVA11_EXTRA_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &> $OUT_PATH &
+$RUNNER $ARGS $JVM_ARGS $JAVA11_EXTRA_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &
 
 get_pid_file_name coordinator
 echo $! >${RSS_PID_DIR}/${pid_file}
