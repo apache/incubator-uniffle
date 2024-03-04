@@ -29,11 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import org.apache.uniffle.client.api.CoordinatorClient;
-import org.apache.uniffle.client.factory.CoordinatorClientFactory;
-import org.apache.uniffle.client.request.RssFetchClientConfRequest;
-import org.apache.uniffle.client.response.RssFetchClientConfResponse;
-import org.apache.uniffle.common.rpc.StatusCode;
 import scala.Tuple2;
 import scala.Tuple3;
 import scala.collection.Iterator;
@@ -65,12 +60,16 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
+import org.apache.uniffle.client.request.RssFetchClientConfRequest;
 import org.apache.uniffle.client.request.RssPartitionToShuffleServerRequest;
+import org.apache.uniffle.client.response.RssFetchClientConfResponse;
 import org.apache.uniffle.client.response.RssPartitionToShuffleServerResponse;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.client.util.RssClientConfig;
@@ -85,6 +84,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
@@ -291,11 +291,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         coordinatorClientFactory.createCoordinatorClient(
             ClientType.valueOf(clientType), coordinators);
 
-    int timeoutMs = sparkConf.getInt(
-        RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.key(),
-        RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.defaultValue().get());
-    for (CoordinatorClient client: coordinatorClients) {
-      RssFetchClientConfResponse response = client.fetchClientConf(new RssFetchClientConfRequest(timeoutMs));
+    int timeoutMs =
+        sparkConf.getInt(
+            RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.key(),
+            RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.defaultValue().get());
+    for (CoordinatorClient client : coordinatorClients) {
+      RssFetchClientConfResponse response =
+          client.fetchClientConf(new RssFetchClientConfRequest(timeoutMs));
       if (response.getStatusCode() == StatusCode.SUCCESS) {
         LOG.info("Success to get conf from {}", client.getDesc());
         RssSparkShuffleUtils.applyDynamicClientConf(sparkConf, response.getClientConf());
