@@ -117,15 +117,15 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
           RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, String.valueOf(builder.getReadBufferSize()));
       if (!rssConf.contains(RssClientConf.BLOCKID_SEQUENCE_NO_BITS)) {
         rssConf.setInteger(
-            RssClientConf.BLOCKID_SEQUENCE_NO_BITS, BlockIdLayout.DEFAULT_SEQUENCE_NO_BITS);
+            RssClientConf.BLOCKID_SEQUENCE_NO_BITS, BlockIdLayout.DEFAULT.sequenceNoBits);
       }
       if (!rssConf.contains(RssClientConf.BLOCKID_PARTITION_ID_BITS)) {
         rssConf.setInteger(
-            RssClientConf.BLOCKID_PARTITION_ID_BITS, BlockIdLayout.DEFAULT_PARTITION_ID_BITS);
+            RssClientConf.BLOCKID_PARTITION_ID_BITS, BlockIdLayout.DEFAULT.partitionIdBits);
       }
       if (!rssConf.contains(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS)) {
         rssConf.setInteger(
-            RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS, BlockIdLayout.DEFAULT_TASK_ATTEMPT_ID_BITS);
+            RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS, BlockIdLayout.DEFAULT.taskAttemptIdBits);
       }
 
       builder.rssConf(rssConf);

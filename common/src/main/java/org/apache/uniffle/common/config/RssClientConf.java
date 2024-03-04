@@ -61,7 +61,7 @@ public class RssClientConf {
   public static final ConfigOption<Integer> BLOCKID_SEQUENCE_NO_BITS =
       ConfigOptions.key("rss.client.blockId.sequenceNoBits")
           .intType()
-          .defaultValue(BlockIdLayout.DEFAULT_SEQUENCE_NO_BITS)
+          .defaultValue(BlockIdLayout.DEFAULT.sequenceNoBits)
           .withDescription(
               "Block ids contain three fields: the sequence number, the partition id and "
                   + "the task attempt id. This configures the bits reserved for the sequence "
@@ -71,7 +71,7 @@ public class RssClientConf {
   public static final ConfigOption<Integer> BLOCKID_PARTITION_ID_BITS =
       ConfigOptions.key("rss.client.blockId.partitionIdBits")
           .intType()
-          .defaultValue(BlockIdLayout.DEFAULT_PARTITION_ID_BITS)
+          .defaultValue(BlockIdLayout.DEFAULT.partitionIdBits)
           .withDescription(
               "Block ids contain three fields: the sequence number, the partition id and "
                   + "the task attempt id. This configures the bits reserved for the partition id. "
@@ -81,7 +81,7 @@ public class RssClientConf {
   public static final ConfigOption<Integer> BLOCKID_TASK_ATTEMPT_ID_BITS =
       ConfigOptions.key("rss.client.blockId.taskAttemptIdBits")
           .intType()
-          .defaultValue(BlockIdLayout.DEFAULT_TASK_ATTEMPT_ID_BITS)
+          .defaultValue(BlockIdLayout.DEFAULT.taskAttemptIdBits)
           .withDescription(
               "Block ids contain three fields: the sequence number, the partition id and "
                   + "the task attempt id. This configures the bits reserved for the task attempt id. "
