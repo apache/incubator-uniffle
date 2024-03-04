@@ -98,11 +98,21 @@ If you observe an error like
 
 you should consider increasing the bits reserved in the blockId for that number / id (while decreasing the other number of bits).
 
+The bits reserved for sequence number, partition id and task attempt id are best specified for Spark clients as follows:
+
+1. Reserve the bits required to support the largest number of partitions that you anticipate. Pick `ceil( log(max number of partitions) / log(2) )` bits.
+   For instance, `20` bits support `1,048,576` partitions.
+2. The number of bits for the task attempt ids should be `partitionIdBits + ceil( log(max attempts) / log(2))`,
+   where `max attempts` is set via Spark conf `spark.task.maxFailures` (default is `4`). In the presence of
+   speculative execution enabled via Spark conf `spark.speculation` (default is false), that `max attempts` has to be incremented by one.
+   For example: `22` bits is sufficient for `taskAttemptIdBits` with `partitionIdBits=20`, and Spark conf `spark.task.maxFailures=4` and `spark.speculation=false`.
+3. Reserve the remaining bits to `sequenceNoBits`: `sequenceNoBits = 63 - partitionIdBits - taskAttemptIdBits`.
+
 | Property Name                     | Default | Description                                                                                                                                             |
 |-----------------------------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
-|spark.rss.blockId.sequenceNoBits   | 18      | Number of bits reserved in the blockId for the sequence number. Note that `sequenceNoBits + partitionIdBits + taskAttemptIdBits` has to sum up to `63`. |
-|spark.rss.blockId.partitionIdBits  | 24      | Number of bits reserved in the blockId for the partition id. Note that `sequenceNoBits + partitionIdBits + taskAttemptIdBits` has to sum up to `63`.    |
-|spark.rss.blockId.taskAttemptIdBits| 21      | Number of bits reserved in the blockId for the task attempt id. Note that `sequenceNoBits + partitionIdBits + taskAttemptIdBits` has to sum up to `63`. |
+|spark.rss.blockId.sequenceNoBits   | 18      | Number of bits reserved in the blockId for the sequence number (`[1..31]`). Note that `sequenceNoBits + partitionIdBits + taskAttemptIdBits` has to sum up to `63`. |
+|spark.rss.blockId.partitionIdBits  | 24      | Number of bits reserved in the blockId for the partition id (`[1..31]`). Note that `sequenceNoBits + partitionIdBits + taskAttemptIdBits` has to sum up to `63`.    |
+|spark.rss.blockId.taskAttemptIdBits| 21      | Number of bits reserved in the blockId for the task attempt id (`[1..31]`). Note that `sequenceNoBits + partitionIdBits + taskAttemptIdBits` has to sum up to `63`. |
 
 ### Adaptive Remote Shuffle Enabling 
 Currently, this feature only supports Spark. 
