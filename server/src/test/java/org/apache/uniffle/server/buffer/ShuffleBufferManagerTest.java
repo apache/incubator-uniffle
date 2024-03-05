@@ -268,12 +268,12 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   @Test
   public void cacheShuffleDataTest() {
     String appId = "cacheShuffleDataTest";
-    int shuffleId = 1;
     shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
     ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
     when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
     int startPartitionNum = (int) ShuffleServerMetrics.gaugeTotalPartitionNum.get();
+    int shuffleId = 1;
     StatusCode sc =
         shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 16));
     assertEquals(StatusCode.NO_REGISTER, sc);
@@ -339,11 +339,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   @Test
   public void cacheShuffleDataWithPreAllocationTest() {
     String appId = "cacheShuffleDataWithPreAllocationTest";
-    int shuffleId = 1;
     shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
     ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
     when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
+    int shuffleId = 1;
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     // pre allocate memory
     shuffleBufferManager.requireMemory(48, true);
@@ -413,11 +413,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mock(ShuffleTaskManager.class));
 
     String appId = "bufferSizeTest";
-    int shuffleId = 1;
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
     shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
     ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
     when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
+    int shuffleId = 1;
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
@@ -547,11 +547,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mock(ShuffleTaskManager.class));
 
     String appId = "bufferSizeTest";
-    int shuffleId = 1;
     shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
     ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
     when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
+    int shuffleId = 1;
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 64));
@@ -707,11 +707,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mock(ShuffleTaskManager.class));
 
     String appId = "bufferSizeTest";
-    int shuffleId = 1;
     shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
     ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
     when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
+    int shuffleId = 1;
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 64));
