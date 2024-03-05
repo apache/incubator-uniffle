@@ -17,12 +17,8 @@
 
 package org.apache.uniffle.server.buffer;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -35,12 +31,15 @@ import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeRangeMap;
 import io.netty.util.internal.PlatformDependent;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
@@ -82,6 +81,8 @@ public class ShuffleBufferManager {
   protected Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool;
   // appId -> shuffleId -> shuffle size in buffer
   protected Map<String, Map<Integer, AtomicLong>> shuffleSizeMap = JavaUtils.newConcurrentMap();
+  private final String serverTags;
+  private final boolean appBlockSizeMetricEnabled;
 
   public ShuffleBufferManager(
       ShuffleServerConf conf, ShuffleFlushManager shuffleFlushManager, boolean nettyServerEnabled) {
@@ -127,6 +128,9 @@ public class ShuffleBufferManager {
     this.hugePartitionMemoryLimitSize =
         Math.round(
             capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO));
+    serverTags = initServerTags(conf);
+    appBlockSizeMetricEnabled =
+        conf.getBoolean(ShuffleServerConf.APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_ENABLED);
   }
 
   public void setShuffleTaskManager(ShuffleTaskManager taskManager) {
@@ -176,6 +180,16 @@ public class ShuffleBufferManager {
     long size = buffer.append(spd);
     if (!isPreAllocated) {
       updateUsedMemory(size);
+    }
+    if (appBlockSizeMetricEnabled) {
+      Arrays.stream(spd.getBlockList())
+          .forEach(
+              b -> {
+                int blockSize = b.getLength();
+                ShuffleServerMetrics.appHistogramWriteBlockSize
+                    .labels(serverTags, appId)
+                    .observe(blockSize);
+              });
     }
     updateShuffleSize(appId, shuffleId, size);
     synchronized (this) {
@@ -334,6 +348,9 @@ public class ShuffleBufferManager {
     removeBufferByShuffleId(appId, shuffleIdToBuffers.keySet());
     shuffleSizeMap.remove(appId);
     bufferPool.remove(appId);
+    if (appBlockSizeMetricEnabled) {
+      ShuffleServerMetrics.appHistogramWriteBlockSize.remove(serverTags, appId);
+    }
   }
 
   public synchronized boolean requireMemory(long size, boolean isPreAllocated) {
@@ -706,5 +723,16 @@ public class ShuffleBufferManager {
       }
     }
     return false;
+  }
+
+  private String initServerTags(ShuffleServerConf conf) {
+    Set<String> tags = new HashSet<>();
+    tags.add(Constants.SHUFFLE_SERVER_VERSION);
+    tags.add(conf.get(RssBaseConf.RPC_SERVER_TYPE).name());
+    List<String> configuredTags = conf.get(ShuffleServerConf.TAGS);
+    if (CollectionUtils.isNotEmpty(configuredTags)) {
+      tags.addAll(configuredTags);
+    }
+    return StringUtils.join(tags, ",");
   }
 }

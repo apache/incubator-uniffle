@@ -582,6 +582,13 @@ public class ShuffleServerConf extends RssBaseConf {
           .withDescription(
               "keep alive time of thread pool that used for calc summary metric, in SECONDS.");
 
+  public static final ConfigOption<Boolean> APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_ENABLED =
+          ConfigOptions.key("rss.server.block.size.metric.enabled")
+                  .booleanType()
+                  .defaultValue(true)
+                  .withDescription(
+                          "whether or not shuffle block size metric enabled");
+
   public ShuffleServerConf() {}
 
   public ShuffleServerConf(String fileName) {

@@ -19,6 +19,7 @@ package org.apache.spark.shuffle.writer;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -179,6 +180,11 @@ public class WriteBufferManager extends MemoryConsumer {
 
     // check buffer size > spill threshold
     if (usedBytes.get() - inSendListBytes.get() > spillSize) {
+      LOG.info(
+          String.format(
+              "ShuffleBufferManager spill for buffer size exceeding spill threshold,"
+                  + "usedBytes[%d],inSendListBytes[%d],spillSize[%d]",
+              usedBytes.get(), inSendListBytes.get(), spillSize));
       List<ShuffleBlockInfo> multiSendingBlocks = clear();
       multiSendingBlocks.addAll(singleOrEmptySendingBlocks);
       writeTime += System.currentTimeMillis() - start;
@@ -316,6 +322,15 @@ public class WriteBufferManager extends MemoryConsumer {
             + dataSize
             + "], memoryUsed["
             + memoryUsed
+            + "],"
+            + "block number["
+            + result.size()
+            + "], max block size["
+            + result
+                .parallelStream()
+                .max(Comparator.comparingInt(ShuffleBlockInfo::getLength))
+                .get()
+                .getLength()
             + "]");
     return result;
   }

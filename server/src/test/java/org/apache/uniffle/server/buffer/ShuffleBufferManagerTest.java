@@ -20,6 +20,7 @@ package org.apache.uniffle.server.buffer;
 import java.io.File;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +29,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.google.common.collect.RangeMap;
 import com.google.common.util.concurrent.Uninterruptibles;
+import io.prometheus.client.Collector;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -728,5 +730,42 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     executor.shutdown();
     assertEquals(0, shuffleBufferManager.getUsedMemory());
     assertEquals(0, shuffleBufferManager.getInFlushSize());
+  }
+
+  @Test
+  public void blockSizeMetricsTest() {
+    String appId = "blockSizeMetricsTest";
+    shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
+    ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
+    int shuffleId = 1;
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
+
+    // cache shuffle block data, and record metrics
+    Arrays.stream(ShuffleServerMetrics.blockSizeBuckets)
+        .sorted()
+        .forEach(
+            bucket -> {
+              StatusCode sc =
+                  shuffleBufferManager.cacheShuffleData(
+                      appId, shuffleId, true, createData(0, (int) bucket));
+              assertEquals(StatusCode.SUCCESS, sc);
+            });
+    // check metrics values
+    List<Collector.MetricFamilySamples> samples =
+        ShuffleServerMetrics.appHistogramWriteBlockSize.collect();
+    assertEquals(samples.size(), 1);
+    int index = 1;
+    Arrays.stream(ShuffleServerMetrics.blockSizeBuckets)
+        .sorted()
+        .forEach(
+            bucket -> {
+              for (Collector.MetricFamilySamples.Sample s : samples.get(0).samples) {
+                if (s.labelValues.contains(bucket)) {
+                  assertEquals(s.value, index);
+                }
+              }
+            });
   }
 }
