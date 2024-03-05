@@ -53,6 +53,8 @@ public class BlockIdLayout {
   public final int maxPartitionId;
   public final int maxTaskAttemptId;
 
+  public final int maxNumPartitions;
+
   private BlockIdLayout(int sequenceNoBits, int partitionIdBits, int taskAttemptIdBits) {
     // individual lengths must be lager than 0
     if (sequenceNoBits <= 0 || partitionIdBits <= 0 || taskAttemptIdBits <= 0) {
@@ -102,6 +104,9 @@ public class BlockIdLayout {
     this.maxSequenceNo = (1 << sequenceNoBits) - 1;
     this.maxPartitionId = (1 << partitionIdBits) - 1;
     this.maxTaskAttemptId = (1 << taskAttemptIdBits) - 1;
+
+    // compute max nums
+    this.maxNumPartitions = this.maxPartitionId + 1;
 
     // compute masks to simplify bit logic in BlockId methods
     this.sequenceNoMask = (long) maxSequenceNo << sequenceNoOffset;

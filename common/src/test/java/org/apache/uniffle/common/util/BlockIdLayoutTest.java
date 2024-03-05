@@ -45,7 +45,9 @@ public class BlockIdLayoutTest {
     assertEquals(2097151, layout.maxPartitionId);
     assertEquals(4194303, layout.maxTaskAttemptId);
 
-    assertEquals(1048575L << 43, layout.sequenceNoMask);
+    assertEquals(2097152, layout.maxNumPartitions);
+
+    assertEquals(1048575L << (21 + 22), layout.sequenceNoMask);
     assertEquals(2097151L << 22, layout.partitionIdMask);
     assertEquals(4194303L, layout.taskAttemptIdMask);
 
