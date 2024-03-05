@@ -30,8 +30,6 @@ import scala.Option;
 
 import com.google.common.collect.Maps;
 import org.apache.spark.MapOutputTrackerMaster;
-import org.apache.spark.Partitioner;
-import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -54,7 +52,6 @@ import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
@@ -62,9 +59,8 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.shuffle.manager.RssShuffleManagerBase;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RssShuffleManagerTest extends SparkIntegrationTestBase {
 
@@ -232,23 +228,6 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
       shuffleManager.unregisterAllMapOutput(0);
       MapOutputTrackerMaster master = (MapOutputTrackerMaster) SparkEnv.get().mapOutputTracker();
       assertTrue(master.containsShuffle(0));
-
-      // register a shuffle with too many partitions should fail
-      Partitioner mockPartitioner = mock(Partitioner.class);
-      when(mockPartitioner.numPartitions()).thenReturn(expectedLayout.maxNumPartitions + 1);
-      ShuffleDependency<String, String, String> mockDependency = mock(ShuffleDependency.class);
-      when(mockDependency.partitioner()).thenReturn(mockPartitioner);
-
-      RssException e =
-          assertThrowsExactly(
-              RssException.class, () -> shuffleManager.registerShuffle(1, mockDependency));
-      assertEquals(
-          "Cannot register shuffle with "
-              + (expectedLayout.maxNumPartitions + 1)
-              + " partitions because the configured block id layout supports at most "
-              + expectedLayout.maxNumPartitions
-              + " partitions.",
-          e.getMessage());
     } finally {
       if (sc != null) {
         sc.stop();

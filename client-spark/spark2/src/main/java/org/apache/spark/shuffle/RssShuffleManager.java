@@ -265,6 +265,16 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   public <K, V, C> ShuffleHandle registerShuffle(
       int shuffleId, int numMaps, ShuffleDependency<K, V, C> dependency) {
 
+    // fail fast if number of partitions is not supported by block id layout
+    if (dependency.partitioner().numPartitions() > blockIdLayout.maxNumPartitions) {
+      throw new RssException(
+          "Cannot register shuffle with "
+              + dependency.partitioner().numPartitions()
+              + " partitions because the configured block id layout supports at most "
+              + blockIdLayout.maxNumPartitions
+              + " partitions.");
+    }
+
     // Spark have three kinds of serializer:
     // org.apache.spark.serializer.JavaSerializer
     // org.apache.spark.sql.execution.UnsafeRowSerializer
@@ -293,16 +303,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       appId = SparkEnv.get().conf().getAppId() + "_" + uuid;
       dataPusher.setRssAppId(appId);
       LOG.info("Generate application id used in rss: " + appId);
-    }
-
-    // fail fast if number of partitions is not supported by block id layout
-    if (dependency.partitioner().numPartitions() > blockIdLayout.maxNumPartitions) {
-      throw new RssException(
-          "Cannot register shuffle with "
-              + dependency.partitioner().numPartitions()
-              + " partitions because the configured block id layout supports at most "
-              + blockIdLayout.maxNumPartitions
-              + " partitions.");
     }
 
     if (dependency.partitioner().numPartitions() == 0) {
