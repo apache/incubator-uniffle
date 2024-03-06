@@ -20,8 +20,6 @@ package org.apache.uniffle.test;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import scala.Option;
-
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
@@ -80,12 +78,18 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
 
   public void updateCommonSparkConf(SparkConf sparkConf) {}
 
-  private static <T> T getIfExists(Option<T> o) {
+  private static <T> T getIfExists(scala.Option<T> o) {
     return o.isDefined() ? o.get() : null;
   }
 
   protected Map runSparkApp(SparkConf sparkConf, String testFileName) throws Exception {
-    SparkSession spark = getIfExists(SparkSession.getActiveSession());
+    // Try to get the current active SparkSession
+    scala.Option<SparkSession> activeSessionOption = SparkSession.getDefaultSession();
+
+    // Get the SparkSession if it exists, using the getIfExists method
+    SparkSession spark = getIfExists(activeSessionOption);
+
+    // Close the active SparkSession if it exists
     if (spark != null) {
       spark.close();
     }

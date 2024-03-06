@@ -29,6 +29,10 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.Metadata;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +49,13 @@ public abstract class SparkSQLTest extends SparkIntegrationTestBase {
 
   @Override
   public Map runTest(SparkSession spark, String fileName) {
-    Dataset<Row> df = spark.read().schema("name STRING, age INT").csv(fileName);
+    StructType schema =
+        new StructType(
+            new StructField[] {
+              new StructField("name", DataTypes.StringType, true, Metadata.empty()),
+              new StructField("age", DataTypes.IntegerType, true, Metadata.empty())
+            });
+    Dataset<Row> df = spark.read().schema(schema).csv(fileName);
     df.createOrReplaceTempView("people");
     Dataset<Row> queryResult =
         spark.sql("SELECT name, count(age) FROM people group by name order by name");

@@ -17,6 +17,7 @@
 
 package org.apache.spark.shuffle.reader;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,8 @@ import org.apache.spark.serializer.KryoSerializer;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -41,7 +44,6 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.storage.handler.impl.HadoopShuffleWriteHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -76,7 +78,25 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     when(contextMock.taskAttemptId()).thenReturn(1L);
     when(contextMock.attemptNumber()).thenReturn(1);
     when(contextMock.taskMetrics()).thenReturn(new TaskMetrics());
-    doNothing().when(contextMock).killTaskIfInterrupted();
+    // Check if the method 'killTaskIfInterrupted' exists
+    Answer<Void> doNothingAnswer =
+        invocation -> {
+          // do nothing
+          return null;
+        };
+
+    Method method = null;
+    try {
+      method = contextMock.getClass().getMethod("killTaskIfInterrupted");
+    } catch (NoSuchMethodException e) {
+      // Ignore, as this means that the Spark version we are using
+      // does not have the 'killTaskIfInterrupted' method
+    }
+    if (method != null) {
+      // If the method exists, mock it and do nothing when it's called
+      Mockito.when(method.invoke(contextMock)).thenAnswer(doNothingAnswer);
+    }
+
     when(dependencyMock.mapSideCombine()).thenReturn(false);
     when(dependencyMock.aggregator()).thenReturn(Option.empty());
     when(dependencyMock.keyOrdering()).thenReturn(Option.empty());

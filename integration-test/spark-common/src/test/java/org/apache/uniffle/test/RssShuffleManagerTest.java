@@ -21,8 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import scala.Option;
-
 import com.google.common.collect.Maps;
 import org.apache.spark.MapOutputTrackerMaster;
 import org.apache.spark.SparkConf;
@@ -76,8 +74,8 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
 
     JavaSparkContext sc = null;
     try {
-      Option<SparkSession> spark = SparkSession.getActiveSession();
-      if (spark.nonEmpty()) {
+      scala.Option<SparkSession> spark = SparkSession.getDefaultSession();
+      if (spark.isDefined()) {
         spark.get().stop();
       }
       sc = new JavaSparkContext(SparkSession.builder().config(conf).getOrCreate().sparkContext());

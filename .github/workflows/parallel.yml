@@ -52,6 +52,7 @@ jobs:
         profile:
           # Pay attention! Don't use profile with character ':'!
           - spark2
+          - spark2.1
           - spark2.3
           - spark3.0
           - spark3

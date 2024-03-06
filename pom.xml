@@ -1280,7 +1280,7 @@
         <scala.binary.version>2.11</scala.binary.version>
         <spark.version>2.4.6</spark.version>
         <client.type>2</client.type>
-        <jackson.version>2.9.0</jackson.version>
+        <jackson.version>2.9.10</jackson.version>
       </properties>
       <modules>
         <module>client-spark/common</module>
@@ -1335,12 +1335,69 @@
     </profile>
 
     <profile>
+      <id>spark2.1</id>
+      <properties>
+        <scala.binary.version>2.11</scala.binary.version>
+        <spark.version>2.1.3</spark.version>
+        <client.type>2</client.type>
+        <jackson.version>2.9.10</jackson.version>
+      </properties>
+      <modules>
+        <module>client-spark/common</module>
+        <module>client-spark/spark2</module>
+        <module>client-spark/spark2-shaded</module>
+        <module>integration-test/spark-common</module>
+      </modules>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>${netty.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-client-spark2</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-client-spark-common</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-integration-common-test</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-client-spark-common</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+    </profile>
+
+    <profile>
       <id>spark2.3</id>
       <properties>
         <scala.binary.version>2.11</scala.binary.version>
         <spark.version>2.3.4</spark.version>
         <client.type>2</client.type>
-        <jackson.version>2.9.0</jackson.version>
+        <jackson.version>2.9.10</jackson.version>
       </properties>
       <modules>
         <module>client-spark/common</module>

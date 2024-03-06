@@ -34,6 +34,10 @@ public class RssSpark2ShuffleUtilsTest {
 
   @Test
   public void testIsStageResubmitSupported() {
+    if (SparkVersionUtils.isSpark2() && SparkVersionUtils.MINOR_VERSION <= 2) {
+      // Spark 2.1/2.2 does not support stage resubmission.
+      return;
+    }
     // by default spark 2.3/2.4 is used, which supports stage resubmit.
     assertTrue(RssSparkShuffleUtils.isStageResubmitSupported());
   }
