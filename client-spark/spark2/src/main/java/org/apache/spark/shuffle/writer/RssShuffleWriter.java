@@ -247,7 +247,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private void writeImpl(Iterator<Product2<K, V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos;
-    int recordCount = 0;
+    long recordCount = 0;
     while (records.hasNext()) {
       recordCount++;
       Product2<K, V> record = records.next();
@@ -266,7 +266,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     shuffleBlockInfos = bufferManager.clear();
     processShuffleBlockInfos(shuffleBlockInfos);
     long s = System.currentTimeMillis();
-    assert recordCount == bufferManager.getRecordCount();
+    checkSentRecordCount(recordCount);
     checkBlockSendResult(blockIds);
     final long checkDuration = System.currentTimeMillis() - s;
     long commitDuration = 0;
@@ -292,6 +292,16 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             + commitDuration
             + "], "
             + bufferManager.getManagerCostInfo());
+  }
+
+  private void checkSentRecordCount(long recordCount) {
+    if (recordCount != bufferManager.getRecordCount()) {
+      String errorMsg =
+          "Potential record loss may have occurred while preparing to send blocks for task["
+              + taskId
+              + "]";
+      throw new RssSendFailedException(errorMsg);
+    }
   }
 
   /**
