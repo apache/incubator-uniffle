@@ -165,9 +165,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
     this.user = sparkConf.get("spark.rss.quota.user", "user");
     this.uuid = sparkConf.get("spark.rss.quota.uuid", Long.toString(System.currentTimeMillis()));
+    this.dynamicConfEnabled = sparkConf.get(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED);
 
     // fetch client conf and apply them if necessary
-    if (isDriver && sparkConf.get(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED)) {
+    if (isDriver && this.dynamicConfEnabled) {
       fetchAndApplyDynamicConf(sparkConf);
     }
     RssSparkShuffleUtils.validateRssClientConf(sparkConf);
@@ -194,7 +195,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         sparkConf.getLong(RssSparkConfig.RSS_HEARTBEAT_TIMEOUT.key(), heartbeatInterval / 2);
     final int retryMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX);
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
-    this.dynamicConfEnabled = sparkConf.get(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED);
     this.dataDistributionType = getDataDistributionType(sparkConf);
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     this.maxConcurrencyPerPartitionToWrite = rssConf.get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
