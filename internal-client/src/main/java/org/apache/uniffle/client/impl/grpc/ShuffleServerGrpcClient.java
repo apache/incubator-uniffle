@@ -152,11 +152,6 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     return blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
   }
 
-  @Override
-  public String getDesc() {
-    return "Shuffle server grpc client ref " + host + ":" + port;
-  }
-
   private ShuffleRegisterResponse doRegisterShuffle(
       String appId,
       int shuffleId,
