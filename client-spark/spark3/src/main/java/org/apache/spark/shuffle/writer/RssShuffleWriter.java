@@ -262,7 +262,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     if (isCombine) {
       createCombiner = shuffleDependency.aggregator().get().createCombiner();
     }
+    int recordCount = 0;
     while (records.hasNext()) {
+      recordCount++;
       // Task should fast fail when sending data failed
       checkIfBlocksFailed();
 
@@ -285,6 +287,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       processShuffleBlockInfos(shuffleBlockInfos);
     }
     long checkStartTs = System.currentTimeMillis();
+    assert recordCount == bufferManager.getRecordCount();
     checkBlockSendResult(blockIds);
     long commitStartTs = System.currentTimeMillis();
     long checkDuration = commitStartTs - checkStartTs;

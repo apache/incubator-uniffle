@@ -247,7 +247,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private void writeImpl(Iterator<Product2<K, V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos;
+    int recordCount = 0;
     while (records.hasNext()) {
+      recordCount++;
       Product2<K, V> record = records.next();
       int partition = getPartition(record._1());
       if (shuffleDependency.mapSideCombine()) {
@@ -264,6 +266,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     shuffleBlockInfos = bufferManager.clear();
     processShuffleBlockInfos(shuffleBlockInfos);
     long s = System.currentTimeMillis();
+    assert recordCount == bufferManager.getRecordCount();
     checkBlockSendResult(blockIds);
     final long checkDuration = System.currentTimeMillis() - s;
     long commitDuration = 0;
