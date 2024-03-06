@@ -31,10 +31,6 @@ import org.apache.uniffle.common.config.RssConf;
  */
 public class BlockIdLayout {
 
-  public static final int DEFAULT_SEQUENCE_NO_BITS = 18;
-  public static final int DEFAULT_PARTITION_ID_BITS = 24;
-  public static final int DEFAULT_TASK_ATTEMPT_ID_BITS = 21;
-
   public static final BlockIdLayout DEFAULT = BlockIdLayout.from(18, 24, 21);
 
   public final int sequenceNoBits;
