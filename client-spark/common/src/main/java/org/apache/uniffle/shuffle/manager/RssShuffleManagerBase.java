@@ -61,7 +61,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
 
   /**
    * Derives block id layout config from maximum number of allowed partitions. This value can be set
-   * in either of SparkConf or RssConf via RssSparkConfig.RSS_MAX_PARTITIONS, where SparkConf has
+   * in either SparkConf or RssConf via RssSparkConfig.RSS_MAX_PARTITIONS, where SparkConf has
    * precedence.
    *
    * <p>Computes the number of required bits for partition id and task attempt id and reserves
