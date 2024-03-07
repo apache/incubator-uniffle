@@ -80,7 +80,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
-import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -110,6 +110,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private boolean heartbeatStarted = false;
   private boolean dynamicConfEnabled = false;
   private final ShuffleDataDistributionType dataDistributionType;
+  private final BlockIdLayout blockIdLayout;
   private final int maxConcurrencyPerPartitionToWrite;
   private final int maxFailures;
   private final boolean speculation;
@@ -183,6 +184,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     this.dynamicConfEnabled = sparkConf.get(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED);
     this.dataDistributionType = getDataDistributionType(sparkConf);
+    this.blockIdLayout = BlockIdLayout.from(RssSparkConfig.toRssConf(sparkConf));
     this.maxConcurrencyPerPartitionToWrite =
         RssSparkConfig.toRssConf(sparkConf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
     this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
@@ -308,6 +310,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     this.dataDistributionType =
         RssSparkConfig.toRssConf(sparkConf).get(RssClientConf.DATA_DISTRIBUTION_TYPE);
+    this.blockIdLayout = BlockIdLayout.from(RssSparkConfig.toRssConf(sparkConf));
     this.maxConcurrencyPerPartitionToWrite =
         RssSparkConfig.toRssConf(sparkConf).get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
     this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
@@ -371,6 +374,16 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   @Override
   public <K, V, C> ShuffleHandle registerShuffle(
       int shuffleId, ShuffleDependency<K, V, C> dependency) {
+
+    // fail fast if number of partitions is not supported by block id layout
+    if (dependency.partitioner().numPartitions() > blockIdLayout.maxNumPartitions) {
+      throw new RssException(
+          "Cannot register shuffle with "
+              + dependency.partitioner().numPartitions()
+              + " partitions because the configured block id layout supports at most "
+              + blockIdLayout.maxNumPartitions
+              + " partitions.");
+    }
 
     // Spark have three kinds of serializer:
     // org.apache.spark.serializer.JavaSerializer
@@ -507,18 +520,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
-    long taskAttemptId =
-        getTaskAttemptId(
-            context.partitionId(),
-            context.attemptNumber(),
-            maxFailures,
-            speculation,
-            Constants.TASK_ATTEMPT_ID_MAX_LENGTH);
     return new RssShuffleWriter<>(
         rssHandle.getAppId(),
         shuffleId,
         taskId,
-        taskAttemptId,
+        getTaskAttemptIdForBlockId(context.partitionId(), context.attemptNumber()),
         writeMetrics,
         this,
         sparkConf,
@@ -527,6 +533,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         this::markFailedTask,
         context,
         shuffleHandleInfo);
+  }
+
+  @Override
+  public long getTaskAttemptIdForBlockId(int mapIndex, int attemptNo) {
+    return getTaskAttemptIdForBlockId(
+        mapIndex, attemptNo, maxFailures, speculation, blockIdLayout.taskAttemptIdBits);
   }
 
   public void setPusherAppId(RssShuffleHandle rssShuffleHandle) {
@@ -697,7 +709,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         shuffleRemoteStoragePath,
         readerHadoopConf,
         partitionNum,
-        RssUtils.generatePartitionToBitmap(blockIdBitmap, startPartition, endPartition),
+        RssUtils.generatePartitionToBitmap(
+            blockIdBitmap, startPartition, endPartition, blockIdLayout),
         taskIdBitmap,
         readMetrics,
         RssSparkConfig.toRssConf(sparkConf),

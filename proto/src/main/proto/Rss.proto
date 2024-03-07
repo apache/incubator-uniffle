@@ -143,6 +143,13 @@ message GetShuffleResultRequest {
   string appId = 1;
   int32 shuffleId = 2;
   int32 partitionId = 3;
+  BlockIdLayout blockIdLayout = 4;
+}
+
+message BlockIdLayout {
+  int32 sequenceNoBits = 1;
+  int32 partitionIdBits = 2;
+  int32 taskAttemptIdBits = 3;
 }
 
 message GetShuffleResultResponse {
@@ -155,6 +162,7 @@ message GetShuffleResultForMultiPartRequest {
   string appId = 1;
   int32 shuffleId = 2;
   repeated int32 partitions = 3;
+  BlockIdLayout blockIdLayout = 4;
 }
 
 message GetShuffleResultForMultiPartResponse {

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -38,11 +39,16 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.BlockIdLayout;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -84,18 +90,34 @@ public class WriteBufferManagerTest {
     return conf;
   }
 
-  @Test
-  public void addRecordCompressedTest() throws Exception {
-    addRecord(true);
+  public static Stream<Arguments> testBlockIdLayouts() {
+    return Stream.of(
+        Arguments.of(BlockIdLayout.DEFAULT), Arguments.of(BlockIdLayout.from(20, 21, 22)));
   }
 
-  @Test
-  public void addRecordUnCompressedTest() throws Exception {
-    addRecord(false);
+  @ParameterizedTest
+  @MethodSource("testBlockIdLayouts")
+  public void addRecordCompressedTest(BlockIdLayout layout) throws Exception {
+    addRecord(true, layout);
   }
 
-  private void addRecord(boolean compress) throws IllegalAccessException {
+  @ParameterizedTest
+  @MethodSource("testBlockIdLayouts")
+  public void addRecordUnCompressedTest(BlockIdLayout layout) throws Exception {
+    addRecord(false, layout);
+  }
+
+  private void addRecord(boolean compress, BlockIdLayout layout) throws IllegalAccessException {
     SparkConf conf = getConf();
+    conf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key(),
+        String.valueOf(layout.sequenceNoBits));
+    conf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_PARTITION_ID_BITS.key(),
+        String.valueOf(layout.partitionIdBits));
+    conf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key(),
+        String.valueOf(layout.taskAttemptIdBits));
     if (!compress) {
       conf.set(RssSparkConfig.SPARK_SHUFFLE_COMPRESS_KEY, String.valueOf(false));
     }
@@ -122,6 +144,7 @@ public class WriteBufferManagerTest {
     result = wbm.addRecord(0, testKey, testValue);
     // single buffer is full
     assertEquals(1, result.size());
+    assertEquals(layout.asBlockId(0, 0, 0), layout.asBlockId(result.get(0).getBlockId()));
     assertEquals(512, wbm.getAllocatedBytes());
     assertEquals(96, wbm.getUsedBytes());
     assertEquals(96, wbm.getInSendListBytes());
@@ -139,6 +162,12 @@ public class WriteBufferManagerTest {
     wbm.addRecord(4, testKey, testValue);
     result = wbm.addRecord(5, testKey, testValue);
     assertEquals(6, result.size());
+    assertEquals(layout.asBlockId(1, 0, 0), layout.asBlockId(result.get(0).getBlockId()));
+    assertEquals(layout.asBlockId(0, 1, 0), layout.asBlockId(result.get(1).getBlockId()));
+    assertEquals(layout.asBlockId(0, 2, 0), layout.asBlockId(result.get(2).getBlockId()));
+    assertEquals(layout.asBlockId(0, 3, 0), layout.asBlockId(result.get(3).getBlockId()));
+    assertEquals(layout.asBlockId(0, 4, 0), layout.asBlockId(result.get(4).getBlockId()));
+    assertEquals(layout.asBlockId(0, 5, 0), layout.asBlockId(result.get(5).getBlockId()));
     assertEquals(512, wbm.getAllocatedBytes());
     assertEquals(288, wbm.getUsedBytes());
     assertEquals(288, wbm.getInSendListBytes());
@@ -221,28 +250,40 @@ public class WriteBufferManagerTest {
     assertEquals(0, spyManager.getShuffleWriteMetrics().recordsWritten());
   }
 
-  @Test
-  public void createBlockIdTest() {
+  @ParameterizedTest
+  @MethodSource("testBlockIdLayouts")
+  public void createBlockIdTest(BlockIdLayout layout) {
     SparkConf conf = getConf();
+    conf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key(),
+        String.valueOf(layout.sequenceNoBits));
+    conf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_PARTITION_ID_BITS.key(),
+        String.valueOf(layout.partitionIdBits));
+    conf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key(),
+        String.valueOf(layout.taskAttemptIdBits));
+
     WriteBufferManager wbm = createManager(conf);
     WriterBuffer mockWriterBuffer = mock(WriterBuffer.class);
     when(mockWriterBuffer.getData()).thenReturn(new byte[] {});
     when(mockWriterBuffer.getMemoryUsed()).thenReturn(0);
     ShuffleBlockInfo sbi = wbm.createShuffleBlock(0, mockWriterBuffer);
+
     // seqNo = 0, partitionId = 0, taskId = 0
-    assertEquals(0L, sbi.getBlockId());
+    assertEquals(layout.asBlockId(0, 0, 0), layout.asBlockId(sbi.getBlockId()));
 
     // seqNo = 1, partitionId = 0, taskId = 0
     sbi = wbm.createShuffleBlock(0, mockWriterBuffer);
-    assertEquals(35184372088832L, sbi.getBlockId());
+    assertEquals(layout.asBlockId(1, 0, 0), layout.asBlockId(sbi.getBlockId()));
 
     // seqNo = 0, partitionId = 1, taskId = 0
     sbi = wbm.createShuffleBlock(1, mockWriterBuffer);
-    assertEquals(2097152L, sbi.getBlockId());
+    assertEquals(layout.asBlockId(0, 1, 0), layout.asBlockId(sbi.getBlockId()));
 
     // seqNo = 1, partitionId = 1, taskId = 0
     sbi = wbm.createShuffleBlock(1, mockWriterBuffer);
-    assertEquals(35184374185984L, sbi.getBlockId());
+    assertEquals(layout.asBlockId(1, 1, 0), layout.asBlockId(sbi.getBlockId()));
   }
 
   @Test

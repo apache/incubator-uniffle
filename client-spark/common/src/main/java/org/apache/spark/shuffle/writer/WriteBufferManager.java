@@ -51,7 +51,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.util.BlockId;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 
 public class WriteBufferManager extends MemoryConsumer {
@@ -97,6 +97,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private boolean memorySpillEnabled;
   private int memorySpillTimeoutSec;
   private boolean isRowBased;
+  private BlockIdLayout blockIdLayout;
 
   public WriteBufferManager(
       int shuffleId,
@@ -162,6 +163,7 @@ public class WriteBufferManager extends MemoryConsumer {
     this.sendSizeLimit = rssConf.get(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMITATION);
     this.memorySpillTimeoutSec = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_TIMEOUT);
     this.memorySpillEnabled = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_ENABLED);
+    this.blockIdLayout = BlockIdLayout.from(rssConf);
   }
 
   /** add serialized columnar data directly when integrate with gluten */
@@ -329,7 +331,8 @@ public class WriteBufferManager extends MemoryConsumer {
       compressTime += System.currentTimeMillis() - start;
     }
     final long crc32 = ChecksumUtils.getCrc32(compressed);
-    final long blockId = BlockId.getBlockId(getNextSeqNo(partitionId), partitionId, taskAttemptId);
+    final long blockId =
+        blockIdLayout.getBlockId(getNextSeqNo(partitionId), partitionId, taskAttemptId);
     uncompressedDataLen += data.length;
     shuffleWriteMetrics.incBytesWritten(compressed.length);
     // add memory to indicate bytes which will be sent to shuffle server

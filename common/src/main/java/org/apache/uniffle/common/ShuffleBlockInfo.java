@@ -22,7 +22,6 @@ import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
-import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.ByteBufUtils;
 
 public class ShuffleBlockInfo {
@@ -137,7 +136,7 @@ public class ShuffleBlockInfo {
     sb.append("ShuffleBlockInfo:");
     sb.append("shuffleId[" + shuffleId + "],");
     sb.append("partitionId[" + partitionId + "],");
-    sb.append(BlockId.toString(blockId) + ",");
+    sb.append("blockId[" + blockId + "],");
     sb.append("length[" + length + "],");
     sb.append("uncompressLength[" + uncompressLength + "],");
     sb.append("crc[" + crc + "],");

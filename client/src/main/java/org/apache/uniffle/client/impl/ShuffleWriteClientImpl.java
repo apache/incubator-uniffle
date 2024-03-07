@@ -89,6 +89,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
@@ -115,6 +116,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private final int unregisterRequestTimeSec;
   private Set<ShuffleServerInfo> defectiveServers;
   private RssConf rssConf;
+  private BlockIdLayout blockIdLayout;
 
   public ShuffleWriteClientImpl(ShuffleClientFactory.WriteClientBuilder builder) {
     // set default value
@@ -147,6 +149,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       defectiveServers = Sets.newConcurrentHashSet();
     }
     this.rssConf = builder.getRssConf();
+    this.blockIdLayout = BlockIdLayout.from(rssConf);
   }
 
   private boolean sendShuffleDataAsync(
@@ -770,7 +773,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int shuffleId,
       int partitionId) {
     RssGetShuffleResultRequest request =
-        new RssGetShuffleResultRequest(appId, shuffleId, partitionId);
+        new RssGetShuffleResultRequest(appId, shuffleId, partitionId, blockIdLayout);
     boolean isSuccessful = false;
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     int successCnt = 0;
@@ -825,7 +828,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         }
       }
       RssGetShuffleResultForMultiPartRequest request =
-          new RssGetShuffleResultForMultiPartRequest(appId, shuffleId, requestPartitions);
+          new RssGetShuffleResultForMultiPartRequest(
+              appId, shuffleId, requestPartitions, blockIdLayout);
       try {
         RssGetShuffleResultResponse response =
             getShuffleServerClient(shuffleServerInfo).getShuffleResultForMultiPart(request);

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.client.util.DefaultIdHelper;
-import org.apache.uniffle.common.util.BlockId;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.RssUtils;
 
 import static org.apache.uniffle.client.util.ClientUtils.waitUntilDoneOrFail;
@@ -48,18 +48,19 @@ public class ClientUtilsTest {
   @Test
   public void testGenerateTaskIdBitMap() {
     int partitionId = 1;
+    BlockIdLayout layout = BlockIdLayout.DEFAULT;
     Roaring64NavigableMap blockIdMap = Roaring64NavigableMap.bitmapOf();
     int taskSize = 10;
     long[] except = new long[taskSize];
     for (int i = 0; i < taskSize; i++) {
       except[i] = i;
       for (int j = 0; j < 100; j++) {
-        long blockId = BlockId.getBlockId(j, partitionId, i);
+        long blockId = layout.getBlockId(j, partitionId, i);
         blockIdMap.addLong(blockId);
       }
     }
     Roaring64NavigableMap taskIdBitMap =
-        RssUtils.generateTaskIdBitMap(blockIdMap, new DefaultIdHelper());
+        RssUtils.generateTaskIdBitMap(blockIdMap, new DefaultIdHelper(layout));
     assertEquals(taskSize, taskIdBitMap.getLongCardinality());
     LongIterator longIterator = taskIdBitMap.getLongIterator();
     for (int i = 0; i < taskSize; i++) {

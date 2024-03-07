@@ -329,7 +329,10 @@ public class RssUtils {
   }
 
   public static Map<Integer, Roaring64NavigableMap> generatePartitionToBitmap(
-      Roaring64NavigableMap shuffleBitmap, int startPartition, int endPartition) {
+      Roaring64NavigableMap shuffleBitmap,
+      int startPartition,
+      int endPartition,
+      BlockIdLayout layout) {
     Map<Integer, Roaring64NavigableMap> result = Maps.newHashMap();
     for (int partitionId = startPartition; partitionId < endPartition; partitionId++) {
       result.computeIfAbsent(partitionId, key -> Roaring64NavigableMap.bitmapOf());
@@ -337,7 +340,7 @@ public class RssUtils {
     Iterator<Long> it = shuffleBitmap.iterator();
     while (it.hasNext()) {
       Long blockId = it.next();
-      int partitionId = BlockId.getPartitionId(blockId);
+      int partitionId = layout.getPartitionId(blockId);
       if (partitionId >= startPartition && partitionId < endPartition) {
         result.get(partitionId).add(blockId);
       }

@@ -21,6 +21,7 @@ import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.netty.IOMode;
+import org.apache.uniffle.common.util.BlockIdLayout;
 
 import static org.apache.uniffle.common.compression.Codec.Type.LZ4;
 
@@ -56,6 +57,36 @@ public class RssClientConf {
           .withDescription(
               "The type of partition shuffle data distribution, including normal and local_order. "
                   + "The default value is normal. This config is only valid in Spark3.x");
+
+  public static final ConfigOption<Integer> BLOCKID_SEQUENCE_NO_BITS =
+      ConfigOptions.key("rss.client.blockId.sequenceNoBits")
+          .intType()
+          .defaultValue(BlockIdLayout.DEFAULT.sequenceNoBits)
+          .withDescription(
+              "Block ids contain three fields: the sequence number, the partition id and "
+                  + "the task attempt id. This configures the bits reserved for the sequence "
+                  + "number. Each field can at most have 31 bits, while all fields together "
+                  + "must sum up to 63 bits.");
+
+  public static final ConfigOption<Integer> BLOCKID_PARTITION_ID_BITS =
+      ConfigOptions.key("rss.client.blockId.partitionIdBits")
+          .intType()
+          .defaultValue(BlockIdLayout.DEFAULT.partitionIdBits)
+          .withDescription(
+              "Block ids contain three fields: the sequence number, the partition id and "
+                  + "the task attempt id. This configures the bits reserved for the partition id. "
+                  + "Each field can at most have 31 bits, while all fields together "
+                  + "must sum up to 63 bits.");
+
+  public static final ConfigOption<Integer> BLOCKID_TASK_ATTEMPT_ID_BITS =
+      ConfigOptions.key("rss.client.blockId.taskAttemptIdBits")
+          .intType()
+          .defaultValue(BlockIdLayout.DEFAULT.taskAttemptIdBits)
+          .withDescription(
+              "Block ids contain three fields: the sequence number, the partition id and "
+                  + "the task attempt id. This configures the bits reserved for the task attempt id. "
+                  + "Each field can at most have 31 bits, while all fields together "
+                  + "must sum up to 63 bits.");
 
   public static final ConfigOption<Integer> MAX_CONCURRENCY_PER_PARTITION_TO_WRITE =
       ConfigOptions.key("rss.client.max.concurrency.of.per-partition.write")

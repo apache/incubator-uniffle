@@ -29,7 +29,6 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.util.BlockId;
 
 public class FixedSizeSegmentSplitter implements SegmentSplitter {
   private static final Logger LOGGER = LoggerFactory.getLogger(FixedSizeSegmentSplitter.class);
@@ -84,11 +83,11 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
         if (dataFileLen != -1 && totalLength > dataFileLen) {
           LOGGER.info(
               "Abort inconsistent data, the data length: {}(bytes) recorded in index file is greater than "
-                  + "the real data file length: {}(bytes). Partition id: {}. "
+                  + "the real data file length: {}(bytes). Block id: {}"
                   + "This may happen when the data is flushing, please ignore.",
               totalLength,
               dataFileLen,
-              BlockId.getPartitionId(blockId));
+              blockId);
           break;
         }
 
