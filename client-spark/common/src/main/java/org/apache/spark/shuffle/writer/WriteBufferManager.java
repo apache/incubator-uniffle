@@ -65,6 +65,8 @@ public class WriteBufferManager extends MemoryConsumer {
   private AtomicLong usedBytes = new AtomicLong(0);
   // bytes of shuffle data which is in send list
   private AtomicLong inSendListBytes = new AtomicLong(0);
+  /** An atomic counter used to keep track of the number of records */
+  private AtomicLong recordCounter = new AtomicLong(0);
   // it's part of blockId
   private Map<Integer, Integer> partitionToSeqNo = Maps.newHashMap();
   private long askExecutorMemory;
@@ -236,6 +238,7 @@ public class WriteBufferManager extends MemoryConsumer {
     if (wb.getMemoryUsed() > bufferSize) {
       List<ShuffleBlockInfo> sentBlocks = new ArrayList<>(1);
       sentBlocks.add(createShuffleBlock(partitionId, wb));
+      recordCounter.addAndGet(wb.getRecordCount());
       copyTime += wb.getCopyTime();
       buffers.remove(partitionId);
       if (LOG.isDebugEnabled()) {
@@ -298,6 +301,7 @@ public class WriteBufferManager extends MemoryConsumer {
       dataSize += wb.getDataLength();
       memoryUsed += wb.getMemoryUsed();
       result.add(createShuffleBlock(entry.getKey(), wb));
+      recordCounter.addAndGet(wb.getRecordCount());
       iterator.remove();
       copyTime += wb.getCopyTime();
     }
@@ -507,6 +511,10 @@ public class WriteBufferManager extends MemoryConsumer {
   @VisibleForTesting
   protected long getInSendListBytes() {
     return inSendListBytes.get();
+  }
+
+  protected long getRecordCount() {
+    return recordCounter.get();
   }
 
   public void freeAllocatedMemory(long freeMemory) {

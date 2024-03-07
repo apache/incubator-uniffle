@@ -262,7 +262,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     if (isCombine) {
       createCombiner = shuffleDependency.aggregator().get().createCombiner();
     }
+    long recordCount = 0;
     while (records.hasNext()) {
+      recordCount++;
       // Task should fast fail when sending data failed
       checkIfBlocksFailed();
 
@@ -285,6 +287,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       processShuffleBlockInfos(shuffleBlockInfos);
     }
     long checkStartTs = System.currentTimeMillis();
+    checkSentRecordCount(recordCount);
     checkBlockSendResult(blockIds);
     long commitStartTs = System.currentTimeMillis();
     long checkDuration = commitStartTs - checkStartTs;
@@ -308,6 +311,16 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             + (System.currentTimeMillis() - commitStartTs)
             + "], "
             + bufferManager.getManagerCostInfo());
+  }
+
+  private void checkSentRecordCount(long recordCount) {
+    if (recordCount != bufferManager.getRecordCount()) {
+      String errorMsg =
+          "Potential record loss may have occurred while preparing to send blocks for task["
+              + taskId
+              + "]";
+      throw new RssSendFailedException(errorMsg);
+    }
   }
 
   // only push-based shuffle use this interface, but rss won't be used when push-based shuffle is
