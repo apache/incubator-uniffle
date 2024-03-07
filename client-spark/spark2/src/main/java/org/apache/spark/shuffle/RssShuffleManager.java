@@ -106,7 +106,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final int dataCommitPoolSize;
   private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
   private boolean heartbeatStarted = false;
-  private boolean dynamicConfEnabled = false;
+  private boolean dynamicConfEnabled;
   private final int maxFailures;
   private final boolean speculation;
   private final BlockIdLayout blockIdLayout;
@@ -144,15 +144,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           "Spark2 doesn't support AQE, spark.sql.adaptive.enabled should be false.");
     }
     this.sparkConf = sparkConf;
-    this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
-    this.speculation = sparkConf.getBoolean("spark.speculation", false);
-    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
-    // configureBlockIdLayout requires maxFailures and speculation to be initialized
-    configureBlockIdLayout(sparkConf, rssConf);
-    this.blockIdLayout = BlockIdLayout.from(rssConf);
     this.user = sparkConf.get("spark.rss.quota.user", "user");
     this.uuid = sparkConf.get("spark.rss.quota.uuid", Long.toString(System.currentTimeMillis()));
-
     this.dynamicConfEnabled = sparkConf.get(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED);
 
     // fetch client conf and apply them if necessary
@@ -160,6 +153,14 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       fetchAndApplyDynamicConf(sparkConf);
     }
     RssSparkShuffleUtils.validateRssClientConf(sparkConf);
+
+    // configure block id layout
+    this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
+    this.speculation = sparkConf.getBoolean("spark.speculation", false);
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+    // configureBlockIdLayout requires maxFailures and speculation to be initialized
+    configureBlockIdLayout(sparkConf, rssConf);
+    this.blockIdLayout = BlockIdLayout.from(rssConf);
 
     // set & check replica config
     this.dataReplica = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA);

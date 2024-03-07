@@ -108,7 +108,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker;
   private ScheduledExecutorService heartBeatScheduledExecutorService;
   private boolean heartbeatStarted = false;
-  private boolean dynamicConfEnabled = false;
+  private boolean dynamicConfEnabled;
   private final ShuffleDataDistributionType dataDistributionType;
   private final BlockIdLayout blockIdLayout;
   private final int maxConcurrencyPerPartitionToWrite;
