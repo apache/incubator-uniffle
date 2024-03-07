@@ -86,6 +86,17 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
   }
 
   @Override
+  public String getClientInfo() {
+    return "ShuffleServerGrpcNettyClient for host["
+        + host
+        + "], port["
+        + port
+        + "], nettyPort["
+        + nettyPort
+        + "]";
+  }
+
+  @Override
   public RssSendShuffleDataResponse sendShuffleData(RssSendShuffleDataRequest request) {
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks =
         request.getShuffleIdToBlocks();

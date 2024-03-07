@@ -74,8 +74,6 @@ public interface ShuffleServerClient {
   RssGetInMemoryShuffleDataResponse getInMemoryShuffleData(
       RssGetInMemoryShuffleDataRequest request);
 
-  String getDesc();
-
   void close();
 
   String getClientInfo();
