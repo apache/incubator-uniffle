@@ -22,7 +22,7 @@ public final class Constants {
   private Constants() {}
 
   // the value is used for client/server compatible, eg, online upgrade
-  public static final String SHUFFLE_SERVER_VERSION = "ss_v4";
+  public static final String SHUFFLE_SERVER_VERSION = "ss_v5";
   public static final String METRICS_TAG_LABEL_NAME = "tags";
   public static final String COORDINATOR_TAG = "coordinator";
   public static final String SHUFFLE_DATA_FILE_SUFFIX = ".data";
