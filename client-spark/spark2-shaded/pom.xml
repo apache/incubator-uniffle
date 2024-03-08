@@ -213,7 +213,8 @@
                           to="lib${rss.shade.native.packageName}_netty_transport_native_kqueue_aarch_64.jnilib"
                           type="glob"></mapper>
                 </move>
-                <!-- Delete NettyUtils, let Spark use its own NettyUtils -->
+                <!-- Delete our NettyUtils to avoid errors like NoSuchMethodError, let Spark use its own NettyUtils -->
+                <!-- See https://github.com/apache/incubator-uniffle/pull/1565 for more details -->
                 <delete dir="${project.build.directory}/unpacked/org/apache/spark/network"/>
                 <echo message="repackaging netty jar"></echo>
                 <jar destfile="${project.build.directory}/${project.artifactId}-${project.version}.jar"
