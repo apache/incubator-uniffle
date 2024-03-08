@@ -47,7 +47,7 @@ impl Ticket {
     }
 
     pub fn is_timeout(&self, timeout_sec: i64) -> bool {
-        crate::util::current_timestamp_sec() - self.created_time > timeout_sec as u64
+        (crate::util::current_timestamp_sec() - self.created_time) as i64 > timeout_sec
     }
 
     pub fn get_id(&self) -> i64 {
