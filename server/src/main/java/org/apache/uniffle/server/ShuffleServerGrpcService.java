@@ -529,15 +529,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String appId = request.getAppId();
     int shuffleId = request.getShuffleId();
     int partitionId = request.getPartitionId();
-    BlockIdLayout blockIdLayout = BlockIdLayout.DEFAULT;
-    // legacy clients might send request without block id layout, we fall back to DEFAULT then
-    if (request.hasBlockIdLayout()) {
-      blockIdLayout =
-          BlockIdLayout.from(
-              request.getBlockIdLayout().getSequenceNoBits(),
-              request.getBlockIdLayout().getPartitionIdBits(),
-              request.getBlockIdLayout().getTaskAttemptIdBits());
-    }
+    BlockIdLayout blockIdLayout =
+        BlockIdLayout.from(
+            request.getBlockIdLayout().getSequenceNoBits(),
+            request.getBlockIdLayout().getPartitionIdBits(),
+            request.getBlockIdLayout().getTaskAttemptIdBits());
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetShuffleResultResponse reply;
@@ -581,15 +577,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String appId = request.getAppId();
     int shuffleId = request.getShuffleId();
     List<Integer> partitionsList = request.getPartitionsList();
-    BlockIdLayout blockIdLayout = BlockIdLayout.DEFAULT;
-    // legacy clients might send request without block id layout, we fall back to DEFAULT then
-    if (request.hasBlockIdLayout()) {
-      blockIdLayout =
-          BlockIdLayout.from(
-              request.getBlockIdLayout().getSequenceNoBits(),
-              request.getBlockIdLayout().getPartitionIdBits(),
-              request.getBlockIdLayout().getTaskAttemptIdBits());
-    }
+    BlockIdLayout blockIdLayout =
+        BlockIdLayout.from(
+            request.getBlockIdLayout().getSequenceNoBits(),
+            request.getBlockIdLayout().getPartitionIdBits(),
+            request.getBlockIdLayout().getTaskAttemptIdBits());
 
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
