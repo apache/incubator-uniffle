@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common.completefuture;
+package org.apache.uniffle.common.future;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
