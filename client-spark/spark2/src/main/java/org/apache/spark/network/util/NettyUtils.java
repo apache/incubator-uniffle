@@ -39,6 +39,11 @@ import org.apache.uniffle.common.exception.RssException;
 /**
  * copy from spark, In order to override the createPooledByteBufAllocator method, the property
  * DEFAULT_TINY_CACHE_SIZE does not exist in netty>4.1.47.
+ *
+ * <p>Attention: This class is intended for use in the testing phase only and will not be included
+ * in the final packaged artifact for production environment. For production environment, Spark will
+ * use its own NettyUtils instead of this one. This is somewhat of a hack, but given that Spark 2.x
+ * doesn't update frequently, it's not much of an issue to proceed this way.
  */
 public class NettyUtils {
 
