@@ -21,6 +21,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Queues;
@@ -50,17 +51,20 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
   private final StorageType storageType;
   protected final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
   private ConsumerWithException<ShuffleDataFlushEvent> eventConsumer;
+  private final ShuffleServer shuffleServer;
 
   private volatile boolean stopped = false;
 
   public DefaultFlushEventHandler(
       ShuffleServerConf conf,
       StorageManager storageManager,
+      ShuffleServer shuffleServer,
       ConsumerWithException<ShuffleDataFlushEvent> eventConsumer) {
     this.shuffleServerConf = conf;
     this.storageType =
         StorageType.valueOf(shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE).name());
     this.storageManager = storageManager;
+    this.shuffleServer = shuffleServer;
     this.eventConsumer = eventConsumer;
     initFlushEventExecutor();
   }
@@ -83,8 +87,17 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
    */
   private void handleEventAndUpdateMetrics(ShuffleDataFlushEvent event, Storage storage) {
     long start = System.currentTimeMillis();
+    String appId = event.getAppId();
+    ReentrantReadWriteLock.ReadLock readLock =
+        shuffleServer.getShuffleTaskManager().getAppReadLock(appId);
     try {
-      eventConsumer.accept(event);
+      readLock.lock();
+      try {
+        eventConsumer.accept(event);
+      } finally {
+        readLock.unlock();
+      }
+
       if (storage != null) {
         ShuffleServerMetrics.incStorageSuccessCounter(storage.getStorageHost());
       }
@@ -124,8 +137,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       }
 
       if (e instanceof EventInvalidException) {
-        // Invalid events have already been released / cleaned up
-        // so no need to call event.doCleanup() here
+        event.doCleanup();
         return;
       }
 

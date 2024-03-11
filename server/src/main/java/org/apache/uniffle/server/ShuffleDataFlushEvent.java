@@ -40,6 +40,7 @@ public class ShuffleDataFlushEvent {
   private final long size;
   private final List<ShufflePartitionedBlock> shuffleBlocks;
   private final Supplier<Boolean> valid;
+
   private final ShuffleBuffer shuffleBuffer;
   private final AtomicInteger retryTimes = new AtomicInteger();
 

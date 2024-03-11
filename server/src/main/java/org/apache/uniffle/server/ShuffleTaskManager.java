@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
@@ -112,7 +112,7 @@ public class ShuffleTaskManager {
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = JavaUtils.newConcurrentMap();
   private Thread clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
-  private final Cache<String, Lock> appLocks;
+  private final Cache<String, ReentrantReadWriteLock> appLocks;
 
   public ShuffleTaskManager(
       ShuffleServerConf conf,
@@ -222,9 +222,18 @@ public class ShuffleTaskManager {
     topNShuffleDataSizeOfAppCalcTask.start();
   }
 
-  private Lock getAppLock(String appId) {
+  public ReentrantReadWriteLock.WriteLock getAppWriteLock(String appId) {
     try {
-      return appLocks.get(appId, ReentrantLock::new);
+      return appLocks.get(appId, ReentrantReadWriteLock::new).writeLock();
+    } catch (ExecutionException e) {
+      LOG.error("Failed to get App lock.", e);
+      throw new RssException(e);
+    }
+  }
+
+  public ReentrantReadWriteLock.ReadLock getAppReadLock(String appId) {
+    try {
+      return appLocks.get(appId, ReentrantReadWriteLock::new).readLock();
     } catch (ExecutionException e) {
       LOG.error("Failed to get App lock.", e);
       throw new RssException(e);
@@ -257,7 +266,7 @@ public class ShuffleTaskManager {
       String user,
       ShuffleDataDistributionType dataDistType,
       int maxConcurrencyPerPartitionToWrite) {
-    Lock lock = getAppLock(appId);
+    ReentrantReadWriteLock.WriteLock lock = getAppWriteLock(appId);
     try {
       lock.lock();
       refreshAppId(appId);
@@ -692,35 +701,42 @@ public class ShuffleTaskManager {
    * @param shuffleIds
    */
   public void removeResourcesByShuffleIds(String appId, List<Integer> shuffleIds) {
-    if (CollectionUtils.isEmpty(shuffleIds)) {
-      return;
-    }
-
-    LOG.info("Start remove resource for appId[{}], shuffleIds[{}]", appId, shuffleIds);
-    final long start = System.currentTimeMillis();
-    final ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
-    if (taskInfo != null) {
-      for (Integer shuffleId : shuffleIds) {
-        taskInfo.getCachedBlockIds().remove(shuffleId);
-        taskInfo.getCommitCounts().remove(shuffleId);
-        taskInfo.getCommitLocks().remove(shuffleId);
+    Lock writeLock = getAppWriteLock(appId);
+    writeLock.lock();
+    try {
+      if (CollectionUtils.isEmpty(shuffleIds)) {
+        return;
       }
+
+      LOG.info("Start remove resource for appId[{}], shuffleIds[{}]", appId, shuffleIds);
+      final long start = System.currentTimeMillis();
+      final ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
+      if (taskInfo != null) {
+        for (Integer shuffleId : shuffleIds) {
+          taskInfo.getCachedBlockIds().remove(shuffleId);
+          taskInfo.getCommitCounts().remove(shuffleId);
+          taskInfo.getCommitLocks().remove(shuffleId);
+        }
+      }
+      Optional.ofNullable(partitionsToBlockIds.get(appId))
+          .ifPresent(
+              x -> {
+                for (Integer shuffleId : shuffleIds) {
+                  x.remove(shuffleId);
+                }
+              });
+      shuffleBufferManager.removeBufferByShuffleId(appId, shuffleIds);
+      shuffleFlushManager.removeResourcesOfShuffleId(appId, shuffleIds);
+      storageManager.removeResources(
+          new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds));
+      LOG.info(
+          "Finish remove resource for appId[{}], shuffleIds[{}], cost[{}]",
+          appId,
+          shuffleIds,
+          System.currentTimeMillis() - start);
+    } finally {
+      writeLock.unlock();
     }
-    Optional.ofNullable(partitionsToBlockIds.get(appId))
-        .ifPresent(
-            x -> {
-              for (Integer shuffleId : shuffleIds) {
-                x.remove(shuffleId);
-              }
-            });
-    shuffleBufferManager.removeBufferByShuffleId(appId, shuffleIds);
-    shuffleFlushManager.removeResourcesOfShuffleId(appId, shuffleIds);
-    storageManager.removeResources(new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds));
-    LOG.info(
-        "Finish remove resource for appId[{}], shuffleIds[{}], cost[{}]",
-        appId,
-        shuffleIds,
-        System.currentTimeMillis() - start);
   }
 
   public void checkLeakShuffleData() {
@@ -736,7 +752,7 @@ public class ShuffleTaskManager {
 
   @VisibleForTesting
   public void removeResources(String appId, boolean checkAppExpired) {
-    Lock lock = getAppLock(appId);
+    Lock lock = getAppWriteLock(appId);
     try {
       lock.lock();
       LOG.info("Start remove resource for appId[" + appId + "]");

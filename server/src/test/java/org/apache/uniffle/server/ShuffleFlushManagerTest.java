@@ -26,6 +26,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
@@ -139,6 +140,9 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, maxConcurrency);
 
     String appId = "concurrentWrite2HdfsWriteOneByOne_appId";
+    ReentrantReadWriteLock rsLock = new ReentrantReadWriteLock();
+    when(mockShuffleServer.getShuffleTaskManager().getAppReadLock(appId))
+        .thenReturn(rsLock.readLock());
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     storageManager.registerRemoteStorage(appId, remoteStorage);
@@ -171,6 +175,9 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, maxConcurrency);
 
     String appId = "concurrentWrite2HdfsWriteOfSinglePartition_appId";
+    ReentrantReadWriteLock rsLock = new ReentrantReadWriteLock();
+    when(mockShuffleServer.getShuffleTaskManager().getAppReadLock(appId))
+        .thenReturn(rsLock.readLock());
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     storageManager.registerRemoteStorage(appId, remoteStorage);
@@ -198,6 +205,9 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   @Test
   public void writeTest() throws Exception {
     String appId = "writeTest_appId";
+    ReentrantReadWriteLock rsLock = new ReentrantReadWriteLock();
+    when(mockShuffleServer.getShuffleTaskManager().getAppReadLock(appId))
+        .thenReturn(rsLock.readLock());
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     storageManager.registerRemoteStorage(appId, remoteStorage);
@@ -263,6 +273,8 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     // test case for process event whose related app was cleared already
     assertEquals(0, ShuffleServerMetrics.gaugeWriteHandler.get(), 0.5);
     ShuffleDataFlushEvent fakeEvent = createShuffleDataFlushEvent("fakeAppId", 1, 1, 1, null);
+    when(mockShuffleServer.getShuffleTaskManager().getAppReadLock("fakeAppId"))
+        .thenReturn(rsLock.readLock());
     manager.addToFlushQueue(fakeEvent);
     waitForQueueClear(manager);
     waitForMetrics(ShuffleServerMetrics.gaugeWriteHandler, 0, 0.5);
@@ -276,6 +288,9 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
 
     String appId = "localMetricsTest_appId";
+    ReentrantReadWriteLock rsLock = new ReentrantReadWriteLock();
+    when(mockShuffleServer.getShuffleTaskManager().getAppReadLock(appId))
+        .thenReturn(rsLock.readLock());
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     ShuffleFlushManager manager =
@@ -306,6 +321,9 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
 
     String appId = "localMetricsTest_appId";
+    ReentrantReadWriteLock rsLock = new ReentrantReadWriteLock();
+    when(mockShuffleServer.getShuffleTaskManager().getAppReadLock(appId))
+        .thenReturn(rsLock.readLock());
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     ShuffleFlushManager manager =
@@ -355,6 +373,9 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     String appId = "complexWriteTest_appId";
+    ReentrantReadWriteLock rsLock = new ReentrantReadWriteLock();
+    when(mockShuffleServer.getShuffleTaskManager().getAppReadLock(appId))
+        .thenReturn(rsLock.readLock());
     storageManager.registerRemoteStorage(appId, remoteStorage);
     List<ShufflePartitionedBlock> expectedBlocks = Lists.newArrayList();
     List<ShuffleDataFlushEvent> flushEvents1 = Lists.newArrayList();
@@ -399,6 +420,12 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     String appId1 = "complexWriteTest_appId1";
     String appId2 = "complexWriteTest_appId2";
+    ReentrantReadWriteLock rsLock1 = new ReentrantReadWriteLock();
+    when(mockShuffleServer.getShuffleTaskManager().getAppReadLock(appId1))
+        .thenReturn(rsLock1.readLock());
+    ReentrantReadWriteLock rsLock2 = new ReentrantReadWriteLock();
+    when(mockShuffleServer.getShuffleTaskManager().getAppReadLock(appId2))
+        .thenReturn(rsLock2.readLock());
     storageManager.registerRemoteStorage(appId1, remoteStorage);
     storageManager.registerRemoteStorage(appId2, remoteStorage);
     ShuffleFlushManager manager =
@@ -456,6 +483,12 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
   public void clearLocalTest(@TempDir File tempDir) throws Exception {
     final String appId1 = "clearLocalTest_appId1";
     final String appId2 = "clearLocalTest_appId12";
+    ReentrantReadWriteLock rsLock1 = new ReentrantReadWriteLock();
+    when(mockShuffleServer.getShuffleTaskManager().getAppReadLock(appId1))
+        .thenReturn(rsLock1.readLock());
+    ReentrantReadWriteLock rsLock2 = new ReentrantReadWriteLock();
+    when(mockShuffleServer.getShuffleTaskManager().getAppReadLock(appId2))
+        .thenReturn(rsLock2.readLock());
     ShuffleServerConf serverConf = new ShuffleServerConf();
     serverConf.set(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(tempDir.getAbsolutePath()));
@@ -690,6 +723,9 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     String appId = "fallbackWrittenWhenMultiStorageManagerEnableTest";
+    ReentrantReadWriteLock rsLock = new ReentrantReadWriteLock();
+    when(mockShuffleServer.getShuffleTaskManager().getAppReadLock(appId))
+        .thenReturn(rsLock.readLock());
     storageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage.getPath()));
 
     ShuffleFlushManager flushManager =
@@ -740,6 +776,9 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleServerConf);
     String appId = "fallbackWrittenWhenMultiStorageManagerEnableTest";
+    ReentrantReadWriteLock rsLock = new ReentrantReadWriteLock();
+    when(mockShuffleServer.getShuffleTaskManager().getAppReadLock(appId))
+        .thenReturn(rsLock.readLock());
     storageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage.getPath()));
 
     ShuffleFlushManager flushManager =
