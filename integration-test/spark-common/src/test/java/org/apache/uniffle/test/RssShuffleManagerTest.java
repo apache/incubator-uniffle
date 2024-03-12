@@ -103,6 +103,7 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
     return new HashMap();
   }
 
+  private static final BlockIdLayout DEFAULT = BlockIdLayout.from(21, 20, 22);
   private static final BlockIdLayout CUSTOM1 = BlockIdLayout.from(20, 21, 22);
   private static final BlockIdLayout CUSTOM2 = BlockIdLayout.from(22, 18, 23);
 
@@ -113,7 +114,7 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
   @ParameterizedTest
   @ValueSource(booleans = {false, true})
   public void testRssShuffleManager(boolean enableDynamicClientConf) throws Exception {
-    doTestRssShuffleManager(null, null, BlockIdLayout.DEFAULT, enableDynamicClientConf);
+    doTestRssShuffleManager(null, null, DEFAULT, enableDynamicClientConf);
   }
 
   @ParameterizedTest
@@ -187,6 +188,7 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
       // get written block ids (we know there is one shuffle where two task attempts wrote two
       // partitions)
       RssConf rssConf = RssSparkConfig.toRssConf(conf);
+      shuffleManager.configureBlockIdLayout(conf, rssConf);
       ShuffleWriteClient shuffleWriteClient =
           ShuffleClientFactory.newWriteBuilder()
               .clientType(ClientType.GRPC.name())

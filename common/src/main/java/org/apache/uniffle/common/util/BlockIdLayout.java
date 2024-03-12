@@ -31,6 +31,8 @@ import org.apache.uniffle.common.config.RssConf;
  */
 public class BlockIdLayout {
 
+  // historic default values, client-specific config defaults may vary
+  // see RssSparkConfig.RSS_MAX_PARTITIONS
   public static final BlockIdLayout DEFAULT = BlockIdLayout.from(18, 24, 21);
 
   public final int sequenceNoBits;
