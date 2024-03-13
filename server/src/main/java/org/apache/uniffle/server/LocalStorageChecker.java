@@ -99,7 +99,7 @@ public class LocalStorageChecker extends Checker {
 
     Map<StorageInfo, CompletableFuture<Void>> futureMap = new HashMap<>();
     for (StorageInfo storageInfo : storageInfos) {
-      CompletableFuture<Void> f =
+      CompletableFuture<Void> storageCheckFuture =
           CompletableFuture.supplyAsync(
               () -> {
                 if (!storageInfo.checkStorageReadAndWrite()) {
@@ -126,7 +126,7 @@ public class LocalStorageChecker extends Checker {
       futureMap.put(
           storageInfo,
           CompletableFutureExtension.orTimeout(
-              f, diskCheckerExecutionTimeoutMs, TimeUnit.MILLISECONDS));
+              storageCheckFuture, diskCheckerExecutionTimeoutMs, TimeUnit.MILLISECONDS));
     }
 
     for (Map.Entry<StorageInfo, CompletableFuture<Void>> entry : futureMap.entrySet()) {
