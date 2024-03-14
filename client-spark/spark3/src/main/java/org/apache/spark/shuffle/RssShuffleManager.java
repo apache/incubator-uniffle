@@ -1190,16 +1190,17 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               ShuffleServerInfo newAssignedServer = assignShuffleServer(shuffleId, id);
               ShuffleHandleInfo shuffleHandleInfo = shuffleIdToShuffleHandleInfo.get(shuffleId);
               for (String partitionId : partitionIds) {
+                Integer partitionIdInteger = Integer.valueOf(partitionId);
                 List<ShuffleServerInfo> shuffleServerInfoList =
-                    shuffleHandleInfo.getPartitionToServers().get(partitionId);
+                    shuffleHandleInfo.getPartitionToServers().get(partitionIdInteger);
                 for (int i = 0; i < shuffleServerInfoList.size(); i++) {
                   if (shuffleServerInfoList.get(i).getId().equals(faultyShuffleServerId)) {
                     shuffleHandleInfo
                         .getFailoverPartitionServers()
-                        .computeIfAbsent(Integer.valueOf(partitionId), k -> Maps.newHashMap());
+                        .computeIfAbsent(partitionIdInteger, k -> Maps.newHashMap());
                     shuffleHandleInfo
                         .getFailoverPartitionServers()
-                        .get(partitionId)
+                        .get(partitionIdInteger)
                         .computeIfAbsent(i, j -> Lists.newArrayList())
                         .add(newAssignedServer);
                   }
