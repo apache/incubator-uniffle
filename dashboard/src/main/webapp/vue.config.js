@@ -16,4 +16,16 @@
  */
 
 module.exports ={
+    // 可以通过配置 vue.config.js 文件来设置代理，以将请求代理到后端服务器。
+    devServer: {
+        host:'localhost',
+        port:8080,
+        proxy: {
+            '/': {
+                ws:false,
+                target: 'http://localhost:19997',
+                changeOrigin: true,
+            },
+        }
+    }
 }

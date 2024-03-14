@@ -15,22 +15,17 @@
  * limitations under the License.
  */
 
-import request from "@/utils/request";
+package org.apache.uniffle.dashboard.web.resource;
 
-const http = {
-    get(url, params, headers, fontBackFlag) {
-        if (fontBackFlag == 0) {
-            return request.getBackEndAxiosInstance().get(url,{params,headers});
-        } else {
-            return request.getFontEndAxiosInstance().get(url,{params,headers});
-        }
-    },
-    post(url, data, headers, fontBackFlag) {
-        if (fontBackFlag == 0) {
-            return request.getBackEndAxiosInstance().post(url,data,headers);
-        } else {
-            return request.getFontEndAxiosInstance().post(url,data,headers);
-        }
-    }
+import org.apache.hbase.thirdparty.javax.ws.rs.Path;
+import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
+import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
+
+@Path("web")
+@Produces({MediaType.APPLICATION_JSON})
+public class WebResource {
+  @Path("coordinator")
+  public Class<GainCoordinatorsResource> getGainCoordinatorsResource() {
+    return GainCoordinatorsResource.class;
+  }
 }
-export default http

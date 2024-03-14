@@ -15,22 +15,9 @@
  * limitations under the License.
  */
 
-import request from "@/utils/request";
-
-const http = {
-    get(url, params, headers, fontBackFlag) {
-        if (fontBackFlag == 0) {
-            return request.getBackEndAxiosInstance().get(url,{params,headers});
-        } else {
-            return request.getFontEndAxiosInstance().get(url,{params,headers});
-        }
-    },
-    post(url, data, headers, fontBackFlag) {
-        if (fontBackFlag == 0) {
-            return request.getBackEndAxiosInstance().post(url,data,headers);
-        } else {
-            return request.getFontEndAxiosInstance().post(url,data,headers);
-        }
-    }
-}
-export default http
+import {defineStore} from 'pinia'
+import {ref} from 'vue'
+export const useCurrentServerStore = defineStore('overall', () => {
+    const currentServer = ref('')
+    return { currentServer }
+})
