@@ -125,6 +125,7 @@ public class DelegationRssShuffleManagerTest {
     conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(), "false");
     conf.set(RssSparkConfig.RSS_ACCESS_ID.key(), "mockId");
     conf.set(RssSparkConfig.RSS_ENABLED.key(), "true");
+    conf.set(RssSparkConfig.RSS_STORAGE_TYPE.key(), "MEMORY_LOCALFILE");
 
     // fall back to SortShuffleManager in driver
     assertCreateSortShuffleManager(conf);

@@ -108,7 +108,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker;
   private ScheduledExecutorService heartBeatScheduledExecutorService;
   private boolean heartbeatStarted = false;
-  private boolean dynamicConfEnabled = false;
+  private boolean dynamicConfEnabled;
   private final ShuffleDataDistributionType dataDistributionType;
   private final BlockIdLayout blockIdLayout;
   private final int maxConcurrencyPerPartitionToWrite;
@@ -160,6 +160,14 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
     this.user = sparkConf.get("spark.rss.quota.user", "user");
     this.uuid = sparkConf.get("spark.rss.quota.uuid", Long.toString(System.currentTimeMillis()));
+    this.dynamicConfEnabled = sparkConf.get(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED);
+
+    // fetch client conf and apply them if necessary
+    if (isDriver && this.dynamicConfEnabled) {
+      fetchAndApplyDynamicConf(sparkConf);
+    }
+    RssSparkShuffleUtils.validateRssClientConf(sparkConf);
+
     // set & check replica config
     this.dataReplica = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA);
     this.dataReplicaWrite = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE);
@@ -182,7 +190,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         sparkConf.getLong(RssSparkConfig.RSS_HEARTBEAT_TIMEOUT.key(), heartbeatInterval / 2);
     final int retryMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX);
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
-    this.dynamicConfEnabled = sparkConf.get(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED);
     this.dataDistributionType = getDataDistributionType(sparkConf);
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     this.maxConcurrencyPerPartitionToWrite = rssConf.get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
@@ -217,16 +224,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     .unregisterRequestTimeSec(unregisterRequestTimeoutSec)
                     .rssConf(rssConf));
     registerCoordinator();
-    // fetch client conf and apply them if necessary and disable ESS
-    if (isDriver && dynamicConfEnabled) {
-      Map<String, String> clusterClientConf =
-          shuffleWriteClient.fetchClientConf(
-              sparkConf.getInt(
-                  RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.key(),
-                  RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.defaultValue().get()));
-      RssSparkShuffleUtils.applyDynamicClientConf(sparkConf, clusterClientConf);
-    }
-    RssSparkShuffleUtils.validateRssClientConf(sparkConf);
     // External shuffle service is not supported when using remote shuffle service
     sparkConf.set("spark.shuffle.service.enabled", "false");
     sparkConf.set("spark.dynamicAllocation.shuffleTracking.enabled", "false");
