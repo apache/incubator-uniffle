@@ -137,6 +137,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private Map<Integer, ShuffleHandleInfo> shuffleIdToShuffleHandleInfo;
   /** Whether to enable the dynamic shuffleServer function rewrite and reread functions */
   private boolean rssResubmitStage;
+
   private boolean taskFailRetry;
   /** A list of shuffleServer for Write failures */
   private Set<String> failuresShuffleServerIds;
