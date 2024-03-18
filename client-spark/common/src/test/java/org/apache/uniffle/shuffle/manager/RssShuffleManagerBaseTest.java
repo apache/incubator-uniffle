@@ -63,6 +63,8 @@ public class RssShuffleManagerBaseTest {
   @Test
   public void testGetDefaultRemoteStorageInfo() {
     SparkConf sparkConf = new SparkConf();
+    sparkConf.set(
+        "spark." + RssClientConf.RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED.key(), "false");
     RemoteStorageInfo remoteStorageInfo =
         RssShuffleManagerBase.getDefaultRemoteStorageInfo(sparkConf);
     assertTrue(remoteStorageInfo.getConfItems().isEmpty());
