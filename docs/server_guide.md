@@ -35,7 +35,7 @@ This document will introduce how to deploy Uniffle shuffle servers.
    
    For the following cases, you don't need to specify `HADOOP_HOME` that will simplify the server deployment.
    1. using the storage type without HDFS like `MEMORY_LOCALFILE
-   2. using HDFS and package with hadoop jars, like this: `./build_distribution.sh --hadoop-profile 'hadoop3.2' -Phadoop-dependencies-included`
+   2. using HDFS and package with hadoop jars, like this: `./build_distribution.sh --hadoop-profile 'hadoop3.2' -Phadoop-dependencies-included`. But you need to explicitly set the `spark.rss.client.remote.storage.useLocalConfAsDefault=true`
 
 3. update RSS_HOME/conf/server.conf, eg,
    ```
