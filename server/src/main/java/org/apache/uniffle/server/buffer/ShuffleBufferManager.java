@@ -18,12 +18,14 @@
 package org.apache.uniffle.server.buffer;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -291,23 +293,36 @@ public class ShuffleBufferManager {
       int startPartition,
       int endPartition,
       boolean isHugePartition) {
-    ShuffleDataFlushEvent event =
-        buffer.toFlushEvent(
-            appId,
-            shuffleId,
-            startPartition,
-            endPartition,
-            () -> bufferPool.containsKey(appId),
-            shuffleFlushManager.getDataDistributionType(appId));
-    if (event != null) {
-      event.addCleanupCallback(() -> releaseMemory(event.getSize(), true, false));
-      updateShuffleSize(appId, shuffleId, -event.getSize());
-      inFlushSize.addAndGet(event.getSize());
-      if (isHugePartition) {
-        event.markOwnedByHugePartition();
+    ReentrantReadWriteLock.ReadLock readLock = shuffleTaskManager.getAppReadLock(appId);
+    readLock.lock();
+    if (!bufferPool.getOrDefault(appId, new HashMap<>()).containsKey(shuffleId)) {
+      LOG.info(
+          "Shuffle[{}] for app[{}] has already been removed, no need to flush the buffer",
+          shuffleId,
+          appId);
+      return;
+    }
+    try {
+      ShuffleDataFlushEvent event =
+          buffer.toFlushEvent(
+              appId,
+              shuffleId,
+              startPartition,
+              endPartition,
+              () -> bufferPool.getOrDefault(appId, new HashMap<>()).containsKey(shuffleId),
+              shuffleFlushManager.getDataDistributionType(appId));
+      if (event != null) {
+        event.addCleanupCallback(() -> releaseMemory(event.getSize(), true, false));
+        updateShuffleSize(appId, shuffleId, -event.getSize());
+        inFlushSize.addAndGet(event.getSize());
+        if (isHugePartition) {
+          event.markOwnedByHugePartition();
+        }
+        ShuffleServerMetrics.gaugeInFlushBufferSize.set(inFlushSize.get());
+        shuffleFlushManager.addToFlushQueue(event);
       }
-      ShuffleServerMetrics.gaugeInFlushBufferSize.set(inFlushSize.get());
-      shuffleFlushManager.addToFlushQueue(event);
+    } finally {
+      readLock.unlock();
     }
   }
 
