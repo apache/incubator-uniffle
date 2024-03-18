@@ -298,18 +298,18 @@ public class WriteBufferManager extends MemoryConsumer {
   }
 
   // transform all [partition, records] to [partition, ShuffleBlockInfo] and clear cache
-  public synchronized List<ShuffleBlockInfo> clear(double bufferSpillRetio) {
+  public synchronized List<ShuffleBlockInfo> clear(double bufferSpillRatio) {
     List<ShuffleBlockInfo> result = Lists.newArrayList();
     long dataSize = 0;
     long memoryUsed = 0;
-    bufferSpillRetio = Math.max(0.1, Math.min(1.0, bufferSpillRetio));
+    bufferSpillRatio = Math.max(0.1, Math.min(1.0, bufferSpillRatio));
     List<Integer> partitionList =
         new ArrayList<Integer>() {
           {
             addAll(buffers.keySet());
           }
         };
-    if (bufferSpillRetio < 1.0) {
+    if (bufferSpillRatio < 1.0) {
       Collections.sort(
           partitionList,
           new Comparator<Integer>() {
@@ -323,7 +323,7 @@ public class WriteBufferManager extends MemoryConsumer {
             }
           });
     }
-    long spillSize = (long) ((usedBytes.get() - inSendListBytes.get()) * bufferSpillRetio);
+    long targetSpillSize = (long) ((usedBytes.get() - inSendListBytes.get()) * bufferSpillRatio);
     for (int partitionId : partitionList) {
       WriterBuffer wb = buffers.get(partitionId);
       if (wb == null) {
@@ -337,7 +337,7 @@ public class WriteBufferManager extends MemoryConsumer {
       copyTime += wb.getCopyTime();
       buffers.remove(partitionId);
       // got enough buffer to spill
-      if (memoryUsed >= spillSize) {
+      if (memoryUsed >= targetSpillSize) {
         break;
       }
     }
@@ -353,7 +353,7 @@ public class WriteBufferManager extends MemoryConsumer {
             + "],number of blocks["
             + result.size()
             + "],flush ratio["
-            + bufferSpillRetio
+            + bufferSpillRatio
             + "]");
     return result;
   }
