@@ -18,6 +18,7 @@
 package org.apache.uniffle.server;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -214,7 +215,13 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
         ShuffleServerMetrics.gaugeFallbackFlushThreadPoolQueueSize.inc();
       }
 
-      dedicatedExecutor.execute(() -> handleEventAndUpdateMetrics(event, storage));
+      CompletableFuture.runAsync(
+              () -> handleEventAndUpdateMetrics(event, storage), dedicatedExecutor)
+          .exceptionally(
+              e -> {
+                LOG.error("Exception happened when handling event and updating metrics.", e);
+                return null;
+              });
     } catch (Exception e) {
       LOG.error("Exception happened when pushing events to dedicated event handler.", e);
     }
