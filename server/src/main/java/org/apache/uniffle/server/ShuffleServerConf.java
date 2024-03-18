@@ -500,8 +500,11 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Integer> NETTY_SERVER_WORKER_THREAD =
       ConfigOptions.key("rss.server.netty.worker.thread")
           .intType()
-          .defaultValue(100)
-          .withDescription("Worker thread count in netty");
+          .defaultValue(0)
+          .withDescription(
+              "Worker thread count in netty. When set to 0, "
+                  + "the default value is dynamically set to twice the number of processor cores, "
+                  + "but it will not be less than 100 to ensure the minimum throughput of the service.");
 
   public static final ConfigOption<Long> SERVER_NETTY_HANDLER_IDLE_TIMEOUT =
       ConfigOptions.key("rss.server.netty.handler.idle.timeout")
