@@ -26,6 +26,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -61,6 +62,11 @@ public class RSSStageDynamicServerReWriteTest extends SparkTaskFailureIntegratio
     startServers();
   }
 
+  @AfterAll
+  public static void shutdownAll() throws Exception {
+    IntegrationTestBase.shutdownServers();
+  }
+
   public static void createServer(int id, File tmpDir, boolean abnormalFlag, ServerType serverType)
       throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType);
@@ -93,7 +99,7 @@ public class RSSStageDynamicServerReWriteTest extends SparkTaskFailureIntegratio
   @Override
   public Map runTest(SparkSession spark, String fileName) throws Exception {
     List<Row> rows =
-        spark.range(0, 1000, 1, 4).repartition(3).groupBy("id").count().collectAsList();
+        spark.range(0, 1000, 1, 4).repartition(4).groupBy("id").count().collectAsList();
     Map<String, Long> result = Maps.newHashMap();
     for (Row row : rows) {
       result.put(row.get(0).toString(), row.getLong(1));
