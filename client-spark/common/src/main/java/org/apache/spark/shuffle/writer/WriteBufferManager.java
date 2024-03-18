@@ -323,7 +323,7 @@ public class WriteBufferManager extends MemoryConsumer {
             }
           });
     }
-    long spillSize = (long) ((usedBytes.get() - inSendListBytes.get()) * bufferSpillRetio);
+    long targetSpillSize = (long) ((usedBytes.get() - inSendListBytes.get()) * bufferSpillRetio);
     for (int partitionId : partitionList) {
       WriterBuffer wb = buffers.get(partitionId);
       if (wb == null) {
@@ -337,7 +337,7 @@ public class WriteBufferManager extends MemoryConsumer {
       copyTime += wb.getCopyTime();
       buffers.remove(partitionId);
       // got enough buffer to spill
-      if (memoryUsed >= spillSize) {
+      if (memoryUsed >= targetSpillSize) {
         break;
       }
     }
