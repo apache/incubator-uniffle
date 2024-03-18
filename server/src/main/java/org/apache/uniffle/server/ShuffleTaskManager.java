@@ -267,8 +267,8 @@ public class ShuffleTaskManager {
       ShuffleDataDistributionType dataDistType,
       int maxConcurrencyPerPartitionToWrite) {
     ReentrantReadWriteLock.WriteLock lock = getAppWriteLock(appId);
+    lock.lock();
     try {
-      lock.lock();
       refreshAppId(appId);
 
       ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
@@ -753,8 +753,8 @@ public class ShuffleTaskManager {
   @VisibleForTesting
   public void removeResources(String appId, boolean checkAppExpired) {
     Lock lock = getAppWriteLock(appId);
+    lock.lock();
     try {
-      lock.lock();
       LOG.info("Start remove resource for appId[" + appId + "]");
       if (checkAppExpired && !isAppExpired(appId)) {
         LOG.info(

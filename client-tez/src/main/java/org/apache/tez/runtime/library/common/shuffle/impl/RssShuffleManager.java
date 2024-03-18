@@ -433,8 +433,8 @@ public class RssShuffleManager extends ShuffleManager {
     protected Void callInternal() throws Exception {
       long nextReport = 0;
       while (!isShutdown.get()) {
+        reportLock.lock();
         try {
-          reportLock.lock();
           while (failedEvents.isEmpty()) {
             boolean signaled =
                 reportCondition.await(maxTimeToWaitForReportMillis, TimeUnit.MILLISECONDS);
@@ -1175,8 +1175,8 @@ public class RssShuffleManager extends ShuffleManager {
               srcAttemptIdentifier.getInputIdentifier(),
               srcAttemptIdentifier.getAttemptNumber());
       if (maxTimeToWaitForReportMillis > 0) {
+        reportLock.lock();
         try {
-          reportLock.lock();
           failedEvents.merge(readError, 1, (a, b) -> a + b);
           reportCondition.signal();
         } finally {
