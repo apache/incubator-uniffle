@@ -296,6 +296,12 @@ public class GetReaderTest extends IntegrationTestBase {
     public boolean isCompleted() {
       return false;
     }
+    
+    // The following method is only available after Spark 3.5.1, and in order to be compatible 
+    // with the version before Spark 3.5.1, the annotation @Override is not added.
+    public boolean isFailed() {
+      return false;
+    }
 
     @Override
     public Properties getLocalProperties() {
