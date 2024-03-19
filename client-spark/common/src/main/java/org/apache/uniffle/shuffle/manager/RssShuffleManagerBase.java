@@ -41,11 +41,17 @@ import org.apache.spark.shuffle.SparkVersionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.api.CoordinatorClient;
+import org.apache.uniffle.client.factory.CoordinatorClientFactory;
+import org.apache.uniffle.client.request.RssFetchClientConfRequest;
+import org.apache.uniffle.client.response.RssFetchClientConfResponse;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.config.ConfigOption;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.rpc.StatusCode;
 
 import static org.apache.uniffle.common.config.RssClientConf.HADOOP_CONFIG_KEY_PREFIX;
 import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED;
@@ -313,6 +319,33 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     }
 
     return (long) mapIndex << attemptBits | attemptNo;
+  }
+
+  protected static void fetchAndApplyDynamicConf(SparkConf sparkConf) {
+    String clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
+    String coordinators = sparkConf.get(RssSparkConfig.RSS_COORDINATOR_QUORUM.key());
+    CoordinatorClientFactory coordinatorClientFactory = CoordinatorClientFactory.getInstance();
+    List<CoordinatorClient> coordinatorClients =
+        coordinatorClientFactory.createCoordinatorClient(
+            ClientType.valueOf(clientType), coordinators);
+
+    int timeoutMs =
+        sparkConf.getInt(
+            RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.key(),
+            RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.defaultValue().get());
+    for (CoordinatorClient client : coordinatorClients) {
+      RssFetchClientConfResponse response =
+          client.fetchClientConf(new RssFetchClientConfRequest(timeoutMs));
+      if (response.getStatusCode() == StatusCode.SUCCESS) {
+        LOG.info("Success to get conf from {}", client.getDesc());
+        RssSparkShuffleUtils.applyDynamicClientConf(sparkConf, response.getClientConf());
+        break;
+      } else {
+        LOG.warn("Fail to get conf from {}", client.getDesc());
+      }
+    }
+
+    coordinatorClients.forEach(CoordinatorClient::close);
   }
 
   @Override

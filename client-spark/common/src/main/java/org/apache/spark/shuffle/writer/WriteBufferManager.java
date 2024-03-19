@@ -497,6 +497,9 @@ public class WriteBufferManager extends MemoryConsumer {
     } catch (TimeoutException timeoutException) {
       // A best effort strategy to wait.
       // If timeout exception occurs, the underlying tasks won't be cancelled.
+      LOG.warn("[taskId: {}] Spill tasks timeout after {} seconds", taskId, memorySpillTimeoutSec);
+    } catch (Exception e) {
+      LOG.warn("[taskId: {}] Failed to spill buffers due to ", taskId, e);
     } finally {
       long releasedSize =
           futures.stream()

@@ -30,6 +30,8 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.NettyRuntime;
+import io.netty.util.internal.SystemPropertyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +50,9 @@ public class StreamServer implements ServerInterface {
 
   private static final Logger LOG = LoggerFactory.getLogger(StreamServer.class);
 
+  /** Use this value to ensure the minimum throughput. */
+  private static final int MIN_NETTY_SERVER_WORKER_THREAD_COUNT_DEFAULT = 100;
+
   private ShuffleServer shuffleServer;
   private EventLoopGroup shuffleBossGroup;
   private EventLoopGroup shuffleWorkerGroup;
@@ -61,6 +66,13 @@ public class StreamServer implements ServerInterface {
         shuffleServerConf.getBoolean(ShuffleServerConf.NETTY_SERVER_EPOLL_ENABLE);
     int acceptThreads = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_ACCEPT_THREAD);
     int workerThreads = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_WORKER_THREAD);
+    if (workerThreads == 0) {
+      workerThreads =
+          Math.max(
+              MIN_NETTY_SERVER_WORKER_THREAD_COUNT_DEFAULT,
+              SystemPropertyUtil.getInt(
+                  "io.netty.eventLoopThreads", NettyRuntime.availableProcessors() * 2));
+    }
     if (isEpollEnable) {
       shuffleBossGroup = new EpollEventLoopGroup(acceptThreads);
       shuffleWorkerGroup = new EpollEventLoopGroup(workerThreads);

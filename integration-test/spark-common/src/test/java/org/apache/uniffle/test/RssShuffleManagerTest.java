@@ -34,11 +34,11 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.shuffle.RssSparkConfig;
+import org.apache.spark.shuffle.RssSparkShuffleUtils;
 import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -74,7 +74,7 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
     shutdownServers();
   }
 
-  public static void startServers(BlockIdLayout dynamicConfLayout) throws Exception {
+  public static Map<String, String> startServers(BlockIdLayout dynamicConfLayout) throws Exception {
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
@@ -95,6 +95,7 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
     createCoordinatorServer(coordinatorConf);
     createShuffleServer(getShuffleServerConf(ServerType.GRPC));
     startServers();
+    return dynamicConf;
   }
 
   @Override
@@ -108,7 +109,7 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
   private static final BlockIdLayout CUSTOM2 = BlockIdLayout.from(22, 18, 23);
 
   public static Stream<Arguments> testBlockIdLayouts() {
-    return Stream.of(Arguments.of(CUSTOM1), Arguments.of(CUSTOM2));
+    return Stream.of(Arguments.of(DEFAULT), Arguments.of(CUSTOM1), Arguments.of(CUSTOM2));
   }
 
   @ParameterizedTest
@@ -125,8 +126,6 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
 
   @ParameterizedTest
   @MethodSource("testBlockIdLayouts")
-  @Disabled(
-      "Dynamic client conf not working for arguments used to create ShuffleWriteClient: issue #1554")
   public void testRssShuffleManagerDynamicClientConf(BlockIdLayout layout) throws Exception {
     doTestRssShuffleManager(null, layout, layout, true);
   }
@@ -144,7 +143,7 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
       BlockIdLayout expectedLayout,
       boolean enableDynamicCLientConf)
       throws Exception {
-    startServers(dynamicConfLayout);
+    Map<String, String> dynamicConf = startServers(dynamicConfLayout);
 
     SparkConf conf = createSparkConf();
     updateSparkConfWithRss(conf);
@@ -159,7 +158,7 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
     conf.set("spark." + RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL, "1000");
     conf.set("spark." + RssClientConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES, "10");
 
-    // configure block id layout (if set)
+    // configure client conf block id layout (if set)
     if (clientConfLayout != null) {
       conf.set(
           "spark." + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key(),
@@ -182,12 +181,26 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
       // create a rdd that triggers shuffle registration
       long count = sc.parallelize(Arrays.asList(1, 2, 3, 4, 5), 2).groupBy(x -> x).count();
       assertEquals(5, count);
-      RssShuffleManagerBase shuffleManager =
-          (RssShuffleManagerBase) SparkEnv.get().shuffleManager();
+
+      // configure expected block id layout
+      conf.set(
+          "spark." + RssClientConf.BLOCKID_SEQUENCE_NO_BITS.key(),
+          String.valueOf(expectedLayout.sequenceNoBits));
+      conf.set(
+          "spark." + RssClientConf.BLOCKID_PARTITION_ID_BITS.key(),
+          String.valueOf(expectedLayout.partitionIdBits));
+      conf.set(
+          "spark." + RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS.key(),
+          String.valueOf(expectedLayout.taskAttemptIdBits));
 
       // get written block ids (we know there is one shuffle where two task attempts wrote two
       // partitions)
       RssConf rssConf = RssSparkConfig.toRssConf(conf);
+      if (clientConfLayout == null && dynamicConfLayout != null) {
+        RssSparkShuffleUtils.applyDynamicClientConf(conf, dynamicConf);
+      }
+      RssShuffleManagerBase shuffleManager =
+          (RssShuffleManagerBase) SparkEnv.get().shuffleManager();
       shuffleManager.configureBlockIdLayout(conf, rssConf);
       ShuffleWriteClient shuffleWriteClient =
           ShuffleClientFactory.newWriteBuilder()

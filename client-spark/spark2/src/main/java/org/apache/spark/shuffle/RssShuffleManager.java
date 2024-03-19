@@ -106,7 +106,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final int dataCommitPoolSize;
   private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
   private boolean heartbeatStarted = false;
-  private boolean dynamicConfEnabled = false;
+  private boolean dynamicConfEnabled;
   private final int maxFailures;
   private final boolean speculation;
   private final BlockIdLayout blockIdLayout;
@@ -144,14 +144,24 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           "Spark2 doesn't support AQE, spark.sql.adaptive.enabled should be false.");
     }
     this.sparkConf = sparkConf;
+    this.user = sparkConf.get("spark.rss.quota.user", "user");
+    this.uuid = sparkConf.get("spark.rss.quota.uuid", Long.toString(System.currentTimeMillis()));
+    this.dynamicConfEnabled = sparkConf.get(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED);
+
+    // fetch client conf and apply them if necessary
+    if (isDriver && this.dynamicConfEnabled) {
+      fetchAndApplyDynamicConf(sparkConf);
+    }
+    RssSparkShuffleUtils.validateRssClientConf(sparkConf);
+
+    // configure block id layout
     this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
     this.speculation = sparkConf.getBoolean("spark.speculation", false);
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     // configureBlockIdLayout requires maxFailures and speculation to be initialized
     configureBlockIdLayout(sparkConf, rssConf);
     this.blockIdLayout = BlockIdLayout.from(rssConf);
-    this.user = sparkConf.get("spark.rss.quota.user", "user");
-    this.uuid = sparkConf.get("spark.rss.quota.uuid", Long.toString(System.currentTimeMillis()));
+
     // set & check replica config
     this.dataReplica = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA);
     this.dataReplicaWrite = sparkConf.get(RssSparkConfig.RSS_DATA_REPLICA_WRITE);
@@ -176,7 +186,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.heartbeatInterval = sparkConf.get(RssSparkConfig.RSS_HEARTBEAT_INTERVAL);
     this.heartbeatTimeout =
         sparkConf.getLong(RssSparkConfig.RSS_HEARTBEAT_TIMEOUT.key(), heartbeatInterval / 2);
-    this.dynamicConfEnabled = sparkConf.get(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED);
     int retryMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX);
     long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
     int heartBeatThreadNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
@@ -203,13 +212,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     .unregisterRequestTimeSec(unregisterRequestTimeoutSec)
                     .rssConf(rssConf));
     registerCoordinator();
-    // fetch client conf and apply them if necessary and disable ESS
-    if (isDriver && dynamicConfEnabled) {
-      Map<String, String> clusterClientConf =
-          shuffleWriteClient.fetchClientConf(sparkConf.get(RssSparkConfig.RSS_ACCESS_TIMEOUT_MS));
-      RssSparkShuffleUtils.applyDynamicClientConf(sparkConf, clusterClientConf);
-    }
-    RssSparkShuffleUtils.validateRssClientConf(sparkConf);
     // External shuffle service is not supported when using remote shuffle service
     sparkConf.set("spark.shuffle.service.enabled", "false");
     LOG.info("Disable external shuffle service in RssShuffleManager.");
@@ -896,16 +898,17 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               ShuffleServerInfo newAssignedServer = assignShuffleServer(shuffleId, id);
               ShuffleHandleInfo shuffleHandleInfo = shuffleIdToShuffleHandleInfo.get(shuffleId);
               for (String partitionId : partitionIds) {
+                Integer partitionIdInteger = Integer.valueOf(partitionId);
                 List<ShuffleServerInfo> shuffleServerInfoList =
-                    shuffleHandleInfo.getPartitionToServers().get(partitionId);
+                    shuffleHandleInfo.getPartitionToServers().get(partitionIdInteger);
                 for (int i = 0; i < shuffleServerInfoList.size(); i++) {
                   if (shuffleServerInfoList.get(i).getId().equals(faultyShuffleServerId)) {
                     shuffleHandleInfo
                         .getFailoverPartitionServers()
-                        .computeIfAbsent(Integer.valueOf(partitionId), k -> Maps.newHashMap());
+                        .computeIfAbsent(partitionIdInteger, k -> Maps.newHashMap());
                     shuffleHandleInfo
                         .getFailoverPartitionServers()
-                        .get(partitionId)
+                        .get(partitionIdInteger)
                         .computeIfAbsent(i, j -> Lists.newArrayList())
                         .add(newAssignedServer);
                   }
