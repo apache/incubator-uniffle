@@ -743,7 +743,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
 
     // cache shuffle block data, and record metrics
-    Arrays.stream(ShuffleServerMetrics.blockSizeBuckets)
+    Arrays.stream(ShuffleServerMetrics.BLOCK_SIZE_BUCKETS)
         .sorted()
         .forEach(
             bucket -> {
@@ -757,7 +757,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
         ShuffleServerMetrics.appHistogramWriteBlockSize.collect();
     assertEquals(samples.size(), 1);
     int index = 1;
-    Arrays.stream(ShuffleServerMetrics.blockSizeBuckets)
+    Arrays.stream(ShuffleServerMetrics.BLOCK_SIZE_BUCKETS)
         .sorted()
         .forEach(
             bucket -> {

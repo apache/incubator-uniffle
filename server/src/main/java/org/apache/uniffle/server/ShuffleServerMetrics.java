@@ -32,7 +32,10 @@ import org.apache.uniffle.common.metrics.MetricsManager;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.LocalStorage;
 
-import static org.apache.uniffle.common.util.Constants.*;
+import static org.apache.uniffle.common.util.Constants.METRICS_APP_LABEL_NAME;
+import static org.apache.uniffle.common.util.Constants.METRICS_TAG_LABEL_NAME;
+import static org.apache.uniffle.common.util.Constants._1kb;
+import static org.apache.uniffle.common.util.Constants._1mb;
 
 public class ShuffleServerMetrics {
 
@@ -135,7 +138,7 @@ public class ShuffleServerMetrics {
       "topN_of_on_localfile_data_size_for_app";
   public static final String TOPN_OF_ON_HADOOP_DATA_SIZE_FOR_APP =
       "topN_of_on_hadoop_data_size_for_app";
-  public static final double[] blockSizeBuckets =
+  public static final double[] BLOCK_SIZE_BUCKETS =
       new double[] {
         32 * _1kb,
         64 * _1kb,
@@ -322,7 +325,7 @@ public class ShuffleServerMetrics {
     counterTotalWriteBlockSize = metricsManager.addLabeledCounter(TOTAL_WRITE_BLOCK);
     appHistogramWriteBlockSize =
         metricsManager.addHistogram(
-            WRITE_BLOCK_SIZE, blockSizeBuckets, METRICS_TAG_LABEL_NAME, METRICS_APP_LABEL_NAME);
+            WRITE_BLOCK_SIZE, BLOCK_SIZE_BUCKETS, METRICS_TAG_LABEL_NAME, METRICS_APP_LABEL_NAME);
     counterTotalWriteTime = metricsManager.addLabeledCounter(TOTAL_WRITE_TIME);
     counterWriteException = metricsManager.addLabeledCounter(TOTAL_WRITE_EXCEPTION);
     counterWriteSlow = metricsManager.addLabeledCounter(TOTAL_WRITE_SLOW);

@@ -19,7 +19,6 @@ package org.apache.spark.shuffle.writer;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -325,12 +324,6 @@ public class WriteBufferManager extends MemoryConsumer {
             + "],"
             + "block number["
             + result.size()
-            + "], max block size["
-            + result
-                .parallelStream()
-                .max(Comparator.comparingInt(ShuffleBlockInfo::getLength))
-                .get()
-                .getLength()
             + "]");
     return result;
   }
