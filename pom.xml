@@ -1761,7 +1761,7 @@
       <id>spark3.5</id>
       <properties>
         <scala.binary.version>2.12</scala.binary.version>
-        <spark.version>3.5.0</spark.version>
+        <spark.version>3.5.1</spark.version>
         <client.type>3</client.type>
         <jackson.version>2.15.2</jackson.version>
         <log4j.version>2.20.0</log4j.version>
