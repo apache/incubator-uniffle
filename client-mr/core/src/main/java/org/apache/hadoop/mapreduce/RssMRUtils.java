@@ -44,28 +44,29 @@ public class RssMRUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssMRUtils.class);
   private static final BlockIdLayout LAYOUT = BlockIdLayout.DEFAULT;
-  private static final int MAX_ATTEMPT_LENGTH = 6;
+  private static final int MAX_ATTEMPT_LENGTH = 4;
   private static final int MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
-  private static final int MAX_SEQUENCE_NO =
-      (1 << (LAYOUT.sequenceNoBits - MAX_ATTEMPT_LENGTH)) - 1;
+  private static final int MAX_TASK_LENGTH = LAYOUT.taskAttemptIdBits - MAX_ATTEMPT_LENGTH;
+  private static final int MAX_TASK_ID = (1 << MAX_TASK_LENGTH) - 1;
 
-  // Class TaskAttemptId have two field id and mapId, rss taskAttemptID have 21 bits,
-  // mapId is 19 bits, id is 2 bits. MR have a trick logic, taskAttemptId will increase
-  // 1000 * (appAttemptId - 1), so we will decrease it.
+  // Class TaskAttemptId have two field id and mapId. MR have a trick logic, taskAttemptId will
+  // increase 1000 * (appAttemptId - 1), so we will decrease it.
   public static long convertTaskAttemptIdToLong(TaskAttemptID taskAttemptID, int appAttemptId) {
-    int lowBytes = taskAttemptID.getTaskID().getId();
-    if (lowBytes > LAYOUT.maxTaskAttemptId) {
-      throw new RssException("TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed");
-    }
     if (appAttemptId < 1) {
       throw new RssException("appAttemptId " + appAttemptId + " is wrong");
     }
-    int highBytes = taskAttemptID.getId() - (appAttemptId - 1) * 1000;
-    if (highBytes > MAX_ATTEMPT_ID || highBytes < 0) {
+    long lowBytes = taskAttemptID.getId() - (appAttemptId - 1) * 1000L;
+    if (lowBytes > MAX_ATTEMPT_ID || lowBytes < 0) {
       throw new RssException(
-          "TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed");
+          "TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed " + MAX_ATTEMPT_ID);
     }
-    return LAYOUT.getBlockId(highBytes, 0, lowBytes);
+    long highBytes = taskAttemptID.getTaskID().getId();
+    if (highBytes > MAX_TASK_ID || highBytes < 0) {
+      throw new RssException(
+          "TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed " + MAX_TASK_ID);
+    }
+    long taskAttemptId = (highBytes << (MAX_ATTEMPT_LENGTH)) + lowBytes;
+    return LAYOUT.getBlockId(0, 0, taskAttemptId);
   }
 
   public static TaskAttemptID createMRTaskAttemptId(
@@ -73,8 +74,10 @@ public class RssMRUtils {
     if (appAttemptId < 1) {
       throw new RssException("appAttemptId " + appAttemptId + " is wrong");
     }
-    TaskID taskID = new TaskID(jobID, taskType, LAYOUT.getTaskAttemptId(rssTaskAttemptId));
-    int id = LAYOUT.getSequenceNo(rssTaskAttemptId) + 1000 * (appAttemptId - 1);
+    int task = LAYOUT.getTaskAttemptId(rssTaskAttemptId) >> MAX_ATTEMPT_LENGTH;
+    int attempt = (int) (rssTaskAttemptId & MAX_ATTEMPT_ID);
+    TaskID taskID = new TaskID(jobID, taskType, task);
+    int id = attempt + 1000 * (appAttemptId - 1);
     return new TaskAttemptID(taskID, id);
   }
 
@@ -228,27 +231,33 @@ public class RssMRUtils {
   }
 
   public static long getBlockId(int partitionId, long taskAttemptId, int nextSeqNo) {
-    long attemptId = taskAttemptId >> (LAYOUT.partitionIdBits + LAYOUT.taskAttemptIdBits);
-    if (attemptId < 0 || attemptId > MAX_ATTEMPT_ID) {
+    if (taskAttemptId < 0 || taskAttemptId > LAYOUT.maxTaskAttemptId) {
       throw new RssException(
-          "Can't support attemptId [" + attemptId + "], the max value should be " + MAX_ATTEMPT_ID);
+          "Can't support attemptId ["
+              + taskAttemptId
+              + "], the max value should be "
+              + LAYOUT.maxTaskAttemptId);
     }
-    if (nextSeqNo < 0 || nextSeqNo > MAX_SEQUENCE_NO) {
+    if (nextSeqNo < 0 || nextSeqNo > LAYOUT.maxSequenceNo) {
       throw new RssException(
-          "Can't support sequence [" + nextSeqNo + "], the max value should be " + MAX_SEQUENCE_NO);
+          "Can't support sequence ["
+              + nextSeqNo
+              + "], the max value should be "
+              + LAYOUT.maxSequenceNo);
     }
 
-    int atomicInt = (int) ((nextSeqNo << MAX_ATTEMPT_LENGTH) + attemptId);
-    long taskId =
-        taskAttemptId - (attemptId << (LAYOUT.partitionIdBits + LAYOUT.taskAttemptIdBits));
-
-    return LAYOUT.getBlockId(atomicInt, partitionId, taskId);
+    if (partitionId < 0 || partitionId > LAYOUT.maxPartitionId) {
+      throw new RssException(
+          "Can't support partitionId ["
+              + partitionId
+              + "], the max value should be "
+              + LAYOUT.maxPartitionId);
+    }
+    return LAYOUT.getBlockId(nextSeqNo, partitionId, taskAttemptId);
   }
 
   public static long getTaskAttemptId(long blockId) {
-    int mapId = LAYOUT.getTaskAttemptId(blockId);
-    int attemptId = LAYOUT.getSequenceNo(blockId) & MAX_ATTEMPT_ID;
-    return LAYOUT.getBlockId(attemptId, 0, mapId);
+    return LAYOUT.getTaskAttemptId(blockId);
   }
 
   public static int estimateTaskConcurrency(JobConf jobConf) {
