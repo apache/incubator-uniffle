@@ -18,6 +18,7 @@
 package org.apache.uniffle.server;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -258,6 +259,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
       long alreadyReleasedSize = 0;
       boolean hasFailureOccurred = false;
+      boolean isShuffleIdDeleted = false;
       for (ShufflePartitionedData spd : shufflePartitionedData) {
         String shuffleDataInfo =
             "appId["
@@ -268,6 +270,20 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 + spd.getPartitionId()
                 + "]";
         try {
+          isShuffleIdDeleted =
+              !shuffleServer
+                  .getShuffleBufferManager()
+                  .getBufferPool()
+                  .getOrDefault(appId, new HashMap<>())
+                  .containsKey(shuffleId);
+          if (isShuffleIdDeleted) {
+            LOG.info(
+                "Shuffle[{}] for app[{}] has already been removed, no need to cache shuffle data[{}]",
+                shuffleId,
+                appId,
+                spd.getPartitionId());
+            break;
+          }
           ret = manager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
           if (ret != StatusCode.SUCCESS) {
             String errorMsg =
@@ -298,10 +314,13 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           LOG.error(errorMsg);
           hasFailureOccurred = true;
           break;
+        } finally {
+          if (hasFailureOccurred || isShuffleIdDeleted) {
+            shuffleServer
+                .getShuffleBufferManager()
+                .releaseMemory(spd.getTotalBlockSize(), false, false);
+          }
         }
-      }
-      if (hasFailureOccurred) {
-        shuffleServer.getShuffleBufferManager().releaseMemory(info.getRequireSize(), false, false);
       }
       // since the required buffer id is only used once, the shuffle client would try to require
       // another buffer whether

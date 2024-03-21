@@ -19,6 +19,7 @@ package org.apache.uniffle.server.netty;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -152,6 +153,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
       long alreadyReleasedSize = 0;
       boolean hasFailureOccurred = false;
+      boolean isShuffleIdDeleted = false;
       for (ShufflePartitionedData spd : shufflePartitionedData) {
         String shuffleDataInfo =
             "appId["
@@ -162,6 +164,20 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 + spd.getPartitionId()
                 + "]";
         try {
+          isShuffleIdDeleted =
+              !shuffleServer
+                  .getShuffleBufferManager()
+                  .getBufferPool()
+                  .getOrDefault(appId, new HashMap<>())
+                  .containsKey(shuffleId);
+          if (isShuffleIdDeleted) {
+            LOG.info(
+                "Shuffle[{}] for app[{}] has already been removed, no need to cache shuffle data[{}]",
+                shuffleId,
+                appId,
+                spd.getPartitionId());
+            continue;
+          }
           if (hasFailureOccurred) {
             continue;
           }
@@ -195,7 +211,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           hasFailureOccurred = true;
         } finally {
           // Once the cache failure occurs, we should explicitly release data held by byteBuf
-          if (hasFailureOccurred) {
+          if (hasFailureOccurred || isShuffleIdDeleted) {
             Arrays.stream(spd.getBlockList()).forEach(block -> block.getData().release());
             shuffleBufferManager.releaseMemory(spd.getTotalBlockSize(), false, false);
           }
