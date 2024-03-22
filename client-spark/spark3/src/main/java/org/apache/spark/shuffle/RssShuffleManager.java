@@ -56,6 +56,8 @@ import org.apache.spark.shuffle.writer.RssShuffleWriter;
 import org.apache.spark.sql.internal.SQLConf;
 import org.apache.spark.storage.BlockId;
 import org.apache.spark.storage.BlockManagerId;
+import org.apache.uniffle.client.request.RssReassignServersRequest;
+import org.apache.uniffle.client.response.RssReassignServersReponse;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -494,7 +496,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     ShuffleHandleInfo shuffleHandleInfo;
     if (rssResubmitStage) {
       // Get the ShuffleServer list from the Driver based on the shuffleId
-      shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);
+      shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId, context, rssHandle.getDependency().partitioner().numPartitions());
     } else {
       shuffleHandleInfo =
           new ShuffleHandleInfo(
@@ -636,7 +638,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     ShuffleHandleInfo shuffleHandleInfo;
     if (rssResubmitStage) {
       // Get the ShuffleServer list from the Driver based on the shuffleId
-      shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);
+      shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId, context, partitionNum);
     } else {
       shuffleHandleInfo =
           new ShuffleHandleInfo(
@@ -1086,7 +1088,19 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * @param shuffleId shuffleId
    * @return ShuffleHandleInfo
    */
-  private synchronized ShuffleHandleInfo getRemoteShuffleHandleInfo(int shuffleId) {
+  private synchronized ShuffleHandleInfo getRemoteShuffleHandleInfo(int shuffleId, TaskContext taskContext, int partitionNum) {
+    RssReassignServersRequest rssReassignServersRequest =
+        new RssReassignServersRequest(
+            taskContext.stageId(),
+            taskContext.stageAttemptNumber(),
+            shuffleId,
+            partitionNum);
+    RssReassignServersReponse rssReassignServersReponse =
+        shuffleManagerClient.reassignShuffleServers(rssReassignServersRequest);
+    LOG.info(
+        "Whether the reassignment is successful: {}",
+        rssReassignServersReponse.isNeedReassign());
+
     ShuffleHandleInfo shuffleHandleInfo;
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     String driver = rssConf.getString("driver.host", "");

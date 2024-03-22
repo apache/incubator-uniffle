@@ -664,17 +664,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         RssReportShuffleWriteFailureResponse response =
             shuffleManagerClient.reportShuffleWriteFailure(req);
         if (response.getReSubmitWholeStage()) {
-          RssReassignServersRequest rssReassignServersRequest =
-              new RssReassignServersRequest(
-                  taskContext.stageId(),
-                  taskContext.stageAttemptNumber(),
-                  shuffleId,
-                  partitioner.numPartitions());
-          RssReassignServersReponse rssReassignServersReponse =
-              shuffleManagerClient.reassignShuffleServers(rssReassignServersRequest);
-          LOG.info(
-              "Whether the reassignment is successful: {}",
-              rssReassignServersReponse.isNeedReassign());
           // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1 is
           // provided.
           FetchFailedException ffe =
