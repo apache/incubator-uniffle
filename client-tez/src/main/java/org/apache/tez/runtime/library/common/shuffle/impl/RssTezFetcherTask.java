@@ -27,8 +27,8 @@ import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
-import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezIdHelper;
 import org.apache.tez.runtime.api.InputContext;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
@@ -52,7 +52,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
   private final FetcherCallback fetcherCallback;
 
   private final InputContext inputContext;
-  private final Configuration conf;
+  private final TezClientConf conf;
   private final FetchedInputAllocator inputManager;
   private final int partition;
 
@@ -78,7 +78,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
   public RssTezFetcherTask(
       FetcherCallback fetcherCallback,
       InputContext inputContext,
-      Configuration conf,
+      TezClientConf conf,
       FetchedInputAllocator inputManager,
       int partition,
       int shuffleId,
@@ -114,23 +114,16 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
         dagIdentifier,
         vertexIndex,
         reduceId);
-    clientType = conf.get(RssTezConfig.RSS_CLIENT_TYPE, RssTezConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
-    this.storageType =
-        conf.get(RssTezConfig.RSS_STORAGE_TYPE, RssTezConfig.RSS_STORAGE_TYPE_DEFAULT_VALUE);
+    clientType = conf.get(TezClientConf.RSS_CLIENT_TYPE);
+    this.storageType = conf.get(TezClientConf.RSS_STORAGE_TYPE);
     LOG.info("RssTezFetcherTask storageType:{}", storageType);
-    this.basePath = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH);
-    String remoteStorageConf = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_CONF);
+    this.basePath = conf.get(TezClientConf.RSS_REMOTE_STORAGE_PATH);
+    String remoteStorageConf = conf.get(TezClientConf.RSS_REMOTE_STORAGE_CONF);
     this.remoteStorageInfo = new RemoteStorageInfo(basePath, remoteStorageConf);
 
-    String readBufferSize =
-        conf.get(
-            RssTezConfig.RSS_CLIENT_READ_BUFFER_SIZE,
-            RssTezConfig.RSS_CLIENT_READ_BUFFER_SIZE_DEFAULT_VALUE);
+    String readBufferSize = conf.get(TezClientConf.RSS_CLIENT_READ_BUFFER_SIZE);
     this.readBufferSize = (int) UnitConverter.byteStringAsBytes(readBufferSize);
-    this.partitionNumPerRange =
-        conf.getInt(
-            RssTezConfig.RSS_PARTITION_NUM_PER_RANGE,
-            RssTezConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
+    this.partitionNumPerRange = conf.get(TezClientConf.RSS_PARTITION_NUM_PER_RANGE);
     LOG.info(
         "RssTezFetcherTask fetch partition:{}, with inputs:{}, readBufferSize:{}, partitionNumPerRange:{}.",
         this.partition,
@@ -195,7 +188,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
                       .hadoopConf(hadoopConf)
                       .idHelper(new TezIdHelper())
                       .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
-                      .rssConf(RssTezConfig.toRssConf(this.conf)));
+                      .rssConf(this.conf.toRssConf()));
       RssTezFetcher fetcher =
           new RssTezFetcher(
               fetcherCallback,
@@ -203,7 +196,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
               shuffleReadClient,
               rssSuccessBlockIdBitmapMap,
               partition,
-              RssTezConfig.toRssConf(this.conf));
+              this.conf);
       fetcher.fetchAllRssBlocks();
       LOG.info(
           "In reduce: "
@@ -216,7 +209,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
   public void shutdown() {}
 
   private Configuration getRemoteConf() {
-    Configuration remoteConf = new Configuration(conf);
+    Configuration remoteConf = conf.getHadoopConfig();
     if (!remoteStorageInfo.isEmpty()) {
       for (Map.Entry<String, String> entry : remoteStorageInfo.getConfItems().entrySet()) {
         remoteConf.set(entry.getKey(), entry.getValue());

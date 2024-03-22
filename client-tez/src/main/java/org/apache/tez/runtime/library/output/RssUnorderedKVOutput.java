@@ -44,6 +44,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tez.common.GetShuffleServerRequest;
 import org.apache.tez.common.GetShuffleServerResponse;
 import org.apache.tez.common.RssTezUtils;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezRemoteShuffleUmbilicalProtocol;
 import org.apache.tez.common.TezUtils;
@@ -68,11 +69,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
-
-import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
-import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
-import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_ID;
-import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 
 /**
  * {@link RssUnorderedKVOutput} is an {@link AbstractLogicalOutput} which support remote shuffle.
@@ -140,8 +136,8 @@ public class RssUnorderedKVOutput extends AbstractLogicalOutput {
             TezRuntimeConfiguration.TEZ_RUNTIME_EMPTY_PARTITION_INFO_VIA_EVENTS_ENABLED,
             TezRuntimeConfiguration.TEZ_RUNTIME_EMPTY_PARTITION_INFO_VIA_EVENTS_ENABLED_DEFAULT);
 
-    this.host = this.conf.get(RSS_AM_SHUFFLE_MANAGER_ADDRESS);
-    this.port = this.conf.getInt(RSS_AM_SHUFFLE_MANAGER_PORT, -1);
+    this.host = this.conf.get(TezClientConf.RSS_AM_SHUFFLE_MANAGER_ADDRESS.key());
+    this.port = this.conf.getInt(TezClientConf.RSS_AM_SHUFFLE_MANAGER_PORT.key(), -1);
     final InetSocketAddress address = NetUtils.createSocketAddrForHost(host, port);
 
     UserGroupInformation taskOwner =
@@ -164,8 +160,14 @@ public class RssUnorderedKVOutput extends AbstractLogicalOutput {
             });
     TezVertexID tezVertexID = taskAttemptId.getTaskID().getVertexID();
     TezDAGID tezDAGID = tezVertexID.getDAGId();
-    int sourceVertexId = this.conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1);
-    int destinationVertexId = this.conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1);
+    int sourceVertexId =
+        this.conf.getInt(
+            TezClientConf.RSS_SHUFFLE_SOURCE_VERTEX_ID.key(),
+            TezClientConf.RSS_SHUFFLE_SOURCE_VERTEX_ID.defaultValue());
+    int destinationVertexId =
+        this.conf.getInt(
+            TezClientConf.RSS_SHUFFLE_DESTINATION_VERTEX_ID.key(),
+            TezClientConf.RSS_SHUFFLE_DESTINATION_VERTEX_ID.defaultValue());
     assert sourceVertexId != -1;
     assert destinationVertexId != -1;
     this.shuffleId =

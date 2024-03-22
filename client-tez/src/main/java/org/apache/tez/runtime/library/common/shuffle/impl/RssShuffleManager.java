@@ -68,6 +68,7 @@ import org.apache.hadoop.util.Time;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
 import org.apache.tez.common.InputContextUtils;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.common.UmbilicalUtils;
@@ -593,7 +594,7 @@ public class RssShuffleManager extends ShuffleManager {
                     new RssTezFetcherTask(
                         RssShuffleManager.this,
                         inputContext,
-                        conf,
+                        new TezClientConf(conf),
                         inputManager,
                         partition,
                         shuffleId,

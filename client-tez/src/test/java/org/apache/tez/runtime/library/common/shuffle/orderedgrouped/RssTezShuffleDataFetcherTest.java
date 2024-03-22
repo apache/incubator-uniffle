@@ -45,7 +45,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
-import org.apache.tez.common.RssTezConfig;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.counters.GenericCounter;
 import org.apache.tez.common.counters.TezCounter;
@@ -244,7 +244,7 @@ public class RssTezShuffleDataFetcherTest {
             new TezCounters(),
             shuffleReadClient,
             3,
-            RssTezConfig.toRssConf(conf),
+            TezClientConf.toRssConf(conf),
             null);
 
     fetcher.fetchAllRssBlocks();

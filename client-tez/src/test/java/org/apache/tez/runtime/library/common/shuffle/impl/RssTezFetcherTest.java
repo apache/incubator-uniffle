@@ -36,6 +36,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.serializer.Deserializer;
 import org.apache.hadoop.io.serializer.SerializationFactory;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
 import org.apache.tez.runtime.library.common.readers.UnorderedKVReader;
@@ -59,8 +60,6 @@ import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.compression.Lz4Codec;
 import org.apache.uniffle.common.config.RssConf;
 
-import static org.apache.tez.common.RssTezConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED;
-import static org.apache.tez.common.RssTezConfig.RSS_REMOTE_SPILL_STORAGE_PATH;
 import static org.apache.tez.common.TezRuntimeFrameworkConfigs.LOCAL_DIRS;
 import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS;
 import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MEMORY_LIMIT_PERCENT;
@@ -250,8 +249,8 @@ public class RssTezFetcherTest {
     conf.set(LOCAL_DIRS, tmpDir + "/local");
     conf.set(TEZ_RUNTIME_KEY_CLASS, Text.class.getName());
     conf.set(TEZ_RUNTIME_VALUE_CLASS, IntWritable.class.getName());
-    conf.setBoolean(RSS_REDUCE_REMOTE_SPILL_ENABLED, true);
-    conf.set(RSS_REMOTE_SPILL_STORAGE_PATH, "/tmp/spill");
+    conf.setBoolean(TezClientConf.RSS_REDUCE_REMOTE_SPILL_ENABLED.key(), true);
+    conf.set(TezClientConf.RSS_REMOTE_SPILL_STORAGE_PATH.key(), "/tmp/spill");
     RssSimpleFetchedInputAllocator inputManager =
         new RssSimpleFetchedInputAllocator(
             "test", "uniqueId1", 0, conf, 2 * 1024 * 1024, 2 * 1024 * 1024, "appattemptid1");

@@ -47,9 +47,9 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.helpers.Loader;
 import org.apache.log4j.helpers.OptionConverter;
 import org.apache.tez.common.AsyncDispatcher;
-import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezClassLoader;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezUtils;
 import org.apache.tez.common.TezUtilsInternal;
@@ -85,12 +85,6 @@ import org.apache.uniffle.common.util.ThreadUtils;
 
 import static org.apache.log4j.LogManager.CONFIGURATOR_CLASS_KEY;
 import static org.apache.log4j.LogManager.DEFAULT_CONFIGURATION_KEY;
-import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
-import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
-import static org.apache.tez.common.RssTezConfig.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK;
-import static org.apache.tez.common.RssTezConfig.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK_DEFAULT;
-import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_ID;
-import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 import static org.apache.tez.dag.api.TezConfiguration.TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS;
 import static org.apache.tez.dag.api.TezConfiguration.TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS_DEFAULT;
 
@@ -145,11 +139,11 @@ public class RssDAGAppMaster extends DAGAppMaster {
   @Override
   public synchronized void serviceInit(Configuration conf) throws Exception {
     super.serviceInit(conf);
-    if (conf.getBoolean(
-        RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK, RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK_DEFAULT)) {
+    TezClientConf rssTezConfig = new TezClientConf(conf);
+    if (rssTezConfig.getBoolean(TezClientConf.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK)) {
       overrideTaskAttemptEventDispatcher();
     }
-    initAndStartRSSClient(this, conf);
+    initAndStartRSSClient(this, rssTezConfig);
   }
 
   public ShuffleWriteClient getShuffleWriteClient() {
@@ -179,7 +173,7 @@ public class RssDAGAppMaster extends DAGAppMaster {
    * @param conf
    * @throws Exception
    */
-  public static void initAndStartRSSClient(final RssDAGAppMaster appMaster, Configuration conf)
+  public static void initAndStartRSSClient(final RssDAGAppMaster appMaster, TezClientConf conf)
       throws Exception {
     ShuffleWriteClient client = appMaster.getShuffleWriteClient();
     if (client == null) {
@@ -187,15 +181,13 @@ public class RssDAGAppMaster extends DAGAppMaster {
       appMaster.setShuffleWriteClient(client);
     }
 
-    String coordinators = conf.get(RssTezConfig.RSS_COORDINATOR_QUORUM);
+    String coordinators = conf.get(TezClientConf.RSS_COORDINATOR_QUORUM);
     LOG.info("Registering coordinators {}", coordinators);
     appMaster.getShuffleWriteClient().registerCoordinators(coordinators);
 
     String strAppAttemptId = appMaster.getAttemptID().toString();
-    long heartbeatInterval =
-        conf.getLong(
-            RssTezConfig.RSS_HEARTBEAT_INTERVAL, RssTezConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
-    long heartbeatTimeout = conf.getLong(RssTezConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
+    long heartbeatInterval = conf.getLong(TezClientConf.RSS_HEARTBEAT_INTERVAL);
+    long heartbeatTimeout = conf.getLong(TezClientConf.RSS_HEARTBEAT_TIMEOUT);
     appMaster
         .getShuffleWriteClient()
         .registerApplicationInfo(strAppAttemptId, heartbeatTimeout, "user");
@@ -216,29 +208,22 @@ public class RssDAGAppMaster extends DAGAppMaster {
         TimeUnit.MILLISECONDS);
 
     // apply dynamic configuration
-    boolean dynamicConfEnabled =
-        conf.getBoolean(
-            RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
-            RssTezConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
+    boolean dynamicConfEnabled = conf.getBoolean(TezClientConf.RSS_DYNAMIC_CLIENT_CONF_ENABLED);
     if (dynamicConfEnabled) {
       appMaster.clusterClientConf =
-          client.fetchClientConf(
-              conf.getInt(
-                  RssTezConfig.RSS_ACCESS_TIMEOUT_MS,
-                  RssTezConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
+          client.fetchClientConf(conf.getInteger(TezClientConf.RSS_ACCESS_TIMEOUT_MS));
     }
 
-    Configuration mergedConf = new Configuration(conf);
-    RssTezUtils.applyDynamicClientConf(mergedConf, appMaster.getClusterClientConf());
+    RssTezUtils.applyDynamicClientConf(conf, appMaster.getClusterClientConf());
 
     // get remote storage from coordinator if necessary
     RemoteStorageInfo defaultRemoteStorage =
         new RemoteStorageInfo(
-            mergedConf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH, ""),
-            mergedConf.get(RssTezConfig.RSS_REMOTE_STORAGE_CONF, ""));
-    String storageType =
-        mergedConf.get(RssTezConfig.RSS_STORAGE_TYPE, RssTezConfig.RSS_STORAGE_TYPE_DEFAULT_VALUE);
-    boolean testMode = mergedConf.getBoolean(RssTezConfig.RSS_TEST_MODE_ENABLE, false);
+            conf.get(TezClientConf.RSS_REMOTE_STORAGE_PATH),
+            conf.get(TezClientConf.RSS_REMOTE_STORAGE_CONF));
+
+    String storageType = conf.get(TezClientConf.RSS_STORAGE_TYPE);
+    boolean testMode = conf.get(TezClientConf.TEZ_RSS_TEST_MODE_ENABLE);
     ClientUtils.validateTestModeConf(testMode, storageType);
     RemoteStorageInfo remoteStorage =
         ClientUtils.fetchRemoteStorage(
@@ -250,10 +235,10 @@ public class RssDAGAppMaster extends DAGAppMaster {
     // set the remote storage with actual value
     appMaster
         .getClusterClientConf()
-        .put(RssTezConfig.RSS_REMOTE_STORAGE_PATH, remoteStorage.getPath());
+        .put(TezClientConf.RSS_REMOTE_STORAGE_PATH.key(), remoteStorage.getPath());
     appMaster
         .getClusterClientConf()
-        .put(RssTezConfig.RSS_REMOTE_STORAGE_CONF, remoteStorage.getConfString());
+        .put(TezClientConf.RSS_REMOTE_STORAGE_CONF.key(), remoteStorage.getConfString());
 
     Token<JobTokenIdentifier> sessionToken =
         TokenCache.getSessionToken(appMaster.getContext().getAppCredentials());
@@ -261,14 +246,14 @@ public class RssDAGAppMaster extends DAGAppMaster {
         new TezRemoteShuffleManager(
             appMaster.getAppID().toString(),
             sessionToken,
-            mergedConf,
+            conf,
             strAppAttemptId,
             client,
             remoteStorage));
     appMaster.getTezRemoteShuffleManager().initialize();
     appMaster.getTezRemoteShuffleManager().start();
 
-    mayCloseTezSlowStart(conf);
+    mayCloseTezSlowStart(conf.getHadoopConfig());
   }
 
   @Override
@@ -359,7 +344,9 @@ public class RssDAGAppMaster extends DAGAppMaster {
         // rollback to local shuffle mode.
         LOG.info(
             "Rollback to local shuffle mode, since tez.shuffle.mode = {}",
-            conf.get(RssTezConfig.RSS_SHUFFLE_MODE, RssTezConfig.DEFAULT_RSS_SHUFFLE_MODE));
+            conf.get(
+                TezClientConf.RSS_SHUFFLE_MODE.key(),
+                TezClientConf.RSS_SHUFFLE_MODE.defaultValue()));
         DAGAppMaster.main(rollBackRemainingArgs);
         return;
       }
@@ -452,7 +439,8 @@ public class RssDAGAppMaster extends DAGAppMaster {
       }
 
       if (conf.getBoolean(
-              RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK, RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK_DEFAULT)
+              TezClientConf.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK.key(),
+              TezClientConf.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK.defaultValue())
           && conf.getBoolean(
               TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS,
               TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS_DEFAULT)) {
@@ -470,7 +458,8 @@ public class RssDAGAppMaster extends DAGAppMaster {
 
   private static boolean isLocalShuffleMode(Configuration conf) {
     String shuffleMode =
-        conf.get(RssTezConfig.RSS_SHUFFLE_MODE, RssTezConfig.DEFAULT_RSS_SHUFFLE_MODE);
+        conf.get(
+            TezClientConf.RSS_SHUFFLE_MODE.key(), TezClientConf.RSS_SHUFFLE_MODE.defaultValue());
     switch (shuffleMode) {
       case "remote":
         return false;
@@ -484,7 +473,8 @@ public class RssDAGAppMaster extends DAGAppMaster {
 
   static void mayCloseTezSlowStart(Configuration conf) {
     if (!conf.getBoolean(
-        RssTezConfig.RSS_AM_SLOW_START_ENABLE, RssTezConfig.RSS_AM_SLOW_START_ENABLE_DEFAULT)) {
+        TezClientConf.RSS_AM_SLOW_START_ENABLE.key(),
+        TezClientConf.RSS_AM_SLOW_START_ENABLE.defaultValue())) {
       conf.setFloat(ShuffleVertexManager.TEZ_SHUFFLE_VERTEX_MANAGER_MIN_SRC_FRACTION, 1.0f);
       conf.setFloat(ShuffleVertexManager.TEZ_SHUFFLE_VERTEX_MANAGER_MAX_SRC_FRACTION, 1.0f);
     }
@@ -560,13 +550,14 @@ public class RssDAGAppMaster extends DAGAppMaster {
           Configuration edgeSourceConf =
               TezUtils.createConfFromUserPayload(
                   edge.getEdgeProperty().getEdgeSource().getUserPayload());
-          edgeSourceConf.setInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, sourceVertexId);
-          edgeSourceConf.setInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, destinationVertexId);
+          edgeSourceConf.setInt(TezClientConf.RSS_SHUFFLE_SOURCE_VERTEX_ID.key(), sourceVertexId);
+          edgeSourceConf.setInt(
+              TezClientConf.RSS_SHUFFLE_DESTINATION_VERTEX_ID.key(), destinationVertexId);
           edgeSourceConf.set(
-              RSS_AM_SHUFFLE_MANAGER_ADDRESS,
+              TezClientConf.RSS_AM_SHUFFLE_MANAGER_ADDRESS.key(),
               this.appMaster.getTezRemoteShuffleManager().getAddress().getHostName());
           edgeSourceConf.setInt(
-              RSS_AM_SHUFFLE_MANAGER_PORT,
+              TezClientConf.RSS_AM_SHUFFLE_MANAGER_PORT.key(),
               this.appMaster.getTezRemoteShuffleManager().getAddress().getPort());
           edgeSourceConf.addResource(filterRssConf);
           RssTezUtils.applyDynamicClientConf(edgeSourceConf, this.appMaster.getClusterClientConf());
@@ -587,13 +578,15 @@ public class RssDAGAppMaster extends DAGAppMaster {
           Configuration edgeDestinationConf =
               TezUtils.createConfFromUserPayload(
                   edge.getEdgeProperty().getEdgeSource().getUserPayload());
-          edgeDestinationConf.setInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, sourceVertexId);
-          edgeDestinationConf.setInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, destinationVertexId);
+          edgeDestinationConf.setInt(
+              TezClientConf.RSS_SHUFFLE_SOURCE_VERTEX_ID.key(), sourceVertexId);
+          edgeDestinationConf.setInt(
+              TezClientConf.RSS_SHUFFLE_DESTINATION_VERTEX_ID.key(), destinationVertexId);
           edgeDestinationConf.set(
-              RSS_AM_SHUFFLE_MANAGER_ADDRESS,
+              TezClientConf.RSS_AM_SHUFFLE_MANAGER_ADDRESS.key(),
               this.appMaster.getTezRemoteShuffleManager().getAddress().getHostName());
           edgeDestinationConf.setInt(
-              RSS_AM_SHUFFLE_MANAGER_PORT,
+              TezClientConf.RSS_AM_SHUFFLE_MANAGER_PORT.key(),
               this.appMaster.getTezRemoteShuffleManager().getAddress().getPort());
           edgeDestinationConf.addResource(filterRssConf);
           RssTezUtils.applyDynamicClientConf(

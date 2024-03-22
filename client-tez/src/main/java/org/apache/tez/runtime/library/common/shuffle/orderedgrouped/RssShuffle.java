@@ -46,7 +46,7 @@ import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
-import org.apache.tez.common.RssTezConfig;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.common.counters.TaskCounter;
@@ -204,19 +204,19 @@ public class RssShuffle implements ExceptionReporter {
 
     boolean useRemoteSpill =
         conf.getBoolean(
-            RssTezConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
-            RssTezConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT);
+            TezClientConf.RSS_REDUCE_REMOTE_SPILL_ENABLED.key(),
+            TezClientConf.RSS_REDUCE_REMOTE_SPILL_ENABLED.defaultValue());
     if (useRemoteSpill) {
       // Use minimized replica, because spilled data can be recomputed by reduce task.
       // Instead, we use more retries on HDFS client.
       int replication =
           conf.getInt(
-              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION,
-              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION_DEFAULT);
+              TezClientConf.RSS_REDUCE_REMOTE_SPILL_REPLICATION.key(),
+              TezClientConf.RSS_REDUCE_REMOTE_SPILL_REPLICATION.defaultValue());
       int retries =
           conf.getInt(
-              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES,
-              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES_DEFAULT);
+              TezClientConf.RSS_REDUCE_REMOTE_SPILL_RETRIES.key(),
+              TezClientConf.RSS_REDUCE_REMOTE_SPILL_RETRIES.defaultValue());
       LOG.info("Tez RssShuffle will use RssMergeManager!");
       return new RssMergeManager(
           this.conf,
@@ -254,8 +254,8 @@ public class RssShuffle implements ExceptionReporter {
   }
 
   private static Configuration getRemoteConf(Configuration conf) {
-    String basePath = conf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH);
-    String remoteStorageConf = conf.get(RssTezConfig.RSS_REMOTE_STORAGE_CONF);
+    String basePath = conf.get(TezClientConf.RSS_REMOTE_STORAGE_PATH.key());
+    String remoteStorageConf = conf.get(TezClientConf.RSS_REMOTE_STORAGE_CONF.key());
     RemoteStorageInfo remoteStorageInfo = new RemoteStorageInfo(basePath, remoteStorageConf);
     Configuration remoteConf = new Configuration(conf);
     if (!remoteStorageInfo.isEmpty()) {

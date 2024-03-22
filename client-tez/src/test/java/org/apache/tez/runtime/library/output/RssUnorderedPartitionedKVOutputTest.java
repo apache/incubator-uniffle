@@ -35,6 +35,7 @@ import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.tez.common.GetShuffleServerResponse;
 import org.apache.tez.common.ShuffleAssignmentsInfoWritable;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezRemoteShuffleUmbilicalProtocol;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
@@ -57,10 +58,6 @@ import org.mockito.Mockito;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
-import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
-import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
-import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_ID;
-import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -90,10 +87,12 @@ public class RssUnorderedPartitionedKVOutputTest {
     conf.set(
         TezRuntimeConfiguration.TEZ_RUNTIME_PARTITIONER_CLASS, HashPartitioner.class.getName());
     conf.setStrings(TezRuntimeFrameworkConfigs.LOCAL_DIRS, workingDir.toString());
-    conf.set(RSS_AM_SHUFFLE_MANAGER_ADDRESS, "localhost");
-    conf.setInt(RSS_AM_SHUFFLE_MANAGER_PORT, 0);
-    conf.setInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, 0);
-    conf.setInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, 1);
+    conf.set(TezClientConf.RSS_AM_SHUFFLE_MANAGER_ADDRESS.key(), "localhost");
+    conf.setInt(
+        TezClientConf.RSS_AM_SHUFFLE_MANAGER_PORT.key(),
+        TezClientConf.RSS_AM_SHUFFLE_MANAGER_PORT.defaultValue());
+    conf.setInt(TezClientConf.RSS_SHUFFLE_SOURCE_VERTEX_ID.key(), 0);
+    conf.setInt(TezClientConf.RSS_SHUFFLE_DESTINATION_VERTEX_ID.key(), 1);
   }
 
   @AfterEach

@@ -31,6 +31,7 @@ import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.util.Progressable;
 import org.apache.hadoop.util.Time;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.counters.TaskCounter;
 import org.apache.tez.common.counters.TezCounter;
 import org.apache.tez.runtime.api.InputContext;
@@ -47,8 +48,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
-
-import static org.apache.tez.common.RssTezConfig.RSS_REMOTE_SPILL_STORAGE_PATH;
 
 public class RssMergeManager extends MergeManager {
 
@@ -182,7 +181,7 @@ public class RssMergeManager extends MergeManager {
 
     // remote fs
     Configuration remoteConfCopied = new Configuration(remoteConf);
-    this.spillBasePath = conf.get(RSS_REMOTE_SPILL_STORAGE_PATH);
+    this.spillBasePath = conf.get(TezClientConf.RSS_REMOTE_SPILL_STORAGE_PATH.key());
     try {
       remoteConfCopied.setInt("dfs.replication", replication);
       remoteConfCopied.setInt("dfs.client.block.write.retries", retries);
