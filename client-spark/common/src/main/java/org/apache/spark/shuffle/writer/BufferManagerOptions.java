@@ -40,23 +40,23 @@ public class BufferManagerOptions {
     bufferSize =
         sparkConf.getSizeAsBytes(
             RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key(),
-            RssSparkConfig.RSS_WRITER_BUFFER_SIZE.defaultValue().get());
+            RssSparkConfig.RSS_WRITER_BUFFER_SIZE.defaultValue());
     serializerBufferSize =
         sparkConf.getSizeAsBytes(
             RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.key(),
-            RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.defaultValue().get());
+            RssSparkConfig.RSS_WRITER_SERIALIZER_BUFFER_SIZE.defaultValue());
     bufferSegmentSize =
         sparkConf.getSizeAsBytes(
             RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.key(),
-            RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.defaultValue().get());
+            RssSparkConfig.RSS_WRITER_BUFFER_SEGMENT_SIZE.defaultValue());
     bufferSpillThreshold =
         sparkConf.getSizeAsBytes(
             RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key(),
-            RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.defaultValue().get());
+            RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.defaultValue());
     preAllocatedBufferSize =
         sparkConf.getSizeAsBytes(
             RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.key(),
-            RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.defaultValue().get());
+            RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.defaultValue());
     requireMemoryInterval = sparkConf.get(RssSparkConfig.RSS_WRITER_REQUIRE_MEMORY_INTERVAL);
     requireMemoryRetryMax = sparkConf.get(RssSparkConfig.RSS_WRITER_REQUIRE_MEMORY_RETRY_MAX);
     LOG.info(RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key() + "=" + bufferSize);
