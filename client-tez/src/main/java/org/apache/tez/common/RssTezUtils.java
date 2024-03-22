@@ -61,7 +61,7 @@ public class RssTezUtils {
   private static final Logger LOG = LoggerFactory.getLogger(RssTezUtils.class);
   private static final BlockIdLayout LAYOUT = BlockIdLayout.DEFAULT;
   public static final int MAX_ATTEMPT_LENGTH = 4;
-  public static final long MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
+  public static final int MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
   private static final int MAX_TASK_LENGTH = LAYOUT.taskAttemptIdBits - MAX_ATTEMPT_LENGTH;
   private static final int MAX_TASK_ID = (1 << MAX_TASK_LENGTH) - 1;
 
@@ -158,26 +158,7 @@ public class RssTezUtils {
     return StringUtils.join(ids, "_", 0, 7);
   }
 
-  public static long getBlockId(int partitionId, long taskAttemptId, int nextSeqNo) {
-    LOG.info(
-        "GetBlockId, partitionId:{}, taskAttemptId:{}, nextSeqNo:{}",
-        partitionId,
-        taskAttemptId,
-        nextSeqNo);
-    if (taskAttemptId < 0 || taskAttemptId > LAYOUT.maxTaskAttemptId) {
-      throw new RssException(
-          "Can't support attemptId ["
-              + taskAttemptId
-              + "], the max value should be "
-              + LAYOUT.maxTaskAttemptId);
-    }
-    if (nextSeqNo < 0 || nextSeqNo > LAYOUT.maxSequenceNo) {
-      throw new RssException(
-          "Can't support sequence ["
-              + nextSeqNo
-              + "], the max value should be "
-              + LAYOUT.maxSequenceNo);
-    }
+  public static long getBlockId(int partitionId, int taskAttemptId, int nextSeqNo) {
     return LAYOUT.getBlockId(nextSeqNo, partitionId, taskAttemptId);
   }
 
@@ -274,7 +255,7 @@ public class RssTezUtils {
     }
   }
 
-  public static long convertTaskAttemptIdToLong(TezTaskAttemptID taskAttemptID) {
+  public static int createRssTaskAttemptId(TezTaskAttemptID taskAttemptID) {
     int lowBytes = taskAttemptID.getId();
     if (lowBytes > MAX_ATTEMPT_ID || lowBytes < 0) {
       throw new RssException("TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed");
@@ -284,8 +265,8 @@ public class RssTezUtils {
       throw new RssException(
           "TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed.");
     }
-    long id = (long) highBytes << MAX_ATTEMPT_LENGTH + lowBytes;
-    LOG.info("ConvertTaskAttemptIdToLong taskAttemptID:{}, id is {}, .", taskAttemptID, id);
+    int id = highBytes << MAX_ATTEMPT_LENGTH + lowBytes;
+    LOG.info("createRssTaskAttemptId taskAttemptID:{}, id is {}, .", taskAttemptID, id);
     return id;
   }
 
@@ -300,7 +281,7 @@ public class RssTezUtils {
     for (InputAttemptIdentifier inputAttemptIdentifier : successMapTaskAttempts) {
       String pathComponent = inputAttemptIdentifier.getPathComponent();
       TezTaskAttemptID mapTaskAttemptID = IdUtils.convertTezTaskAttemptID(pathComponent);
-      long rssTaskId = RssTezUtils.convertTaskAttemptIdToLong(mapTaskAttemptID);
+      int rssTaskId = RssTezUtils.createRssTaskAttemptId(mapTaskAttemptID);
       long mapTaskId = mapTaskAttemptID.getTaskID().getId();
 
       LOG.info(

@@ -64,7 +64,7 @@ public class SortWriteBufferManager<K, V> {
   private final Counters.Counter mapOutputRecordCounter;
   private long uncompressedDataLen = 0;
   private long compressTime = 0;
-  private final long taskAttemptId;
+  private final int taskAttemptId;
   private final AtomicLong memoryUsedSize = new AtomicLong(0);
   private final int batch;
   private final AtomicLong inSendListBytes = new AtomicLong(0);
@@ -101,7 +101,7 @@ public class SortWriteBufferManager<K, V> {
 
   public SortWriteBufferManager(
       long maxMemSize,
-      long taskAttemptId,
+      int taskAttemptId,
       int batch,
       Serializer<K> keySerializer,
       Serializer<V> valSerializer,

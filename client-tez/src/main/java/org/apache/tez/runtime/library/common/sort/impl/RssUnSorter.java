@@ -80,7 +80,7 @@ public class RssUnSorter extends ExternalSorter {
         conf.getDouble(
             RssTezConfig.RSS_CLIENT_SORT_MEMORY_USE_THRESHOLD,
             RssTezConfig.RSS_CLIENT_DEFAULT_SORT_MEMORY_USE_THRESHOLD);
-    long taskAttemptId = RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptID);
+    int taskAttemptId = RssTezUtils.createRssTaskAttemptId(tezTaskAttemptID);
     long maxSegmentSize =
         conf.getLong(
             RssTezConfig.RSS_CLIENT_MAX_BUFFER_SIZE,

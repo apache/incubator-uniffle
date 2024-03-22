@@ -51,31 +51,30 @@ public class RssMRUtils {
 
   // Class TaskAttemptId have two field id and mapId. MR have a trick logic, taskAttemptId will
   // increase 1000 * (appAttemptId - 1), so we will decrease it.
-  public static long convertTaskAttemptIdToLong(TaskAttemptID taskAttemptID, int appAttemptId) {
+  public static int createRssTaskAttemptId(TaskAttemptID taskAttemptID, int appAttemptId) {
     if (appAttemptId < 1) {
       throw new RssException("appAttemptId " + appAttemptId + " is wrong");
     }
-    long lowBytes = taskAttemptID.getId() - (appAttemptId - 1) * 1000L;
+    int lowBytes = taskAttemptID.getId() - (appAttemptId - 1) * 1000;
     if (lowBytes > MAX_ATTEMPT_ID || lowBytes < 0) {
       throw new RssException(
           "TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed " + MAX_ATTEMPT_ID);
     }
-    long highBytes = taskAttemptID.getTaskID().getId();
+    int highBytes = taskAttemptID.getTaskID().getId();
     if (highBytes > MAX_TASK_ID || highBytes < 0) {
       throw new RssException(
           "TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed " + MAX_TASK_ID);
     }
-    long taskAttemptId = (highBytes << (MAX_ATTEMPT_LENGTH)) + lowBytes;
-    return LAYOUT.getBlockId(0, 0, taskAttemptId);
+    return (highBytes << (MAX_ATTEMPT_LENGTH)) + lowBytes;
   }
 
   public static TaskAttemptID createMRTaskAttemptId(
-      JobID jobID, TaskType taskType, long rssTaskAttemptId, int appAttemptId) {
+      JobID jobID, TaskType taskType, int rssTaskAttemptId, int appAttemptId) {
     if (appAttemptId < 1) {
       throw new RssException("appAttemptId " + appAttemptId + " is wrong");
     }
-    int task = LAYOUT.getTaskAttemptId(rssTaskAttemptId) >> MAX_ATTEMPT_LENGTH;
-    int attempt = (int) (rssTaskAttemptId & MAX_ATTEMPT_ID);
+    int task = rssTaskAttemptId >> MAX_ATTEMPT_LENGTH;
+    int attempt = rssTaskAttemptId & MAX_ATTEMPT_ID;
     TaskID taskID = new TaskID(jobID, taskType, task);
     int id = attempt + 1000 * (appAttemptId - 1);
     return new TaskAttemptID(taskID, id);
@@ -230,29 +229,7 @@ public class RssMRUtils {
     return rssJobConf.get(key, defaultValue);
   }
 
-  public static long getBlockId(int partitionId, long taskAttemptId, int nextSeqNo) {
-    if (taskAttemptId < 0 || taskAttemptId > LAYOUT.maxTaskAttemptId) {
-      throw new RssException(
-          "Can't support attemptId ["
-              + taskAttemptId
-              + "], the max value should be "
-              + LAYOUT.maxTaskAttemptId);
-    }
-    if (nextSeqNo < 0 || nextSeqNo > LAYOUT.maxSequenceNo) {
-      throw new RssException(
-          "Can't support sequence ["
-              + nextSeqNo
-              + "], the max value should be "
-              + LAYOUT.maxSequenceNo);
-    }
-
-    if (partitionId < 0 || partitionId > LAYOUT.maxPartitionId) {
-      throw new RssException(
-          "Can't support partitionId ["
-              + partitionId
-              + "], the max value should be "
-              + LAYOUT.maxPartitionId);
-    }
+  public static long getBlockId(int partitionId, int taskAttemptId, int nextSeqNo) {
     return LAYOUT.getBlockId(nextSeqNo, partitionId, taskAttemptId);
   }
 

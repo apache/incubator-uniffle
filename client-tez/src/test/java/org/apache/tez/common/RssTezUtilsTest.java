@@ -47,7 +47,7 @@ public class RssTezUtilsTest {
 
   @Test
   public void baskAttemptIdTest() {
-    long taskAttemptId = 0x1000ad12;
+    int taskAttemptId = 0x1000ad12;
     ApplicationId appId = ApplicationId.newInstance(9999, 72);
     TezDAGID dagId = TezDAGID.getInstance(appId, 1);
     TezVertexID vId = TezVertexID.getInstance(dagId, 35);
@@ -56,7 +56,7 @@ public class RssTezUtilsTest {
 
     boolean isException = false;
     try {
-      RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId);
+      RssTezUtils.createRssTaskAttemptId(tezTaskAttemptId);
     } catch (RssException e) {
       isException = true;
     }
@@ -66,7 +66,7 @@ public class RssTezUtilsTest {
     tezTaskAttemptId = TezTaskAttemptID.getInstance(taskId, 2);
     isException = false;
     try {
-      RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId);
+      RssTezUtils.createRssTaskAttemptId(tezTaskAttemptId);
     } catch (RssException e) {
       isException = true;
     }
@@ -80,7 +80,7 @@ public class RssTezUtilsTest {
     TezVertexID vId = TezVertexID.getInstance(dagId, 35);
     TezTaskID tId = TezTaskID.getInstance(vId, 389);
     TezTaskAttemptID tezTaskAttemptId = TezTaskAttemptID.getInstance(tId, 2);
-    long taskAttemptId = RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId);
+    int taskAttemptId = RssTezUtils.createRssTaskAttemptId(tezTaskAttemptId);
     long blockId = RssTezUtils.getBlockId(1, taskAttemptId, 0);
     long newTaskAttemptId = RssTezUtils.getTaskAttemptId(blockId);
     assertEquals(taskAttemptId, newTaskAttemptId);
@@ -97,7 +97,7 @@ public class RssTezUtilsTest {
     TezVertexID vId = TezVertexID.getInstance(dagId, 35);
     TezTaskID tId = TezTaskID.getInstance(vId, 389);
     TezTaskAttemptID tezTaskAttemptId = TezTaskAttemptID.getInstance(tId, 2);
-    long taskAttemptId = RssTezUtils.convertTaskAttemptIdToLong(tezTaskAttemptId);
+    int taskAttemptId = RssTezUtils.createRssTaskAttemptId(tezTaskAttemptId);
     long mask = (1L << layout.partitionIdBits) - 1;
     for (int partitionId = 0; partitionId <= 3000; partitionId++) {
       for (int seqNo = 0; seqNo <= 10; seqNo++) {
