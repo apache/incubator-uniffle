@@ -19,10 +19,9 @@ package org.apache.spark.shuffle.writer;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -98,6 +97,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private int memorySpillTimeoutSec;
   private boolean isRowBased;
   private BlockIdLayout blockIdLayout;
+  private double bufferSpillRatio;
 
   public WriteBufferManager(
       int shuffleId,
@@ -163,6 +163,7 @@ public class WriteBufferManager extends MemoryConsumer {
     this.sendSizeLimit = rssConf.get(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMITATION);
     this.memorySpillTimeoutSec = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_TIMEOUT);
     this.memorySpillEnabled = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_ENABLED);
+    this.bufferSpillRatio = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_RATIO);
     this.blockIdLayout = BlockIdLayout.from(rssConf);
   }
 
@@ -179,7 +180,12 @@ public class WriteBufferManager extends MemoryConsumer {
 
     // check buffer size > spill threshold
     if (usedBytes.get() - inSendListBytes.get() > spillSize) {
-      List<ShuffleBlockInfo> multiSendingBlocks = clear();
+      LOG.info(
+          String.format(
+              "ShuffleBufferManager spill for buffer size exceeding spill threshold,"
+                  + "usedBytes[%d],inSendListBytes[%d],spill size threshold[%d]",
+              usedBytes.get(), inSendListBytes.get(), spillSize));
+      List<ShuffleBlockInfo> multiSendingBlocks = clear(bufferSpillRatio);
       multiSendingBlocks.addAll(singleOrEmptySendingBlocks);
       writeTime += System.currentTimeMillis() - start;
       return multiSendingBlocks;
@@ -292,20 +298,48 @@ public class WriteBufferManager extends MemoryConsumer {
   }
 
   // transform all [partition, records] to [partition, ShuffleBlockInfo] and clear cache
-  public synchronized List<ShuffleBlockInfo> clear() {
+  public synchronized List<ShuffleBlockInfo> clear(double bufferSpillRetio) {
     List<ShuffleBlockInfo> result = Lists.newArrayList();
     long dataSize = 0;
     long memoryUsed = 0;
-    Iterator<Entry<Integer, WriterBuffer>> iterator = buffers.entrySet().iterator();
-    while (iterator.hasNext()) {
-      Entry<Integer, WriterBuffer> entry = iterator.next();
-      WriterBuffer wb = entry.getValue();
+    bufferSpillRetio = Math.max(0.1, Math.min(1.0, bufferSpillRetio));
+    List<Integer> partitionList =
+        new ArrayList<Integer>() {
+          {
+            addAll(buffers.keySet());
+          }
+        };
+    if (bufferSpillRetio < 1.0) {
+      Collections.sort(
+          partitionList,
+          new Comparator<Integer>() {
+            WriterBuffer defaultBuffer = new WriterBuffer(0);
+
+            @Override
+            public int compare(Integer o1, Integer o2) {
+              int partSize1 = buffers.getOrDefault(o1, defaultBuffer).getMemoryUsed();
+              int partSize2 = buffers.getOrDefault(o2, defaultBuffer).getMemoryUsed();
+              return partSize2 - partSize1;
+            }
+          });
+    }
+    long spillSize = (long) ((usedBytes.get() - inSendListBytes.get()) * bufferSpillRetio);
+    for (int partitionId : partitionList) {
+      WriterBuffer wb = buffers.get(partitionId);
+      if (wb == null) {
+        LOG.warn("get partition buffer failed,this should not happen!");
+        continue;
+      }
       dataSize += wb.getDataLength();
       memoryUsed += wb.getMemoryUsed();
-      result.add(createShuffleBlock(entry.getKey(), wb));
+      result.add(createShuffleBlock(partitionId, wb));
       recordCounter.addAndGet(wb.getRecordCount());
-      iterator.remove();
       copyTime += wb.getCopyTime();
+      buffers.remove(partitionId);
+      // got enough buffer to spill
+      if (memoryUsed >= spillSize) {
+        break;
+      }
     }
     LOG.info(
         "Flush total buffer for shuffleId["
@@ -316,6 +350,10 @@ public class WriteBufferManager extends MemoryConsumer {
             + dataSize
             + "], memoryUsed["
             + memoryUsed
+            + "],number of blocks["
+            + result.size()
+            + "],flush ratio["
+            + bufferSpillRetio
             + "]");
     return result;
   }
@@ -458,7 +496,7 @@ public class WriteBufferManager extends MemoryConsumer {
       return 0L;
     }
 
-    List<CompletableFuture<Long>> futures = spillFunc.apply(clear());
+    List<CompletableFuture<Long>> futures = spillFunc.apply(clear(bufferSpillRatio));
     CompletableFuture<Void> allOfFutures =
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
     try {

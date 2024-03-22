@@ -291,7 +291,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       }
     }
     final long start = System.currentTimeMillis();
-    shuffleBlockInfos = bufferManager.clear();
+    shuffleBlockInfos = bufferManager.clear(1.0);
     if (shuffleBlockInfos != null && !shuffleBlockInfos.isEmpty()) {
       processShuffleBlockInfos(shuffleBlockInfos);
     }

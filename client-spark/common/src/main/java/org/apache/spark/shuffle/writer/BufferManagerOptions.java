@@ -35,6 +35,7 @@ public class BufferManagerOptions {
   private long preAllocatedBufferSize;
   private long requireMemoryInterval;
   private int requireMemoryRetryMax;
+  private double bufferSpillPercent;
 
   public BufferManagerOptions(SparkConf sparkConf) {
     bufferSize =
@@ -53,6 +54,10 @@ public class BufferManagerOptions {
         sparkConf.getSizeAsBytes(
             RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key(),
             RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.defaultValue().get());
+    bufferSpillPercent =
+        sparkConf.getDouble(
+            RssSparkConfig.RSS_MEMORY_SPILL_RATIO.key(),
+            RssSparkConfig.RSS_MEMORY_SPILL_RATIO.defaultValue());
     preAllocatedBufferSize =
         sparkConf.getSizeAsBytes(
             RssSparkConfig.RSS_WRITER_PRE_ALLOCATED_BUFFER_SIZE.key(),
@@ -117,6 +122,10 @@ public class BufferManagerOptions {
 
   public long getBufferSpillThreshold() {
     return bufferSpillThreshold;
+  }
+
+  public double getBufferSpillPercent() {
+    return bufferSpillPercent;
   }
 
   public long getRequireMemoryInterval() {
