@@ -59,8 +59,7 @@ public interface ShuffleWriteClient {
         remoteStorage,
         dataDistributionType,
         maxConcurrencyPerPartitionToWrite,
-        false
-    );
+        false);
   }
 
   void registerShuffle(
