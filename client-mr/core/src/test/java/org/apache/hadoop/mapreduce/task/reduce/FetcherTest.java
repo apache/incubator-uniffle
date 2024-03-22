@@ -503,7 +503,8 @@ public class FetcherTest {
         List<PartitionRange> partitionRanges,
         RemoteStorageInfo storageType,
         ShuffleDataDistributionType distributionType,
-        int maxConcurrencyPerPartitionToWrite) {}
+        int maxConcurrencyPerPartitionToWrite,
+        boolean isStageRetry) {}
 
     @Override
     public boolean sendCommit(
