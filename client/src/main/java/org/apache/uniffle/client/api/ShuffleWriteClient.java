@@ -43,6 +43,26 @@ public interface ShuffleWriteClient {
 
   void registerApplicationInfo(String appId, long timeoutMs, String user);
 
+  default void registerShuffle(
+      ShuffleServerInfo shuffleServerInfo,
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorage,
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite) {
+    registerShuffle(
+        shuffleServerInfo,
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorage,
+        dataDistributionType,
+        maxConcurrencyPerPartitionToWrite,
+        false
+    );
+  }
+
   void registerShuffle(
       ShuffleServerInfo shuffleServerInfo,
       String appId,
@@ -50,7 +70,8 @@ public interface ShuffleWriteClient {
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage,
       ShuffleDataDistributionType dataDistributionType,
-      int maxConcurrencyPerPartitionToWrite);
+      int maxConcurrencyPerPartitionToWrite,
+      boolean isStageRetry);
 
   boolean sendCommit(
       Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);

@@ -158,6 +158,30 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String remoteStoragePath = req.getRemoteStorage().getPath();
     String user = req.getUser();
 
+    if (req.getIsStageRetry()) {
+      try {
+        long start = System.currentTimeMillis();
+        shuffleServer.getShuffleTaskManager().removeShuffleDataSync(appId, shuffleId);
+        LOG.info(
+            "Deleted the previous stage attempt data due to stage recomputing for app: {}, "
+                + "shuffleId: {}. It costs {} ms",
+            appId,
+            shuffleId,
+            System.currentTimeMillis() - start);
+      } catch (Exception e) {
+        LOG.error(
+            "Errors on clearing previous stage attempt data for app: {}, shuffleId: {}",
+            appId,
+            shuffleId,
+            e);
+        StatusCode code = StatusCode.INTERNAL_ERROR;
+        reply = ShuffleRegisterResponse.newBuilder().setStatus(code.toProto()).build();
+        responseObserver.onNext(reply);
+        responseObserver.onCompleted();
+        return;
+      }
+    }
+
     ShuffleDataDistributionType shuffleDataDistributionType =
         ShuffleDataDistributionType.valueOf(
             Optional.ofNullable(req.getShuffleDataDistribution())
