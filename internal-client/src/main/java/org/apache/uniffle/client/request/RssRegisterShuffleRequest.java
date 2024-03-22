@@ -44,6 +44,25 @@ public class RssRegisterShuffleRequest {
       RemoteStorageInfo remoteStorageInfo,
       String user,
       ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite) {
+    this(
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorageInfo,
+        user,
+        dataDistributionType,
+        maxConcurrencyPerPartitionToWrite,
+        false);
+  }
+
+  public RssRegisterShuffleRequest(
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorageInfo,
+      String user,
+      ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       boolean isStageRetry) {
     this.appId = appId;
