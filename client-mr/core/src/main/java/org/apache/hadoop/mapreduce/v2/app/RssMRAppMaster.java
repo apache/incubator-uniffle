@@ -165,16 +165,16 @@ public class RssMRAppMaster extends MRAppMaster {
       // get remote storage from coordinator if necessary
       boolean dynamicConfEnabled =
           conf.getBoolean(
-              RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED,
-              RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED_DEFAULT_VALUE);
+              RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(),
+              RssMRConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.defaultValue());
 
       // fetch client conf and apply them if necessary
       if (dynamicConfEnabled) {
         Map<String, String> clusterClientConf =
             client.fetchClientConf(
                 conf.getInt(
-                    RssMRConfig.RSS_ACCESS_TIMEOUT_MS,
-                    RssMRConfig.RSS_ACCESS_TIMEOUT_MS_DEFAULT_VALUE));
+                    RssMRConfig.RSS_ACCESS_TIMEOUT_MS.key(),
+                    RssMRConfig.RSS_ACCESS_TIMEOUT_MS.defaultValue()));
         RssMRUtils.applyDynamicClientConf(extraConf, clusterClientConf);
       }
 
@@ -187,7 +187,8 @@ public class RssMRAppMaster extends MRAppMaster {
       }
       assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
       String clientType =
-          extraConf.get(RssMRConfig.RSS_CLIENT_TYPE, RssMRConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
+          extraConf.get(
+              RssMRConfig.RSS_CLIENT_TYPE.key(), RssMRConfig.RSS_CLIENT_TYPE.defaultValue());
       ClientUtils.validateClientType(clientType);
       assignmentTags.add(clientType);
 
@@ -207,8 +208,8 @@ public class RssMRAppMaster extends MRAppMaster {
       RssMRUtils.validateRssClientConf(extraConf);
       // When containers have disk with very limited space, reduce is allowed to spill data to hdfs
       if (conf.getBoolean(
-          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
-          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT)) {
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED.key(),
+          RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED.defaultValue())) {
 
         if (remoteStorage.isEmpty()) {
           throw new IllegalArgumentException(
@@ -223,11 +224,11 @@ public class RssMRAppMaster extends MRAppMaster {
         int originalAttempts = conf.getInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, 4);
         int inc =
             conf.getInt(
-                RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC,
-                RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC_DEFAULT);
+                RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC.key(),
+                RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC.defaultValue());
         if (inc < 0) {
           throw new IllegalArgumentException(
-              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC + " cannot be negative");
+              RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ATTEMPT_INC.key() + " cannot be negative");
         }
         conf.setInt(MRJobConfig.REDUCE_MAX_ATTEMPTS, originalAttempts + inc);
       }
@@ -237,12 +238,12 @@ public class RssMRAppMaster extends MRAppMaster {
       // same result
       long retryInterval =
           conf.getLong(
-              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL,
-              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE);
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL.key(),
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL.defaultValue());
       int retryTimes =
           conf.getInt(
-              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES,
-              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE);
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES.key(),
+              RssMRConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES.defaultValue());
       ShuffleAssignmentsInfo response;
       try {
         response =
@@ -296,7 +297,8 @@ public class RssMRAppMaster extends MRAppMaster {
       }
       long heartbeatInterval =
           conf.getLong(
-              RssMRConfig.RSS_HEARTBEAT_INTERVAL, RssMRConfig.RSS_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
+              RssMRConfig.RSS_HEARTBEAT_INTERVAL.key(),
+              RssMRConfig.RSS_HEARTBEAT_INTERVAL.defaultValue());
       long heartbeatTimeout =
           conf.getLong(RssMRConfig.RSS_HEARTBEAT_TIMEOUT, heartbeatInterval / 2);
       client.registerApplicationInfo(appId, heartbeatTimeout, "user");
