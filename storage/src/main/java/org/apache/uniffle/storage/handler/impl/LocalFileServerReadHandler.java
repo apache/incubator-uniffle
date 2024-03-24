@@ -149,6 +149,7 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
     }
     // get dataFileSize for read segment generation in DataSkippableReadHandler#readShuffleData
     long dataFileSize = new File(dataFileName).length();
-    return new ShuffleIndexResult(new FileSegmentManagedBuffer(indexFile, 0, len, preferDirect), dataFileSize);
+    return new ShuffleIndexResult(
+        new FileSegmentManagedBuffer(indexFile, 0, len, preferDirect), dataFileSize);
   }
 }

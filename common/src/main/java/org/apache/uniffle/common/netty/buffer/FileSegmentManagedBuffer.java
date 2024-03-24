@@ -63,7 +63,8 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
     FileChannel channel = null;
     try {
       channel = new RandomAccessFile(file, "r").getChannel();
-      ByteBuffer buf = preferDirect ? ByteBuffer.allocateDirect(length) : ByteBuffer.allocate(length);
+      ByteBuffer buf =
+          preferDirect ? ByteBuffer.allocateDirect(length) : ByteBuffer.allocate(length);
       channel.position(offset);
       while (buf.remaining() != 0) {
         if (channel.read(buf) == -1) {

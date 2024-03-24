@@ -819,7 +819,8 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     StorageManager storageManager = shuffleServer.getStorageManager();
     ShuffleTaskManager shuffleTaskManager =
-        new ShuffleTaskManager(conf, shuffleFlushManager, shuffleBufferManager, storageManager, false);
+        new ShuffleTaskManager(
+            conf, shuffleFlushManager, shuffleBufferManager, storageManager, false);
 
     int startPartition = 6;
     int endPartition = 9;
@@ -895,7 +896,8 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     StorageManager storageManager = shuffleServer.getStorageManager();
     ShuffleTaskManager shuffleTaskManager =
-        new ShuffleTaskManager(conf, shuffleFlushManager, shuffleBufferManager, storageManager, false);
+        new ShuffleTaskManager(
+            conf, shuffleFlushManager, shuffleBufferManager, storageManager, false);
     Map<Integer, long[]> blockIdsToReport = Maps.newHashMap();
     try {
       shuffleTaskManager.addFinishedBlockIds(appId, shuffleId, blockIdsToReport, bitNum);

@@ -102,7 +102,8 @@ public class ShuffleBufferManager {
               ? (long)
                   (NettyUtils.getMaxDirectMemory()
                       * conf.getDouble(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO))
-              : (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO));
+              : (long)
+                  (heapSize * conf.getDouble(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO));
     }
     LOG.info(
         "Init shuffle buffer manager with capacity: {}, read buffer capacity: {}.",

@@ -639,7 +639,9 @@ public class ShuffleTaskManager {
       throw new FileNotFoundException("No such data stored in current storage manager.");
     }
 
-    return storage.getOrCreateReadHandler(request).getShuffleData(offset, length, nettyServerEnabled);
+    return storage
+        .getOrCreateReadHandler(request)
+        .getShuffleData(offset, length, nettyServerEnabled);
   }
 
   public ShuffleIndexResult getShuffleIndex(

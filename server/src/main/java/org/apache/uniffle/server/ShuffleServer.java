@@ -292,7 +292,11 @@ public class ShuffleServer {
         new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager, nettyServerEnabled);
     shuffleTaskManager =
         new ShuffleTaskManager(
-            shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager, nettyServerEnabled);
+            shuffleServerConf,
+            shuffleFlushManager,
+            shuffleBufferManager,
+            storageManager,
+            nettyServerEnabled);
     shuffleTaskManager.start();
 
     setServer();
