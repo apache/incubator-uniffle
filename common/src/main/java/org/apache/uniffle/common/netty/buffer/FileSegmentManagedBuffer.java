@@ -39,11 +39,13 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
   private final File file;
   private final long offset;
   private final int length;
+  private final boolean preferDirect;
 
-  public FileSegmentManagedBuffer(File file, long offset, int length) {
+  public FileSegmentManagedBuffer(File file, long offset, int length, boolean preferDirect) {
     this.file = file;
     this.offset = offset;
     this.length = length;
+    this.preferDirect = preferDirect;
   }
 
   @Override
@@ -61,7 +63,7 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
     FileChannel channel = null;
     try {
       channel = new RandomAccessFile(file, "r").getChannel();
-      ByteBuffer buf = ByteBuffer.allocate(length);
+      ByteBuffer buf = preferDirect ? ByteBuffer.allocateDirect(length) : ByteBuffer.allocate(length);
       channel.position(offset);
       while (buf.remaining() != 0) {
         if (channel.read(buf) == -1) {
@@ -85,7 +87,7 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
       }
 
       LOG.error(errorMessage, e);
-      return ByteBuffer.allocate(0);
+      return preferDirect ? ByteBuffer.allocateDirect(0) : ByteBuffer.allocate(0);
     } finally {
       JavaUtils.closeQuietly(channel);
     }

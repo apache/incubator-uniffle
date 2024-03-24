@@ -708,7 +708,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
   public void getBlockIdsByPartitionIdTest() {
     BlockIdLayout layout = BlockIdLayout.DEFAULT;
     ShuffleServerConf conf = new ShuffleServerConf();
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, null, null, null);
+    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, null, null, null, false);
 
     Roaring64NavigableMap expectedBlockIds = Roaring64NavigableMap.bitmapOf();
     int expectedPartitionId = 5;
@@ -754,7 +754,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
   public void getBlockIdsByMultiPartitionTest() {
     BlockIdLayout layout = BlockIdLayout.DEFAULT;
     ShuffleServerConf conf = new ShuffleServerConf();
-    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, null, null, null);
+    ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, null, null, null, false);
 
     Roaring64NavigableMap expectedBlockIds = Roaring64NavigableMap.bitmapOf();
     int startPartition = 3;
@@ -819,7 +819,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     StorageManager storageManager = shuffleServer.getStorageManager();
     ShuffleTaskManager shuffleTaskManager =
-        new ShuffleTaskManager(conf, shuffleFlushManager, shuffleBufferManager, storageManager);
+        new ShuffleTaskManager(conf, shuffleFlushManager, shuffleBufferManager, storageManager, false);
 
     int startPartition = 6;
     int endPartition = 9;
@@ -895,7 +895,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     StorageManager storageManager = shuffleServer.getStorageManager();
     ShuffleTaskManager shuffleTaskManager =
-        new ShuffleTaskManager(conf, shuffleFlushManager, shuffleBufferManager, storageManager);
+        new ShuffleTaskManager(conf, shuffleFlushManager, shuffleBufferManager, storageManager, false);
     Map<Integer, long[]> blockIdsToReport = Maps.newHashMap();
     try {
       shuffleTaskManager.addFinishedBlockIds(appId, shuffleId, blockIdsToReport, bitNum);

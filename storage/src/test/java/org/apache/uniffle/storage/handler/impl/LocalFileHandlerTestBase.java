@@ -99,7 +99,7 @@ public class LocalFileHandlerTestBase {
   }
 
   public static ShuffleIndexResult readIndex(ServerReadHandler readHandler) {
-    ShuffleIndexResult shuffleIndexResult = readHandler.getShuffleIndex();
+    ShuffleIndexResult shuffleIndexResult = readHandler.getShuffleIndex(false);
     return shuffleIndexResult;
   }
 
@@ -116,7 +116,7 @@ public class LocalFileHandlerTestBase {
     for (ShuffleDataSegment shuffleDataSegment : shuffleDataSegments) {
       byte[] shuffleData =
           readHandler
-              .getShuffleData(shuffleDataSegment.getOffset(), shuffleDataSegment.getLength())
+              .getShuffleData(shuffleDataSegment.getOffset(), shuffleDataSegment.getLength(), false)
               .getData();
       ShuffleDataResult sdr =
           new ShuffleDataResult(shuffleData, shuffleDataSegment.getBufferSegments());

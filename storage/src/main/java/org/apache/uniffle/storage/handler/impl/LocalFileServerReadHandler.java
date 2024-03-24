@@ -131,13 +131,13 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
   }
 
   @Override
-  public ShuffleDataResult getShuffleData(long offset, int length) {
+  public ShuffleDataResult getShuffleData(long offset, int length, boolean preferDirect) {
     return new ShuffleDataResult(
-        new FileSegmentManagedBuffer(new File(dataFileName), offset, length));
+        new FileSegmentManagedBuffer(new File(dataFileName), offset, length, preferDirect));
   }
 
   @Override
-  public ShuffleIndexResult getShuffleIndex() {
+  public ShuffleIndexResult getShuffleIndex(boolean preferDirect) {
     File indexFile = new File(indexFileName);
     long indexFileSize = indexFile.length();
     int indexNum = (int) (indexFileSize / FileBasedShuffleSegment.SEGMENT_SIZE);
@@ -149,6 +149,6 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
     }
     // get dataFileSize for read segment generation in DataSkippableReadHandler#readShuffleData
     long dataFileSize = new File(dataFileName).length();
-    return new ShuffleIndexResult(new FileSegmentManagedBuffer(indexFile, 0, len), dataFileSize);
+    return new ShuffleIndexResult(new FileSegmentManagedBuffer(indexFile, 0, len, preferDirect), dataFileSize);
   }
 }

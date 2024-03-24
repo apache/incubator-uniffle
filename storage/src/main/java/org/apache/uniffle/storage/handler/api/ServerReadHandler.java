@@ -22,7 +22,7 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 
 public interface ServerReadHandler {
 
-  ShuffleDataResult getShuffleData(long offset, int length);
+  ShuffleDataResult getShuffleData(long offset, int length, boolean preferDirect);
 
-  ShuffleIndexResult getShuffleIndex();
+  ShuffleIndexResult getShuffleIndex(boolean preferDirect);
 }

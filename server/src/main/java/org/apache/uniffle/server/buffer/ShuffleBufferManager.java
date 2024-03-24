@@ -98,7 +98,11 @@ public class ShuffleBufferManager {
     this.readCapacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY);
     if (this.readCapacity < 0) {
       this.readCapacity =
-          (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO));
+          nettyServerEnabled
+              ? (long)
+                  (NettyUtils.getMaxDirectMemory()
+                      * conf.getDouble(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO))
+              : (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO));
     }
     LOG.info(
         "Init shuffle buffer manager with capacity: {}, read buffer capacity: {}.",

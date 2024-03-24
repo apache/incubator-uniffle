@@ -483,7 +483,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager, false);
     ShuffleTaskManager shuffleTaskManager =
         new ShuffleTaskManager(
-            shuffleConf, shuffleFlushManager, shuffleBufferManager, storageManager);
+            shuffleConf, shuffleFlushManager, shuffleBufferManager, storageManager, false);
 
     when(mockShuffleServer.getShuffleFlushManager()).thenReturn(shuffleFlushManager);
     when(mockShuffleServer.getShuffleBufferManager()).thenReturn(shuffleBufferManager);
