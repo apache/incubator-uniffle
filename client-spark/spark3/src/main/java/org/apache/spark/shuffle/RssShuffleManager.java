@@ -1092,6 +1092,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    */
   private synchronized ShuffleHandleInfo getRemoteShuffleHandleInfo(
       int shuffleId, TaskContext taskContext, int partitionNum) {
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+    String driver = rssConf.getString("driver.host", "");
+    int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
+    if (shuffleManagerClient == null) {
+      shuffleManagerClient = createShuffleManagerClient(driver, port);
+    }
+
     RssReassignServersRequest rssReassignServersRequest =
         new RssReassignServersRequest(
             taskContext.stageId(), taskContext.stageAttemptNumber(), shuffleId, partitionNum);
@@ -1101,12 +1108,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         "Whether the reassignment is successful: {}", rssReassignServersReponse.isNeedReassign());
 
     ShuffleHandleInfo shuffleHandleInfo;
-    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
-    String driver = rssConf.getString("driver.host", "");
-    int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
-    if (shuffleManagerClient == null) {
-      shuffleManagerClient = createShuffleManagerClient(driver, port);
-    }
     RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
         new RssPartitionToShuffleServerRequest(shuffleId);
     RssPartitionToShuffleServerResponse rpcPartitionToShufflerServer =
