@@ -298,10 +298,13 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           LOG.error(errorMsg);
           hasFailureOccurred = true;
           break;
+        } finally {
+          if (hasFailureOccurred) {
+            shuffleServer
+                .getShuffleBufferManager()
+                .releaseMemory(spd.getTotalBlockSize(), false, false);
+          }
         }
-      }
-      if (hasFailureOccurred) {
-        shuffleServer.getShuffleBufferManager().releaseMemory(info.getRequireSize(), false, false);
       }
       // since the required buffer id is only used once, the shuffle client would try to require
       // another buffer whether
