@@ -513,7 +513,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   }
 
   @Override
-  public long getTaskAttemptIdForBlockId(int mapIndex, int attemptNo) {
+  public int getTaskAttemptIdForBlockId(int mapIndex, int attemptNo) {
     return getTaskAttemptIdForBlockId(
         mapIndex, attemptNo, maxFailures, speculation, blockIdLayout.taskAttemptIdBits);
   }

@@ -181,7 +181,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       String appId,
       int shuffleId,
       String taskId,
-      long taskAttemptId,
+      int taskAttemptId,
       ShuffleWriteMetrics shuffleWriteMetrics,
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
