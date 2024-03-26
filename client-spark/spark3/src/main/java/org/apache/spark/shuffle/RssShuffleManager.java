@@ -370,6 +370,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.heartBeatScheduledExecutorService = null;
     this.taskToFailedBlockSendTracker = taskToFailedBlockSendTracker;
     this.dataPusher = dataPusher;
+    this.registerShuffleMaxParallelism = rssConf.get(RSS_CLIENT_REGISTER_SHUFFLE_MAX_PARALLELISM);
   }
 
   // This method is called in Spark driver side,
