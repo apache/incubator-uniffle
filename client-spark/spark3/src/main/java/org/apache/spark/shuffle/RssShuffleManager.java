@@ -18,12 +18,15 @@
 package org.apache.spark.shuffle;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -91,6 +94,7 @@ import org.apache.uniffle.shuffle.manager.ShuffleManagerServerFactory;
 
 import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;
 import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
+import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_REGISTER_SHUFFLE_MAX_PARALLELISM;
 
 public class RssShuffleManager extends RssShuffleManagerBase {
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleManager.class);
@@ -146,6 +150,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private Map<String, Boolean> serverAssignedInfos;
 
   private Map<String, ShuffleServerInfo> reassignedFaultyServers;
+
+  private final int registerShuffleMaxParallelism;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
@@ -276,6 +282,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.failuresShuffleServerIds = Sets.newHashSet();
     this.serverAssignedInfos = JavaUtils.newConcurrentMap();
     this.reassignedFaultyServers = JavaUtils.newConcurrentMap();
+    this.registerShuffleMaxParallelism = rssConf.get(RSS_CLIENT_REGISTER_SHUFFLE_MAX_PARALLELISM);
   }
 
   public CompletableFuture<Long> sendData(AddBlockEvent event) {
@@ -891,37 +898,68 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     taskToFailedBlockSendTracker.remove(taskId);
   }
 
+  @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
   @VisibleForTesting
   protected void registerShuffleServers(
       String appId,
       int shuffleId,
       Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges,
       RemoteStorageInfo remoteStorage) {
-    if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
-      return;
-    }
-    LOG.info("Start to register shuffleId[" + shuffleId + "]");
-    long start = System.currentTimeMillis();
-    Set<Map.Entry<ShuffleServerInfo, List<PartitionRange>>> entries =
-        serverToPartitionRanges.entrySet();
-    entries.stream()
-        .forEach(
-            entry -> {
-              shuffleWriteClient.registerShuffle(
-                  entry.getKey(),
-                  appId,
+    ExecutorService executors = null;
+    try {
+      if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
+        return;
+      }
+
+      LOG.info("Start to register shuffleId[" + shuffleId + "]");
+      long start = System.currentTimeMillis();
+      executors =
+          Executors.newFixedThreadPool(
+              Math.min(serverToPartitionRanges.size(), registerShuffleMaxParallelism));
+      List<CompletableFuture<Boolean>> futureList = new ArrayList<>();
+      for (Map.Entry<ShuffleServerInfo, List<PartitionRange>> entry :
+          serverToPartitionRanges.entrySet()) {
+        CompletableFuture<Boolean> f =
+            CompletableFuture.supplyAsync(
+                () -> {
+                  shuffleWriteClient.registerShuffle(
+                      entry.getKey(),
+                      appId,
+                      shuffleId,
+                      entry.getValue(),
+                      remoteStorage,
+                      dataDistributionType,
+                      maxConcurrencyPerPartitionToWrite);
+                  return true;
+                },
+                executors);
+        f.exceptionally(
+            e -> {
+              LOG.error(
+                  "Errors on register shuffle to server: [{}] for shuffleId: {}",
+                  entry.getKey().getHost(),
                   shuffleId,
-                  entry.getValue(),
-                  remoteStorage,
-                  dataDistributionType,
-                  maxConcurrencyPerPartitionToWrite);
+                  e);
+              return false;
             });
-    LOG.info(
-        "Finish register shuffleId["
-            + shuffleId
-            + "] with "
-            + (System.currentTimeMillis() - start)
-            + " ms");
+        futureList.add(f);
+      }
+
+      if (!ClientUtils.waitUntilDoneOrFail(futureList, false)) {
+        throw new RssException("Failed to register shuffle.");
+      }
+
+      LOG.info(
+          "Finish register shuffleId["
+              + shuffleId
+              + "] with "
+              + (System.currentTimeMillis() - start)
+              + " ms");
+    } finally {
+      if (executors != null) {
+        executors.shutdown();
+      }
+    }
   }
 
   @VisibleForTesting

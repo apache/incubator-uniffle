@@ -209,4 +209,10 @@ public class RssClientConf {
           .defaultValue(false)
           .withDescription(
               "Whether to support task write failed retry internal, default value is false.");
+
+  public static final ConfigOption<Integer> RSS_CLIENT_REGISTER_SHUFFLE_MAX_PARALLELISM =
+      ConfigOptions.key("rss.client.registerShuffle.maxParallelism")
+          .intType()
+          .defaultValue(5)
+          .withDescription("The max parallelism of register shuffles to several shuffle-servers.");
 }
