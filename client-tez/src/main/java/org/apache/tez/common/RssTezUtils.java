@@ -60,10 +60,10 @@ public class RssTezUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssTezUtils.class);
   private static final BlockIdLayout LAYOUT = BlockIdLayout.DEFAULT;
-  private static final int MAX_ATTEMPT_LENGTH = 6;
-  private static final int MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
-  private static final int MAX_SEQUENCE_NO =
-      (1 << (LAYOUT.sequenceNoBits - MAX_ATTEMPT_LENGTH)) - 1;
+  public static final int MAX_ATTEMPT_LENGTH = 4;
+  public static final int MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
+  private static final int MAX_TASK_LENGTH = LAYOUT.taskAttemptIdBits - MAX_ATTEMPT_LENGTH;
+  private static final int MAX_TASK_ID = (1 << MAX_TASK_LENGTH) - 1;
 
   public static final String HOST_NAME = "hostname";
 
@@ -158,33 +158,12 @@ public class RssTezUtils {
     return StringUtils.join(ids, "_", 0, 7);
   }
 
-  public static long getBlockId(int partitionId, long taskAttemptId, int nextSeqNo) {
-    LOG.info(
-        "GetBlockId, partitionId:{}, taskAttemptId:{}, nextSeqNo:{}",
-        partitionId,
-        taskAttemptId,
-        nextSeqNo);
-    long attemptId = taskAttemptId >> (LAYOUT.partitionIdBits + LAYOUT.taskAttemptIdBits);
-    if (attemptId < 0 || attemptId > MAX_ATTEMPT_ID) {
-      throw new RssException(
-          "Can't support attemptId [" + attemptId + "], the max value should be " + MAX_ATTEMPT_ID);
-    }
-    if (nextSeqNo < 0 || nextSeqNo > MAX_SEQUENCE_NO) {
-      throw new RssException(
-          "Can't support sequence [" + nextSeqNo + "], the max value should be " + MAX_SEQUENCE_NO);
-    }
-
-    int atomicInt = (int) ((nextSeqNo << MAX_ATTEMPT_LENGTH) + attemptId);
-    long taskId =
-        taskAttemptId - (attemptId << (LAYOUT.partitionIdBits + LAYOUT.taskAttemptIdBits));
-
-    return LAYOUT.getBlockId(atomicInt, partitionId, taskId);
+  public static long getBlockId(int partitionId, int taskAttemptId, int nextSeqNo) {
+    return LAYOUT.getBlockId(nextSeqNo, partitionId, taskAttemptId);
   }
 
   public static long getTaskAttemptId(long blockId) {
-    int mapId = LAYOUT.getTaskAttemptId(blockId);
-    int attemptId = LAYOUT.getSequenceNo(blockId) & MAX_ATTEMPT_ID;
-    return LAYOUT.getBlockId(attemptId, 0, mapId);
+    return LAYOUT.getTaskAttemptId(blockId);
   }
 
   public static int estimateTaskConcurrency(Configuration jobConf, int mapNum, int reduceNum) {
@@ -276,18 +255,18 @@ public class RssTezUtils {
     }
   }
 
-  public static long convertTaskAttemptIdToLong(TezTaskAttemptID taskAttemptID) {
-    int lowBytes = taskAttemptID.getTaskID().getId();
-    if (lowBytes > LAYOUT.maxTaskAttemptId) {
+  public static int createRssTaskAttemptId(TezTaskAttemptID taskAttemptID) {
+    int lowBytes = taskAttemptID.getId();
+    if (lowBytes > MAX_ATTEMPT_ID || lowBytes < 0) {
       throw new RssException("TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed");
     }
-    int highBytes = taskAttemptID.getId();
-    if (highBytes > MAX_ATTEMPT_ID || highBytes < 0) {
+    int highBytes = taskAttemptID.getTaskID().getId();
+    if (highBytes > MAX_TASK_ID || highBytes < 0) {
       throw new RssException(
           "TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed.");
     }
-    long id = LAYOUT.getBlockId(highBytes, 0, lowBytes);
-    LOG.info("ConvertTaskAttemptIdToLong taskAttemptID:{}, id is {}, .", taskAttemptID, id);
+    int id = (highBytes << MAX_ATTEMPT_LENGTH) + lowBytes;
+    LOG.info("createRssTaskAttemptId taskAttemptID:{}, id is {}, .", taskAttemptID, id);
     return id;
   }
 
@@ -302,7 +281,7 @@ public class RssTezUtils {
     for (InputAttemptIdentifier inputAttemptIdentifier : successMapTaskAttempts) {
       String pathComponent = inputAttemptIdentifier.getPathComponent();
       TezTaskAttemptID mapTaskAttemptID = IdUtils.convertTezTaskAttemptID(pathComponent);
-      long rssTaskId = RssTezUtils.convertTaskAttemptIdToLong(mapTaskAttemptID);
+      int rssTaskId = RssTezUtils.createRssTaskAttemptId(mapTaskAttemptID);
       long mapTaskId = mapTaskAttemptID.getTaskID().getId();
 
       LOG.info(

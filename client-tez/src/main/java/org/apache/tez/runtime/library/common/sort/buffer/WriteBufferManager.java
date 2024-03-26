@@ -95,7 +95,7 @@ public class WriteBufferManager<K, V> {
   private final long sendCheckInterval;
   private final long sendCheckTimeout;
   private final int bitmapSplitNum;
-  private final long taskAttemptId;
+  private final int taskAttemptId;
   private final BlockIdLayout blockIdLayout;
   private TezTaskAttemptID tezTaskAttemptID;
   private final RssConf rssConf;
@@ -109,7 +109,7 @@ public class WriteBufferManager<K, V> {
       TezTaskAttemptID tezTaskAttemptID,
       long maxMemSize,
       String appId,
-      long taskAttemptId,
+      int taskAttemptId,
       Set<Long> successBlockIds,
       Set<Long> failedBlockIds,
       ShuffleWriteClient shuffleWriteClient,

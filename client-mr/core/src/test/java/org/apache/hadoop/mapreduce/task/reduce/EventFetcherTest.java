@@ -58,8 +58,8 @@ public class EventFetcherTest {
     RssEventFetcher ef = new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
-      long rssTaskId =
-          RssMRUtils.convertTaskAttemptIdToLong(
+      int rssTaskId =
+          RssMRUtils.createRssTaskAttemptId(
               new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1);
       expected.addLong(rssTaskId);
     }
@@ -88,8 +88,8 @@ public class EventFetcherTest {
     RssEventFetcher ef = new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
-      long rssTaskId =
-          RssMRUtils.convertTaskAttemptIdToLong(
+      int rssTaskId =
+          RssMRUtils.createRssTaskAttemptId(
               new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1);
       expected.addLong(rssTaskId);
     }
@@ -120,8 +120,8 @@ public class EventFetcherTest {
 
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
-      long rssTaskId =
-          RssMRUtils.convertTaskAttemptIdToLong(
+      int rssTaskId =
+          RssMRUtils.createRssTaskAttemptId(
               new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1);
       expected.addLong(rssTaskId);
     }
@@ -145,8 +145,8 @@ public class EventFetcherTest {
     RssEventFetcher ef = new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
-      long rssTaskId =
-          RssMRUtils.convertTaskAttemptIdToLong(
+      int rssTaskId =
+          RssMRUtils.createRssTaskAttemptId(
               new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1);
       expected.addLong(rssTaskId);
     }
@@ -171,8 +171,8 @@ public class EventFetcherTest {
     RssEventFetcher ef = new RssEventFetcher(1, tid, umbilical, jobConf, MAX_EVENTS_TO_FETCH);
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
-      long rssTaskId =
-          RssMRUtils.convertTaskAttemptIdToLong(
+      int rssTaskId =
+          RssMRUtils.createRssTaskAttemptId(
               new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1);
       expected.addLong(rssTaskId);
     }
@@ -204,14 +204,14 @@ public class EventFetcherTest {
     Roaring64NavigableMap expected = Roaring64NavigableMap.bitmapOf();
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
       if (!tipFailed.contains(mapIndex) && !obsoleted.contains(mapIndex)) {
-        long rssTaskId =
-            RssMRUtils.convertTaskAttemptIdToLong(
+        int rssTaskId =
+            RssMRUtils.createRssTaskAttemptId(
                 new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1);
         expected.addLong(rssTaskId);
       }
       if (obsoleted.contains(mapIndex)) {
-        long rssTaskId =
-            RssMRUtils.convertTaskAttemptIdToLong(
+        int rssTaskId =
+            RssMRUtils.createRssTaskAttemptId(
                 new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 1), 1);
         expected.addLong(rssTaskId);
       }

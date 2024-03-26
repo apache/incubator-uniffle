@@ -484,14 +484,11 @@ public class RssShuffleManagerBaseTest {
     // test with ints that overflow into signed int and long
     assertEquals(Integer.MAX_VALUE, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 0, 1, false, 31));
     assertEquals(
-        (long) Integer.MAX_VALUE << 1 | 1,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 1, 2, false, 32));
+        Integer.MAX_VALUE << 1 | 1, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 1, 2, false, 32));
     assertEquals(
-        (long) Integer.MAX_VALUE << 2 | 3,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 3, 4, false, 33));
+        Integer.MAX_VALUE << 2 | 3, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 3, 4, false, 33));
     assertEquals(
-        (long) Integer.MAX_VALUE << 3 | 7,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 7, 8, false, 34));
+        Integer.MAX_VALUE << 3 | 7, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 7, 8, false, 34));
 
     // test with attemptNo >= maxFailures
     assertThrowsExactly(RssException.class, () -> getTaskAttemptIdForBlockId(0, 1, -1, false, 10));
@@ -599,17 +596,13 @@ public class RssShuffleManagerBaseTest {
 
     // test with ints that overflow into signed int and long
     assertEquals(
-        (long) Integer.MAX_VALUE << 1,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 0, 1, true, 32));
+        Integer.MAX_VALUE << 1, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 0, 1, true, 32));
     assertEquals(
-        (long) Integer.MAX_VALUE << 1 | 1,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 1, 1, true, 32));
+        Integer.MAX_VALUE << 1 | 1, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 1, 1, true, 32));
     assertEquals(
-        (long) Integer.MAX_VALUE << 2 | 3,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 3, 3, true, 33));
+        Integer.MAX_VALUE << 2 | 3, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 3, 3, true, 33));
     assertEquals(
-        (long) Integer.MAX_VALUE << 3 | 7,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 7, 7, true, 34));
+        Integer.MAX_VALUE << 3 | 7, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 7, 7, true, 34));
 
     // test with attemptNo > maxFailures (attemptNo == maxFailures allowed for speculation enabled)
     assertThrowsExactly(RssException.class, () -> getTaskAttemptIdForBlockId(0, 2, -1, true, 10));

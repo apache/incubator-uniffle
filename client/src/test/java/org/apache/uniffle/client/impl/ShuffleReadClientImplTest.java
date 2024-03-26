@@ -691,7 +691,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
       int num,
       int length,
       int partitionId,
-      long taskAttemptId,
+      int taskAttemptId,
       Map<Long, byte[]> expectedData,
       Roaring64NavigableMap blockIdBitmap,
       BlockIdLayout layout)
@@ -715,7 +715,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
       int num,
       int length,
       int partitionId,
-      long taskAttemptId,
+      int taskAttemptId,
       Map<Long, byte[]> expectedData,
       Roaring64NavigableMap blockIdBitmap)
       throws Exception {
@@ -735,7 +735,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
       int num,
       int length,
       int partitionId,
-      long taskAttemptId,
+      int taskAttemptId,
       Map<Long, byte[]> expectedData,
       Roaring64NavigableMap blockIdBitmap)
       throws Exception {

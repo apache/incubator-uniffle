@@ -349,7 +349,7 @@ public class FetcherTest {
     SortWriteBufferManager<Text, Text> manager =
         new SortWriteBufferManager(
             10240,
-            1L,
+            1,
             10,
             serializationFactory.getSerializer(Text.class),
             serializationFactory.getSerializer(Text.class),
