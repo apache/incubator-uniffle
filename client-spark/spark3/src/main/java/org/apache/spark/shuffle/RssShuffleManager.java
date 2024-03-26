@@ -149,6 +149,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
   private Map<String, ShuffleServerInfo> reassignedFaultyServers;
 
+  private final Object reassignLock = new Object();
+
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
     boolean supportsRelocation =
@@ -498,7 +500,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       // Get the ShuffleServer list from the Driver based on the shuffleId
       shuffleHandleInfo =
           getRemoteShuffleHandleInfo(
-              shuffleId, context, rssHandle.getDependency().partitioner().numPartitions());
+              shuffleId, context, rssHandle.getDependency().partitioner().numPartitions(), true);
     } else {
       shuffleHandleInfo =
           new ShuffleHandleInfo(
@@ -640,7 +642,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     ShuffleHandleInfo shuffleHandleInfo;
     if (rssResubmitStage) {
       // Get the ShuffleServer list from the Driver based on the shuffleId
-      shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId, context, partitionNum);
+      shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId, context, partitionNum, false);
     } else {
       shuffleHandleInfo =
           new ShuffleHandleInfo(
@@ -1091,7 +1093,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * @return ShuffleHandleInfo
    */
   private synchronized ShuffleHandleInfo getRemoteShuffleHandleInfo(
-      int shuffleId, TaskContext taskContext, int partitionNum) {
+      int shuffleId, TaskContext taskContext, int partitionNum, boolean isWriter) {
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     String driver = rssConf.getString("driver.host", "");
     int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
@@ -1099,13 +1101,15 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       shuffleManagerClient = createShuffleManagerClient(driver, port);
     }
 
-    RssReassignServersRequest rssReassignServersRequest =
-        new RssReassignServersRequest(
-            taskContext.stageId(), taskContext.stageAttemptNumber(), shuffleId, partitionNum);
-    RssReassignServersReponse rssReassignServersReponse =
-        shuffleManagerClient.reassignShuffleServers(rssReassignServersRequest);
-    LOG.info(
-        "Whether the reassignment is successful: {}", rssReassignServersReponse.isNeedReassign());
+    if (taskContext.stageAttemptNumber() > 0 && isWriter) {
+      RssReassignServersRequest rssReassignServersRequest =
+          new RssReassignServersRequest(
+              taskContext.stageId(), taskContext.stageAttemptNumber(), shuffleId, partitionNum);
+      RssReassignServersReponse rssReassignServersReponse =
+          shuffleManagerClient.reassignShuffleServers(rssReassignServersRequest);
+      LOG.info(
+          "Whether the reassignment is successful: {}", rssReassignServersReponse.isNeedReassign());
+    }
 
     ShuffleHandleInfo shuffleHandleInfo;
     RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
@@ -1137,49 +1141,51 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * @param numPartitions
    */
   @Override
-  public synchronized boolean reassignAllShuffleServersForWholeStage(
+  public boolean reassignAllShuffleServersForWholeStage(
       int stageId, int stageAttemptNumber, int shuffleId, int numPartitions) {
-    String stageIdAndAttempt = stageId + "_" + stageAttemptNumber;
-    Boolean needReassign = serverAssignedInfos.computeIfAbsent(stageIdAndAttempt, id -> false);
-    if (!needReassign) {
-      int requiredShuffleServerNumber =
-          RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
-      int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
+    synchronized (reassignLock) {
+      String stageIdAndAttempt = stageId + "_" + stageAttemptNumber;
+      Boolean needReassign = serverAssignedInfos.computeIfAbsent(stageIdAndAttempt, id -> false);
+      if (!needReassign) {
+        int requiredShuffleServerNumber =
+            RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
+        int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
 
-      /**
-       * this will clear up the previous stage attempt all data when registering the same shuffleId
-       * at the second time
-       */
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers =
-          requestShuffleAssignment(
-              shuffleId,
-              numPartitions,
-              1,
-              requiredShuffleServerNumber,
-              estimateTaskConcurrency,
-              failuresShuffleServerIds,
-              true);
-      /**
-       * we need to clear the metadata of the completed task, otherwise some of the stage's data
-       * will be lost
-       */
-      try {
-        unregisterAllMapOutput(shuffleId);
-      } catch (SparkException e) {
-        LOG.error("Clear MapoutTracker Meta failed!");
-        throw new RssException("Clear MapoutTracker Meta failed!", e);
+        /**
+         * this will clear up the previous stage attempt all data when registering the same
+         * shuffleId at the second time
+         */
+        Map<Integer, List<ShuffleServerInfo>> partitionToServers =
+            requestShuffleAssignment(
+                shuffleId,
+                numPartitions,
+                1,
+                requiredShuffleServerNumber,
+                estimateTaskConcurrency,
+                failuresShuffleServerIds,
+                true);
+        /**
+         * we need to clear the metadata of the completed task, otherwise some of the stage's data
+         * will be lost
+         */
+        try {
+          unregisterAllMapOutput(shuffleId);
+        } catch (SparkException e) {
+          LOG.error("Clear MapoutTracker Meta failed!");
+          throw new RssException("Clear MapoutTracker Meta failed!", e);
+        }
+        ShuffleHandleInfo handleInfo =
+            new ShuffleHandleInfo(shuffleId, partitionToServers, getRemoteStorageInfo());
+        shuffleIdToShuffleHandleInfo.put(shuffleId, handleInfo);
+        serverAssignedInfos.put(stageIdAndAttempt, true);
+        return true;
+      } else {
+        LOG.info(
+            "The Stage:{} has been reassigned in an Attempt{},Return without performing any operation",
+            stageId,
+            stageAttemptNumber);
+        return false;
       }
-      ShuffleHandleInfo handleInfo =
-          new ShuffleHandleInfo(shuffleId, partitionToServers, getRemoteStorageInfo());
-      shuffleIdToShuffleHandleInfo.put(shuffleId, handleInfo);
-      serverAssignedInfos.put(stageIdAndAttempt, true);
-      return true;
-    } else {
-      LOG.info(
-          "The Stage:{} has been reassigned in an Attempt{},Return without performing any operation",
-          stageId,
-          stageAttemptNumber);
-      return false;
     }
   }
 
