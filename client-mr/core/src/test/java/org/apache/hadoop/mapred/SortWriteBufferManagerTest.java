@@ -517,7 +517,8 @@ public class SortWriteBufferManagerTest {
         List<PartitionRange> partitionRanges,
         RemoteStorageInfo remoteStorage,
         ShuffleDataDistributionType distributionType,
-        int maxConcurrencyPerPartitionToWrite) {}
+        int maxConcurrencyPerPartitionToWrite,
+        boolean isStageRetry) {}
 
     @Override
     public boolean sendCommit(

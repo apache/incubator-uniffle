@@ -529,7 +529,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage,
       ShuffleDataDistributionType dataDistributionType,
-      int maxConcurrencyPerPartitionToWrite) {
+      int maxConcurrencyPerPartitionToWrite,
+      int stageAttemptNumber) {
     String user = null;
     try {
       user = UserGroupInformation.getCurrentUser().getShortUserName();
@@ -545,7 +546,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             remoteStorage,
             user,
             dataDistributionType,
-            maxConcurrencyPerPartitionToWrite);
+            maxConcurrencyPerPartitionToWrite,
+            stageAttemptNumber);
     RssRegisterShuffleResponse response =
         getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 
