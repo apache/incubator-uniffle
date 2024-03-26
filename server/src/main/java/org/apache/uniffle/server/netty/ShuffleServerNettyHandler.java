@@ -438,7 +438,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
 
     if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(length)) {
       try {
-        long start = System.currentTimeMillis();
+        final long start = System.currentTimeMillis();
         sdr =
             shuffleServer
                 .getShuffleTaskManager()
@@ -517,7 +517,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     private final RequestMessage request;
     private final TransportClient client;
 
-    public ReleaseMemoryAndRecordReadTimeListener(
+    ReleaseMemoryAndRecordReadTimeListener(
         long readStartedTime,
         long readBufferSize,
         long dataSize,
