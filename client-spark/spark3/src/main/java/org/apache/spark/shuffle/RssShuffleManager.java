@@ -497,10 +497,22 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
     ShuffleHandleInfo shuffleHandleInfo;
     if (rssResubmitStage) {
+      // reassign all the shuffle servers if stage is retry
+      if (context.stageAttemptNumber() > 0) {
+        RssReassignServersRequest rssReassignServersRequest =
+            new RssReassignServersRequest(
+                context.stageId(),
+                context.stageAttemptNumber(),
+                shuffleId,
+                rssHandle.getDependency().partitioner().numPartitions());
+        RssReassignServersReponse rssReassignServersReponse =
+            getOrCreateShuffleManagerClient().reassignShuffleServers(rssReassignServersRequest);
+        LOG.info(
+            "Whether the reassignment is successful: {}",
+            rssReassignServersReponse.isNeedReassign());
+      }
       // Get the ShuffleServer list from the Driver based on the shuffleId
-      shuffleHandleInfo =
-          getRemoteShuffleHandleInfo(
-              shuffleId, context, rssHandle.getDependency().partitioner().numPartitions(), true);
+      shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);
     } else {
       shuffleHandleInfo =
           new ShuffleHandleInfo(
@@ -642,7 +654,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     ShuffleHandleInfo shuffleHandleInfo;
     if (rssResubmitStage) {
       // Get the ShuffleServer list from the Driver based on the shuffleId
-      shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId, context, partitionNum, false);
+      shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);
     } else {
       shuffleHandleInfo =
           new ShuffleHandleInfo(
@@ -1079,11 +1091,20 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     return shuffleIdToShuffleHandleInfo.get(shuffleId);
   }
 
-  private ShuffleManagerClient createShuffleManagerClient(String host, int port) {
+  private synchronized ShuffleManagerClient getOrCreateShuffleManagerClient() {
+    if (shuffleManagerClient != null) {
+      return shuffleManagerClient;
+    }
+
     // Host can be inferred from `spark.driver.bindAddress`, which would be set when SparkContext is
     // constructed.
-    return ShuffleManagerClientFactory.getInstance()
-        .createShuffleManagerClient(ClientType.GRPC, host, port);
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+    String host = rssConf.getString("driver.host", "");
+    int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
+    this.shuffleManagerClient =
+        ShuffleManagerClientFactory.getInstance()
+            .createShuffleManagerClient(ClientType.GRPC, host, port);
+    return shuffleManagerClient;
   }
 
   /**
@@ -1092,30 +1113,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * @param shuffleId shuffleId
    * @return ShuffleHandleInfo
    */
-  private synchronized ShuffleHandleInfo getRemoteShuffleHandleInfo(
-      int shuffleId, TaskContext taskContext, int partitionNum, boolean isWriter) {
-    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
-    String driver = rssConf.getString("driver.host", "");
-    int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
-    if (shuffleManagerClient == null) {
-      shuffleManagerClient = createShuffleManagerClient(driver, port);
-    }
-
-    if (taskContext.stageAttemptNumber() > 0 && isWriter) {
-      RssReassignServersRequest rssReassignServersRequest =
-          new RssReassignServersRequest(
-              taskContext.stageId(), taskContext.stageAttemptNumber(), shuffleId, partitionNum);
-      RssReassignServersReponse rssReassignServersReponse =
-          shuffleManagerClient.reassignShuffleServers(rssReassignServersRequest);
-      LOG.info(
-          "Whether the reassignment is successful: {}", rssReassignServersReponse.isNeedReassign());
-    }
-
+  private synchronized ShuffleHandleInfo getRemoteShuffleHandleInfo(int shuffleId) {
     ShuffleHandleInfo shuffleHandleInfo;
     RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
         new RssPartitionToShuffleServerRequest(shuffleId);
     RssPartitionToShuffleServerResponse rpcPartitionToShufflerServer =
-        shuffleManagerClient.getPartitionToShufflerServer(rssPartitionToShuffleServerRequest);
+        getOrCreateShuffleManagerClient()
+            .getPartitionToShufflerServer(rssPartitionToShuffleServerRequest);
     shuffleHandleInfo =
         new ShuffleHandleInfo(
             shuffleId,
