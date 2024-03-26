@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
+import io.prometheus.client.Histogram;
 import io.prometheus.client.Summary;
 import org.apache.commons.lang3.StringUtils;
 
@@ -31,11 +32,17 @@ import org.apache.uniffle.common.metrics.MetricsManager;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.LocalStorage;
 
+import static org.apache.uniffle.common.util.Constants.METRICS_APP_LABEL_NAME;
+import static org.apache.uniffle.common.util.Constants.METRICS_TAG_LABEL_NAME;
+import static org.apache.uniffle.common.util.Constants._1kb;
+import static org.apache.uniffle.common.util.Constants._1mb;
+
 public class ShuffleServerMetrics {
 
   private static final String TOTAL_RECEIVED_DATA = "total_received_data";
   private static final String TOTAL_WRITE_DATA = "total_write_data";
   private static final String TOTAL_WRITE_BLOCK = "total_write_block";
+  private static final String WRITE_BLOCK_SIZE = "write_block_size";
   private static final String TOTAL_WRITE_TIME = "total_write_time";
   private static final String TOTAL_WRITE_HANDLER = "total_write_handler";
   private static final String TOTAL_WRITE_EXCEPTION = "total_write_exception";
@@ -132,6 +139,19 @@ public class ShuffleServerMetrics {
       "topN_of_on_localfile_data_size_for_app";
   public static final String TOPN_OF_ON_HADOOP_DATA_SIZE_FOR_APP =
       "topN_of_on_hadoop_data_size_for_app";
+  public static final double[] BLOCK_SIZE_BUCKETS =
+      new double[] {
+        32 * _1kb,
+        64 * _1kb,
+        128 * _1kb,
+        256 * _1kb,
+        512 * _1kb,
+        _1mb,
+        2 * _1mb,
+        4 * _1mb,
+        8 * _1mb,
+        16 * _1mb
+      };
 
   public static Counter.Child counterTotalAppNum;
   public static Counter.Child counterTotalAppWithHugePartitionNum;
@@ -141,6 +161,7 @@ public class ShuffleServerMetrics {
   public static Counter.Child counterTotalReceivedDataSize;
   public static Counter.Child counterTotalWriteDataSize;
   public static Counter.Child counterTotalWriteBlockSize;
+  public static Histogram appHistogramWriteBlockSize;
   public static Counter.Child counterTotalWriteTime;
   public static Counter.Child counterWriteException;
   public static Counter.Child counterWriteSlow;
@@ -305,6 +326,9 @@ public class ShuffleServerMetrics {
     counterTotalReceivedDataSize = metricsManager.addLabeledCounter(TOTAL_RECEIVED_DATA);
     counterTotalWriteDataSize = metricsManager.addLabeledCounter(TOTAL_WRITE_DATA);
     counterTotalWriteBlockSize = metricsManager.addLabeledCounter(TOTAL_WRITE_BLOCK);
+    appHistogramWriteBlockSize =
+        metricsManager.addHistogram(
+            WRITE_BLOCK_SIZE, BLOCK_SIZE_BUCKETS, METRICS_TAG_LABEL_NAME, METRICS_APP_LABEL_NAME);
     counterTotalWriteTime = metricsManager.addLabeledCounter(TOTAL_WRITE_TIME);
     counterWriteException = metricsManager.addLabeledCounter(TOTAL_WRITE_EXCEPTION);
     counterWriteSlow = metricsManager.addLabeledCounter(TOTAL_WRITE_SLOW);
