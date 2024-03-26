@@ -255,7 +255,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             .recordTransportTime(GetMemoryShuffleDataRequest.class.getName(), transportTime);
       }
     }
-    long start = System.currentTimeMillis();
+    final long start = System.currentTimeMillis();
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetMemoryShuffleDataResponse response;
@@ -418,11 +418,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             + shuffleId
             + "], partitionId["
             + partitionId
-            + "]"
-            + "offset["
+            + "], offset["
             + offset
-            + "]"
-            + "length["
+            + "], length["
             + length
             + "]";
 
