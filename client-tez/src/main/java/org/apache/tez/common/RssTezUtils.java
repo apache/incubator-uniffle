@@ -265,7 +265,7 @@ public class RssTezUtils {
       throw new RssException(
           "TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed.");
     }
-    int id = highBytes << MAX_ATTEMPT_LENGTH + lowBytes;
+    int id = (highBytes << MAX_ATTEMPT_LENGTH) + lowBytes;
     LOG.info("createRssTaskAttemptId taskAttemptID:{}, id is {}, .", taskAttemptID, id);
     return id;
   }
