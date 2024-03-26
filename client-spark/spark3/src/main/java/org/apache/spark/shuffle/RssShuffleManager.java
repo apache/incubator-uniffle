@@ -452,7 +452,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             requiredShuffleServerNumber,
             estimateTaskConcurrency,
             failuresShuffleServerIds,
-            false);
+            0);
 
     startHeartbeat();
 
@@ -898,7 +898,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       int shuffleId,
       Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges,
       RemoteStorageInfo remoteStorage,
-      boolean isStageRetry) {
+      int stageAttemptNumber) {
     if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
       return;
     }
@@ -908,17 +908,16 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         serverToPartitionRanges.entrySet();
     entries.stream()
         .forEach(
-            entry -> {
-              shuffleWriteClient.registerShuffle(
-                  entry.getKey(),
-                  appId,
-                  shuffleId,
-                  entry.getValue(),
-                  remoteStorage,
-                  dataDistributionType,
-                  maxConcurrencyPerPartitionToWrite,
-                  isStageRetry);
-            });
+            entry ->
+                shuffleWriteClient.registerShuffle(
+                    entry.getKey(),
+                    appId,
+                    shuffleId,
+                    entry.getValue(),
+                    remoteStorage,
+                    dataDistributionType,
+                    maxConcurrencyPerPartitionToWrite,
+                    stageAttemptNumber));
     LOG.info(
         "Finish register shuffleId["
             + shuffleId
@@ -1167,7 +1166,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                 requiredShuffleServerNumber,
                 estimateTaskConcurrency,
                 failuresShuffleServerIds,
-                true);
+                stageAttemptNumber);
         /**
          * we need to clear the metadata of the completed task, otherwise some of the stage's data
          * will be lost
@@ -1232,7 +1231,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     Set<String> faultyServerIds = Sets.newHashSet(faultyShuffleServerId);
     faultyServerIds.addAll(failuresShuffleServerIds);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers =
-        requestShuffleAssignment(shuffleId, 1, 1, 1, 1, faultyServerIds, false);
+        requestShuffleAssignment(shuffleId, 1, 1, 1, 1, faultyServerIds, 0);
     if (partitionToServers.get(0) != null && partitionToServers.get(0).size() == 1) {
       return partitionToServers.get(0).get(0);
     }
@@ -1246,7 +1245,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       int assignmentShuffleServerNumber,
       int estimateTaskConcurrency,
       Set<String> faultyServerIds,
-      boolean isStageRetry) {
+      int stageAttemptNumber) {
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
     ClientUtils.validateClientType(clientType);
     assignmentTags.add(clientType);
@@ -1273,7 +1272,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                 shuffleId,
                 response.getServerToPartitionRanges(),
                 getRemoteStorageInfo(),
-                isStageRetry);
+                stageAttemptNumber);
             return response.getPartitionToServers();
           },
           retryInterval,

@@ -157,8 +157,12 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int shuffleId = req.getShuffleId();
     String remoteStoragePath = req.getRemoteStorage().getPath();
     String user = req.getUser();
+    int stageAttemptNumber = req.getStageAttemptNumber();
 
-    if (req.getIsStageRetry()) {
+    ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
+    int attemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
+    if (stageAttemptNumber > attemptNumber) {
+      taskInfo.refreshLatestStageAttemptNumber(shuffleId, stageAttemptNumber);
       try {
         long start = System.currentTimeMillis();
         shuffleServer.getShuffleTaskManager().removeShuffleDataSync(appId, shuffleId);

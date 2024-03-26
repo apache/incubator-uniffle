@@ -35,7 +35,7 @@ public class RssRegisterShuffleRequest {
   private String user;
   private ShuffleDataDistributionType dataDistributionType;
   private int maxConcurrencyPerPartitionToWrite;
-  private boolean isStageRetry;
+  private int stageAttemptNumber;
 
   public RssRegisterShuffleRequest(
       String appId,
@@ -53,7 +53,7 @@ public class RssRegisterShuffleRequest {
         user,
         dataDistributionType,
         maxConcurrencyPerPartitionToWrite,
-        false);
+        0);
   }
 
   public RssRegisterShuffleRequest(
@@ -64,7 +64,7 @@ public class RssRegisterShuffleRequest {
       String user,
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
-      boolean isStageRetry) {
+      int stageAttemptNumber) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionRanges = partitionRanges;
@@ -72,7 +72,7 @@ public class RssRegisterShuffleRequest {
     this.user = user;
     this.dataDistributionType = dataDistributionType;
     this.maxConcurrencyPerPartitionToWrite = maxConcurrencyPerPartitionToWrite;
-    this.isStageRetry = isStageRetry;
+    this.stageAttemptNumber = stageAttemptNumber;
   }
 
   public RssRegisterShuffleRequest(
@@ -90,7 +90,7 @@ public class RssRegisterShuffleRequest {
         user,
         dataDistributionType,
         RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue(),
-        false);
+        0);
   }
 
   public RssRegisterShuffleRequest(
@@ -103,7 +103,7 @@ public class RssRegisterShuffleRequest {
         StringUtils.EMPTY,
         ShuffleDataDistributionType.NORMAL,
         RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue(),
-        false);
+        0);
   }
 
   public String getAppId() {
@@ -134,7 +134,7 @@ public class RssRegisterShuffleRequest {
     return maxConcurrencyPerPartitionToWrite;
   }
 
-  public boolean isStageRetry() {
-    return isStageRetry;
+  public int getStageAttemptNumber() {
+    return stageAttemptNumber;
   }
 }

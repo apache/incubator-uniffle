@@ -184,7 +184,7 @@ message ShuffleRegisterRequest {
   string user = 5;
   DataDistribution shuffleDataDistribution = 6;
   int32 maxConcurrencyPerPartitionToWrite = 7;
-  bool isStageRetry = 8;
+  int32 stageAttemptNumber = 8;
 }
 
 enum DataDistribution {

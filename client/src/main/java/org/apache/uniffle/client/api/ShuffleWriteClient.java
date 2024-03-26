@@ -59,7 +59,7 @@ public interface ShuffleWriteClient {
         remoteStorage,
         dataDistributionType,
         maxConcurrencyPerPartitionToWrite,
-        false);
+        0);
   }
 
   void registerShuffle(
@@ -70,7 +70,7 @@ public interface ShuffleWriteClient {
       RemoteStorageInfo remoteStorage,
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
-      boolean isStageRetry);
+      int stageAttemptNumber);
 
   boolean sendCommit(
       Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);
