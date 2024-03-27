@@ -292,6 +292,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         client.getChannel().writeAndFlush(response).addListener(listener);
         return;
       } catch (Exception e) {
+        shuffleServer.getShuffleBufferManager().releaseReadMemory(readBufferSize);
         if (shuffleDataResult != null) {
           shuffleDataResult.release();
         }
@@ -367,6 +368,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         client.getChannel().writeAndFlush(response).addListener(listener);
         return;
       } catch (FileNotFoundException indexFileNotFoundException) {
+        shuffleServer.getShuffleBufferManager().releaseReadMemory(assumedFileSize);
         if (shuffleIndexResult != null) {
           shuffleIndexResult.release();
         }
@@ -378,6 +380,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             new GetLocalShuffleIndexResponse(
                 req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER, 0L);
       } catch (Exception e) {
+        shuffleServer.getShuffleBufferManager().releaseReadMemory(assumedFileSize);
         if (shuffleIndexResult != null) {
           shuffleIndexResult.release();
         }
@@ -471,6 +474,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         client.getChannel().writeAndFlush(response).addListener(listener);
         return;
       } catch (Exception e) {
+        shuffleServer.getShuffleBufferManager().releaseReadMemory(length);
         if (sdr != null) {
           sdr.release();
         }
