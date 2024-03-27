@@ -40,7 +40,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Double> SERVER_BUFFER_CAPACITY_RATIO =
       ConfigOptions.key("rss.server.buffer.capacity.ratio")
           .doubleType()
-          .defaultValue(0.7)
+          .defaultValue(0.6)
           .withDescription(
               "JVM heap size or off-heap size(when enabling Netty) * ratio for the maximum memory of buffer manager for shuffle server, this "
                   + "is only effective when `rss.server.buffer.capacity` is not explicitly set");
@@ -54,7 +54,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Double> SERVER_READ_BUFFER_CAPACITY_RATIO =
       ConfigOptions.key("rss.server.read.buffer.capacity.ratio")
           .doubleType()
-          .defaultValue(0.1)
+          .defaultValue(0.2)
           .withDescription(
               "JVM heap size or off-heap size(when enabling Netty) * ratio for read buffer size, this is only effective when "
                   + "`rss.server.reader.buffer.capacity.ratio` is not explicitly set");
