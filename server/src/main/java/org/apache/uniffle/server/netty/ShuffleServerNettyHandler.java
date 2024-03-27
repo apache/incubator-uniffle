@@ -264,8 +264,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
 
     // todo: if can get the exact memory size?
     if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(readBufferSize)) {
+      ShuffleDataResult shuffleDataResult = null;
       try {
-        ShuffleDataResult shuffleDataResult =
+        shuffleDataResult =
             shuffleServer
                 .getShuffleTaskManager()
                 .getInMemoryShuffleData(
@@ -291,6 +292,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         client.getChannel().writeAndFlush(response).addListener(listener);
         return;
       } catch (Exception e) {
+        if (shuffleDataResult != null) {
+          shuffleDataResult.release();
+        }
         status = StatusCode.INTERNAL_ERROR;
         msg =
             "Error happened when get in memory shuffle data for "
@@ -343,9 +347,10 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             .getShuffleServerConf()
             .getLong(ShuffleServerConf.SERVER_SHUFFLE_INDEX_SIZE_HINT);
     if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(assumedFileSize)) {
+      ShuffleIndexResult shuffleIndexResult = null;
       try {
         final long start = System.currentTimeMillis();
-        ShuffleIndexResult shuffleIndexResult =
+        shuffleIndexResult =
             shuffleServer
                 .getShuffleTaskManager()
                 .getShuffleIndex(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
@@ -362,6 +367,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         client.getChannel().writeAndFlush(response).addListener(listener);
         return;
       } catch (FileNotFoundException indexFileNotFoundException) {
+        if (shuffleIndexResult != null) {
+          shuffleIndexResult.release();
+        }
         LOG.warn(
             "Index file for {} is not found, maybe the data has been flushed to cold storage.",
             requestInfo,
@@ -370,6 +378,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             new GetLocalShuffleIndexResponse(
                 req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER, 0L);
       } catch (Exception e) {
+        if (shuffleIndexResult != null) {
+          shuffleIndexResult.release();
+        }
         status = StatusCode.INTERNAL_ERROR;
         msg = "Error happened when get shuffle index for " + requestInfo + ", " + e.getMessage();
         LOG.error(msg, e);
@@ -410,7 +421,6 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetLocalShuffleDataResponse response;
-    ShuffleDataResult sdr;
     String requestInfo =
         "appId["
             + appId
@@ -435,6 +445,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     }
 
     if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(length)) {
+      ShuffleDataResult sdr = null;
       try {
         final long start = System.currentTimeMillis();
         sdr =
@@ -460,6 +471,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         client.getChannel().writeAndFlush(response).addListener(listener);
         return;
       } catch (Exception e) {
+        if (sdr != null) {
+          sdr.release();
+        }
         status = StatusCode.INTERNAL_ERROR;
         msg = "Error happened when get shuffle data for " + requestInfo + ", " + e.getMessage();
         LOG.error(msg, e);
