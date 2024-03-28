@@ -589,7 +589,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                   Lists.newArrayList(),
                   Unpooled.EMPTY_BUFFER);
         } else {
-          throw new RssException("Can not handle request " + request.type());
+          LOG.error("Cannot handle request {}", request.type());
+          return;
         }
         client.getChannel().writeAndFlush(errorResponse);
         LOG.error(
