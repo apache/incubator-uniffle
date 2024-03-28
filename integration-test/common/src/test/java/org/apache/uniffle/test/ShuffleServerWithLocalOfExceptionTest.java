@@ -85,7 +85,7 @@ public class ShuffleServerWithLocalOfExceptionTest extends ShuffleReadWriteBase 
             partitionId,
             150,
             shuffleServerClient,
-            Roaring64NavigableMap.bitmapOf());
+            Roaring64NavigableMap.bitmapOf(), 1, 0);
     grpcShuffleServers.get(0).stopServer();
     try {
       memoryClientReadHandler.readShuffleData();

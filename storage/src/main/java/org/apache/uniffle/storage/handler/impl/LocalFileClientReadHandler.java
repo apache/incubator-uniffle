@@ -37,6 +37,8 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
   private final int partitionNumPerRange;
   private final int partitionNum;
   private ShuffleServerClient shuffleServerClient;
+  private int retryMax;
+  private long retryIntervalMax;
 
   public LocalFileClientReadHandler(
       String appId,
@@ -50,7 +52,9 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
       Roaring64NavigableMap processBlockIds,
       ShuffleServerClient shuffleServerClient,
       ShuffleDataDistributionType distributionType,
-      Roaring64NavigableMap expectTaskIds) {
+      Roaring64NavigableMap expectTaskIds,
+      int retryMax,
+      long retryIntervalMax) {
     super(
         appId,
         shuffleId,
@@ -63,6 +67,8 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     this.shuffleServerClient = shuffleServerClient;
     this.partitionNumPerRange = partitionNumPerRange;
     this.partitionNum = partitionNum;
+    this.retryMax = retryMax;
+    this.retryIntervalMax = retryIntervalMax;
   }
 
   /** Only for test */
@@ -76,7 +82,9 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
       int readBufferSize,
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
-      ShuffleServerClient shuffleServerClient) {
+      ShuffleServerClient shuffleServerClient,
+      int retryMax,
+      long retryIntervalMax) {
     this(
         appId,
         shuffleId,
@@ -89,7 +97,9 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
         processBlockIds,
         shuffleServerClient,
         ShuffleDataDistributionType.NORMAL,
-        Roaring64NavigableMap.bitmapOf());
+        Roaring64NavigableMap.bitmapOf(),
+        retryMax,
+        retryIntervalMax);
   }
 
   @Override
@@ -97,7 +107,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     ShuffleIndexResult shuffleIndexResult = null;
     RssGetShuffleIndexRequest request =
         new RssGetShuffleIndexRequest(
-            appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
+            appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, retryMax, retryIntervalMax);
     try {
       shuffleIndexResult = shuffleServerClient.getShuffleIndex(request).getShuffleIndexResult();
     } catch (RssFetchFailedException e) {
@@ -141,7 +151,9 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
             partitionNumPerRange,
             partitionNum,
             shuffleDataSegment.getOffset(),
-            expectedLength);
+            expectedLength,
+            retryMax,
+            retryIntervalMax);
     try {
       RssGetShuffleDataResponse response = shuffleServerClient.getShuffleData(request);
       result =

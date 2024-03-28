@@ -308,7 +308,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 req.getRequestId(), status, msg, Lists.newArrayList(), Unpooled.EMPTY_BUFFER);
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get in memory shuffle data";
       LOG.error(msg + " for " + requestInfo);
       response =
@@ -392,7 +392,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER, 0L);
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get shuffle index";
       LOG.error(msg + " for " + requestInfo);
       response =
@@ -486,7 +486,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 req.getRequestId(), status, msg, new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get shuffle data";
       LOG.error(msg + " for " + requestInfo);
       response =

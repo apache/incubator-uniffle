@@ -17,21 +17,25 @@
 
 package org.apache.uniffle.client.request;
 
-public class RssGetShuffleIndexRequest {
+public class RssGetShuffleIndexRequest implements RetryableRequest {
 
   private final String appId;
   private final int shuffleId;
   private final int partitionId;
   private final int partitionNumPerRange;
   private final int partitionNum;
+  private int retryMax;
+  private long retryIntervalMax;
 
   public RssGetShuffleIndexRequest(
-      String appId, int shuffleId, int partitionId, int partitionNumPerRange, int partitionNum) {
+      String appId, int shuffleId, int partitionId, int partitionNumPerRange, int partitionNum, int retryMax, long retryIntervalMax) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.partitionNumPerRange = partitionNumPerRange;
     this.partitionNum = partitionNum;
+    this.retryMax = retryMax;
+    this.retryIntervalMax = retryIntervalMax;
   }
 
   public String getAppId() {
@@ -52,5 +56,20 @@ public class RssGetShuffleIndexRequest {
 
   public int getPartitionNum() {
     return partitionNum;
+  }
+
+  @Override
+  public int getRetryMax() {
+    return retryMax;
+  }
+
+  @Override
+  public long getRetryIntervalMax() {
+    return retryIntervalMax;
+  }
+
+  @Override
+  public String operationType() {
+    return "GetShuffleIndex";
   }
 }

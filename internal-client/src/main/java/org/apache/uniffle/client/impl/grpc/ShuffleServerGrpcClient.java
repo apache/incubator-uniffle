@@ -31,6 +31,7 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import io.netty.buffer.Unpooled;
+import org.apache.uniffle.client.request.RetryableRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,6 +116,15 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   protected static final long FAILED_REQUIRE_ID = -1;
   protected long rpcTimeout;
   private ShuffleServerBlockingStub blockingStub;
+  /**
+   * A single instance of the Random class is created as a member variable to be reused throughout `ShuffleServerGrpcClient`.
+   * This approach has the following benefits:
+   * 1. Performance optimization: It avoids the overhead of creating and destroying objects frequently, reducing memory allocation and garbage collection costs.
+   * 2. Randomness: Reusing the same Random object helps maintain the randomness of the generated numbers.
+   * If multiple Random objects are created in a short period of time, their seeds may be the same or very close, leading to less random numbers.
+   */
+  protected Random random = new Random();
+  protected static final int BACK_OFF_BASE = 2000;
 
   @VisibleForTesting
   public ShuffleServerGrpcClient(String host, int port) {
@@ -237,8 +247,6 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     long start = System.currentTimeMillis();
     int retry = 0;
     long result = FAILED_REQUIRE_ID;
-    Random random = new Random();
-    final int backOffBase = 2000;
     if (LOG.isDebugEnabled()) {
       LOG.debug(
           "Requiring buffer for appId: {}, shuffleId: {}, partitionIds: {} with {} bytes from {}:{}",
@@ -291,7 +299,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         long backoffTime =
             Math.min(
                 retryIntervalMax,
-                backOffBase * (1L << Math.min(retry, 16)) + random.nextInt(backOffBase));
+                    BACK_OFF_BASE * (1L << Math.min(retry, 16)) + random.nextInt(BACK_OFF_BASE));
         Thread.sleep(backoffTime);
       } catch (Exception e) {
         LOG.warn(
@@ -1027,4 +1035,5 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   public void adjustTimeout(long timeout) {
     rpcTimeout = timeout;
   }
+
 }

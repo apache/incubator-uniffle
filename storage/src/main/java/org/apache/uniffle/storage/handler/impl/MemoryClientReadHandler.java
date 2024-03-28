@@ -37,6 +37,8 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
   private long lastBlockId = Constants.INVALID_BLOCK_ID;
   private ShuffleServerClient shuffleServerClient;
   private Roaring64NavigableMap expectTaskIds;
+  private int retryMax;
+  private long retryIntervalMax;
 
   public MemoryClientReadHandler(
       String appId,
@@ -44,13 +46,17 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       int partitionId,
       int readBufferSize,
       ShuffleServerClient shuffleServerClient,
-      Roaring64NavigableMap expectTaskIds) {
+      Roaring64NavigableMap expectTaskIds,
+      int retryMax,
+      long retryIntervalMax) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.readBufferSize = readBufferSize;
     this.shuffleServerClient = shuffleServerClient;
     this.expectTaskIds = expectTaskIds;
+    this.retryMax = retryMax;
+    this.retryIntervalMax = retryIntervalMax;
   }
 
   @Override
@@ -59,7 +65,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
 
     RssGetInMemoryShuffleDataRequest request =
         new RssGetInMemoryShuffleDataRequest(
-            appId, shuffleId, partitionId, lastBlockId, readBufferSize, expectTaskIds);
+            appId, shuffleId, partitionId, lastBlockId, readBufferSize, expectTaskIds, retryMax, retryIntervalMax);
 
     try {
       RssGetInMemoryShuffleDataResponse response =

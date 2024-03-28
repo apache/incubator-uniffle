@@ -114,6 +114,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final String uuid;
   private DataPusher dataPusher;
   private final int maxConcurrencyPerPartitionToWrite;
+  private int retryMax;
+  private long retryIntervalMax;
 
   private final Map<Integer, Integer> shuffleIdToPartitionNum = JavaUtils.newConcurrentMap();
   private final Map<Integer, Integer> shuffleIdToNumMapTasks = JavaUtils.newConcurrentMap();
@@ -186,8 +188,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.heartbeatInterval = sparkConf.get(RssSparkConfig.RSS_HEARTBEAT_INTERVAL);
     this.heartbeatTimeout =
         sparkConf.getLong(RssSparkConfig.RSS_HEARTBEAT_TIMEOUT.key(), heartbeatInterval / 2);
-    int retryMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX);
-    long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
+    this.retryMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX);
+    this.retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
     int heartBeatThreadNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
     this.dataCommitPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE);
     int unregisterThreadPoolSize =
