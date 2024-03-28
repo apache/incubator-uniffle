@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
+import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.BlockIdLayout;
@@ -44,37 +45,46 @@ public class RssMRUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssMRUtils.class);
   private static final BlockIdLayout LAYOUT = BlockIdLayout.DEFAULT;
-  private static final int MAX_ATTEMPT_LENGTH = 4;
-  private static final int MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
-  private static final int MAX_TASK_LENGTH = LAYOUT.taskAttemptIdBits - MAX_ATTEMPT_LENGTH;
-  private static final int MAX_TASK_ID = (1 << MAX_TASK_LENGTH) - 1;
 
   // Class TaskAttemptId have two field id and mapId. MR have a trick logic, taskAttemptId will
   // increase 1000 * (appAttemptId - 1), so we will decrease it.
-  public static int createRssTaskAttemptId(TaskAttemptID taskAttemptID, int appAttemptId) {
+  public static int createRssTaskAttemptId(
+      TaskAttemptID taskAttemptID, int appAttemptId, int maxAttemptNo) {
+    int attemptBits = ClientUtils.getAttemptIdBits(maxAttemptNo);
+
     if (appAttemptId < 1) {
       throw new RssException("appAttemptId " + appAttemptId + " is wrong");
     }
-    int lowBytes = taskAttemptID.getId() - (appAttemptId - 1) * 1000;
-    if (lowBytes > MAX_ATTEMPT_ID || lowBytes < 0) {
+    int attemptId = taskAttemptID.getId() - (appAttemptId - 1) * 1000;
+    if (attemptId > maxAttemptNo || attemptId < 0) {
       throw new RssException(
-          "TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed " + MAX_ATTEMPT_ID);
+          "TaskAttempt " + taskAttemptID + " attemptId " + attemptId + " exceed " + maxAttemptNo);
     }
-    int highBytes = taskAttemptID.getTaskID().getId();
-    if (highBytes > MAX_TASK_ID || highBytes < 0) {
+    int taskId = taskAttemptID.getTaskID().getId();
+
+    int mapIndexBits = 32 - Integer.numberOfLeadingZeros(taskId);
+    if (mapIndexBits + attemptBits > LAYOUT.taskAttemptIdBits) {
       throw new RssException(
-          "TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed " + MAX_TASK_ID);
+          "Observing taskId["
+              + taskId
+              + "] that would produce a taskAttemptId with "
+              + (mapIndexBits + attemptBits)
+              + " bits which is larger than the allowed "
+              + LAYOUT.taskAttemptIdBits
+              + "]). Please consider providing more bits for taskAttemptIds.");
     }
-    return (highBytes << (MAX_ATTEMPT_LENGTH)) + lowBytes;
+
+    return (taskId << (attemptBits)) + attemptId;
   }
 
   public static TaskAttemptID createMRTaskAttemptId(
-      JobID jobID, TaskType taskType, int rssTaskAttemptId, int appAttemptId) {
+      JobID jobID, TaskType taskType, int rssTaskAttemptId, int appAttemptId, int maxAttemptNo) {
+    int attemptBits = ClientUtils.getAttemptIdBits(maxAttemptNo);
     if (appAttemptId < 1) {
       throw new RssException("appAttemptId " + appAttemptId + " is wrong");
     }
-    int task = rssTaskAttemptId >> MAX_ATTEMPT_LENGTH;
-    int attempt = rssTaskAttemptId & MAX_ATTEMPT_ID;
+    int task = rssTaskAttemptId >> attemptBits;
+    int attempt = rssTaskAttemptId & ((1 << attemptBits) - 1);
     TaskID taskID = new TaskID(jobID, taskType, task);
     int id = attempt + 1000 * (appAttemptId - 1);
     return new TaskAttemptID(taskID, id);

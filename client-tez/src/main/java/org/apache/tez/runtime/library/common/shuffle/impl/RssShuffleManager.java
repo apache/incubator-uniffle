@@ -99,6 +99,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 // This only knows how to deal with a single srcIndex for a given targetIndex.
@@ -589,6 +590,16 @@ public class RssShuffleManager extends ShuffleManager {
                     partitionToServers.get(partition),
                     partitionToServers);
 
+                int maxFailures =
+                    conf.getInt(
+                        TezConfiguration.TEZ_AM_TASK_MAX_FAILED_ATTEMPTS,
+                        TezConfiguration.TEZ_AM_TASK_MAX_FAILED_ATTEMPTS_DEFAULT);
+                boolean speculation =
+                    conf.getBoolean(
+                        TezConfiguration.TEZ_AM_SPECULATION_ENABLED,
+                        TezConfiguration.TEZ_AM_SPECULATION_ENABLED_DEFAULT);
+                int maxAttemptNo = ClientUtils.getMaxAttemptNo(maxFailures, speculation);
+
                 RssTezFetcherTask fetcher =
                     new RssTezFetcherTask(
                         RssShuffleManager.this,
@@ -603,7 +614,8 @@ public class RssShuffleManager extends ShuffleManager {
                         rssAllBlockIdBitmapMap,
                         rssSuccessBlockIdBitmapMap,
                         numInputs,
-                        partitionToServers.size());
+                        partitionToServers.size(),
+                        maxAttemptNo);
                 rssRunningFetchers.add(fetcher);
                 if (isShutdown.get()) {
                   LOG.info(

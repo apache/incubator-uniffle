@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
+import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.BlockIdLayout;
@@ -60,10 +61,6 @@ public class RssTezUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssTezUtils.class);
   private static final BlockIdLayout LAYOUT = BlockIdLayout.DEFAULT;
-  public static final int MAX_ATTEMPT_LENGTH = 4;
-  public static final int MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
-  private static final int MAX_TASK_LENGTH = LAYOUT.taskAttemptIdBits - MAX_ATTEMPT_LENGTH;
-  private static final int MAX_TASK_ID = (1 << MAX_TASK_LENGTH) - 1;
 
   public static final String HOST_NAME = "hostname";
 
@@ -255,23 +252,38 @@ public class RssTezUtils {
     }
   }
 
-  public static int createRssTaskAttemptId(TezTaskAttemptID taskAttemptID) {
-    int lowBytes = taskAttemptID.getId();
-    if (lowBytes > MAX_ATTEMPT_ID || lowBytes < 0) {
-      throw new RssException("TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed");
-    }
-    int highBytes = taskAttemptID.getTaskID().getId();
-    if (highBytes > MAX_TASK_ID || highBytes < 0) {
+  public static int createRssTaskAttemptId(TezTaskAttemptID taskAttemptID, int maxAttemptNo) {
+    int attemptBits = ClientUtils.getAttemptIdBits(maxAttemptNo);
+
+    int attemptId = taskAttemptID.getId();
+    if (attemptId > maxAttemptNo || attemptId < 0) {
       throw new RssException(
-          "TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed.");
+          "TaskAttempt " + taskAttemptID + " attemptId " + attemptId + " exceed");
     }
-    int id = (highBytes << MAX_ATTEMPT_LENGTH) + lowBytes;
+    int taskId = taskAttemptID.getTaskID().getId();
+
+    int mapIndexBits = 32 - Integer.numberOfLeadingZeros(taskId);
+    if (mapIndexBits + attemptBits > LAYOUT.taskAttemptIdBits) {
+      throw new RssException(
+          "Observing taskId["
+              + taskId
+              + "] that would produce a taskAttemptId with "
+              + (mapIndexBits + attemptBits)
+              + " bits which is larger than the allowed "
+              + LAYOUT.taskAttemptIdBits
+              + "]). Please consider providing more bits for taskAttemptIds.");
+    }
+
+    int id = (taskId << attemptBits) + attemptId;
     LOG.info("createRssTaskAttemptId taskAttemptID:{}, id is {}, .", taskAttemptID, id);
     return id;
   }
 
   public static Roaring64NavigableMap fetchAllRssTaskIds(
-      Set<InputAttemptIdentifier> successMapTaskAttempts, int totalMapsCount, int appAttemptId) {
+      Set<InputAttemptIdentifier> successMapTaskAttempts,
+      int totalMapsCount,
+      int appAttemptId,
+      int maxAttemptNo) {
     String errMsg = "TaskAttemptIDs are inconsistent with map tasks";
     Roaring64NavigableMap rssTaskIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap mapTaskIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -281,7 +293,7 @@ public class RssTezUtils {
     for (InputAttemptIdentifier inputAttemptIdentifier : successMapTaskAttempts) {
       String pathComponent = inputAttemptIdentifier.getPathComponent();
       TezTaskAttemptID mapTaskAttemptID = IdUtils.convertTezTaskAttemptID(pathComponent);
-      int rssTaskId = RssTezUtils.createRssTaskAttemptId(mapTaskAttemptID);
+      int rssTaskId = RssTezUtils.createRssTaskAttemptId(mapTaskAttemptID, maxAttemptNo);
       long mapTaskId = mapTaskAttemptID.getTaskID().getId();
 
       LOG.info(

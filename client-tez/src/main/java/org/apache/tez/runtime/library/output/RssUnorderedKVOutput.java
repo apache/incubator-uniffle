@@ -67,6 +67,7 @@ import org.apache.tez.runtime.library.common.sort.impl.RssUnSorter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
@@ -217,6 +218,16 @@ public class RssUnorderedKVOutput extends AbstractLogicalOutput {
   public void start() throws Exception {
     if (!isStarted.get()) {
       memoryUpdateCallbackHandler.validateUpdateReceived();
+      int maxFailures =
+          conf.getInt(
+              TezConfiguration.TEZ_AM_TASK_MAX_FAILED_ATTEMPTS,
+              TezConfiguration.TEZ_AM_TASK_MAX_FAILED_ATTEMPTS_DEFAULT);
+      boolean speculation =
+          conf.getBoolean(
+              TezConfiguration.TEZ_AM_SPECULATION_ENABLED,
+              TezConfiguration.TEZ_AM_SPECULATION_ENABLED_DEFAULT);
+      int maxAttemptNo = ClientUtils.getMaxAttemptNo(maxFailures, speculation);
+      int rsstaskAttemptId = RssTezUtils.createRssTaskAttemptId(taskAttemptId, maxAttemptNo);
       sorter =
           new RssUnSorter(
               taskAttemptId,
@@ -227,7 +238,8 @@ public class RssUnorderedKVOutput extends AbstractLogicalOutput {
               memoryUpdateCallbackHandler.getMemoryAssigned(),
               shuffleId,
               applicationAttemptId,
-              partitionToServers);
+              partitionToServers,
+              rsstaskAttemptId);
       LOG.info("Initialized RssUnSorter.");
       isStarted.set(true);
     }

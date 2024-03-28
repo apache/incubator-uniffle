@@ -45,6 +45,7 @@ import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.request.RssFetchClientConfRequest;
 import org.apache.uniffle.client.response.RssFetchClientConfResponse;
+import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.config.ConfigOption;
@@ -112,7 +113,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
               + maxPartitions);
     }
 
-    int attemptIdBits = getAttemptIdBits(getMaxAttemptNo(maxFailures, speculation));
+    int attemptIdBits =
+        ClientUtils.getAttemptIdBits(ClientUtils.getMaxAttemptNo(maxFailures, speculation));
     int partitionIdBits = 32 - Integer.numberOfLeadingZeros(maxPartitions - 1); // [1..31]
     int taskAttemptIdBits = partitionIdBits + attemptIdBits; // [1+attemptIdBits..31+attemptIdBits]
     int sequenceNoBits = 63 - partitionIdBits - taskAttemptIdBits; // [1-attemptIdBits..61]
@@ -252,23 +254,6 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     }
   }
 
-  protected static int getMaxAttemptNo(int maxFailures, boolean speculation) {
-    // attempt number is zero based: 0, 1, …, maxFailures-1
-    // max maxFailures < 1 is not allowed but for safety, we interpret that as maxFailures == 1
-    int maxAttemptNo = maxFailures < 1 ? 0 : maxFailures - 1;
-
-    // with speculative execution enabled we could observe +1 attempts
-    if (speculation) {
-      maxAttemptNo++;
-    }
-
-    return maxAttemptNo;
-  }
-
-  protected static int getAttemptIdBits(int maxAttemptNo) {
-    return 32 - Integer.numberOfLeadingZeros(maxAttemptNo);
-  }
-
   /** See static overload of this method. */
   public abstract int getTaskAttemptIdForBlockId(int mapIndex, int attemptNo);
 
@@ -287,8 +272,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
    */
   protected static int getTaskAttemptIdForBlockId(
       int mapIndex, int attemptNo, int maxFailures, boolean speculation, int maxTaskAttemptIdBits) {
-    int maxAttemptNo = getMaxAttemptNo(maxFailures, speculation);
-    int attemptBits = getAttemptIdBits(maxAttemptNo);
+    int maxAttemptNo = ClientUtils.getMaxAttemptNo(maxFailures, speculation);
+    int attemptBits = ClientUtils.getAttemptIdBits(maxAttemptNo);
 
     if (attemptNo > maxAttemptNo) {
       // this should never happen, if it does, our assumptions are wrong,

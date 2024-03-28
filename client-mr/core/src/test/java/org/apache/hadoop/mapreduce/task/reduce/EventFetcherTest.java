@@ -60,7 +60,7 @@ public class EventFetcherTest {
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
       int rssTaskId =
           RssMRUtils.createRssTaskAttemptId(
-              new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1);
+              new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1, 4);
       expected.addLong(rssTaskId);
     }
 
@@ -90,7 +90,7 @@ public class EventFetcherTest {
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
       int rssTaskId =
           RssMRUtils.createRssTaskAttemptId(
-              new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1);
+              new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1, 4);
       expected.addLong(rssTaskId);
     }
 
@@ -122,7 +122,7 @@ public class EventFetcherTest {
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
       int rssTaskId =
           RssMRUtils.createRssTaskAttemptId(
-              new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1);
+              new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1, 4);
       expected.addLong(rssTaskId);
     }
     Roaring64NavigableMap taskIdBitmap = ef.fetchAllRssTaskIds();
@@ -147,7 +147,7 @@ public class EventFetcherTest {
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
       int rssTaskId =
           RssMRUtils.createRssTaskAttemptId(
-              new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1);
+              new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1, 4);
       expected.addLong(rssTaskId);
     }
     IllegalStateException ex =
@@ -173,7 +173,7 @@ public class EventFetcherTest {
     for (int mapIndex = 0; mapIndex < mapTaskNum; mapIndex++) {
       int rssTaskId =
           RssMRUtils.createRssTaskAttemptId(
-              new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1);
+              new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1, 4);
       expected.addLong(rssTaskId);
     }
     IllegalStateException ex =
@@ -206,13 +206,13 @@ public class EventFetcherTest {
       if (!tipFailed.contains(mapIndex) && !obsoleted.contains(mapIndex)) {
         int rssTaskId =
             RssMRUtils.createRssTaskAttemptId(
-                new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1);
+                new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 0), 1, 4);
         expected.addLong(rssTaskId);
       }
       if (obsoleted.contains(mapIndex)) {
         int rssTaskId =
             RssMRUtils.createRssTaskAttemptId(
-                new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 1), 1);
+                new TaskAttemptID("12345", 1, TaskType.MAP, mapIndex, 1), 1, 4);
         expected.addLong(rssTaskId);
       }
     }

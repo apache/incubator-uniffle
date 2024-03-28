@@ -290,7 +290,8 @@ public class FetcherTest {
             null,
             new Progress(),
             new MROutputFiles());
-    TaskAttemptID taskAttemptID = RssMRUtils.createMRTaskAttemptId(new JobID(), TaskType.MAP, 1, 1);
+    TaskAttemptID taskAttemptID =
+        RssMRUtils.createMRTaskAttemptId(new JobID(), TaskType.MAP, 1, 1, 4);
     byte[] buffer = new byte[10];
     MapOutput mapOutput1 = merger.reserve(taskAttemptID, 10, 1);
     RssBypassWriter.write(mapOutput1, buffer);

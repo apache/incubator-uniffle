@@ -27,10 +27,12 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapTaskCompletionEventsUpdate;
 import org.apache.hadoop.mapred.TaskCompletionEvent;
 import org.apache.hadoop.mapred.TaskUmbilicalProtocol;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.RssMRUtils;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.exception.RssException;
 
 public class RssEventFetcher<K, V> {
@@ -75,7 +77,11 @@ public class RssEventFetcher<K, V> {
     String errMsg = "TaskAttemptIDs are inconsistent with map tasks";
     for (TaskAttemptID taskAttemptID : successMaps) {
       if (!obsoleteMaps.contains(taskAttemptID)) {
-        int rssTaskId = RssMRUtils.createRssTaskAttemptId(taskAttemptID, appAttemptId);
+        int maxFailures = jobConf.getInt(MRJobConfig.MAP_MAX_ATTEMPTS, 4);
+        boolean speculation = jobConf.getBoolean(MRJobConfig.MAP_SPECULATIVE, true);
+        int maxAttemptNo = ClientUtils.getMaxAttemptNo(maxFailures, speculation);
+        int rssTaskId =
+            RssMRUtils.createRssTaskAttemptId(taskAttemptID, appAttemptId, maxAttemptNo);
         int mapIndex = taskAttemptID.getTaskID().getId();
         // There can be multiple successful attempts on same map task.
         // So we only need to accept one of them.
