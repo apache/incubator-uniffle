@@ -36,7 +36,9 @@ import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.RssUtils;
 
-import static org.apache.uniffle.client.util.ClientUtils.*;
+import static org.apache.uniffle.client.util.ClientUtils.getAttemptIdBits;
+import static org.apache.uniffle.client.util.ClientUtils.getMaxAttemptNo;
+import static org.apache.uniffle.client.util.ClientUtils.waitUntilDoneOrFail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
