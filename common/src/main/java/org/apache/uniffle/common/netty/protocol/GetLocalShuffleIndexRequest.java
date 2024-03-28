@@ -93,4 +93,9 @@ public class GetLocalShuffleIndexRequest extends RequestMessage {
   public int getPartitionNum() {
     return partitionNum;
   }
+
+  @Override
+  public String getOperationType() {
+    return "getLocalShuffleIndex";
+  }
 }

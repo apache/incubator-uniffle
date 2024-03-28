@@ -35,4 +35,6 @@ public abstract class RequestMessage extends Message {
   public long getRequestId() {
     return requestId;
   }
+
+  public abstract String getOperationType();
 }

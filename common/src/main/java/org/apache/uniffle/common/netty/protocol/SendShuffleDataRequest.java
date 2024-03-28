@@ -145,4 +145,9 @@ public class SendShuffleDataRequest extends RequestMessage {
   public void setTimestamp(long timestamp) {
     this.timestamp = timestamp;
   }
+
+  @Override
+  public String getOperationType() {
+    return "sendShuffleData";
+  }
 }
