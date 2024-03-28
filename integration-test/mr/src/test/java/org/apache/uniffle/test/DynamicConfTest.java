@@ -22,7 +22,7 @@ import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.LargeSorter;
-import org.apache.hadoop.mapreduce.RssMRConfig;
+import org.apache.hadoop.mapreduce.MRClientConf;
 import org.apache.hadoop.util.Tool;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -39,9 +39,9 @@ public class DynamicConfTest extends MRIntegrationTestBase {
 
   protected static Map<String, String> getDynamicConf() {
     Map<String, String> dynamicConf = new HashMap<>();
-    dynamicConf.put(RssMRConfig.RSS_REMOTE_STORAGE_PATH, HDFS_URI + "rss/test");
-    dynamicConf.put(RssMRConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
-    dynamicConf.put(RssMRConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
+    dynamicConf.put(MRClientConf.RSS_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
+    dynamicConf.put(MRClientConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
+    dynamicConf.put(MRClientConf.RSS_CLIENT_TYPE.key(), ClientType.GRPC.name());
     return dynamicConf;
   }
 

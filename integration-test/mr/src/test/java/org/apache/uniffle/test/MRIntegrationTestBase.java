@@ -34,9 +34,9 @@ import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapreduce.MRClientConf;
 import org.apache.hadoop.mapreduce.MRConfig;
 import org.apache.hadoop.mapreduce.MRJobConfig;
-import org.apache.hadoop.mapreduce.RssMRConfig;
 import org.apache.hadoop.mapreduce.filecache.DistributedCache;
 import org.apache.hadoop.mapreduce.v2.MiniMRYarnCluster;
 import org.apache.hadoop.mapreduce.v2.TestMRJobs;
@@ -146,7 +146,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
         "org.apache.hadoop.mapred.RssMapOutputCollector");
     jobConf.set(
         MRConfig.SHUFFLE_CONSUMER_PLUGIN, "org.apache.hadoop.mapreduce.task.reduce.RssShuffle");
-    jobConf.set(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED, "true");
+    jobConf.set(MRClientConf.RSS_REDUCE_REMOTE_SPILL_ENABLED.key(), "true");
 
     File file = new File(parentPath, "client-mr/core/target/shaded");
     File[] jars = file.listFiles();
@@ -181,7 +181,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
             + localFile.getName()
             + ","
             + MRJobConfig.DEFAULT_MAPREDUCE_APPLICATION_CLASSPATH);
-    jobConf.set(RssMRConfig.RSS_COORDINATOR_QUORUM, COORDINATOR_QUORUM);
+    jobConf.set(MRClientConf.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     updateRssConfiguration(jobConf);
     runMRApp(jobConf, getTestTool(), getTestArgs());
   }
@@ -202,12 +202,12 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
   protected static Map<String, String> getDynamicConf() {
     Map<String, String> dynamicConf = new HashMap<>();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssMRConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    dynamicConf.put(MRClientConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     return dynamicConf;
   }
 
   protected void updateRssConfiguration(Configuration jobConf) {
-    jobConf.set(RssMRConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
+    jobConf.set(MRClientConf.RSS_CLIENT_TYPE.key(), ClientType.GRPC.name());
   }
 
   private void runMRApp(Configuration conf, Tool tool, String[] args) throws Exception {
