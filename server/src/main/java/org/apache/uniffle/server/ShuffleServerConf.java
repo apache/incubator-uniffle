@@ -132,12 +132,6 @@ public class ShuffleServerConf extends RssBaseConf {
           .withDescription(
               "Expired time (ms) for application which has no heartbeat with coordinator");
 
-  public static final ConfigOption<Integer> SERVER_MEMORY_REQUEST_RETRY_MAX =
-      ConfigOptions.key("rss.server.memory.request.retry.max")
-          .intType()
-          .defaultValue(50)
-          .withDescription("Max times to retry for memory request");
-
   public static final ConfigOption<Long> SERVER_PRE_ALLOCATION_EXPIRED =
       ConfigOptions.key("rss.server.preAllocation.expired")
           .longType()
