@@ -410,12 +410,10 @@ public class WriteBufferManager extends MemoryConsumer {
 
   public List<AddBlockEvent> buildBlockEvents(List<ShuffleBlockInfo> shuffleBlockInfoList) {
     long totalSize = 0;
-    long memoryUsed = 0;
     List<AddBlockEvent> events = new ArrayList<>();
     List<ShuffleBlockInfo> shuffleBlockInfosPerEvent = Lists.newArrayList();
     for (ShuffleBlockInfo sbi : shuffleBlockInfoList) {
       totalSize += sbi.getSize();
-      memoryUsed += sbi.getFreeMemory();
       shuffleBlockInfosPerEvent.add(sbi);
       // split shuffle data according to the size
       if (totalSize > sendSizeLimit) {
@@ -427,20 +425,9 @@ public class WriteBufferManager extends MemoryConsumer {
                   + totalSize
                   + " bytes");
         }
-        // Use final temporary variables for closures
-        final long memoryUsedTemp = memoryUsed;
-        final List<ShuffleBlockInfo> shuffleBlocksTemp = shuffleBlockInfosPerEvent;
-        events.add(
-            new AddBlockEvent(
-                taskId,
-                shuffleBlockInfosPerEvent,
-                () -> {
-                  freeAllocatedMemory(memoryUsedTemp);
-                  shuffleBlocksTemp.stream().forEach(x -> x.getData().release());
-                }));
+        events.add(new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));
         shuffleBlockInfosPerEvent = Lists.newArrayList();
         totalSize = 0;
-        memoryUsed = 0;
       }
     }
     if (!shuffleBlockInfosPerEvent.isEmpty()) {
@@ -453,16 +440,7 @@ public class WriteBufferManager extends MemoryConsumer {
                 + " bytes");
       }
       // Use final temporary variables for closures
-      final long memoryUsedTemp = memoryUsed;
-      final List<ShuffleBlockInfo> shuffleBlocksTemp = shuffleBlockInfosPerEvent;
-      events.add(
-          new AddBlockEvent(
-              taskId,
-              shuffleBlockInfosPerEvent,
-              () -> {
-                freeAllocatedMemory(memoryUsedTemp);
-                shuffleBlocksTemp.stream().forEach(x -> x.getData().release());
-              }));
+      events.add(new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));
     }
     return events;
   }

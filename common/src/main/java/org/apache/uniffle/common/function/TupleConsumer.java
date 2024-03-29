@@ -15,23 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common.exception;
+package org.apache.uniffle.common.function;
 
-public class RssSendFailedException extends RssException {
-
-  public RssSendFailedException() {
-    super("");
-  }
-
-  public RssSendFailedException(String message) {
-    super(message);
-  }
-
-  public RssSendFailedException(Throwable e) {
-    super(e);
-  }
-
-  public RssSendFailedException(String message, Throwable e) {
-    super(message, e);
-  }
+@FunctionalInterface
+public interface TupleConsumer<T, F> {
+  void accept(T t, F f);
 }

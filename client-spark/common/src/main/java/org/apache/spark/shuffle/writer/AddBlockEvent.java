@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.function.TupleConsumer;
 
 public class AddBlockEvent {
 
@@ -28,18 +29,17 @@ public class AddBlockEvent {
   private List<ShuffleBlockInfo> shuffleDataInfoList;
   private List<Runnable> processedCallbackChain;
 
+  // The var is to indicate if the blocks fail to send, whether the writer will resend to
+  // re-assignment servers.
+  // if so, the failure blocks will not be released.
+  private boolean isResendEnabled = false;
+
+  private TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback;
+
   public AddBlockEvent(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
     this.taskId = taskId;
     this.shuffleDataInfoList = shuffleDataInfoList;
     this.processedCallbackChain = new ArrayList<>();
-  }
-
-  public AddBlockEvent(
-      String taskId, List<ShuffleBlockInfo> shuffleBlockInfoList, Runnable callback) {
-    this.taskId = taskId;
-    this.shuffleDataInfoList = shuffleBlockInfoList;
-    this.processedCallbackChain = new ArrayList<>();
-    addCallback(callback);
   }
 
   /** @param callback, should not throw any exception and execute fast. */
@@ -57,6 +57,23 @@ public class AddBlockEvent {
 
   public List<Runnable> getProcessedCallbackChain() {
     return processedCallbackChain;
+  }
+
+  public void withBlockProcessedCallback(
+      TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback) {
+    this.blockProcessedCallback = blockProcessedCallback;
+  }
+
+  public TupleConsumer<ShuffleBlockInfo, Boolean> getBlockProcessedCallback() {
+    return blockProcessedCallback;
+  }
+
+  public void enableBlockResend() {
+    this.isResendEnabled = true;
+  }
+
+  public boolean isBlockResendEnabled() {
+    return isResendEnabled;
   }
 
   @Override

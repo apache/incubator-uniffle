@@ -37,6 +37,8 @@ public class ShuffleBlockInfo {
   private int uncompressLength;
   private long freeMemory;
 
+  private int retryCounter = 0;
+
   public ShuffleBlockInfo(
       int shuffleId,
       int partitionId,
@@ -82,6 +84,14 @@ public class ShuffleBlockInfo {
     this.uncompressLength = uncompressLength;
     this.freeMemory = freeMemory;
     this.taskAttemptId = taskAttemptId;
+  }
+
+  public int getRetryCounter() {
+    return retryCounter;
+  }
+
+  public void setRetryCounter(int retryCounter) {
+    this.retryCounter = retryCounter;
   }
 
   public long getBlockId() {
