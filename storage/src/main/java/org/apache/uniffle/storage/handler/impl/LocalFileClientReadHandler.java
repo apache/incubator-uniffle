@@ -161,8 +161,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     } catch (Exception e) {
       throw new RssException(
           "Failed to read shuffle data with "
-              + shuffleServerClient.getClientInfo()
-              + " due to ", e);
+              + shuffleServerClient.getClientInfo(), e);
     }
     if (result.getDataBuffer().remaining() != expectedLength) {
       throw new RssException(

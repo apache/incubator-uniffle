@@ -77,8 +77,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       // todo: fault tolerance solution should be added
       throw new RssFetchFailedException(
           "Failed to read in memory shuffle data with "
-              + shuffleServerClient.getClientInfo()
-              + " due to ", e);
+              + shuffleServerClient.getClientInfo(), e);
     }
 
     // update lastBlockId for next rpc call
