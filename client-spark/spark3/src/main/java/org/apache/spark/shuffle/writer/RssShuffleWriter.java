@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -120,6 +121,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   protected final ShuffleWriteMetrics shuffleWriteMetrics;
 
   private final BlockingQueue<Object> finishEventQueue = new LinkedBlockingQueue<>();
+
+  private final Map<String, ShuffleServerInfo> faultyServers = new HashMap<>();
 
   // Only for tests
   @VisibleForTesting
@@ -461,7 +464,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     List<ShuffleBlockInfo> failedBlockInfoList = Lists.newArrayList();
     Map<ShuffleServerInfo, List<TrackingBlockStatus>> faultyServerToPartitions =
         failedBlockStatusSet.stream().collect(Collectors.groupingBy(d -> d.getShuffleServerInfo()));
-    Map<String, ShuffleServerInfo> faultyServers = shuffleManager.getReassignedFaultyServers();
     faultyServerToPartitions.entrySet().stream()
         .forEach(
             t -> {
@@ -530,6 +532,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       if (response.getStatusCode() != StatusCode.SUCCESS) {
         throw new RssException(
             "reassign server response with statusCode[" + response.getStatusCode() + "]");
+      }
+      if (response.getShuffleServer() == null) {
+        throw new RssException("empty newer reassignment server!");
       }
       return response.getShuffleServer();
     } catch (Exception e) {

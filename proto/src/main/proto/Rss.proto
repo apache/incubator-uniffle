@@ -590,7 +590,7 @@ message ReassignServersReponse{
 
 message RssReassignFaultyShuffleServerRequest{
   int32 shuffleId  = 1;
-  repeated string partitionIds = 2;
+  repeated int32 partitionIds = 2;
   string faultyShuffleServerId = 3;
 }
 

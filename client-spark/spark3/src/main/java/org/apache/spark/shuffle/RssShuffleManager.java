@@ -35,8 +35,6 @@ import scala.collection.Iterator;
 import scala.collection.Seq;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.hadoop.conf.Configuration;
@@ -144,8 +142,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * assignments, stageID, Attemptnumber Whether to reassign the combination flag;
    */
   private Map<String, Boolean> serverAssignedInfos;
-
-  private Map<String, ShuffleServerInfo> reassignedFaultyServers;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
@@ -275,7 +271,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.shuffleIdToShuffleHandleInfo = JavaUtils.newConcurrentMap();
     this.failuresShuffleServerIds = Sets.newHashSet();
     this.serverAssignedInfos = JavaUtils.newConcurrentMap();
-    this.reassignedFaultyServers = JavaUtils.newConcurrentMap();
   }
 
   public CompletableFuture<Long> sendData(AddBlockEvent event) {
@@ -1180,39 +1175,27 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
   }
 
+  // this is only valid on driver side that exposed to being invoked by grpc server
   @Override
   public ShuffleServerInfo reassignFaultyShuffleServerForTasks(
-      int shuffleId, Set<String> partitionIds, String faultyShuffleServerId) {
-    ShuffleServerInfo newShuffleServerInfo =
-        reassignedFaultyServers.computeIfAbsent(
-            faultyShuffleServerId,
-            id -> {
-              ShuffleServerInfo newAssignedServer = assignShuffleServer(shuffleId, id);
-              ShuffleHandleInfo shuffleHandleInfo = shuffleIdToShuffleHandleInfo.get(shuffleId);
-              for (String partitionId : partitionIds) {
-                Integer partitionIdInteger = Integer.valueOf(partitionId);
-                List<ShuffleServerInfo> shuffleServerInfoList =
-                    shuffleHandleInfo.getPartitionToServers().get(partitionIdInteger);
-                for (int i = 0; i < shuffleServerInfoList.size(); i++) {
-                  if (shuffleServerInfoList.get(i).getId().equals(faultyShuffleServerId)) {
-                    shuffleHandleInfo
-                        .getFailoverPartitionServers()
-                        .computeIfAbsent(partitionIdInteger, k -> Maps.newHashMap());
-                    shuffleHandleInfo
-                        .getFailoverPartitionServers()
-                        .get(partitionIdInteger)
-                        .computeIfAbsent(i, j -> Lists.newArrayList())
-                        .add(newAssignedServer);
-                  }
-                }
-              }
-              return newAssignedServer;
-            });
-    return newShuffleServerInfo;
-  }
+      int shuffleId, Set<Integer> partitionIds, String faultyShuffleServerId) {
+    ShuffleHandleInfo handleInfo = shuffleIdToShuffleHandleInfo.get(shuffleId);
+    synchronized (handleInfo) {
+      // find out whether this server has been marked faulty in this shuffle
+      // if it has been reassigned, directly return the replacement server.
+      if (handleInfo.isExistingFaultyServer(faultyShuffleServerId)) {
+        return handleInfo.useExistingReassignmentForMultiPartitions(
+            partitionIds, faultyShuffleServerId);
+      }
 
-  public Map<String, ShuffleServerInfo> getReassignedFaultyServers() {
-    return reassignedFaultyServers;
+      // get the newer server to replace faulty server.
+      ShuffleServerInfo newAssignedServer = assignShuffleServer(shuffleId, faultyShuffleServerId);
+      if (newAssignedServer != null) {
+        handleInfo.createNewReassignmentForMultiPartitions(
+            partitionIds, faultyShuffleServerId, newAssignedServer);
+      }
+      return newAssignedServer;
+    }
   }
 
   private ShuffleServerInfo assignShuffleServer(int shuffleId, String faultyShuffleServerId) {

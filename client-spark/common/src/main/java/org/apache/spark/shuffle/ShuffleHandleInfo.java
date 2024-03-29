@@ -28,6 +28,7 @@ import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.JavaUtils;
 
 /**
  * Class for holding, 1. partition ID -> shuffle servers mapping. 2. remote storage info
@@ -41,7 +42,10 @@ public class ShuffleHandleInfo implements Serializable {
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
 
   // partitionId -> replica -> failover servers
-  private Map<Integer, Map<Integer, List<ShuffleServerInfo>>> failoverPartitionServers;
+  private Map<Integer, Map<Integer, ShuffleServerInfo>> failoverPartitionServers;
+  // todo: support mores replacement servers for one faulty server.
+  private Map<String, ShuffleServerInfo> faultyServerReplacements;
+
   // shuffle servers which is for store shuffle data
   private Set<ShuffleServerInfo> shuffleServersForData;
   // remoteStorage used for this job
@@ -62,14 +66,11 @@ public class ShuffleHandleInfo implements Serializable {
       this.shuffleServersForData.addAll(ssis);
     }
     this.remoteStorage = storageInfo;
+    this.faultyServerReplacements = JavaUtils.newConcurrentMap();
   }
 
   public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
     return partitionToServers;
-  }
-
-  public Map<Integer, Map<Integer, List<ShuffleServerInfo>>> getFailoverPartitionServers() {
-    return failoverPartitionServers;
   }
 
   public Set<ShuffleServerInfo> getShuffleServersForData() {
@@ -82,5 +83,35 @@ public class ShuffleHandleInfo implements Serializable {
 
   public int getShuffleId() {
     return shuffleId;
+  }
+
+  public boolean isExistingFaultyServer(String serverId) {
+    return faultyServerReplacements.containsKey(serverId);
+  }
+
+  public ShuffleServerInfo useExistingReassignmentForMultiPartitions(
+      Set<Integer> partitionIds, String faultyServerId) {
+    return createNewReassignmentForMultiPartitions(partitionIds, faultyServerId, null);
+  }
+
+  public ShuffleServerInfo createNewReassignmentForMultiPartitions(
+      Set<Integer> partitionIds, String faultyServerId, ShuffleServerInfo replacement) {
+    if (replacement != null) {
+      faultyServerReplacements.put(faultyServerId, replacement);
+    }
+
+    replacement = faultyServerReplacements.get(faultyServerId);
+    for (Integer partitionId : partitionIds) {
+      List<ShuffleServerInfo> replicaServers = partitionToServers.get(partitionId);
+      for (int i = 0; i < replicaServers.size(); i++) {
+        if (replicaServers.get(i).getId().equals(faultyServerId)) {
+          Map<Integer, ShuffleServerInfo> replicaReplacements =
+              failoverPartitionServers.computeIfAbsent(
+                  partitionId, k -> JavaUtils.newConcurrentMap());
+          replicaReplacements.put(i, replacement);
+        }
+      }
+    }
+    return replacement;
   }
 }
