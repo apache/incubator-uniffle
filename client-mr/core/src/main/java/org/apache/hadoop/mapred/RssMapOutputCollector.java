@@ -30,7 +30,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.RssMRConfig;
 import org.apache.hadoop.mapreduce.RssMRUtils;
 import org.apache.hadoop.mapreduce.TaskCounter;
@@ -39,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
-import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ByteUnit;
@@ -101,12 +99,9 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
             RssMRConfig.RSS_CLIENT_DEFAULT_MEMORY_THRESHOLD);
     ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
     String appId = applicationAttemptId.toString();
-    int maxFailures = mrJobConf.getInt(MRJobConfig.MAP_MAX_ATTEMPTS, 4);
-    boolean speculation = mrJobConf.getBoolean(MRJobConfig.MAP_SPECULATIVE, true);
-    int maxAttemptNo = ClientUtils.getMaxAttemptNo(maxFailures, speculation);
     int taskAttemptId =
         RssMRUtils.createRssTaskAttemptId(
-            mapTask.getTaskID(), applicationAttemptId.getAttemptId(), maxAttemptNo);
+            mapTask.getTaskID(), applicationAttemptId.getAttemptId(), mrJobConf);
     double sendThreshold =
         RssMRUtils.getDouble(
             rssJobConf,

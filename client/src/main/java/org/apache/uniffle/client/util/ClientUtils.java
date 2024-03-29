@@ -126,7 +126,7 @@ public class ClientUtils {
     return maxAttemptNo;
   }
 
-  public static int getAttemptIdBits(int maxAttemptNo) {
-    return 32 - Integer.numberOfLeadingZeros(maxAttemptNo);
+  public static int getNumberOfSignificantBits(int number) {
+    return 32 - Integer.numberOfLeadingZeros(number);
   }
 }

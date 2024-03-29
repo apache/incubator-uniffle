@@ -114,8 +114,9 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     }
 
     int attemptIdBits =
-        ClientUtils.getAttemptIdBits(ClientUtils.getMaxAttemptNo(maxFailures, speculation));
-    int partitionIdBits = 32 - Integer.numberOfLeadingZeros(maxPartitions - 1); // [1..31]
+        ClientUtils.getNumberOfSignificantBits(
+            ClientUtils.getMaxAttemptNo(maxFailures, speculation));
+    int partitionIdBits = ClientUtils.getNumberOfSignificantBits(maxPartitions - 1); // [1..31]
     int taskAttemptIdBits = partitionIdBits + attemptIdBits; // [1+attemptIdBits..31+attemptIdBits]
     int sequenceNoBits = 63 - partitionIdBits - taskAttemptIdBits; // [1-attemptIdBits..61]
 
@@ -273,7 +274,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   protected static int getTaskAttemptIdForBlockId(
       int mapIndex, int attemptNo, int maxFailures, boolean speculation, int maxTaskAttemptIdBits) {
     int maxAttemptNo = ClientUtils.getMaxAttemptNo(maxFailures, speculation);
-    int attemptBits = ClientUtils.getAttemptIdBits(maxAttemptNo);
+    int attemptBits = ClientUtils.getNumberOfSignificantBits(maxAttemptNo);
 
     if (attemptNo > maxAttemptNo) {
       // this should never happen, if it does, our assumptions are wrong,
@@ -287,7 +288,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
               + ".");
     }
 
-    int mapIndexBits = 32 - Integer.numberOfLeadingZeros(mapIndex);
+    int mapIndexBits = ClientUtils.getNumberOfSignificantBits(mapIndex);
     if (mapIndexBits + attemptBits > maxTaskAttemptIdBits) {
       throw new RssException(
           "Observing mapIndex["

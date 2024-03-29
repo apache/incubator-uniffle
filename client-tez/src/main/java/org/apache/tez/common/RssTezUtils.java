@@ -24,6 +24,7 @@ import java.util.Set;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
@@ -252,17 +253,17 @@ public class RssTezUtils {
     }
   }
 
-  public static int createRssTaskAttemptId(TezTaskAttemptID taskAttemptID, int maxAttemptNo) {
-    int attemptBits = ClientUtils.getAttemptIdBits(maxAttemptNo);
+  public static int createRssTaskAttemptId(TezTaskAttemptID taskAttemptId, int maxAttemptNo) {
+    int attemptBits = ClientUtils.getNumberOfSignificantBits(maxAttemptNo);
 
-    int attemptId = taskAttemptID.getId();
+    int attemptId = taskAttemptId.getId();
     if (attemptId > maxAttemptNo || attemptId < 0) {
       throw new RssException(
-          "TaskAttempt " + taskAttemptID + " attemptId " + attemptId + " exceed");
+          "TaskAttempt " + taskAttemptId + " attemptId " + attemptId + " exceed");
     }
-    int taskId = taskAttemptID.getTaskID().getId();
+    int taskId = taskAttemptId.getTaskID().getId();
 
-    int mapIndexBits = 32 - Integer.numberOfLeadingZeros(taskId);
+    int mapIndexBits = ClientUtils.getNumberOfSignificantBits(taskId);
     if (mapIndexBits + attemptBits > LAYOUT.taskAttemptIdBits) {
       throw new RssException(
           "Observing taskId["
@@ -274,9 +275,26 @@ public class RssTezUtils {
               + "]). Please consider providing more bits for taskAttemptIds.");
     }
 
-    int id = (taskId << attemptBits) + attemptId;
-    LOG.info("createRssTaskAttemptId taskAttemptID:{}, id is {}, .", taskAttemptID, id);
+    int id = (taskId << attemptBits) | attemptId;
+    LOG.info("createRssTaskAttemptId taskAttemptId:{}, id is {}, .", taskAttemptId, id);
     return id;
+  }
+
+  public static int getMaxAttemptNo(Configuration conf) {
+    int maxFailures =
+        conf.getInt(
+            TezConfiguration.TEZ_AM_TASK_MAX_FAILED_ATTEMPTS,
+            TezConfiguration.TEZ_AM_TASK_MAX_FAILED_ATTEMPTS_DEFAULT);
+    boolean speculation =
+        conf.getBoolean(
+            TezConfiguration.TEZ_AM_SPECULATION_ENABLED,
+            TezConfiguration.TEZ_AM_SPECULATION_ENABLED_DEFAULT);
+    return ClientUtils.getMaxAttemptNo(maxFailures, speculation);
+  }
+
+  public static int createRssTaskAttemptId(TezTaskAttemptID taskAttemptID, Configuration conf) {
+    int maxAttemptNo = getMaxAttemptNo(conf);
+    return createRssTaskAttemptId(taskAttemptID, maxAttemptNo);
   }
 
   public static Roaring64NavigableMap fetchAllRssTaskIds(

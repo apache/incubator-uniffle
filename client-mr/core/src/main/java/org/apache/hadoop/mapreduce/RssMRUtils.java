@@ -50,7 +50,7 @@ public class RssMRUtils {
   // increase 1000 * (appAttemptId - 1), so we will decrease it.
   public static int createRssTaskAttemptId(
       TaskAttemptID taskAttemptID, int appAttemptId, int maxAttemptNo) {
-    int attemptBits = ClientUtils.getAttemptIdBits(maxAttemptNo);
+    int attemptBits = ClientUtils.getNumberOfSignificantBits(maxAttemptNo);
 
     if (appAttemptId < 1) {
       throw new RssException("appAttemptId " + appAttemptId + " is wrong");
@@ -62,7 +62,7 @@ public class RssMRUtils {
     }
     int taskId = taskAttemptID.getTaskID().getId();
 
-    int mapIndexBits = 32 - Integer.numberOfLeadingZeros(taskId);
+    int mapIndexBits = ClientUtils.getNumberOfSignificantBits(taskId);
     if (mapIndexBits + attemptBits > LAYOUT.taskAttemptIdBits) {
       throw new RssException(
           "Observing taskId["
@@ -74,12 +74,25 @@ public class RssMRUtils {
               + "]). Please consider providing more bits for taskAttemptIds.");
     }
 
-    return (taskId << (attemptBits)) + attemptId;
+    return (taskId << attemptBits) | attemptId;
+  }
+
+  public static int createRssTaskAttemptId(
+      TaskAttemptID taskAttemptID, int appAttemptId, int maxFailures, boolean speculation) {
+    int maxAttemptNo = ClientUtils.getMaxAttemptNo(maxFailures, speculation);
+    return createRssTaskAttemptId(taskAttemptID, appAttemptId, maxAttemptNo);
+  }
+
+  public static int createRssTaskAttemptId(
+      TaskAttemptID taskAttemptID, int appAttemptId, Configuration conf) {
+    int maxFailures = conf.getInt(MRJobConfig.MAP_MAX_ATTEMPTS, 4);
+    boolean speculation = conf.getBoolean(MRJobConfig.MAP_SPECULATIVE, true);
+    return createRssTaskAttemptId(taskAttemptID, appAttemptId, maxFailures, speculation);
   }
 
   public static TaskAttemptID createMRTaskAttemptId(
       JobID jobID, TaskType taskType, int rssTaskAttemptId, int appAttemptId, int maxAttemptNo) {
-    int attemptBits = ClientUtils.getAttemptIdBits(maxAttemptNo);
+    int attemptBits = ClientUtils.getNumberOfSignificantBits(maxAttemptNo);
     if (appAttemptId < 1) {
       throw new RssException("appAttemptId " + appAttemptId + " is wrong");
     }

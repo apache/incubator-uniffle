@@ -95,7 +95,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
-import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
@@ -541,15 +540,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
     this.basePath = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH);
     String remoteStorageConf = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_CONF);
     this.remoteStorageInfo = new RemoteStorageInfo(basePath, remoteStorageConf);
-    int maxFailures =
-        conf.getInt(
-            TezConfiguration.TEZ_AM_TASK_MAX_FAILED_ATTEMPTS,
-            TezConfiguration.TEZ_AM_TASK_MAX_FAILED_ATTEMPTS_DEFAULT);
-    boolean speculation =
-        conf.getBoolean(
-            TezConfiguration.TEZ_AM_SPECULATION_ENABLED,
-            TezConfiguration.TEZ_AM_SPECULATION_ENABLED_DEFAULT);
-    this.maxAttemptNo = ClientUtils.getMaxAttemptNo(maxFailures, speculation);
+    this.maxAttemptNo = RssTezUtils.getMaxAttemptNo(conf);
 
     LOG.info(
         "RSSShuffleScheduler running for sourceVertex: "

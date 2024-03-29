@@ -68,6 +68,7 @@ import org.apache.hadoop.util.Time;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
 import org.apache.tez.common.InputContextUtils;
+import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.common.UmbilicalUtils;
@@ -99,7 +100,6 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 // This only knows how to deal with a single srcIndex for a given targetIndex.
@@ -590,15 +590,7 @@ public class RssShuffleManager extends ShuffleManager {
                     partitionToServers.get(partition),
                     partitionToServers);
 
-                int maxFailures =
-                    conf.getInt(
-                        TezConfiguration.TEZ_AM_TASK_MAX_FAILED_ATTEMPTS,
-                        TezConfiguration.TEZ_AM_TASK_MAX_FAILED_ATTEMPTS_DEFAULT);
-                boolean speculation =
-                    conf.getBoolean(
-                        TezConfiguration.TEZ_AM_SPECULATION_ENABLED,
-                        TezConfiguration.TEZ_AM_SPECULATION_ENABLED_DEFAULT);
-                int maxAttemptNo = ClientUtils.getMaxAttemptNo(maxFailures, speculation);
+                int maxAttemptNo = RssTezUtils.getMaxAttemptNo(conf);
 
                 RssTezFetcherTask fetcher =
                     new RssTezFetcherTask(

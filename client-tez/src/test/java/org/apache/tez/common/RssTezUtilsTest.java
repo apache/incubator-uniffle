@@ -51,7 +51,7 @@ public class RssTezUtilsTest {
     ApplicationId appId = ApplicationId.newInstance(9999, 72);
     TezDAGID dagId = TezDAGID.getInstance(appId, 1);
     TezVertexID vId = TezVertexID.getInstance(dagId, 35);
-    TezTaskID taskId = TezTaskID.getInstance(vId, (int) taskAttemptId);
+    TezTaskID taskId = TezTaskID.getInstance(vId, taskAttemptId);
     TezTaskAttemptID tezTaskAttemptId = TezTaskAttemptID.getInstance(taskId, 3);
 
     boolean isException = false;
@@ -62,7 +62,7 @@ public class RssTezUtilsTest {
     }
     assertTrue(isException);
 
-    taskId = TezTaskID.getInstance(vId, (int) (1 << 21));
+    taskId = TezTaskID.getInstance(vId, 1 << 21);
     tezTaskAttemptId = TezTaskAttemptID.getInstance(taskId, 2);
     isException = false;
     try {

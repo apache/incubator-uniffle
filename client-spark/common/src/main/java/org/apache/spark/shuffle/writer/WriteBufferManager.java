@@ -73,10 +73,10 @@ public class WriteBufferManager extends MemoryConsumer {
   private int shuffleId;
   private String taskId;
   private int taskAttemptId;
+  private SerializerInstance instance;
   private ShuffleWriteMetrics shuffleWriteMetrics;
   // cache partition -> records
   private Map<Integer, WriterBuffer> buffers;
-  private SerializerInstance instance;
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
   private int serializerBufferSize;
   private int bufferSegmentSize;

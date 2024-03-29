@@ -36,8 +36,8 @@ import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.RssUtils;
 
-import static org.apache.uniffle.client.util.ClientUtils.getAttemptIdBits;
 import static org.apache.uniffle.client.util.ClientUtils.getMaxAttemptNo;
+import static org.apache.uniffle.client.util.ClientUtils.getNumberOfSignificantBits;
 import static org.apache.uniffle.client.util.ClientUtils.waitUntilDoneOrFail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -161,19 +161,19 @@ public class ClientUtilsTest {
   }
 
   @Test
-  public void testGetAttemptIdBits() {
-    assertEquals(0, getAttemptIdBits(0));
-    assertEquals(1, getAttemptIdBits(1));
-    assertEquals(2, getAttemptIdBits(2));
-    assertEquals(2, getAttemptIdBits(3));
-    assertEquals(3, getAttemptIdBits(4));
-    assertEquals(3, getAttemptIdBits(5));
-    assertEquals(3, getAttemptIdBits(6));
-    assertEquals(3, getAttemptIdBits(7));
-    assertEquals(4, getAttemptIdBits(8));
-    assertEquals(4, getAttemptIdBits(9));
-    assertEquals(10, getAttemptIdBits(1023));
-    assertEquals(11, getAttemptIdBits(1024));
-    assertEquals(11, getAttemptIdBits(1025));
+  public void testGetNumberOfSignificantBits() {
+    assertEquals(0, getNumberOfSignificantBits(0));
+    assertEquals(1, getNumberOfSignificantBits(1));
+    assertEquals(2, getNumberOfSignificantBits(2));
+    assertEquals(2, getNumberOfSignificantBits(3));
+    assertEquals(3, getNumberOfSignificantBits(4));
+    assertEquals(3, getNumberOfSignificantBits(5));
+    assertEquals(3, getNumberOfSignificantBits(6));
+    assertEquals(3, getNumberOfSignificantBits(7));
+    assertEquals(4, getNumberOfSignificantBits(8));
+    assertEquals(4, getNumberOfSignificantBits(9));
+    assertEquals(10, getNumberOfSignificantBits(1023));
+    assertEquals(11, getNumberOfSignificantBits(1024));
+    assertEquals(11, getNumberOfSignificantBits(1025));
   }
 }
