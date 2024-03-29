@@ -440,11 +440,6 @@ public class ShuffleBufferManager {
             + readCapacity
             + "]");
     ShuffleServerMetrics.counterTotalRequireReadMemoryRetryNum.inc();
-    try {
-      Thread.sleep(1000);
-    } catch (Exception e) {
-      LOG.warn("Error happened when require memory", e);
-    }
     ShuffleServerMetrics.counterTotalRequireReadMemoryFailedNum.inc();
     return false;
   }
