@@ -280,6 +280,11 @@ public class RssTezUtils {
     return id;
   }
 
+  public static int createRssTaskAttemptId(TezTaskAttemptID taskAttemptId, Configuration conf) {
+    int maxAttemptNo = getMaxAttemptNo(conf);
+    return createRssTaskAttemptId(taskAttemptId, maxAttemptNo);
+  }
+
   public static int getMaxAttemptNo(Configuration conf) {
     int maxFailures =
         conf.getInt(
@@ -290,11 +295,6 @@ public class RssTezUtils {
             TezConfiguration.TEZ_AM_SPECULATION_ENABLED,
             TezConfiguration.TEZ_AM_SPECULATION_ENABLED_DEFAULT);
     return ClientUtils.getMaxAttemptNo(maxFailures, speculation);
-  }
-
-  public static int createRssTaskAttemptId(TezTaskAttemptID taskAttemptID, Configuration conf) {
-    int maxAttemptNo = getMaxAttemptNo(conf);
-    return createRssTaskAttemptId(taskAttemptID, maxAttemptNo);
   }
 
   public static Roaring64NavigableMap fetchAllRssTaskIds(
@@ -310,9 +310,9 @@ public class RssTezUtils {
 
     for (InputAttemptIdentifier inputAttemptIdentifier : successMapTaskAttempts) {
       String pathComponent = inputAttemptIdentifier.getPathComponent();
-      TezTaskAttemptID mapTaskAttemptID = IdUtils.convertTezTaskAttemptID(pathComponent);
-      int rssTaskId = RssTezUtils.createRssTaskAttemptId(mapTaskAttemptID, maxAttemptNo);
-      long mapTaskId = mapTaskAttemptID.getTaskID().getId();
+      TezTaskAttemptID mapTaskAttemptId = IdUtils.convertTezTaskAttemptID(pathComponent);
+      int rssTaskId = RssTezUtils.createRssTaskAttemptId(mapTaskAttemptId, maxAttemptNo);
+      long mapTaskId = mapTaskAttemptId.getTaskID().getId();
 
       LOG.info(
           "FetchAllRssTaskIds, pathComponent: {}, mapTaskId:{}, rssTaskId:{}, is contains:{}",
