@@ -422,26 +422,38 @@ public class ShuffleBufferManager {
     ShuffleServerMetrics.gaugeInFlushBufferSize.set(inFlushSize.get());
   }
 
-  public boolean requireReadMemoryWithRetry(long size) {
+  public boolean requireReadMemory(long size) {
     ShuffleServerMetrics.counterTotalRequireReadMemoryNum.inc();
-    synchronized (this) {
-      if (readDataMemory.get() + size < readCapacity) {
-        readDataMemory.addAndGet(size);
-        ShuffleServerMetrics.gaugeReadBufferUsedSize.inc(size);
-        return true;
+    boolean success = false;
+
+    do {
+      long currentReadDataMemory = readDataMemory.get();
+      long newReadDataMemory = currentReadDataMemory + size;
+      if (newReadDataMemory < readCapacity) {
+        if (readDataMemory.compareAndSet(currentReadDataMemory, newReadDataMemory)) {
+          ShuffleServerMetrics.gaugeReadBufferUsedSize.inc(size);
+          success = true;
+          break;
+        }
+      } else {
+        break;
       }
+    } while (true);
+
+    if (!success) {
+      LOG.error(
+              "Can't require["
+                      + size
+                      + "] for read data, current["
+                      + readDataMemory.get()
+                      + "], capacity["
+                      + readCapacity
+                      + "]");
+      ShuffleServerMetrics.counterTotalRequireReadMemoryRetryNum.inc();
+      ShuffleServerMetrics.counterTotalRequireReadMemoryFailedNum.inc();
     }
-    LOG.error(
-        "Can't require["
-            + size
-            + "] for read data, current["
-            + readDataMemory.get()
-            + "], capacity["
-            + readCapacity
-            + "]");
-    ShuffleServerMetrics.counterTotalRequireReadMemoryRetryNum.inc();
-    ShuffleServerMetrics.counterTotalRequireReadMemoryFailedNum.inc();
-    return false;
+
+    return success;
   }
 
   public void releaseReadMemory(long size) {
