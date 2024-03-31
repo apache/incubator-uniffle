@@ -425,7 +425,14 @@ public class WriteBufferManager extends MemoryConsumer {
                   + totalSize
                   + " bytes");
         }
-        events.add(new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));
+        events.add(
+            new AddBlockEvent(
+                taskId,
+                shuffleBlockInfosPerEvent,
+                (block, isSuccessful) -> {
+                  this.freeAllocatedMemory(block.getFreeMemory());
+                  block.getData().release();
+                }));
         shuffleBlockInfosPerEvent = Lists.newArrayList();
         totalSize = 0;
       }
@@ -440,7 +447,14 @@ public class WriteBufferManager extends MemoryConsumer {
                 + " bytes");
       }
       // Use final temporary variables for closures
-      events.add(new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));
+      events.add(
+          new AddBlockEvent(
+              taskId,
+              shuffleBlockInfosPerEvent,
+              (block, isSuccessful) -> {
+                this.freeAllocatedMemory(block.getFreeMemory());
+                block.getData().release();
+              }));
     }
     return events;
   }

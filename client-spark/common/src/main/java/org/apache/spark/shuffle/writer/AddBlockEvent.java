@@ -42,6 +42,14 @@ public class AddBlockEvent {
     this.processedCallbackChain = new ArrayList<>();
   }
 
+  public AddBlockEvent(
+      String taskId,
+      List<ShuffleBlockInfo> blocks,
+      TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback) {
+    this(taskId, blocks);
+    this.blockProcessedCallback = blockProcessedCallback;
+  }
+
   /** @param callback, should not throw any exception and execute fast. */
   public void addCallback(Runnable callback) {
     processedCallbackChain.add(callback);

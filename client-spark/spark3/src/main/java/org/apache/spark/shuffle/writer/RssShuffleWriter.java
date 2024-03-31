@@ -364,26 +364,15 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       List<ShuffleBlockInfo> shuffleBlockInfoList) {
     List<CompletableFuture<Long>> futures = new ArrayList<>();
     for (AddBlockEvent event : bufferManager.buildBlockEvents(shuffleBlockInfoList)) {
-      event.withBlockProcessedCallback(
-          (block, isSuccessful) -> {
-            boolean isRelease = false;
-            if (!isBlockFailSentRetryEnabled) {
-              isRelease = true;
-            } else {
-              if (isSuccessful) {
-                isRelease = true;
-              } else {
-                if (block.getRetryCounter() >= blockFailSentMaxTimes - 1) {
-                  isRelease = true;
-                }
+      if (isBlockFailSentRetryEnabled) {
+        event.withBlockProcessedCallback(
+            (block, isSuccessful) -> {
+              if (isSuccessful || block.getRetryCounter() >= blockFailSentMaxTimes - 1) {
+                bufferManager.freeAllocatedMemory(block.getFreeMemory());
+                block.getData().release();
               }
-            }
-
-            if (isRelease) {
-              bufferManager.freeAllocatedMemory(block.getFreeMemory());
-              block.getData().release();
-            }
-          });
+            });
+      }
       event.addCallback(
           () -> {
             boolean ret = finishEventQueue.add(new Object());
