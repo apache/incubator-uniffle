@@ -28,12 +28,6 @@ public class AddBlockEvent {
   private String taskId;
   private List<ShuffleBlockInfo> shuffleDataInfoList;
   private List<Runnable> processedCallbackChain;
-
-  // The var is to indicate if the blocks fail to send, whether the writer will resend to
-  // re-assignment servers.
-  // if so, the failure blocks will not be released.
-  private boolean isResendEnabled = false;
-
   private TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback;
 
   public AddBlockEvent(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
@@ -74,14 +68,6 @@ public class AddBlockEvent {
 
   public TupleConsumer<ShuffleBlockInfo, Boolean> getBlockProcessedCallback() {
     return blockProcessedCallback;
-  }
-
-  public void enableBlockResend() {
-    this.isResendEnabled = true;
-  }
-
-  public boolean isBlockResendEnabled() {
-    return isResendEnabled;
   }
 
   @Override
