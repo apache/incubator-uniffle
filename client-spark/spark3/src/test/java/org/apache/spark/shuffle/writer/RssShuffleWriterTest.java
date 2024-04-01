@@ -74,6 +74,11 @@ import static org.mockito.Mockito.when;
 public class RssShuffleWriterTest {
 
   @Test
+  public void blockFailureResendTest() {
+    SparkConf conf = new SparkConf();
+  }
+
+  @Test
   public void checkBlockSendResultTest() {
     SparkConf conf = new SparkConf();
     conf.setAppName("testApp")
@@ -161,8 +166,8 @@ public class RssShuffleWriterTest {
         assertThrows(
             RuntimeException.class,
             () -> rssShuffleWriter.checkBlockSendResult(Sets.newHashSet(1L, 2L, 3L)));
-    System.out.println(e2.getMessage());
-    assertTrue(e3.getMessage().startsWith("Send failed:"));
+    System.out.println(e3.getMessage());
+    assertTrue(e3.getMessage().startsWith("Send fail"));
     successBlocks.clear();
     taskToFailedBlockSendTracker.clear();
   }

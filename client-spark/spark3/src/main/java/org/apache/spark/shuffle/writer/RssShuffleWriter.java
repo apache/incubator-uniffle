@@ -437,7 +437,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       collectBlocksToResendOrFastFail();
     } else {
       if (hasAnyBlockFailure()) {
-        throw new RssSendFailedException();
+        throw new RssSendFailedException("Send fail");
       }
     }
   }
