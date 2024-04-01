@@ -83,6 +83,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssSendFailedException;
 import org.apache.uniffle.common.exception.RssWaitFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
 public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
@@ -123,7 +124,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private final BlockingQueue<Object> finishEventQueue = new LinkedBlockingQueue<>();
 
-  private final Map<String, ShuffleServerInfo> faultyServers = new HashMap<>();
+  // shuffleServerId -> failoverShuffleServer
+  private final Map<String, ShuffleServerInfo> failoverShuffleServers =
+      JavaUtils.newConcurrentMap();
 
   // Only for tests
   @VisibleForTesting
@@ -499,12 +502,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                   t.getValue().stream()
                       .map(x -> x.getShuffleBlockInfo().getPartitionId())
                       .collect(Collectors.toSet());
-              ShuffleServerInfo dynamicShuffleServer = faultyServers.get(t.getKey().getId());
+              ShuffleServerInfo dynamicShuffleServer =
+                  failoverShuffleServers.get(t.getKey().getId());
               if (dynamicShuffleServer == null) {
                 // todo: merge multiple requests into one.
                 dynamicShuffleServer =
                     reAssignFaultyShuffleServer(partitionIds, t.getKey().getId());
-                faultyServers.put(t.getKey().getId(), dynamicShuffleServer);
+                failoverShuffleServers.put(t.getKey().getId(), dynamicShuffleServer);
               }
 
               ShuffleServerInfo finalDynamicShuffleServer = dynamicShuffleServer;
@@ -527,7 +531,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                 reAssignSeverBlockInfoList.add(newBlock);
               }
             });
-    clearFailedBlockStates(failedBlockInfoList, faultyServers);
+    clearFailedBlockStates(failedBlockInfoList, failoverShuffleServers);
     processShuffleBlockInfos(reAssignSeverBlockInfoList);
   }
 
@@ -721,5 +725,15 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       }
     }
     throw new RssException(e);
+  }
+
+  @VisibleForTesting
+  protected void enableBlockFailSentRetry() {
+    this.isBlockFailSentRetryEnabled = true;
+  }
+
+  @VisibleForTesting
+  protected void addReassignmentShuffleServer(String shuffleId, ShuffleServerInfo replacement) {
+    failoverShuffleServers.put(shuffleId, replacement);
   }
 }
