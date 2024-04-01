@@ -274,7 +274,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     while (records.hasNext()) {
       recordCount++;
 
-      dataCheckOrRetry();
+      checkDataIfAnyFailure();
 
       Product2<K, V> record = records.next();
       K key = record._1();
@@ -399,7 +399,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       while (true) {
         try {
           finishEventQueue.clear();
-          dataCheckOrRetry();
+          checkDataIfAnyFailure();
           Set<Long> successBlockIds = shuffleManager.getSuccessBlockIds(taskId);
           blockIds.removeAll(successBlockIds);
           if (blockIds.isEmpty()) {
@@ -435,9 +435,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
   }
 
-  private void dataCheckOrRetry() {
+  private void checkDataIfAnyFailure() {
     if (isBlockFailSentRetryEnabled) {
-      collectBlocksToResendOrFastFail();
+      collectFailedBlocksToResend();
     } else {
       if (hasAnyBlockFailure()) {
         throw new RssSendFailedException("Send fail");
@@ -458,7 +458,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     return false;
   }
 
-  private void collectBlocksToResendOrFastFail() {
+  private void collectFailedBlocksToResend() {
     if (!isBlockFailSentRetryEnabled) {
       return;
     }
