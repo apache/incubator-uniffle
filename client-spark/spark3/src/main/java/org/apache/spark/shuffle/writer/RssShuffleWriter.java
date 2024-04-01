@@ -112,7 +112,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final Set<Long> blockIds = Sets.newConcurrentHashSet();
   private TaskContext taskContext;
   private SparkConf sparkConf;
-  private boolean taskFailureRetryEnabled;
+  private boolean blockSendFailureRetryEnabled;
 
   /** used by columnar rss shuffle writer implementation */
   protected final long taskAttemptId;
@@ -189,7 +189,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.taskFailureCallback = taskFailureCallback;
     this.taskContext = context;
     this.sparkConf = sparkConf;
-    this.taskFailureRetryEnabled =
+    this.blockSendFailureRetryEnabled =
         sparkConf.getBoolean(
             RssSparkConfig.SPARK_RSS_CONFIG_PREFIX
                 + RssClientConf.RSS_TASK_FAILURE_RETRY_ENABLED.key(),
@@ -421,7 +421,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private void checkIfBlocksFailed() {
     Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
-    if (taskFailureRetryEnabled && !failedBlockIds.isEmpty()) {
+    if (blockSendFailureRetryEnabled && !failedBlockIds.isEmpty()) {
       Set<TrackingBlockStatus> shouldResendBlockSet = shouldResendBlockStatusSet(failedBlockIds);
       try {
         reSendFailedBlockIds(shouldResendBlockSet);
