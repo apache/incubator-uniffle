@@ -28,7 +28,13 @@ public class RssGetShuffleIndexRequest implements RetryableRequest {
   private long retryIntervalMax;
 
   public RssGetShuffleIndexRequest(
-      String appId, int shuffleId, int partitionId, int partitionNumPerRange, int partitionNum, int retryMax, long retryIntervalMax) {
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int partitionNumPerRange,
+      int partitionNum,
+      int retryMax,
+      long retryIntervalMax) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;

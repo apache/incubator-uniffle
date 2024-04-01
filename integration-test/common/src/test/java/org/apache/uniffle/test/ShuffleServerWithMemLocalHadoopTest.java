@@ -204,7 +204,9 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
             75,
             expectBlockIds,
             processBlockIds,
-            shuffleServerClient, 1, 0);
+            shuffleServerClient,
+            1,
+            0);
     HadoopClientReadHandler hadoopClientReadHandler =
         new HadoopClientReadHandler(
             testAppId,

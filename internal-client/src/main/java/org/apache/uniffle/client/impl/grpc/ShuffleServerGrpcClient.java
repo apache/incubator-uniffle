@@ -31,11 +31,11 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import io.netty.buffer.Unpooled;
-import org.apache.uniffle.client.request.RetryableRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
+import org.apache.uniffle.client.request.RetryableRequest;
 import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssGetInMemoryShuffleDataRequest;
@@ -119,13 +119,16 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   protected long rpcTimeout;
   private ShuffleServerBlockingStub blockingStub;
   /**
-   * A single instance of the Random class is created as a member variable to be reused throughout `ShuffleServerGrpcClient`.
-   * This approach has the following benefits:
-   * 1. Performance optimization: It avoids the overhead of creating and destroying objects frequently, reducing memory allocation and garbage collection costs.
-   * 2. Randomness: Reusing the same Random object helps maintain the randomness of the generated numbers.
-   * If multiple Random objects are created in a short period of time, their seeds may be the same or very close, leading to less random numbers.
+   * A single instance of the Random class is created as a member variable to be reused throughout
+   * `ShuffleServerGrpcClient`. This approach has the following benefits: 1. Performance
+   * optimization: It avoids the overhead of creating and destroying objects frequently, reducing
+   * memory allocation and garbage collection costs. 2. Randomness: Reusing the same Random object
+   * helps maintain the randomness of the generated numbers. If multiple Random objects are created
+   * in a short period of time, their seeds may be the same or very close, leading to less random
+   * numbers.
    */
   protected Random random = new Random();
+
   protected static final int BACK_OFF_BASE = 2000;
 
   @VisibleForTesting
@@ -301,7 +304,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         long backoffTime =
             Math.min(
                 retryIntervalMax,
-                    BACK_OFF_BASE * (1L << Math.min(retry, 16)) + random.nextInt(BACK_OFF_BASE));
+                BACK_OFF_BASE * (1L << Math.min(retry, 16)) + random.nextInt(BACK_OFF_BASE));
         Thread.sleep(backoffTime);
       } catch (Exception e) {
         LOG.warn(
@@ -833,13 +836,13 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setTimestamp(start)
             .build();
     String requestInfo =
-            "appId["
-                    + request.getAppId()
-                    + "], shuffleId["
-                    + request.getShuffleId()
-                    + "], partitionId["
-                    + request.getPartitionId()
-                    + "]";
+        "appId["
+            + request.getAppId()
+            + "], shuffleId["
+            + request.getShuffleId()
+            + "], partitionId["
+            + request.getPartitionId()
+            + "]";
     int retry = 0;
     GetLocalShuffleDataResponse rpcResponse;
     while (true) {
@@ -847,18 +850,19 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       if (rpcResponse.getStatus() != NO_BUFFER) {
         break;
       }
-      waitOrThrow(request, retry, requestInfo, StatusCode.fromProto(rpcResponse.getStatus()), start);
+      waitOrThrow(
+          request, retry, requestInfo, StatusCode.fromProto(rpcResponse.getStatus()), start);
       retry++;
     }
     RssGetShuffleDataResponse response;
     switch (rpcResponse.getStatus()) {
       case SUCCESS:
         LOG.info(
-                "GetShuffleData from {}:{} for {} cost {} ms",
-                host,
-                port,
-                requestInfo,
-                System.currentTimeMillis() - start);
+            "GetShuffleData from {}:{} for {} cost {} ms",
+            host,
+            port,
+            requestInfo,
+            System.currentTimeMillis() - start);
         response =
             new RssGetShuffleDataResponse(
                 StatusCode.SUCCESS, ByteBuffer.wrap(rpcResponse.getData().toByteArray()));
@@ -890,13 +894,13 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setPartitionNum(request.getPartitionNum())
             .build();
     String requestInfo =
-            "appId["
-                    + request.getAppId()
-                    + "], shuffleId["
-                    + request.getShuffleId()
-                    + "], partitionId["
-                    + request.getPartitionId()
-                    + "]";
+        "appId["
+            + request.getAppId()
+            + "], shuffleId["
+            + request.getShuffleId()
+            + "], partitionId["
+            + request.getPartitionId()
+            + "]";
     long start = System.currentTimeMillis();
     int retry = 0;
     GetLocalShuffleIndexResponse rpcResponse;
@@ -905,18 +909,19 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       if (rpcResponse.getStatus() != NO_BUFFER) {
         break;
       }
-      waitOrThrow(request, retry, requestInfo, StatusCode.fromProto(rpcResponse.getStatus()), start);
+      waitOrThrow(
+          request, retry, requestInfo, StatusCode.fromProto(rpcResponse.getStatus()), start);
       retry++;
     }
     RssGetShuffleIndexResponse response;
     switch (rpcResponse.getStatus()) {
       case SUCCESS:
         LOG.info(
-                "GetShuffleIndex from {}:{} for {} cost {} ms",
-                host,
-                port,
-                requestInfo,
-                System.currentTimeMillis() - start);
+            "GetShuffleIndex from {}:{} for {} cost {} ms",
+            host,
+            port,
+            requestInfo,
+            System.currentTimeMillis() - start);
         response =
             new RssGetShuffleIndexResponse(
                 StatusCode.SUCCESS,
@@ -966,13 +971,13 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setTimestamp(start)
             .build();
     String requestInfo =
-            "appId["
-                    + request.getAppId()
-                    + "], shuffleId["
-                    + request.getShuffleId()
-                    + "], partitionId["
-                    + request.getPartitionId()
-                    + "]";
+        "appId["
+            + request.getAppId()
+            + "], shuffleId["
+            + request.getShuffleId()
+            + "], partitionId["
+            + request.getPartitionId()
+            + "]";
     int retry = 0;
     GetMemoryShuffleDataResponse rpcResponse;
     while (true) {
@@ -980,20 +985,21 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       if (rpcResponse.getStatus() != NO_BUFFER) {
         break;
       }
-      waitOrThrow(request, retry, requestInfo, StatusCode.fromProto(rpcResponse.getStatus()), start);
+      waitOrThrow(
+          request, retry, requestInfo, StatusCode.fromProto(rpcResponse.getStatus()), start);
       retry++;
     }
     RssGetInMemoryShuffleDataResponse response;
     switch (rpcResponse.getStatus()) {
       case SUCCESS:
         LOG.info(
-                "GetInMemoryShuffleData from {}:{} for "
-                        + requestInfo
-                        + " cost "
-                        + (System.currentTimeMillis() - start)
-                        + " ms",
-                host,
-                port);
+            "GetInMemoryShuffleData from {}:{} for "
+                + requestInfo
+                + " cost "
+                + (System.currentTimeMillis() - start)
+                + " ms",
+            host,
+            port);
         response =
             new RssGetInMemoryShuffleDataResponse(
                 StatusCode.SUCCESS,
@@ -1021,9 +1027,12 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     return "ShuffleServerGrpcClient for host[" + host + "], port[" + port + "]";
   }
 
-  protected void waitOrThrow(RetryableRequest request, int retry, String requestInfo, StatusCode statusCode, long start) {
+  protected void waitOrThrow(
+      RetryableRequest request, int retry, String requestInfo, StatusCode statusCode, long start) {
     if (retry >= request.getRetryMax()) {
-      String msg = String.format("ShuffleServer %s:%s is full when %s due to %s, after %d retries, cost %d ms",
+      String msg =
+          String.format(
+              "ShuffleServer %s:%s is full when %s due to %s, after %d retries, cost %d ms",
               host,
               port,
               request.operationType(),
@@ -1035,22 +1044,27 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     }
     try {
       long backoffTime =
-              Math.min(
-                      request.getRetryIntervalMax(),
-                      BACK_OFF_BASE * (1L << Math.min(retry, 16)) + random.nextInt(BACK_OFF_BASE));
+          Math.min(
+              request.getRetryIntervalMax(),
+              BACK_OFF_BASE * (1L << Math.min(retry, 16)) + random.nextInt(BACK_OFF_BASE));
       LOG.warn(
-              "Can't acquire buffer for {} from {}:{} when executing {}, due to {}. "
-                      + "Will retry {} more time(s) after waiting {} milliseconds.",
-              requestInfo,
-              host,
-              port,
-              request.operationType(),
-              statusCode,
-              request.getRetryMax() - retry,
-              backoffTime);
+          "Can't acquire buffer for {} from {}:{} when executing {}, due to {}. "
+              + "Will retry {} more time(s) after waiting {} milliseconds.",
+          requestInfo,
+          host,
+          port,
+          request.operationType(),
+          statusCode,
+          request.getRetryMax() - retry,
+          backoffTime);
       Thread.sleep(backoffTime);
     } catch (InterruptedException e) {
-      LOG.warn("Exception happened when executing {} from {}:{}", request.operationType(), host, port, e);
+      LOG.warn(
+          "Exception happened when executing {} from {}:{}",
+          request.operationType(),
+          host,
+          port,
+          e);
     }
   }
 
@@ -1086,5 +1100,4 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   public void adjustTimeout(long timeout) {
     rpcTimeout = timeout;
   }
-
 }

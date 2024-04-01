@@ -172,7 +172,9 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
             partitionNumPerRange,
             partitionNum,
             segment.getOffset(),
-            segment.getLength(), 1, 0);
+            segment.getLength(),
+            1,
+            0);
 
     // read shuffle data
     return new ShuffleDataResult(

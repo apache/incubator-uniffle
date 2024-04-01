@@ -217,12 +217,12 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
       JobConf readerJobConf = getRemoteConf();
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoList.size() > 1;
       int retryMax =
-              rssJobConf.getInt(
-                      RssMRConfig.RSS_CLIENT_RETRY_MAX, RssMRConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
+          rssJobConf.getInt(
+              RssMRConfig.RSS_CLIENT_RETRY_MAX, RssMRConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
       long retryIntervalMax =
-              rssJobConf.getLong(
-                      RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
-                      RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
+          rssJobConf.getLong(
+              RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
+              RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
       ShuffleReadClient shuffleReadClient =
           ShuffleClientFactory.getInstance()
               .createShuffleReadClient(

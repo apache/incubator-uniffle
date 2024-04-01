@@ -442,13 +442,13 @@ public class ShuffleBufferManager {
 
     if (!success) {
       LOG.error(
-              "Can't require["
-                      + size
-                      + "] for read data, current["
-                      + readDataMemory.get()
-                      + "], capacity["
-                      + readCapacity
-                      + "]");
+          "Can't require["
+              + size
+              + "] for read data, current["
+              + readDataMemory.get()
+              + "], capacity["
+              + readCapacity
+              + "]");
       ShuffleServerMetrics.counterTotalRequireReadMemoryRetryNum.inc();
       ShuffleServerMetrics.counterTotalRequireReadMemoryFailedNum.inc();
     }

@@ -107,7 +107,13 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     ShuffleIndexResult shuffleIndexResult = null;
     RssGetShuffleIndexRequest request =
         new RssGetShuffleIndexRequest(
-            appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, retryMax, retryIntervalMax);
+            appId,
+            shuffleId,
+            partitionId,
+            partitionNumPerRange,
+            partitionNum,
+            retryMax,
+            retryIntervalMax);
     try {
       shuffleIndexResult = shuffleServerClient.getShuffleIndex(request).getShuffleIndexResult();
     } catch (RssFetchFailedException e) {
@@ -160,8 +166,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
           new ShuffleDataResult(response.getShuffleData(), shuffleDataSegment.getBufferSegments());
     } catch (Exception e) {
       throw new RssException(
-          "Failed to read shuffle data with "
-              + shuffleServerClient.getClientInfo(), e);
+          "Failed to read shuffle data with " + shuffleServerClient.getClientInfo(), e);
     }
     if (result.getDataBuffer().remaining() != expectedLength) {
       throw new RssException(

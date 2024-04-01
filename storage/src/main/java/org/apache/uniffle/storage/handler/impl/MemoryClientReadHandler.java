@@ -65,7 +65,14 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
 
     RssGetInMemoryShuffleDataRequest request =
         new RssGetInMemoryShuffleDataRequest(
-            appId, shuffleId, partitionId, lastBlockId, readBufferSize, expectTaskIds, retryMax, retryIntervalMax);
+            appId,
+            shuffleId,
+            partitionId,
+            lastBlockId,
+            readBufferSize,
+            expectTaskIds,
+            retryMax,
+            retryIntervalMax);
 
     try {
       RssGetInMemoryShuffleDataResponse response =
@@ -76,8 +83,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
     } catch (Exception e) {
       // todo: fault tolerance solution should be added
       throw new RssFetchFailedException(
-          "Failed to read in memory shuffle data with "
-              + shuffleServerClient.getClientInfo(), e);
+          "Failed to read in memory shuffle data with " + shuffleServerClient.getClientInfo(), e);
     }
 
     // update lastBlockId for next rpc call
