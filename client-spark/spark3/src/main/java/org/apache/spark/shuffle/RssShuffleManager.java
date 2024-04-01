@@ -138,7 +138,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   /** Whether to enable the dynamic shuffleServer function rewrite and reread functions */
   private boolean rssResubmitStage;
 
-  private boolean taskBlockSendFailureRetry;
+  private boolean taskBlockSendFailureRetryEnabled;
 
   private boolean shuffleManagerRpcServiceEnabled;
   /** A list of shuffleServer for Write failures */
@@ -243,12 +243,9 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.rssResubmitStage =
         rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
             && RssSparkShuffleUtils.isStageResubmitSupported();
-    this.taskBlockSendFailureRetry =
-        sparkConf.getBoolean(
-            RssSparkConfig.SPARK_RSS_CONFIG_PREFIX
-                + RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.key(),
-            RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.defaultValue());
-    this.shuffleManagerRpcServiceEnabled = taskBlockSendFailureRetry || rssResubmitStage;
+    this.taskBlockSendFailureRetryEnabled =
+        rssConf.getBoolean(RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED);
+    this.shuffleManagerRpcServiceEnabled = taskBlockSendFailureRetryEnabled || rssResubmitStage;
     if (isDriver) {
       heartBeatScheduledExecutorService =
           ThreadUtils.getDaemonSingleThreadScheduledExecutor("rss-heartbeat");

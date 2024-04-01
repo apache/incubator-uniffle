@@ -204,7 +204,7 @@ public class RssClientConf {
                   + "the remote storage conf will use the client side hadoop configuration loaded from the classpath.");
 
   public static final ConfigOption<Boolean> RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED =
-      ConfigOptions.key("rss.client.block.send.failure.retry.enabled")
+      ConfigOptions.key("rss.client.blockSendFailureRetry.enabled")
           .booleanType()
           .defaultValue(false)
           .withDescription(
