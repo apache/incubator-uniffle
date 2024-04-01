@@ -192,7 +192,7 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     // read the 1-th segment from memory
     MemoryClientReadHandler memoryClientReadHandler =
         new MemoryClientReadHandler(
-            testAppId, shuffleId, partitionId, 150, shuffleServerClient, exceptTaskIds, 1, 0);
+            testAppId, shuffleId, partitionId, 150, shuffleServerClient, exceptTaskIds);
     LocalFileClientReadHandler localFileClientReadHandler =
         new LocalFileClientReadHandler(
             testAppId,

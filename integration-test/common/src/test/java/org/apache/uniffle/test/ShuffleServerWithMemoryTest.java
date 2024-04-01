@@ -181,7 +181,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // create memory handler to read data,
     MemoryClientReadHandler memoryClientReadHandler =
         new MemoryClientReadHandler(
-            testAppId, shuffleId, partitionId, 20, shuffleServerClient, exceptTaskIds, 1, 0);
+            testAppId, shuffleId, partitionId, 20, shuffleServerClient, exceptTaskIds);
     // start to read data, one block data for every call
     ShuffleDataResult sdr = memoryClientReadHandler.readShuffleData();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -350,7 +350,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // create memory handler to read data,
     MemoryClientReadHandler memoryClientReadHandler =
         new MemoryClientReadHandler(
-            testAppId, shuffleId, partitionId, 20, shuffleServerClient, exceptTaskIds, 1, 0);
+            testAppId, shuffleId, partitionId, 20, shuffleServerClient, exceptTaskIds);
     // start to read data, one block data for every call
     ShuffleDataResult sdr = memoryClientReadHandler.readShuffleData();
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -360,7 +360,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     exceptTaskIds.removeLong(blocks.get(0).getTaskAttemptId());
     MemoryClientReadHandler memoryClientReadHandler2 =
         new MemoryClientReadHandler(
-            testAppId, shuffleId, partitionId, 20, shuffleServerClient, exceptTaskIds, 1, 0);
+            testAppId, shuffleId, partitionId, 20, shuffleServerClient, exceptTaskIds);
     sdr = memoryClientReadHandler2.readShuffleData();
     expectedData.clear();
     expectedData.put(blocks.get(1).getBlockId(), ByteBufUtils.readBytes(blocks.get(1).getData()));
@@ -419,7 +419,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     Roaring64NavigableMap exceptTaskIds = Roaring64NavigableMap.bitmapOf(0);
     MemoryClientReadHandler memoryClientReadHandler =
         new MemoryClientReadHandler(
-            testAppId, shuffleId, partitionId, 150, shuffleServerClient, exceptTaskIds, 1, 0);
+            testAppId, shuffleId, partitionId, 150, shuffleServerClient, exceptTaskIds);
     LocalFileClientReadHandler localFileClientReadHandler =
         new LocalFileClientReadHandler(
             testAppId,

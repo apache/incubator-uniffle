@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +58,17 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
     this.expectTaskIds = expectTaskIds;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
+  }
+
+  @VisibleForTesting
+  public MemoryClientReadHandler(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int readBufferSize,
+      ShuffleServerClient shuffleServerClient,
+      Roaring64NavigableMap expectTaskIds) {
+    this(appId, shuffleId, partitionId, readBufferSize, shuffleServerClient, expectTaskIds, 1, 0);
   }
 
   @Override
