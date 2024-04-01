@@ -592,6 +592,8 @@ message RssReassignFaultyShuffleServerRequest{
   int32 shuffleId  = 1;
   repeated int32 partitionIds = 2;
   string faultyShuffleServerId = 3;
+  int32 stageId = 4;
+  int32 stageAttemptNumber = 5;
 }
 
 message RssReassignFaultyShuffleServerResponse{

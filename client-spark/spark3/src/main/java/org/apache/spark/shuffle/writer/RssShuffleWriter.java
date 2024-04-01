@@ -477,6 +477,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                 dynamicShuffleServer =
                     reAssignFaultyShuffleServer(partitionIds, t.getKey().getId());
                 faultyServers.put(t.getKey().getId(), dynamicShuffleServer);
+                shuffleManager.updateShuffleHandleInfoFaultyServer(
+                    shuffleId, partitionIds, t.getKey().getId(), dynamicShuffleServer);
               }
 
               ShuffleServerInfo finalDynamicShuffleServer = dynamicShuffleServer;
@@ -527,7 +529,12 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
     try (ShuffleManagerClient shuffleManagerClient = createShuffleManagerClient(driver, port)) {
       RssReassignFaultyShuffleServerRequest request =
-          new RssReassignFaultyShuffleServerRequest(shuffleId, partitionIds, faultyServerId);
+          new RssReassignFaultyShuffleServerRequest(
+              shuffleId,
+              partitionIds,
+              faultyServerId,
+              taskContext.stageId(),
+              taskContext.stageAttemptNumber());
       RssReassignFaultyShuffleServerResponse response =
           shuffleManagerClient.reassignFaultyShuffleServer(request);
       if (response.getStatusCode() != StatusCode.SUCCESS) {

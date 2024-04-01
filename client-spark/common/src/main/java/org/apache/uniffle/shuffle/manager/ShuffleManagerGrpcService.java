@@ -260,7 +260,9 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
         shuffleManager.reassignFaultyShuffleServerForTasks(
             request.getShuffleId(),
             Sets.newHashSet(request.getPartitionIdsList()),
-            request.getFaultyShuffleServerId());
+            request.getFaultyShuffleServerId(),
+            request.getStageId(),
+            request.getStageAttemptNumber());
     RssProtos.StatusCode code = RssProtos.StatusCode.SUCCESS;
     RssProtos.RssReassignFaultyShuffleServerResponse reply =
         RssProtos.RssReassignFaultyShuffleServerResponse.newBuilder()
