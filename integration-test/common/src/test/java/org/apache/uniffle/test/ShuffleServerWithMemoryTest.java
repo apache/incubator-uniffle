@@ -219,9 +219,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
             50,
             expectBlockIds,
             processBlockIds,
-            shuffleServerClient,
-            1,
-            0);
+            shuffleServerClient);
     ClientReadHandler[] handlers = new ClientReadHandler[2];
     handlers[0] = memoryClientReadHandler;
     handlers[1] = localFileQuorumClientReadHandler;
@@ -431,9 +429,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
             75,
             expectBlockIds,
             processBlockIds,
-            shuffleServerClient,
-            1,
-            0);
+            shuffleServerClient);
     ClientReadHandler[] handlers = new ClientReadHandler[2];
     handlers[0] = memoryClientReadHandler;
     handlers[1] = localFileClientReadHandler;

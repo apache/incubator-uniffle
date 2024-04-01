@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +72,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     this.retryIntervalMax = retryIntervalMax;
   }
 
-  /** Only for test */
+  @VisibleForTesting
   public LocalFileClientReadHandler(
       String appId,
       int shuffleId,
@@ -82,9 +83,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
       int readBufferSize,
       Roaring64NavigableMap expectBlockIds,
       Roaring64NavigableMap processBlockIds,
-      ShuffleServerClient shuffleServerClient,
-      int retryMax,
-      long retryIntervalMax) {
+      ShuffleServerClient shuffleServerClient) {
     this(
         appId,
         shuffleId,
@@ -98,8 +97,8 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
         shuffleServerClient,
         ShuffleDataDistributionType.NORMAL,
         Roaring64NavigableMap.bitmapOf(),
-        retryMax,
-        retryIntervalMax);
+        1,
+        0);
   }
 
   @Override
