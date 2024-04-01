@@ -382,39 +382,6 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     }
   }
 
-  protected void waitOrThrow(RetryableRequest request, int retry, String requestInfo, StatusCode statusCode, long start) {
-    if (retry >= request.getRetryMax()) {
-      String msg = String.format("ShuffleServer %s:%s is full when %s due to %s, after %d retries, cost %d ms",
-              host,
-              port,
-              request.operationType(),
-              statusCode,
-              request.getRetryMax(),
-              System.currentTimeMillis() - start);
-      LOG.error(msg);
-      throw new RssFetchFailedException(msg);
-    }
-    try {
-      long backoffTime =
-              Math.min(
-                      request.getRetryIntervalMax(),
-                      BACK_OFF_BASE * (1L << Math.min(retry, 16)) + random.nextInt(BACK_OFF_BASE));
-      LOG.warn(
-              "Can't acquire buffer for {} from {}:{} when executing {}, due to {}. "
-                      + "Will retry {} more time(s) after waiting {} milliseconds.",
-              requestInfo,
-              host,
-              port,
-              request.operationType(),
-              statusCode,
-              request.getRetryMax() - retry,
-              backoffTime);
-      Thread.sleep(backoffTime);
-    } catch (InterruptedException e) {
-      LOG.warn("Exception happened when executing {} from {}:{}", request.operationType(), host, port, e);
-    }
-  }
-
   private static final AtomicLong counter = new AtomicLong();
 
   public static long requestId() {
