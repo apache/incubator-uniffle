@@ -205,7 +205,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     // case: read with ComposedClientReadHandler
     memoryClientReadHandler =
         new MemoryClientReadHandler(
-            testAppId, shuffleId, partitionId, 50, shuffleServerClient, exceptTaskIds, 1, 0);
+            testAppId, shuffleId, partitionId, 50, shuffleServerClient, exceptTaskIds);
 
     Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
     LocalFileClientReadHandler localFileQuorumClientReadHandler =
