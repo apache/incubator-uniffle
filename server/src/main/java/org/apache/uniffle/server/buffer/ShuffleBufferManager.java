@@ -424,23 +424,22 @@ public class ShuffleBufferManager {
 
   public boolean requireReadMemory(long size) {
     ShuffleServerMetrics.counterTotalRequireReadMemoryNum.inc();
-    boolean success = false;
+    boolean isSuccessful = false;
 
     do {
       long currentReadDataMemory = readDataMemory.get();
       long newReadDataMemory = currentReadDataMemory + size;
-      if (newReadDataMemory < readCapacity) {
-        if (readDataMemory.compareAndSet(currentReadDataMemory, newReadDataMemory)) {
-          ShuffleServerMetrics.gaugeReadBufferUsedSize.inc(size);
-          success = true;
-          break;
-        }
-      } else {
+      if (newReadDataMemory >= readCapacity) {
+        break;
+      }
+      if (readDataMemory.compareAndSet(currentReadDataMemory, newReadDataMemory)) {
+        ShuffleServerMetrics.gaugeReadBufferUsedSize.inc(size);
+        isSuccessful = true;
         break;
       }
     } while (true);
 
-    if (!success) {
+    if (!isSuccessful) {
       LOG.error(
           "Can't require["
               + size
@@ -453,7 +452,7 @@ public class ShuffleBufferManager {
       ShuffleServerMetrics.counterTotalRequireReadMemoryFailedNum.inc();
     }
 
-    return success;
+    return isSuccessful;
   }
 
   public void releaseReadMemory(long size) {

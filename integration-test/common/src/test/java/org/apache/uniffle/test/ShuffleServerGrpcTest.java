@@ -993,7 +993,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
             .get();
     try {
       grpcShuffleServerClient.getShuffleIndex(
-          new RssGetShuffleIndexRequest(appId, shuffleId, 1, 1, 3, 1, 0));
+          new RssGetShuffleIndexRequest(appId, shuffleId, 1, 1, 3));
     } catch (Exception e) {
       // ignore the exception, just test metrics value
     }
@@ -1024,7 +1024,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
             .get();
     try {
       grpcShuffleServerClient.getShuffleData(
-          new RssGetShuffleDataRequest(appId, shuffleId, 0, 1, 3, 0, 100, 1, 0));
+          new RssGetShuffleDataRequest(appId, shuffleId, 0, 1, 3, 0, 100));
     } catch (Exception e) {
       // ignore the exception, just test metrics value
     }

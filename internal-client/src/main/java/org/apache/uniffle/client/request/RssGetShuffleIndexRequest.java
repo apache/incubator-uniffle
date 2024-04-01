@@ -17,7 +17,9 @@
 
 package org.apache.uniffle.client.request;
 
-public class RssGetShuffleIndexRequest implements RetryableRequest {
+import com.google.common.annotations.VisibleForTesting;
+
+public class RssGetShuffleIndexRequest extends RetryableRequest {
 
   private final String appId;
   private final int shuffleId;
@@ -42,6 +44,12 @@ public class RssGetShuffleIndexRequest implements RetryableRequest {
     this.partitionNum = partitionNum;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
+  }
+
+  @VisibleForTesting
+  public RssGetShuffleIndexRequest(
+      String appId, int shuffleId, int partitionId, int partitionNumPerRange, int partitionNum) {
+    this(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, 1, 0);
   }
 
   public String getAppId() {

@@ -17,10 +17,10 @@
 
 package org.apache.uniffle.client.request;
 
-public interface RetryableRequest {
-  int getRetryMax();
+public abstract class RetryableRequest {
+  public abstract int getRetryMax();
 
-  long getRetryIntervalMax();
+  public abstract long getRetryIntervalMax();
 
-  String operationType();
+  public abstract String operationType();
 }
