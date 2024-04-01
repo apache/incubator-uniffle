@@ -26,8 +26,6 @@ public class RssGetShuffleIndexRequest extends RetryableRequest {
   private final int partitionId;
   private final int partitionNumPerRange;
   private final int partitionNum;
-  private int retryMax;
-  private long retryIntervalMax;
 
   public RssGetShuffleIndexRequest(
       String appId,
@@ -70,16 +68,6 @@ public class RssGetShuffleIndexRequest extends RetryableRequest {
 
   public int getPartitionNum() {
     return partitionNum;
-  }
-
-  @Override
-  public int getRetryMax() {
-    return retryMax;
-  }
-
-  @Override
-  public long getRetryIntervalMax() {
-    return retryIntervalMax;
   }
 
   @Override

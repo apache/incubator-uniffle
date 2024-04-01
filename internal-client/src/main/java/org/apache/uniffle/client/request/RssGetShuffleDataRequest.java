@@ -28,8 +28,6 @@ public class RssGetShuffleDataRequest extends RetryableRequest {
   private final int partitionNum;
   private final long offset;
   private final int length;
-  private int retryMax;
-  private long retryIntervalMax;
 
   public RssGetShuffleDataRequest(
       String appId,
@@ -90,16 +88,6 @@ public class RssGetShuffleDataRequest extends RetryableRequest {
 
   public int getLength() {
     return length;
-  }
-
-  @Override
-  public int getRetryMax() {
-    return retryMax;
-  }
-
-  @Override
-  public long getRetryIntervalMax() {
-    return retryIntervalMax;
   }
 
   @Override

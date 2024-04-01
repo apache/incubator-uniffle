@@ -18,9 +18,16 @@
 package org.apache.uniffle.client.request;
 
 public abstract class RetryableRequest {
-  public abstract int getRetryMax();
+  protected int retryMax;
+  protected long retryIntervalMax;
 
-  public abstract long getRetryIntervalMax();
+  public int getRetryMax() {
+    return retryMax;
+  }
+
+  public long getRetryIntervalMax() {
+    return retryIntervalMax;
+  }
 
   public abstract String operationType();
 }

@@ -27,8 +27,6 @@ public class RssGetInMemoryShuffleDataRequest extends RetryableRequest {
   private final long lastBlockId;
   private final int readBufferSize;
   private final Roaring64NavigableMap expectedTaskIds;
-  private int retryMax;
-  private long retryIntervalMax;
 
   public RssGetInMemoryShuffleDataRequest(
       String appId,
@@ -82,16 +80,6 @@ public class RssGetInMemoryShuffleDataRequest extends RetryableRequest {
 
   public Roaring64NavigableMap getExpectedTaskIds() {
     return expectedTaskIds;
-  }
-
-  @Override
-  public int getRetryMax() {
-    return retryMax;
-  }
-
-  @Override
-  public long getRetryIntervalMax() {
-    return retryIntervalMax;
   }
 
   @Override
