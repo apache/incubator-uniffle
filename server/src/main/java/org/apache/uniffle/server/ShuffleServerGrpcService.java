@@ -722,7 +722,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         shuffleServer.getShuffleBufferManager().releaseReadMemory(length);
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get shuffle data";
       LOG.error(msg + " for " + requestInfo);
       reply =
@@ -812,7 +812,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         shuffleServer.getShuffleBufferManager().releaseReadMemory(assumedFileSize);
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get shuffle index";
       LOG.error(msg + " for " + requestInfo);
       reply =
@@ -915,7 +915,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         shuffleServer.getShuffleBufferManager().releaseReadMemory(readBufferSize);
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get in memory shuffle data";
       LOG.error(msg + " for " + requestInfo);
       reply =
