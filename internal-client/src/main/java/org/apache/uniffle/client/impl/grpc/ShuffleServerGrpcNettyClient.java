@@ -239,7 +239,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
         LOG.info(
             "GetInMemoryShuffleData from {}:{} for {} cost {} ms",
             host,
-            port,
+            nettyPort,
             requestInfo,
             System.currentTimeMillis() - start);
         return new RssGetInMemoryShuffleDataResponse(
@@ -251,7 +251,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
             "Can't get shuffle in memory data from "
                 + host
                 + ":"
-                + port
+                + nettyPort
                 + " for "
                 + requestInfo
                 + ", errorMsg:"
@@ -297,7 +297,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
         LOG.info(
             "GetShuffleIndex from {}:{} for {} cost {} ms",
             host,
-            port,
+            nettyPort,
             requestInfo,
             System.currentTimeMillis() - start);
         return new RssGetShuffleIndexResponse(
@@ -309,7 +309,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
             "Can't get shuffle index from "
                 + host
                 + ":"
-                + port
+                + nettyPort
                 + " for "
                 + requestInfo
                 + ", errorMsg:"
@@ -359,7 +359,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
         LOG.info(
             "GetShuffleData from {}:{} for {} cost {} ms",
             host,
-            port,
+            nettyPort,
             requestInfo,
             System.currentTimeMillis() - start);
         return new RssGetShuffleDataResponse(
@@ -369,7 +369,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
             "Can't get shuffle data from "
                 + host
                 + ":"
-                + port
+                + nettyPort
                 + " for "
                 + requestInfo
                 + ", errorMsg:"
