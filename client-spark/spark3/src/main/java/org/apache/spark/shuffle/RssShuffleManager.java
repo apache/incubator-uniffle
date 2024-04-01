@@ -137,6 +137,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private Map<Integer, ShuffleHandleInfo> shuffleIdToShuffleHandleInfo;
   /** Whether to enable the dynamic shuffleServer function rewrite and reread functions */
   private boolean rssResubmitStage;
+
+  private boolean taskBlockSendFailureRetryEnabled;
+
+  private boolean shuffleManagerRpcServiceEnabled;
   /** A list of shuffleServer for Write failures */
   private Set<String> failuresShuffleServerIds;
   /**
@@ -239,10 +243,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.rssResubmitStage =
         rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
             && RssSparkShuffleUtils.isStageResubmitSupported();
+    this.taskBlockSendFailureRetryEnabled =
+        rssConf.getBoolean(RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED);
+    this.shuffleManagerRpcServiceEnabled = taskBlockSendFailureRetryEnabled || rssResubmitStage;
     if (isDriver) {
       heartBeatScheduledExecutorService =
           ThreadUtils.getDaemonSingleThreadScheduledExecutor("rss-heartbeat");
-      if (rssResubmitStage) {
+      if (shuffleManagerRpcServiceEnabled) {
         LOG.info("stage resubmit is supported and enabled");
         // start shuffle manager server
         rssConf.set(RPC_SERVER_PORT, 0);
@@ -471,7 +478,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
     shuffleIdToPartitionNum.putIfAbsent(shuffleId, dependency.partitioner().numPartitions());
     shuffleIdToNumMapTasks.putIfAbsent(shuffleId, dependency.rdd().partitions().length);
-    if (rssResubmitStage) {
+    if (shuffleManagerRpcServiceEnabled) {
       ShuffleHandleInfo handleInfo =
           new ShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
       shuffleIdToShuffleHandleInfo.put(shuffleId, handleInfo);
@@ -509,7 +516,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       writeMetrics = context.taskMetrics().shuffleWriteMetrics();
     }
     ShuffleHandleInfo shuffleHandleInfo;
-    if (rssResubmitStage) {
+    if (shuffleManagerRpcServiceEnabled) {
       // Get the ShuffleServer list from the Driver based on the shuffleId
       shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);
     } else {
@@ -651,7 +658,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     final int partitionNum = rssShuffleHandle.getDependency().partitioner().numPartitions();
     int shuffleId = rssShuffleHandle.getShuffleId();
     ShuffleHandleInfo shuffleHandleInfo;
-    if (rssResubmitStage) {
+    if (shuffleManagerRpcServiceEnabled) {
       // Get the ShuffleServer list from the Driver based on the shuffleId
       shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);
     } else {
