@@ -480,7 +480,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             taskId,
             retryRecords.stream().map(x -> x.getShuffleServerInfo()).collect(Collectors.toSet()));
         // fast fail if any blocks failure with multiple retry times
-        throw new RssSendFailedException();
+        throw new RssSendFailedException("Errors on resending the blocks data to the remote shuffle-server.");
       }
 
       // todo: if setting multi replica and another replica is succeed to send, no need to resend

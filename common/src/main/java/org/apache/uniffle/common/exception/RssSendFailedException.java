@@ -19,10 +19,6 @@ package org.apache.uniffle.common.exception;
 
 public class RssSendFailedException extends RssException {
 
-  public RssSendFailedException() {
-    super("");
-  }
-
   public RssSendFailedException(String message) {
     super(message);
   }
