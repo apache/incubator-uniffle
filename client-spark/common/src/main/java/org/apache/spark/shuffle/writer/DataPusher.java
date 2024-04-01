@@ -100,9 +100,10 @@ public class DataPusher implements Closeable {
             Set<Long> succeedBlockIds = result.getSuccessBlockIds();
             if (succeedBlockIds != null && !succeedBlockIds.isEmpty()) {
               for (ShuffleBlockInfo block : shuffleBlockInfoList) {
-                event
-                    .getBlockProcessedCallback()
-                    .accept(block, succeedBlockIds.contains(block.getBlockId()));
+                Optional.ofNullable(event.getBlockProcessedCallback())
+                    .ifPresent(
+                        callback ->
+                            callback.accept(block, succeedBlockIds.contains(block.getBlockId())));
               }
             }
 
