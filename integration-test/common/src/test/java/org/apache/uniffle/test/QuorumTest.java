@@ -285,6 +285,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
                 Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, fakedShuffleServerInfo2))
             .build();
     // The data should be read
+
     validateResult(readClient, expectedData);
 
     // case2: When 2 servers are failed, the block sending should fail
@@ -316,12 +317,83 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertEquals(readClient.readShuffleBlockData(), null);
   }
 
+  @Test
+  public void testRpcRetryLogic() {
+    String testAppId = "testRpcRetryLogic";
+    registerShuffleServer(testAppId, 3, 2, 2, true);
+    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+
+    List<ShuffleBlockInfo> blocks =
+        createShuffleBlockList(
+            0,
+            0,
+            0,
+            3,
+            25,
+            blockIdBitmap,
+            expectedData,
+            Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
+
+    SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
+    Roaring64NavigableMap failedBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    Roaring64NavigableMap successfulBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    for (Long blockId : result.getSuccessBlockIds()) {
+      successfulBlockIdBitmap.addLong(blockId);
+    }
+    for (Long blockId : result.getFailedBlockIds()) {
+      failedBlockIdBitmap.addLong(blockId);
+    }
+    assertEquals(0, failedBlockIdBitmap.getLongCardinality());
+    assertEquals(blockIdBitmap, successfulBlockIdBitmap);
+
+    Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
+
+    ShuffleReadClientImpl readClient =
+        baseReadBuilder()
+            .appId(testAppId)
+            .blockIdBitmap(blockIdBitmap)
+            .taskIdBitmap(taskIdBitmap)
+            .shuffleServerInfoList(
+                Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2))
+            .retryMax(3)
+            .retryIntervalMax(1)
+            .build();
+
+    // The data cannot be read because the maximum number of retries is 3
+    enableFirstReadRequest(4);
+    try {
+      validateResult(readClient, expectedData);
+      fail();
+    } catch (Exception e) {
+      // do nothing
+    }
+    disableFirstReadRequest();
+
+    // The data can be read because the reader will retry
+    enableFirstReadRequest(1);
+    validateResult(readClient, expectedData);
+    disableFirstReadRequest();
+  }
+
   private void enableTimeout(MockedShuffleServer server, long timeout) {
     ((MockedGrpcServer) server.getServer()).getService().enableMockedTimeout(timeout);
   }
 
   private void disableTimeout(MockedShuffleServer server) {
     ((MockedGrpcServer) server.getServer()).getService().disableMockedTimeout();
+  }
+
+  private static void enableFirstReadRequest(int failCount) {
+    for (ShuffleServer server : grpcShuffleServers) {
+      ((MockedGrpcServer) server.getServer()).getService().enableFirstNReadRequestToFail(failCount);
+    }
+  }
+
+  private static void disableFirstReadRequest() {
+    for (ShuffleServer server : grpcShuffleServers) {
+      ((MockedGrpcServer) server.getServer()).getService().resetFirstNReadRequestToFail();
+    }
   }
 
   static class MockedShuffleWriteClientImpl extends ShuffleWriteClientImpl {
