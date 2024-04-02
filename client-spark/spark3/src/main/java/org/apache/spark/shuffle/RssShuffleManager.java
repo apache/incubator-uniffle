@@ -667,19 +667,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               rssShuffleHandle.getPartitionToServers(),
               rssShuffleHandle.getRemoteStorage());
     }
-    Map<Integer, List<ShuffleServerInfo>> allPartitionToServers =
-        shuffleHandleInfo.getPartitionToServers();
-    Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers =
-        allPartitionToServers.entrySet().stream()
-            .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition)
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions =
-        RssUtils.generateServerToPartitions(requirePartitionToServers);
+    Map<ShuffleServerInfo, Set<Integer>> blockIdServerToPartitions =
+        getBlockIdServers(shuffleHandleInfo, startPartition, endPartition);
     long start = System.currentTimeMillis();
     Roaring64NavigableMap blockIdBitmap =
         getShuffleResultForMultiPart(
             clientType,
-            serverToPartitions,
+            blockIdServerToPartitions,
             rssShuffleHandle.getAppId(),
             shuffleId,
             context.stageAttemptNumber());
@@ -725,7 +719,20 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         readMetrics,
         RssSparkConfig.toRssConf(sparkConf),
         dataDistributionType,
-        allPartitionToServers);
+        shuffleHandleInfo.listAllPartitionAssignmentServers());
+  }
+
+  private Map<ShuffleServerInfo, Set<Integer>> getBlockIdServers(
+      ShuffleHandleInfo shuffleHandleInfo, int startPartition, int endPartition) {
+    Map<Integer, List<ShuffleServerInfo>> allPartitionToServers =
+        shuffleHandleInfo.getPartitionToServers();
+    Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers =
+        allPartitionToServers.entrySet().stream()
+            .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions =
+        RssUtils.generateServerToPartitions(requirePartitionToServers);
+    return serverToPartitions;
   }
 
   @SuppressFBWarnings("REC_CATCH_EXCEPTION")

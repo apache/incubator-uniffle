@@ -18,7 +18,9 @@
 package org.apache.spark.shuffle;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -113,5 +115,29 @@ public class ShuffleHandleInfo implements Serializable {
       }
     }
     return replacement;
+  }
+
+  /** This composes the partition's replica server + replacement servers. */
+  public Map<Integer, List<ShuffleServerInfo>> listAllPartitionAssignmentServers() {
+    Map<Integer, List<ShuffleServerInfo>> partitionServer = new HashMap<>();
+    for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : partitionToServers.entrySet()) {
+      int partitionId = entry.getKey();
+      List<ShuffleServerInfo> replicas = entry.getValue();
+      Map<Integer, ShuffleServerInfo> replacements = failoverPartitionServers.get(partitionId);
+      if (replacements == null) {
+        replacements = Collections.emptyMap();
+      }
+
+      List<ShuffleServerInfo> servers =
+          partitionServer.computeIfAbsent(partitionId, k -> new ArrayList<>());
+      for (int i = 0; i < replicas.size(); i++) {
+        servers.add(replicas.get(i));
+        ShuffleServerInfo replacement = replacements.get(i);
+        if (replacement != null) {
+          servers.add(replacement);
+        }
+      }
+    }
+    return partitionServer;
   }
 }

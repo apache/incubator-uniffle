@@ -712,4 +712,8 @@ public class ShuffleBufferManager {
     }
     return false;
   }
+
+  public void setUsedMemory(long usedMemory) {
+    this.usedMemory.set(usedMemory);
+  }
 }

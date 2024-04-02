@@ -35,8 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShuffleHandleInfoTest {
 
-  private ShuffleServerInfo createFakeServerInfo(String host) {
-    return new ShuffleServerInfo(host, 1);
+  private ShuffleServerInfo createFakeServerInfo(String id) {
+    return new ShuffleServerInfo(id, "1.1.1.1", 1);
   }
 
   @Test
@@ -57,5 +57,26 @@ public class ShuffleHandleInfoTest {
     assertTrue(handleInfo.isExistingFaultyServer("a"));
 
     assertEquals(newServer, handleInfo.useExistingReassignmentForMultiPartitions(partitions, "a"));
+  }
+
+  @Test
+  public void testListAllPartitionAssignmentServers() {
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
+    partitionToServers.put(1, Arrays.asList(createFakeServerInfo("a"), createFakeServerInfo("b")));
+    partitionToServers.put(2, Arrays.asList(createFakeServerInfo("c")));
+
+    ShuffleHandleInfo handleInfo =
+        new ShuffleHandleInfo(1, partitionToServers, new RemoteStorageInfo(""));
+
+    Set<Integer> partitions = new HashSet<>();
+    partitions.add(2);
+    handleInfo.createNewReassignmentForMultiPartitions(partitions, "c", createFakeServerInfo("d"));
+
+    Map<Integer, List<ShuffleServerInfo>> partitionAssignment =
+        handleInfo.listAllPartitionAssignmentServers();
+    assertEquals(2, partitionAssignment.size());
+    assertEquals(
+        Arrays.asList(createFakeServerInfo("c"), createFakeServerInfo("d")),
+        partitionAssignment.get(2));
   }
 }
