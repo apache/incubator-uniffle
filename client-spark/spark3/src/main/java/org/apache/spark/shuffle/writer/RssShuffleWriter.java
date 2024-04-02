@@ -528,7 +528,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       ShuffleServerInfo replacement = replacementShuffleServers.get(entry.getKey().getId());
       if (replacement == null) {
         // todo: merge multiple requests into one.
-        replacement = reAssignFaultyShuffleServer(partitionIds, entry.getKey().getId());
+        replacement = reassignFaultyShuffleServer(partitionIds, entry.getKey().getId());
         replacementShuffleServers.put(entry.getKey().getId(), replacement);
       }
 
@@ -578,7 +578,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         });
   }
 
-  private ShuffleServerInfo reAssignFaultyShuffleServer(
+  private ShuffleServerInfo reassignFaultyShuffleServer(
       Set<Integer> partitionIds, String faultyServerId) {
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     String driver = rssConf.getString("driver.host", "");
