@@ -56,8 +56,10 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
+import org.apache.uniffle.client.impl.TrackingBlockStatus;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.function.TupleConsumer;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.storage.util.StorageType;
@@ -98,19 +100,25 @@ public class RssShuffleWriterTest {
         new FakedDataPusher(
             event -> {
               assertEquals("taskId", event.getTaskId());
+              FailedBlockSendTracker tracker = taskToFailedBlockSendTracker.get(event.getTaskId());
+              TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback =
+                  event.getBlockProcessedCallback();
               for (ShuffleBlockInfo block : event.getShuffleDataInfoList()) {
+                boolean isSuccessful = true;
                 ShuffleServerInfo shuffleServer = block.getShuffleServerInfos().get(0);
-                if (shuffleServer.getId().equals("id1") && block.getRetryCounter() == 0) {
-                  taskToFailedBlockSendTracker
-                      .get(event.getTaskId())
-                      .add(block, shuffleServer, StatusCode.NO_BUFFER_FOR_HUGE_PARTITION);
+                List<TrackingBlockStatus> statusList =
+                    tracker.getFailedBlockStatus(block.getBlockId());
+                int record = statusList == null ? 0 : statusList.size();
+                if (shuffleServer.getId().equals("id1") && record == 0) {
+                  tracker.add(block, shuffleServer, StatusCode.NO_BUFFER_FOR_HUGE_PARTITION);
                   sentFailureCnt.addAndGet(1);
+                  isSuccessful = false;
                 } else {
                   successBlockIds.putIfAbsent(event.getTaskId(), Sets.newConcurrentHashSet());
                   successBlockIds.get(event.getTaskId()).add(block.getBlockId());
-
                   shuffleBlockInfos.add(block);
                 }
+                blockProcessedCallback.accept(block, isSuccessful);
               }
               return new CompletableFuture<>();
             });
@@ -188,7 +196,7 @@ public class RssShuffleWriterTest {
             mockShuffleHandleInfo,
             contextMock);
     rssShuffleWriter.enableBlockFailSentRetry();
-    doReturn(1000000L).when(bufferManagerSpy).acquireMemory(anyLong());
+    doReturn(100000L).when(bufferManagerSpy).acquireMemory(anyLong());
     rssShuffleWriter.addReassignmentShuffleServer(
         "id1", new ShuffleServerInfo("id10", "0.0.0.10", 100));
 
@@ -216,6 +224,9 @@ public class RssShuffleWriterTest {
         shuffleBlockInfos.stream().mapToInt(ShuffleBlockInfo::getLength).sum(),
         shuffleWriteMetrics.bytesWritten());
     assertEquals(6, shuffleBlockInfos.size());
+
+    assertEquals(0, bufferManagerSpy.getUsedBytes());
+    assertEquals(0, bufferManagerSpy.getInSendListBytes());
   }
 
   @Test
@@ -307,7 +318,7 @@ public class RssShuffleWriterTest {
             RuntimeException.class,
             () -> rssShuffleWriter.checkBlockSendResult(Sets.newHashSet(1L, 2L, 3L)));
     System.out.println(e3.getMessage());
-    assertTrue(e3.getMessage().startsWith("Send fail"));
+    assertTrue(e3.getMessage().startsWith("Fail to send the block"));
     successBlocks.clear();
     taskToFailedBlockSendTracker.clear();
   }

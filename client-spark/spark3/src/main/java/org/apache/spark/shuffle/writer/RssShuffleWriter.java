@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +45,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.spark.Partitioner;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
@@ -368,11 +368,30 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     List<CompletableFuture<Long>> futures = new ArrayList<>();
     for (AddBlockEvent event : bufferManager.buildBlockEvents(shuffleBlockInfoList)) {
       if (isBlockFailSentRetryEnabled) {
+        FailedBlockSendTracker tracker = shuffleManager.getBlockIdsFailedSendTracker(taskId);
         event.withBlockProcessedCallback(
             (block, isSuccessful) -> {
-              if (isSuccessful || block.getRetryCounter() >= blockFailSentMaxTimes - 1) {
+              if (isSuccessful) {
                 bufferManager.freeAllocatedMemory(block.getFreeMemory());
                 block.getData().release();
+                return;
+              }
+
+              // for the exceeding max send retry blocks, we should release its data and allocated
+              // memory.
+              List<TrackingBlockStatus> record = tracker.getFailedBlockStatus(block.getBlockId());
+              if (CollectionUtils.isEmpty(record)) {
+                LOG.error(
+                    "No tracking block status for the block send failure. This should not happen.");
+              }
+              int blockSendCnt = record == null ? 0 : record.size();
+              if (blockSendCnt >= blockFailSentMaxTimes) {
+                bufferManager.freeAllocatedMemory(block.getFreeMemory());
+                block.getData().release();
+              } else {
+                LOG.debug(
+                    "Do nothing of block processed callback for blockId: {}. It will be resend.",
+                    block.getBlockId());
               }
             });
       }
@@ -440,7 +459,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       collectFailedBlocksToResend();
     } else {
       if (hasAnyBlockFailure()) {
-        throw new RssSendFailedException("Send fail");
+        throw new RssSendFailedException("Fail to send the block");
       }
     }
   }
@@ -528,7 +547,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                         failedBlockInfo.getUncompressLength(),
                         failedBlockInfo.getFreeMemory(),
                         taskAttemptId);
-                newBlock.setRetryCounter(failedBlockInfo.getRetryCounter() + 1);
                 reAssignSeverBlockInfoList.add(newBlock);
               }
             });

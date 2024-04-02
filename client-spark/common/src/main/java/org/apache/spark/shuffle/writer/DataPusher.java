@@ -97,14 +97,15 @@ public class DataPusher implements Closeable {
             putFailedBlockSendTracker(
                 taskToFailedBlockSendTracker, taskId, result.getFailedBlockSendTracker());
           } finally {
-            Set<Long> succeedBlockIds = result.getSuccessBlockIds();
-            if (succeedBlockIds != null && !succeedBlockIds.isEmpty()) {
-              for (ShuffleBlockInfo block : shuffleBlockInfoList) {
-                Optional.ofNullable(event.getBlockProcessedCallback())
-                    .ifPresent(
-                        callback ->
-                            callback.accept(block, succeedBlockIds.contains(block.getBlockId())));
-              }
+            Set<Long> succeedBlockIds =
+                result.getSuccessBlockIds() == null
+                    ? Collections.emptySet()
+                    : result.getSuccessBlockIds();
+            for (ShuffleBlockInfo block : shuffleBlockInfoList) {
+              Optional.ofNullable(event.getBlockProcessedCallback())
+                  .ifPresent(
+                      callback ->
+                          callback.accept(block, succeedBlockIds.contains(block.getBlockId())));
             }
 
             List<Runnable> callbackChain =
