@@ -373,7 +373,7 @@ public class WriteBufferManagerTest {
           List<AddBlockEvent> events = wbm.buildBlockEvents(blocks);
           for (AddBlockEvent event : events) {
             TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback =
-                event.getBlockProcessedCallback();
+                event.getBlockSentCallback();
             for (ShuffleBlockInfo block : event.getShuffleDataInfoList()) {
               blockProcessedCallback.accept(block, true);
             }
@@ -420,7 +420,7 @@ public class WriteBufferManagerTest {
                           }
                         }
                         TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback =
-                            event.getBlockProcessedCallback();
+                            event.getBlockSentCallback();
                         for (ShuffleBlockInfo block : event.getShuffleDataInfoList()) {
                           blockProcessedCallback.accept(block, true);
                         }

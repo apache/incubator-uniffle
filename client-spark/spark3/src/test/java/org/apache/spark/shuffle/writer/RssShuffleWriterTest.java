@@ -102,7 +102,7 @@ public class RssShuffleWriterTest {
               assertEquals("taskId", event.getTaskId());
               FailedBlockSendTracker tracker = taskToFailedBlockSendTracker.get(event.getTaskId());
               TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback =
-                  event.getBlockProcessedCallback();
+                  event.getBlockSentCallback();
               for (ShuffleBlockInfo block : event.getShuffleDataInfoList()) {
                 boolean isSuccessful = true;
                 ShuffleServerInfo shuffleServer = block.getShuffleServerInfos().get(0);

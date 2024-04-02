@@ -28,7 +28,7 @@ public class AddBlockEvent {
   private String taskId;
   private List<ShuffleBlockInfo> shuffleDataInfoList;
   private List<Runnable> processedCallbackChain;
-  private TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback;
+  private TupleConsumer<ShuffleBlockInfo, Boolean> blockSentCallback;
 
   public AddBlockEvent(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
     this.taskId = taskId;
@@ -39,9 +39,9 @@ public class AddBlockEvent {
   public AddBlockEvent(
       String taskId,
       List<ShuffleBlockInfo> blocks,
-      TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback) {
+      TupleConsumer<ShuffleBlockInfo, Boolean> blockSentCallback) {
     this(taskId, blocks);
-    this.blockProcessedCallback = blockProcessedCallback;
+    this.blockSentCallback = blockSentCallback;
   }
 
   /** @param callback, should not throw any exception and execute fast. */
@@ -61,13 +61,12 @@ public class AddBlockEvent {
     return processedCallbackChain;
   }
 
-  public void withBlockProcessedCallback(
-      TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback) {
-    this.blockProcessedCallback = blockProcessedCallback;
+  public void withBlockSentCallback(TupleConsumer<ShuffleBlockInfo, Boolean> blockSentCallback) {
+    this.blockSentCallback = blockSentCallback;
   }
 
-  public TupleConsumer<ShuffleBlockInfo, Boolean> getBlockProcessedCallback() {
-    return blockProcessedCallback;
+  public TupleConsumer<ShuffleBlockInfo, Boolean> getBlockSentCallback() {
+    return blockSentCallback;
   }
 
   @Override
