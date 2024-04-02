@@ -68,7 +68,8 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       int readBufferSize,
       ShuffleServerClient shuffleServerClient,
       Roaring64NavigableMap expectTaskIds) {
-    this(appId, shuffleId, partitionId, readBufferSize, shuffleServerClient, expectTaskIds, 1, 0);
+    this(
+        appId, shuffleId, partitionId, readBufferSize, shuffleServerClient, expectTaskIds, 3, 1000);
   }
 
   @Override
