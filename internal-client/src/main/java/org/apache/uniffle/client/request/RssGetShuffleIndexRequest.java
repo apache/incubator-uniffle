@@ -47,7 +47,7 @@ public class RssGetShuffleIndexRequest extends RetryableRequest {
   @VisibleForTesting
   public RssGetShuffleIndexRequest(
       String appId, int shuffleId, int partitionId, int partitionNumPerRange, int partitionNum) {
-    this(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, 3, 1000);
+    this(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, 1, 0);
   }
 
   public String getAppId() {

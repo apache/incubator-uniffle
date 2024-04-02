@@ -55,7 +55,7 @@ public class RssGetInMemoryShuffleDataRequest extends RetryableRequest {
       long lastBlockId,
       int readBufferSize,
       Roaring64NavigableMap expectedTaskIds) {
-    this(appId, shuffleId, partitionId, lastBlockId, readBufferSize, expectedTaskIds, 3, 1000);
+    this(appId, shuffleId, partitionId, lastBlockId, readBufferSize, expectedTaskIds, 1, 0);
   }
 
   public String getAppId() {
