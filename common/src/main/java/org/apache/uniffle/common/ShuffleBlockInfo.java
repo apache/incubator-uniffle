@@ -36,6 +36,7 @@ public class ShuffleBlockInfo {
   private List<ShuffleServerInfo> shuffleServerInfos;
   private int uncompressLength;
   private long freeMemory;
+  private int retryCnt = 0;
 
   public ShuffleBlockInfo(
       int shuffleId,
@@ -151,6 +152,18 @@ public class ShuffleBlockInfo {
     }
 
     return sb.toString();
+  }
+
+  public void incrRetryCnt() {
+    this.retryCnt += 1;
+  }
+
+  public int getRetryCnt() {
+    return retryCnt;
+  }
+
+  public void reassignShuffleServers(List<ShuffleServerInfo> replacements) {
+    this.shuffleServerInfos = replacements;
   }
 
   public synchronized void copyDataTo(ByteBuf to) {

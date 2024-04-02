@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
@@ -95,7 +96,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final String appId;
   private final int shuffleId;
   private WriteBufferManager bufferManager;
-  private final String taskId;
+  private String taskId;
   private final int numMaps;
   private final ShuffleDependency<K, V, C> shuffleDependency;
   private final Partitioner partitioner;
@@ -115,7 +116,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private TaskContext taskContext;
   private SparkConf sparkConf;
   private boolean blockFailSentRetryEnabled;
-  private int blockFailSentMaxTimes = 2;
+  private int blockFailSentRetryMaxTimes = 1;
 
   /** used by columnar rss shuffle writer implementation */
   protected final long taskAttemptId;
@@ -363,35 +364,20 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     return Collections.emptyList();
   }
 
+  private void releaseBlockResource(ShuffleBlockInfo block) {
+    bufferManager.freeAllocatedMemory(block.getFreeMemory());
+    block.getData().release();
+  }
+
   protected List<CompletableFuture<Long>> postBlockEvent(
       List<ShuffleBlockInfo> shuffleBlockInfoList) {
     List<CompletableFuture<Long>> futures = new ArrayList<>();
     for (AddBlockEvent event : bufferManager.buildBlockEvents(shuffleBlockInfoList)) {
       if (blockFailSentRetryEnabled) {
-        FailedBlockSendTracker tracker = shuffleManager.getBlockIdsFailedSendTracker(taskId);
         event.withBlockSentCallback(
             (block, isSuccessful) -> {
               if (isSuccessful) {
-                bufferManager.freeAllocatedMemory(block.getFreeMemory());
-                block.getData().release();
-                return;
-              }
-
-              // for the exceeding max send retry blocks, we should release its data and allocated
-              // memory.
-              List<TrackingBlockStatus> record = tracker.getFailedBlockStatus(block.getBlockId());
-              if (CollectionUtils.isEmpty(record)) {
-                throw new RssSendFailedException(
-                    "No tracking block status for the block send failure. This should not happen.");
-              }
-              int blockSendCnt = record == null ? 0 : record.size();
-              if (blockSendCnt >= blockFailSentMaxTimes) {
-                bufferManager.freeAllocatedMemory(block.getFreeMemory());
-                block.getData().release();
-              } else {
-                LOG.debug(
-                    "Do nothing of block processed callback for blockId: {}. It will be resend.",
-                    block.getBlockId());
+                releaseBlockResource(block);
               }
             });
       }
@@ -488,23 +474,41 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       return;
     }
 
+    boolean isFastFail = false;
     Set<TrackingBlockStatus> resendCandidates = new HashSet<>();
     // to check whether the blocks resent exceed the max resend count.
     for (Long blockId : failedBlockIds) {
-      List<TrackingBlockStatus> retryRecords = failedTracker.getFailedBlockStatus(blockId);
+      List<TrackingBlockStatus> failedBlockStatus = failedTracker.getFailedBlockStatus(blockId);
+      int retryIndex = failedBlockStatus.get(0).getShuffleBlockInfo().getRetryCnt();
       // todo: support retry times by config
-      if (retryRecords.size() >= blockFailSentMaxTimes) {
+      if (retryIndex >= blockFailSentRetryMaxTimes) {
         LOG.error(
-            "Partial blocks for taskId: [{}] retry exceeding the max retry times. Fast fail! faulty server list: {}",
+            "Partial blocks for taskId: [{}] retry exceeding the max retry times: [{}]. Fast fail! faulty server list: {}",
             taskId,
-            retryRecords.stream().map(x -> x.getShuffleServerInfo()).collect(Collectors.toSet()));
-        // fast fail if any blocks failure with multiple retry times
-        throw new RssSendFailedException(
-            "Errors on resending the blocks data to the remote shuffle-server.");
+            blockFailSentRetryMaxTimes,
+            failedBlockStatus.stream()
+                .map(x -> x.getShuffleServerInfo())
+                .collect(Collectors.toSet()));
+        isFastFail = true;
+        break;
       }
 
       // todo: if setting multi replica and another replica is succeed to send, no need to resend
-      resendCandidates.add(retryRecords.get(retryRecords.size() - 1));
+      resendCandidates.addAll(failedBlockStatus);
+    }
+
+    if (isFastFail) {
+      // release data and allocated memory
+      for (Long blockId : failedBlockIds) {
+        List<TrackingBlockStatus> failedBlockStatus = failedTracker.getFailedBlockStatus(blockId);
+        Optional<TrackingBlockStatus> blockStatus = failedBlockStatus.stream().findFirst();
+        if (blockStatus.isPresent()) {
+          releaseBlockResource(blockStatus.get().getShuffleBlockInfo());
+        }
+      }
+
+      throw new RssSendFailedException(
+          "Errors on resending the blocks data to the remote shuffle-server.");
     }
 
     resendFailedBlocks(resendCandidates);
@@ -512,46 +516,49 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private void resendFailedBlocks(Set<TrackingBlockStatus> failedBlockStatusSet) {
     List<ShuffleBlockInfo> reassignBlocks = Lists.newArrayList();
-    List<ShuffleBlockInfo> failedBlocks = Lists.newArrayList();
     Map<ShuffleServerInfo, List<TrackingBlockStatus>> faultyServerToPartitions =
         failedBlockStatusSet.stream().collect(Collectors.groupingBy(d -> d.getShuffleServerInfo()));
-    faultyServerToPartitions.entrySet().stream()
-        .forEach(
-            t -> {
-              Set<Integer> partitionIds =
-                  t.getValue().stream()
-                      .map(x -> x.getShuffleBlockInfo().getPartitionId())
-                      .collect(Collectors.toSet());
-              ShuffleServerInfo dynamicShuffleServer =
-                  replacementShuffleServers.get(t.getKey().getId());
-              if (dynamicShuffleServer == null) {
-                // todo: merge multiple requests into one.
-                dynamicShuffleServer =
-                    reAssignFaultyShuffleServer(partitionIds, t.getKey().getId());
-                replacementShuffleServers.put(t.getKey().getId(), dynamicShuffleServer);
-              }
 
-              ShuffleServerInfo finalDynamicShuffleServer = dynamicShuffleServer;
-              for (TrackingBlockStatus blockStatus : failedBlockStatusSet) {
-                ShuffleBlockInfo failedBlockInfo = blockStatus.getShuffleBlockInfo();
-                failedBlocks.add(failedBlockInfo);
-                ShuffleBlockInfo newBlock =
-                    new ShuffleBlockInfo(
-                        failedBlockInfo.getShuffleId(),
-                        failedBlockInfo.getPartitionId(),
-                        failedBlockInfo.getBlockId(),
-                        failedBlockInfo.getLength(),
-                        failedBlockInfo.getCrc(),
-                        failedBlockInfo.getData(),
-                        Lists.newArrayList(finalDynamicShuffleServer),
-                        failedBlockInfo.getUncompressLength(),
-                        failedBlockInfo.getFreeMemory(),
-                        taskAttemptId);
-                reassignBlocks.add(newBlock);
-              }
-            });
-    clearFailedBlockStates(failedBlocks, replacementShuffleServers);
+    for (Map.Entry<ShuffleServerInfo, List<TrackingBlockStatus>> entry :
+        faultyServerToPartitions.entrySet()) {
+      Set<Integer> partitionIds =
+          entry.getValue().stream()
+              .map(x -> x.getShuffleBlockInfo().getPartitionId())
+              .collect(Collectors.toSet());
+      ShuffleServerInfo replacement = replacementShuffleServers.get(entry.getKey().getId());
+      if (replacement == null) {
+        // todo: merge multiple requests into one.
+        replacement = reAssignFaultyShuffleServer(partitionIds, entry.getKey().getId());
+        replacementShuffleServers.put(entry.getKey().getId(), replacement);
+      }
+
+      for (TrackingBlockStatus blockStatus : failedBlockStatusSet) {
+        // clear the previous retry state of block
+        ShuffleBlockInfo block = blockStatus.getShuffleBlockInfo();
+        clearFailedBlockState(block);
+
+        final ShuffleBlockInfo newBlock = block;
+        newBlock.incrRetryCnt();
+        newBlock.reassignShuffleServers(Arrays.asList(replacement));
+
+        reassignBlocks.add(newBlock);
+      }
+    }
+
     processShuffleBlockInfos(reassignBlocks);
+  }
+
+  private void clearFailedBlockState(ShuffleBlockInfo block) {
+    shuffleManager.getBlockIdsFailedSendTracker(taskId).remove(block.getBlockId());
+    block.getShuffleServerInfos().stream()
+        .filter(s -> replacementShuffleServers.containsKey(s.getId()))
+        .forEach(
+            s ->
+                serverToPartitionToBlockIds
+                    .get(s)
+                    .get(block.getPartitionId())
+                    .remove(block.getBlockId()));
+    partitionLengths[block.getPartitionId()] -= block.getLength();
   }
 
   private void clearFailedBlockStates(
@@ -752,7 +759,22 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   @VisibleForTesting
+  protected void setBlockFailSentRetryMaxTimes(int blockFailSentRetryMaxTimes) {
+    this.blockFailSentRetryMaxTimes = blockFailSentRetryMaxTimes;
+  }
+
+  @VisibleForTesting
   protected void addReassignmentShuffleServer(String shuffleId, ShuffleServerInfo replacement) {
     replacementShuffleServers.put(shuffleId, replacement);
+  }
+
+  @VisibleForTesting
+  protected void setTaskId(String taskId) {
+    this.taskId = taskId;
+  }
+
+  @VisibleForTesting
+  protected Map<ShuffleServerInfo, Map<Integer, Set<Long>>> getServerToPartitionToBlockIds() {
+    return serverToPartitionToBlockIds;
   }
 }

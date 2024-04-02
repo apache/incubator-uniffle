@@ -56,7 +56,6 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
-import org.apache.uniffle.client.impl.TrackingBlockStatus;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.function.TupleConsumer;
@@ -67,6 +66,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -75,6 +75,17 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 public class RssShuffleWriterTest {
+
+  private MutableList<Product2<String, String>> createMockRecords() {
+    MutableList<Product2<String, String>> data = new MutableList<>();
+    data.appendElem(new Tuple2<>("testKey2", "testValue2"));
+    data.appendElem(new Tuple2<>("testKey3", "testValue3"));
+    data.appendElem(new Tuple2<>("testKey4", "testValue4"));
+    data.appendElem(new Tuple2<>("testKey6", "testValue6"));
+    data.appendElem(new Tuple2<>("testKey1", "testValue1"));
+    data.appendElem(new Tuple2<>("testKey5", "testValue5"));
+    return data;
+  }
 
   @Test
   public void blockFailureResendTest() throws Exception {
@@ -106,11 +117,8 @@ public class RssShuffleWriterTest {
               for (ShuffleBlockInfo block : event.getShuffleDataInfoList()) {
                 boolean isSuccessful = true;
                 ShuffleServerInfo shuffleServer = block.getShuffleServerInfos().get(0);
-                List<TrackingBlockStatus> statusList =
-                    tracker.getFailedBlockStatus(block.getBlockId());
-                int record = statusList == null ? 0 : statusList.size();
-                if (shuffleServer.getId().equals("id1") && record == 0) {
-                  tracker.add(block, shuffleServer, StatusCode.NO_BUFFER_FOR_HUGE_PARTITION);
+                if (shuffleServer.getId().equals("id1") && block.getRetryCnt() == 0) {
+                  tracker.add(block, shuffleServer, StatusCode.NO_BUFFER);
                   sentFailureCnt.addAndGet(1);
                   isSuccessful = false;
                 } else {
@@ -137,6 +145,11 @@ public class RssShuffleWriterTest {
     when(mockPartitioner.numPartitions()).thenReturn(3);
 
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
+    List<ShuffleServerInfo> ssi12 =
+        Arrays.asList(
+            new ShuffleServerInfo("id1", "0.0.0.1", 100),
+            new ShuffleServerInfo("id2", "0.0.0.2", 100));
+    partitionToServers.put(0, ssi12);
     List<ShuffleServerInfo> ssi34 =
         Arrays.asList(
             new ShuffleServerInfo("id3", "0.0.0.3", 100),
@@ -147,11 +160,6 @@ public class RssShuffleWriterTest {
             new ShuffleServerInfo("id5", "0.0.0.5", 100),
             new ShuffleServerInfo("id6", "0.0.0.6", 100));
     partitionToServers.put(2, ssi56);
-    List<ShuffleServerInfo> ssi12 =
-        Arrays.asList(
-            new ShuffleServerInfo("id1", "0.0.0.1", 100),
-            new ShuffleServerInfo("id2", "0.0.0.2", 100));
-    partitionToServers.put(0, ssi12);
     when(mockPartitioner.getPartition("testKey1")).thenReturn(0);
     when(mockPartitioner.getPartition("testKey2")).thenReturn(1);
     when(mockPartitioner.getPartition("testKey4")).thenReturn(0);
@@ -197,21 +205,14 @@ public class RssShuffleWriterTest {
             contextMock);
     rssShuffleWriter.enableBlockFailSentRetry();
     doReturn(100000L).when(bufferManagerSpy).acquireMemory(anyLong());
-    rssShuffleWriter.addReassignmentShuffleServer(
-        "id1", new ShuffleServerInfo("id10", "0.0.0.10", 100));
+    ShuffleServerInfo replacement = new ShuffleServerInfo("id10", "0.0.0.10", 100);
+    rssShuffleWriter.addReassignmentShuffleServer("id1", replacement);
 
     RssShuffleWriter<String, String, String> rssShuffleWriterSpy = spy(rssShuffleWriter);
     doNothing().when(rssShuffleWriterSpy).sendCommit();
 
-    // case 1
-    MutableList<Product2<String, String>> data = new MutableList<>();
-    data.appendElem(new Tuple2<>("testKey2", "testValue2"));
-    data.appendElem(new Tuple2<>("testKey3", "testValue3"));
-    data.appendElem(new Tuple2<>("testKey4", "testValue4"));
-    data.appendElem(new Tuple2<>("testKey6", "testValue6"));
-    data.appendElem(new Tuple2<>("testKey1", "testValue1"));
-    data.appendElem(new Tuple2<>("testKey5", "testValue5"));
-
+    // case 1. failed blocks will be resent
+    MutableList<Product2<String, String>> data = createMockRecords();
     rssShuffleWriterSpy.write(data.iterator());
 
     Awaitility.await()
@@ -225,6 +226,48 @@ public class RssShuffleWriterTest {
         shuffleWriteMetrics.bytesWritten());
     assertEquals(6, shuffleBlockInfos.size());
 
+    assertEquals(0, bufferManagerSpy.getUsedBytes());
+    assertEquals(0, bufferManagerSpy.getInSendListBytes());
+
+    // check the blockId -> servers mapping.
+    // server -> partitionId -> blockIds
+    Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds =
+        rssShuffleWriterSpy.getServerToPartitionToBlockIds();
+    assertEquals(2, serverToPartitionToBlockIds.get(replacement).get(0).size());
+
+    // case2. If exceeding the max retry times, it will fast fail.
+    rssShuffleWriterSpy.setBlockFailSentRetryMaxTimes(1);
+    rssShuffleWriterSpy.setTaskId("taskId2");
+    FakedDataPusher alwaysFailedDataPusher =
+        new FakedDataPusher(
+            event -> {
+              assertEquals("taskId2", event.getTaskId());
+              FailedBlockSendTracker tracker = taskToFailedBlockSendTracker.get(event.getTaskId());
+              TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback =
+                  event.getBlockSentCallback();
+              for (ShuffleBlockInfo block : event.getShuffleDataInfoList()) {
+                boolean isSuccessful = true;
+                ShuffleServerInfo shuffleServer = block.getShuffleServerInfos().get(0);
+                if (shuffleServer.getId().equals("id1")) {
+                  tracker.add(block, shuffleServer, StatusCode.NO_BUFFER);
+                  isSuccessful = false;
+                } else {
+                  successBlockIds.putIfAbsent(event.getTaskId(), Sets.newConcurrentHashSet());
+                  successBlockIds.get(event.getTaskId()).add(block.getBlockId());
+                }
+                blockProcessedCallback.accept(block, isSuccessful);
+              }
+              return new CompletableFuture<>();
+            });
+    manager.setDataPusher(alwaysFailedDataPusher);
+
+    MutableList<Product2<String, String>> mockedData = createMockRecords();
+    try {
+      rssShuffleWriterSpy.write(mockedData.iterator());
+      fail();
+    } catch (Exception e) {
+      // ignore
+    }
     assertEquals(0, bufferManagerSpy.getUsedBytes());
     assertEquals(0, bufferManagerSpy.getInSendListBytes());
   }

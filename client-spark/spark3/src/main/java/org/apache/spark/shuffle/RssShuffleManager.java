@@ -1264,4 +1264,9 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   public boolean isRssResubmitStage() {
     return rssResubmitStage;
   }
+
+  @VisibleForTesting
+  public void setDataPusher(DataPusher dataPusher) {
+    this.dataPusher = dataPusher;
+  }
 }
