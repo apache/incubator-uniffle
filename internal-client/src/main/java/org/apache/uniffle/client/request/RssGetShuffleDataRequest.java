@@ -59,8 +59,7 @@ public class RssGetShuffleDataRequest extends RetryableRequest {
       int partitionNum,
       long offset,
       int length) {
-    this(
-        appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, offset, length, 1, 0);
+    this(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, offset, length, 1, 0);
   }
 
   public String getAppId() {

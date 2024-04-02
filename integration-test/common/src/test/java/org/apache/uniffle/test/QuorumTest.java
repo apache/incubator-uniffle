@@ -285,7 +285,6 @@ public class QuorumTest extends ShuffleReadWriteBase {
                 Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, fakedShuffleServerInfo2))
             .build();
     // The data should be read
-
     validateResult(readClient, expectedData);
 
     // case2: When 2 servers are failed, the block sending should fail
