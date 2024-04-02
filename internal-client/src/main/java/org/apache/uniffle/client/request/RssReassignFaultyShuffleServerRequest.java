@@ -24,11 +24,11 @@ import org.apache.uniffle.proto.RssProtos;
 public class RssReassignFaultyShuffleServerRequest {
 
   private int shuffleId;
-  private Set<String> partitionIds;
+  private Set<Integer> partitionIds;
   private String faultyShuffleServerId;
 
   public RssReassignFaultyShuffleServerRequest(
-      int shuffleId, Set<String> partitionIds, String faultyShuffleServerId) {
+      int shuffleId, Set<Integer> partitionIds, String faultyShuffleServerId) {
     this.shuffleId = shuffleId;
     this.partitionIds = partitionIds;
     this.faultyShuffleServerId = faultyShuffleServerId;
@@ -38,7 +38,7 @@ public class RssReassignFaultyShuffleServerRequest {
     return shuffleId;
   }
 
-  public Set<String> getPartitionIds() {
+  public Set<Integer> getPartitionIds() {
     return partitionIds;
   }
 

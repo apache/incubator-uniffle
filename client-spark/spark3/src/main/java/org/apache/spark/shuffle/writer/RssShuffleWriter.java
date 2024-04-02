@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -120,6 +121,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   protected final ShuffleWriteMetrics shuffleWriteMetrics;
 
   private final BlockingQueue<Object> finishEventQueue = new LinkedBlockingQueue<>();
+
+  private final Map<String, ShuffleServerInfo> faultyServers = new HashMap<>();
 
   // Only for tests
   @VisibleForTesting
@@ -462,13 +465,12 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     List<ShuffleBlockInfo> failedBlockInfoList = Lists.newArrayList();
     Map<ShuffleServerInfo, List<TrackingBlockStatus>> faultyServerToPartitions =
         failedBlockStatusSet.stream().collect(Collectors.groupingBy(d -> d.getShuffleServerInfo()));
-    Map<String, ShuffleServerInfo> faultyServers = shuffleManager.getReassignedFaultyServers();
     faultyServerToPartitions.entrySet().stream()
         .forEach(
             t -> {
-              Set<String> partitionIds =
+              Set<Integer> partitionIds =
                   t.getValue().stream()
-                      .map(x -> String.valueOf(x.getShuffleBlockInfo().getPartitionId()))
+                      .map(x -> x.getShuffleBlockInfo().getPartitionId())
                       .collect(Collectors.toSet());
               ShuffleServerInfo dynamicShuffleServer = faultyServers.get(t.getKey().getId());
               if (dynamicShuffleServer == null) {
@@ -519,7 +521,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   private ShuffleServerInfo reAssignFaultyShuffleServer(
-      Set<String> partitionIds, String faultyServerId) {
+      Set<Integer> partitionIds, String faultyServerId) {
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     String driver = rssConf.getString("driver.host", "");
     int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
@@ -531,6 +533,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       if (response.getStatusCode() != StatusCode.SUCCESS) {
         throw new RssException(
             "reassign server response with statusCode[" + response.getStatusCode() + "]");
+      }
+      if (response.getShuffleServer() == null) {
+        throw new RssException("empty newer reassignment server!");
       }
       return response.getShuffleServer();
     } catch (Exception e) {
