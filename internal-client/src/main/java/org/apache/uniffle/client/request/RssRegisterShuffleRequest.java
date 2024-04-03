@@ -35,6 +35,27 @@ public class RssRegisterShuffleRequest {
   private String user;
   private ShuffleDataDistributionType dataDistributionType;
   private int maxConcurrencyPerPartitionToWrite;
+  private boolean blockFailureReassignEnabled = false;
+
+  public RssRegisterShuffleRequest(
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorageInfo,
+      String user,
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite,
+      boolean blockFailureReassignEnabled) {
+    this(
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorageInfo,
+        user,
+        dataDistributionType,
+        maxConcurrencyPerPartitionToWrite);
+    this.blockFailureReassignEnabled = blockFailureReassignEnabled;
+  }
 
   public RssRegisterShuffleRequest(
       String appId,
@@ -108,5 +129,9 @@ public class RssRegisterShuffleRequest {
 
   public int getMaxConcurrencyPerPartitionToWrite() {
     return maxConcurrencyPerPartitionToWrite;
+  }
+
+  public boolean isBlockFailureReassignEnabled() {
+    return blockFailureReassignEnabled;
   }
 }

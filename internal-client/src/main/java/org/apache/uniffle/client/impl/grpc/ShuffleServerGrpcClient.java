@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import io.netty.buffer.Unpooled;
@@ -174,7 +175,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       RemoteStorageInfo remoteStorageInfo,
       String user,
       ShuffleDataDistributionType dataDistributionType,
-      int maxConcurrencyPerPartitionToWrite) {
+      int maxConcurrencyPerPartitionToWrite,
+      boolean blockFailureReassignEnabled) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
@@ -182,6 +184,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setUser(user)
         .setShuffleDataDistribution(RssProtos.DataDistribution.valueOf(dataDistributionType.name()))
         .setMaxConcurrencyPerPartitionToWrite(maxConcurrencyPerPartitionToWrite)
+        .setBlockFailureReassignEnabled(BoolValue.of(blockFailureReassignEnabled))
         .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges));
     RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
     rsBuilder.setPath(remoteStorageInfo.getPath());
@@ -433,7 +436,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             request.getRemoteStorageInfo(),
             request.getUser(),
             request.getDataDistributionType(),
-            request.getMaxConcurrencyPerPartitionToWrite());
+            request.getMaxConcurrencyPerPartitionToWrite(),
+            request.isBlockFailureReassignEnabled());
 
     RssRegisterShuffleResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();

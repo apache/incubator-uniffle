@@ -113,6 +113,10 @@ public class ShuffleTaskInfo {
     return specification.get().getDistributionType();
   }
 
+  public boolean isBlockFailureReassignEnabled() {
+    return specification.get().isBlockFailureReassignEnabled();
+  }
+
   public void setSpecification(ShuffleSpecification specification) {
     this.specification.set(specification);
   }

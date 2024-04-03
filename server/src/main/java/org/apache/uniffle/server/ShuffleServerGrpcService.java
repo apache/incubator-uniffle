@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -194,7 +195,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
                 user,
                 shuffleDataDistributionType,
-                maxConcurrencyPerPartitionToWrite);
+                maxConcurrencyPerPartitionToWrite,
+                req.hasBlockFailureReassignEnabled());
 
     reply = ShuffleRegisterResponse.newBuilder().setStatus(result.toProto()).build();
     responseObserver.onNext(reply);
@@ -204,9 +206,22 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void sendShuffleData(
       SendShuffleDataRequest req, StreamObserver<SendShuffleDataResponse> responseObserver) {
+    String appId = req.getAppId();
+    if (shuffleServer.getServerStatus() != ServerStatus.ACTIVE
+        && shuffleServer
+            .getShuffleTaskManager()
+            .getShuffleTaskInfo(appId)
+            .isBlockFailureReassignEnabled()) {
+      responseObserver.onNext(
+          SendShuffleDataResponse.newBuilder()
+              .setStatus(StatusCode.SERVER_INACTIVE.toProto())
+              .setRetMsg("Server is inactive, status: " + shuffleServer.getServerStatus())
+              .build());
+      responseObserver.onCompleted();
+      return;
+    }
 
     SendShuffleDataResponse reply;
-    String appId = req.getAppId();
     int shuffleId = req.getShuffleId();
     long requireBufferId = req.getRequireBufferId();
     long timestamp = req.getTimestamp();

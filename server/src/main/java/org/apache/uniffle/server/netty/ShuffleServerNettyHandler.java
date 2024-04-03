@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -99,6 +100,24 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
   public void handleSendShuffleDataRequest(TransportClient client, SendShuffleDataRequest req) {
     RpcResponse rpcResponse;
     String appId = req.getAppId();
+
+    if (shuffleServer.getServerStatus() != ServerStatus.ACTIVE
+        && shuffleServer
+            .getShuffleTaskManager()
+            .getShuffleTaskInfo(appId)
+            .isBlockFailureReassignEnabled()) {
+      req.getPartitionToBlocks().values().stream()
+          .flatMap(Collection::stream)
+          .forEach(block -> block.getData().release());
+      rpcResponse =
+          new RpcResponse(
+              req.getRequestId(),
+              StatusCode.SERVER_INACTIVE,
+              "Server is inactive, status: " + shuffleServer.getServerStatus());
+      client.getChannel().writeAndFlush(rpcResponse);
+      return;
+    }
+
     int shuffleId = req.getShuffleId();
     long requireBufferId = req.getRequireId();
     long timestamp = req.getTimestamp();
