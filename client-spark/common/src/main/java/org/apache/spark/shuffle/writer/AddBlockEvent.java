@@ -59,14 +59,14 @@ public class AddBlockEvent {
     return "AddBlockEvent: TaskId[" + taskId + "], " + shuffleDataInfoList;
   }
 
-  public void callbackOnBlockFailure(ShuffleBlockInfo block) {
+  public void triggerBlockFailureCallback(ShuffleBlockInfo block) {
     if (block == null || blockFailureCallback == null) {
       return;
     }
     blockFailureCallback.onBlockFailure(block);
   }
 
-  public void callbackOnBlockSuccess(ShuffleBlockInfo block) {
+  public void triggerBlockSuccessCallback(ShuffleBlockInfo block) {
     if (block == null || blockSuccessCallback == null) {
       return;
     }

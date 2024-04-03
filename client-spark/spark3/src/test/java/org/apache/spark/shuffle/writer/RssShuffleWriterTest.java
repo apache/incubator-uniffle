@@ -124,9 +124,9 @@ public class RssShuffleWriterTest {
                   shuffleBlockInfos.add(block);
                 }
                 if (isSuccessful) {
-                  event.callbackOnBlockSuccess(block);
+                  event.triggerBlockSuccessCallback(block);
                 } else {
-                  event.callbackOnBlockFailure(block);
+                  event.triggerBlockFailureCallback(block);
                 }
               }
               return new CompletableFuture<>();
@@ -255,9 +255,9 @@ public class RssShuffleWriterTest {
                   successBlockIds.get(event.getTaskId()).add(block.getBlockId());
                 }
                 if (isSuccessful) {
-                  event.callbackOnBlockSuccess(block);
+                  event.triggerBlockSuccessCallback(block);
                 } else {
-                  event.callbackOnBlockFailure(block);
+                  event.triggerBlockFailureCallback(block);
                 }
               }
               return new CompletableFuture<>();

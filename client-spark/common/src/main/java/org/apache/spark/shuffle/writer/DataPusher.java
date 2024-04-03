@@ -103,9 +103,9 @@ public class DataPusher implements Closeable {
                     : result.getSuccessBlockIds();
             for (ShuffleBlockInfo block : shuffleBlockInfoList) {
               if (succeedBlockIds.contains(block.getBlockId())) {
-                event.callbackOnBlockSuccess(block);
+                event.triggerBlockSuccessCallback(block);
               } else {
-                event.callbackOnBlockFailure(block);
+                event.triggerBlockFailureCallback(block);
               }
             }
 
