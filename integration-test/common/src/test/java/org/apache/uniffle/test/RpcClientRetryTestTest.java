@@ -139,7 +139,10 @@ public class RpcClientRetryTestTest extends ShuffleReadWriteBase {
 
   private static Stream<Arguments> testRpcRetryLogicProvider() {
     return Stream.of(
-        Arguments.of(StorageType.MEMORY_LOCALFILE), Arguments.of(StorageType.LOCALFILE));
+        Arguments.of(StorageType.MEMORY_LOCALFILE),
+        // According to SERVER_BUFFER_CAPACITY & SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE,
+        // data will be flushed to disk, so read from disk only
+        Arguments.of(StorageType.LOCALFILE));
   }
 
   @ParameterizedTest
