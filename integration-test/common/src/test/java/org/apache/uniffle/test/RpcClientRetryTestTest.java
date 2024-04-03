@@ -24,8 +24,8 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -59,7 +59,7 @@ public class RpcClientRetryTestTest extends ShuffleReadWriteBase {
   private static ShuffleServerInfo shuffleServerInfo0;
   private static ShuffleServerInfo shuffleServerInfo1;
   private static ShuffleServerInfo shuffleServerInfo2;
-  private MockedShuffleWriteClientImpl shuffleWriteClientImpl;
+  private static MockedShuffleWriteClientImpl shuffleWriteClientImpl;
 
   private ShuffleClientFactory.ReadClientBuilder baseReadBuilder(StorageType storageType) {
     return ShuffleClientFactory.newReadBuilder()
@@ -86,8 +86,8 @@ public class RpcClientRetryTestTest extends ShuffleReadWriteBase {
     return new MockedShuffleServer(shuffleServerConf);
   }
 
-  @BeforeEach
-  public void initCluster(@TempDir File tmpDir) throws Exception {
+  @BeforeAll
+  public static void initCluster(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
 
@@ -129,8 +129,8 @@ public class RpcClientRetryTestTest extends ShuffleReadWriteBase {
     coordinators = Lists.newArrayList();
   }
 
-  @AfterEach
-  public void cleanEnv() throws Exception {
+  @AfterAll
+  public static void cleanEnv() throws Exception {
     if (shuffleWriteClientImpl != null) {
       shuffleWriteClientImpl.close();
     }
