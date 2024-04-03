@@ -54,7 +54,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class RpcClientRetryTestTest extends ShuffleReadWriteBase {
+public class RpcClientRetryTest extends ShuffleReadWriteBase {
 
   private static ShuffleServerInfo shuffleServerInfo0;
   private static ShuffleServerInfo shuffleServerInfo1;
