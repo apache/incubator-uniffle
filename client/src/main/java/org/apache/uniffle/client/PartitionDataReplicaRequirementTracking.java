@@ -79,4 +79,8 @@ public class PartitionDataReplicaRequirementTracking {
       }
     }
   }
+
+  public int getShuffleId() {
+    return shuffleId;
+  }
 }
