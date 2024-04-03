@@ -58,7 +58,6 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.function.TupleConsumer;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.storage.util.StorageType;
@@ -112,8 +111,6 @@ public class RssShuffleWriterTest {
             event -> {
               assertEquals("taskId", event.getTaskId());
               FailedBlockSendTracker tracker = taskToFailedBlockSendTracker.get(event.getTaskId());
-              TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback =
-                  event.getBlockSentCallback();
               for (ShuffleBlockInfo block : event.getShuffleDataInfoList()) {
                 boolean isSuccessful = true;
                 ShuffleServerInfo shuffleServer = block.getShuffleServerInfos().get(0);
@@ -126,7 +123,11 @@ public class RssShuffleWriterTest {
                   successBlockIds.get(event.getTaskId()).add(block.getBlockId());
                   shuffleBlockInfos.add(block);
                 }
-                blockProcessedCallback.accept(block, isSuccessful);
+                if (isSuccessful) {
+                  event.callbackOnBlockSuccess(block);
+                } else {
+                  event.callbackOnBlockFailure(block);
+                }
               }
               return new CompletableFuture<>();
             });
@@ -243,8 +244,6 @@ public class RssShuffleWriterTest {
             event -> {
               assertEquals("taskId2", event.getTaskId());
               FailedBlockSendTracker tracker = taskToFailedBlockSendTracker.get(event.getTaskId());
-              TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback =
-                  event.getBlockSentCallback();
               for (ShuffleBlockInfo block : event.getShuffleDataInfoList()) {
                 boolean isSuccessful = true;
                 ShuffleServerInfo shuffleServer = block.getShuffleServerInfos().get(0);
@@ -255,7 +254,11 @@ public class RssShuffleWriterTest {
                   successBlockIds.putIfAbsent(event.getTaskId(), Sets.newConcurrentHashSet());
                   successBlockIds.get(event.getTaskId()).add(block.getBlockId());
                 }
-                blockProcessedCallback.accept(block, isSuccessful);
+                if (isSuccessful) {
+                  event.callbackOnBlockSuccess(block);
+                } else {
+                  event.callbackOnBlockFailure(block);
+                }
               }
               return new CompletableFuture<>();
             });

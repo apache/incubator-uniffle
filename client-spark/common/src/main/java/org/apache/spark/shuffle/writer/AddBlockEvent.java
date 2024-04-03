@@ -21,27 +21,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
-import org.apache.uniffle.common.function.TupleConsumer;
 
 public class AddBlockEvent {
 
   private String taskId;
   private List<ShuffleBlockInfo> shuffleDataInfoList;
   private List<Runnable> processedCallbackChain;
-  private TupleConsumer<ShuffleBlockInfo, Boolean> blockSentCallback;
+
+  private BlockFailureCallback blockFailureCallback;
+  private BlockSuccessCallback blockSuccessCallback;
 
   public AddBlockEvent(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
     this.taskId = taskId;
     this.shuffleDataInfoList = shuffleDataInfoList;
     this.processedCallbackChain = new ArrayList<>();
-  }
-
-  public AddBlockEvent(
-      String taskId,
-      List<ShuffleBlockInfo> blocks,
-      TupleConsumer<ShuffleBlockInfo, Boolean> blockSentCallback) {
-    this(taskId, blocks);
-    this.blockSentCallback = blockSentCallback;
   }
 
   /** @param callback, should not throw any exception and execute fast. */
@@ -61,16 +54,30 @@ public class AddBlockEvent {
     return processedCallbackChain;
   }
 
-  public void withBlockSentCallback(TupleConsumer<ShuffleBlockInfo, Boolean> blockSentCallback) {
-    this.blockSentCallback = blockSentCallback;
-  }
-
-  public TupleConsumer<ShuffleBlockInfo, Boolean> getBlockSentCallback() {
-    return blockSentCallback;
-  }
-
   @Override
   public String toString() {
     return "AddBlockEvent: TaskId[" + taskId + "], " + shuffleDataInfoList;
+  }
+
+  public void callbackOnBlockFailure(ShuffleBlockInfo block) {
+    if (block == null) {
+      return;
+    }
+    this.blockFailureCallback.onBlockFailure(block);
+  }
+
+  public void callbackOnBlockSuccess(ShuffleBlockInfo block) {
+    if (block == null) {
+      return;
+    }
+    this.blockSuccessCallback.onBlockSuccess(block);
+  }
+
+  public void withBlockFailureCallback(BlockFailureCallback blockFailureCallback) {
+    this.blockFailureCallback = blockFailureCallback;
+  }
+
+  public void withBlockSuccessCallback(BlockSuccessCallback blockSuccessCallback) {
+    this.blockSuccessCallback = blockSuccessCallback;
   }
 }

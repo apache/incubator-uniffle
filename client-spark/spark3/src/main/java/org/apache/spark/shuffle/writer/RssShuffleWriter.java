@@ -364,22 +364,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     return Collections.emptyList();
   }
 
-  private void releaseBlockResource(ShuffleBlockInfo block) {
-    bufferManager.freeAllocatedMemory(block.getFreeMemory());
-    block.getData().release();
-  }
-
   protected List<CompletableFuture<Long>> postBlockEvent(
       List<ShuffleBlockInfo> shuffleBlockInfoList) {
     List<CompletableFuture<Long>> futures = new ArrayList<>();
     for (AddBlockEvent event : bufferManager.buildBlockEvents(shuffleBlockInfoList)) {
       if (blockFailSentRetryEnabled) {
-        event.withBlockSentCallback(
-            (block, isSuccessful) -> {
-              if (isSuccessful) {
-                releaseBlockResource(block);
-              }
-            });
+        // do nothing if failed.
+        event.withBlockFailureCallback(block -> {});
       }
       event.addCallback(
           () -> {
@@ -503,7 +494,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         List<TrackingBlockStatus> failedBlockStatus = failedTracker.getFailedBlockStatus(blockId);
         Optional<TrackingBlockStatus> blockStatus = failedBlockStatus.stream().findFirst();
         if (blockStatus.isPresent()) {
-          releaseBlockResource(blockStatus.get().getShuffleBlockInfo());
+          bufferManager.releaseBlockResource(blockStatus.get().getShuffleBlockInfo());
         }
       }
 

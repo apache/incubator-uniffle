@@ -48,7 +48,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.function.TupleConsumer;
 import org.apache.uniffle.common.util.BlockIdLayout;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -372,10 +371,8 @@ public class WriteBufferManagerTest {
           long sum = 0L;
           List<AddBlockEvent> events = wbm.buildBlockEvents(blocks);
           for (AddBlockEvent event : events) {
-            TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback =
-                event.getBlockSentCallback();
             for (ShuffleBlockInfo block : event.getShuffleDataInfoList()) {
-              blockProcessedCallback.accept(block, true);
+              event.callbackOnBlockSuccess(block);
             }
             event.getProcessedCallbackChain().stream().forEach(x -> x.run());
             sum += event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
@@ -419,10 +416,8 @@ public class WriteBufferManagerTest {
                             // ignore.
                           }
                         }
-                        TupleConsumer<ShuffleBlockInfo, Boolean> blockProcessedCallback =
-                            event.getBlockSentCallback();
                         for (ShuffleBlockInfo block : event.getShuffleDataInfoList()) {
-                          blockProcessedCallback.accept(block, true);
+                          event.callbackOnBlockSuccess(block);
                         }
                         event.getProcessedCallbackChain().stream().forEach(x -> x.run());
                         sum +=

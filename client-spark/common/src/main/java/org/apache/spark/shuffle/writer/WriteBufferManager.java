@@ -408,6 +408,11 @@ public class WriteBufferManager extends MemoryConsumer {
     }
   }
 
+  public void releaseBlockResource(ShuffleBlockInfo block) {
+    this.freeAllocatedMemory(block.getFreeMemory());
+    block.getData().release();
+  }
+
   public List<AddBlockEvent> buildBlockEvents(List<ShuffleBlockInfo> shuffleBlockInfoList) {
     long totalSize = 0;
     List<AddBlockEvent> events = new ArrayList<>();
@@ -425,14 +430,10 @@ public class WriteBufferManager extends MemoryConsumer {
                   + totalSize
                   + " bytes");
         }
-        events.add(
-            new AddBlockEvent(
-                taskId,
-                shuffleBlockInfosPerEvent,
-                (block, isSuccessful) -> {
-                  this.freeAllocatedMemory(block.getFreeMemory());
-                  block.getData().release();
-                }));
+        AddBlockEvent event = new AddBlockEvent(taskId, shuffleBlockInfosPerEvent);
+        event.withBlockFailureCallback(this::releaseBlockResource);
+        event.withBlockSuccessCallback(this::releaseBlockResource);
+        events.add(event);
         shuffleBlockInfosPerEvent = Lists.newArrayList();
         totalSize = 0;
       }
@@ -447,14 +448,10 @@ public class WriteBufferManager extends MemoryConsumer {
                 + " bytes");
       }
       // Use final temporary variables for closures
-      events.add(
-          new AddBlockEvent(
-              taskId,
-              shuffleBlockInfosPerEvent,
-              (block, isSuccessful) -> {
-                this.freeAllocatedMemory(block.getFreeMemory());
-                block.getData().release();
-              }));
+      AddBlockEvent event = new AddBlockEvent(taskId, shuffleBlockInfosPerEvent);
+      event.withBlockSuccessCallback(this::releaseBlockResource);
+      event.withBlockFailureCallback(this::releaseBlockResource);
+      events.add(event);
     }
     return events;
   }
