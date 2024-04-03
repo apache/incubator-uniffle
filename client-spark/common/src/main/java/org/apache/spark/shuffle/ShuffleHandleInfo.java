@@ -163,7 +163,8 @@ public class ShuffleHandleInfo implements Serializable {
       Map<Integer, List<ShuffleServerInfo>> reassignments = afterAssignment.get(partitionId);
       for (int i = 0; i < entry.getValue().size(); i++) {
         // initial
-        List<ShuffleServerInfo> servers = replicaRequirements.computeIfAbsent(i, x -> new ArrayList<>());
+        List<ShuffleServerInfo> servers =
+            replicaRequirements.computeIfAbsent(i, x -> new ArrayList<>());
         servers.add(entry.getValue().get(i));
 
         // after reassign
