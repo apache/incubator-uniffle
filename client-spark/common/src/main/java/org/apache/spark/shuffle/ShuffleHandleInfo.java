@@ -45,9 +45,9 @@ public class ShuffleHandleInfo implements Serializable {
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
 
   // partitionId -> replica -> failover servers
-  private Map<Integer, Map<Integer, List<ShuffleServerInfo>>> failoverPartitionServers;
+  private Map<Integer, Map<Integer, List<ShuffleServerInfo>>> partitionReplacementServers;
   // todo: support mores replacement servers for one faulty server.
-  private Map<String, ShuffleServerInfo> faultyServerReplacements;
+  private Map<String, ShuffleServerInfo> faultyServerToReplacements;
 
   // shuffle servers which is for store shuffle data
   private Set<ShuffleServerInfo> shuffleServersForData;
@@ -64,20 +64,20 @@ public class ShuffleHandleInfo implements Serializable {
     this.shuffleId = shuffleId;
     this.partitionToServers = partitionToServers;
     this.shuffleServersForData = Sets.newHashSet();
-    this.failoverPartitionServers = Maps.newConcurrentMap();
+    this.partitionReplacementServers = Maps.newConcurrentMap();
     for (List<ShuffleServerInfo> ssis : partitionToServers.values()) {
       this.shuffleServersForData.addAll(ssis);
     }
     this.remoteStorage = storageInfo;
-    this.faultyServerReplacements = JavaUtils.newConcurrentMap();
+    this.faultyServerToReplacements = JavaUtils.newConcurrentMap();
   }
 
   public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
     return partitionToServers;
   }
 
-  public Map<Integer, Map<Integer, List<ShuffleServerInfo>>> getFailoverPartitionServers() {
-    return failoverPartitionServers;
+  public Map<Integer, Map<Integer, List<ShuffleServerInfo>>> getPartitionReplacementServers() {
+    return partitionReplacementServers;
   }
 
   public Set<ShuffleServerInfo> getShuffleServersForData() {
@@ -93,7 +93,7 @@ public class ShuffleHandleInfo implements Serializable {
   }
 
   public boolean isExistingFaultyServer(String serverId) {
-    return faultyServerReplacements.containsKey(serverId);
+    return faultyServerToReplacements.containsKey(serverId);
   }
 
   public ShuffleServerInfo useExistingReassignmentForMultiPartitions(
@@ -104,16 +104,16 @@ public class ShuffleHandleInfo implements Serializable {
   public ShuffleServerInfo createNewReassignmentForMultiPartitions(
       Set<Integer> partitionIds, String faultyServerId, ShuffleServerInfo replacement) {
     if (replacement != null) {
-      faultyServerReplacements.put(faultyServerId, replacement);
+      faultyServerToReplacements.put(faultyServerId, replacement);
     }
 
-    replacement = faultyServerReplacements.get(faultyServerId);
+    replacement = faultyServerToReplacements.get(faultyServerId);
     for (Integer partitionId : partitionIds) {
       List<ShuffleServerInfo> replicaServers = partitionToServers.get(partitionId);
       for (int i = 0; i < replicaServers.size(); i++) {
         if (replicaServers.get(i).getId().equals(faultyServerId)) {
           Map<Integer, List<ShuffleServerInfo>> replicaReplacements =
-              failoverPartitionServers.computeIfAbsent(
+              partitionReplacementServers.computeIfAbsent(
                   partitionId, k -> JavaUtils.newConcurrentMap());
           replicaReplacements.computeIfAbsent(i, k -> new ArrayList<>()).add(replacement);
         }
@@ -129,7 +129,7 @@ public class ShuffleHandleInfo implements Serializable {
       int partitionId = entry.getKey();
       List<ShuffleServerInfo> replicas = entry.getValue();
       Map<Integer, List<ShuffleServerInfo>> replacements =
-          failoverPartitionServers.get(partitionId);
+          partitionReplacementServers.get(partitionId);
       if (replacements == null) {
         replacements = Collections.emptyMap();
       }
@@ -153,7 +153,7 @@ public class ShuffleHandleInfo implements Serializable {
 
     Map<Integer, List<ShuffleServerInfo>> initialAssignment = handle.getPartitionToServers();
     Map<Integer, Map<Integer, List<ShuffleServerInfo>>> afterAssignment =
-        handle.getFailoverPartitionServers();
+        handle.getPartitionReplacementServers();
 
     for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : initialAssignment.entrySet()) {
       int partitionId = entry.getKey();
