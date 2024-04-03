@@ -588,7 +588,8 @@ public class WriteBufferManagerTest {
         List<PartitionRange> partitionRanges,
         RemoteStorageInfo remoteStorage,
         ShuffleDataDistributionType dataDistributionType,
-        int maxConcurrencyPerPartitionToWrite) {}
+        int maxConcurrencyPerPartitionToWrite,
+        boolean blockFailureReassignEnabled) {}
 
     @Override
     public boolean sendCommit(
