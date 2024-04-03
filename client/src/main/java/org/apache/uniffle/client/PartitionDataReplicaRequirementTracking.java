@@ -83,4 +83,8 @@ public class PartitionDataReplicaRequirementTracking {
   public int getShuffleId() {
     return shuffleId;
   }
+
+  public Map<Integer, Map<Integer, List<ShuffleServerInfo>>> getInventory() {
+    return inventory;
+  }
 }

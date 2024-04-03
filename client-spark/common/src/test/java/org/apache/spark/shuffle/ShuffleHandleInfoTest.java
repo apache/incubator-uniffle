@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -78,5 +79,26 @@ public class ShuffleHandleInfoTest {
     assertEquals(
         Arrays.asList(createFakeServerInfo("c"), createFakeServerInfo("d")),
         partitionAssignment.get(2));
+  }
+
+  @Test
+  public void testCreatePartitionReplicaTracking() {
+    ShuffleServerInfo a = createFakeServerInfo("a");
+    ShuffleServerInfo b = createFakeServerInfo("b");
+    ShuffleServerInfo c = createFakeServerInfo("c");
+
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
+    partitionToServers.put(1, Arrays.asList(a, b));
+    partitionToServers.put(2, Arrays.asList(c));
+
+    ShuffleHandleInfo handleInfo =
+        new ShuffleHandleInfo(1, partitionToServers, new RemoteStorageInfo(""));
+
+    // not any replacements
+    PartitionDataReplicaRequirementTracking tracking = handleInfo.createPartitionReplicaTracking();
+    Map<Integer, Map<Integer, List<ShuffleServerInfo>>> inventory = tracking.getInventory();
+    assertEquals(a, inventory.get(1).get(0).get(0));
+    assertEquals(b, inventory.get(1).get(1).get(0));
+    assertEquals(c, inventory.get(2).get(0).get(0));
   }
 }
