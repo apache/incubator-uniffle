@@ -60,17 +60,17 @@ public class AddBlockEvent {
   }
 
   public void callbackOnBlockFailure(ShuffleBlockInfo block) {
-    if (block == null) {
+    if (block == null || blockFailureCallback == null) {
       return;
     }
-    this.blockFailureCallback.onBlockFailure(block);
+    blockFailureCallback.onBlockFailure(block);
   }
 
   public void callbackOnBlockSuccess(ShuffleBlockInfo block) {
-    if (block == null) {
+    if (block == null || blockSuccessCallback == null) {
       return;
     }
-    this.blockSuccessCallback.onBlockSuccess(block);
+    blockSuccessCallback.onBlockSuccess(block);
   }
 
   public void withBlockFailureCallback(BlockFailureCallback blockFailureCallback) {
