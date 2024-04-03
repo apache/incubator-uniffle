@@ -50,6 +50,7 @@ import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
 import org.apache.tez.runtime.library.output.OutputTestHelpers;
 import org.apache.tez.runtime.library.output.RssOrderedPartitionedKVOutputTest;
 import org.apache.tez.runtime.library.partitioner.HashPartitioner;
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -663,7 +664,8 @@ public class WriteBufferManagerTest {
         Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
         String appId,
         int shuffleId,
-        Set<Integer> failedPartitions) {
+        Set<Integer> failedPartitions,
+        PartitionDataReplicaRequirementTracking tracking) {
       return null;
     }
 

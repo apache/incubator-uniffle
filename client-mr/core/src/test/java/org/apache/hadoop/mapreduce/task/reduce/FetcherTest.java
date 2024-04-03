@@ -56,6 +56,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.util.Progress;
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -560,7 +561,8 @@ public class FetcherTest {
         Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
         String appId,
         int shuffleId,
-        Set<Integer> failedPartitions) {
+        Set<Integer> failedPartitions,
+        PartitionDataReplicaRequirementTracking tracking) {
       return null;
     }
 

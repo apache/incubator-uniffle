@@ -36,6 +36,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -593,7 +594,8 @@ public class SortWriteBufferManagerTest {
         Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
         String appId,
         int shuffleId,
-        Set<Integer> failedPartitions) {
+        Set<Integer> failedPartitions,
+        PartitionDataReplicaRequirementTracking tracking) {
       return null;
     }
 
