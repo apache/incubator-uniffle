@@ -138,7 +138,7 @@ public class RpcClientRetryTestTest extends ShuffleReadWriteBase {
   }
 
   private static Stream<Arguments> testRpcRetryLogicProvider() {
-    return Stream.of(Arguments.of(StorageType.MEMORY, StorageType.LOCALFILE));
+    return Stream.of(Arguments.of(StorageType.MEMORY_LOCALFILE, StorageType.LOCALFILE));
   }
 
   @ParameterizedTest
