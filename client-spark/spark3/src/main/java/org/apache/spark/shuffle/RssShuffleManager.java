@@ -62,6 +62,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
@@ -676,7 +677,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             blockIdServerToPartitions,
             rssShuffleHandle.getAppId(),
             shuffleId,
-            context.stageAttemptNumber());
+            context.stageAttemptNumber(),
+            shuffleHandleInfo.createPartitionReplicaTracking());
     LOG.info(
         "Get shuffle blockId cost "
             + (System.currentTimeMillis() - start)
@@ -725,7 +727,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private Map<ShuffleServerInfo, Set<Integer>> getBlockIdServers(
       ShuffleHandleInfo shuffleHandleInfo, int startPartition, int endPartition) {
     Map<Integer, List<ShuffleServerInfo>> allPartitionToServers =
-        shuffleHandleInfo.getPartitionToServers();
+        shuffleHandleInfo.listAllPartitionAssignmentServers();
     Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers =
         allPartitionToServers.entrySet().stream()
             .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition)
@@ -1081,11 +1083,17 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
       String appId,
       int shuffleId,
-      int stageAttemptId) {
+      int stageAttemptId,
+      PartitionDataReplicaRequirementTracking replicaRequirementTracking) {
     Set<Integer> failedPartitions = Sets.newHashSet();
     try {
       return shuffleWriteClient.getShuffleResultForMultiPart(
-          clientType, serverToPartitions, appId, shuffleId, failedPartitions);
+          clientType,
+          serverToPartitions,
+          appId,
+          shuffleId,
+          failedPartitions,
+          replicaRequirementTracking);
     } catch (RssFetchFailedException e) {
       throw RssSparkShuffleUtils.reportRssFetchFailedException(
           e, sparkConf, appId, shuffleId, stageAttemptId, failedPartitions);

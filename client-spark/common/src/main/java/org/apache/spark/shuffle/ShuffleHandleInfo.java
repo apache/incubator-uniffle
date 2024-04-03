@@ -28,6 +28,7 @@ import java.util.Set;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.JavaUtils;
@@ -44,7 +45,7 @@ public class ShuffleHandleInfo implements Serializable {
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
 
   // partitionId -> replica -> failover servers
-  private Map<Integer, Map<Integer, ShuffleServerInfo>> failoverPartitionServers;
+  private Map<Integer, Map<Integer, List<ShuffleServerInfo>>> failoverPartitionServers;
   // todo: support mores replacement servers for one faulty server.
   private Map<String, ShuffleServerInfo> faultyServerReplacements;
 
@@ -73,6 +74,10 @@ public class ShuffleHandleInfo implements Serializable {
 
   public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
     return partitionToServers;
+  }
+
+  public Map<Integer, Map<Integer, List<ShuffleServerInfo>>> getFailoverPartitionServers() {
+    return failoverPartitionServers;
   }
 
   public Set<ShuffleServerInfo> getShuffleServersForData() {
@@ -107,10 +112,10 @@ public class ShuffleHandleInfo implements Serializable {
       List<ShuffleServerInfo> replicaServers = partitionToServers.get(partitionId);
       for (int i = 0; i < replicaServers.size(); i++) {
         if (replicaServers.get(i).getId().equals(faultyServerId)) {
-          Map<Integer, ShuffleServerInfo> replicaReplacements =
+          Map<Integer, List<ShuffleServerInfo>> replicaReplacements =
               failoverPartitionServers.computeIfAbsent(
                   partitionId, k -> JavaUtils.newConcurrentMap());
-          replicaReplacements.put(i, replacement);
+          replicaReplacements.computeIfAbsent(i, k -> new ArrayList<>()).add(replacement);
         }
       }
     }
@@ -123,7 +128,8 @@ public class ShuffleHandleInfo implements Serializable {
     for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : partitionToServers.entrySet()) {
       int partitionId = entry.getKey();
       List<ShuffleServerInfo> replicas = entry.getValue();
-      Map<Integer, ShuffleServerInfo> replacements = failoverPartitionServers.get(partitionId);
+      Map<Integer, List<ShuffleServerInfo>> replacements =
+          failoverPartitionServers.get(partitionId);
       if (replacements == null) {
         replacements = Collections.emptyMap();
       }
@@ -132,12 +138,44 @@ public class ShuffleHandleInfo implements Serializable {
           partitionServer.computeIfAbsent(partitionId, k -> new ArrayList<>());
       for (int i = 0; i < replicas.size(); i++) {
         servers.add(replicas.get(i));
-        ShuffleServerInfo replacement = replacements.get(i);
-        if (replacement != null) {
-          servers.add(replacement);
+        List<ShuffleServerInfo> replacementServers = replacements.get(i);
+        if (replacementServers != null) {
+          servers.addAll(replacementServers);
         }
       }
     }
     return partitionServer;
+  }
+
+  public PartitionDataReplicaRequirementTracking createPartitionReplicaTracking() {
+    ShuffleHandleInfo handle = this;
+    Map<Integer, Map<Integer, List<ShuffleServerInfo>>> requirements = new HashMap<>();
+
+    Map<Integer, List<ShuffleServerInfo>> initialAssignment = handle.getPartitionToServers();
+    Map<Integer, Map<Integer, List<ShuffleServerInfo>>> afterAssignment =
+        handle.getFailoverPartitionServers();
+
+    for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : initialAssignment.entrySet()) {
+      int partitionId = entry.getKey();
+      Map<Integer, List<ShuffleServerInfo>> replicaRequirements =
+          requirements.computeIfAbsent(partitionId, k -> new HashMap<>());
+
+      Map<Integer, List<ShuffleServerInfo>> reassignments = afterAssignment.get(partitionId);
+      for (int i = 0; i < entry.getValue().size(); i++) {
+        // initial
+        List<ShuffleServerInfo> servers = replicaRequirements.putIfAbsent(i, new ArrayList<>());
+        servers.add(entry.getValue().get(i));
+
+        // after reassign
+        final int replicaIdx = i;
+        if (reassignments != null && reassignments.containsKey(replicaIdx)) {
+          servers.addAll(reassignments.get(replicaIdx));
+        }
+      }
+    }
+
+    PartitionDataReplicaRequirementTracking replicaRequirement =
+        new PartitionDataReplicaRequirementTracking(handle.getShuffleId(), requirements);
+    return replicaRequirement;
   }
 }
