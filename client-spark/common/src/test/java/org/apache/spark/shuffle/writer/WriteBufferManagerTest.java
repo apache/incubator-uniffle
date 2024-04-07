@@ -372,7 +372,7 @@ public class WriteBufferManagerTest {
           List<AddBlockEvent> events = wbm.buildBlockEvents(blocks);
           for (AddBlockEvent event : events) {
             for (ShuffleBlockInfo block : event.getShuffleDataInfoList()) {
-              event.triggerBlockSuccessCallback(block);
+              block.executeCompletionCallback(true);
             }
             event.getProcessedCallbackChain().stream().forEach(x -> x.run());
             sum += event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
@@ -417,7 +417,7 @@ public class WriteBufferManagerTest {
                           }
                         }
                         for (ShuffleBlockInfo block : event.getShuffleDataInfoList()) {
-                          event.triggerBlockSuccessCallback(block);
+                          block.executeCompletionCallback(true);
                         }
                         event.getProcessedCallbackChain().stream().forEach(x -> x.run());
                         sum +=

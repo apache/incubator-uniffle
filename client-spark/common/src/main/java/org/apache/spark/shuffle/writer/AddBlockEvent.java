@@ -28,9 +28,6 @@ public class AddBlockEvent {
   private List<ShuffleBlockInfo> shuffleDataInfoList;
   private List<Runnable> processedCallbackChain;
 
-  private BlockFailureCallback blockFailureCallback;
-  private BlockSuccessCallback blockSuccessCallback;
-
   public AddBlockEvent(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
     this.taskId = taskId;
     this.shuffleDataInfoList = shuffleDataInfoList;
@@ -57,27 +54,5 @@ public class AddBlockEvent {
   @Override
   public String toString() {
     return "AddBlockEvent: TaskId[" + taskId + "], " + shuffleDataInfoList;
-  }
-
-  public void triggerBlockFailureCallback(ShuffleBlockInfo block) {
-    if (block == null || blockFailureCallback == null) {
-      return;
-    }
-    blockFailureCallback.onBlockFailure(block);
-  }
-
-  public void triggerBlockSuccessCallback(ShuffleBlockInfo block) {
-    if (block == null || blockSuccessCallback == null) {
-      return;
-    }
-    blockSuccessCallback.onBlockSuccess(block);
-  }
-
-  public void withBlockFailureCallback(BlockFailureCallback blockFailureCallback) {
-    this.blockFailureCallback = blockFailureCallback;
-  }
-
-  public void withBlockSuccessCallback(BlockSuccessCallback blockSuccessCallback) {
-    this.blockSuccessCallback = blockSuccessCallback;
   }
 }

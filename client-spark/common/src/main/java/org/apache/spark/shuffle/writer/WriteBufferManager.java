@@ -418,6 +418,7 @@ public class WriteBufferManager extends MemoryConsumer {
     List<AddBlockEvent> events = new ArrayList<>();
     List<ShuffleBlockInfo> shuffleBlockInfosPerEvent = Lists.newArrayList();
     for (ShuffleBlockInfo sbi : shuffleBlockInfoList) {
+      sbi.withCompletionCallback((block, isSuccessful) -> this.releaseBlockResource(block));
       totalSize += sbi.getSize();
       shuffleBlockInfosPerEvent.add(sbi);
       // split shuffle data according to the size
@@ -430,10 +431,7 @@ public class WriteBufferManager extends MemoryConsumer {
                   + totalSize
                   + " bytes");
         }
-        AddBlockEvent event = new AddBlockEvent(taskId, shuffleBlockInfosPerEvent);
-        event.withBlockFailureCallback(this::releaseBlockResource);
-        event.withBlockSuccessCallback(this::releaseBlockResource);
-        events.add(event);
+        events.add(new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));
         shuffleBlockInfosPerEvent = Lists.newArrayList();
         totalSize = 0;
       }
@@ -448,10 +446,7 @@ public class WriteBufferManager extends MemoryConsumer {
                 + " bytes");
       }
       // Use final temporary variables for closures
-      AddBlockEvent event = new AddBlockEvent(taskId, shuffleBlockInfosPerEvent);
-      event.withBlockSuccessCallback(this::releaseBlockResource);
-      event.withBlockFailureCallback(this::releaseBlockResource);
-      events.add(event);
+      events.add(new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));
     }
     return events;
   }

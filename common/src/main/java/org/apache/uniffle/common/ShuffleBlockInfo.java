@@ -38,6 +38,8 @@ public class ShuffleBlockInfo {
   private long freeMemory;
   private int retryCnt = 0;
 
+  private transient BlockCompletionCallback completionCallback;
+
   public ShuffleBlockInfo(
       int shuffleId,
       int partitionId,
@@ -168,5 +170,16 @@ public class ShuffleBlockInfo {
 
   public synchronized void copyDataTo(ByteBuf to) {
     ByteBufUtils.copyByteBuf(data, to);
+  }
+
+  public void withCompletionCallback(BlockCompletionCallback callback) {
+    this.completionCallback = callback;
+  }
+
+  public void executeCompletionCallback(boolean isSuccessful) {
+    if (completionCallback == null) {
+      return;
+    }
+    completionCallback.onBlockCompletion(this, isSuccessful);
   }
 }

@@ -370,7 +370,14 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     for (AddBlockEvent event : bufferManager.buildBlockEvents(shuffleBlockInfoList)) {
       if (blockFailSentRetryEnabled) {
         // do nothing if failed.
-        event.withBlockFailureCallback(block -> {});
+        for (ShuffleBlockInfo block : event.getShuffleDataInfoList()) {
+          block.withCompletionCallback(
+              (completionBlock, isSuccessful) -> {
+                if (isSuccessful) {
+                  bufferManager.releaseBlockResource(completionBlock);
+                }
+              });
+        }
       }
       event.addCallback(
           () -> {
@@ -494,7 +501,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         List<TrackingBlockStatus> failedBlockStatus = failedTracker.getFailedBlockStatus(blockId);
         Optional<TrackingBlockStatus> blockStatus = failedBlockStatus.stream().findFirst();
         if (blockStatus.isPresent()) {
-          bufferManager.releaseBlockResource(blockStatus.get().getShuffleBlockInfo());
+          blockStatus.get().getShuffleBlockInfo().executeCompletionCallback(true);
         }
       }
 

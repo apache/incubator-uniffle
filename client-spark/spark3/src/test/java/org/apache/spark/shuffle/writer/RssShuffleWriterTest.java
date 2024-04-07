@@ -123,11 +123,7 @@ public class RssShuffleWriterTest {
                   successBlockIds.get(event.getTaskId()).add(block.getBlockId());
                   shuffleBlockInfos.add(block);
                 }
-                if (isSuccessful) {
-                  event.triggerBlockSuccessCallback(block);
-                } else {
-                  event.triggerBlockFailureCallback(block);
-                }
+                block.executeCompletionCallback(isSuccessful);
               }
               return new CompletableFuture<>();
             });
@@ -254,11 +250,7 @@ public class RssShuffleWriterTest {
                   successBlockIds.putIfAbsent(event.getTaskId(), Sets.newConcurrentHashSet());
                   successBlockIds.get(event.getTaskId()).add(block.getBlockId());
                 }
-                if (isSuccessful) {
-                  event.triggerBlockSuccessCallback(block);
-                } else {
-                  event.triggerBlockFailureCallback(block);
-                }
+                block.executeCompletionCallback(isSuccessful);
               }
               return new CompletableFuture<>();
             });
