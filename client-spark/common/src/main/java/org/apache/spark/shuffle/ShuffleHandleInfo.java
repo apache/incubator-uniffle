@@ -18,6 +18,7 @@
 package org.apache.spark.shuffle;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -178,5 +179,9 @@ public class ShuffleHandleInfo implements Serializable {
     PartitionDataReplicaRequirementTracking replicaRequirement =
         new PartitionDataReplicaRequirementTracking(handle.getShuffleId(), requirements);
     return replicaRequirement;
+  }
+
+  public static ShuffleHandleInfo fromBytes(ByteBuffer bytes) {
+    return KryoSerializerWrapper.getInstance().deserialize(bytes, ShuffleHandleInfo.class);
   }
 }

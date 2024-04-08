@@ -1135,10 +1135,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     RssPartitionToShuffleServerResponse rpcPartitionToShufflerServer =
         shuffleManagerClient.getPartitionToShufflerServer(rssPartitionToShuffleServerRequest);
     shuffleHandleInfo =
-        new ShuffleHandleInfo(
-            shuffleId,
-            rpcPartitionToShufflerServer.getPartitionToServers(),
-            rpcPartitionToShufflerServer.getRemoteStorageInfo());
+        ShuffleHandleInfo.fromBytes(rpcPartitionToShufflerServer.getShuffleHandleBytes());
     return shuffleHandleInfo;
   }
 

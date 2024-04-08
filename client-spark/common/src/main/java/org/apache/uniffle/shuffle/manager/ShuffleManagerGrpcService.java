@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.shuffle.manager;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,12 +28,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
 import com.google.common.collect.Sets;
+import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
+import org.apache.spark.shuffle.KryoSerializerWrapper;
 import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.proto.RssProtos;
@@ -193,38 +195,21 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     ShuffleHandleInfo shuffleHandleInfoByShuffleId =
         shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
     if (shuffleHandleInfoByShuffleId != null) {
+      ByteBuffer shuffleHandleByteBuffer =
+          KryoSerializerWrapper.getInstance()
+              .serialize(shuffleHandleInfoByShuffleId, ShuffleHandleInfo.class);
       code = RssProtos.StatusCode.SUCCESS;
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers =
-          shuffleHandleInfoByShuffleId.getPartitionToServers();
-      Map<Integer, RssProtos.GetShuffleServerListResponse> protopartitionToServers =
-          JavaUtils.newConcurrentMap();
-      for (Map.Entry<Integer, List<ShuffleServerInfo>> integerListEntry :
-          partitionToServers.entrySet()) {
-        List<RssProtos.ShuffleServerId> shuffleServerIds =
-            ShuffleServerInfo.toProto(integerListEntry.getValue());
-        RssProtos.GetShuffleServerListResponse getShuffleServerListResponse =
-            RssProtos.GetShuffleServerListResponse.newBuilder()
-                .addAllServers(shuffleServerIds)
-                .build();
-        protopartitionToServers.put(integerListEntry.getKey(), getShuffleServerListResponse);
-      }
-      RemoteStorageInfo remoteStorage = shuffleHandleInfoByShuffleId.getRemoteStorage();
-      RssProtos.RemoteStorageInfo.Builder protosRemoteStage =
-          RssProtos.RemoteStorageInfo.newBuilder()
-              .setPath(remoteStorage.getPath())
-              .putAllConfItems(remoteStorage.getConfItems());
       reply =
           RssProtos.PartitionToShuffleServerResponse.newBuilder()
               .setStatus(code)
-              .putAllPartitionToShuffleServer(protopartitionToServers)
-              .setRemoteStorageInfo(protosRemoteStage)
+              .setShuffleHandleInfoSerializableBytes(ByteString.copyFrom(shuffleHandleByteBuffer))
               .build();
     } else {
       code = RssProtos.StatusCode.INVALID_REQUEST;
       reply =
           RssProtos.PartitionToShuffleServerResponse.newBuilder()
               .setStatus(code)
-              .putAllPartitionToShuffleServer(null)
+              .setShuffleHandleInfoSerializableBytes(null)
               .build();
     }
     responseObserver.onNext(reply);

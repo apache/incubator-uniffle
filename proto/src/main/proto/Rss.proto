@@ -551,9 +551,8 @@ message PartitionToShuffleServerRequest {
 
 message PartitionToShuffleServerResponse {
   StatusCode status = 1;
-  map<int32,GetShuffleServerListResponse> partitionToShuffleServer = 2;
-  RemoteStorageInfo remote_storage_info = 3;
-  string msg = 4;
+  string msg = 2;
+  bytes shuffleHandleInfoSerializableBytes = 3;
 }
 
 message RemoteStorageInfo{
