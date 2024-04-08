@@ -559,23 +559,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     partitionLengths[block.getPartitionId()] -= block.getLength();
   }
 
-  private void clearFailedBlockStates(
-      List<ShuffleBlockInfo> failedBlockInfoList, Map<String, ShuffleServerInfo> faultyServers) {
-    failedBlockInfoList.forEach(
-        shuffleBlockInfo -> {
-          shuffleManager.getBlockIdsFailedSendTracker(taskId).remove(shuffleBlockInfo.getBlockId());
-          shuffleBlockInfo.getShuffleServerInfos().stream()
-              .filter(s -> faultyServers.containsKey(s.getId()))
-              .forEach(
-                  s ->
-                      serverToPartitionToBlockIds
-                          .get(s)
-                          .get(shuffleBlockInfo.getPartitionId())
-                          .remove(shuffleBlockInfo.getBlockId()));
-          partitionLengths[shuffleBlockInfo.getPartitionId()] -= shuffleBlockInfo.getLength();
-        });
-  }
-
   private ShuffleServerInfo reassignFaultyShuffleServer(
       Set<Integer> partitionIds, String faultyServerId) {
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
