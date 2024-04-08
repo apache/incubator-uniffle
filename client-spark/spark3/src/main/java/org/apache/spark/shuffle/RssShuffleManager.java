@@ -35,7 +35,6 @@ import scala.collection.Iterator;
 import scala.collection.Seq;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.hadoop.conf.Configuration;
@@ -147,6 +146,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * assignments, stageID, Attemptnumber Whether to reassign the combination flag;
    */
   private Map<String, Boolean> serverAssignedInfos;
+
   Map<Integer, Map<ShuffleServerInfo, List<PartitionRange>>> serverToPartitionRanges;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
@@ -1249,17 +1249,23 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     estimateTaskConcurrency,
                     faultyServerIds);
             // find the partitionRange based on lastFaultyServerId.
-            Map<ShuffleServerInfo, List<PartitionRange>> partitionRange = response.getServerToPartitionRanges();
+            Map<ShuffleServerInfo, List<PartitionRange>> partitionRange =
+                response.getServerToPartitionRanges();
             if (lastFaultyServerId != null) {
-              Map<ShuffleServerInfo, List<PartitionRange>> shuffleServerInfoListMap = serverToPartitionRanges.get(shuffleId);
+              Map<ShuffleServerInfo, List<PartitionRange>> shuffleServerInfoListMap =
+                  serverToPartitionRanges.get(shuffleId);
               if (shuffleServerInfoListMap != null) {
                 java.util.Iterator<ShuffleServerInfo> it = partitionRange.keySet().iterator();
                 if (it.hasNext()) {
                   ShuffleServerInfo newServer = it.next();
-                  partitionRange = shuffleServerInfoListMap.entrySet().stream().filter(x -> x.getKey().getId().equals(lastFaultyServerId))
+                  partitionRange =
+                      shuffleServerInfoListMap.entrySet().stream()
+                          .filter(x -> x.getKey().getId().equals(lastFaultyServerId))
                           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-                  Map<ShuffleServerInfo, List<PartitionRange>> newPartitionRange = JavaUtils.newConcurrentMap();
-                  for (Map.Entry<ShuffleServerInfo, List<PartitionRange>> entry : partitionRange.entrySet()) {
+                  Map<ShuffleServerInfo, List<PartitionRange>> newPartitionRange =
+                      JavaUtils.newConcurrentMap();
+                  for (Map.Entry<ShuffleServerInfo, List<PartitionRange>> entry :
+                      partitionRange.entrySet()) {
                     if (entry.getKey().getId().equals(lastFaultyServerId)) {
                       newPartitionRange.put(newServer, entry.getValue());
                     } else {
@@ -1270,8 +1276,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                 }
               }
             }
-            registerShuffleServers(
-                id.get(), shuffleId, partitionRange, getRemoteStorageInfo());
+            registerShuffleServers(id.get(), shuffleId, partitionRange, getRemoteStorageInfo());
             return response.getPartitionToServers();
           },
           retryInterval,
