@@ -18,7 +18,10 @@
 package org.apache.spark.shuffle;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import scala.Tuple2;
@@ -1157,7 +1161,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               1,
               requiredShuffleServerNumber,
               estimateTaskConcurrency,
-              failuresShuffleServerIds);
+              failuresShuffleServerIds,
+              null);
       /**
        * we need to clear the metadata of the completed task, otherwise some of the stage's data
        * will be lost
@@ -1196,24 +1201,54 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       }
 
       // get the newer server to replace faulty server.
-      ShuffleServerInfo newAssignedServer = assignShuffleServer(shuffleId, faultyShuffleServerId);
+      ShuffleServerInfo newAssignedServer =
+          reassignShuffleServerForTask(shuffleId, partitionIds, faultyShuffleServerId);
       if (newAssignedServer != null) {
         handleInfo.createNewReassignmentForMultiPartitions(
             partitionIds, faultyShuffleServerId, newAssignedServer);
       }
+      LOG.info(
+          "Reassign shuffle-server from {} -> {} for shuffleId: {}, partitionIds: {}",
+          faultyShuffleServerId,
+          newAssignedServer,
+          shuffleId,
+          partitionIds);
       return newAssignedServer;
     }
   }
 
-  private ShuffleServerInfo assignShuffleServer(int shuffleId, String faultyShuffleServerId) {
+  private ShuffleServerInfo reassignShuffleServerForTask(
+      int shuffleId, Set<Integer> partitionIds, String faultyShuffleServerId) {
     Set<String> faultyServerIds = Sets.newHashSet(faultyShuffleServerId);
     faultyServerIds.addAll(failuresShuffleServerIds);
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers =
-        requestShuffleAssignment(shuffleId, 1, 1, 1, 1, faultyServerIds);
-    if (partitionToServers.get(0) != null && partitionToServers.get(0).size() == 1) {
-      return partitionToServers.get(0).get(0);
-    }
-    return null;
+    AtomicReference<ShuffleServerInfo> replacementRef = new AtomicReference<>();
+    requestShuffleAssignment(
+        shuffleId,
+        1,
+        1,
+        1,
+        1,
+        faultyServerIds,
+        shuffleAssignmentsInfo -> {
+          if (shuffleAssignmentsInfo == null) {
+            return null;
+          }
+          Optional<List<ShuffleServerInfo>> replacementOpt =
+              shuffleAssignmentsInfo.getPartitionToServers().values().stream().findFirst();
+          ShuffleServerInfo replacement = replacementOpt.get().get(0);
+          replacementRef.set(replacement);
+
+          Map<Integer, List<ShuffleServerInfo>> newPartitionToServers = new HashMap<>();
+          List<PartitionRange> partitionRanges = new ArrayList<>();
+          for (Integer partitionId : partitionIds) {
+            newPartitionToServers.put(partitionId, Arrays.asList(replacement));
+            partitionRanges.add(new PartitionRange(partitionId, partitionId));
+          }
+          Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges = new HashMap<>();
+          serverToPartitionRanges.put(replacement, partitionRanges);
+          return new ShuffleAssignmentsInfo(newPartitionToServers, serverToPartitionRanges);
+        });
+    return replacementRef.get();
   }
 
   private Map<Integer, List<ShuffleServerInfo>> requestShuffleAssignment(
@@ -1222,7 +1257,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       int partitionNumPerRange,
       int assignmentShuffleServerNumber,
       int estimateTaskConcurrency,
-      Set<String> faultyServerIds) {
+      Set<String> faultyServerIds,
+      Function<ShuffleAssignmentsInfo, ShuffleAssignmentsInfo> reassignmentHandler) {
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
     ClientUtils.validateClientType(clientType);
     assignmentTags.add(clientType);
@@ -1242,6 +1278,9 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     assignmentShuffleServerNumber,
                     estimateTaskConcurrency,
                     faultyServerIds);
+            if (reassignmentHandler != null) {
+              response = reassignmentHandler.apply(response);
+            }
             registerShuffleServers(
                 id.get(), shuffleId, response.getServerToPartitionRanges(), getRemoteStorageInfo());
             return response.getPartitionToServers();
