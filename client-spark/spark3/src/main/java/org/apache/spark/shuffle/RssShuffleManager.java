@@ -1222,34 +1222,32 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     Set<String> faultyServerIds = Sets.newHashSet(faultyShuffleServerId);
     faultyServerIds.addAll(failuresShuffleServerIds);
     AtomicReference<ShuffleServerInfo> replacementRef = new AtomicReference<>();
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers =
-        requestShuffleAssignment(
-            shuffleId,
-            1,
-            1,
-            1,
-            1,
-            faultyServerIds,
-            shuffleAssignmentsInfo -> {
-              if (shuffleAssignmentsInfo == null) {
-                return null;
-              }
-              Optional<List<ShuffleServerInfo>> replacementOpt =
-                  shuffleAssignmentsInfo.getPartitionToServers().values().stream().findFirst();
-              ShuffleServerInfo replacement = replacementOpt.get().get(0);
-              replacementRef.set(replacement);
+    requestShuffleAssignment(
+        shuffleId,
+        1,
+        1,
+        1,
+        1,
+        faultyServerIds,
+        shuffleAssignmentsInfo -> {
+          if (shuffleAssignmentsInfo == null) {
+            return null;
+          }
+          Optional<List<ShuffleServerInfo>> replacementOpt =
+              shuffleAssignmentsInfo.getPartitionToServers().values().stream().findFirst();
+          ShuffleServerInfo replacement = replacementOpt.get().get(0);
+          replacementRef.set(replacement);
 
-              Map<Integer, List<ShuffleServerInfo>> newPartitionToServers = new HashMap<>();
-              List<PartitionRange> partitionRanges = new ArrayList<>();
-              for (Integer partitionId : partitionIds) {
-                newPartitionToServers.put(partitionId, Arrays.asList(replacement));
-                partitionRanges.add(new PartitionRange(partitionId, partitionId));
-              }
-              Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges =
-                  new HashMap<>();
-              serverToPartitionRanges.put(replacement, partitionRanges);
-              return new ShuffleAssignmentsInfo(newPartitionToServers, serverToPartitionRanges);
-            });
+          Map<Integer, List<ShuffleServerInfo>> newPartitionToServers = new HashMap<>();
+          List<PartitionRange> partitionRanges = new ArrayList<>();
+          for (Integer partitionId : partitionIds) {
+            newPartitionToServers.put(partitionId, Arrays.asList(replacement));
+            partitionRanges.add(new PartitionRange(partitionId, partitionId));
+          }
+          Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges = new HashMap<>();
+          serverToPartitionRanges.put(replacement, partitionRanges);
+          return new ShuffleAssignmentsInfo(newPartitionToServers, serverToPartitionRanges);
+        });
     return replacementRef.get();
   }
 
