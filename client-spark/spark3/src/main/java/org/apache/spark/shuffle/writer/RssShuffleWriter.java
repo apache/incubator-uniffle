@@ -653,7 +653,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       if (blockFailSentRetryEnabled) {
         if (success) {
           if (CollectionUtils.isNotEmpty(shuffleManager.getFailedBlockIds(taskId))) {
-            LOG.error("Errors on stopping writer due to the remaining failed blockIds. This should not happen.");
+            LOG.error(
+                "Errors on stopping writer due to the remaining failed blockIds. This should not happen.");
             return Option.empty();
           }
         } else {
