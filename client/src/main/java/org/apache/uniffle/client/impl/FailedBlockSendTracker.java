@@ -61,7 +61,12 @@ public class FailedBlockSendTracker {
     trackingBlockStatusMap.remove(blockId);
   }
 
-  public void clear() {
+  public void clearAndReleaseBlockResources() {
+    trackingBlockStatusMap
+        .values()
+        .stream()
+        .flatMap(x -> x.stream())
+        .forEach(x -> x.getShuffleBlockInfo().executeCompletionCallback(true));
     trackingBlockStatusMap.clear();
   }
 

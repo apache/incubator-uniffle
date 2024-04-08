@@ -650,6 +650,16 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         return Option.empty();
       }
     } finally {
+      if (blockFailSentRetryEnabled) {
+        if (success) {
+          if (CollectionUtils.isNotEmpty(shuffleManager.getFailedBlockIds(taskId))) {
+            LOG.error("Errors on stopping writer due to the remaining failed blockIds. This should not happen.");
+            return Option.empty();
+          }
+        } else {
+          shuffleManager.getBlockIdsFailedSendTracker(taskId).clearAndReleaseBlockResources();
+        }
+      }
       // free all memory & metadata, or memory leak happen in executor
       if (bufferManager != null) {
         bufferManager.freeAllMemory();
