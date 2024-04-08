@@ -355,7 +355,6 @@ public class RssShuffleWriterTest {
         assertThrows(
             RuntimeException.class,
             () -> rssShuffleWriter.checkBlockSendResult(Sets.newHashSet(1L, 2L, 3L)));
-    System.out.println(e3.getMessage());
     assertTrue(e3.getMessage().startsWith("Fail to send the block"));
     successBlocks.clear();
     taskToFailedBlockSendTracker.clear();
