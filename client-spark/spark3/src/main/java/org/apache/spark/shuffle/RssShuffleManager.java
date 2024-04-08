@@ -668,13 +668,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               rssShuffleHandle.getPartitionToServers(),
               rssShuffleHandle.getRemoteStorage());
     }
-    Map<ShuffleServerInfo, Set<Integer>> blockIdServerToPartitions =
-        getBlockIdServers(shuffleHandleInfo, startPartition, endPartition);
+    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions =
+        getPartitionDataServers(shuffleHandleInfo, startPartition, endPartition);
     long start = System.currentTimeMillis();
     Roaring64NavigableMap blockIdBitmap =
         getShuffleResultForMultiPart(
             clientType,
-            blockIdServerToPartitions,
+            serverToPartitions,
             rssShuffleHandle.getAppId(),
             shuffleId,
             context.stageAttemptNumber(),
@@ -724,7 +724,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         shuffleHandleInfo.listAllPartitionAssignmentServers());
   }
 
-  private Map<ShuffleServerInfo, Set<Integer>> getBlockIdServers(
+  private Map<ShuffleServerInfo, Set<Integer>> getPartitionDataServers(
       ShuffleHandleInfo shuffleHandleInfo, int startPartition, int endPartition) {
     Map<Integer, List<ShuffleServerInfo>> allPartitionToServers =
         shuffleHandleInfo.listAllPartitionAssignmentServers();

@@ -63,6 +63,12 @@ public class PartitionBlockDataReassignTest extends SparkSQLTest {
     ShuffleServerConf grpcShuffleServerConf2 = buildShuffleServerConf(ServerType.GRPC);
     createShuffleServer(grpcShuffleServerConf2);
 
+    ShuffleServerConf grpcShuffleServerConf3 = buildShuffleServerConf(ServerType.GRPC_NETTY);
+    createShuffleServer(grpcShuffleServerConf3);
+
+    ShuffleServerConf grpcShuffleServerConf4 = buildShuffleServerConf(ServerType.GRPC_NETTY);
+    createShuffleServer(grpcShuffleServerConf4);
+
     startServers();
 
     // simulate one server without enough buffer
@@ -82,8 +88,8 @@ public class PartitionBlockDataReassignTest extends SparkSQLTest {
 
   @Override
   public void updateRssStorage(SparkConf sparkConf) {
-    sparkConf.set("spark." + RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, "1");
-    sparkConf.set("spark." + RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED, "true");
+    sparkConf.set("spark." + RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, "2");
+    sparkConf.set("spark." + RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.key(), "true");
   }
 
   @Override
