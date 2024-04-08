@@ -263,7 +263,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId[" + partitionId + "]";
 
     // todo: if can get the exact memory size?
-    if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(readBufferSize)) {
+    if (shuffleServer.getShuffleBufferManager().requireReadMemory(readBufferSize)) {
       ShuffleDataResult shuffleDataResult = null;
       try {
         shuffleDataResult =
@@ -308,7 +308,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 req.getRequestId(), status, msg, Lists.newArrayList(), Unpooled.EMPTY_BUFFER);
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get in memory shuffle data";
       LOG.error(msg + " for " + requestInfo);
       response =
@@ -347,7 +347,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         shuffleServer
             .getShuffleServerConf()
             .getLong(ShuffleServerConf.SERVER_SHUFFLE_INDEX_SIZE_HINT);
-    if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(assumedFileSize)) {
+    if (shuffleServer.getShuffleBufferManager().requireReadMemory(assumedFileSize)) {
       ShuffleIndexResult shuffleIndexResult = null;
       try {
         final long start = System.currentTimeMillis();
@@ -392,7 +392,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER, 0L);
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get shuffle index";
       LOG.error(msg + " for " + requestInfo);
       response =
@@ -447,7 +447,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
     }
 
-    if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(length)) {
+    if (shuffleServer.getShuffleBufferManager().requireReadMemory(length)) {
       ShuffleDataResult sdr = null;
       try {
         final long start = System.currentTimeMillis();
@@ -486,7 +486,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 req.getRequestId(), status, msg, new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get shuffle data";
       LOG.error(msg + " for " + requestInfo);
       response =

@@ -60,7 +60,6 @@ public class ShuffleBufferManager {
   private final ShuffleFlushManager shuffleFlushManager;
   private long capacity;
   private long readCapacity;
-  private int retryNum;
   private long highWaterMark;
   private long lowWaterMark;
   private boolean bufferFlushEnabled;
@@ -111,7 +110,6 @@ public class ShuffleBufferManager {
         readCapacity);
     this.shuffleFlushManager = shuffleFlushManager;
     this.bufferPool = new ConcurrentHashMap<>();
-    this.retryNum = conf.getInteger(ShuffleServerConf.SERVER_MEMORY_REQUEST_RETRY_MAX);
     this.highWaterMark =
         (long)
             (capacity
@@ -424,35 +422,37 @@ public class ShuffleBufferManager {
     ShuffleServerMetrics.gaugeInFlushBufferSize.set(inFlushSize.get());
   }
 
-  public boolean requireReadMemoryWithRetry(long size) {
+  public boolean requireReadMemory(long size) {
     ShuffleServerMetrics.counterTotalRequireReadMemoryNum.inc();
-    for (int i = 0; i < retryNum; i++) {
-      synchronized (this) {
-        if (readDataMemory.get() + size < readCapacity) {
-          readDataMemory.addAndGet(size);
-          ShuffleServerMetrics.gaugeReadBufferUsedSize.inc(size);
-          return true;
-        }
+    boolean isSuccessful = false;
+
+    do {
+      long currentReadDataMemory = readDataMemory.get();
+      long newReadDataMemory = currentReadDataMemory + size;
+      if (newReadDataMemory >= readCapacity) {
+        break;
       }
-      LOG.info(
+      if (readDataMemory.compareAndSet(currentReadDataMemory, newReadDataMemory)) {
+        ShuffleServerMetrics.gaugeReadBufferUsedSize.inc(size);
+        isSuccessful = true;
+        break;
+      }
+    } while (true);
+
+    if (!isSuccessful) {
+      LOG.error(
           "Can't require["
               + size
               + "] for read data, current["
               + readDataMemory.get()
               + "], capacity["
               + readCapacity
-              + "], re-try "
-              + i
-              + " times");
+              + "]");
       ShuffleServerMetrics.counterTotalRequireReadMemoryRetryNum.inc();
-      try {
-        Thread.sleep(1000);
-      } catch (Exception e) {
-        LOG.warn("Error happened when require memory", e);
-      }
+      ShuffleServerMetrics.counterTotalRequireReadMemoryFailedNum.inc();
     }
-    ShuffleServerMetrics.counterTotalRequireReadMemoryFailedNum.inc();
-    return false;
+
+    return isSuccessful;
   }
 
   public void releaseReadMemory(long size) {

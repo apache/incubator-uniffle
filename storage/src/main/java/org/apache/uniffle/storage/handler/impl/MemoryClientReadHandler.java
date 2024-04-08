@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,8 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
   private long lastBlockId = Constants.INVALID_BLOCK_ID;
   private ShuffleServerClient shuffleServerClient;
   private Roaring64NavigableMap expectTaskIds;
+  private int retryMax;
+  private long retryIntervalMax;
 
   public MemoryClientReadHandler(
       String appId,
@@ -44,13 +47,28 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       int partitionId,
       int readBufferSize,
       ShuffleServerClient shuffleServerClient,
-      Roaring64NavigableMap expectTaskIds) {
+      Roaring64NavigableMap expectTaskIds,
+      int retryMax,
+      long retryIntervalMax) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.readBufferSize = readBufferSize;
     this.shuffleServerClient = shuffleServerClient;
     this.expectTaskIds = expectTaskIds;
+    this.retryMax = retryMax;
+    this.retryIntervalMax = retryIntervalMax;
+  }
+
+  @VisibleForTesting
+  public MemoryClientReadHandler(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int readBufferSize,
+      ShuffleServerClient shuffleServerClient,
+      Roaring64NavigableMap expectTaskIds) {
+    this(appId, shuffleId, partitionId, readBufferSize, shuffleServerClient, expectTaskIds, 1, 0);
   }
 
   @Override
@@ -59,7 +77,14 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
 
     RssGetInMemoryShuffleDataRequest request =
         new RssGetInMemoryShuffleDataRequest(
-            appId, shuffleId, partitionId, lastBlockId, readBufferSize, expectTaskIds);
+            appId,
+            shuffleId,
+            partitionId,
+            lastBlockId,
+            readBufferSize,
+            expectTaskIds,
+            retryMax,
+            retryIntervalMax);
 
     try {
       RssGetInMemoryShuffleDataResponse response =
@@ -70,10 +95,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
     } catch (Exception e) {
       // todo: fault tolerance solution should be added
       throw new RssFetchFailedException(
-          "Failed to read in memory shuffle data with "
-              + shuffleServerClient.getClientInfo()
-              + " due to "
-              + e);
+          "Failed to read in memory shuffle data with " + shuffleServerClient.getClientInfo(), e);
     }
 
     // update lastBlockId for next rpc call

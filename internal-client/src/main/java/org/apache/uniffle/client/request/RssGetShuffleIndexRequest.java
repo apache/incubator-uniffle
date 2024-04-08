@@ -17,7 +17,9 @@
 
 package org.apache.uniffle.client.request;
 
-public class RssGetShuffleIndexRequest {
+import com.google.common.annotations.VisibleForTesting;
+
+public class RssGetShuffleIndexRequest extends RetryableRequest {
 
   private final String appId;
   private final int shuffleId;
@@ -26,12 +28,26 @@ public class RssGetShuffleIndexRequest {
   private final int partitionNum;
 
   public RssGetShuffleIndexRequest(
-      String appId, int shuffleId, int partitionId, int partitionNumPerRange, int partitionNum) {
+      String appId,
+      int shuffleId,
+      int partitionId,
+      int partitionNumPerRange,
+      int partitionNum,
+      int retryMax,
+      long retryIntervalMax) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.partitionNumPerRange = partitionNumPerRange;
     this.partitionNum = partitionNum;
+    this.retryMax = retryMax;
+    this.retryIntervalMax = retryIntervalMax;
+  }
+
+  @VisibleForTesting
+  public RssGetShuffleIndexRequest(
+      String appId, int shuffleId, int partitionId, int partitionNumPerRange, int partitionNum) {
+    this(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, 1, 0);
   }
 
   public String getAppId() {
@@ -52,5 +68,10 @@ public class RssGetShuffleIndexRequest {
 
   public int getPartitionNum() {
     return partitionNum;
+  }
+
+  @Override
+  public String operationType() {
+    return "GetShuffleIndex";
   }
 }

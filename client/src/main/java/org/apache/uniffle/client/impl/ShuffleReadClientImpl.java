@@ -168,6 +168,8 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setExpectTaskIds(taskIdBitmap);
     request.setClientConf(builder.getRssConf());
     request.setClientType(builder.getClientType());
+    request.setRetryMax(builder.getRetryMax());
+    request.setRetryIntervalMax(builder.getRetryIntervalMax());
     if (builder.isExpectedTaskIdsBitmapFilterEnable()) {
       request.useExpectedTaskIdsBitmapFilter();
     }
