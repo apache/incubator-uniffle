@@ -138,7 +138,7 @@ public class HybridStorageManager implements StorageManager {
   public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event) {
     StorageManager underStorageManager = eventOfUnderStorageManagers.getIfPresent(event);
     if (underStorageManager == null) {
-      return false;
+      underStorageManager = selectStorageManager(event);
     }
     return underStorageManager.write(storage, handler, event);
   }
