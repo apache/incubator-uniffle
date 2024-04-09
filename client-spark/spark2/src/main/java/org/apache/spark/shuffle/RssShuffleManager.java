@@ -822,13 +822,9 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
     RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
         new RssPartitionToShuffleServerRequest(shuffleId);
-    RssPartitionToShuffleServerResponse rpcPartitionToShufflerServer =
+    RssPartitionToShuffleServerResponse handleInfoResponse =
         shuffleManagerClient.getPartitionToShufflerServer(rssPartitionToShuffleServerRequest);
-    shuffleHandleInfo =
-        new ShuffleHandleInfo(
-            shuffleId,
-            rpcPartitionToShufflerServer.getPartitionToServers(),
-            rpcPartitionToShufflerServer.getRemoteStorageInfo());
+    shuffleHandleInfo = ShuffleHandleInfo.fromBytes(handleInfoResponse.getShuffleHandleBytes());
     return shuffleHandleInfo;
   }
 
