@@ -855,7 +855,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                 + "], shuffleId["
                 + shuffleId
                 + "], requestPartitions"
-                + requestPartitions);
+                + requestPartitions, e);
       }
     }
     boolean isSuccessful =
