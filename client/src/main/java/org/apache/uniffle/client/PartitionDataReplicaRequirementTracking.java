@@ -87,4 +87,16 @@ public class PartitionDataReplicaRequirementTracking {
   public Map<Integer, Map<Integer, List<ShuffleServerInfo>>> getInventory() {
     return inventory;
   }
+
+  @Override
+  public String toString() {
+    return "PartitionDataReplicaRequirementTracking{"
+        + "shuffleId="
+        + shuffleId
+        + ", inventory="
+        + inventory
+        + ", succeedList="
+        + succeedList
+        + '}';
+  }
 }

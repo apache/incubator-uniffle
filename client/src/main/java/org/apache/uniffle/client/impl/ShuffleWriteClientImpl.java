@@ -855,13 +855,15 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                 + "], shuffleId["
                 + shuffleId
                 + "], requestPartitions"
-                + requestPartitions, e);
+                + requestPartitions,
+            e);
       }
     }
     boolean isSuccessful =
         allRequestedPartitionIds.stream()
             .allMatch(x -> replicaRequirementTracking.isSatisfied(x, replicaRead));
     if (!isSuccessful) {
+      LOG.error("Failed to meet replica requirement: {}", replicaRequirementTracking);
       throw new RssFetchFailedException(
           "Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]");
     }

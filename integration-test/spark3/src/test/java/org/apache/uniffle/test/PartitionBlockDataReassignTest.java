@@ -88,7 +88,7 @@ public class PartitionBlockDataReassignTest extends SparkSQLTest {
 
   @Override
   public void updateRssStorage(SparkConf sparkConf) {
-    sparkConf.set("spark." + RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, "2");
+    sparkConf.set("spark." + RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, "1");
     sparkConf.set("spark." + RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.key(), "true");
   }
 
