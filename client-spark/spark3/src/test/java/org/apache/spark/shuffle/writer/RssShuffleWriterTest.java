@@ -233,8 +233,10 @@ public class RssShuffleWriterTest {
     assertEquals(2, serverToPartitionToBlockIds.get(replacement).get(0).size());
 
     // case2. If exceeding the max retry times, it will fast fail.
-    rssShuffleWriterSpy.setBlockFailSentRetryMaxTimes(1);
-    rssShuffleWriterSpy.setTaskId("taskId2");
+    rssShuffleWriter.setBlockFailSentRetryMaxTimes(1);
+    rssShuffleWriter.setTaskId("taskId2");
+    rssShuffleWriter.getBufferManager().setTaskId("taskId2");
+    taskToFailedBlockSendTracker.put("taskId2", new FailedBlockSendTracker());
     FakedDataPusher alwaysFailedDataPusher =
         new FakedDataPusher(
             event -> {
@@ -257,8 +259,9 @@ public class RssShuffleWriterTest {
     manager.setDataPusher(alwaysFailedDataPusher);
 
     MutableList<Product2<String, String>> mockedData = createMockRecords();
+
     try {
-      rssShuffleWriterSpy.write(mockedData.iterator());
+      rssShuffleWriter.write(mockedData.iterator());
       fail();
     } catch (Exception e) {
       // ignore
