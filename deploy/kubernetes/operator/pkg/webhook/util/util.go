@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
@@ -163,7 +164,7 @@ type MetricItem struct {
 	Name        string   `json:"name"`
 	LabelNames  []string `json:"labelNames"`
 	LabelValues []string `json:"labelValues"`
-	Value       float32  `json:"value"`
+	Value       interface{}  `json:"value"`
 }
 
 // MetricList records all items of metric information of shuffle servers.
@@ -180,7 +181,12 @@ func getLastAppNum(body []byte) (int, error) {
 	}
 	for i := range resp.Metrics {
 		if resp.Metrics[i].Name == "app_num_with_node" {
-			return int(resp.Metrics[i].Value), nil
+			if value, ok := resp.Metrics[i].Value.(string); ok {
+				fValue, err := strconv.ParseFloat(value, 64)
+				return int(fValue), err
+			} else if value, ok := resp.Metrics[i].Value.(float64); ok {
+				return int(value), nil
+			}
 		}
 	}
 	return 0, nil
