@@ -860,7 +860,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
     boolean isSuccessful =
         allRequestedPartitionIds.stream()
-            .allMatch(x -> replicaRequirementTracking.isSatisfied(x, replica));
+            .allMatch(x -> replicaRequirementTracking.isSatisfied(x, replicaRead));
     if (!isSuccessful) {
       throw new RssFetchFailedException(
           "Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]");
