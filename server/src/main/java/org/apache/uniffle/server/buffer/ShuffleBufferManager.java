@@ -298,14 +298,14 @@ public class ShuffleBufferManager {
       boolean isHugePartition) {
     ReentrantReadWriteLock.ReadLock readLock = shuffleTaskManager.getAppReadLock(appId);
     readLock.lock();
-    if (!bufferPool.getOrDefault(appId, new HashMap<>()).containsKey(shuffleId)) {
-      LOG.info(
-          "Shuffle[{}] for app[{}] has already been removed, no need to flush the buffer",
-          shuffleId,
-          appId);
-      return;
-    }
     try {
+      if (!bufferPool.getOrDefault(appId, new HashMap<>()).containsKey(shuffleId)) {
+        LOG.info(
+            "Shuffle[{}] for app[{}] has already been removed, no need to flush the buffer",
+            shuffleId,
+            appId);
+        return;
+      }
       ShuffleDataFlushEvent event =
           buffer.toFlushEvent(
               appId,
