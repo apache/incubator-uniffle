@@ -195,9 +195,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     ShuffleHandleInfo shuffleHandleInfoByShuffleId =
         shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
     if (shuffleHandleInfoByShuffleId != null) {
-      ByteBuffer shuffleHandleByteBuffer =
-          KryoSerializerWrapper.getInstance()
-              .serialize(shuffleHandleInfoByShuffleId, ShuffleHandleInfo.class);
+      ByteBuffer shuffleHandleByteBuffer = shuffleHandleInfoByShuffleId.toBytes();
       code = RssProtos.StatusCode.SUCCESS;
       reply =
           RssProtos.PartitionToShuffleServerResponse.newBuilder()

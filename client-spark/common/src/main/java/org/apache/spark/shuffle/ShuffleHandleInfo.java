@@ -184,4 +184,8 @@ public class ShuffleHandleInfo implements Serializable {
   public static ShuffleHandleInfo fromBytes(ByteBuffer bytes) {
     return KryoSerializerWrapper.getInstance().deserialize(bytes, ShuffleHandleInfo.class);
   }
+
+  public ByteBuffer toBytes() {
+    return KryoSerializerWrapper.getInstance().serialize(this, ShuffleHandleInfo.class);
+  }
 }
