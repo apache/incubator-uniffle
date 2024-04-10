@@ -27,6 +27,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -352,5 +353,120 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
             + crcCheckTime
             + " ms");
     clientReadHandler.logConsumedBlockInfo();
+  }
+
+  public static final class Builder {
+    private String appId;
+    private int shuffleId;
+    private int partitionId;
+    private int partitionNumPerRange;
+    private int partitionNum;
+    private String basePath;
+    private Roaring64NavigableMap blockIdBitmap;
+    private Roaring64NavigableMap taskIdBitmap;
+    private List<ShuffleServerInfo> shuffleServerInfoList;
+    private Configuration hadoopConf;
+    private IdHelper idHelper;
+    private ShuffleDataDistributionType shuffleDataDistributionType =
+            ShuffleDataDistributionType.NORMAL;
+    private boolean expectedTaskIdsBitmapFilterEnable = false;
+    private RssConf rssConf;
+
+    public static Builder newBuilder() {
+      return new Builder();
+    }
+
+    public Builder setAppId(String appId) {
+      this.appId = appId;
+      return this;
+    }
+
+    public Builder setShuffleId(int shuffleId) {
+      this.shuffleId = shuffleId;
+      return this;
+    }
+
+    public Builder setPartitionId(int partitionId) {
+      this.partitionId = partitionId;
+      return this;
+    }
+
+    public Builder setPartitionNumPerRange(int partitiopartitionNumPerRangenId) {
+      this.partitionNumPerRange = partitionNumPerRange;
+      return this;
+    }
+
+    public Builder setPartitionNum(int partitionNum) {
+      this.partitionNum = partitionNum;
+      return this;
+    }
+
+    public Builder setBasePath(String basePath) {
+      this.basePath = basePath;
+      return this;
+    }
+
+    public Builder setBlockIdBitMap(Roaring64NavigableMap blockIdBitmap) {
+      this.blockIdBitmap = blockIdBitmap;
+      return this;
+    }
+
+    public Builder setTaskIdBitmap(Roaring64NavigableMap taskIdBitmap) {
+      this.taskIdBitmap = taskIdBitmap;
+      return this;
+    }
+
+    public Builder setShuffleServerInfoList(List<ShuffleServerInfo> shuffleServerInfoList) {
+      this.shuffleServerInfoList = shuffleServerInfoList;
+      return this;
+    }
+
+    public Builder setHadoopConf(List<ShuffleServerInfo> shuffleServerInfoList) {
+      this.shuffleServerInfoList = shuffleServerInfoList;
+      return this;
+    }
+
+    public Builder setHadoopConf(Configuration hadoopConf) {
+      this.hadoopConf = hadoopConf;
+      return this;
+    }
+
+    public Builder setIdHelper(IdHelper idHelper) {
+      this.idHelper = idHelper;
+      return this;
+    }
+
+    public Builder setShuffleDataDistributionType(ShuffleDataDistributionType shuffleDataDistributionType) {
+      this.shuffleDataDistributionType = shuffleDataDistributionType;
+      return this;
+    }
+
+    public Builder EnableExpectedTaskIdsBitmapFilter() {
+      this.expectedTaskIdsBitmapFilterEnable = true;
+      return this;
+    }
+
+    public Builder SetRssConf(RssConf rssConf) {
+      this.rssConf = rssConf;
+      return this;
+    }
+
+    public ShuffleReadClientImpl build() {
+      return new ShuffleReadClientImpl(
+              this.appId,
+              this.shuffleId,
+              this.partitionId,
+              this.partitionNumPerRange,
+              this.partitionNum,
+              this.basePath,
+              this.blockIdBitmap,
+              this.taskIdBitmap,
+              this.shuffleServerInfoList,
+              this.hadoopConf,
+              this.idHelper,
+              this.shuffleDataDistributionType,
+              this.expectedTaskIdsBitmapFilterEnable,
+              this.rssConf);
+    }
   }
 }
