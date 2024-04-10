@@ -763,22 +763,19 @@ public class ShuffleTaskManager {
         return;
       }
       final long start = System.currentTimeMillis();
-      String user = getUserByAppId(appId);
       ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.remove(appId);
       if (shuffleTaskInfo == null) {
         LOG.info("Resource for appId[" + appId + "] had been removed before.");
         return;
       }
 
-      final Map<Integer, Roaring64NavigableMap> shuffleToCachedBlockIds =
-          shuffleTaskInfo.getCachedBlockIds();
       partitionsToBlockIds.remove(appId);
       shuffleBufferManager.removeBuffer(appId);
       shuffleFlushManager.removeResources(appId);
-      if (!shuffleToCachedBlockIds.isEmpty()) {
-        storageManager.removeResources(
-            new AppPurgeEvent(appId, user, new ArrayList<>(shuffleToCachedBlockIds.keySet())));
-      }
+
+      String user = getUserByAppId(appId);
+      storageManager.removeResources(new AppPurgeEvent(appId, user));
+
       if (shuffleTaskInfo.hasHugePartition()) {
         ShuffleServerMetrics.gaugeAppWithHugePartitionNum.dec();
         ShuffleServerMetrics.gaugeHugePartitionNum.dec(shuffleTaskInfo.getHugePartitionSize());
