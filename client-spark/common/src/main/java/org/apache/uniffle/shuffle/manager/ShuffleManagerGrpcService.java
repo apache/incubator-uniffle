@@ -30,7 +30,6 @@ import java.util.function.Supplier;
 import com.google.common.collect.Sets;
 import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
-import org.apache.spark.shuffle.KryoSerializerWrapper;
 import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
