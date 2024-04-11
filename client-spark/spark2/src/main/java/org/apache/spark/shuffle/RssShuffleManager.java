@@ -895,18 +895,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     synchronized (handleInfo) {
       // find out whether this server has been marked faulty in this shuffle
       // if it has been reassigned, directly return the replacement server.
-      if (handleInfo.isExistingFaultyServer(faultyShuffleServerId)) {
-        return handleInfo.useExistingReassignmentForMultiPartitions(
-            partitionIds, faultyShuffleServerId);
+      Set<ShuffleServerInfo> replacements =
+          handleInfo.getExistingReplacements(faultyShuffleServerId);
+      if (replacements == null) {
+        replacements = Sets.newHashSet(assignShuffleServer(shuffleId, faultyShuffleServerId));
       }
-
-      // get the newer server to replace faulty server.
-      ShuffleServerInfo newAssignedServer = assignShuffleServer(shuffleId, faultyShuffleServerId);
-      if (newAssignedServer != null) {
-        handleInfo.createNewReassignmentForMultiPartitions(
-            partitionIds, faultyShuffleServerId, newAssignedServer);
-      }
-      return newAssignedServer;
+      handleInfo.updateReassignment(partitionIds, faultyShuffleServerId, replacements);
+      return replacements.stream().findFirst().get();
     }
   }
 

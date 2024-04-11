@@ -721,13 +721,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         readMetrics,
         RssSparkConfig.toRssConf(sparkConf),
         dataDistributionType,
-        shuffleHandleInfo.listAllPartitionAssignmentServers());
+        shuffleHandleInfo.listPartitionAssignedServers());
   }
 
   private Map<ShuffleServerInfo, Set<Integer>> getPartitionDataServers(
       ShuffleHandleInfo shuffleHandleInfo, int startPartition, int endPartition) {
     Map<Integer, List<ShuffleServerInfo>> allPartitionToServers =
-        shuffleHandleInfo.listAllPartitionAssignmentServers();
+        shuffleHandleInfo.listPartitionAssignedServers();
     Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers =
         allPartitionToServers.entrySet().stream()
             .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition)
@@ -1207,29 +1207,24 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     synchronized (handleInfo) {
       // find out whether this server has been marked faulty in this shuffle
       // if it has been reassigned, directly return the replacement server.
-      if (handleInfo.isExistingFaultyServer(faultyShuffleServerId)) {
-        return handleInfo.useExistingReassignmentForMultiPartitions(
-            partitionIds, faultyShuffleServerId);
+      // otherwise, it should request new servers to reassign
+      Set<ShuffleServerInfo> replacements =
+          handleInfo.getExistingReplacements(faultyShuffleServerId);
+      if (replacements == null) {
+        replacements = requestServersForTask(shuffleId, partitionIds, faultyShuffleServerId);
       }
-
-      // get the newer server to replace faulty server.
-      ShuffleServerInfo newAssignedServer =
-          reassignShuffleServerForTask(shuffleId, partitionIds, faultyShuffleServerId);
-      if (newAssignedServer != null) {
-        handleInfo.createNewReassignmentForMultiPartitions(
-            partitionIds, faultyShuffleServerId, newAssignedServer);
-      }
+      handleInfo.updateReassignment(partitionIds, faultyShuffleServerId, replacements);
       LOG.info(
           "Reassign shuffle-server from {} -> {} for shuffleId: {}, partitionIds: {}",
           faultyShuffleServerId,
-          newAssignedServer,
+          replacements,
           shuffleId,
           partitionIds);
-      return newAssignedServer;
+      return replacements.stream().findFirst().get();
     }
   }
 
-  private ShuffleServerInfo reassignShuffleServerForTask(
+  private Set<ShuffleServerInfo> requestServersForTask(
       int shuffleId, Set<Integer> partitionIds, String faultyShuffleServerId) {
     Set<String> faultyServerIds = Sets.newHashSet(faultyShuffleServerId);
     faultyServerIds.addAll(failuresShuffleServerIds);
@@ -1260,7 +1255,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           serverToPartitionRanges.put(replacement, partitionRanges);
           return new ShuffleAssignmentsInfo(newPartitionToServers, serverToPartitionRanges);
         });
-    return replacementRef.get();
+    return Sets.newHashSet(replacementRef.get());
   }
 
   private Map<Integer, List<ShuffleServerInfo>> requestShuffleAssignment(
