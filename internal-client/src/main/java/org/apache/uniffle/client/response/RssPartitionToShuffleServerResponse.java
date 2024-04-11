@@ -17,32 +17,27 @@
 
 package org.apache.uniffle.client.response;
 
-import java.nio.ByteBuffer;
-
-import com.google.protobuf.ByteString;
-
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.proto.RssProtos;
 
 public class RssPartitionToShuffleServerResponse extends ClientResponse {
-  private ByteBuffer shuffleHandleBytes;
+  private RssProtos.ShuffleHandleInfo shuffleHandleInfoProto;
 
   public RssPartitionToShuffleServerResponse(
-      StatusCode statusCode, String message, ByteBuffer shuffleHandleBytes) {
+      StatusCode statusCode, String message, RssProtos.ShuffleHandleInfo shuffleHandleInfoProto) {
     super(statusCode, message);
-    this.shuffleHandleBytes = shuffleHandleBytes;
+    this.shuffleHandleInfoProto = shuffleHandleInfoProto;
   }
 
-  public ByteBuffer getShuffleHandleBytes() {
-    return shuffleHandleBytes;
+  public RssProtos.ShuffleHandleInfo getShuffleHandleInfoProto() {
+    return shuffleHandleInfoProto;
   }
 
   public static RssPartitionToShuffleServerResponse fromProto(
       RssProtos.PartitionToShuffleServerResponse response) {
-    ByteString shuffleHandleBytes = response.getShuffleHandleInfoSerializableBytes();
     return new RssPartitionToShuffleServerResponse(
         StatusCode.valueOf(response.getStatus().name()),
         response.getMsg(),
-        shuffleHandleBytes.asReadOnlyByteBuffer());
+        response.getShuffleHandleInfo());
   }
 }

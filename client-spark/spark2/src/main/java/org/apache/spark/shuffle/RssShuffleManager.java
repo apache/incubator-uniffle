@@ -824,7 +824,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         new RssPartitionToShuffleServerRequest(shuffleId);
     RssPartitionToShuffleServerResponse handleInfoResponse =
         shuffleManagerClient.getPartitionToShufflerServer(rssPartitionToShuffleServerRequest);
-    shuffleHandleInfo = ShuffleHandleInfo.fromBytes(handleInfoResponse.getShuffleHandleBytes());
+    shuffleHandleInfo = ShuffleHandleInfo.fromProto(handleInfoResponse.getShuffleHandleInfoProto());
     return shuffleHandleInfo;
   }
 

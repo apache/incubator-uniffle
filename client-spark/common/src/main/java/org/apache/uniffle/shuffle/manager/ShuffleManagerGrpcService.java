@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.shuffle.manager;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,7 +27,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
 import com.google.common.collect.Sets;
-import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
 import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.slf4j.Logger;
@@ -194,19 +192,18 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     ShuffleHandleInfo shuffleHandleInfoByShuffleId =
         shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
     if (shuffleHandleInfoByShuffleId != null) {
-      ByteBuffer shuffleHandleByteBuffer = shuffleHandleInfoByShuffleId.toBytes();
       code = RssProtos.StatusCode.SUCCESS;
       reply =
           RssProtos.PartitionToShuffleServerResponse.newBuilder()
               .setStatus(code)
-              .setShuffleHandleInfoSerializableBytes(ByteString.copyFrom(shuffleHandleByteBuffer))
+              .setShuffleHandleInfo(ShuffleHandleInfo.toProto(shuffleHandleInfoByShuffleId))
               .build();
     } else {
       code = RssProtos.StatusCode.INVALID_REQUEST;
       reply =
           RssProtos.PartitionToShuffleServerResponse.newBuilder()
               .setStatus(code)
-              .setShuffleHandleInfoSerializableBytes(null)
+              .setShuffleHandleInfo(ShuffleHandleInfo.toProto(ShuffleHandleInfo.EMPTY_HANDLE_INFO))
               .build();
     }
     responseObserver.onNext(reply);
