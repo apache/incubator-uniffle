@@ -33,6 +33,7 @@ import scala.runtime.BoxedUnit;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.spark.Aggregator;
 import org.apache.spark.InterruptibleIterator;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.TaskContext;
@@ -123,36 +124,51 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   public Iterator<Product2<K, C>> read() {
     LOG.info("Shuffle read started:" + getReadInfo());
 
-    Iterator<Product2<K, C>> aggrIter = null;
-    Iterator<Product2<K, C>> resultIter = null;
+    Iterator<Product2<K, C>> resultIter;
     MultiPartitionIterator rssShuffleDataIterator = new MultiPartitionIterator<K, C>();
-
-    if (shuffleDependency.aggregator().isDefined()) {
-      if (shuffleDependency.mapSideCombine()) {
-        aggrIter =
-            shuffleDependency
-                .aggregator()
-                .get()
-                .combineCombinersByKey(rssShuffleDataIterator, context);
-      } else {
-        aggrIter =
-            shuffleDependency
-                .aggregator()
-                .get()
-                .combineValuesByKey(rssShuffleDataIterator, context);
-      }
-    } else {
-      aggrIter = rssShuffleDataIterator;
-    }
 
     if (shuffleDependency.keyOrdering().isDefined()) {
       // Create an ExternalSorter to sort the data
-      ExternalSorter<K, C, C> sorter =
-          new ExternalSorter<>(
-              context, Option.empty(), Option.empty(), shuffleDependency.keyOrdering(), serializer);
+      ExternalSorter<K, Object, C> sorter;
+      if (shuffleDependency.aggregator().isDefined()) {
+        if (shuffleDependency.mapSideCombine()) {
+          Aggregator<K, C, C> aggregator =
+              new Aggregator<>(
+                  x -> x,
+                  shuffleDependency.aggregator().get().mergeCombiners(),
+                  shuffleDependency.aggregator().get().mergeCombiners());
+          sorter =
+              (ExternalSorter<K, Object, C>)
+                  new ExternalSorter<>(
+                      context,
+                      Option.apply(aggregator),
+                      Option.empty(),
+                      shuffleDependency.keyOrdering(),
+                      serializer);
+        } else {
+          Aggregator<K, Object, C> aggregator =
+              (Aggregator<K, Object, C>) shuffleDependency.aggregator().get();
+          sorter =
+              (ExternalSorter<K, Object, C>)
+                  new ExternalSorter<>(
+                      context,
+                      Option.apply(aggregator),
+                      Option.empty(),
+                      shuffleDependency.keyOrdering(),
+                      serializer);
+        }
+      } else {
+        sorter =
+            new ExternalSorter<>(
+                context,
+                Option.empty(),
+                Option.empty(),
+                shuffleDependency.keyOrdering(),
+                serializer);
+      }
       LOG.info("Inserting aggregated records to sorter");
       long startTime = System.currentTimeMillis();
-      sorter.insertAll(aggrIter);
+      sorter.insertAll(rssShuffleDataIterator);
       LOG.info(
           "Inserted aggregated records to sorter: millis:"
               + (System.currentTimeMillis() - startTime));
@@ -176,8 +192,22 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
           };
       context.addTaskCompletionListener(fn1);
       resultIter = CompletionIterator$.MODULE$.apply(sorter.iterator(), fn0);
+    } else if (shuffleDependency.aggregator().isDefined()) {
+      if (shuffleDependency.mapSideCombine()) {
+        resultIter =
+            shuffleDependency
+                .aggregator()
+                .get()
+                .combineCombinersByKey(rssShuffleDataIterator, context);
+      } else {
+        resultIter =
+            shuffleDependency
+                .aggregator()
+                .get()
+                .combineValuesByKey(rssShuffleDataIterator, context);
+      }
     } else {
-      resultIter = aggrIter;
+      resultIter = rssShuffleDataIterator;
     }
 
     if (!(resultIter instanceof InterruptibleIterator)) {

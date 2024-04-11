@@ -21,13 +21,16 @@ import java.util.List;
 import java.util.Map;
 
 import scala.Function0;
+import scala.Function2;
 import scala.Option;
 import scala.Product2;
 import scala.collection.Iterator;
 import scala.runtime.AbstractFunction0;
+import scala.runtime.AbstractFunction1;
 import scala.runtime.BoxedUnit;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.spark.Aggregator;
 import org.apache.spark.InterruptibleIterator;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.TaskContext;
@@ -155,33 +158,55 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
           completionIterator.completion();
         });
 
-    Iterator<Product2<K, C>> resultIter = null;
-    Iterator<Product2<K, C>> aggregatedIter = null;
-
-    if (shuffleDependency.aggregator().isDefined()) {
-      if (shuffleDependency.mapSideCombine()) {
-        // We are reading values that are already combined
-        aggregatedIter =
-            shuffleDependency.aggregator().get().combineCombinersByKey(completionIterator, context);
-      } else {
-        // We don't know the value type, but also don't care -- the dependency *should*
-        // have made sure its compatible w/ this aggregator, which will convert the value
-        // type to the combined type C
-        aggregatedIter =
-            shuffleDependency.aggregator().get().combineValuesByKey(completionIterator, context);
-      }
-    } else {
-      aggregatedIter = completionIterator;
-    }
+    Iterator<Product2<K, C>> resultIter;
 
     if (shuffleDependency.keyOrdering().isDefined()) {
       // Create an ExternalSorter to sort the data
-      ExternalSorter<K, C, C> sorter =
-          new ExternalSorter<>(
-              context, Option.empty(), Option.empty(), shuffleDependency.keyOrdering(), serializer);
+      ExternalSorter<K, Object, C> sorter;
+      if (shuffleDependency.aggregator().isDefined()) {
+        if (shuffleDependency.mapSideCombine()) {
+          Aggregator<K, C, C> aggregator =
+              new Aggregator<K, C, C>(
+                  new AbstractFunction1<C, C>() {
+                    @Override
+                    public C apply(C x) {
+                      return x;
+                    }
+                  },
+                  (Function2<C, C, C>) shuffleDependency.aggregator().get().mergeCombiners(),
+                  (Function2<C, C, C>) shuffleDependency.aggregator().get().mergeCombiners());
+          sorter =
+              (ExternalSorter<K, Object, C>)
+                  new ExternalSorter<>(
+                      context,
+                      Option.apply(aggregator),
+                      Option.empty(),
+                      shuffleDependency.keyOrdering(),
+                      serializer);
+        } else {
+          Aggregator<K, Object, C> aggregator =
+              (Aggregator<K, Object, C>) shuffleDependency.aggregator().get();
+          sorter =
+              (ExternalSorter<K, Object, C>)
+                  new ExternalSorter<>(
+                      context,
+                      Option.apply(aggregator),
+                      Option.empty(),
+                      shuffleDependency.keyOrdering(),
+                      serializer);
+        }
+      } else {
+        sorter =
+            new ExternalSorter<>(
+                context,
+                Option.empty(),
+                Option.empty(),
+                shuffleDependency.keyOrdering(),
+                serializer);
+      }
       LOG.info("Inserting aggregated records to sorter");
       long startTime = System.currentTimeMillis();
-      sorter.insertAll(aggregatedIter);
+      sorter.insertAll(rssShuffleDataIterator);
       LOG.info(
           "Inserted aggregated records to sorter: millis:"
               + (System.currentTimeMillis() - startTime));
@@ -206,8 +231,22 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
             }
           };
       resultIter = CompletionIterator$.MODULE$.apply(sorter.iterator(), fn0);
+    } else if (shuffleDependency.aggregator().isDefined()) {
+      if (shuffleDependency.mapSideCombine()) {
+        resultIter =
+            shuffleDependency
+                .aggregator()
+                .get()
+                .combineCombinersByKey(rssShuffleDataIterator, context);
+      } else {
+        resultIter =
+            shuffleDependency
+                .aggregator()
+                .get()
+                .combineValuesByKey(rssShuffleDataIterator, context);
+      }
     } else {
-      resultIter = aggregatedIter;
+      resultIter = rssShuffleDataIterator;
     }
 
     if (!(resultIter instanceof InterruptibleIterator)) {
