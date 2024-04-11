@@ -472,7 +472,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     assertNotNull(shuffleBufferManager.getBufferPool().get(appId).get(1));
 
     // the shufflePurgeEvent only will delete the children folders
-    // Once the app is expired, all the app folder should be deleted.
+    // Once the app is expired, all the app folders should be deleted.
     shuffleTaskManager.removeResources(appId, false);
     assertFalse(fs.exists(new Path(appBasePath)));
   }
@@ -534,7 +534,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     }
 
     // the shufflePurgeEvent only will delete the children folders
-    // Once the app is expired, all the app folder should be deleted.
+    // Once the app is expired, all the app folders should be deleted.
     shuffleTaskManager.removeResources(appId, false);
     for (String path : conf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH)) {
       String appPath = path + "/" + appId;
