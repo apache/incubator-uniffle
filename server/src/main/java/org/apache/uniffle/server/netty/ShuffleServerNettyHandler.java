@@ -563,49 +563,53 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 + requestInfo
                 + ", "
                 + cause.getMessage();
-        LOG.error(errorMsg, future.cause());
-        RpcResponse errorResponse;
-        if (request instanceof GetLocalShuffleDataRequest) {
-          errorResponse =
-              new GetLocalShuffleDataResponse(
-                  request.getRequestId(),
-                  StatusCode.INTERNAL_ERROR,
-                  errorMsg,
-                  new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
-        } else if (request instanceof GetLocalShuffleIndexRequest) {
-          errorResponse =
-              new GetLocalShuffleIndexResponse(
-                  request.getRequestId(),
-                  StatusCode.INTERNAL_ERROR,
-                  errorMsg,
-                  Unpooled.EMPTY_BUFFER,
-                  0L);
-        } else if (request instanceof GetMemoryShuffleDataRequest) {
-          errorResponse =
-              new GetMemoryShuffleDataResponse(
-                  request.getRequestId(),
-                  StatusCode.INTERNAL_ERROR,
-                  errorMsg,
-                  Lists.newArrayList(),
-                  Unpooled.EMPTY_BUFFER);
-        } else {
-          LOG.error("Cannot handle request {}", request.type());
-          return;
+        if (future.channel().isWritable()) {
+          RpcResponse errorResponse;
+          if (request instanceof GetLocalShuffleDataRequest) {
+            errorResponse =
+                new GetLocalShuffleDataResponse(
+                    request.getRequestId(),
+                    StatusCode.INTERNAL_ERROR,
+                    errorMsg,
+                    new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
+          } else if (request instanceof GetLocalShuffleIndexRequest) {
+            errorResponse =
+                new GetLocalShuffleIndexResponse(
+                    request.getRequestId(),
+                    StatusCode.INTERNAL_ERROR,
+                    errorMsg,
+                    Unpooled.EMPTY_BUFFER,
+                    0L);
+          } else if (request instanceof GetMemoryShuffleDataRequest) {
+            errorResponse =
+                new GetMemoryShuffleDataResponse(
+                    request.getRequestId(),
+                    StatusCode.INTERNAL_ERROR,
+                    errorMsg,
+                    Lists.newArrayList(),
+                    Unpooled.EMPTY_BUFFER);
+          } else {
+            LOG.error("Cannot handle request {}", request.type(), cause);
+            return;
+          }
+          client.getChannel().writeAndFlush(errorResponse);
         }
-        client.getChannel().writeAndFlush(errorResponse);
         LOG.error(
             "Failed to execute {} for {}. Took {} ms and could not retrieve {} bytes of data",
             request.getOperationType(),
             requestInfo,
             readTime,
-            dataSize);
+            dataSize,
+            cause);
       } else {
-        LOG.info(
-            "Successfully executed {} for {}. Took {} ms and retrieved {} bytes of data",
-            request.getOperationType(),
-            requestInfo,
-            readTime,
-            dataSize);
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(
+              "Successfully executed {} for {}. Took {} ms and retrieved {} bytes of data",
+              request.getOperationType(),
+              requestInfo,
+              readTime,
+              dataSize);
+        }
       }
     }
   }
