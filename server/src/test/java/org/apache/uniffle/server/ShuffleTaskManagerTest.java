@@ -470,7 +470,11 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     assertTrue(fs.exists(new Path(appBasePath)));
     assertNull(shuffleBufferManager.getBufferPool().get(appId).get(0));
     assertNotNull(shuffleBufferManager.getBufferPool().get(appId).get(1));
+
+    // the shufflePurgeEvent only will delete the children folders
+    // Once the app is expired, all the app folders should be deleted.
     shuffleTaskManager.removeResources(appId, false);
+    assertFalse(fs.exists(new Path(appBasePath)));
   }
 
   @Test
@@ -527,6 +531,14 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
       if (files != null) {
         assertEquals(0, files.length);
       }
+    }
+
+    // the shufflePurgeEvent only will delete the children folders
+    // Once the app is expired, all the app folders should be deleted.
+    shuffleTaskManager.removeResources(appId, false);
+    for (String path : conf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH)) {
+      String appPath = path + "/" + appId;
+      assertFalse(new File(appPath).exists());
     }
   }
 
