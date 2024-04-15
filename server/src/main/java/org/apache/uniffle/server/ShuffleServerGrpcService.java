@@ -693,6 +693,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         ShuffleServerMetrics.counterTotalReadTime.inc(readTime);
         ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getDataLength());
         ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getDataLength());
+        ShuffleServerMetrics.gaugeReadLocalDataFileThreadNum.inc();
+        ShuffleServerMetrics.gaugeReadLocalDataFileBufferSize.inc(length);
         shuffleServer
             .getGrpcMetrics()
             .recordProcessTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, readTime);
@@ -720,6 +722,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           sdr.release();
         }
         shuffleServer.getShuffleBufferManager().releaseReadMemory(length);
+        ShuffleServerMetrics.gaugeReadLocalDataFileThreadNum.dec();
+        ShuffleServerMetrics.gaugeReadLocalDataFileBufferSize.dec(length);
       }
     } else {
       status = StatusCode.NO_BUFFER;
@@ -779,6 +783,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         ByteBuffer data = shuffleIndexResult.getIndexData();
         ShuffleServerMetrics.counterTotalReadDataSize.inc(data.remaining());
         ShuffleServerMetrics.counterTotalReadLocalIndexFileSize.inc(data.remaining());
+        ShuffleServerMetrics.gaugeReadLocalIndexFileThreadNum.inc();
+        ShuffleServerMetrics.gaugeReadLocalIndexFileBufferSize.inc(assumedFileSize);
         GetLocalShuffleIndexResponse.Builder builder =
             GetLocalShuffleIndexResponse.newBuilder().setStatus(status.toProto()).setRetMsg(msg);
         LOG.info(
@@ -810,6 +816,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           shuffleIndexResult.release();
         }
         shuffleServer.getShuffleBufferManager().releaseReadMemory(assumedFileSize);
+        ShuffleServerMetrics.gaugeReadLocalIndexFileThreadNum.dec();
+        ShuffleServerMetrics.gaugeReadLocalIndexFileBufferSize.dec(assumedFileSize);
       }
     } else {
       status = StatusCode.NO_BUFFER;
@@ -875,6 +883,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           bufferSegments = shuffleDataResult.getBufferSegments();
           ShuffleServerMetrics.counterTotalReadDataSize.inc(data.length);
           ShuffleServerMetrics.counterTotalReadMemoryDataSize.inc(data.length);
+          ShuffleServerMetrics.gaugeReadMemoryDataThreadNum.inc();
+          ShuffleServerMetrics.gaugeReadMemoryDataBufferSize.inc(readBufferSize);
         }
         long costTime = System.currentTimeMillis() - start;
         shuffleServer
@@ -911,6 +921,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       } finally {
         if (shuffleDataResult != null) {
           shuffleDataResult.release();
+          ShuffleServerMetrics.gaugeReadMemoryDataThreadNum.dec();
+          ShuffleServerMetrics.gaugeReadMemoryDataBufferSize.dec(readBufferSize);
         }
         shuffleServer.getShuffleBufferManager().releaseReadMemory(readBufferSize);
       }
