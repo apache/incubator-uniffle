@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/http"
-	"strconv"
 	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
@@ -159,12 +159,30 @@ func NeedInspectPod(pod *corev1.Pod) bool {
 	return false
 }
 
+// JSONFloat is used to parse the float64 which may be NaN
+type JSONFloat float64
+
+// UnmarshalJSON return the parsed JSONFloat
+func (j *JSONFloat) UnmarshalJSON(v []byte) error {
+	if s := string(v); s == "\"NaN\"" {
+		*j = JSONFloat(math.NaN())
+		return nil
+	}
+	// just a regular float value
+	var fv float64
+	if err := json.Unmarshal(v, &fv); err != nil {
+		return err
+	}
+	*j = JSONFloat(fv)
+	return nil
+}
+
 // MetricItem records an item of metric information of shuffle servers.
 type MetricItem struct {
-	Name        string   `json:"name"`
-	LabelNames  []string `json:"labelNames"`
-	LabelValues []string `json:"labelValues"`
-	Value       interface{}  `json:"value"`
+	Name        string    `json:"name"`
+	LabelNames  []string  `json:"labelNames"`
+	LabelValues []string  `json:"labelValues"`
+	Value       JSONFloat `json:"value"`
 }
 
 // MetricList records all items of metric information of shuffle servers.
@@ -181,12 +199,7 @@ func getLastAppNum(body []byte) (int, error) {
 	}
 	for i := range resp.Metrics {
 		if resp.Metrics[i].Name == "app_num_with_node" {
-			if value, ok := resp.Metrics[i].Value.(string); ok {
-				fValue, err := strconv.ParseFloat(value, 64)
-				return int(fValue), err
-			} else if value, ok := resp.Metrics[i].Value.(float64); ok {
-				return int(value), nil
-			}
+			return int(resp.Metrics[i].Value), nil
 		}
 	}
 	return 0, nil
