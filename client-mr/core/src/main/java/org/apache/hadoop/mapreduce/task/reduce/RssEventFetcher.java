@@ -104,7 +104,7 @@ public class RssEventFetcher<K, V> {
     if (taskIdBitmap.getLongCardinality() + tipFailedCount != totalMapsCount) {
       for (int index = 0; index < totalMapsCount; index++) {
         if (!mapIndexBitmap.contains(index)) {
-          LOG.error("Fail to fetch " + " map task on index: " + index);
+          LOG.error("Fail to fetch map task on index: {}", index);
         }
       }
       throw new IllegalStateException(errMsg);

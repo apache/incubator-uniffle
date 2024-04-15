@@ -43,7 +43,7 @@ public class YamlClientConfParserTest {
 
     // rssClientConf with format of 'k : v'
 
-    String yaml = "rssClientConf:\n" + "    k1: v1\n" + "    k2: v2";
+    String yaml = "rssClientConf:\n    k1: v1\n    k2: v2";
 
     ClientConf conf = parser.tryParse(IOUtils.toInputStream(yaml));
     assertEquals(2, conf.getRssClientConf().size());

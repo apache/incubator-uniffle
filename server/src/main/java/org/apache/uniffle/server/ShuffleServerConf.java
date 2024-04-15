@@ -468,7 +468,7 @@ public class ShuffleServerConf extends RssBaseConf {
           .intType()
           .checkValue(
               ConfigUtils.SERVER_PORT_VALIDATOR,
-              "check server port value is 0 " + "or value >= 1024 && value <= 65535")
+              "check server port value is 0 or value >= 1024 && value <= 65535")
           .defaultValue(-1)
           .withDescription("Shuffle netty server port");
 

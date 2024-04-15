@@ -173,8 +173,7 @@ public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
             (this.memoryLimit
                 * jobConf.getFloat(
                     MRJobConfig.SHUFFLE_MERGE_PERCENT, MRJobConfig.DEFAULT_SHUFFLE_MERGE_PERCENT));
-    LOG.info(
-        "MergerManager: memoryLimit=" + memoryLimit + ", " + "mergeThreshold=" + mergeThreshold);
+    LOG.info("MergerManager: memoryLimit={}, mergeThreshold={}", memoryLimit, mergeThreshold);
 
     this.inMemoryMerger = createRssInMemoryMerger();
     this.inMemoryMerger.start();

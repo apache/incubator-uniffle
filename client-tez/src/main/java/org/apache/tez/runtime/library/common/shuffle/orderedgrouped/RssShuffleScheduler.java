@@ -1056,7 +1056,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
   @Override
   public void reportLocalError(IOException ioe) {
-    LOG.error(srcNameTrimmed + ": " + "Shuffle failed : caused by local error", ioe);
+    LOG.error("{}: Shuffle failed: caused by local error", srcNameTrimmed, ioe);
     // Shuffle knows how to deal with failures post shutdown via the onFailure hook
     exceptionReporter.reportException(ioe);
   }
@@ -1320,7 +1320,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   @Override
   public void obsoleteInput(InputAttemptIdentifier srcAttempt) {
     // The incoming srcAttempt does not contain a path component.
-    LOG.info(srcNameTrimmed + ": " + "Adding obsolete input: " + srcAttempt);
+    LOG.info("{}: Adding obsolete input: {}", srcNameTrimmed, srcAttempt);
     ShuffleEventInfo eventInfo = pipelinedShuffleInfoEventsMap.get(srcAttempt.getInputIdentifier());
 
     // Pipelined shuffle case (where pipelinedShuffleInfoEventsMap gets populated).
@@ -1684,8 +1684,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
         }
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(
-              srcNameTrimmed + ": " + "NumCompletedInputs: {}" + (numInputs - remainingMaps.get()));
+          LOG.debug("{}: NumCompletedInputs: {}", srcNameTrimmed, numInputs - remainingMaps.get());
         }
         // Ensure there's memory available before scheduling the next Fetcher.
         try {
@@ -1731,13 +1730,14 @@ class RssShuffleScheduler extends ShuffleScheduler {
                 break; // Check for the exit condition.
               }
               if (LOG.isDebugEnabled()) {
-                LOG.debug(srcNameTrimmed + ": " + "Processing pending host: " + mapHost.toString());
+                LOG.debug("{}: Processing pending host: {}", srcNameTrimmed, mapHost.toString());
               }
               if (!isShutdown.get()) {
                 count++;
                 if (LOG.isDebugEnabled()) {
                   LOG.debug(
-                      srcNameTrimmed + ": " + "Scheduling fetch for inputHost: {}",
+                      "{}: Scheduling fetch for inputHost: {}",
+                      srcNameTrimmed,
                       mapHost.getHostIdentifier() + ":" + mapHost.getPartitionId());
                 }
 
@@ -1937,7 +1937,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
       rssFetcherOrderedGrouped.shutDown();
 
       if (isShutdown.get()) {
-        LOG.info(srcNameTrimmed + ": " + "Already shutdown. Ignoring fetch complete");
+        LOG.info("{}: Already shutdown. Ignoring fetch complete", srcNameTrimmed);
       } else {
         successRssPartitionSet.add(partitionId);
         MapHost mapHost = runningRssPartitionMap.remove(partitionId);
@@ -1962,9 +1962,9 @@ class RssShuffleScheduler extends ShuffleScheduler {
       LOG.error("Failed to fetch.", t);
       rssFetcherOrderedGrouped.shutDown();
       if (isShutdown.get()) {
-        LOG.info(srcNameTrimmed + ": " + "Already shutdown. Ignoring fetch complete");
+        LOG.info("{}: Already shutdown. Ignoring fetch complete", srcNameTrimmed);
       } else {
-        LOG.error(srcNameTrimmed + ": " + "Fetcher failed with error", t);
+        LOG.error("{}: Fetcher failed with error", srcNameTrimmed, t);
         exceptionReporter.reportException(t);
         doBookKeepingForFetcherComplete();
       }
