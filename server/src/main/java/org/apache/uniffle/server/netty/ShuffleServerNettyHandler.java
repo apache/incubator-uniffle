@@ -256,7 +256,6 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             .recordTransportTime(GetMemoryShuffleDataRequest.class.getName(), transportTime);
       }
     }
-    final long start = System.currentTimeMillis();
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetMemoryShuffleDataResponse response;
@@ -267,6 +266,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     if (shuffleServer.getShuffleBufferManager().requireReadMemory(readBufferSize)) {
       ShuffleDataResult shuffleDataResult = null;
       try {
+        final long start = System.currentTimeMillis();
         shuffleDataResult =
             shuffleServer
                 .getShuffleTaskManager()
