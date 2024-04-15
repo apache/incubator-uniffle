@@ -778,7 +778,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             shuffleServer
                 .getShuffleTaskManager()
                 .getShuffleIndex(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
-        long readTime = System.currentTimeMillis() - start;
 
         ByteBuffer data = shuffleIndexResult.getIndexData();
         ShuffleServerMetrics.counterTotalReadDataSize.inc(data.remaining());
@@ -787,6 +786,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         ShuffleServerMetrics.gaugeReadLocalIndexFileBufferSize.inc(assumedFileSize);
         GetLocalShuffleIndexResponse.Builder builder =
             GetLocalShuffleIndexResponse.newBuilder().setStatus(status.toProto()).setRetMsg(msg);
+        long readTime = System.currentTimeMillis() - start;
+        shuffleServer
+            .getGrpcMetrics()
+            .recordProcessTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_INDEX_METHOD, readTime);
         LOG.info(
             "Successfully getShuffleIndex cost {} ms for {}" + " bytes with {}",
             readTime,
