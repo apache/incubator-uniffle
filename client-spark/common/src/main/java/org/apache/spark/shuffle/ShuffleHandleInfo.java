@@ -45,8 +45,11 @@ public class ShuffleHandleInfo implements Serializable {
   private RemoteStorageInfo remoteStorage;
 
   /**
-   * partitionId -> replica -> assigned servers The first index of list<ShuffleServerInfo> is the
-   * initial static assignment server. The remaining indexes are the replacement servers if exists.
+   * partitionId -> replica -> assigned servers.
+   *
+   * <p>The first index of list<ShuffleServerInfo> is the initial static assignment server.
+   *
+   * <p>The remaining indexes are the replacement servers if exists.
    */
   private Map<Integer, Map<Integer, List<ShuffleServerInfo>>> partitionReplicaAssignedServers;
   // faulty servers replacement mapping
