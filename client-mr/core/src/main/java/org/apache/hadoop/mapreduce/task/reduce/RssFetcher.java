@@ -22,8 +22,6 @@ import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Reporter;
@@ -32,6 +30,8 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.util.Progress;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
@@ -42,7 +42,7 @@ import org.apache.uniffle.common.util.ByteUnit;
 
 public class RssFetcher<K, V> {
 
-  private static final Log LOG = LogFactory.getLog(RssFetcher.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RssFetcher.class);
 
   private final Reporter reporter;
 
