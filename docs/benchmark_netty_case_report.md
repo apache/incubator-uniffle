@@ -72,7 +72,7 @@ Shuffle Server's configuration:
   rss.server.netty.connect.backlog 128
   ````
 
-## TPC-DS
+## TPC-DS(SF=40000)
 
 We use [spark-sql-perf](https://github.com/databricks/spark-sql-perf) to generate 10TB data.
 
