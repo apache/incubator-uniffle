@@ -110,7 +110,7 @@ public class ShuffleServerInfo implements Serializable {
           + nettyPort
           + "]}";
     } else {
-      return "ShuffleServerInfo{host[" + host + "]," + " grpc port[" + grpcPort + "]}";
+      return "ShuffleServerInfo{host[" + host + "], grpc port[" + grpcPort + "]}";
     }
   }
 

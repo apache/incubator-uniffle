@@ -20,8 +20,6 @@ package org.apache.uniffle.hadoop.shim;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.task.reduce.ShuffleClientMetrics;
@@ -30,10 +28,12 @@ import org.apache.hadoop.mapreduce.v2.app.client.ClientService;
 import org.apache.hadoop.mapreduce.v2.app.rm.RMContainerAllocator;
 import org.apache.hadoop.yarn.api.protocolrecords.AllocateResponse;
 import org.apache.hadoop.yarn.exceptions.YarnException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HadoopShimImpl {
 
-  private static final Log LOG = LogFactory.getLog(HadoopShimImpl.class);
+  private static final Logger LOG = LoggerFactory.getLogger(HadoopShimImpl.class);
 
   public static ShuffleClientMetrics createShuffleClientMetrics(
       TaskAttemptID taskAttemptID, JobConf jobConf) {

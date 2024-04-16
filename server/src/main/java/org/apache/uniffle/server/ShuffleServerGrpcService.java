@@ -699,7 +699,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             .getGrpcMetrics()
             .recordProcessTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, readTime);
         LOG.info(
-            "Successfully getShuffleData cost {} ms for shuffle" + " data with {}",
+            "Successfully getShuffleData cost {} ms for shuffle data with {}",
             readTime,
             requestInfo);
         reply =
@@ -791,7 +791,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             .getGrpcMetrics()
             .recordProcessTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_INDEX_METHOD, readTime);
         LOG.info(
-            "Successfully getShuffleIndex cost {} ms for {}" + " bytes with {}",
+            "Successfully getShuffleIndex cost {} ms for {} bytes with {}",
             readTime,
             data.remaining(),
             requestInfo);
@@ -894,7 +894,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             .getGrpcMetrics()
             .recordProcessTime(ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD, costTime);
         LOG.info(
-            "Successfully getInMemoryShuffleData cost {} ms with {} bytes shuffle" + " data for {}",
+            "Successfully getInMemoryShuffleData cost {} ms with {} bytes shuffle data for {}",
             costTime,
             data.length,
             requestInfo);

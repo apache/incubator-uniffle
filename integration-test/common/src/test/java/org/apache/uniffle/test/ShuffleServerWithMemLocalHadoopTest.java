@@ -162,7 +162,7 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     LOG.info("checkSkippedMetrics={}, isNettyMode={}", checkSkippedMetrics, isNettyMode);
     ShuffleServerGrpcClient shuffleServerClient =
         isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
-    String testAppId = "memoryLocalFileHDFSReadWithFilterTest_" + "ship_" + checkSkippedMetrics;
+    String testAppId = "memoryLocalFileHDFSReadWithFilterTest_ship_" + checkSkippedMetrics;
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr =
