@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -255,7 +256,6 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             .recordTransportTime(GetMemoryShuffleDataRequest.class.getName(), transportTime);
       }
     }
-    final long start = System.currentTimeMillis();
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetMemoryShuffleDataResponse response;
@@ -266,6 +266,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     if (shuffleServer.getShuffleBufferManager().requireReadMemory(readBufferSize)) {
       ShuffleDataResult shuffleDataResult = null;
       try {
+        final long start = System.currentTimeMillis();
         shuffleDataResult =
             shuffleServer
                 .getShuffleTaskManager()
@@ -283,12 +284,14 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           bufferSegments = shuffleDataResult.getBufferSegments();
           ShuffleServerMetrics.counterTotalReadDataSize.inc(data.size());
           ShuffleServerMetrics.counterTotalReadMemoryDataSize.inc(data.size());
+          ShuffleServerMetrics.gaugeReadMemoryDataThreadNum.inc();
+          ShuffleServerMetrics.gaugeReadMemoryDataBufferSize.inc(readBufferSize);
         }
         response =
             new GetMemoryShuffleDataResponse(req.getRequestId(), status, msg, bufferSegments, data);
         ReleaseMemoryAndRecordReadTimeListener listener =
             new ReleaseMemoryAndRecordReadTimeListener(
-                start, readBufferSize, data.size(), requestInfo, req, client);
+                start, readBufferSize, data.size(), requestInfo, req, response, client);
         client.getChannel().writeAndFlush(response).addListener(listener);
         return;
       } catch (Exception e) {
@@ -359,12 +362,14 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         ManagedBuffer data = shuffleIndexResult.getManagedBuffer();
         ShuffleServerMetrics.counterTotalReadDataSize.inc(data.size());
         ShuffleServerMetrics.counterTotalReadLocalIndexFileSize.inc(data.size());
+        ShuffleServerMetrics.gaugeReadLocalIndexFileThreadNum.inc();
+        ShuffleServerMetrics.gaugeReadLocalIndexFileBufferSize.inc(assumedFileSize);
         response =
             new GetLocalShuffleIndexResponse(
                 req.getRequestId(), status, msg, data, shuffleIndexResult.getDataFileLen());
         ReleaseMemoryAndRecordReadTimeListener listener =
             new ReleaseMemoryAndRecordReadTimeListener(
-                start, assumedFileSize, data.size(), requestInfo, req, client);
+                start, assumedFileSize, data.size(), requestInfo, req, response, client);
         client.getChannel().writeAndFlush(response).addListener(listener);
         return;
       } catch (FileNotFoundException indexFileNotFoundException) {
@@ -465,12 +470,14 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                     length);
         ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getDataLength());
         ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getDataLength());
+        ShuffleServerMetrics.gaugeReadLocalDataFileThreadNum.inc();
+        ShuffleServerMetrics.gaugeReadLocalDataFileBufferSize.inc(length);
         response =
             new GetLocalShuffleDataResponse(
                 req.getRequestId(), status, msg, sdr.getManagedBuffer());
         ReleaseMemoryAndRecordReadTimeListener listener =
             new ReleaseMemoryAndRecordReadTimeListener(
-                start, length, sdr.getDataLength(), requestInfo, req, client);
+                start, length, sdr.getDataLength(), requestInfo, req, response, client);
         client.getChannel().writeAndFlush(response).addListener(listener);
         return;
       } catch (Exception e) {
@@ -531,6 +538,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     private final long dataSize;
     private final String requestInfo;
     private final RequestMessage request;
+    private final RpcResponse response;
     private final TransportClient client;
 
     ReleaseMemoryAndRecordReadTimeListener(
@@ -539,12 +547,14 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         long dataSize,
         String requestInfo,
         RequestMessage request,
+        RpcResponse response,
         TransportClient client) {
       this.readStartedTime = readStartedTime;
       this.readBufferSize = readBufferSize;
       this.dataSize = dataSize;
       this.requestInfo = requestInfo;
       this.request = request;
+      this.response = response;
       this.client = client;
     }
 
@@ -554,6 +564,20 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       long readTime = System.currentTimeMillis() - readStartedTime;
       ShuffleServerMetrics.counterTotalReadTime.inc(readTime);
       shuffleServer.getNettyMetrics().recordProcessTime(request.getClass().getName(), readTime);
+      if (request instanceof GetLocalShuffleDataRequest) {
+        ShuffleServerMetrics.gaugeReadLocalDataFileThreadNum.dec();
+        ShuffleServerMetrics.gaugeReadLocalDataFileBufferSize.dec(readBufferSize);
+      } else if (request instanceof GetLocalShuffleIndexRequest) {
+        ShuffleServerMetrics.gaugeReadLocalIndexFileThreadNum.dec();
+        ShuffleServerMetrics.gaugeReadLocalIndexFileBufferSize.dec(readBufferSize);
+      } else if (request instanceof GetMemoryShuffleDataRequest) {
+        GetMemoryShuffleDataResponse getMemoryShuffleDataResponse =
+            (GetMemoryShuffleDataResponse) response;
+        if (CollectionUtils.isNotEmpty(getMemoryShuffleDataResponse.getBufferSegments())) {
+          ShuffleServerMetrics.gaugeReadMemoryDataThreadNum.dec();
+          ShuffleServerMetrics.gaugeReadMemoryDataBufferSize.dec(readBufferSize);
+        }
+      }
       if (!future.isSuccess()) {
         Throwable cause = future.cause();
         String errorMsg =

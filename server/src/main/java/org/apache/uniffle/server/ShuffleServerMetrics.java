@@ -54,6 +54,13 @@ public class ShuffleServerMetrics {
       "localfile_flush_thread_pool_queue_size";
   private static final String FALLBACK_FLUSH_THREAD_POOL_QUEUE_SIZE =
       "fallback_flush_thread_pool_queue_size";
+  private static final String READ_LOCAL_DATA_FILE_THREAD_NUM = "read_local_data_file_thread_num";
+  private static final String READ_LOCAL_INDEX_FILE_THREAD_NUM = "read_local_index_file_thread_num";
+  private static final String READ_MEMORY_DATA_THREAD_NUM = "read_memory_data_thread_num";
+  private static final String READ_LOCAL_DATA_FILE_BUFFER_SIZE = "read_local_data_file_buffer_size";
+  private static final String READ_LOCAL_INDEX_FILE_BUFFER_SIZE =
+      "read_local_index_file_buffer_size";
+  private static final String READ_MEMORY_DATA_BUFFER_SIZE = "read_memory_data_buffer_size";
   private static final String TOTAL_READ_DATA = "total_read_data";
   private static final String TOTAL_READ_LOCAL_DATA_FILE = "total_read_local_data_file";
   private static final String TOTAL_READ_LOCAL_INDEX_FILE = "total_read_local_index_file";
@@ -196,6 +203,12 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeFallbackFlushThreadPoolQueueSize;
   public static Gauge.Child gaugeAppNum;
   public static Gauge.Child gaugeTotalPartitionNum;
+  public static Gauge.Child gaugeReadLocalDataFileThreadNum;
+  public static Gauge.Child gaugeReadLocalIndexFileThreadNum;
+  public static Gauge.Child gaugeReadMemoryDataThreadNum;
+  public static Gauge.Child gaugeReadLocalDataFileBufferSize;
+  public static Gauge.Child gaugeReadLocalIndexFileBufferSize;
+  public static Gauge.Child gaugeReadMemoryDataBufferSize;
 
   public static Gauge gaugeTotalDataSizeUsage;
   public static Gauge gaugeInMemoryDataSizeUsage;
@@ -400,6 +413,17 @@ public class ShuffleServerMetrics {
 
     gaugeAppNum = metricsManager.addLabeledGauge(APP_NUM_WITH_NODE);
     gaugeTotalPartitionNum = metricsManager.addLabeledGauge(PARTITION_NUM_WITH_NODE);
+
+    gaugeReadLocalDataFileThreadNum =
+        metricsManager.addLabeledGauge(READ_LOCAL_DATA_FILE_THREAD_NUM);
+    gaugeReadLocalIndexFileThreadNum =
+        metricsManager.addLabeledGauge(READ_LOCAL_INDEX_FILE_THREAD_NUM);
+    gaugeReadMemoryDataThreadNum = metricsManager.addLabeledGauge(READ_MEMORY_DATA_THREAD_NUM);
+    gaugeReadLocalDataFileBufferSize =
+        metricsManager.addLabeledGauge(READ_LOCAL_DATA_FILE_BUFFER_SIZE);
+    gaugeReadLocalIndexFileBufferSize =
+        metricsManager.addLabeledGauge(READ_LOCAL_INDEX_FILE_BUFFER_SIZE);
+    gaugeReadMemoryDataBufferSize = metricsManager.addLabeledGauge(READ_MEMORY_DATA_BUFFER_SIZE);
 
     gaugeHugePartitionNum = metricsManager.addLabeledGauge(HUGE_PARTITION_NUM);
     gaugeAppWithHugePartitionNum = metricsManager.addLabeledGauge(APP_WITH_HUGE_PARTITION_NUM);
