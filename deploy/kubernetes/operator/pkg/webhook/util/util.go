@@ -162,6 +162,16 @@ func NeedInspectPod(pod *corev1.Pod) bool {
 // JSONFloat is used to parse the float64 which may be NaN
 type JSONFloat float64
 
+// MarshalJSON return bytes representing JSONFloat
+func (j JSONFloat) MarshalJSON() ([]byte, error) {
+	v := float64(j)
+	if math.IsNaN(v) {
+		s := "\"NaN\""
+		return []byte(s), nil
+	}
+	return json.Marshal(v) // marshal result as standard float64
+}
+
 // UnmarshalJSON return the parsed JSONFloat
 func (j *JSONFloat) UnmarshalJSON(v []byte) error {
 	if s := string(v); s == "\"NaN\"" {
