@@ -113,7 +113,7 @@ Total: Read 10.7TiB, Write 6.4TiB
 Note:
 
 1. Read and write operations are essentially happening simultaneously.
-2. The calculation formula for `Netty(SSD) Performance Improvement` is as follows:
+2. The calculation formula for `Netty(SSD) Total Task Time Reduction` is as follows:
 
 ````
 Netty(SSD) Total Task Time Reduction = (Tasks Total Time - Tasks Total Time( Netty(SSD) )) / Tasks Total Time * 100%
