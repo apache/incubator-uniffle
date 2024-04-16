@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.collections.CollectionUtils;
 
 import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -54,6 +55,8 @@ public class ShuffleHandleInfo implements Serializable {
   private Map<Integer, Map<Integer, List<ShuffleServerInfo>>> partitionReplicaAssignedServers;
   // faulty servers replacement mapping
   private Map<String, Set<ShuffleServerInfo>> faultyServerToReplacements;
+  // The collection of partition ids that need to be load balanced, such as huge partition.
+  private Set<Integer> loadBalancePartitionCandidates = new HashSet<>();
 
   public static final ShuffleHandleInfo EMPTY_HANDLE_INFO =
       new ShuffleHandleInfo(-1, Collections.EMPTY_MAP, RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
@@ -131,17 +134,29 @@ public class ShuffleHandleInfo implements Serializable {
     return faultyServerToReplacements.containsKey(serverId);
   }
 
-  public Set<ShuffleServerInfo> getExistingReplacements(String faultyServerId) {
+  public Set<ShuffleServerInfo> getReplacements(String faultyServerId) {
     return faultyServerToReplacements.get(faultyServerId);
   }
 
-  public void updateReassignment(
+  public void updateAssignment(
       Set<Integer> partitionIds, String faultyServerId, Set<ShuffleServerInfo> replacements) {
+    updateAssignment(partitionIds, faultyServerId, replacements, new HashSet<>());
+  }
+
+  public void updateAssignment(
+      Set<Integer> partitionIds,
+      String faultyServerId,
+      Set<ShuffleServerInfo> replacements,
+      Set<Integer> needLoadBalancePartitionIds) {
     if (replacements == null) {
       return;
     }
-
     faultyServerToReplacements.put(faultyServerId, replacements);
+
+    if (CollectionUtils.isNotEmpty(needLoadBalancePartitionIds)) {
+      loadBalancePartitionCandidates.addAll(needLoadBalancePartitionIds);
+    }
+
     // todo: optimize the multiple for performance
     for (Integer partitionId : partitionIds) {
       Map<Integer, List<ShuffleServerInfo>> replicaServers =
@@ -178,6 +193,39 @@ public class ShuffleHandleInfo implements Serializable {
       }
     }
     return partitionToServers;
+  }
+
+  /**
+   * key: partitionId, value: the servers for multiple replicas.
+   *
+   * <p>Leveraging the partition reassign mechanism, it could support multiple servers for one
+   * partition replica for huge partition load balance or reassignment multiple times. But it will
+   * use the different policies.
+   *
+   * <p>For the former, this will use the hash to get one from the candidates. For the latter, this
+   * will always get the last one that is available for now.
+   */
+  public Map<Integer, List<ShuffleServerInfo>> getLatestAssignmentPlan(long taskAttemptId) {
+    Map<Integer, List<ShuffleServerInfo>> plan = new HashMap<>();
+    for (Map.Entry<Integer, Map<Integer, List<ShuffleServerInfo>>> entry :
+        partitionReplicaAssignedServers.entrySet()) {
+      int partitionId = entry.getKey();
+      boolean isNeedLoadBalance = loadBalancePartitionCandidates.contains(partitionId);
+      Map<Integer, List<ShuffleServerInfo>> replicaServers = entry.getValue();
+      for (Map.Entry<Integer, List<ShuffleServerInfo>> replicaServerEntry :
+          replicaServers.entrySet()) {
+        ShuffleServerInfo candidate;
+        int candidateSize = replicaServerEntry.getValue().size();
+        // todo: loop find the next candidate if current candidate is in faulty list.
+        if (isNeedLoadBalance) {
+          candidate = replicaServerEntry.getValue().get((int) (taskAttemptId % candidateSize));
+        } else {
+          candidate = replicaServerEntry.getValue().get(candidateSize - 1);
+        }
+        plan.computeIfAbsent(partitionId, x -> new ArrayList<>()).add(candidate);
+      }
+    }
+    return plan;
   }
 
   public PartitionDataReplicaRequirementTracking createPartitionReplicaTracking() {
@@ -224,6 +272,9 @@ public class ShuffleHandleInfo implements Serializable {
   }
 
   public static ShuffleHandleInfo fromProto(RssProtos.ShuffleHandleInfo handleProto) {
+    if (handleProto == null) {
+      return null;
+    }
     Map<Integer, Map<Integer, List<ShuffleServerInfo>>> partitionToServers = new HashMap<>();
     for (Map.Entry<Integer, RssProtos.PartitionReplicaServers> entry :
         handleProto.getPartitionToServersMap().entrySet()) {
@@ -246,5 +297,9 @@ public class ShuffleHandleInfo implements Serializable {
     handle.partitionReplicaAssignedServers = partitionToServers;
     handle.remoteStorage = remoteStorageInfo;
     return handle;
+  }
+
+  public Set<String> listFaultyServers() {
+    return faultyServerToReplacements.keySet();
   }
 }

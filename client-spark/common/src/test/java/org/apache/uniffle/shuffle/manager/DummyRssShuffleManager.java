@@ -22,8 +22,6 @@ import java.util.Set;
 
 import org.apache.spark.shuffle.ShuffleHandleInfo;
 
-import org.apache.uniffle.common.ShuffleServerInfo;
-
 import static org.mockito.Mockito.mock;
 
 public class DummyRssShuffleManager implements RssShuffleManagerInterface {
@@ -69,8 +67,11 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   }
 
   @Override
-  public ShuffleServerInfo reassignFaultyShuffleServerForTasks(
-      int shuffleId, Set<Integer> partitionIds, String faultyShuffleServerId) {
-    return mock(ShuffleServerInfo.class);
+  public ShuffleHandleInfo reassignFaultyShuffleServerForTasks(
+      int shuffleId,
+      Set<Integer> partitionIds,
+      String faultyShuffleServerId,
+      Set<Integer> needLoadBalancePartitionIds) {
+    return mock(ShuffleHandleInfo.class);
   }
 }

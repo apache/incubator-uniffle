@@ -889,19 +889,22 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
   // this is only valid on driver side that exposed to being invoked by grpc server
   @Override
-  public ShuffleServerInfo reassignFaultyShuffleServerForTasks(
-      int shuffleId, Set<Integer> partitionIds, String faultyShuffleServerId) {
+  public ShuffleHandleInfo reassignFaultyShuffleServerForTasks(
+      int shuffleId,
+      Set<Integer> partitionIds,
+      String faultyShuffleServerId,
+      Set<Integer> needLoadBalancePartitionIds) {
     ShuffleHandleInfo handleInfo = shuffleIdToShuffleHandleInfo.get(shuffleId);
     synchronized (handleInfo) {
       // find out whether this server has been marked faulty in this shuffle
       // if it has been reassigned, directly return the replacement server.
-      Set<ShuffleServerInfo> replacements =
-          handleInfo.getExistingReplacements(faultyShuffleServerId);
+      Set<ShuffleServerInfo> replacements = handleInfo.getReplacements(faultyShuffleServerId);
       if (replacements == null) {
+        // todo: If load balance partitionId exists, it should assign multiple servers.
         replacements = Sets.newHashSet(assignShuffleServer(shuffleId, faultyShuffleServerId));
       }
-      handleInfo.updateReassignment(partitionIds, faultyShuffleServerId, replacements);
-      return replacements.stream().findFirst().get();
+      handleInfo.updateAssignment(partitionIds, faultyShuffleServerId, replacements);
+      return handleInfo;
     }
   }
 

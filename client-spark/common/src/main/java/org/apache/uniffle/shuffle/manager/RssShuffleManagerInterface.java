@@ -22,8 +22,6 @@ import java.util.Set;
 import org.apache.spark.SparkException;
 import org.apache.spark.shuffle.ShuffleHandleInfo;
 
-import org.apache.uniffle.common.ShuffleServerInfo;
-
 /**
  * This is a proxy interface that mainly delegates the un-registration of shuffles to the
  * MapOutputTrackerMaster on the driver. It provides a unified interface that hides implementation
@@ -78,6 +76,9 @@ public interface RssShuffleManagerInterface {
   boolean reassignAllShuffleServersForWholeStage(
       int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
 
-  ShuffleServerInfo reassignFaultyShuffleServerForTasks(
-      int shuffleId, Set<Integer> partitionIds, String faultyShuffleServerId);
+  ShuffleHandleInfo reassignFaultyShuffleServerForTasks(
+      int shuffleId,
+      Set<Integer> partitionIds,
+      String faultyShuffleServerId,
+      Set<Integer> needLoadBalancePartitionIds);
 }

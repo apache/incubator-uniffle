@@ -64,6 +64,19 @@ public class RssSparkConfig {
           .withDescription(
               "The memory spill switch triggered by Spark TaskMemoryManager, default value is false.");
 
+  public static final ConfigOption<Integer> RSS_PARTITION_REASSIGN_LOAD_BALANCE_SERVER_NUM =
+      ConfigOptions.key("rss.client.partitionReassign.loadBalanceServerNum")
+          .intType()
+          .defaultValue(5)
+          .withDescription(
+              "The shuffle server num for load balance of huge partition when partition reassign is triggered.");
+
+  public static final ConfigOption<Integer> RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES =
+      ConfigOptions.key("rss.client.partitionReassign.blockRetryMaxTimes")
+          .intType()
+          .defaultValue(1)
+          .withDescription("The block retry max times when partition reassign is enabled.");
+
   public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
 
   public static final ConfigEntry<Integer> RSS_PARTITION_NUM_PER_RANGE =

@@ -51,7 +51,7 @@ public class ShuffleHandleInfoTest {
 
     assertFalse(handleInfo.isMarkedAsFaultyServer("a"));
     Set<Integer> partitions = Sets.newHashSet(1);
-    handleInfo.updateReassignment(partitions, "a", Sets.newHashSet(createFakeServerInfo("d")));
+    handleInfo.updateAssignment(partitions, "a", Sets.newHashSet(createFakeServerInfo("d")));
     assertTrue(handleInfo.isMarkedAsFaultyServer("a"));
   }
 
@@ -66,7 +66,7 @@ public class ShuffleHandleInfoTest {
 
     // case1
     Set<Integer> partitions = Sets.newHashSet(2);
-    handleInfo.updateReassignment(partitions, "c", Sets.newHashSet(createFakeServerInfo("d")));
+    handleInfo.updateAssignment(partitions, "c", Sets.newHashSet(createFakeServerInfo("d")));
 
     Map<Integer, List<ShuffleServerInfo>> partitionAssignment =
         handleInfo.listPartitionAssignedServers();
@@ -77,7 +77,7 @@ public class ShuffleHandleInfoTest {
 
     // case2: reassign multiple times for one partition, it will not append the same replacement
     // servers
-    handleInfo.updateReassignment(partitions, "c", Sets.newHashSet(createFakeServerInfo("d")));
+    handleInfo.updateAssignment(partitions, "c", Sets.newHashSet(createFakeServerInfo("d")));
     partitionAssignment = handleInfo.listPartitionAssignedServers();
     assertEquals(
         Arrays.asList(createFakeServerInfo("c"), createFakeServerInfo("d")),
@@ -85,7 +85,7 @@ public class ShuffleHandleInfoTest {
 
     // case3: reassign multiple times for one partition, it will append the non-existing replacement
     // servers
-    handleInfo.updateReassignment(
+    handleInfo.updateAssignment(
         partitions, "c", Sets.newHashSet(createFakeServerInfo("d"), createFakeServerInfo("e")));
     partitionAssignment = handleInfo.listPartitionAssignedServers();
     assertEquals(

@@ -527,4 +527,21 @@ public class ShuffleServer {
   public String getEncodedTags() {
     return StringUtils.join(tags, ",");
   }
+
+  @VisibleForTesting
+  public void sendHeartbeat() {
+    ShuffleServer shuffleServer = this;
+    registerHeartBeat.sendHeartBeat(
+        shuffleServer.getId(),
+        shuffleServer.getIp(),
+        shuffleServer.getGrpcPort(),
+        shuffleServer.getUsedMemory(),
+        shuffleServer.getPreAllocatedMemory(),
+        shuffleServer.getAvailableMemory(),
+        shuffleServer.getEventNumInFlush(),
+        shuffleServer.getTags(),
+        shuffleServer.getServerStatus(),
+        shuffleServer.getStorageManager().getStorageInfo(),
+        shuffleServer.getNettyPort());
+  }
 }

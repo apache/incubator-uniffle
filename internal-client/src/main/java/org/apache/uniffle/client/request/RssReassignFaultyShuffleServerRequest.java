@@ -27,11 +27,17 @@ public class RssReassignFaultyShuffleServerRequest {
   private Set<Integer> partitionIds;
   private String faultyShuffleServerId;
 
+  private Set<Integer> needLoadBalancePartitionIds;
+
   public RssReassignFaultyShuffleServerRequest(
-      int shuffleId, Set<Integer> partitionIds, String faultyShuffleServerId) {
+      int shuffleId,
+      Set<Integer> partitionIds,
+      String faultyShuffleServerId,
+      Set<Integer> needLoadBalancePartitionIds) {
     this.shuffleId = shuffleId;
     this.partitionIds = partitionIds;
     this.faultyShuffleServerId = faultyShuffleServerId;
+    this.needLoadBalancePartitionIds = needLoadBalancePartitionIds;
   }
 
   public int getShuffleId() {
@@ -51,7 +57,8 @@ public class RssReassignFaultyShuffleServerRequest {
         RssProtos.RssReassignFaultyShuffleServerRequest.newBuilder()
             .setShuffleId(this.shuffleId)
             .setFaultyShuffleServerId(this.faultyShuffleServerId)
-            .addAllPartitionIds(this.partitionIds);
+            .addAllPartitionIds(this.partitionIds)
+            .addAllNeedLoadBalancePartitionIds(this.needLoadBalancePartitionIds);
     return builder.build();
   }
 }

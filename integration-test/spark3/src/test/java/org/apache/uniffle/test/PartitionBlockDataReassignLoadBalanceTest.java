@@ -21,32 +21,31 @@ import java.io.File;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
-import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategyFactory;
+import org.apache.uniffle.server.MockedGrpcServer;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.apache.uniffle.client.util.RssClientConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER;
-import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.apache.uniffle.coordinator.CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY;
 
-/** This class is to test the mechanism of partition block data reassignment. */
-public class PartitionBlockDataReassignTest extends SparkSQLTest {
-
-  private static String basePath;
+/** This class is to test the partition reassign mechanism of load balance for huge partition. */
+public class PartitionBlockDataReassignLoadBalanceTest extends PartitionBlockDataReassignBasicTest {
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
     // for coordinator
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setLong("rss.coordinator.app.expired", 5000);
+    coordinatorConf.set(
+        COORDINATOR_ASSIGNMENT_STRATEGY, AssignmentStrategyFactory.StrategyName.BASIC);
+
     Map<String, String> dynamicConf = Maps.newHashMap();
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
@@ -57,48 +56,29 @@ public class PartitionBlockDataReassignTest extends SparkSQLTest {
     File dataDir2 = new File(tmpDir, "data2");
     basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
 
+    // grpc server.
     ShuffleServerConf grpcShuffleServerConf1 = buildShuffleServerConf(ServerType.GRPC);
-    createShuffleServer(grpcShuffleServerConf1);
+    createMockedShuffleServer(grpcShuffleServerConf1);
 
     ShuffleServerConf grpcShuffleServerConf2 = buildShuffleServerConf(ServerType.GRPC);
-    createShuffleServer(grpcShuffleServerConf2);
+    createMockedShuffleServer(grpcShuffleServerConf2);
 
-    ShuffleServerConf grpcShuffleServerConf3 = buildShuffleServerConf(ServerType.GRPC_NETTY);
-    createShuffleServer(grpcShuffleServerConf3);
+    ShuffleServerConf grpcShuffleServerConf3 = buildShuffleServerConf(ServerType.GRPC);
+    createMockedShuffleServer(grpcShuffleServerConf3);
 
+    // netty server.
     ShuffleServerConf grpcShuffleServerConf4 = buildShuffleServerConf(ServerType.GRPC_NETTY);
     createShuffleServer(grpcShuffleServerConf4);
 
+    ShuffleServerConf grpcShuffleServerConf5 = buildShuffleServerConf(ServerType.GRPC_NETTY);
+    createShuffleServer(grpcShuffleServerConf5);
+
     startServers();
 
-    // simulate one server without enough buffer
-    ShuffleServer faultyShuffleServer = grpcShuffleServers.get(0);
-    ShuffleBufferManager bufferManager = faultyShuffleServer.getShuffleBufferManager();
-    bufferManager.setUsedMemory(bufferManager.getCapacity() + 100);
-  }
-
-  private static ShuffleServerConf buildShuffleServerConf(ServerType serverType) throws Exception {
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType);
-    shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
-    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 4000);
-    shuffleServerConf.setString("rss.storage.basePath", basePath);
-    shuffleServerConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE.name());
-    return shuffleServerConf;
-  }
-
-  @Override
-  public void updateRssStorage(SparkConf sparkConf) {
-    sparkConf.set("spark." + RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, "1");
-    sparkConf.set("spark." + RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.key(), "true");
-  }
-
-  @Override
-  public void checkShuffleData() throws Exception {
-    Thread.sleep(12000);
-    String[] paths = basePath.split(",");
-    for (String path : paths) {
-      File f = new File(path);
-      assertEquals(0, f.list().length);
-    }
+    // This will make the partition reassign to 2 servers.
+    ShuffleServer g1 = grpcShuffleServers.get(0);
+    ((MockedGrpcServer) g1.getServer())
+        .getService()
+        .enableMockRequireBufferFailWithNoBufferForHugePartition();
   }
 }

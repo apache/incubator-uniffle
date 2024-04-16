@@ -235,16 +235,17 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
   public void reassignFaultyShuffleServer(
       RssProtos.RssReassignFaultyShuffleServerRequest request,
       StreamObserver<RssProtos.RssReassignFaultyShuffleServerResponse> responseObserver) {
-    ShuffleServerInfo shuffleServerInfo =
+    ShuffleHandleInfo handle =
         shuffleManager.reassignFaultyShuffleServerForTasks(
             request.getShuffleId(),
             Sets.newHashSet(request.getPartitionIdsList()),
-            request.getFaultyShuffleServerId());
+            request.getFaultyShuffleServerId(),
+            Sets.newHashSet(request.getNeedLoadBalancePartitionIdsList()));
     RssProtos.StatusCode code = RssProtos.StatusCode.SUCCESS;
     RssProtos.RssReassignFaultyShuffleServerResponse reply =
         RssProtos.RssReassignFaultyShuffleServerResponse.newBuilder()
             .setStatus(code)
-            .setServer(ShuffleServerInfo.convertToShuffleServerId(shuffleServerInfo))
+            .setHandle(ShuffleHandleInfo.toProto(handle))
             .build();
     responseObserver.onNext(reply);
     responseObserver.onCompleted();

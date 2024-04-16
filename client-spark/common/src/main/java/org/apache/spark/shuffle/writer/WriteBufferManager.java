@@ -77,7 +77,6 @@ public class WriteBufferManager extends MemoryConsumer {
   private ShuffleWriteMetrics shuffleWriteMetrics;
   // cache partition -> records
   private Map<Integer, WriterBuffer> buffers;
-  private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
   private int serializerBufferSize;
   private int bufferSegmentSize;
   private long copyTime = 0;
@@ -98,6 +97,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private int memorySpillTimeoutSec;
   private boolean isRowBased;
   private BlockIdLayout blockIdLayout;
+  private Function<Integer, List<ShuffleServerInfo>> partitionAssignmentRetrieveFunc;
 
   public WriteBufferManager(
       int shuffleId,
@@ -127,11 +127,11 @@ public class WriteBufferManager extends MemoryConsumer {
       long taskAttemptId,
       BufferManagerOptions bufferManagerOptions,
       Serializer serializer,
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
       TaskMemoryManager taskMemoryManager,
       ShuffleWriteMetrics shuffleWriteMetrics,
       RssConf rssConf,
-      Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc) {
+      Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc,
+      Function<Integer, List<ShuffleServerInfo>> partitionAssignmentRetrieveFunc) {
     super(taskMemoryManager, taskMemoryManager.pageSizeBytes(), MemoryMode.ON_HEAP);
     this.bufferSize = bufferManagerOptions.getBufferSize();
     this.spillSize = bufferManagerOptions.getBufferSpillThreshold();
@@ -139,7 +139,6 @@ public class WriteBufferManager extends MemoryConsumer {
     this.shuffleId = shuffleId;
     this.taskId = taskId;
     this.taskAttemptId = taskAttemptId;
-    this.partitionToServers = partitionToServers;
     this.shuffleWriteMetrics = shuffleWriteMetrics;
     this.serializerBufferSize = bufferManagerOptions.getSerializerBufferSize();
     this.bufferSegmentSize = bufferManagerOptions.getBufferSegmentSize();
@@ -164,6 +163,31 @@ public class WriteBufferManager extends MemoryConsumer {
     this.memorySpillTimeoutSec = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_TIMEOUT);
     this.memorySpillEnabled = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_ENABLED);
     this.blockIdLayout = BlockIdLayout.from(rssConf);
+    this.partitionAssignmentRetrieveFunc = partitionAssignmentRetrieveFunc;
+  }
+
+  public WriteBufferManager(
+      int shuffleId,
+      String taskId,
+      long taskAttemptId,
+      BufferManagerOptions bufferManagerOptions,
+      Serializer serializer,
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      TaskMemoryManager taskMemoryManager,
+      ShuffleWriteMetrics shuffleWriteMetrics,
+      RssConf rssConf,
+      Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc) {
+    this(
+        shuffleId,
+        taskId,
+        taskAttemptId,
+        bufferManagerOptions,
+        serializer,
+        taskMemoryManager,
+        shuffleWriteMetrics,
+        rssConf,
+        spillFunc,
+        partitionId -> partitionToServers.get(partitionId));
   }
 
   /** add serialized columnar data directly when integrate with gluten */
@@ -344,7 +368,7 @@ public class WriteBufferManager extends MemoryConsumer {
         compressed.length,
         crc32,
         compressed,
-        partitionToServers.get(partitionId),
+        partitionAssignmentRetrieveFunc.apply(partitionId),
         uncompressLength,
         wb.getMemoryUsed(),
         taskAttemptId);
@@ -572,5 +596,10 @@ public class WriteBufferManager extends MemoryConsumer {
   @VisibleForTesting
   public void setSendSizeLimit(long sendSizeLimit) {
     this.sendSizeLimit = sendSizeLimit;
+  }
+
+  public void setPartitionAssignmentRetrieveFunc(
+      Function<Integer, List<ShuffleServerInfo>> partitionAssignmentRetrieveFunc) {
+    this.partitionAssignmentRetrieveFunc = partitionAssignmentRetrieveFunc;
   }
 }

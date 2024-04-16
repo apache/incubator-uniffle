@@ -605,12 +605,13 @@ message RssReassignFaultyShuffleServerRequest{
   int32 shuffleId  = 1;
   repeated int32 partitionIds = 2;
   string faultyShuffleServerId = 3;
+  repeated int32 needLoadBalancePartitionIds = 4;
 }
 
 message RssReassignFaultyShuffleServerResponse{
   StatusCode status = 1;
-  ShuffleServerId server = 2;
-  string msg = 3;
+  string msg = 2;
+  ShuffleHandleInfo handle = 3;
 }
 
 
