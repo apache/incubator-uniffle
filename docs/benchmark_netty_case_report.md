@@ -116,7 +116,13 @@ Note:
 2. The calculation formula for `Netty(SSD) Performance Improvement` is as follows:
 
 ````
-Netty(SSD) Performance Improvement = (Tasks Total Time - Tasks Total Time( Netty(SSD) )) / Tasks Total Time * 100%
+Netty(SSD) Total Task Time Reduction = (Tasks Total Time - Tasks Total Time( Netty(SSD) )) / Tasks Total Time * 100%
+````
+
+3. The calculation formula for `Netty(SSD) Speedup` is as follows:
+
+````
+Netty(SSD) Speedup = Tasks Total Time / Tasks Total Time( Netty(SSD) ) * 100%
 ````
 
 ## Conclusion
