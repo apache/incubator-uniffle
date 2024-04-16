@@ -137,3 +137,5 @@ We can draw the following conclusions:
 3. When comparing with Netty mode turned on, **SSD brings about an 80% of total task time reduction compared to HDD**.
 4. **Above 11200 concurrency, it is not recommended to use gRPC mode**, as gRPC mode will cause the machine's load
    to be much higher than Netty mode, and the Shuffle Server's process will consume more memory on the machine.
+   Also, it is highly susceptible to encountering OOM issues.
+   See https://github.com/apache/incubator-uniffle/issues/1651 for more details.
