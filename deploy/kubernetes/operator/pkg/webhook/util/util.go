@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"time"
 
@@ -158,12 +159,40 @@ func NeedInspectPod(pod *corev1.Pod) bool {
 	return false
 }
 
+// JSONFloat is used to parse the float64 which may be NaN
+type JSONFloat float64
+
+// MarshalJSON return bytes representing JSONFloat
+func (j JSONFloat) MarshalJSON() ([]byte, error) {
+	v := float64(j)
+	if math.IsNaN(v) {
+		s := "\"NaN\""
+		return []byte(s), nil
+	}
+	return json.Marshal(v) // marshal result as standard float64
+}
+
+// UnmarshalJSON return the parsed JSONFloat
+func (j *JSONFloat) UnmarshalJSON(v []byte) error {
+	if s := string(v); s == "\"NaN\"" {
+		*j = JSONFloat(math.NaN())
+		return nil
+	}
+	// just a regular float value
+	var fv float64
+	if err := json.Unmarshal(v, &fv); err != nil {
+		return err
+	}
+	*j = JSONFloat(fv)
+	return nil
+}
+
 // MetricItem records an item of metric information of shuffle servers.
 type MetricItem struct {
-	Name        string   `json:"name"`
-	LabelNames  []string `json:"labelNames"`
-	LabelValues []string `json:"labelValues"`
-	Value       float32  `json:"value"`
+	Name        string    `json:"name"`
+	LabelNames  []string  `json:"labelNames"`
+	LabelValues []string  `json:"labelValues"`
+	Value       JSONFloat `json:"value"`
 }
 
 // MetricList records all items of metric information of shuffle servers.
