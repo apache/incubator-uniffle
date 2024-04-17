@@ -20,7 +20,10 @@ package org.apache.spark.shuffle.reader;
 import java.util.List;
 import java.util.Map;
 
-import scala.*;
+import scala.Function0;
+import scala.Function2;
+import scala.Option;
+import scala.Product2;
 import scala.collection.Iterator;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.AbstractFunction1;
