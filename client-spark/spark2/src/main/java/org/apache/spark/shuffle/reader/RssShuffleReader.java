@@ -20,10 +20,7 @@ package org.apache.spark.shuffle.reader;
 import java.util.List;
 import java.util.Map;
 
-import scala.Function0;
-import scala.Function2;
-import scala.Option;
-import scala.Product2;
+import scala.*;
 import scala.collection.Iterator;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.AbstractFunction1;
@@ -162,48 +159,31 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
     if (shuffleDependency.keyOrdering().isDefined()) {
       // Create an ExternalSorter to sort the data
-      ExternalSorter<K, Object, C> sorter;
+      Option<Aggregator<K, Object, C>> aggregator = Option.empty();
       if (shuffleDependency.aggregator().isDefined()) {
         if (shuffleDependency.mapSideCombine()) {
-          Aggregator<K, C, C> aggregator =
-              new Aggregator<K, C, C>(
-                  new AbstractFunction1<C, C>() {
-                    @Override
-                    public C apply(C x) {
-                      return x;
-                    }
-                  },
-                  (Function2<C, C, C>) shuffleDependency.aggregator().get().mergeCombiners(),
-                  (Function2<C, C, C>) shuffleDependency.aggregator().get().mergeCombiners());
-          sorter =
-              (ExternalSorter<K, Object, C>)
-                  new ExternalSorter<>(
-                      context,
-                      Option.apply(aggregator),
-                      Option.empty(),
-                      shuffleDependency.keyOrdering(),
-                      serializer);
+          aggregator =
+              Option.apply(
+                  (Aggregator<K, Object, C>)
+                      new Aggregator<K, C, C>(
+                          new AbstractFunction1<C, C>() {
+                            @Override
+                            public C apply(C x) {
+                              return x;
+                            }
+                          },
+                          (Function2<C, C, C>)
+                              shuffleDependency.aggregator().get().mergeCombiners(),
+                          (Function2<C, C, C>)
+                              shuffleDependency.aggregator().get().mergeCombiners()));
         } else {
-          Aggregator<K, Object, C> aggregator =
-              (Aggregator<K, Object, C>) shuffleDependency.aggregator().get();
-          sorter =
-              (ExternalSorter<K, Object, C>)
-                  new ExternalSorter<>(
-                      context,
-                      Option.apply(aggregator),
-                      Option.empty(),
-                      shuffleDependency.keyOrdering(),
-                      serializer);
+          aggregator =
+              Option.apply((Aggregator<K, Object, C>) shuffleDependency.aggregator().get());
         }
-      } else {
-        sorter =
-            new ExternalSorter<>(
-                context,
-                Option.empty(),
-                Option.empty(),
-                shuffleDependency.keyOrdering(),
-                serializer);
       }
+      ExternalSorter<K, Object, C> sorter =
+          new ExternalSorter<>(
+              context, aggregator, Option.empty(), shuffleDependency.keyOrdering(), serializer);
       LOG.info("Inserting aggregated records to sorter");
       long startTime = System.currentTimeMillis();
       sorter.insertAll(rssShuffleDataIterator);
