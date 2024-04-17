@@ -41,8 +41,8 @@ public class ShuffleHandleInfoWrapper {
     this.update(shuffleHandleInfo, null);
   }
 
-  public List<ShuffleServerInfo> retrievePartitionAssignment(int taskAttemptId) {
-    return latestAssignment.get(taskAttemptId);
+  public List<ShuffleServerInfo> retrievePartitionAssignment(int partitiontId) {
+    return latestAssignment.get(partitiontId);
   }
 
   public boolean isReassigned(String serverId) {
