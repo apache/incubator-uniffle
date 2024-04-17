@@ -114,11 +114,14 @@ public class ShuffleServerInfo implements Serializable {
     }
   }
 
-  private static ShuffleServerInfo convertToShuffleServerId(
+  private static ShuffleServerInfo convertFromShuffleServerId(
       RssProtos.ShuffleServerId shuffleServerId) {
     ShuffleServerInfo shuffleServerInfo =
         new ShuffleServerInfo(
-            shuffleServerId.getId(), shuffleServerId.getIp(), shuffleServerId.getPort(), 0);
+            shuffleServerId.getId(),
+            shuffleServerId.getIp(),
+            shuffleServerId.getPort(),
+            shuffleServerId.getNettyPort());
     return shuffleServerInfo;
   }
 
@@ -136,7 +139,7 @@ public class ShuffleServerInfo implements Serializable {
 
   public static List<ShuffleServerInfo> fromProto(List<RssProtos.ShuffleServerId> servers) {
     return servers.stream()
-        .map(server -> convertToShuffleServerId(server))
+        .map(server -> convertFromShuffleServerId(server))
         .collect(Collectors.toList());
   }
 
