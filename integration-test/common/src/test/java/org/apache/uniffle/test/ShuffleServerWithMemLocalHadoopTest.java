@@ -73,7 +73,7 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
       LoggerFactory.getLogger(ShuffleServerWithMemLocalHadoopTest.class);
   private ShuffleServerGrpcClient grpcShuffleServerClient;
   private ShuffleServerGrpcNettyClient nettyShuffleServerClient;
-  private static String REMOTE_STORAGE = HDFS_URI + "rss/test";
+  private static String REMOTE_STORAGE = HDFS_URI + "rss/test_%s";
   private static ShuffleServerConf grpcShuffleServerConfig;
   private static ShuffleServerConf nettyShuffleServerConfig;
 
@@ -161,7 +161,10 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr =
         new RssRegisterShuffleRequest(
-            testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), REMOTE_STORAGE);
+            testAppId,
+            0,
+            Lists.newArrayList(new PartitionRange(0, 0)),
+            String.format(REMOTE_STORAGE, isNettyMode));
     shuffleServerClient.registerShuffle(rrsr);
     Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
     Map<Long, byte[]> dataMap = Maps.newHashMap();
@@ -210,7 +213,7 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
             500,
             expectBlockIds,
             processBlockIds,
-            REMOTE_STORAGE,
+            String.format(REMOTE_STORAGE, isNettyMode),
             conf);
     ClientReadHandler[] handlers = new ClientReadHandler[3];
     handlers[0] = memoryClientReadHandler;
