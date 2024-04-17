@@ -193,6 +193,7 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
         isNettyMode ? nettyShuffleServerInfoList : grpcShuffleServerInfoList;
     ShuffleReadClientImpl readClient =
         ShuffleClientFactory.newReadBuilder()
+            .clientType(isNettyMode ? ClientType.GRPC_NETTY : ClientType.GRPC)
             .storageType(StorageType.LOCALFILE.name())
             .appId(appId)
             .shuffleId(0)

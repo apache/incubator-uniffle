@@ -44,6 +44,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.BlockIdLayout;
@@ -124,6 +125,7 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
       boolean compress) {
     ShuffleReadClientImpl readClient =
         ShuffleClientFactory.newReadBuilder()
+            .clientType(ClientType.GRPC)
             .storageType(StorageType.HDFS.name())
             .appId("appId")
             .shuffleId(0)

@@ -140,6 +140,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
                     LOCALHOST,
                     grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT)));
     return ShuffleClientFactory.newReadBuilder()
+        .clientType(isNettyMode ? ClientType.GRPC_NETTY : ClientType.GRPC)
         .storageType(StorageType.LOCALFILE.name())
         .shuffleId(0)
         .partitionId(0)

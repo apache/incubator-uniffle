@@ -21,7 +21,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
@@ -94,10 +93,6 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
   private static ShuffleServer nettyShuffleServer;
   private static ShuffleServerConf grpcShuffleServerConfig;
   private static ShuffleServerConf nettyShuffleServerConfig;
-
-  private static AtomicInteger serverRpcPortCounter = new AtomicInteger();
-  private static AtomicInteger nettyPortCounter = new AtomicInteger();
-  private static AtomicInteger jettyPortCounter = new AtomicInteger();
 
   static @TempDir File tempDir;
 
@@ -225,8 +220,9 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     return partitionToBlocks;
   }
 
-  private ShuffleClientFactory.ReadClientBuilder baseReadBuilder() {
+  private ShuffleClientFactory.ReadClientBuilder baseReadBuilder(boolean isNettyMode) {
     return ShuffleClientFactory.newReadBuilder()
+        .clientType(isNettyMode ? ClientType.GRPC_NETTY : ClientType.GRPC)
         .storageType(StorageType.HDFS.name())
         .shuffleId(0)
         .partitionId(0)
@@ -305,7 +301,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
             : new ShuffleServerInfo(
                 LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
     ShuffleReadClientImpl readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(appId)
             .basePath(dataBasePath)
             .blockIdBitmap(bitmaps[0])
@@ -341,7 +337,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     shuffleServerClient.finishShuffle(rfsr);
 
     readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(appId)
             .basePath(dataBasePath)
             .blockIdBitmap(bitmaps[0])
@@ -351,7 +347,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     validateResult(readClient, expectedData, bitmaps[0]);
 
     readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(appId)
             .partitionId(1)
             .basePath(dataBasePath)
@@ -362,7 +358,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     validateResult(readClient, expectedData, bitmaps[1]);
 
     readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(appId)
             .partitionId(2)
             .basePath(dataBasePath)
@@ -373,7 +369,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     validateResult(readClient, expectedData, bitmaps[2]);
 
     readClient =
-        baseReadBuilder()
+        baseReadBuilder(isNettyMode)
             .appId(appId)
             .partitionId(3)
             .basePath(dataBasePath)

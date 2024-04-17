@@ -171,6 +171,7 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
                 LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
     ShuffleReadClientImpl readClient =
         ShuffleClientFactory.newReadBuilder()
+            .clientType(isNettyMode ? ClientType.GRPC_NETTY : ClientType.GRPC)
             .storageType(StorageType.LOCALFILE_HDFS.name())
             .appId(appId)
             .shuffleId(shuffleId)
