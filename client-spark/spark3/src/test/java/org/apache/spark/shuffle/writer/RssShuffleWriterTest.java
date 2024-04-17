@@ -134,8 +134,6 @@ public class RssShuffleWriterTest {
             new ShuffleServerInfo("id5", "0.0.0.5", 100),
             new ShuffleServerInfo("id6", "0.0.0.6", 100));
     partitionToServers.put(2, ssi56);
-    ShuffleHandleInfo shuffleHandleInfo =
-        new ShuffleHandleInfo(0, partitionToServers, RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
 
     when(mockPartitioner.getPartition("testKey1")).thenReturn(0);
     when(mockPartitioner.getPartition("testKey2")).thenReturn(1);
@@ -165,6 +163,8 @@ public class RssShuffleWriterTest {
 
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
     TaskContext contextMock = mock(TaskContext.class);
+    ShuffleHandleInfo shuffleHandleInfo =
+        new ShuffleHandleInfo(0, partitionToServers, RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
             "appId",
@@ -386,8 +386,6 @@ public class RssShuffleWriterTest {
             new ShuffleServerInfo("id5", "0.0.0.5", 100),
             new ShuffleServerInfo("id6", "0.0.0.6", 100));
     partitionToServers.put(2, ssi56);
-    ShuffleHandleInfo shuffleHandleInfo =
-        new ShuffleHandleInfo(0, partitionToServers, RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
 
     when(mockPartitioner.getPartition("testKey1")).thenReturn(0);
     when(mockPartitioner.getPartition("testKey2")).thenReturn(1);
@@ -417,6 +415,8 @@ public class RssShuffleWriterTest {
 
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
     TaskContext contextMock = mock(TaskContext.class);
+    ShuffleHandleInfo shuffleHandleInfo =
+        new ShuffleHandleInfo(0, partitionToServers, RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
             "appId",
