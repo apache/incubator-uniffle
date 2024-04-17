@@ -140,8 +140,19 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
   }
 
   @Override
-  public void updateSparkConfWithRss(SparkConf sparkConf) {
-    super.updateSparkConfWithRss(sparkConf);
+  public void updateSparkConfWithRssGrpc(SparkConf sparkConf) {
+    super.updateSparkConfWithRssGrpc(sparkConf);
+    addMultiReplicaConf(sparkConf);
+  }
+
+  @Override
+  public void updateSparkConfWithRssNetty(SparkConf sparkConf) {
+    super.updateSparkConfWithRssNetty(sparkConf);
+    // Add multi replica conf
+    addMultiReplicaConf(sparkConf);
+  }
+
+  private static void addMultiReplicaConf(SparkConf sparkConf) {
     // Add multi replica conf
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA.key(), String.valueOf(replicateWrite));
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA_WRITE.key(), String.valueOf(replicateWrite));
