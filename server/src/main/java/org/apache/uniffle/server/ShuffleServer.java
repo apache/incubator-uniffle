@@ -30,6 +30,7 @@ import com.google.common.collect.Sets;
 import io.prometheus.client.CollectorRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.uniffle.server.merge.ShuffleMergeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -102,6 +103,9 @@ public class ShuffleServer {
   private boolean nettyServerEnabled;
   private StreamServer streamServer;
   private JvmPauseMonitor jvmPauseMonitor;
+
+  private boolean remoteMergeEnable;
+  private ShuffleMergeManager shuffleMergeManager;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -294,7 +298,10 @@ public class ShuffleServer {
         new ShuffleTaskManager(
             shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
     shuffleTaskManager.start();
-
+    remoteMergeEnable = shuffleServerConf.get(ShuffleServerConf.SERVER_MERGE_ENABLE);
+    if (remoteMergeEnable) {
+      shuffleMergeManager = new ShuffleMergeManager(shuffleServerConf, shuffleTaskManager);
+    }
     setServer();
   }
 
@@ -464,6 +471,14 @@ public class ShuffleServer {
 
   public ShuffleFlushManager getShuffleFlushManager() {
     return shuffleFlushManager;
+  }
+
+  public ShuffleMergeManager getShuffleMergeManager() {
+    return shuffleMergeManager;
+  }
+
+  public boolean isRemoteMergeEnable() {
+    return remoteMergeEnable;
   }
 
   public long getUsedMemory() {

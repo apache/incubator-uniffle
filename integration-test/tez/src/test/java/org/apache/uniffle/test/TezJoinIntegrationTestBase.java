@@ -22,6 +22,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.examples.JoinDataGen;
 import org.apache.tez.examples.JoinValidate;
+import org.junit.jupiter.api.BeforeAll;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -33,6 +34,11 @@ public class TezJoinIntegrationTestBase extends TezIntegrationTestBase {
   protected static final String HASH_INPUT_FILE_SIZE = "500000";
   protected static final String JOIN_EXPECTED_PATH = "join_expected";
   protected static final String NUM_TASKS = "2";
+
+  @BeforeAll
+  public static void setupServers() throws Exception {
+    TezIntegrationTestBase.setupServers(null);
+  }
 
   protected void generateInputFile() throws Exception {
     fs.delete(new Path(STREAM_INPUT_PATH), true);

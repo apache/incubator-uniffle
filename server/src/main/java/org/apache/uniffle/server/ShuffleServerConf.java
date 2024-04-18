@@ -585,6 +585,54 @@ public class ShuffleServerConf extends RssBaseConf {
           .withDescription(
               "keep alive time of thread pool that used for calc summary metric, in SECONDS.");
 
+  public static final ConfigOption<Boolean> SERVER_MERGE_ENABLE =
+      ConfigOptions.key("rss.server.merge.enable")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Whether to enable remote merge");
+
+  public static final ConfigOption<Integer> SERVER_MERGE_THREAD_POOL_SIZE =
+      ConfigOptions.key("rss.server.merge.threadPool.size")
+          .intType()
+          .defaultValue(10)
+          .withDescription("thread pool for merge");
+
+  public static final ConfigOption<Integer> SERVER_MERGE_THREAD_POOL_QUEUE_SIZE =
+      ConfigOptions.key("rss.server.merge.threadPool.queue.size")
+          .intType()
+          .defaultValue(Integer.MAX_VALUE)
+          .withDescription("size of waiting queue for merge thread pool");
+
+  public static final ConfigOption<Integer> SERVER_MERGE_THREAD_ALIVE =
+      ConfigOptions.key("rss.server.merge.thread.alive")
+          .intType()
+          .defaultValue(120)
+          .withDescription("thread idle time in merge thread pool (s)");
+
+  public static final ConfigOption<String> SERVER_DEFAULT_MERGED_BLOCK_SIZE =
+      ConfigOptions.key("rss.server.default.merged.block.size")
+          .stringType()
+          .defaultValue("2m")
+          .withDescription("The default merged block size.");
+
+  public static final ConfigOption<Long> SERVER_MERGE_CACHE_MERGED_BLOCK_INIT_SLEEP_MS =
+      ConfigOptions.key("rss.server.merge.cache.merged.block.init.sleep.ms")
+          .longType()
+          .defaultValue(100L)
+          .withDescription("When caching merged block, the minimum waiting event after failure to require memory");
+
+  public static final ConfigOption<Long> SERVER_MERGE_CACHE_MERGED_BLOCK_MAX_SLEEP_MS =
+      ConfigOptions.key("rss.server.merge.cache.merged.block.max.sleep.ms")
+          .longType()
+          .defaultValue(2000L)
+          .withDescription("When caching merged block, the maximum waiting event after failure to require memory");
+
+  public static final ConfigOption<Integer> SERVER_MERGE_MAX_OPEN_FILE =
+      ConfigOptions.key("rss.server.merge.max.open.file")
+          .intType()
+          .defaultValue(655350)
+          .withDescription("The maximum open file is used for merge.");
+
   public ShuffleServerConf() {}
 
   public ShuffleServerConf(String fileName) {

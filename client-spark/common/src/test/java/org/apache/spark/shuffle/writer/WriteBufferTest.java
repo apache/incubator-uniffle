@@ -17,6 +17,7 @@
 
 package org.apache.spark.shuffle.writer;
 
+import org.apache.uniffle.client.shuffle.writer.WrappedByteArrayOutputStream;
 import scala.reflect.ClassTag$;
 
 import org.apache.spark.SparkConf;

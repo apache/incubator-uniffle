@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.shuffle.writer;
+package org.apache.uniffle.client.shuffle.writer;
 
 import java.io.ByteArrayOutputStream;
 

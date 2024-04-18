@@ -29,6 +29,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
+import org.apache.uniffle.client.shuffle.writer.WrappedByteArrayOutputStream;
 import scala.reflect.ClassTag$;
 import scala.reflect.ManifestFactory$;
 

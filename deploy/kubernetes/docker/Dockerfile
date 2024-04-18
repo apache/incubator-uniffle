@@ -29,6 +29,13 @@ LABEL author=${AUTHOR}
 LABEL git-branch=${GIT_BRANCH}
 LABEL git-commit=${GIT_COMMIT}
 
+RUN echo "*	hard	nproc	65535" >> /etc/security/limits.conf && \
+    echo "*	soft	nproc	65535" >> /etc/security/limits.conf && \
+    echo "*	hard	nofile	6553500" >> /etc/security/limits.conf && \
+    echo "*	soft	nofile	6553500" >> /etc/security/limits.conf && \
+    echo "* hard    core    unlimited" >> /etc/security/limits.conf && \
+    echo "* soft    core    unlimited" >> /etc/security/limits.conf && \
+    echo "fs.nr_open=6553500" >> /etc/sysctl.conf
 RUN useradd -ms /bin/bash rssadmin
 RUN mkdir -p /data/rssadmin/
 RUN chown -R rssadmin:rssadmin /data

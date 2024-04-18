@@ -44,7 +44,7 @@ import org.apache.uniffle.storage.util.StorageType;
 public abstract class IntegrationTestBase extends HadoopTestBase {
 
   /** Should not be accessed directly, use `getNextRpcServerPort` instead */
-  private static final int SHUFFLE_SERVER_INITIAL_PORT = 20001;
+  protected static final int SHUFFLE_SERVER_INITIAL_PORT = 20001;
 
   /** Should not be accessed directly, use `getNextJettyServerPort` instead */
   private static final int JETTY_SERVER_INITIAL_PORT = 18080;

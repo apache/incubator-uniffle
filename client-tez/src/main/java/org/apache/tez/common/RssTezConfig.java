@@ -225,6 +225,15 @@ public class RssTezConfig {
   public static final String RSS_SHUFFLE_MODE = TEZ_RSS_CONFIG_PREFIX + "shuffle.mode";
   public static final String DEFAULT_RSS_SHUFFLE_MODE = "remote";
 
+  public static final String RSS_REMOTE_MERGE_ENABLE = TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_MERGE_ENABLE;
+  public static final boolean RSS_REMOTE_MERGE_ENABLE_DEFAULT = false;
+  public static final String RSS_MERGED_BLOCK_SZIE = TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_MERGED_BLOCK_SZIE;
+  public static final int RSS_MERGED_BLOCK_SZIE_DEFAULT = RssClientConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT;
+  public static final String RSS_MERGED_WRITE_MAX_RECORDS = TEZ_RSS_CONFIG_PREFIX + "rm.write.max.records";
+  public static final int RSS_MERGED_WRITE_MAX_RECORDS_DEFAULT = 10000;
+  public static final String RSS_MERGED_WRITE_MAX_RECORDS_PER_BUFFER = TEZ_RSS_CONFIG_PREFIX + "rm.write.max.records.per.buffer";
+  public static final int RSS_MERGED_WRITE_MAX_RECORDS_PER_BUFFER_DEFAULT = 5000;
+
   public static RssConf toRssConf(Configuration jobConf) {
     RssConf rssConf = new RssConf();
     for (Map.Entry<String, String> entry : jobConf) {

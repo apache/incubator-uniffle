@@ -238,16 +238,6 @@ public class SortWriteBufferManager<K, V> {
     buffers.remove(buffer.getPartitionId());
     buffer.sort();
     ShuffleBlockInfo block;
-    if (combinerRunner != null) {
-      try {
-        buffer = combineBuffer(buffer);
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Successfully finished combining.");
-        }
-      } catch (Exception e) {
-        LOG.error("Error occurred while combining in Map:", e);
-      }
-    }
     block = createShuffleBlock(buffer);
     buffer.clear();
     shuffleBlocks.add(block);

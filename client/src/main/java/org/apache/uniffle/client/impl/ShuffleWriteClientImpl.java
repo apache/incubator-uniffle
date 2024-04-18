@@ -38,6 +38,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.uniffle.client.request.RssReportUniqueBlocksRequest;
+import org.apache.uniffle.client.response.RssReportUniqueBlocksResponse;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -529,7 +531,11 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage,
       ShuffleDataDistributionType dataDistributionType,
-      int maxConcurrencyPerPartitionToWrite) {
+      int maxConcurrencyPerPartitionToWrite,
+      String keyClassName,
+      String valueClassName,
+      String comparatorClassName,
+      int mergedBlockSize) {
     String user = null;
     try {
       user = UserGroupInformation.getCurrentUser().getShortUserName();
@@ -545,7 +551,11 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             remoteStorage,
             user,
             dataDistributionType,
-            maxConcurrencyPerPartitionToWrite);
+            maxConcurrencyPerPartitionToWrite,
+            keyClassName,
+            valueClassName,
+            comparatorClassName,
+            mergedBlockSize);
     RssRegisterShuffleResponse response =
         getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 
@@ -763,6 +773,31 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
     }
     return blockIdCount;
+  }
+
+  @Override
+  public void reportUniqueBlocks(Set<ShuffleServerInfo> serverInfos, String appId, int shuffleId, int partitionId,
+                                 Roaring64NavigableMap expectedBlockIds) {
+    RssReportUniqueBlocksRequest request =
+        new RssReportUniqueBlocksRequest(appId, shuffleId, partitionId, expectedBlockIds);
+    boolean atLeastOneSucceeful = false;
+    for (ShuffleServerInfo ssi : serverInfos) {
+      RssReportUniqueBlocksResponse response = getShuffleServerClient(ssi).reportUniqueBlocks(request);
+      if (response.getStatusCode() == StatusCode.SUCCESS) {
+        atLeastOneSucceeful = true;
+        LOG.info(
+            "Report unique blocks to " + ssi + " for appId[" + appId + "], shuffleId[" + shuffleId +
+                "], partitionIds[" + partitionId + "] successfully");
+      } else {
+        LOG.warn(
+            "Report unique blocks to " + ssi + " for appId[" + appId + "], shuffleId[" + shuffleId +
+                "], partitionIds[" + partitionId + "] failed with " + response.getStatusCode());
+      }
+    }
+    if (!atLeastOneSucceeful) {
+      throw new RssFetchFailedException("Report Unique Blocks failed for appId[" + appId + "], shuffleId[" +
+          shuffleId + "], partitionIds[" + partitionId + "]");
+    }
   }
 
   @Override

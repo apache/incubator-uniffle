@@ -23,6 +23,8 @@ import java.util.Map;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.StorageType;
 import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.common.serializer.kryo.KryoSerializer;
+import org.apache.uniffle.common.serializer.writable.WritableSerializer;
 import org.apache.uniffle.common.util.RssUtils;
 
 public class RssBaseConf extends RssConf {
@@ -252,6 +254,33 @@ public class RssBaseConf extends RssConf {
           .intType()
           .defaultValue(16)
           .withDescription("start server service max retry");
+
+  /* Serialization */
+  public static final ConfigOption<Boolean> RSS_KRYO_REGISTRATION_REQUIRED =
+      ConfigOptions.key("rss.kryo.registrationRequired")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Whether registration is required.");
+  public static final ConfigOption<Boolean> RSS_KRYO_REFERENCE_TRACKING =
+      ConfigOptions.key("rss.kryo.referenceTracking")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription("Whether to track references to the same object when serializing data with Kryo.");
+  public static final ConfigOption<Boolean> RSS_KRYO_UNSAFE =
+      ConfigOptions.key("rss.kryo.unsafe")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription("Whether to use unsafe based Kryo serializer.");
+  public static final ConfigOption<Boolean> RSS_USE_POOL =
+      ConfigOptions.key("rss.kryo.pool")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription("Whether to use kryo pool.");
+  public static final ConfigOption<String> RSS_IO_SERIALIZATIONS =
+      ConfigOptions.key("rss.io.serializations")
+          .stringType()
+          .defaultValue(WritableSerializer.class.getName() + "," + KryoSerializer.class.getName())
+          .withDescription("Whether to use kryo pool.");
 
   public boolean loadConfFromFile(String fileName, List<ConfigOption<Object>> configOptions) {
     Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);

@@ -24,8 +24,10 @@ import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleIndexRequest;
 import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
 import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
+import org.apache.uniffle.client.request.RssGetSortedShuffleDataRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
+import org.apache.uniffle.client.request.RssReportUniqueBlocksRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.request.RssUnregisterShuffleByAppIdRequest;
@@ -36,8 +38,10 @@ import org.apache.uniffle.client.response.RssGetInMemoryShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleIndexResponse;
 import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
+import org.apache.uniffle.client.response.RssGetSortedShuffleDataResponse;
 import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
+import org.apache.uniffle.client.response.RssReportUniqueBlocksResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleByAppIdResponse;
@@ -73,6 +77,10 @@ public interface ShuffleServerClient {
 
   RssGetInMemoryShuffleDataResponse getInMemoryShuffleData(
       RssGetInMemoryShuffleDataRequest request);
+
+  RssReportUniqueBlocksResponse reportUniqueBlocks(RssReportUniqueBlocksRequest request);
+
+  RssGetSortedShuffleDataResponse getSortedShuffleData(RssGetSortedShuffleDataRequest request);
 
   void close();
 

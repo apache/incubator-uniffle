@@ -99,6 +99,8 @@
     <system-rules.version>1.19.0</system-rules.version>
     <zstd-jni.version>1.5.2-3</zstd-jni.version>
     <snappy-java.version>1.1.8.4</snappy-java.version>
+    <kryo.version>4.0.2</kryo.version>
+    <tez.version>0.9.2</tez.version>
     <test.redirectToFile>true</test.redirectToFile>
     <trimStackTrace>false</trimStackTrace>
     <skipUTs>${skipTests}</skipUTs>
@@ -773,6 +775,17 @@
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-core</artifactId>
         <version>${log4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.esotericsoftware</groupId>
+        <artifactId>kryo-shaded</artifactId>
+        <version>${kryo.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.objenesis</groupId>
+            <artifactId>objenesis</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <!-- end -->
     </dependencies>
@@ -2059,9 +2072,6 @@
         <module>client-tez</module>
         <module>integration-test/tez</module>
       </modules>
-      <properties>
-        <tez.version>0.9.1</tez.version>
-      </properties>
       <dependencyManagement>
         <dependencies>
           <dependency>

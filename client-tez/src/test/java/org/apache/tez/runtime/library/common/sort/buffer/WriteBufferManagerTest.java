@@ -587,7 +587,11 @@ public class WriteBufferManagerTest {
         List<PartitionRange> partitionRanges,
         RemoteStorageInfo remoteStorage,
         ShuffleDataDistributionType dataDistributionType,
-        int maxConcurrencyPerPartitionToWrite) {}
+        int maxConcurrencyPerPartitionToWrite,
+        String keyClassName,
+        String valueClassName,
+        String comparatorClassName,
+        int mergedBlockSize) {}
 
     @Override
     public boolean sendCommit(
@@ -634,6 +638,10 @@ public class WriteBufferManagerTest {
                 });
       }
     }
+
+    @Override
+    public void reportUniqueBlocks(Set<ShuffleServerInfo> serverInfos, String appId, int shuffleId, int partitionId,
+                                   Roaring64NavigableMap expectedTaskIds) {}
 
     @Override
     public ShuffleAssignmentsInfo getShuffleAssignments(

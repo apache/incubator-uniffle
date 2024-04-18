@@ -382,6 +382,33 @@ public class RssSparkConfig {
                           + "sequence number, the partition id and the task attempt id."))
           .createWithDefault(1048576);
 
+  public static final ConfigEntry<Boolean> RSS_REMOTE_MERGE_ENABLE =
+      createBooleanBuilder(
+          new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_MERGE_ENABLE)
+              .doc("Whether to enable remote merge"))
+          .createWithDefault(false);
+
+  public static final ConfigEntry<Integer> RSS_MERGED_BLOCK_SZIE =
+      createIntegerBuilder(
+          new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_MERGED_BLOCK_SZIE)
+              .internal()
+              .doc("The merged block size."))
+          .createWithDefault(RssClientConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT);
+
+  public static final ConfigEntry<Integer> RSS_MERGED_WRITE_MAX_RECORDS_PER_BUFFER =
+      createIntegerBuilder(
+          new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + "rm.write.max.records.per.buffer")
+              .internal()
+              .doc("max records per buffer for rm write manager."))
+          .createWithDefault(5000);
+
+  public static final ConfigEntry<Integer> RSS_MERGED_WRITE_MAX_RECORDS =
+      createIntegerBuilder(
+          new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + "rm.write.max.records")
+              .internal()
+              .doc("max records for rm write manager."))
+          .createWithDefault(10000);
+
   // spark2 doesn't have this key defined
   public static final String SPARK_SHUFFLE_COMPRESS_KEY = "spark.shuffle.compress";
 

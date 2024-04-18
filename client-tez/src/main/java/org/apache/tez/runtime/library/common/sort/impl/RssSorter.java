@@ -17,6 +17,11 @@
 
 package org.apache.tez.runtime.library.common.sort.impl;
 
+import static org.apache.tez.common.RssTezConfig.RSS_MERGED_WRITE_MAX_RECORDS;
+import static org.apache.tez.common.RssTezConfig.RSS_MERGED_WRITE_MAX_RECORDS_DEFAULT;
+import static org.apache.tez.common.RssTezConfig.RSS_MERGED_WRITE_MAX_RECORDS_PER_BUFFER;
+import static org.apache.tez.common.RssTezConfig.RSS_MERGED_WRITE_MAX_RECORDS_PER_BUFFER_DEFAULT;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +35,8 @@ import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.runtime.api.OutputContext;
+import org.apache.tez.runtime.library.common.ConfigUtils;
+import org.apache.tez.runtime.library.common.sort.buffer.RMWriteBufferManager;
 import org.apache.tez.runtime.library.common.sort.buffer.WriteBufferManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +52,8 @@ public class RssSorter extends ExternalSorter {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssSorter.class);
   private WriteBufferManager bufferManager;
+  private boolean isRemoteMergeEnable;
+  private RMWriteBufferManager rmBufferManager;
   private Set<Long> successBlockIds = Sets.newConcurrentHashSet();
   private Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
@@ -139,47 +148,88 @@ public class RssSorter extends ExternalSorter {
 
     LOG.info("applicationAttemptId is {}", applicationAttemptId.toString());
 
-    bufferManager =
-        new WriteBufferManager(
-            tezTaskAttemptID,
-            (long) (ByteUnit.MiB.toBytes(sortmb) * sortThreshold),
-            applicationAttemptId.toString(),
-            taskAttemptId,
-            successBlockIds,
-            failedBlockIds,
-            RssTezUtils.createShuffleClient(conf),
-            comparator,
-            maxSegmentSize,
-            keySerializer,
-            valSerializer,
-            maxBufferSize,
-            memoryThreshold,
-            sendThreadNum,
-            sendThreshold,
-            batch,
-            new RssConf(),
-            partitionToServers,
-            numMaps,
-            isMemoryShuffleEnabled(storageType),
-            sendCheckInterval,
-            sendCheckTimeout,
-            bitmapSplitNum,
-            shuffleId,
-            true,
-            mapOutputByteCounter,
-            mapOutputRecordCounter);
-    LOG.info("Initialized WriteBufferManager.");
+    this.isRemoteMergeEnable =
+        conf.getBoolean(RssTezConfig.RSS_REMOTE_MERGE_ENABLE, RssTezConfig.RSS_REMOTE_MERGE_ENABLE_DEFAULT);
+    if (isRemoteMergeEnable) {
+      rmBufferManager = new RMWriteBufferManager(
+          (long) (ByteUnit.MiB.toBytes(sortmb) * sortThreshold),
+          taskAttemptId,
+          shuffleId,
+          batch,
+          comparator,
+          memoryThreshold,
+          applicationAttemptId.toString(),
+          RssTezUtils.createShuffleClient(conf),
+          sendCheckInterval,
+          sendCheckTimeout,
+          partitionToServers,
+          successBlockIds,
+          failedBlockIds,
+          bitmapSplitNum,
+          numMaps,
+          isMemoryShuffleEnabled(storageType),
+          sendThreadNum,
+          sendThreshold,
+          new RssConf(),
+          ConfigUtils.getIntermediateOutputKeyClass(this.conf),
+          ConfigUtils.getIntermediateOutputValueClass(this.conf),
+          mapOutputByteCounter,
+          mapOutputRecordCounter,
+          maxBufferSize,
+          this.conf.getInt(RSS_MERGED_WRITE_MAX_RECORDS_PER_BUFFER, RSS_MERGED_WRITE_MAX_RECORDS_PER_BUFFER_DEFAULT),
+          this.conf.getInt(RSS_MERGED_WRITE_MAX_RECORDS, RSS_MERGED_WRITE_MAX_RECORDS_DEFAULT));
+      LOG.info("Initialized RMWriteBufferManager.");
+    } else {
+      bufferManager =
+          new WriteBufferManager(
+              tezTaskAttemptID,
+              (long) (ByteUnit.MiB.toBytes(sortmb) * sortThreshold),
+              applicationAttemptId.toString(),
+              taskAttemptId,
+              successBlockIds,
+              failedBlockIds,
+              RssTezUtils.createShuffleClient(conf),
+              comparator,
+              maxSegmentSize,
+              keySerializer,
+              valSerializer,
+              maxBufferSize,
+              memoryThreshold,
+              sendThreadNum,
+              sendThreshold,
+              batch,
+              new RssConf(),
+              partitionToServers,
+              numMaps,
+              isMemoryShuffleEnabled(storageType),
+              sendCheckInterval,
+              sendCheckTimeout,
+              bitmapSplitNum,
+              shuffleId,
+              true,
+              mapOutputByteCounter,
+              mapOutputRecordCounter);
+      LOG.info("Initialized WriteBufferManager.");
+    }
   }
 
   @Override
   public void flush() throws IOException {
-    bufferManager.waitSendFinished();
+    if (isRemoteMergeEnable) {
+      rmBufferManager.waitSendFinished();
+    } else {
+      bufferManager.waitSendFinished();
+    }
   }
 
   @Override
   public final void close() throws IOException {
     super.close();
-    bufferManager.freeAllResources();
+    if (isRemoteMergeEnable) {
+      rmBufferManager.freeAllResources();
+    } else {
+      bufferManager.freeAllResources();
+    }
   }
 
   @Override
@@ -211,7 +261,11 @@ public class RssSorter extends ExternalSorter {
       throw new IOException("Illegal partition for " + key + " (" + partition + ")");
     }
 
-    bufferManager.addRecord(partition, key, value);
+    if (isRemoteMergeEnable) {
+      rmBufferManager.addRecord(partition, key, value);
+    } else {
+      bufferManager.addRecord(partition, key, value);
+    }
     numRecordsPerPartition[partition]++;
   }
 

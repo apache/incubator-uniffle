@@ -19,6 +19,7 @@ package org.apache.spark.shuffle;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import org.apache.spark.shuffle.reader.RMRssShuffleReader;
 import scala.Tuple2;
 import scala.Tuple3;
 import scala.collection.Iterator;
@@ -118,6 +120,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private String uuid;
   private Set<String> failedTaskIds = Sets.newConcurrentHashSet();
   private DataPusher dataPusher;
+  private boolean remoteMergeEnable;
 
   private final Map<Integer, Integer> shuffleIdToPartitionNum = JavaUtils.newConcurrentMap();
   private final Map<Integer, Integer> shuffleIdToNumMapTasks = JavaUtils.newConcurrentMap();
@@ -146,6 +149,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private Map<String, Boolean> serverAssignedInfos;
 
   private Map<String, ShuffleServerInfo> reassignedFaultyServers;
+
+  private Map<Integer, ShuffleDependency> dependencies = new HashMap();
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
@@ -272,6 +277,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             failedTaskIds,
             poolSize,
             keepAliveTime);
+    this.remoteMergeEnable = sparkConf.get(RssSparkConfig.RSS_REMOTE_MERGE_ENABLE);
     this.shuffleIdToShuffleHandleInfo = JavaUtils.newConcurrentMap();
     this.failuresShuffleServerIds = Sets.newHashSet();
     this.serverAssignedInfos = JavaUtils.newConcurrentMap();
@@ -426,6 +432,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           shuffleId, id.get(), dependency.rdd().getNumPartitions(), dependency, hdlInfoBd);
     }
 
+    dependencies.put(shuffleId, dependency);
     String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
     RemoteStorageInfo defaultRemoteStorage = getDefaultRemoteStorageInfo(sparkConf);
     RemoteStorageInfo remoteStorage =
@@ -458,8 +465,18 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                         assignmentTags,
                         requiredShuffleServerNumber,
                         estimateTaskConcurrency);
-                registerShuffleServers(
-                    id.get(), shuffleId, response.getServerToPartitionRanges(), remoteStorage);
+                String valueClassName = dependency.mapSideCombine() ?
+                    dependency.combinerClassName().getOrElse(() -> {
+                      throw new RssException(
+                          "combine class name should not be null when map side combine is enable");
+                    }) : dependency.valueClassName();
+                registerShuffleServers(id.get(),
+                    shuffleId,
+                    response.getServerToPartitionRanges(),
+                    remoteStorage,
+                    dependency.keyClassName(),
+                    valueClassName,
+                    dependency.keyOrdering().map(o -> o.getClass().getName()).getOrElse(() -> null));
                 return response.getPartitionToServers();
               },
               retryInterval,
@@ -703,6 +720,20 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     Configuration readerHadoopConf =
         RssSparkShuffleUtils.getRemoteStorageHadoopConf(sparkConf, shuffleRemoteStorageInfo);
 
+    if (remoteMergeEnable) {
+      return new RMRssShuffleReader<>(
+          startPartition,
+          endPartition,
+          context,
+          rssShuffleHandle,
+          shuffleWriteClient,
+          allPartitionToServers,
+          RssUtils.generatePartitionToBitmap(blockIdBitmap, startPartition, endPartition, blockIdLayout),
+          taskIdBitmap,
+          readMetrics,
+          RssSparkConfig.toRssConf(sparkConf));
+    }
+
     return new RssShuffleReader<K, C>(
         startPartition,
         endPartition,
@@ -896,7 +927,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       String appId,
       int shuffleId,
       Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges,
-      RemoteStorageInfo remoteStorage) {
+      RemoteStorageInfo remoteStorage,
+      String keyClass,
+      String valueClass,
+      String comparatorClass) {
     if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
       return;
     }
@@ -914,7 +948,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                   entry.getValue(),
                   remoteStorage,
                   dataDistributionType,
-                  maxConcurrencyPerPartitionToWrite);
+                  maxConcurrencyPerPartitionToWrite,
+                  remoteMergeEnable ? keyClass : null,
+                  remoteMergeEnable ? valueClass : null,
+                  remoteMergeEnable ? comparatorClass: null,
+                  sparkConf.get(RssSparkConfig.RSS_MERGED_BLOCK_SZIE));
             });
     LOG.info(
         "Finish register shuffleId["
@@ -1242,6 +1280,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     try {
       return RetryUtils.retry(
           () -> {
+            ShuffleDependency dependency = dependencies.get(shuffleId);
+            String valueClassName = dependency.mapSideCombine() ?
+                (String) dependency.combinerClassName().getOrElse(() -> {
+                  throw new RssException(
+                      "combine class name should not be null when map side combine is enable");
+                }) : dependency.valueClassName();
             ShuffleAssignmentsInfo response =
                 shuffleWriteClient.getShuffleAssignments(
                     id.get(),
@@ -1253,7 +1297,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     estimateTaskConcurrency,
                     faultyServerIds);
             registerShuffleServers(
-                id.get(), shuffleId, response.getServerToPartitionRanges(), getRemoteStorageInfo());
+                id.get(), shuffleId, response.getServerToPartitionRanges(), getRemoteStorageInfo(),
+                dependency.keyClassName(),
+                valueClassName,
+                (String) dependency.keyOrdering().map(o -> o.getClass().getName()).getOrElse(() -> null));
             return response.getPartitionToServers();
           },
           retryInterval,

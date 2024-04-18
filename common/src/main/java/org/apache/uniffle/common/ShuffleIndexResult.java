@@ -28,6 +28,7 @@ import org.apache.uniffle.common.util.ByteBufUtils;
 public class ShuffleIndexResult {
   private final ManagedBuffer buffer;
   private long dataFileLen;
+  private String dataFileName;
 
   public ShuffleIndexResult() {
     this(ByteBuffer.wrap(new byte[0]), -1);
@@ -43,9 +44,10 @@ public class ShuffleIndexResult {
     this.dataFileLen = dataFileLen;
   }
 
-  public ShuffleIndexResult(ManagedBuffer buffer, long dataFileLen) {
+  public ShuffleIndexResult(ManagedBuffer buffer, long dataFileLen, String dataFileName) {
     this.buffer = buffer;
     this.dataFileLen = dataFileLen;
+    this.dataFileName = dataFileName;
   }
 
   public byte[] getData() {
@@ -78,5 +80,9 @@ public class ShuffleIndexResult {
 
   public ManagedBuffer getManagedBuffer() {
     return buffer;
+  }
+
+  public String getDataFileName() {
+    return dataFileName;
   }
 }

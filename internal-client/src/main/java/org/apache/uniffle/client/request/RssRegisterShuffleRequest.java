@@ -35,6 +35,35 @@ public class RssRegisterShuffleRequest {
   private String user;
   private ShuffleDataDistributionType dataDistributionType;
   private int maxConcurrencyPerPartitionToWrite;
+  private String keyClassName;
+  private String valueClassName;
+  private String comparatorClassName;
+  private int mergedBlockSize;
+
+  public RssRegisterShuffleRequest(
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorageInfo,
+      String user,
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite,
+      String keyClassName,
+      String valueClassName,
+      String comparatorClassName,
+      int mergedBlockSize) {
+    this.appId = appId;
+    this.shuffleId = shuffleId;
+    this.partitionRanges = partitionRanges;
+    this.remoteStorageInfo = remoteStorageInfo;
+    this.user = user;
+    this.dataDistributionType = dataDistributionType;
+    this.maxConcurrencyPerPartitionToWrite = maxConcurrencyPerPartitionToWrite;
+    this.keyClassName = keyClassName;
+    this.valueClassName = valueClassName;
+    this.comparatorClassName = comparatorClassName;
+    this.mergedBlockSize = mergedBlockSize;
+  }
 
   public RssRegisterShuffleRequest(
       String appId,
@@ -44,13 +73,8 @@ public class RssRegisterShuffleRequest {
       String user,
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite) {
-    this.appId = appId;
-    this.shuffleId = shuffleId;
-    this.partitionRanges = partitionRanges;
-    this.remoteStorageInfo = remoteStorageInfo;
-    this.user = user;
-    this.dataDistributionType = dataDistributionType;
-    this.maxConcurrencyPerPartitionToWrite = maxConcurrencyPerPartitionToWrite;
+    this(appId, shuffleId, partitionRanges, remoteStorageInfo, user, dataDistributionType,
+        maxConcurrencyPerPartitionToWrite, null, null, null, -1);
   }
 
   public RssRegisterShuffleRequest(
@@ -108,5 +132,21 @@ public class RssRegisterShuffleRequest {
 
   public int getMaxConcurrencyPerPartitionToWrite() {
     return maxConcurrencyPerPartitionToWrite;
+  }
+
+  public String getKeyClassName() {
+    return keyClassName;
+  }
+
+  public String getValueClassName() {
+    return valueClassName;
+  }
+
+  public String getComparatorClassName() {
+    return comparatorClassName;
+  }
+
+  public int getMergedBlockSize() {
+    return mergedBlockSize;
   }
 }

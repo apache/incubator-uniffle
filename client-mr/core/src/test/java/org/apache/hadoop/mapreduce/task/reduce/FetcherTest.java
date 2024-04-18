@@ -503,7 +503,11 @@ public class FetcherTest {
         List<PartitionRange> partitionRanges,
         RemoteStorageInfo storageType,
         ShuffleDataDistributionType distributionType,
-        int maxConcurrencyPerPartitionToWrite) {}
+        int maxConcurrencyPerPartitionToWrite,
+        String keyClassName,
+        String valueClassName,
+        String comparatorClassName,
+        int mergedBlockSize) {}
 
     @Override
     public boolean sendCommit(
@@ -531,6 +535,10 @@ public class FetcherTest {
         int shuffleId,
         long taskAttemptId,
         int bitmapNum) {}
+
+    @Override
+    public void reportUniqueBlocks(Set<ShuffleServerInfo> serverInfos, String appId, int shuffleId, int partitionId,
+                                   Roaring64NavigableMap expectedTaskIds) {}
 
     @Override
     public ShuffleAssignmentsInfo getShuffleAssignments(

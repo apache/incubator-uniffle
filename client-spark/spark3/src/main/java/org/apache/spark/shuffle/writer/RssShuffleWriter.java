@@ -17,6 +17,8 @@
 
 package org.apache.spark.shuffle.writer;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_REMOTE_MERGE_ENABLE;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +37,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.ClassUtils;
+import org.apache.spark.Aggregator;
+import org.apache.spark.shuffle.SparkCombiner;
+import org.apache.uniffle.client.shuffle.writer.Combiner;
 import scala.Function1;
 import scala.Option;
 import scala.Product2;
@@ -93,6 +99,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final String appId;
   private final int shuffleId;
   private WriteBufferManager bufferManager;
+  private boolean isRemoteMergeEnable;
+  private RMWriteBufferManager<K, V, C> rmBufferManager;
   private final String taskId;
   private final int numMaps;
   private final ShuffleDependency<K, V, C> shuffleDependency;
@@ -222,19 +230,65 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleHandleInfo,
         context);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
-    final WriteBufferManager bufferManager =
-        new WriteBufferManager(
-            shuffleId,
-            taskId,
-            taskAttemptId,
-            bufferOptions,
-            rssHandle.getDependency().serializer(),
-            shuffleHandleInfo.getPartitionToServers(),
-            context.taskMemoryManager(),
-            shuffleWriteMetrics,
-            RssSparkConfig.toRssConf(sparkConf),
-            this::processShuffleBlockInfos);
-    this.bufferManager = bufferManager;
+    this.isRemoteMergeEnable = sparkConf.get(RSS_REMOTE_MERGE_ENABLE);
+    if (this.isRemoteMergeEnable) {
+      try {
+        RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+        Class combineClass = null;
+        if (shuffleDependency.mapSideCombine()) {
+          String combineClassName = shuffleDependency.combinerClassName().getOrElse(() -> null);
+          if (combineClassName != null) {
+            combineClass = ClassUtils.getClass(combineClassName);
+          }
+        }
+        Combiner combiner = null;
+        boolean mapSideCombine = shuffleDependency.mapSideCombine();
+        if (mapSideCombine) {
+          Aggregator aggregator = shuffleDependency.aggregator().getOrElse(() -> null);
+          if (aggregator != null) {
+            combiner = new SparkCombiner(aggregator);
+          } else {
+            throw new RssException("When map side combine is enable, combiner should not be null");
+          }
+        }
+
+        Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc = this::processShuffleBlockInfos;
+        this.rmBufferManager =
+            new RMWriteBufferManager(
+                shuffleId,
+                taskId,
+                taskAttemptId,
+                bufferOptions,
+                rssHandle.getPartitionToServers(),
+                context.taskMemoryManager(),
+                rssConf,
+                shuffleDependency.keyOrdering().getOrElse(() -> null),
+                combiner,
+                ClassUtils.getClass(shuffleDependency.keyClassName()),
+                ClassUtils.getClass(shuffleDependency.valueClassName()),
+                combineClass,
+                shuffleDependency.mapSideCombine(),
+                sparkConf.get(RssSparkConfig.RSS_MERGED_WRITE_MAX_RECORDS_PER_BUFFER),
+                sparkConf.get(RssSparkConfig.RSS_MERGED_WRITE_MAX_RECORDS),
+                spillFunc);
+      } catch (ClassNotFoundException e) {
+        throw new RssException(e);
+      }
+    } else {
+      final WriteBufferManager bufferManager =
+          new WriteBufferManager(
+              shuffleId,
+              taskId,
+              taskAttemptId,
+              bufferOptions,
+              rssHandle.getDependency().serializer(),
+              rssHandle.getPartitionToServers(),
+              context.taskMemoryManager(),
+              shuffleWriteMetrics,
+              RssSparkConfig.toRssConf(sparkConf),
+              this::processShuffleBlockInfos);
+      this.bufferManager = bufferManager;
+    }
   }
 
   private boolean isMemoryShuffleEnabled(String storageType) {
@@ -271,18 +325,26 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       Product2<K, V> record = records.next();
       K key = record._1();
       int partition = getPartition(key);
-      if (isCombine) {
-        Object c = createCombiner.apply(record._2());
-        shuffleBlockInfos = bufferManager.addRecord(partition, record._1(), c);
+      if (isRemoteMergeEnable) {
+        shuffleBlockInfos = rmBufferManager.addRecord(partition, record._1(), record._2());
       } else {
-        shuffleBlockInfos = bufferManager.addRecord(partition, record._1(), record._2());
+        if (isCombine) {
+          Object c = createCombiner.apply(record._2());
+          shuffleBlockInfos = bufferManager.addRecord(partition, record._1(), c);
+        } else {
+          shuffleBlockInfos = bufferManager.addRecord(partition, record._1(), record._2());
+        }
       }
       if (shuffleBlockInfos != null && !shuffleBlockInfos.isEmpty()) {
         processShuffleBlockInfos(shuffleBlockInfos);
       }
     }
     final long start = System.currentTimeMillis();
-    shuffleBlockInfos = bufferManager.clear();
+    if (isRemoteMergeEnable) {
+      shuffleBlockInfos = rmBufferManager.clear();
+    } else {
+      shuffleBlockInfos = bufferManager.clear();
+    }
     if (shuffleBlockInfos != null && !shuffleBlockInfos.isEmpty()) {
       processShuffleBlockInfos(shuffleBlockInfos);
     }
@@ -294,7 +356,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     if (!isMemoryShuffleEnabled) {
       sendCommit();
     }
-    long writeDurationMs = bufferManager.getWriteTime() + (System.currentTimeMillis() - start);
+    long writeDurationMs = isRemoteMergeEnable ? 0: bufferManager.getWriteTime() + (System.currentTimeMillis() - start);
     shuffleWriteMetrics.incWriteTime(TimeUnit.MILLISECONDS.toNanos(writeDurationMs));
     LOG.info(
         "Finish write shuffle for appId["
@@ -310,11 +372,11 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             + "], commit["
             + (System.currentTimeMillis() - commitStartTs)
             + "], "
-            + bufferManager.getManagerCostInfo());
+            + (isRemoteMergeEnable ? "" : bufferManager.getManagerCostInfo()));
   }
 
   private void checkSentRecordCount(long recordCount) {
-    if (recordCount != bufferManager.getRecordCount()) {
+    if (!isRemoteMergeEnable && recordCount != bufferManager.getRecordCount()) {
       String errorMsg =
           "Potential record loss may have occurred while preparing to send blocks for task["
               + taskId
@@ -358,15 +420,28 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   protected List<CompletableFuture<Long>> postBlockEvent(
       List<ShuffleBlockInfo> shuffleBlockInfoList) {
     List<CompletableFuture<Long>> futures = new ArrayList<>();
-    for (AddBlockEvent event : bufferManager.buildBlockEvents(shuffleBlockInfoList)) {
-      event.addCallback(
-          () -> {
-            boolean ret = finishEventQueue.add(new Object());
-            if (!ret) {
-              LOG.error("Add event " + event + " to finishEventQueue fail");
-            }
-          });
-      futures.add(shuffleManager.sendData(event));
+    if (isRemoteMergeEnable) {
+      for (AddBlockEvent event : rmBufferManager.buildBlockEvents(shuffleBlockInfoList)) {
+        event.addCallback(
+            () -> {
+              boolean ret = finishEventQueue.add(new Object());
+              if (!ret) {
+                LOG.error("Add event " + event + " to finishEventQueue fail");
+              }
+            });
+        futures.add(shuffleManager.sendData(event));
+      }
+    } else {
+      for (AddBlockEvent event : bufferManager.buildBlockEvents(shuffleBlockInfoList)) {
+        event.addCallback(
+            () -> {
+              boolean ret = finishEventQueue.add(new Object());
+              if (!ret) {
+                LOG.error("Add event " + event + " to finishEventQueue fail");
+              }
+            });
+        futures.add(shuffleManager.sendData(event));
+      }
     }
     return futures;
   }
@@ -606,8 +681,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       }
     } finally {
       // free all memory & metadata, or memory leak happen in executor
-      if (bufferManager != null) {
-        bufferManager.freeAllMemory();
+      if (!isRemoteMergeEnable) {
+        if (bufferManager != null) {
+          bufferManager.freeAllMemory();
+        }
       }
       if (shuffleManager != null) {
         shuffleManager.clearTaskMeta(taskId);

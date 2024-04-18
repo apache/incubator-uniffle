@@ -370,7 +370,11 @@ public class QuorumTest extends ShuffleReadWriteBase {
           Lists.newArrayList(new PartitionRange(0, 0)),
           new RemoteStorageInfo(""),
           ShuffleDataDistributionType.NORMAL,
-          1);
+          1,
+          null,
+          null,
+          null,
+          -1);
     }
   }
 

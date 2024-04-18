@@ -43,6 +43,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tez.common.GetShuffleServerRequest;
 import org.apache.tez.common.GetShuffleServerResponse;
+import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezCommonUtils;
 import org.apache.tez.common.TezRemoteShuffleUmbilicalProtocol;
@@ -59,6 +60,7 @@ import org.apache.tez.runtime.api.OutputContext;
 import org.apache.tez.runtime.api.Writer;
 import org.apache.tez.runtime.library.api.KeyValuesWriter;
 import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
+import org.apache.tez.runtime.library.common.ConfigUtils;
 import org.apache.tez.runtime.library.common.MemoryUpdateCallbackHandler;
 import org.apache.tez.runtime.library.common.shuffle.ShuffleUtils;
 import org.apache.tez.runtime.library.common.sort.impl.ExternalSorter;
@@ -170,9 +172,15 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
     assert destinationVertexId != -1;
     this.shuffleId =
         RssTezUtils.computeShuffleId(tezDAGID.getId(), sourceVertexId, destinationVertexId);
-    GetShuffleServerRequest request =
-        new GetShuffleServerRequest(
-            this.taskAttemptId, this.mapNum, this.numOutputs, this.shuffleId);
+    String keyClassName = conf.get(TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS, "");
+    String valueClassName = conf.get(TezRuntimeConfiguration.TEZ_RUNTIME_VALUE_CLASS, "");
+    String comparatorClassName = ConfigUtils.getIntermediateOutputKeyComparator(this.conf).getClass().getName();
+    boolean remoteMergeEnable =
+        conf.getBoolean(RssTezConfig.RSS_REMOTE_MERGE_ENABLE, RssTezConfig.RSS_REMOTE_MERGE_ENABLE_DEFAULT);
+    GetShuffleServerRequest request = remoteMergeEnable ?
+        new GetShuffleServerRequest(this.taskAttemptId, this.mapNum, this.numOutputs, this.shuffleId, keyClassName,
+            valueClassName, comparatorClassName) :
+        new GetShuffleServerRequest(this.taskAttemptId, this.mapNum, this.numOutputs, this.shuffleId);
     GetShuffleServerResponse response = umbilical.getShuffleAssignments(request);
     this.partitionToServers =
         response

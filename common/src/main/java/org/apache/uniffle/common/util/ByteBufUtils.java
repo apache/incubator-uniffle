@@ -93,7 +93,7 @@ public class ByteBufUtils {
   }
 
   public static ByteBuf byteStringToByteBuf(ByteString bytes) {
-    final ByteBuffer byteBuffer = bytes.asReadOnlyByteBuffer();
+    final ByteBuffer byteBuffer = ByteBuffer.wrap(bytes.toByteArray());
     return Unpooled.wrappedBuffer(byteBuffer);
   }
 }

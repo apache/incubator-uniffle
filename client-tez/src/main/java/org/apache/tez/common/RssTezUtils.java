@@ -32,6 +32,7 @@ import org.apache.tez.runtime.library.input.ConcatenatedMergedKeyValuesInput;
 import org.apache.tez.runtime.library.input.OrderedGroupedInputLegacy;
 import org.apache.tez.runtime.library.input.OrderedGroupedKVInput;
 import org.apache.tez.runtime.library.input.OrderedGroupedMergedKVInput;
+import org.apache.tez.runtime.library.input.RMRssOrderedGroupedKVInput;
 import org.apache.tez.runtime.library.input.RssConcatenatedMergedKeyValueInput;
 import org.apache.tez.runtime.library.input.RssConcatenatedMergedKeyValuesInput;
 import org.apache.tez.runtime.library.input.RssOrderedGroupedInputLegacy;
@@ -124,7 +125,8 @@ public class RssTezUtils {
                     .replicaRead(replicaRead)
                     .replicaSkipEnabled(replicaSkipEnabled)
                     .dataTransferPoolSize(dataTransferPoolSize)
-                    .dataCommitPoolSize(dataCommitPoolSize));
+                    .dataCommitPoolSize(dataCommitPoolSize)
+                    .rssConf(RssTezConfig.toRssConf(conf)));
     return client;
   }
 
@@ -411,13 +413,12 @@ public class RssTezUtils {
     }
   }
 
-  public static String replaceRssInputClassName(String className) {
+  public static String replaceRssInputClassName(String className, boolean isRemoteMergeEnable) {
     if (className.equals(OrderedGroupedKVInput.class.getName())) {
-      LOG.info(
-          "Input class name will transient from {} to {}",
-          className,
-          RssOrderedGroupedKVInput.class.getName());
-      return RssOrderedGroupedKVInput.class.getName();
+      String orderedInputClasName = isRemoteMergeEnable ? RMRssOrderedGroupedKVInput.class.getName() :
+          RssOrderedGroupedKVInput.class.getName();
+      LOG.info("Input class name will transient from {} to {}", className, orderedInputClasName);
+      return orderedInputClasName;
     } else if (className.equals(OrderedGroupedMergedKVInput.class.getName())) {
       LOG.info(
           "Input class name will transient from {} to {}",
