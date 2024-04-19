@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.shuffle.manager;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,7 +29,7 @@ import org.apache.uniffle.common.rpc.ServerType;
 
 public class ShuffleManagerServerFactoryTest {
   private static Stream<Arguments> shuffleManagerServerTypeProvider() {
-    return Stream.of(Arguments.of(ServerType.GRPC_NETTY), Arguments.of(ServerType.GRPC));
+    return Arrays.stream(ServerType.values()).map(Arguments::of);
   }
 
   @ParameterizedTest
