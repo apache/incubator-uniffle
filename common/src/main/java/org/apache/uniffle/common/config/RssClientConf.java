@@ -193,8 +193,7 @@ public class RssClientConf {
       ConfigOptions.key("rss.client.type")
           .enumType(ClientType.class)
           .defaultValue(ClientType.GRPC)
-          .withDescription(
-              "Supports GRPC_NETTY, GRPC. The default value is GRPC. But we recommend using GRPC_NETTY to enable Netty on the client side for better stability and performance.");
+          .withDescription("Supports GRPC, GRPC_NETTY");
 
   public static final ConfigOption<Boolean> RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED =
       ConfigOptions.key("rss.client.remote.storage.useLocalConfAsDefault")
