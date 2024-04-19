@@ -221,17 +221,17 @@ public class RssShuffleWriterTest {
                     ShuffleServerInfo replacement1 = new ShuffleServerInfo("id10", "0.0.0.10", 100);
                     shuffleHandleInfo.updateAssignment(
                         Sets.newHashSet(0, 1, 2), "id1", Sets.newHashSet(replacement1));
-                    writer.addReassignment(shuffleHandleInfo, "id1");
+                    writer.updateAssignmentAndMarkFaultyServer(shuffleHandleInfo, "id1");
                   } else if (serverId.equals("id10")) {
                     ShuffleServerInfo replacement2 = new ShuffleServerInfo("id11", "0.0.0.10", 100);
                     shuffleHandleInfo.updateAssignment(
                         Sets.newHashSet(0, 1, 2), "id10", Sets.newHashSet(replacement2));
-                    writer.addReassignment(shuffleHandleInfo, "id10");
+                    writer.updateAssignmentAndMarkFaultyServer(shuffleHandleInfo, "id10");
                   } else if (serverId.equals("id11")) {
                     ShuffleServerInfo replacement3 = new ShuffleServerInfo("id12", "0.0.0.10", 100);
                     shuffleHandleInfo.updateAssignment(
                         Sets.newHashSet(0, 1, 2), "id11", Sets.newHashSet(replacement3));
-                    writer.addReassignment(shuffleHandleInfo, "id11");
+                    writer.updateAssignmentAndMarkFaultyServer(shuffleHandleInfo, "id11");
                   }
 
                 } else {
@@ -288,7 +288,7 @@ public class RssShuffleWriterTest {
                       .add(block, server, StatusCode.NO_BUFFER);
                   failureCnt.incrementAndGet();
                   // refresh the assignment to simulate the reassign rpc.
-                  writer.addReassignment(shuffleHandleInfo, "id1");
+                  writer.updateAssignmentAndMarkFaultyServer(shuffleHandleInfo, "id1");
                 } else {
                   taskToSuccessBlockIds
                       .computeIfAbsent(taskId, x -> new HashSet<>())
@@ -437,7 +437,7 @@ public class RssShuffleWriterTest {
     ShuffleServerInfo replacement = new ShuffleServerInfo("id10", "0.0.0.10", 100);
     shuffleHandleInfo.updateAssignment(
         Sets.newHashSet(0, 1, 2), "id1", Sets.newHashSet(replacement));
-    rssShuffleWriter.addReassignment(shuffleHandleInfo, "id1");
+    rssShuffleWriter.updateAssignmentAndMarkFaultyServer(shuffleHandleInfo, "id1");
 
     RssShuffleWriter<String, String, String> rssShuffleWriterSpy = spy(rssShuffleWriter);
     doNothing().when(rssShuffleWriterSpy).sendCommit();

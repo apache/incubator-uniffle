@@ -196,17 +196,20 @@ public class ShuffleHandleInfo implements Serializable {
   }
 
   /**
-   * key: partitionId, value: the servers for multiple replicas.
-   *
-   * <p>Leveraging the partition reassign mechanism, it could support multiple servers for one
+   * Leveraging the partition reassign mechanism, it could support multiple servers for one
    * partition replica for huge partition load balance or reassignment multiple times. But it will
    * use the different policies.
    *
    * <p>For the former, this will use the hash to get one from the candidates. For the latter, this
    * will always get the last one that is available for now.
+   *
+   * @param taskAttemptId
+   * @return the latest mapping of partition writing to servers for the task. key: partitionId,
+   *     value: the servers for multiple replicas.
    */
-  public Map<Integer, List<ShuffleServerInfo>> getLatestAssignmentPlan(long taskAttemptId) {
-    Map<Integer, List<ShuffleServerInfo>> plan = new HashMap<>();
+  public Map<Integer, List<ShuffleServerInfo>> getLatestAssignmentByTaskAttemptId(
+      long taskAttemptId) {
+    Map<Integer, List<ShuffleServerInfo>> assignment = new HashMap<>();
     for (Map.Entry<Integer, Map<Integer, List<ShuffleServerInfo>>> entry :
         partitionReplicaAssignedServers.entrySet()) {
       int partitionId = entry.getKey();
@@ -222,10 +225,10 @@ public class ShuffleHandleInfo implements Serializable {
         } else {
           candidate = replicaServerEntry.getValue().get(candidateSize - 1);
         }
-        plan.computeIfAbsent(partitionId, x -> new ArrayList<>()).add(candidate);
+        assignment.computeIfAbsent(partitionId, x -> new ArrayList<>()).add(candidate);
       }
     }
-    return plan;
+    return assignment;
   }
 
   public PartitionDataReplicaRequirementTracking createPartitionReplicaTracking() {

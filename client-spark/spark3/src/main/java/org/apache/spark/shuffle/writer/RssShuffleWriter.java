@@ -127,7 +127,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final BlockingQueue<Object> finishEventQueue = new LinkedBlockingQueue<>();
 
   // Will be updated when the reassignment is triggered.
-  private ShuffleHandleInfoWrapper shuffleHandle;
+  private TaskAttemptAssignment taskAttemptAssignment;
 
   // Only for tests
   @VisibleForTesting
@@ -158,7 +158,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleHandleInfo,
         context);
     this.bufferManager = bufferManager;
-    this.shuffleHandle = new ShuffleHandleInfoWrapper(taskAttemptId, shuffleHandleInfo);
+    this.taskAttemptAssignment = new TaskAttemptAssignment(taskAttemptId, shuffleHandleInfo);
   }
 
   private RssShuffleWriter(
@@ -247,12 +247,12 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             this::processShuffleBlockInfos,
             this::retrievePartitionAssignment);
     this.bufferManager = bufferManager;
-    this.shuffleHandle = new ShuffleHandleInfoWrapper(taskAttemptId, shuffleHandleInfo);
+    this.taskAttemptAssignment = new TaskAttemptAssignment(taskAttemptId, shuffleHandleInfo);
   }
 
   @VisibleForTesting
   protected List<ShuffleServerInfo> retrievePartitionAssignment(int partitionId) {
-    return this.shuffleHandle.retrievePartitionAssignment(partitionId);
+    return this.taskAttemptAssignment.retrievePartitionAssignment(partitionId);
   }
 
   private boolean isMemoryShuffleEnabled(String storageType) {
@@ -535,7 +535,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       ShuffleServerInfo faultyServer = entry.getKey();
       List<TrackingBlockStatus> blocks = entry.getValue();
 
-      if (!shuffleHandle.isReassigned(faultyServer.getId())) {
+      if (!taskAttemptAssignment.isReassigned(faultyServer.getId())) {
         Set<Integer> partitionIds = new HashSet<>();
         Set<Integer> hugePartitionIds = new HashSet<>();
         for (TrackingBlockStatus blockStatus : blocks) {
@@ -598,7 +598,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             "reassign server response with statusCode[" + response.getStatusCode() + "]");
       }
       ShuffleHandleInfo handle = ShuffleHandleInfo.fromProto(response.getHandle());
-      shuffleHandle.update(handle, faultyServerId);
+      taskAttemptAssignment.update(handle);
+      taskAttemptAssignment.addFaultyServer(faultyServerId);
     } catch (Exception e) {
       throw new RssException(
           "Failed to reassign a new server for faultyServerId server[" + faultyServerId + "]", e);
@@ -778,8 +779,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   @VisibleForTesting
-  protected void addReassignment(ShuffleHandleInfo shuffleHandleInfo, String faultyServerId) {
-    shuffleHandle.update(shuffleHandleInfo, faultyServerId);
+  protected void updateAssignmentAndMarkFaultyServer(
+      ShuffleHandleInfo shuffleHandleInfo, String faultyServerId) {
+    taskAttemptAssignment.update(shuffleHandleInfo);
+    taskAttemptAssignment.addFaultyServer(faultyServerId);
   }
 
   @VisibleForTesting
@@ -798,6 +801,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   public ShuffleHandleInfo getShuffleHandleInfo() {
-    return shuffleHandle.getRef();
+    return taskAttemptAssignment.getRef();
   }
 }

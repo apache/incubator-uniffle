@@ -28,35 +28,38 @@ import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 
-/** This class is to wrap the shuffleHandleInfo to speed up the partitionAssignment getting. */
-public class ShuffleHandleInfoWrapper {
+/** This class is to get the partition assignment for ShuffleWriter. */
+public class TaskAttemptAssignment {
   private ShuffleHandleInfo handle;
   private final long taskAttemptId;
   private final Set<String> faultyServers;
   private Map<Integer, List<ShuffleServerInfo>> latestAssignment;
 
-  public ShuffleHandleInfoWrapper(long taskAttemptId, ShuffleHandleInfo shuffleHandleInfo) {
+  public TaskAttemptAssignment(long taskAttemptId, ShuffleHandleInfo shuffleHandleInfo) {
     this.taskAttemptId = taskAttemptId;
     this.faultyServers = new HashSet<>();
-    this.update(shuffleHandleInfo, null);
+    this.update(shuffleHandleInfo);
   }
 
-  public List<ShuffleServerInfo> retrievePartitionAssignment(int partitiontId) {
-    return latestAssignment.get(partitiontId);
+  public List<ShuffleServerInfo> retrievePartitionAssignment(int partitionId) {
+    return latestAssignment.get(partitionId);
   }
 
   public boolean isReassigned(String serverId) {
     return faultyServers.contains(serverId);
   }
 
-  public void update(ShuffleHandleInfo handle, String faultyServerId) {
+  public void update(ShuffleHandleInfo handle) {
     if (handle == null) {
       throw new RssException("Errors on updating shuffle handle by the empty handleInfo.");
     }
     this.handle = handle;
-    this.latestAssignment = handle.getLatestAssignmentPlan(taskAttemptId);
-    if (faultyServerId != null) {
-      this.faultyServers.add(faultyServerId);
+    this.latestAssignment = handle.getLatestAssignmentByTaskAttemptId(taskAttemptId);
+  }
+
+  public void addFaultyServer(String serverId) {
+    if (serverId != null) {
+      this.faultyServers.add(serverId);
     }
   }
 
