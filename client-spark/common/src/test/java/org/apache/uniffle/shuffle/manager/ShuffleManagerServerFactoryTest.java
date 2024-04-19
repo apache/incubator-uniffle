@@ -17,21 +17,28 @@
 
 package org.apache.uniffle.shuffle.manager;
 
-import org.junit.jupiter.api.Test;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.rpc.ServerType;
 
 public class ShuffleManagerServerFactoryTest {
-  @Test
-  public void testShuffleManagerServerType() {
+  private static Stream<Arguments> shuffleManagerServerTypeProvider() {
+    return Stream.of(Arguments.of(ServerType.GRPC_NETTY), Arguments.of(ServerType.GRPC));
+  }
+
+  @ParameterizedTest
+  @MethodSource("shuffleManagerServerTypeProvider")
+  public void testShuffleManagerServerType(ServerType serverType) {
     // add code to generate tests that check the server type
-    for (ServerType serverType : ServerType.values()) {
-      RssBaseConf conf = new RssBaseConf();
-      conf.set(RssBaseConf.RPC_SERVER_TYPE, serverType);
-      ShuffleManagerServerFactory factory = new ShuffleManagerServerFactory(null, conf);
-      // this should execute normally;
-      factory.getServer();
-    }
+    RssBaseConf conf = new RssBaseConf();
+    conf.set(RssBaseConf.RPC_SERVER_TYPE, serverType);
+    ShuffleManagerServerFactory factory = new ShuffleManagerServerFactory(null, conf);
+    // this should execute normally;
+    factory.getServer();
   }
 }
