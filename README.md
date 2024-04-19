@@ -346,7 +346,7 @@ The following security configurations are introduced.
   please see [Proxy user - Superusers Acting On Behalf Of Other Users](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/Superusers.html)
 
 ## Benchmark
-We provide some benchmark tests for Uniffle. For details, you can see [Uniffle Benchmark](docs/benchmark.md)
+We provide some benchmark tests for Uniffle. For details, you can see [Uniffle 0.2.0 Benchmark](docs/benchmark.md), [Uniffle 0.9.0 Benchmark](docs/benchmark_netty_case_report.md).
 
 ## LICENSE
 
