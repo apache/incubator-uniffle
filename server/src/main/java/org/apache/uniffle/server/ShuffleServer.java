@@ -133,9 +133,6 @@ public class ShuffleServer {
     grpcPort = server.start();
     if (nettyServerEnabled) {
       nettyPort = streamServer.start();
-    } else {
-      // To make it clear, we explicitly set the value to -1
-      nettyPort = -1;
     }
 
     if (nettyServerEnabled) {
