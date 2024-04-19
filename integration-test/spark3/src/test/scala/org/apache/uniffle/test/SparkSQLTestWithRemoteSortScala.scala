@@ -1,20 +1,22 @@
 package org.apache.uniffle.test
 
+import com.google.common.collect.Maps
+import org.apache.commons.lang3.StringUtils
 import org.apache.spark.shuffle.RssSparkConfig
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Dataset, Row, SparkSession}
+import org.apache.uniffle.common.rpc.ServerType
 import org.apache.uniffle.coordinator.CoordinatorConf
 import org.apache.uniffle.server.ShuffleServerConf
 import org.apache.uniffle.storage.util.StorageType
-import org.apache.uniffle.test.IntegrationTestBase._
+import org.apache.uniffle.test.IntegrationTestBase.{addDynamicConf, createCoordinatorServer, createShuffleServer, getCoordinatorConf, getShuffleServerConf, startServers}
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.{BeforeAll, Test}
 
 import java.io.{File, FileWriter, PrintWriter}
 import java.util
-import scala.collection.JavaConverters.mapAsJavaMap
-import scala.util.Random
+import java.util.Map
 
-object OrderedWordCountTestWithRemoteSortScala {
+object SparkSQLTestWithRemoteSortScala {
 
   @BeforeAll
   @throws[Exception]
@@ -31,21 +33,17 @@ object OrderedWordCountTestWithRemoteSortScala {
   }
 }
 
-class OrderedWordCountTestWithRemoteSortScala extends SparkIntegrationTestBase {
-
-  private[test] val inputPath: String = "word_count_input"
-  private[test] val wordTable: Array[String] = Array("apple",
-    "banana", "fruit", "tomato", "pineapple", "grape", "lemon", "orange", "peach", "mango")
+class SparkSQLTestWithRemoteSortScala extends SparkIntegrationTestBase {
 
   @Test
   @throws[Exception]
-  def orderedWordCountTest(): Unit = {
+  def sparkSQLTest(): Unit = {
     run()
   }
 
   @throws[Exception]
   override def run(): Unit = {
-    val fileName = generateTextFile(100)
+    val fileName = generateTestFile
     val sparkConf = createSparkConf
     // lz4 conflict, so use snappy here
     sparkConf.set("spark.io.compression.codec", "snappy")
@@ -69,26 +67,40 @@ class OrderedWordCountTestWithRemoteSortScala extends SparkIntegrationTestBase {
   }
 
   @throws[Exception]
-  def generateTextFile(rows: Int): String = {
-    val file = new File(IntegrationTestBase.tempDir, "wordcount.txt")
+  override def generateTestFile: String = generateCsvFile
+
+  @throws[Exception]
+  protected def generateCsvFile: String = {
+    val rows = 1000
+    val file = new File(IntegrationTestBase.tempDir, "test.csv")
     file.createNewFile
     file.deleteOnExit()
-    val r = Random
-    val writer = new PrintWriter(new FileWriter(file))
-    try for (i <- 0 until rows) {
-      writer.println(wordTable(r.nextInt(wordTable.length)))
+    try {
+      val writer = new PrintWriter(new FileWriter(file))
+      try for (i <- 0 until rows) {
+        writer.println(generateRecord)
+      }
+      finally if (writer != null) writer.close()
     }
-    finally if (writer != null) writer.close()
     file.getAbsolutePath
   }
 
-  override def runTest(spark: SparkSession, fileName: String): util.Map[String, Int] = {
-    val sc = spark.sparkContext
-    val rdd = sc.textFile(fileName)
-    val counts = rdd.flatMap(_.split(" ")).
-      map(w => (w, 1)).
-      reduceByKey(_ + _)
-      .sortBy(_._1)
-    mapAsJavaMap(counts.collectAsMap())
+  private def generateRecord = {
+    val random = new java.util.Random
+    val ch = ('a' + random.nextInt(26)).toChar
+    val repeats = random.nextInt(10)
+    StringUtils.repeat(ch, repeats) + "," + random.nextInt(100)
+  }
+
+  override def runTest(spark: SparkSession, fileName: String): util.Map[String, Long] = {
+    val df = spark.read.schema("name STRING, age INT").csv(fileName)
+    df.createOrReplaceTempView("people")
+    val queryResult: Dataset[Row] =
+      spark.sql("SELECT name, count(age) FROM people group by name order by name");
+    val result:Map[String, Long] = Maps.newHashMap[String, Long]
+    queryResult.javaRDD.collect.stream.forEach((row: Row) => {
+      result.put(row.getString(0), row.getLong(1))
+    })
+    result
   }
 }
