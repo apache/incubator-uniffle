@@ -174,18 +174,12 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       context.addTaskCompletionListener(fn1);
       resultIter = CompletionIterator$.MODULE$.apply(sorter.iterator(), fn0);
     } else if (shuffleDependency.aggregator().isDefined()) {
+      Aggregator<K, Object, C> aggregator =
+          (Aggregator<K, Object, C>) shuffleDependency.aggregator().get();
       if (shuffleDependency.mapSideCombine()) {
-        resultIter =
-            shuffleDependency
-                .aggregator()
-                .get()
-                .combineCombinersByKey(rssShuffleDataIterator, context);
+        resultIter = aggregator.combineCombinersByKey(rssShuffleDataIterator, context);
       } else {
-        resultIter =
-            shuffleDependency
-                .aggregator()
-                .get()
-                .combineValuesByKey(rssShuffleDataIterator, context);
+        resultIter = aggregator.combineValuesByKey(rssShuffleDataIterator, context);
       }
     } else {
       resultIter = rssShuffleDataIterator;
