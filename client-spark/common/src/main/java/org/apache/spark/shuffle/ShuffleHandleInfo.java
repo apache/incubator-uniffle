@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.proto.RssProtos;
 
 /**
@@ -150,14 +151,14 @@ public class ShuffleHandleInfo implements Serializable {
       Set<Integer> partitionIds,
       String faultyServerId,
       Set<ShuffleServerInfo> replacements,
-      Set<Integer> needLoadBalancePartitionIds) {
+      Set<Integer> loadBalancePartitionIds) {
     if (replacements == null) {
       return;
     }
     faultyServerToReplacements.put(faultyServerId, replacements);
 
-    if (CollectionUtils.isNotEmpty(needLoadBalancePartitionIds)) {
-      loadBalancePartitionCandidates.addAll(needLoadBalancePartitionIds);
+    if (CollectionUtils.isNotEmpty(loadBalancePartitionIds)) {
+      loadBalancePartitionCandidates.addAll(loadBalancePartitionIds);
     }
 
     // todo: optimize the multiple for performance
@@ -307,5 +308,22 @@ public class ShuffleHandleInfo implements Serializable {
 
   public Set<String> listFaultyServers() {
     return faultyServerToReplacements.keySet();
+  }
+
+  public void checkPartitionReassignServerNum(
+      Set<Integer> partitionIds, int legalReassignServerNum) {
+    for (int partitionId : partitionIds) {
+      Map<Integer, List<ShuffleServerInfo>> replicas =
+          partitionReplicaAssignedServers.get(partitionId);
+      for (List<ShuffleServerInfo> servers : replicas.values()) {
+        if (servers.size() - 1 > legalReassignServerNum) {
+          throw new RssException(
+              "Illegal reassignment servers for partitionId: "
+                  + partitionId
+                  + " that exceeding the max legal reassign server num: "
+                  + legalReassignServerNum);
+        }
+      }
+    }
   }
 }

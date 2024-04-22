@@ -71,6 +71,13 @@ public class RssSparkConfig {
           .withDescription(
               "The shuffle server num for load balance of huge partition when partition reassign is triggered.");
 
+  public static final ConfigOption<Integer> RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM =
+      ConfigOptions.key("rss.client.partitionReassign.maxReassignServerNum")
+          .intType()
+          .defaultValue(10)
+          .withDescription(
+              "The max reassign server num for one partition when using partition reassign mechanism.");
+
   public static final ConfigOption<Integer> RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES =
       ConfigOptions.key("rss.client.partitionReassign.blockRetryMaxTimes")
           .intType()

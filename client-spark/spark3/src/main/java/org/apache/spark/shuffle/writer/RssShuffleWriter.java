@@ -594,8 +594,11 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssReassignFaultyShuffleServerResponse response =
           shuffleManagerClient.reassignFaultyShuffleServer(request);
       if (response.getStatusCode() != StatusCode.SUCCESS) {
-        throw new RssException(
-            "reassign server response with statusCode[" + response.getStatusCode() + "]");
+        String msg =
+            String.format(
+                "Reassign server failed. statusCode: %s, msg: %s",
+                response.getStatusCode(), response.getMessage());
+        throw new RssException(msg);
       }
       ShuffleHandleInfo handle = ShuffleHandleInfo.fromProto(response.getHandle());
       taskAttemptAssignment.update(handle);

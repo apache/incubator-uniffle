@@ -94,6 +94,7 @@ import org.apache.uniffle.shuffle.manager.ShuffleManagerGrpcService;
 import org.apache.uniffle.shuffle.manager.ShuffleManagerServerFactory;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_LOAD_BALANCE_SERVER_NUM;
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM;
 import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;
 import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
 
@@ -155,6 +156,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private Map<String, Boolean> serverAssignedInfos;
 
   private final int partitionReassignLoadBalanceServerNum;
+  private final int partitionReassignMaxReassignServerNum;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
@@ -289,6 +291,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.serverAssignedInfos = JavaUtils.newConcurrentMap();
     this.partitionReassignLoadBalanceServerNum =
         rssConf.get(RSS_PARTITION_REASSIGN_LOAD_BALANCE_SERVER_NUM);
+    this.partitionReassignMaxReassignServerNum =
+        rssConf.get(RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM);
   }
 
   public CompletableFuture<Long> sendData(AddBlockEvent event) {
@@ -378,6 +382,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.dataPusher = dataPusher;
     this.partitionReassignLoadBalanceServerNum =
         rssConf.get(RSS_PARTITION_REASSIGN_LOAD_BALANCE_SERVER_NUM);
+    this.partitionReassignMaxReassignServerNum =
+        rssConf.get(RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM);
   }
 
   // This method is called in Spark driver side,
@@ -1213,16 +1219,21 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       int shuffleId,
       Set<Integer> partitionIds,
       String faultyShuffleServerId,
-      Set<Integer> needLoadBalancePartitionIds) {
+      Set<Integer> loadBalancePartitionIds) {
     ShuffleHandleInfo handleInfo = shuffleIdToShuffleHandleInfo.get(shuffleId);
     synchronized (handleInfo) {
+      // If the reassignment servers for one partition exceeds the max reassign server num,
+      // it should fast fail.
+      handleInfo.checkPartitionReassignServerNum(
+          partitionIds, partitionReassignMaxReassignServerNum);
+
       // find out whether this server has been marked faulty in this shuffle
       // if it has been reassigned, directly return the replacement server.
       // otherwise, it should request new servers to reassign
       Set<ShuffleServerInfo> replacements = handleInfo.getReplacements(faultyShuffleServerId);
       if (replacements == null) {
         int requiredServerNum = 1;
-        if (CollectionUtils.isNotEmpty(needLoadBalancePartitionIds)) {
+        if (CollectionUtils.isNotEmpty(loadBalancePartitionIds)) {
           requiredServerNum = partitionReassignLoadBalanceServerNum;
         }
         Set<String> faultyServers = new HashSet<>(handleInfo.listFaultyServers());
@@ -1238,7 +1249,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             getRemoteStorageInfo());
       }
       handleInfo.updateAssignment(
-          partitionIds, faultyShuffleServerId, replacements, needLoadBalancePartitionIds);
+          partitionIds, faultyShuffleServerId, replacements, loadBalancePartitionIds);
       LOG.info(
           "Reassign shuffle-server from [{}] -> [{}] for shuffleId: {}, partitionIds: {}",
           faultyShuffleServerId,

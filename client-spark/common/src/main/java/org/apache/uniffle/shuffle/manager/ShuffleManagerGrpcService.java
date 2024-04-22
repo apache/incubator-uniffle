@@ -235,18 +235,29 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
   public void reassignFaultyShuffleServer(
       RssProtos.RssReassignFaultyShuffleServerRequest request,
       StreamObserver<RssProtos.RssReassignFaultyShuffleServerResponse> responseObserver) {
-    ShuffleHandleInfo handle =
-        shuffleManager.reassignFaultyShuffleServerForTasks(
-            request.getShuffleId(),
-            Sets.newHashSet(request.getPartitionIdsList()),
-            request.getFaultyShuffleServerId(),
-            Sets.newHashSet(request.getNeedLoadBalancePartitionIdsList()));
-    RssProtos.StatusCode code = RssProtos.StatusCode.SUCCESS;
-    RssProtos.RssReassignFaultyShuffleServerResponse reply =
-        RssProtos.RssReassignFaultyShuffleServerResponse.newBuilder()
-            .setStatus(code)
-            .setHandle(ShuffleHandleInfo.toProto(handle))
-            .build();
+    RssProtos.StatusCode code = RssProtos.StatusCode.INTERNAL_ERROR;
+    RssProtos.RssReassignFaultyShuffleServerResponse reply;
+    try {
+      ShuffleHandleInfo handle =
+          shuffleManager.reassignFaultyShuffleServerForTasks(
+              request.getShuffleId(),
+              Sets.newHashSet(request.getPartitionIdsList()),
+              request.getFaultyShuffleServerId(),
+              Sets.newHashSet(request.getNeedLoadBalancePartitionIdsList()));
+      code = RssProtos.StatusCode.SUCCESS;
+      reply =
+          RssProtos.RssReassignFaultyShuffleServerResponse.newBuilder()
+              .setStatus(code)
+              .setHandle(ShuffleHandleInfo.toProto(handle))
+              .build();
+    } catch (Exception e) {
+      LOG.error("Errors on reassigning faulty server.", e);
+      reply =
+          RssProtos.RssReassignFaultyShuffleServerResponse.newBuilder()
+              .setStatus(code)
+              .setMsg(e.getMessage())
+              .build();
+    }
     responseObserver.onNext(reply);
     responseObserver.onCompleted();
   }
