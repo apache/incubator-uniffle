@@ -72,6 +72,17 @@ public class ShuffleHandleInfo implements Serializable {
     this.partitionReplicaAssignedServers = toPartitionReplicaMapping(partitionToServers);
   }
 
+  @VisibleForTesting
+  protected ShuffleHandleInfo(
+      int shuffleId,
+      RemoteStorageInfo storageInfo,
+      Map<Integer, Map<Integer, List<ShuffleServerInfo>>> partitionReplicaAssignedServers) {
+    this.shuffleId = shuffleId;
+    this.remoteStorage = storageInfo;
+    this.faultyServerToReplacements = new HashMap<>();
+    this.partitionReplicaAssignedServers = partitionReplicaAssignedServers;
+  }
+
   public ShuffleHandleInfo() {
     // ignore
   }

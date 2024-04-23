@@ -17,11 +17,13 @@
 
 package org.apache.spark.shuffle;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Test;
@@ -55,7 +57,37 @@ public class ShuffleHandleInfoTest {
         handleInfo.updateAssignment(
             partitions, "a", Sets.newHashSet(createFakeServerInfo("a"), createFakeServerInfo("d")));
     assertTrue(updated.containsKey(1));
-    assertTrue(updated.get(1).stream().findFirst().get() == createFakeServerInfo("d"));
+    assertTrue(updated.get(1).stream().findFirst().get().getId().equals("d"));
+
+    // case2: update when having multiple servers
+    Map<Integer, Map<Integer, List<ShuffleServerInfo>>> partitionReplicaAssignedServers =
+        new HashMap<>();
+    List<ShuffleServerInfo> servers =
+        new ArrayList<>(
+            Arrays.asList(
+                createFakeServerInfo("a"),
+                createFakeServerInfo("b"),
+                createFakeServerInfo("c"),
+                createFakeServerInfo("d")));
+    partitionReplicaAssignedServers
+        .computeIfAbsent(1, x -> new HashMap<>())
+        .computeIfAbsent(0, x -> servers);
+    handleInfo =
+        new ShuffleHandleInfo(1, new RemoteStorageInfo(""), partitionReplicaAssignedServers);
+    partitions = Sets.newHashSet(1);
+    updated =
+        handleInfo.updateAssignment(
+            partitions,
+            "a",
+            Sets.newHashSet(
+                createFakeServerInfo("b"),
+                createFakeServerInfo("d"),
+                createFakeServerInfo("e"),
+                createFakeServerInfo("f")));
+    assertTrue(updated.containsKey(1));
+    assertEquals(
+        updated.get(1).stream().collect(Collectors.toSet()),
+        Sets.newHashSet(createFakeServerInfo("e"), createFakeServerInfo("f")));
   }
 
   @Test
