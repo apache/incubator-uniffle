@@ -41,6 +41,24 @@ public class ShuffleHandleInfoTest {
   }
 
   @Test
+  public void testUpdateAssignment() {
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
+    partitionToServers.put(1, Arrays.asList(createFakeServerInfo("a"), createFakeServerInfo("b")));
+    partitionToServers.put(2, Arrays.asList(createFakeServerInfo("c")));
+
+    ShuffleHandleInfo handleInfo =
+        new ShuffleHandleInfo(1, partitionToServers, new RemoteStorageInfo(""));
+
+    // case1: update the replacement servers but has existing servers
+    Set<Integer> partitions = Sets.newHashSet(1);
+    Map<Integer, Set<ShuffleServerInfo>> updated =
+        handleInfo.updateAssignment(
+            partitions, "a", Sets.newHashSet(createFakeServerInfo("a"), createFakeServerInfo("d")));
+    assertTrue(updated.containsKey(1));
+    assertTrue(updated.get(1).stream().findFirst().get() == createFakeServerInfo("d"));
+  }
+
+  @Test
   public void testReassignment() {
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
     partitionToServers.put(1, Arrays.asList(createFakeServerInfo("a"), createFakeServerInfo("b")));
