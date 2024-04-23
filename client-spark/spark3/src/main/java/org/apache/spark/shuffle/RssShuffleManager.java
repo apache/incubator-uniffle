@@ -1213,7 +1213,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
   }
 
-  // this is only valid on driver side that exposed to being invoked by grpc server
+  /** this is only valid on driver side that exposed to being invoked by grpc server */
   @Override
   public ShuffleHandleInfo reassignFaultyShuffleServerForTasks(
       int shuffleId,
@@ -1230,6 +1230,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       // find out whether this server has been marked faulty in this shuffle
       // if it has been reassigned, directly return the replacement server.
       // otherwise, it should request new servers to reassign
+      boolean useExistingReplacements = false;
       Set<ShuffleServerInfo> replacements = handleInfo.getReplacements(faultyShuffleServerId);
       if (replacements == null) {
         int requiredServerNum = 1;
@@ -1241,15 +1242,28 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         replacements =
             reassignServerForTask(shuffleId, partitionIds, faultyServers, requiredServerNum);
       } else {
-        // todo: ignore register for those partitions that have been registered
-        registerShuffleServers(
-            id.get(),
-            shuffleId,
-            createShuffleAssignmentsInfo(replacements, partitionIds).getServerToPartitionRanges(),
-            getRemoteStorageInfo());
+        useExistingReplacements = true;
       }
-      handleInfo.updateAssignment(
-          partitionIds, faultyShuffleServerId, replacements, loadBalancePartitionIds);
+      Map<Integer, Set<ShuffleServerInfo>> updatedPartitionToServers =
+          handleInfo.updateAssignment(
+              partitionIds, faultyShuffleServerId, replacements, loadBalancePartitionIds);
+
+      if (useExistingReplacements) {
+        // When using the existing replacements, it means the partitions may not register to these
+        // replacement servers.
+        // And so it's necessary to register again to ensure legal writing.
+        Map<ShuffleServerInfo, List<PartitionRange>> newServerToPartitions = new HashMap<>();
+        for (Map.Entry<Integer, Set<ShuffleServerInfo>> partitionToServers :
+            updatedPartitionToServers.entrySet()) {
+          int partitionId = partitionToServers.getKey();
+          for (ShuffleServerInfo server : partitionToServers.getValue()) {
+            newServerToPartitions
+                .computeIfAbsent(server, x -> new ArrayList<>())
+                .add(new PartitionRange(partitionId, partitionId));
+          }
+        }
+        registerShuffleServers(id.get(), shuffleId, newServerToPartitions, getRemoteStorageInfo());
+      }
       LOG.info(
           "Reassign shuffle-server from [{}] -> [{}] for shuffleId: {}, partitionIds: {}",
           faultyShuffleServerId,

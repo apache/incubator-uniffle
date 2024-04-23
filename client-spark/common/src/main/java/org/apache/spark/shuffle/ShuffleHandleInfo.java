@@ -139,24 +139,31 @@ public class ShuffleHandleInfo implements Serializable {
     return faultyServerToReplacements.get(faultyServerId);
   }
 
-  public void updateAssignment(
+  public Map<Integer, Set<ShuffleServerInfo>> updateAssignment(
       Set<Integer> partitionIds, String faultyServerId, Set<ShuffleServerInfo> replacements) {
-    updateAssignment(partitionIds, faultyServerId, replacements, new HashSet<>());
+    return updateAssignment(partitionIds, faultyServerId, replacements, new HashSet<>());
   }
 
-  public void updateAssignment(
+  /**
+   * Update the assignment for partitions by replacement servers
+   *
+   * @return the updated partition servers collections successfully
+   */
+  public Map<Integer, Set<ShuffleServerInfo>> updateAssignment(
       Set<Integer> partitionIds,
       String faultyServerId,
       Set<ShuffleServerInfo> replacements,
       Set<Integer> loadBalancePartitionIds) {
     if (replacements == null) {
-      return;
+      return Collections.emptyMap();
     }
     faultyServerToReplacements.put(faultyServerId, replacements);
 
     if (CollectionUtils.isNotEmpty(loadBalancePartitionIds)) {
       loadBalancePartitionCandidates.addAll(loadBalancePartitionIds);
     }
+
+    Map<Integer, Set<ShuffleServerInfo>> updatedPartitionServers = new HashMap<>();
 
     // todo: optimize the multiple for performance
     for (Integer partitionId : partitionIds) {
@@ -171,10 +178,18 @@ public class ShuffleHandleInfo implements Serializable {
           Set<ShuffleServerInfo> tempSet = new HashSet<>();
           tempSet.addAll(replacements);
           tempSet.removeAll(servers);
-          servers.addAll(tempSet);
+
+          if (CollectionUtils.isNotEmpty(tempSet)) {
+            updatedPartitionServers
+                .computeIfAbsent(partitionId, x -> new HashSet<>())
+                .addAll(tempSet);
+
+            servers.addAll(tempSet);
+          }
         }
       }
     }
+    return updatedPartitionServers;
   }
 
   // partitionId -> replica -> failover servers
