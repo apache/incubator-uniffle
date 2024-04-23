@@ -25,12 +25,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.CollectionUtils;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -59,7 +57,7 @@ public class ShuffleHandleInfo implements Serializable {
   // faulty servers replacement mapping
   private Map<String, Set<ShuffleServerInfo>> faultyServerToReplacements;
   // The collection of partition ids that need to be load balanced, such as huge partition.
-  private Set<Integer> loadBalancePartitionCandidates = new ConcurrentHashSet<>();
+  private Set<Integer> loadBalancePartitionCandidates = new HashSet<>();
 
   public static final ShuffleHandleInfo EMPTY_HANDLE_INFO =
       new ShuffleHandleInfo(-1, Collections.EMPTY_MAP, RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
@@ -70,7 +68,7 @@ public class ShuffleHandleInfo implements Serializable {
       RemoteStorageInfo storageInfo) {
     this.shuffleId = shuffleId;
     this.remoteStorage = storageInfo;
-    this.faultyServerToReplacements = new ConcurrentHashMap<>();
+    this.faultyServerToReplacements = new HashMap<>();
     this.partitionReplicaAssignedServers = toPartitionReplicaMapping(partitionToServers);
   }
 
@@ -81,13 +79,12 @@ public class ShuffleHandleInfo implements Serializable {
   private Map<Integer, Map<Integer, List<ShuffleServerInfo>>> toPartitionReplicaMapping(
       Map<Integer, List<ShuffleServerInfo>> partitionToServers) {
     Map<Integer, Map<Integer, List<ShuffleServerInfo>>> partitionReplicaAssignedServers =
-        new ConcurrentHashMap<>();
+        new HashMap<>();
     for (Map.Entry<Integer, List<ShuffleServerInfo>> partitionEntry :
         partitionToServers.entrySet()) {
       int partitionId = partitionEntry.getKey();
       Map<Integer, List<ShuffleServerInfo>> replicaMapping =
-          partitionReplicaAssignedServers.computeIfAbsent(
-              partitionId, x -> new ConcurrentHashMap<>());
+          partitionReplicaAssignedServers.computeIfAbsent(partitionId, x -> new HashMap<>());
 
       List<ShuffleServerInfo> replicaServers = partitionEntry.getValue();
       for (int i = 0; i < replicaServers.size(); i++) {
@@ -242,40 +239,42 @@ public class ShuffleHandleInfo implements Serializable {
   }
 
   public static RssProtos.ShuffleHandleInfo toProto(ShuffleHandleInfo handleInfo) {
-    Map<Integer, RssProtos.PartitionReplicaServers> partitionToServers = new HashMap<>();
-    for (Map.Entry<Integer, Map<Integer, List<ShuffleServerInfo>>> entry :
-        handleInfo.partitionReplicaAssignedServers.entrySet()) {
-      int partitionId = entry.getKey();
+    synchronized (handleInfo) {
+      Map<Integer, RssProtos.PartitionReplicaServers> partitionToServers = new HashMap<>();
+      for (Map.Entry<Integer, Map<Integer, List<ShuffleServerInfo>>> entry :
+          handleInfo.partitionReplicaAssignedServers.entrySet()) {
+        int partitionId = entry.getKey();
 
-      Map<Integer, RssProtos.ReplicaServersItem> replicaServersProto = new HashMap<>();
-      Map<Integer, List<ShuffleServerInfo>> replicaServers = entry.getValue();
-      for (Map.Entry<Integer, List<ShuffleServerInfo>> replicaServerEntry :
-          replicaServers.entrySet()) {
-        RssProtos.ReplicaServersItem item =
-            RssProtos.ReplicaServersItem.newBuilder()
-                .addAllServerId(ShuffleServerInfo.toProto(replicaServerEntry.getValue()))
+        Map<Integer, RssProtos.ReplicaServersItem> replicaServersProto = new HashMap<>();
+        Map<Integer, List<ShuffleServerInfo>> replicaServers = entry.getValue();
+        for (Map.Entry<Integer, List<ShuffleServerInfo>> replicaServerEntry :
+            replicaServers.entrySet()) {
+          RssProtos.ReplicaServersItem item =
+              RssProtos.ReplicaServersItem.newBuilder()
+                  .addAllServerId(ShuffleServerInfo.toProto(replicaServerEntry.getValue()))
+                  .build();
+          replicaServersProto.put(replicaServerEntry.getKey(), item);
+        }
+
+        RssProtos.PartitionReplicaServers partitionReplicaServerProto =
+            RssProtos.PartitionReplicaServers.newBuilder()
+                .putAllReplicaServers(replicaServersProto)
                 .build();
-        replicaServersProto.put(replicaServerEntry.getKey(), item);
+        partitionToServers.put(partitionId, partitionReplicaServerProto);
       }
 
-      RssProtos.PartitionReplicaServers partitionReplicaServerProto =
-          RssProtos.PartitionReplicaServers.newBuilder()
-              .putAllReplicaServers(replicaServersProto)
+      RssProtos.ShuffleHandleInfo handleProto =
+          RssProtos.ShuffleHandleInfo.newBuilder()
+              .setShuffleId(handleInfo.shuffleId)
+              .setRemoteStorageInfo(
+                  RssProtos.RemoteStorageInfo.newBuilder()
+                      .setPath(handleInfo.remoteStorage.getPath())
+                      .putAllConfItems(handleInfo.remoteStorage.getConfItems())
+                      .build())
+              .putAllPartitionToServers(partitionToServers)
               .build();
-      partitionToServers.put(partitionId, partitionReplicaServerProto);
+      return handleProto;
     }
-
-    RssProtos.ShuffleHandleInfo handleProto =
-        RssProtos.ShuffleHandleInfo.newBuilder()
-            .setShuffleId(handleInfo.shuffleId)
-            .setRemoteStorageInfo(
-                RssProtos.RemoteStorageInfo.newBuilder()
-                    .setPath(handleInfo.remoteStorage.getPath())
-                    .putAllConfItems(handleInfo.remoteStorage.getConfItems())
-                    .build())
-            .putAllPartitionToServers(partitionToServers)
-            .build();
-    return handleProto;
   }
 
   public static ShuffleHandleInfo fromProto(RssProtos.ShuffleHandleInfo handleProto) {
