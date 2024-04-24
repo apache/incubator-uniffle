@@ -194,7 +194,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 user,
                 shuffleDataDistributionType,
                 maxConcurrencyPerPartitionToWrite,
-                req.hasBlockFailureReassignEnabled());
+                req.getBlockFailureReassignEnabled().getValue());
 
     reply = ShuffleRegisterResponse.newBuilder().setStatus(result.toProto()).build();
     responseObserver.onNext(reply);
