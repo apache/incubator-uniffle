@@ -103,6 +103,8 @@ public class ShuffleServer {
   private StreamServer streamServer;
   private JvmPauseMonitor jvmPauseMonitor;
 
+  private boolean decommissionActivateClientReassignEnabled;
+
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
     try {
@@ -228,6 +230,10 @@ public class ShuffleServer {
     }
     grpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     nettyPort = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_PORT);
+
+    decommissionActivateClientReassignEnabled =
+        shuffleServerConf.get(
+            ShuffleServerConf.SERVER_DECOMMISSION_ACTIVATE_CLIENT_REASSIGN_ENABLE);
 
     initServerTags();
 
@@ -543,5 +549,12 @@ public class ShuffleServer {
         shuffleServer.getServerStatus(),
         shuffleServer.getStorageManager().getStorageInfo(),
         shuffleServer.getNettyPort());
+  }
+
+  public boolean isActivateClientPartitionReassign() {
+    if (decommissionActivateClientReassignEnabled && serverStatus.get() != ServerStatus.ACTIVE) {
+      return true;
+    }
+    return false;
   }
 }

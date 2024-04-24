@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -428,7 +427,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void requireBuffer(
       RequireBufferRequest request, StreamObserver<RequireBufferResponse> responseObserver) {
     String appId = request.getAppId();
-    if (shuffleServer.getServerStatus() != ServerStatus.ACTIVE
+    if (shuffleServer.isActivateClientPartitionReassign()
         && shuffleServer
             .getShuffleTaskManager()
             .getShuffleTaskInfo(appId)

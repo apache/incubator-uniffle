@@ -463,6 +463,13 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(true)
           .withDescription("Whether shutdown the server after server is decommissioned");
 
+  public static final ConfigOption<Boolean> SERVER_DECOMMISSION_ACTIVATE_CLIENT_REASSIGN_ENABLE =
+      ConfigOptions.key("rss.server.decommission.activeClientReassignEnabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "Whether to activate client partition reassign mechanism for server quick decommission");
+
   public static final ConfigOption<Integer> NETTY_SERVER_PORT =
       ConfigOptions.key("rss.server.netty.port")
           .intType()
