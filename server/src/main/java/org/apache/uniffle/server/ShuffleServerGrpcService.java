@@ -152,10 +152,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void registerShuffle(
       ShuffleRegisterRequest req, StreamObserver<ShuffleRegisterResponse> responseObserver) {
-
     ShuffleRegisterResponse reply;
-    String appId = req.getAppId();
     int shuffleId = req.getShuffleId();
+    String appId = req.getAppId();
     String remoteStoragePath = req.getRemoteStorage().getPath();
     String user = req.getUser();
 
@@ -206,22 +205,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void sendShuffleData(
       SendShuffleDataRequest req, StreamObserver<SendShuffleDataResponse> responseObserver) {
-    String appId = req.getAppId();
-    if (shuffleServer.getServerStatus() != ServerStatus.ACTIVE
-        && shuffleServer
-            .getShuffleTaskManager()
-            .getShuffleTaskInfo(appId)
-            .isBlockFailureReassignEnabled()) {
-      responseObserver.onNext(
-          SendShuffleDataResponse.newBuilder()
-              .setStatus(StatusCode.SERVER_INACTIVE.toProto())
-              .setRetMsg("Server is inactive, status: " + shuffleServer.getServerStatus())
-              .build());
-      responseObserver.onCompleted();
-      return;
-    }
-
     SendShuffleDataResponse reply;
+    String appId = req.getAppId();
     int shuffleId = req.getShuffleId();
     long requireBufferId = req.getRequireBufferId();
     long timestamp = req.getTimestamp();
@@ -443,6 +428,20 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void requireBuffer(
       RequireBufferRequest request, StreamObserver<RequireBufferResponse> responseObserver) {
     String appId = request.getAppId();
+    if (shuffleServer.getServerStatus() != ServerStatus.ACTIVE
+        && shuffleServer
+            .getShuffleTaskManager()
+            .getShuffleTaskInfo(appId)
+            .isBlockFailureReassignEnabled()) {
+      responseObserver.onNext(
+          RequireBufferResponse.newBuilder()
+              .setStatus(StatusCode.SERVER_INACTIVE.toProto())
+              .setRetMsg("Server is inactive, status: " + shuffleServer.getServerStatus())
+              .build());
+      responseObserver.onCompleted();
+      return;
+    }
+
     long requireBufferId = -1;
     StatusCode status = StatusCode.SUCCESS;
     try {
