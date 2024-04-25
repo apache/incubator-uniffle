@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,9 +59,14 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
   private int nettyPort;
   private TransportClientFactory clientFactory;
 
+  @VisibleForTesting
+  public ShuffleServerGrpcNettyClient(String host, int grpcPort, int nettyPort) {
+    this(new RssConf(), host, grpcPort, nettyPort);
+  }
+
   public ShuffleServerGrpcNettyClient(RssConf rssConf, String host, int grpcPort, int nettyPort) {
     this(
-        rssConf,
+        rssConf == null ? new RssConf() : rssConf,
         host,
         grpcPort,
         nettyPort,
