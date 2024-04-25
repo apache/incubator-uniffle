@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -54,10 +55,10 @@ public class ShuffleHandleInfo implements Serializable {
    * <p>The remaining indexes are the replacement servers if exists.
    */
   private Map<Integer, Map<Integer, List<ShuffleServerInfo>>> partitionReplicaAssignedServers;
-  // faulty servers replacement mapping
-  private Map<String, Set<ShuffleServerInfo>> faultyServerToReplacements;
+  // excluded server's replacements  mapping
+  private Map<String, Set<ShuffleServerInfo>> excludedServerToReplacements;
   // The collection of partition ids that need to be load balanced, such as huge partition.
-  private Set<Integer> loadBalancePartitionCandidates = new HashSet<>();
+  private Set<Integer> loadBalancePartitionIds = new HashSet<>();
 
   public static final ShuffleHandleInfo EMPTY_HANDLE_INFO =
       new ShuffleHandleInfo(-1, Collections.EMPTY_MAP, RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
@@ -68,7 +69,7 @@ public class ShuffleHandleInfo implements Serializable {
       RemoteStorageInfo storageInfo) {
     this.shuffleId = shuffleId;
     this.remoteStorage = storageInfo;
-    this.faultyServerToReplacements = new HashMap<>();
+    this.excludedServerToReplacements = new HashMap<>();
     this.partitionReplicaAssignedServers = toPartitionReplicaMapping(partitionToServers);
   }
 
@@ -79,7 +80,7 @@ public class ShuffleHandleInfo implements Serializable {
       Map<Integer, Map<Integer, List<ShuffleServerInfo>>> partitionReplicaAssignedServers) {
     this.shuffleId = shuffleId;
     this.remoteStorage = storageInfo;
-    this.faultyServerToReplacements = new HashMap<>();
+    this.excludedServerToReplacements = new HashMap<>();
     this.partitionReplicaAssignedServers = partitionReplicaAssignedServers;
   }
 
@@ -143,16 +144,49 @@ public class ShuffleHandleInfo implements Serializable {
 
   @VisibleForTesting
   protected boolean isMarkedAsFaultyServer(String serverId) {
-    return faultyServerToReplacements.containsKey(serverId);
+    return excludedServerToReplacements.containsKey(serverId);
   }
 
   public Set<ShuffleServerInfo> getReplacements(String faultyServerId) {
-    return faultyServerToReplacements.get(faultyServerId);
+    return excludedServerToReplacements.get(faultyServerId);
   }
 
   public Map<Integer, Set<ShuffleServerInfo>> updateAssignment(
       Set<Integer> partitionIds, String faultyServerId, Set<ShuffleServerInfo> replacements) {
     return updateAssignment(partitionIds, faultyServerId, replacements, new HashSet<>());
+  }
+
+  public void updateLoadBalancePartitions(List<Integer> partitionIds) {
+    partitionIds.stream().forEach(x -> loadBalancePartitionIds.add(x));
+  }
+
+  public Set<ShuffleServerInfo> updateAssignment(
+      int partitionId, String receivingFailureServerId, Set<ShuffleServerInfo> replacements) {
+    if (replacements == null || StringUtils.isEmpty(receivingFailureServerId)) {
+      return Collections.emptySet();
+    }
+    excludedServerToReplacements.put(receivingFailureServerId, replacements);
+
+    Set<ShuffleServerInfo> updatedServers = new HashSet<>();
+    Map<Integer, List<ShuffleServerInfo>> replicaServers =
+        partitionReplicaAssignedServers.get(partitionId);
+    for (Map.Entry<Integer, List<ShuffleServerInfo>> serverEntry : replicaServers.entrySet()) {
+      List<ShuffleServerInfo> servers = serverEntry.getValue();
+      if (servers.stream()
+          .map(x -> x.getId())
+          .collect(Collectors.toSet())
+          .contains(receivingFailureServerId)) {
+        Set<ShuffleServerInfo> tempSet = new HashSet<>();
+        tempSet.addAll(replacements);
+        tempSet.removeAll(servers);
+
+        if (CollectionUtils.isNotEmpty(tempSet)) {
+          updatedServers.addAll(tempSet);
+          servers.addAll(tempSet);
+        }
+      }
+    }
+    return updatedServers;
   }
 
   /**
@@ -168,10 +202,10 @@ public class ShuffleHandleInfo implements Serializable {
     if (replacements == null) {
       return Collections.emptyMap();
     }
-    faultyServerToReplacements.put(faultyServerId, replacements);
+    excludedServerToReplacements.put(faultyServerId, replacements);
 
     if (CollectionUtils.isNotEmpty(loadBalancePartitionIds)) {
-      loadBalancePartitionCandidates.addAll(loadBalancePartitionIds);
+      this.loadBalancePartitionIds.addAll(loadBalancePartitionIds);
     }
 
     Map<Integer, Set<ShuffleServerInfo>> updatedPartitionServers = new HashMap<>();
@@ -240,7 +274,7 @@ public class ShuffleHandleInfo implements Serializable {
     for (Map.Entry<Integer, Map<Integer, List<ShuffleServerInfo>>> entry :
         partitionReplicaAssignedServers.entrySet()) {
       int partitionId = entry.getKey();
-      boolean isNeedLoadBalance = loadBalancePartitionCandidates.contains(partitionId);
+      boolean isNeedLoadBalance = loadBalancePartitionIds.contains(partitionId);
       Map<Integer, List<ShuffleServerInfo>> replicaServers = entry.getValue();
       for (Map.Entry<Integer, List<ShuffleServerInfo>> replicaServerEntry :
           replicaServers.entrySet()) {
@@ -331,8 +365,8 @@ public class ShuffleHandleInfo implements Serializable {
     return handle;
   }
 
-  public Set<String> listFaultyServers() {
-    return faultyServerToReplacements.keySet();
+  public Set<String> listExcludedServers() {
+    return excludedServerToReplacements.keySet();
   }
 
   public void checkPartitionReassignServerNum(

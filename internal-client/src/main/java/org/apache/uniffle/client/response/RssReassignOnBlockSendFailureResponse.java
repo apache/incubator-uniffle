@@ -20,11 +20,10 @@ package org.apache.uniffle.client.response;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.proto.RssProtos;
 
-public class RssReassignFaultyShuffleServerResponse extends ClientResponse {
-
+public class RssReassignOnBlockSendFailureResponse extends ClientResponse {
   private RssProtos.ShuffleHandleInfo handle;
 
-  public RssReassignFaultyShuffleServerResponse(
+  public RssReassignOnBlockSendFailureResponse(
       StatusCode statusCode, String message, RssProtos.ShuffleHandleInfo handle) {
     super(statusCode, message);
     this.handle = handle;
@@ -34,9 +33,9 @@ public class RssReassignFaultyShuffleServerResponse extends ClientResponse {
     return handle;
   }
 
-  public static RssReassignFaultyShuffleServerResponse fromProto(
-      RssProtos.RssReassignFaultyShuffleServerResponse response) {
-    return new RssReassignFaultyShuffleServerResponse(
+  public static RssReassignOnBlockSendFailureResponse fromProto(
+      RssProtos.RssReassignOnBlockSendFailureResponse response) {
+    return new RssReassignOnBlockSendFailureResponse(
         StatusCode.valueOf(response.getStatus().name()), response.getMsg(), response.getHandle());
   }
 }

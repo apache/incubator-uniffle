@@ -75,6 +75,7 @@ import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.ReceivingFailureServer;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
@@ -84,6 +85,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
@@ -1215,61 +1217,62 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
   /** this is only valid on driver side that exposed to being invoked by grpc server */
   @Override
-  public ShuffleHandleInfo reassignFaultyShuffleServerForTasks(
-      int shuffleId,
-      Set<Integer> partitionIds,
-      String faultyShuffleServerId,
-      Set<Integer> loadBalancePartitionIds) {
+  public ShuffleHandleInfo reassignOnBlockSendFailure(
+      int shuffleId, Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
     ShuffleHandleInfo handleInfo = shuffleIdToShuffleHandleInfo.get(shuffleId);
     synchronized (handleInfo) {
       // If the reassignment servers for one partition exceeds the max reassign server num,
       // it should fast fail.
       handleInfo.checkPartitionReassignServerNum(
-          partitionIds, partitionReassignMaxReassignServerNum);
+          partitionToFailureServers.keySet(), partitionReassignMaxReassignServerNum);
 
-      // find out whether this server has been marked faulty in this shuffle
-      // if it has been reassigned, directly return the replacement server.
-      // otherwise, it should request new servers to reassign
-      boolean useExistingReplacements = false;
-      Set<ShuffleServerInfo> replacements = handleInfo.getReplacements(faultyShuffleServerId);
-      if (replacements == null) {
-        int requiredServerNum = 1;
-        if (CollectionUtils.isNotEmpty(loadBalancePartitionIds)) {
-          requiredServerNum = partitionReassignLoadBalanceServerNum;
-        }
-        Set<String> faultyServers = new HashSet<>(handleInfo.listFaultyServers());
-        faultyServers.add(faultyShuffleServerId);
-        replacements =
-            reassignServerForTask(shuffleId, partitionIds, faultyServers, requiredServerNum);
-      } else {
-        useExistingReplacements = true;
-      }
-      Map<Integer, Set<ShuffleServerInfo>> updatedPartitionToServers =
-          handleInfo.updateAssignment(
-              partitionIds, faultyShuffleServerId, replacements, loadBalancePartitionIds);
+      List<Integer> loadBalancePartitions = new ArrayList<>();
+      Map<ShuffleServerInfo, List<PartitionRange>> newServerToPartitions = new HashMap<>();
 
-      if (useExistingReplacements) {
-        // When using the existing replacements, it means the partitions may not register to these
-        // replacement servers.
-        // And so it's necessary to register again to ensure legal writing.
-        Map<ShuffleServerInfo, List<PartitionRange>> newServerToPartitions = new HashMap<>();
-        for (Map.Entry<Integer, Set<ShuffleServerInfo>> partitionToServers :
-            updatedPartitionToServers.entrySet()) {
-          int partitionId = partitionToServers.getKey();
-          for (ShuffleServerInfo server : partitionToServers.getValue()) {
-            newServerToPartitions
-                .computeIfAbsent(server, x -> new ArrayList<>())
-                .add(new PartitionRange(partitionId, partitionId));
+      for (Map.Entry<Integer, List<ReceivingFailureServer>> entry :
+          partitionToFailureServers.entrySet()) {
+        int partitionId = entry.getKey();
+        for (ReceivingFailureServer receivingFailureServer : entry.getValue()) {
+          StatusCode code = receivingFailureServer.getStatusCode();
+          String serverId = receivingFailureServer.getServerId();
+
+          boolean serverHasReplaced = false;
+          Set<ShuffleServerInfo> replacements = handleInfo.getReplacements(serverId);
+          if (CollectionUtils.isEmpty(replacements)) {
+            int requiredServerNum = 1;
+            if (code == StatusCode.NO_BUFFER_FOR_HUGE_PARTITION) {
+              requiredServerNum = partitionReassignLoadBalanceServerNum;
+              loadBalancePartitions.add(partitionId);
+            }
+
+            Set<String> excludedServers = new HashSet<>(handleInfo.listExcludedServers());
+            excludedServers.add(serverId);
+            replacements =
+                reassignServerForTask(
+                    shuffleId, Sets.newHashSet(partitionId), excludedServers, requiredServerNum);
+          } else {
+            serverHasReplaced = true;
+          }
+
+          Set<ShuffleServerInfo> updatedReassignServers =
+              handleInfo.updateAssignment(partitionId, serverId, replacements);
+          if (serverHasReplaced) {
+            for (ShuffleServerInfo serverInfo : updatedReassignServers) {
+              newServerToPartitions
+                  .computeIfAbsent(serverInfo, x -> new ArrayList<>())
+                  .add(new PartitionRange(partitionId, partitionId));
+            }
           }
         }
+      }
+      handleInfo.updateLoadBalancePartitions(loadBalancePartitions);
+
+      if (!newServerToPartitions.isEmpty()) {
+        LOG.info(
+            "Register the new partition->servers assignment on reassign. {}",
+            newServerToPartitions);
         registerShuffleServers(id.get(), shuffleId, newServerToPartitions, getRemoteStorageInfo());
       }
-      LOG.info(
-          "Reassign shuffle-server from [{}] -> [{}] for shuffleId: {}, partitionIds: {}",
-          faultyShuffleServerId,
-          replacements,
-          shuffleId,
-          partitionIds);
       return handleInfo;
     }
   }

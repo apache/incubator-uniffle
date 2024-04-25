@@ -889,7 +889,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
   // this is only valid on driver side that exposed to being invoked by grpc server
   @Override
-  public ShuffleHandleInfo reassignFaultyShuffleServerForTasks(
+  public ShuffleHandleInfo reassignShuffleServersForTask(
       int shuffleId,
       Set<Integer> partitionIds,
       String faultyShuffleServerId,

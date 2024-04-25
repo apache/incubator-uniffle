@@ -17,10 +17,8 @@
 
 package org.apache.spark.shuffle.writer;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.spark.shuffle.ShuffleHandleInfo;
@@ -32,21 +30,15 @@ import org.apache.uniffle.common.exception.RssException;
 public class TaskAttemptAssignment {
   private ShuffleHandleInfo handle;
   private final long taskAttemptId;
-  private final Set<String> faultyServers;
   private Map<Integer, List<ShuffleServerInfo>> latestAssignment;
 
   public TaskAttemptAssignment(long taskAttemptId, ShuffleHandleInfo shuffleHandleInfo) {
     this.taskAttemptId = taskAttemptId;
-    this.faultyServers = new HashSet<>();
     this.update(shuffleHandleInfo);
   }
 
   public List<ShuffleServerInfo> retrievePartitionAssignment(int partitionId) {
     return latestAssignment.get(partitionId);
-  }
-
-  public boolean isReassigned(String serverId) {
-    return faultyServers.contains(serverId);
   }
 
   public void update(ShuffleHandleInfo handle) {
@@ -55,12 +47,6 @@ public class TaskAttemptAssignment {
     }
     this.handle = handle;
     this.latestAssignment = handle.getLatestAssignmentByTaskAttemptId(taskAttemptId);
-  }
-
-  public void addFaultyServer(String serverId) {
-    if (serverId != null) {
-      this.faultyServers.add(serverId);
-    }
   }
 
   // Only for tests

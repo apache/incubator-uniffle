@@ -25,13 +25,14 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
-import com.google.common.collect.Sets;
 import io.grpc.stub.StreamObserver;
 import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ReceivingFailureServer;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.proto.RssProtos;
@@ -232,28 +233,31 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
   }
 
   @Override
-  public void reassignFaultyShuffleServer(
-      RssProtos.RssReassignFaultyShuffleServerRequest request,
-      StreamObserver<RssProtos.RssReassignFaultyShuffleServerResponse> responseObserver) {
+  public void reassignOnBlockSendFailure(
+      org.apache.uniffle.proto.RssProtos.RssReassignOnBlockSendFailureRequest request,
+      io.grpc.stub.StreamObserver<
+              org.apache.uniffle.proto.RssProtos.RssReassignOnBlockSendFailureResponse>
+          responseObserver) {
     RssProtos.StatusCode code = RssProtos.StatusCode.INTERNAL_ERROR;
-    RssProtos.RssReassignFaultyShuffleServerResponse reply;
+    RssProtos.RssReassignOnBlockSendFailureResponse reply;
     try {
       ShuffleHandleInfo handle =
-          shuffleManager.reassignFaultyShuffleServerForTasks(
+          shuffleManager.reassignOnBlockSendFailure(
               request.getShuffleId(),
-              Sets.newHashSet(request.getPartitionIdsList()),
-              request.getFaultyShuffleServerId(),
-              Sets.newHashSet(request.getNeedLoadBalancePartitionIdsList()));
+              request.getFailurePartitionToServerIdsMap().entrySet().stream()
+                  .collect(
+                      Collectors.toMap(
+                          Map.Entry::getKey, x -> ReceivingFailureServer.fromProto(x.getValue()))));
       code = RssProtos.StatusCode.SUCCESS;
       reply =
-          RssProtos.RssReassignFaultyShuffleServerResponse.newBuilder()
+          RssProtos.RssReassignOnBlockSendFailureResponse.newBuilder()
               .setStatus(code)
               .setHandle(ShuffleHandleInfo.toProto(handle))
               .build();
     } catch (Exception e) {
-      LOG.error("Errors on reassigning faulty server.", e);
+      LOG.error("Errors on reassigning when block send failure.", e);
       reply =
-          RssProtos.RssReassignFaultyShuffleServerResponse.newBuilder()
+          RssProtos.RssReassignOnBlockSendFailureResponse.newBuilder()
               .setStatus(code)
               .setMsg(e.getMessage())
               .build();
