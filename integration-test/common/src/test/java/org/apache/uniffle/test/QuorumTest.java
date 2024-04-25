@@ -75,6 +75,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
   private ShuffleClientFactory.ReadClientBuilder baseReadBuilder() {
     return ShuffleClientFactory.newReadBuilder()
+        .clientType(ClientType.GRPC)
         .storageType(StorageType.MEMORY_LOCALFILE.name())
         .shuffleId(0)
         .partitionId(0)
