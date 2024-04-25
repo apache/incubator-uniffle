@@ -45,6 +45,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -249,7 +250,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     String testAppId = "rpcFailedTest";
     registerShuffleServer(testAppId, 3, 2, 2, true);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
 
     // case1: When only 1 server is failed, the block sending should success
     List<ShuffleBlockInfo> blocks =
@@ -264,13 +265,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
             Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, fakedShuffleServerInfo2));
 
     SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
-    Roaring64NavigableMap failedBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap succBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet failedBlockIdBitmap = BlockIdSet.empty();
+    BlockIdSet succBlockIdBitmap = BlockIdSet.empty();
     for (Long blockId : result.getSuccessBlockIds()) {
-      succBlockIdBitmap.addLong(blockId);
+      succBlockIdBitmap.add(blockId);
     }
     for (Long blockId : result.getFailedBlockIds()) {
-      failedBlockIdBitmap.addLong(blockId);
+      failedBlockIdBitmap.add(blockId);
     }
     assertEquals(0, failedBlockIdBitmap.getLongCardinality());
     assertEquals(blockIdBitmap, succBlockIdBitmap);
@@ -289,7 +290,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     validateResult(readClient, expectedData);
 
     // case2: When 2 servers are failed, the block sending should fail
-    blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    blockIdBitmap = BlockIdSet.empty();
     blocks =
         createShuffleBlockList(
             0,
@@ -302,13 +303,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
             Lists.newArrayList(
                 shuffleServerInfo0, fakedShuffleServerInfo1, fakedShuffleServerInfo2));
     result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
-    failedBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
-    succBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    failedBlockIdBitmap = BlockIdSet.empty();
+    succBlockIdBitmap = BlockIdSet.empty();
     for (Long blockId : result.getSuccessBlockIds()) {
-      succBlockIdBitmap.addLong(blockId);
+      succBlockIdBitmap.add(blockId);
     }
     for (Long blockId : result.getFailedBlockIds()) {
-      failedBlockIdBitmap.addLong(blockId);
+      failedBlockIdBitmap.add(blockId);
     }
     assertEquals(blockIdBitmap, failedBlockIdBitmap);
     assertEquals(0, succBlockIdBitmap.getLongCardinality());
@@ -379,7 +380,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
   public void case1() throws Exception {
     String testAppId = "case1";
     registerShuffleServer(testAppId, 3, 2, 2, true);
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
 
     // only 1 server is timout, the block sending should success
     enableTimeout((MockedShuffleServer) grpcShuffleServers.get(2), 500);
@@ -392,7 +393,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     serverToPartitionToBlockIds.put(shuffleServerInfo1, partitionToBlockIds);
     serverToPartitionToBlockIds.put(shuffleServerInfo2, partitionToBlockIds);
     shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 0, 0L, 1);
-    Roaring64NavigableMap report =
+    BlockIdSet report =
         shuffleWriteClientImpl.getShuffleResult(
             "GRPC",
             Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
@@ -414,9 +415,9 @@ public class QuorumTest extends ShuffleReadWriteBase {
             expectedData,
             Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
     SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
-    Roaring64NavigableMap succBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet succBlockIdBitmap = BlockIdSet.empty();
     for (Long blockId : result.getSuccessBlockIds()) {
-      succBlockIdBitmap.addLong(blockId);
+      succBlockIdBitmap.add(blockId);
     }
     assertEquals(0, result.getFailedBlockIds().size());
     assertEquals(blockIdBitmap, succBlockIdBitmap);
@@ -439,7 +440,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     registerShuffleServer(testAppId, 3, 2, 2, true);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     // When 2 servers are timeout, the block sending should fail
     enableTimeout((MockedShuffleServer) grpcShuffleServers.get(1), 500);
@@ -455,9 +456,9 @@ public class QuorumTest extends ShuffleReadWriteBase {
             expectedData,
             Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
     SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
-    Roaring64NavigableMap failedBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet failedBlockIdBitmap = BlockIdSet.empty();
     for (Long blockId : result.getFailedBlockIds()) {
-      failedBlockIdBitmap.addLong(blockId);
+      failedBlockIdBitmap.add(blockId);
     }
     assertEquals(blockIdBitmap, failedBlockIdBitmap);
     assertEquals(0, result.getSuccessBlockIds().size());
@@ -501,7 +502,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     enableTimeout((MockedShuffleServer) grpcShuffleServers.get(2), 500);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(
             0,
@@ -513,13 +514,13 @@ public class QuorumTest extends ShuffleReadWriteBase {
             expectedData,
             Lists.newArrayList(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2));
     SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
-    Roaring64NavigableMap failedBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap succBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet failedBlockIdBitmap = BlockIdSet.empty();
+    BlockIdSet succBlockIdBitmap = BlockIdSet.empty();
     for (Long blockId : result.getSuccessBlockIds()) {
-      succBlockIdBitmap.addLong(blockId);
+      succBlockIdBitmap.add(blockId);
     }
     for (Long blockId : result.getFailedBlockIds()) {
-      failedBlockIdBitmap.addLong(blockId);
+      failedBlockIdBitmap.add(blockId);
     }
     assertEquals(blockIdBitmap, succBlockIdBitmap);
     assertEquals(0, failedBlockIdBitmap.getLongCardinality());
@@ -533,7 +534,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 0, 0L, 1);
 
-    Roaring64NavigableMap report =
+    BlockIdSet report =
         shuffleWriteClientImpl.getShuffleResult(
             "GRPC",
             Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
@@ -577,7 +578,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     enableTimeout((MockedShuffleServer) grpcShuffleServers.get(2), 500);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     for (int i = 0; i < 5; i++) {
       List<ShuffleBlockInfo> blocks =
@@ -613,7 +614,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     registerShuffleServer(testAppId, 3, 2, 2, true);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     final List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(
             0,
@@ -633,7 +634,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     serverToPartitionToBlockIds.put(shuffleServerInfo1, partitionToBlockIds);
     serverToPartitionToBlockIds.put(shuffleServerInfo2, partitionToBlockIds);
     shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 0, 0L, 1);
-    Roaring64NavigableMap report =
+    BlockIdSet report =
         shuffleWriteClientImpl.getShuffleResult(
             "GRPC",
             Sets.newHashSet(shuffleServerInfo0, shuffleServerInfo1, shuffleServerInfo2),
@@ -644,9 +645,9 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     // data read should success
     SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
-    Roaring64NavigableMap succBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet succBlockIdBitmap = BlockIdSet.empty();
     for (Long blockId : result.getSuccessBlockIds()) {
-      succBlockIdBitmap.addLong(blockId);
+      succBlockIdBitmap.add(blockId);
     }
     assertEquals(0, result.getFailedBlockIds().size());
     assertEquals(blockIdBitmap, succBlockIdBitmap);
@@ -687,9 +688,9 @@ public class QuorumTest extends ShuffleReadWriteBase {
     String testAppId = "case6";
     registerShuffleServer(testAppId, 3, 2, 2, true);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap0 = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap blockIdBitmap2 = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap0 = BlockIdSet.empty();
+    BlockIdSet blockIdBitmap1 = BlockIdSet.empty();
+    BlockIdSet blockIdBitmap2 = BlockIdSet.empty();
 
     List<ShuffleBlockInfo> partition0 =
         createShuffleBlockList(
@@ -753,7 +754,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     registerShuffleServer(testAppId, 3, 2, 2, true);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
 
     // attempt to send data to "all servers", but only the server 0,1 receive data actually
@@ -811,7 +812,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     registerShuffleServer(testAppId, 3, 2, 2, true);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
 
     // attempt to send data to "all servers", but only the server 0,2 receive data actually
@@ -872,7 +873,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     registerShuffleServer(testAppId, 5, 3, 3, true);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
 
     // attempt to send data to "all servers", but only the server 0,1,2 receive data actually
@@ -926,7 +927,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     registerShuffleServer(testAppId, 5, 3, 3, true);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
 
     // attempt to send data to "all servers", but the secondary round is activated due to failures
@@ -980,7 +981,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     registerShuffleServer(testAppId, 5, 4, 2, true);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
 
     // attempt to send data to "all servers", but only the server 0,1,2 receive data actually
@@ -1035,7 +1036,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     registerShuffleServer(testAppId, 3, 2, 2, false);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
 
     for (int i = 0; i < 5; i++) {
@@ -1090,11 +1091,11 @@ public class QuorumTest extends ShuffleReadWriteBase {
       Map<Long, byte[]> expectedData,
       Roaring64NavigableMap blockIdBitmap) {
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
-    Roaring64NavigableMap matched = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet matched = BlockIdSet.empty();
     while (csb != null && csb.getByteBuffer() != null) {
       for (Map.Entry<Long, byte[]> entry : expectedData.entrySet()) {
         if (compareByte(entry.getValue(), csb.getByteBuffer())) {
-          matched.addLong(entry.getKey());
+          matched.add(entry.getKey());
           break;
         }
       }

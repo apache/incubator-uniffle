@@ -25,11 +25,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.Sets;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.JavaUtils;
 
 /**
@@ -46,7 +46,7 @@ public class ShuffleTaskInfo {
 
   private Map<Integer, Object> commitLocks;
   /** shuffleId -> blockIds */
-  private Map<Integer, Roaring64NavigableMap> cachedBlockIds;
+  private Map<Integer, BlockIdSet> cachedBlockIds;
 
   private AtomicReference<String> user;
 
@@ -93,7 +93,7 @@ public class ShuffleTaskInfo {
     return commitLocks;
   }
 
-  public Map<Integer, Roaring64NavigableMap> getCachedBlockIds() {
+  public Map<Integer, BlockIdSet> getCachedBlockIds() {
     return cachedBlockIds;
   }
 

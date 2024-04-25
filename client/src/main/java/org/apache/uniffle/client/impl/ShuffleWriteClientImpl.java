@@ -39,7 +39,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,6 +91,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
@@ -768,7 +768,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @Override
-  public Roaring64NavigableMap getShuffleResult(
+  public BlockIdSet getShuffleResult(
       String clientType,
       Set<ShuffleServerInfo> shuffleServerInfoSet,
       String appId,
@@ -777,7 +777,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     RssGetShuffleResultRequest request =
         new RssGetShuffleResultRequest(appId, shuffleId, partitionId, blockIdLayout);
     boolean isSuccessful = false;
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     int successCnt = 0;
     for (ShuffleServerInfo ssi : shuffleServerInfoSet) {
       try {
@@ -785,8 +785,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             getShuffleServerClient(ssi).getShuffleResult(request);
         if (response.getStatusCode() == StatusCode.SUCCESS) {
           // merge into blockIds from multiple servers.
-          Roaring64NavigableMap blockIdBitmapOfServer = response.getBlockIdBitmap();
-          blockIdBitmap.or(blockIdBitmapOfServer);
+          BlockIdSet blockIdBitmapOfServer = response.getBlockIdBitmap();
+          blockIdBitmap.addAll(blockIdBitmapOfServer);
           successCnt++;
           if (successCnt >= replicaRead) {
             isSuccessful = true;
@@ -812,14 +812,14 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @Override
-  public Roaring64NavigableMap getShuffleResultForMultiPart(
+  public BlockIdSet getShuffleResultForMultiPart(
       String clientType,
       Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
       String appId,
       int shuffleId,
       Set<Integer> failedPartitions,
       PartitionDataReplicaRequirementTracking replicaRequirementTracking) {
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Set<Integer> allRequestedPartitionIds = new HashSet<>();
     for (Map.Entry<ShuffleServerInfo, Set<Integer>> entry : serverToPartitions.entrySet()) {
       ShuffleServerInfo shuffleServerInfo = entry.getKey();
@@ -838,8 +838,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             getShuffleServerClient(shuffleServerInfo).getShuffleResultForMultiPart(request);
         if (response.getStatusCode() == StatusCode.SUCCESS) {
           // merge into blockIds from multiple servers.
-          Roaring64NavigableMap blockIdBitmapOfServer = response.getBlockIdBitmap();
-          blockIdBitmap.or(blockIdBitmapOfServer);
+          BlockIdSet blockIdBitmapOfServer = response.getBlockIdBitmap();
+          blockIdBitmap.addAll(blockIdBitmapOfServer);
           for (Integer partitionId : requestPartitions) {
             replicaRequirementTracking.markPartitionOfServerSuccessful(
                 partitionId, shuffleServerInfo);

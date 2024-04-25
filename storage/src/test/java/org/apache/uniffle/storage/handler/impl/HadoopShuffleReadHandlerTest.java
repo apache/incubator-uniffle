@@ -31,12 +31,12 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.Test;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.storage.HadoopShuffleHandlerTestBase;
 import org.apache.uniffle.storage.HadoopTestBase;
@@ -65,9 +65,9 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
     int total =
         HadoopShuffleHandlerTestBase.calcExpectedSegmentNum(
             expectTotalBlockNum, blockSize, readBufferSize);
-    Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
-    expectedData.forEach((id, block) -> expectBlockIds.addLong(id));
+    BlockIdSet expectBlockIds = BlockIdSet.empty();
+    BlockIdSet processBlockIds = BlockIdSet.empty();
+    expectedData.forEach((id, block) -> expectBlockIds.add(id));
     String fileNamePrefix =
         ShuffleStorageUtils.getFullShuffleDataFolder(
                 basePath, ShuffleStorageUtils.getShuffleDataPathWithRange("appId", 0, 1, 1, 10))
@@ -129,9 +129,9 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
     int total =
         HadoopShuffleHandlerTestBase.calcExpectedSegmentNum(
             expectTotalBlockNum, blockSize, readBufferSize);
-    Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
-    expectedData.forEach((id, block) -> expectBlockIds.addLong(id));
+    BlockIdSet expectBlockIds = BlockIdSet.empty();
+    BlockIdSet processBlockIds = BlockIdSet.empty();
+    expectedData.forEach((id, block) -> expectBlockIds.add(id));
     String fileNamePrefix =
         ShuffleStorageUtils.getFullShuffleDataFolder(
                 basePath, ShuffleStorageUtils.getShuffleDataPathWithRange("appId", 0, 1, 1, 10))

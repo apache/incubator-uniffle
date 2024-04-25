@@ -31,6 +31,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
@@ -52,8 +53,8 @@ public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
       int partitionId,
       String filePrefix,
       int readBufferSize,
-      Roaring64NavigableMap expectBlockIds,
-      Roaring64NavigableMap processBlockIds,
+      BlockIdSet expectBlockIds,
+      BlockIdSet processBlockIds,
       Configuration conf,
       ShuffleDataDistributionType distributionType,
       Roaring64NavigableMap expectTaskIds,
@@ -83,8 +84,8 @@ public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
       int partitionId,
       String filePrefix,
       int readBufferSize,
-      Roaring64NavigableMap expectBlockIds,
-      Roaring64NavigableMap processBlockIds,
+      BlockIdSet expectBlockIds,
+      BlockIdSet processBlockIds,
       Configuration conf)
       throws Exception {
     this(

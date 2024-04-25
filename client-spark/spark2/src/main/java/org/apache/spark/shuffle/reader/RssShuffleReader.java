@@ -53,6 +53,7 @@ import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.BlockIdSet;
 
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
@@ -70,7 +71,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private String basePath;
   private int partitionNumPerRange;
   private int partitionNum;
-  private Roaring64NavigableMap blockIdBitmap;
+  private BlockIdSet blockIdBitmap;
   private Roaring64NavigableMap taskIdBitmap;
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
@@ -85,7 +86,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       Configuration hadoopConf,
       int partitionNumPerRange,
       int partitionNum,
-      Roaring64NavigableMap blockIdBitmap,
+      BlockIdSet blockIdBitmap,
       Roaring64NavigableMap taskIdBitmap,
       RssConf rssConf,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers) {

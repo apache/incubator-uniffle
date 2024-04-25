@@ -56,6 +56,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -191,9 +192,9 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
   }
 
   private Map<Integer, List<ShuffleBlockInfo>> createTestData(
-      Roaring64NavigableMap[] bitmaps, Map<Long, byte[]> expectedData) {
+      BlockIdSet[] bitmaps, Map<Long, byte[]> expectedData) {
     for (int i = 0; i < 4; i++) {
-      bitmaps[i] = Roaring64NavigableMap.bitmapOf();
+      bitmaps[i] = BlockIdSet.empty();
     }
     List<ShuffleBlockInfo> blocks1 =
         ShuffleReadWriteBase.createShuffleBlockList(
@@ -265,7 +266,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
             ShuffleDataDistributionType.NORMAL);
     shuffleServerClient.registerShuffle(rrsr);
 
-    Roaring64NavigableMap[] bitmaps = new Roaring64NavigableMap[4];
+    BlockIdSet[] bitmaps = new BlockIdSet[4];
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Map<Integer, List<ShuffleBlockInfo>> dataBlocks = createTestData(bitmaps, expectedData);
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
@@ -376,15 +377,13 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
   }
 
   protected void validateResult(
-      ShuffleReadClientImpl readClient,
-      Map<Long, byte[]> expectedData,
-      Roaring64NavigableMap blockIdBitmap) {
+      ShuffleReadClientImpl readClient, Map<Long, byte[]> expectedData, BlockIdSet blockIdBitmap) {
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
-    Roaring64NavigableMap matched = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet matched = BlockIdSet.empty();
     while (csb != null && csb.getByteBuffer() != null) {
       for (Map.Entry<Long, byte[]> entry : expectedData.entrySet()) {
         if (TestUtils.compareByte(entry.getValue(), csb.getByteBuffer())) {
-          matched.addLong(entry.getKey());
+          matched.add(entry.getKey());
           break;
         }
       }

@@ -24,11 +24,13 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.segment.SegmentSplitterFactory;
+import org.apache.uniffle.common.util.BlockIdSet;
 
 public abstract class DataSkippableReadHandler extends AbstractClientReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(DataSkippableReadHandler.class);
@@ -36,8 +38,8 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
   protected List<ShuffleDataSegment> shuffleDataSegments = Lists.newArrayList();
   protected int segmentIndex = 0;
 
-  protected Roaring64NavigableMap expectBlockIds;
-  protected Roaring64NavigableMap processBlockIds;
+  protected BlockIdSet expectBlockIds;
+  protected BlockIdSet processBlockIds;
 
   protected ShuffleDataDistributionType distributionType;
   protected Roaring64NavigableMap expectTaskIds;
@@ -47,8 +49,8 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       int shuffleId,
       int partitionId,
       int readBufferSize,
-      Roaring64NavigableMap expectBlockIds,
-      Roaring64NavigableMap processBlockIds,
+      BlockIdSet expectBlockIds,
+      BlockIdSet processBlockIds,
       ShuffleDataDistributionType distributionType,
       Roaring64NavigableMap expectTaskIds) {
     this.appId = appId;
@@ -87,14 +89,14 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
     ShuffleDataResult result = null;
     while (segmentIndex < shuffleDataSegments.size()) {
       ShuffleDataSegment segment = shuffleDataSegments.get(segmentIndex);
-      Roaring64NavigableMap blocksOfSegment = Roaring64NavigableMap.bitmapOf();
-      segment.getBufferSegments().forEach(block -> blocksOfSegment.addLong(block.getBlockId()));
+      BlockIdSet blocksOfSegment = BlockIdSet.empty();
+      blocksOfSegment.addAll(
+          segment.getBufferSegments().stream().mapToLong(BufferSegment::getBlockId));
       // skip unexpected blockIds
-      blocksOfSegment.and(expectBlockIds);
+      blocksOfSegment.retainAll(expectBlockIds);
       if (!blocksOfSegment.isEmpty()) {
         // skip processed blockIds
-        blocksOfSegment.or(processBlockIds);
-        blocksOfSegment.xor(processBlockIds);
+        blocksOfSegment.removeAll(processBlockIds);
         if (!blocksOfSegment.isEmpty()) {
           result = readShuffleData(segment);
           segmentIndex++;

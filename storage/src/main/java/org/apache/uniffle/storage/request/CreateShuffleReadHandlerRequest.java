@@ -27,6 +27,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.IdHelper;
 
 public class CreateShuffleReadHandlerRequest {
@@ -45,8 +46,8 @@ public class CreateShuffleReadHandlerRequest {
   private RssBaseConf rssBaseConf;
   private Configuration hadoopConf;
   private List<ShuffleServerInfo> shuffleServerInfoList;
-  private Roaring64NavigableMap expectBlockIds;
-  private Roaring64NavigableMap processBlockIds;
+  private BlockIdSet expectBlockIds;
+  private BlockIdSet processBlockIds;
   private ShuffleDataDistributionType distributionType;
   private Roaring64NavigableMap expectTaskIds;
   private boolean expectedTaskIdsBitmapFilterEnable;
@@ -171,19 +172,19 @@ public class CreateShuffleReadHandlerRequest {
     this.hadoopConf = hadoopConf;
   }
 
-  public void setExpectBlockIds(Roaring64NavigableMap expectBlockIds) {
+  public void setExpectBlockIds(BlockIdSet expectBlockIds) {
     this.expectBlockIds = expectBlockIds;
   }
 
-  public Roaring64NavigableMap getExpectBlockIds() {
+  public BlockIdSet getExpectBlockIds() {
     return expectBlockIds;
   }
 
-  public void setProcessBlockIds(Roaring64NavigableMap processBlockIds) {
+  public void setProcessBlockIds(BlockIdSet processBlockIds) {
     this.processBlockIds = processBlockIds;
   }
 
-  public Roaring64NavigableMap getProcessBlockIds() {
+  public BlockIdSet getProcessBlockIds() {
     return processBlockIds;
   }
 

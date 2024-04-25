@@ -35,6 +35,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
@@ -46,8 +47,8 @@ public class HadoopClientReadHandler extends AbstractClientReadHandler {
   protected final int partitionNum;
   protected final int readBufferSize;
   private final String shuffleServerId;
-  protected Roaring64NavigableMap expectBlockIds;
-  protected Roaring64NavigableMap processBlockIds;
+  protected BlockIdSet expectBlockIds;
+  protected BlockIdSet processBlockIds;
   protected final String storageBasePath;
   protected final Configuration hadoopConf;
   protected final List<HadoopShuffleReadHandler> readHandlers = Lists.newArrayList();
@@ -64,8 +65,8 @@ public class HadoopClientReadHandler extends AbstractClientReadHandler {
       int partitionNumPerRange,
       int partitionNum,
       int readBufferSize,
-      Roaring64NavigableMap expectBlockIds,
-      Roaring64NavigableMap processBlockIds,
+      BlockIdSet expectBlockIds,
+      BlockIdSet processBlockIds,
       String storageBasePath,
       Configuration hadoopConf,
       ShuffleDataDistributionType distributionType,
@@ -98,8 +99,8 @@ public class HadoopClientReadHandler extends AbstractClientReadHandler {
       int partitionNumPerRange,
       int partitionNum,
       int readBufferSize,
-      Roaring64NavigableMap expectBlockIds,
-      Roaring64NavigableMap processBlockIds,
+      BlockIdSet expectBlockIds,
+      BlockIdSet processBlockIds,
       String storageBasePath,
       Configuration hadoopConf) {
     this(

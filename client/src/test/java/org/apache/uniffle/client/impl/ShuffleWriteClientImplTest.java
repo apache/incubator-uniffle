@@ -49,6 +49,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.IOMode;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.RssUtils;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -374,8 +375,7 @@ public class ShuffleWriteClientImplTest {
 
     Set<ShuffleServerInfo> shuffleServerInfoSet =
         Sets.newHashSet(new ShuffleServerInfo("id", "host", 0));
-    Roaring64NavigableMap result =
-        spyClient.getShuffleResult("GRPC", shuffleServerInfoSet, "appId", 1, 2);
+    BlockIdSet result = spyClient.getShuffleResult("GRPC", shuffleServerInfoSet, "appId", 1, 2);
 
     verify(mockShuffleServerClient)
         .getShuffleResult(argThat(request -> request.getBlockIdLayout().equals(layout)));

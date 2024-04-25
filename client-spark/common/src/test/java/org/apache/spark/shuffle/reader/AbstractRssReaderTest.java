@@ -32,12 +32,12 @@ import com.google.common.collect.Sets;
 import org.apache.spark.serializer.SerializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -67,7 +67,7 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
       int blockNum,
       int recordNum,
       Map<String, String> expectedData,
-      Roaring64NavigableMap blockIdBitmap,
+      BlockIdSet blockIdBitmap,
       String keyPrefix,
       Serializer serializer,
       int partitionID)
@@ -91,7 +91,7 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
       int recordNum,
       BlockIdLayout layout,
       Map<String, String> expectedData,
-      Roaring64NavigableMap blockIdBitmap,
+      BlockIdSet blockIdBitmap,
       String keyPrefix,
       Serializer serializer,
       int partitionID)
@@ -114,7 +114,7 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
       int blockNum,
       int recordNum,
       Map<String, String> expectedData,
-      Roaring64NavigableMap blockIdBitmap,
+      BlockIdSet blockIdBitmap,
       String keyPrefix,
       Serializer serializer,
       int partitionID,
@@ -139,7 +139,7 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
       int recordNum,
       BlockIdLayout layout,
       Map<String, String> expectedData,
-      Roaring64NavigableMap blockIdBitmap,
+      BlockIdSet blockIdBitmap,
       String keyPrefix,
       Serializer serializer,
       int partitionID,

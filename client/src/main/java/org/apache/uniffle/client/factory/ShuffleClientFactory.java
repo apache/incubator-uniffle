@@ -30,6 +30,7 @@ import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.IdHelper;
 
 public class ShuffleClientFactory {
@@ -199,7 +200,7 @@ public class ShuffleClientFactory {
     private String basePath;
     private int partitionNumPerRange;
     private int partitionNum;
-    private Roaring64NavigableMap blockIdBitmap;
+    private BlockIdSet blockIdBitmap;
     private Roaring64NavigableMap taskIdBitmap;
     private List<ShuffleServerInfo> shuffleServerInfoList;
     private Configuration hadoopConf;
@@ -245,7 +246,7 @@ public class ShuffleClientFactory {
       return this;
     }
 
-    public ReadClientBuilder blockIdBitmap(Roaring64NavigableMap blockIdBitmap) {
+    public ReadClientBuilder blockIdBitmap(BlockIdSet blockIdBitmap) {
       this.blockIdBitmap = blockIdBitmap;
       return this;
     }
@@ -348,7 +349,7 @@ public class ShuffleClientFactory {
       return basePath;
     }
 
-    public Roaring64NavigableMap getBlockIdBitmap() {
+    public BlockIdSet getBlockIdBitmap() {
       return blockIdBitmap;
     }
 

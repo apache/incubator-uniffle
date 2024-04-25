@@ -28,7 +28,6 @@ import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
@@ -38,6 +37,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,7 +50,7 @@ public class LocalFileServerReadHandlerTest {
     int blockSize = 7;
 
     ByteBuffer byteBuffer = ByteBuffer.allocate(expectTotalBlockNum * 40);
-    Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet expectBlockIds = BlockIdSet.empty();
 
     // We simulate the generation of 4 block index files and 3 block data files to test
     // LocalFileClientReadHandler
@@ -77,7 +77,7 @@ public class LocalFileServerReadHandlerTest {
         new HashSet<>());
     byteBuffer.rewind();
 
-    blocks.forEach(block -> expectBlockIds.addLong(block.getBlockId()));
+    blocks.forEach(block -> expectBlockIds.add(block.getBlockId()));
 
     String appId = "app1";
     int shuffleId = 1;
@@ -122,7 +122,7 @@ public class LocalFileServerReadHandlerTest {
         .when(mockShuffleServerClient)
         .getShuffleData(Mockito.argThat(segment2Match));
 
-    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet processBlockIds = BlockIdSet.empty();
     LocalFileClientReadHandler handler =
         new LocalFileClientReadHandler(
             appId,

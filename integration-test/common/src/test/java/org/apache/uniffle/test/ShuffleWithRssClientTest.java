@@ -46,6 +46,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -137,7 +138,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         ShuffleDataDistributionType.NORMAL,
         -1);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
 
     // simulator a failed server
     ShuffleServerInfo fakeShuffleServerInfo =
@@ -154,13 +155,13 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
             Lists.newArrayList(shuffleServerInfo1, fakeShuffleServerInfo));
     SendShuffleDataResult result =
         shuffleWriteClientImpl.sendShuffleData(testAppId, blocks, () -> false);
-    Roaring64NavigableMap failedBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap succBlockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet failedBlockIdBitmap = BlockIdSet.empty();
+    BlockIdSet succBlockIdBitmap = BlockIdSet.empty();
     for (Long blockId : result.getFailedBlockIds()) {
-      failedBlockIdBitmap.addLong(blockId);
+      failedBlockIdBitmap.add(blockId);
     }
     for (Long blockId : result.getSuccessBlockIds()) {
-      succBlockIdBitmap.addLong(blockId);
+      succBlockIdBitmap.add(blockId);
     }
     // There will no failed blocks when replica=2
     assertEquals(failedBlockIdBitmap.getLongCardinality(), 0);
@@ -178,7 +179,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     serverToPartitionToBlockIds.put(shuffleServerInfo1, ptb);
     serverToPartitionToBlockIds.put(fakeShuffleServerInfo, ptb);
     shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 0, 0, 2);
-    Roaring64NavigableMap report =
+    BlockIdSet report =
         shuffleWriteClientImpl.getShuffleResult(
             "GRPC", Sets.newHashSet(shuffleServerInfo1, fakeShuffleServerInfo), testAppId, 0, 0);
     assertEquals(blockIdBitmap, report);
@@ -218,7 +219,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     serverToPartitionToBlockIds.put(shuffleServerInfo1, partitionToBlocks);
     // case1
     shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 1, 0, 1);
-    Roaring64NavigableMap bitmap =
+    BlockIdSet bitmap =
         shuffleWriteClientImpl.getShuffleResult(
             "GRPC", Sets.newHashSet(shuffleServerInfo1), testAppId, 1, 0);
     assertTrue(bitmap.isEmpty());
@@ -277,7 +278,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
 
     shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 1, 0, 1);
 
-    Roaring64NavigableMap bitmap =
+    BlockIdSet bitmap =
         shuffleWriteClientImpl.getShuffleResult(
             "GRPC", Sets.newHashSet(shuffleServerInfo1), testAppId, 1, 0);
     assertTrue(bitmap.isEmpty());
@@ -334,7 +335,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         ShuffleDataDistributionType.NORMAL,
         -1);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
 
     List<ShuffleBlockInfo> blocks =

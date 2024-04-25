@@ -19,6 +19,7 @@ package org.apache.uniffle.test;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,8 +35,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.roaringbitmap.longlong.LongIterator;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
@@ -50,6 +49,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServer;
@@ -149,7 +149,7 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
 
-    Roaring64NavigableMap[] bitmaps = new Roaring64NavigableMap[4];
+    BlockIdSet[] bitmaps = new BlockIdSet[4];
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = createTestData(bitmaps, expectedData);
 
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleToBlocks = Maps.newHashMap();
@@ -207,9 +207,9 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
     assertEquals(expectedBlockIds.size(), matched);
   }
 
-  private Set<Long> transBitmapToSet(Roaring64NavigableMap blockIdBitmap) {
+  private Set<Long> transBitmapToSet(BlockIdSet blockIdBitmap) {
     Set<Long> blockIds = Sets.newHashSet();
-    LongIterator iter = blockIdBitmap.getLongIterator();
+    Iterator<Long> iter = blockIdBitmap.stream().iterator();
     while (iter.hasNext()) {
       blockIds.add(iter.next());
     }

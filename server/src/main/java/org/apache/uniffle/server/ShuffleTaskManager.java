@@ -63,9 +63,9 @@ import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
-import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
@@ -106,7 +106,7 @@ public class ShuffleTaskManager {
   // merge different blockId of partition to one bitmap can reduce memory cost,
   // but when get blockId, performance will degrade a little which can be optimized by client
   // configuration
-  private Map<String, Map<Integer, Roaring64NavigableMap[]>> partitionsToBlockIds;
+  private Map<String, Map<Integer, BlockIdSet[]>> partitionsToBlockIds;
   private final ShuffleBufferManager shuffleBufferManager;
   private Map<String, ShuffleTaskInfo> shuffleTaskInfos = JavaUtils.newConcurrentMap();
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = JavaUtils.newConcurrentMap();
@@ -330,8 +330,8 @@ public class ShuffleTaskManager {
   public StatusCode commitShuffle(String appId, int shuffleId) throws Exception {
     long start = System.currentTimeMillis();
     refreshAppId(appId);
-    Roaring64NavigableMap cachedBlockIds = getCachedBlockIds(appId, shuffleId);
-    Roaring64NavigableMap cloneBlockIds;
+    BlockIdSet cachedBlockIds = getCachedBlockIds(appId, shuffleId);
+    BlockIdSet cloneBlockIds;
     ShuffleTaskInfo shuffleTaskInfo =
         shuffleTaskInfos.computeIfAbsent(appId, x -> new ShuffleTaskInfo(appId));
     Object lock = shuffleTaskInfo.getCommitLocks().computeIfAbsent(shuffleId, x -> new Object());
@@ -340,20 +340,17 @@ public class ShuffleTaskManager {
       if (System.currentTimeMillis() - start > commitTimeout) {
         throw new RssException("Shuffle data commit timeout for " + commitTimeout + " ms");
       }
-      synchronized (cachedBlockIds) {
-        cloneBlockIds = RssUtils.cloneBitMap(cachedBlockIds);
-      }
+      cloneBlockIds = cachedBlockIds.copy();
       long expectedCommitted = cloneBlockIds.getLongCardinality();
       shuffleBufferManager.commitShuffleTask(appId, shuffleId);
-      Roaring64NavigableMap committedBlockIds;
-      Roaring64NavigableMap cloneCommittedBlockIds;
+      BlockIdSet committedBlockIds;
+      BlockIdSet cloneCommittedBlockIds;
       long checkInterval = 1000L;
       while (true) {
         committedBlockIds = shuffleFlushManager.getCommittedBlockIds(appId, shuffleId);
-        synchronized (committedBlockIds) {
-          cloneCommittedBlockIds = RssUtils.cloneBitMap(committedBlockIds);
-        }
-        cloneBlockIds.andNot(cloneCommittedBlockIds);
+        // create thread-safe copy, then remove those block ids
+        cloneCommittedBlockIds = committedBlockIds.copy();
+        cloneBlockIds.removeAll(cloneCommittedBlockIds);
         if (cloneBlockIds.isEmpty()) {
           break;
         }
@@ -390,20 +387,20 @@ public class ShuffleTaskManager {
   public void addFinishedBlockIds(
       String appId, Integer shuffleId, Map<Integer, long[]> partitionToBlockIds, int bitmapNum) {
     refreshAppId(appId);
-    Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
+    Map<Integer, BlockIdSet[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
     if (shuffleIdToPartitions == null) {
       throw new RssException("appId[" + appId + "] is expired!");
     }
     shuffleIdToPartitions.computeIfAbsent(
         shuffleId,
         key -> {
-          Roaring64NavigableMap[] blockIds = new Roaring64NavigableMap[bitmapNum];
+          BlockIdSet[] blockIds = new BlockIdSet[bitmapNum];
           for (int i = 0; i < bitmapNum; i++) {
-            blockIds[i] = Roaring64NavigableMap.bitmapOf();
+            blockIds[i] = BlockIdSet.empty();
           }
           return blockIds;
         });
-    Roaring64NavigableMap[] blockIds = shuffleIdToPartitions.get(shuffleId);
+    BlockIdSet[] blockIds = shuffleIdToPartitions.get(shuffleId);
     if (blockIds.length != bitmapNum) {
       throw new InvalidRequestException(
           "Request expects "
@@ -415,12 +412,8 @@ public class ShuffleTaskManager {
 
     for (Map.Entry<Integer, long[]> entry : partitionToBlockIds.entrySet()) {
       Integer partitionId = entry.getKey();
-      Roaring64NavigableMap bitmap = blockIds[partitionId % bitmapNum];
-      synchronized (bitmap) {
-        for (long blockId : entry.getValue()) {
-          bitmap.addLong(blockId);
-        }
-      }
+      BlockIdSet bitmap = blockIds[partitionId % bitmapNum];
+      bitmap.addAll(Arrays.stream(entry.getValue()));
     }
   }
 
@@ -444,28 +437,22 @@ public class ShuffleTaskManager {
     }
     ShuffleTaskInfo shuffleTaskInfo =
         shuffleTaskInfos.computeIfAbsent(appId, x -> new ShuffleTaskInfo(appId));
-    Roaring64NavigableMap bitmap =
-        shuffleTaskInfo
-            .getCachedBlockIds()
-            .computeIfAbsent(shuffleId, x -> Roaring64NavigableMap.bitmapOf());
+    BlockIdSet blockIds =
+        shuffleTaskInfo.getCachedBlockIds().computeIfAbsent(shuffleId, x -> BlockIdSet.empty());
 
     long size = 0L;
-    synchronized (bitmap) {
-      for (ShufflePartitionedBlock spb : spbs) {
-        bitmap.addLong(spb.getBlockId());
-        size += spb.getSize();
-      }
-    }
+    blockIds.addAll(Arrays.stream(spbs).mapToLong(ShufflePartitionedBlock::getBlockId));
+    size += Arrays.stream(spbs).mapToLong(ShufflePartitionedBlock::getSize).sum();
     long partitionSize = shuffleTaskInfo.addPartitionDataSize(shuffleId, partitionId, size);
     if (shuffleBufferManager.isHugePartition(partitionSize)) {
       shuffleTaskInfo.markHugePartition(shuffleId, partitionId);
     }
   }
 
-  public Roaring64NavigableMap getCachedBlockIds(String appId, int shuffleId) {
-    Map<Integer, Roaring64NavigableMap> shuffleIdToBlockIds =
+  public BlockIdSet getCachedBlockIds(String appId, int shuffleId) {
+    Map<Integer, BlockIdSet> shuffleIdToBlockIds =
         shuffleTaskInfos.getOrDefault(appId, new ShuffleTaskInfo(appId)).getCachedBlockIds();
-    Roaring64NavigableMap blockIds = shuffleIdToBlockIds.get(shuffleId);
+    BlockIdSet blockIds = shuffleIdToBlockIds.get(shuffleId);
     if (blockIds == null) {
       LOG.warn(
           "Unexpected value when getCachedBlockIds for appId["
@@ -473,7 +460,7 @@ public class ShuffleTaskManager {
               + "], shuffleId["
               + shuffleId
               + "]");
-      return Roaring64NavigableMap.bitmapOf();
+      return BlockIdSet.empty();
     }
     return blockIds;
   }
@@ -551,12 +538,12 @@ public class ShuffleTaskManager {
         storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
       }
     }
-    Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
+    Map<Integer, BlockIdSet[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
     if (shuffleIdToPartitions == null) {
       return null;
     }
 
-    Roaring64NavigableMap[] blockIds = shuffleIdToPartitions.get(shuffleId);
+    BlockIdSet[] blockIds = shuffleIdToPartitions.get(shuffleId);
     if (blockIds == null) {
       return new byte[] {};
     }
@@ -571,29 +558,29 @@ public class ShuffleTaskManager {
       }
     }
 
-    Roaring64NavigableMap res = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet res = BlockIdSet.empty();
     for (Map.Entry<Integer, Set<Integer>> entry : bitmapIndexToPartitions.entrySet()) {
       Set<Integer> requestPartitions = entry.getValue();
-      Roaring64NavigableMap bitmap = blockIds[entry.getKey()];
-      getBlockIdsByPartitionId(requestPartitions, bitmap, res, blockIdLayout);
+      BlockIdSet set = blockIds[entry.getKey()];
+      getBlockIdsByPartitionId(requestPartitions, set, res, blockIdLayout);
     }
-    return RssUtils.serializeBitMap(res);
+    return res.serialize();
   }
 
   // filter the specific partition blockId in the bitmap to the resultBitmap
-  protected Roaring64NavigableMap getBlockIdsByPartitionId(
+  protected BlockIdSet getBlockIdsByPartitionId(
       Set<Integer> requestPartitions,
-      Roaring64NavigableMap bitmap,
-      Roaring64NavigableMap resultBitmap,
+      BlockIdSet blockIds,
+      BlockIdSet result,
       BlockIdLayout blockIdLayout) {
-    bitmap.forEach(
+    blockIds.forEach(
         blockId -> {
           int partitionId = blockIdLayout.getPartitionId(blockId);
           if (requestPartitions.contains(partitionId)) {
-            resultBitmap.addLong(blockId);
+            result.add(blockId);
           }
         });
-    return resultBitmap;
+    return result;
   }
 
   public ShuffleDataResult getInMemoryShuffleData(
@@ -857,7 +844,7 @@ public class ShuffleTaskManager {
   }
 
   @VisibleForTesting
-  public Map<String, Map<Integer, Roaring64NavigableMap[]>> getPartitionsToBlockIds() {
+  public Map<String, Map<Integer, BlockIdSet[]>> getPartitionsToBlockIds() {
     return partitionsToBlockIds;
   }
 

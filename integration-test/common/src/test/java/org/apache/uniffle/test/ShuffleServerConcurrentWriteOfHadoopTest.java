@@ -54,6 +54,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -120,12 +121,12 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
             clientSpecifiedConcurrency);
     shuffleServerClient.registerShuffle(rrsr);
 
-    List<Roaring64NavigableMap> bitmaps = new ArrayList<>();
+    List<BlockIdSet> bitmaps = new ArrayList<>();
     Map<Long, byte[]> expectedDataList = new HashMap<>();
     IntStream.range(0, 20)
         .forEach(
             x -> {
-              Roaring64NavigableMap bitmap = Roaring64NavigableMap.bitmapOf();
+              BlockIdSet bitmap = BlockIdSet.empty();
               bitmaps.add(bitmap);
 
               Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -167,11 +168,11 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
                 nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT))
             : new ShuffleServerInfo(
                 LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
-    Roaring64NavigableMap blocksBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blocksBitmap = BlockIdSet.empty();
     bitmaps.stream()
         .forEach(
             x -> {
-              Iterator<Long> iterator = x.iterator();
+              Iterator<Long> iterator = x.stream().iterator();
               while (iterator.hasNext()) {
                 blocksBitmap.add(iterator.next());
               }

@@ -51,6 +51,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -97,7 +98,7 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
     Map<Integer, List<Integer>> map = Maps.newHashMap();
     map.put(0, Lists.newArrayList(0));
     registerShuffle(appId, map, isNettyMode);
-    Roaring64NavigableMap blockBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockBitmap = BlockIdSet.empty();
     final List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(0, 0, 0, 40, 2 * 1024 * 1024, blockBitmap, expectedData);
     makeChaos();
@@ -156,7 +157,7 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
       String appId,
       int shuffleId,
       int partitionId,
-      Roaring64NavigableMap blockBitmap,
+      BlockIdSet blockBitmap,
       Roaring64NavigableMap taskBitmap,
       Map<Long, byte[]> expectedData,
       boolean isNettyMode) {
@@ -186,11 +187,11 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
             .hadoopConf(conf)
             .build();
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
-    Roaring64NavigableMap matched = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet matched = BlockIdSet.empty();
     while (csb != null && csb.getByteBuffer() != null) {
       for (Map.Entry<Long, byte[]> entry : expectedData.entrySet()) {
         if (compareByte(entry.getValue(), csb.getByteBuffer())) {
-          matched.addLong(entry.getKey());
+          matched.add(entry.getKey());
           break;
         }
       }

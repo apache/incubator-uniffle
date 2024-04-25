@@ -89,6 +89,7 @@ import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -700,7 +701,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     Map<ShuffleServerInfo, Set<Integer>> serverToPartitions =
         getPartitionDataServers(shuffleHandleInfo, startPartition, endPartition);
     long start = System.currentTimeMillis();
-    Roaring64NavigableMap blockIdBitmap =
+    BlockIdSet blockIdBitmap =
         getShuffleResultForMultiPart(
             clientType,
             serverToPartitions,
@@ -1108,7 +1109,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     return !failedTaskIds.contains(taskId);
   }
 
-  private Roaring64NavigableMap getShuffleResultForMultiPart(
+  private BlockIdSet getShuffleResultForMultiPart(
       String clientType,
       Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
       String appId,

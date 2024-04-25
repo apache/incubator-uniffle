@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.TestUtils;
 import org.apache.uniffle.client.api.ShuffleReadClient;
@@ -41,6 +40,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.segment.FixedSizeSegmentSplitter;
 import org.apache.uniffle.common.segment.SegmentSplitter;
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ChecksumUtils;
 
 public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
@@ -55,7 +55,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       long taskAttemptId,
       int blockNum,
       int length,
-      Roaring64NavigableMap blockIdBitmap,
+      BlockIdSet blockIdBitmap,
       Map<Long, byte[]> dataMap,
       List<ShuffleServerInfo> shuffleServerInfoList) {
     List<ShuffleBlockInfo> shuffleBlockInfoList = Lists.newArrayList();
@@ -65,7 +65,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       int seqno = ATOMIC_INT.getAndIncrement();
 
       long blockId = LAYOUT.getBlockId(seqno, 0, taskAttemptId);
-      blockIdBitmap.addLong(blockId);
+      blockIdBitmap.add(blockId);
       dataMap.put(blockId, buf);
       shuffleBlockInfoList.add(
           new ShuffleBlockInfo(
@@ -89,7 +89,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       long taskAttemptId,
       int blockNum,
       int length,
-      Roaring64NavigableMap blockIdBitmap,
+      BlockIdSet blockIdBitmap,
       Map<Long, byte[]> dataMap) {
     List<ShuffleServerInfo> shuffleServerInfoList =
         Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
@@ -105,9 +105,9 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
   }
 
   public static Map<Integer, List<ShuffleBlockInfo>> createTestData(
-      Roaring64NavigableMap[] bitmaps, Map<Long, byte[]> expectedData) {
+      BlockIdSet[] bitmaps, Map<Long, byte[]> expectedData) {
     for (int i = 0; i < 4; i++) {
-      bitmaps[i] = Roaring64NavigableMap.bitmapOf();
+      bitmaps[i] = BlockIdSet.empty();
     }
     List<ShuffleBlockInfo> blocks1 =
         createShuffleBlockList(0, 0, 0, 3, 25, bitmaps[0], expectedData, mockSSI);

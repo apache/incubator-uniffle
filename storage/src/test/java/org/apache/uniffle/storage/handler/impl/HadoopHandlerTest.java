@@ -28,11 +28,11 @@ import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.Test;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
@@ -97,10 +97,10 @@ public class HadoopHandlerTest extends HadoopTestBase {
       List<byte[]> expectedData,
       List<Long> expectedBlockId)
       throws IllegalStateException {
-    Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet expectBlockIds = BlockIdSet.empty();
+    BlockIdSet processBlockIds = BlockIdSet.empty();
     for (long blockId : expectedBlockId) {
-      expectBlockIds.addLong(blockId);
+      expectBlockIds.add(blockId);
     }
     // read directly and compare
     HadoopClientReadHandler readHandler =
