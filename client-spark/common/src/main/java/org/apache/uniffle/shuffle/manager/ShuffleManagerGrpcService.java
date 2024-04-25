@@ -28,7 +28,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.grpc.stub.StreamObserver;
+import org.apache.spark.shuffle.MutableShuffleHandleInfo;
 import org.apache.spark.shuffle.ShuffleHandleInfo;
+import org.apache.spark.shuffle.ShuffleHandleInfoBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -190,7 +192,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     RssProtos.PartitionToShuffleServerResponse reply;
     RssProtos.StatusCode code;
     int shuffleId = request.getShuffleId();
-    ShuffleHandleInfo shuffleHandleInfoByShuffleId =
+    ShuffleHandleInfoBase shuffleHandleInfoByShuffleId =
         shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
     if (shuffleHandleInfoByShuffleId != null) {
       code = RssProtos.StatusCode.SUCCESS;
@@ -241,7 +243,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     RssProtos.StatusCode code = RssProtos.StatusCode.INTERNAL_ERROR;
     RssProtos.RssReassignOnBlockSendFailureResponse reply;
     try {
-      ShuffleHandleInfo handle =
+      MutableShuffleHandleInfo handle =
           shuffleManager.reassignOnBlockSendFailure(
               request.getShuffleId(),
               request.getFailurePartitionToServerIdsMap().entrySet().stream()

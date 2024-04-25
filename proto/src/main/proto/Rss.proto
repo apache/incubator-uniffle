@@ -552,10 +552,16 @@ message PartitionToShuffleServerRequest {
 message PartitionToShuffleServerResponse {
   StatusCode status = 1;
   string msg = 2;
-  ShuffleHandleInfo shuffleHandleInfo = 3;
+  DefaultShuffleHandleInfo shuffleHandleInfo = 3;
 }
 
-message ShuffleHandleInfo {
+message DefaultShuffleHandleInfo {
+  int32 shuffleId = 1;
+  map<int32, GetShuffleServerListResponse> partitionToServers = 2;
+  RemoteStorageInfo remoteStorageInfo = 3;
+}
+
+message MutableShuffleHandleInfo {
   int32 shuffleId = 1;
   map<int32, PartitionReplicaServers> partitionToServers = 2;
   RemoteStorageInfo remoteStorageInfo = 3;
@@ -618,7 +624,7 @@ message ReceivingFailureServer {
 message RssReassignOnBlockSendFailureResponse {
   StatusCode status = 1;
   string msg = 2;
-  ShuffleHandleInfo handle = 3;
+  MutableShuffleHandleInfo handle = 3;
 }
 
 

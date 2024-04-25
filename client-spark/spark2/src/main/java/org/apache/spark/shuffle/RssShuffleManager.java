@@ -795,7 +795,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   }
 
   @Override
-  public ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId) {
+  public ShuffleHandleInfoBase getShuffleHandleInfoByShuffleId(int shuffleId) {
     return shuffleIdToShuffleHandleInfo.get(shuffleId);
   }
 

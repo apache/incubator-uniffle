@@ -23,6 +23,7 @@ import java.util.Map;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.spark.shuffle.ShuffleHandleInfo;
 
+import org.apache.spark.shuffle.ShuffleHandleInfoBase;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 
@@ -32,7 +33,7 @@ public class TaskAttemptAssignment {
   private final long taskAttemptId;
   private Map<Integer, List<ShuffleServerInfo>> latestAssignment;
 
-  public TaskAttemptAssignment(long taskAttemptId, ShuffleHandleInfo shuffleHandleInfo) {
+  public TaskAttemptAssignment(long taskAttemptId, ShuffleHandleInfoBase shuffleHandleInfo) {
     this.taskAttemptId = taskAttemptId;
     this.update(shuffleHandleInfo);
   }
@@ -41,7 +42,7 @@ public class TaskAttemptAssignment {
     return latestAssignment.get(partitionId);
   }
 
-  public void update(ShuffleHandleInfo handle) {
+  public void update(ShuffleHandleInfoBase handle) {
     if (handle == null) {
       throw new RssException("Errors on updating shuffle handle by the empty handleInfo.");
     }
