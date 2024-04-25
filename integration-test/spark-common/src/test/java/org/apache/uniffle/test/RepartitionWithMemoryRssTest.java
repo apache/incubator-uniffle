@@ -63,7 +63,7 @@ public class RepartitionWithMemoryRssTest extends RepartitionTest {
   public void testMemoryRelease() throws Exception {
     final String fileName = generateTextFile(10000, 10000);
     SparkConf sparkConf = createSparkConf();
-    updateSparkConfWithRss(sparkConf);
+    updateSparkConfWithRssGrpc(sparkConf);
     sparkConf.set("spark.executor.memory", "500m");
     sparkConf.set("spark.unsafe.exceptionOnMemoryLeak", "true");
     updateRssStorage(sparkConf);

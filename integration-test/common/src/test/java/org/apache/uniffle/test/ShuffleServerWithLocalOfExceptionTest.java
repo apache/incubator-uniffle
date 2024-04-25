@@ -40,7 +40,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class ShuffleServerWithLocalOfExceptionTest extends ShuffleReadWriteBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
-  private static String REMOTE_STORAGE = HDFS_URI + "rss/test";
 
   private static int rpcPort;
 

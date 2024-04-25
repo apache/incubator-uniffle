@@ -63,6 +63,7 @@ public class RpcClientRetryTest extends ShuffleReadWriteBase {
 
   private ShuffleClientFactory.ReadClientBuilder baseReadBuilder(StorageType storageType) {
     return ShuffleClientFactory.newReadBuilder()
+        .clientType(ClientType.GRPC)
         .storageType(storageType.name())
         .shuffleId(0)
         .partitionId(0)
