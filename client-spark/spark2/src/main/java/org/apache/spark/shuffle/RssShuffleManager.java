@@ -126,7 +126,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * Mapping between ShuffleId and ShuffleServer list. ShuffleServer list is dynamically allocated.
    * ShuffleServer is not obtained from RssShuffleHandle, but from this mapping.
    */
-  private Map<Integer, DefaultShuffleHandleInfo> shuffleIdToShuffleHandleInfo =
+  private Map<Integer, ShuffleHandleInfo> shuffleIdToShuffleHandleInfo =
       JavaUtils.newConcurrentMap();
   /** Whether to enable the dynamic shuffleServer function rewrite and reread functions */
   private boolean rssResubmitStage;
@@ -384,8 +384,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     shuffleIdToPartitionNum.putIfAbsent(shuffleId, dependency.partitioner().numPartitions());
     shuffleIdToNumMapTasks.putIfAbsent(shuffleId, dependency.rdd().partitions().length);
     if (shuffleManagerRpcServiceEnabled) {
-      DefaultShuffleHandleInfo handleInfo =
-          new DefaultShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
+      MutableShuffleHandleInfo handleInfo =
+          new MutableShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
       shuffleIdToShuffleHandleInfo.put(shuffleId, handleInfo);
     }
     Broadcast<DefaultShuffleHandleInfo> hdlInfoBd =
@@ -878,8 +878,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         LOG.error("Clear MapoutTracker Meta failed!");
         throw new RssException("Clear MapoutTracker Meta failed!", e);
       }
-      DefaultShuffleHandleInfo handleInfo =
-          new DefaultShuffleHandleInfo(shuffleId, partitionToServers, getRemoteStorageInfo());
+      MutableShuffleHandleInfo handleInfo =
+          new MutableShuffleHandleInfo(shuffleId, partitionToServers, getRemoteStorageInfo());
       shuffleIdToShuffleHandleInfo.put(shuffleId, handleInfo);
       serverAssignedInfos.put(stageIdAndAttempt, true);
       return true;
