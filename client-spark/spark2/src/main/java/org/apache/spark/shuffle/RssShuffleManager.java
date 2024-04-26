@@ -44,7 +44,6 @@ import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.shuffle.handle.DefaultShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
-import org.apache.spark.shuffle.handle.ShuffleHandleInfoBase;
 import org.apache.spark.shuffle.reader.RssShuffleReader;
 import org.apache.spark.shuffle.writer.AddBlockEvent;
 import org.apache.spark.shuffle.writer.DataPusher;
@@ -66,6 +65,7 @@ import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.ReceivingFailureServer;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
@@ -561,7 +561,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                 rssShuffleHandle.getRemoteStorage());
       }
       Map<Integer, List<ShuffleServerInfo>> partitionToServers =
-          shuffleHandleInfo.getLatestPartitionServersForWriter();
+          shuffleHandleInfo.getAllPartitionServersForReader();
       Roaring64NavigableMap blockIdBitmap =
           getShuffleResult(
               clientType,
@@ -799,7 +799,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   }
 
   @Override
-  public ShuffleHandleInfoBase getShuffleHandleInfoByShuffleId(int shuffleId) {
+  public ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId) {
     return shuffleIdToShuffleHandleInfo.get(shuffleId);
   }
 
@@ -892,25 +892,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
   }
 
-  // this is only valid on driver side that exposed to being invoked by grpc server
   @Override
-  public DefaultShuffleHandleInfo reassignShuffleServersForTask(
-      int shuffleId,
-      Set<Integer> partitionIds,
-      String faultyShuffleServerId,
-      Set<Integer> needLoadBalancePartitionIds) {
-    DefaultShuffleHandleInfo handleInfo = shuffleIdToShuffleHandleInfo.get(shuffleId);
-    synchronized (handleInfo) {
-      // find out whether this server has been marked faulty in this shuffle
-      // if it has been reassigned, directly return the replacement server.
-      Set<ShuffleServerInfo> replacements = handleInfo.getReplacements(faultyShuffleServerId);
-      if (replacements == null) {
-        // todo: If load balance partitionId exists, it should assign multiple servers.
-        replacements = Sets.newHashSet(assignShuffleServer(shuffleId, faultyShuffleServerId));
-      }
-      handleInfo.updateAssignment(partitionIds, faultyShuffleServerId, replacements);
-      return handleInfo;
-    }
+  public MutableShuffleHandleInfo reassignOnBlockSendFailure(
+      int shuffleId, Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
+    throw new RssException("Illegal access for reassignOnBlockSendFailure that is not supported.");
   }
 
   private ShuffleServerInfo assignShuffleServer(int shuffleId, String faultyShuffleServerId) {

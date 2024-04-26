@@ -63,7 +63,7 @@ public class RssSparkShuffleUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssSparkShuffleUtils.class);
 
-  public static final ClassTag<DefaultShuffleHandleInfo> SHUFFLE_HANDLER_INFO_CLASS_TAG =
+  public static final ClassTag<DefaultShuffleHandleInfo> DEFAULT_SHUFFLE_HANDLER_INFO_CLASS_TAG =
       scala.reflect.ClassTag$.MODULE$.apply(DefaultShuffleHandleInfo.class);
   public static final ClassTag<byte[]> BYTE_ARRAY_CLASS_TAG =
       scala.reflect.ClassTag$.MODULE$.apply(byte[].class);
@@ -272,7 +272,7 @@ public class RssSparkShuffleUtils {
       RemoteStorageInfo storageInfo) {
     DefaultShuffleHandleInfo handleInfo =
         new DefaultShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
-    return sc.broadcast(handleInfo, SHUFFLE_HANDLER_INFO_CLASS_TAG);
+    return sc.broadcast(handleInfo, DEFAULT_SHUFFLE_HANDLER_INFO_CLASS_TAG);
   }
 
   private static <T> T instantiateFetchFailedException(

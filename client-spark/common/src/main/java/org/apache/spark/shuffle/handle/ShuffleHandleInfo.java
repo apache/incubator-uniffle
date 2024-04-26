@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 public interface ShuffleHandleInfo {
@@ -42,4 +43,8 @@ public interface ShuffleHandleInfo {
 
   /** Create the partition replicas tracker for the writer to check data replica requirements */
   PartitionDataReplicaRequirementTracking createPartitionReplicaTracking();
+
+  int getShuffleId();
+
+  RemoteStorageInfo getRemoteStorage();
 }

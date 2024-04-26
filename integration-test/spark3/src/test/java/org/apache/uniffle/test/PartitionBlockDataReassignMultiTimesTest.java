@@ -86,7 +86,6 @@ public class PartitionBlockDataReassignMultiTimesTest extends PartitionBlockData
     sparkConf.set("spark." + RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.key(), "true");
   }
 
-  @Override
   public void updateSparkConfWithRss(SparkConf sparkConf) {
     super.updateSparkConfWithRss(sparkConf);
 
