@@ -17,9 +17,11 @@
 
 package org.apache.spark.shuffle.handle;
 
+import java.io.Serializable;
+
 import org.apache.uniffle.common.RemoteStorageInfo;
 
-public abstract class ShuffleHandleInfoBase implements ShuffleHandleInfo {
+public abstract class ShuffleHandleInfoBase implements ShuffleHandleInfo, Serializable {
   protected int shuffleId;
   protected RemoteStorageInfo remoteStorage;
 
