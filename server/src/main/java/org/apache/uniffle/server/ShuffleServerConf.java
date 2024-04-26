@@ -575,7 +575,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Boolean> APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_ENABLED =
       ConfigOptions.key("rss.server.metrics.blockSizeStatisticsEnabled")
           .booleanType()
-          .defaultValue(true)
+          .defaultValue(false)
           .withDescription("whether or not shuffle block size metric enabled");
 
   public static final ConfigOption<String> APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_BUCKETS =
