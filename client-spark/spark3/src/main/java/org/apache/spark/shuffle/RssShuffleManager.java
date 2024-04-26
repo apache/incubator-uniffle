@@ -1233,7 +1233,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           boolean serverHasReplaced = false;
           Set<ShuffleServerInfo> replacements = handleInfo.getReplacements(serverId);
           if (CollectionUtils.isEmpty(replacements)) {
-            int requiredServerNum = 1;
+            final int requiredServerNum = 1;
             Set<String> excludedServers = new HashSet<>(handleInfo.listExcludedServers());
             excludedServers.add(serverId);
             replacements =

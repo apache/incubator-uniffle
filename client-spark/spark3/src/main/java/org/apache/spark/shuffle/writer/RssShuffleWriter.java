@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -131,6 +132,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   // Will be updated when the reassignment is triggered.
   private TaskAttemptAssignment taskAttemptAssignment;
+
+  private static final Set<StatusCode> ILLEGAL_STATUS_CODE_WITHOUT_BLOCK_RESEND =
+      Sets.newHashSet(StatusCode.NO_REGISTER);
 
   // Only for tests
   @VisibleForTesting
@@ -493,8 +497,11 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     // to check whether the blocks resent exceed the max resend count.
     for (Long blockId : failedBlockIds) {
       List<TrackingBlockStatus> failedBlockStatus = failedTracker.getFailedBlockStatus(blockId);
-      int retryIndex = failedBlockStatus.get(0).getShuffleBlockInfo().getRetryCnt();
-      // todo: support retry times by config
+      int retryIndex =
+          failedBlockStatus.stream()
+              .map(x -> x.getShuffleBlockInfo().getRetryCnt())
+              .max(Comparator.comparing(Integer::valueOf))
+              .get();
       if (retryIndex >= blockFailSentRetryMaxTimes) {
         LOG.error(
             "Partial blocks for taskId: [{}] retry exceeding the max retry times: [{}]. Fast fail! faulty server list: {}",
@@ -505,6 +512,19 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                 .collect(Collectors.toSet()));
         isFastFail = true;
         break;
+      }
+
+      for (TrackingBlockStatus status : failedBlockStatus) {
+        StatusCode code = status.getStatusCode();
+        if (ILLEGAL_STATUS_CODE_WITHOUT_BLOCK_RESEND.contains(code)) {
+          LOG.error(
+              "Partial blocks for taskId: [{}] failed on the illegal status code: [{}] without resend on server: {}",
+              taskId,
+              code,
+              status.getShuffleServerInfo());
+          isFastFail = true;
+          break;
+        }
       }
 
       // todo: if setting multi replica and another replica is succeed to send, no need to resend
