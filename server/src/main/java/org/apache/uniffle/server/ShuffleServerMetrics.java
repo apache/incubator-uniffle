@@ -249,9 +249,16 @@ public class ShuffleServerMetrics {
     }
   }
 
-  @VisibleForTesting
   public static void register(ShuffleServerConf serverConf) {
     register(CollectorRegistry.defaultRegistry, Constants.SHUFFLE_SERVER_VERSION, serverConf);
+  }
+
+  @VisibleForTesting
+  public static void register() {
+    register(
+        CollectorRegistry.defaultRegistry,
+        Constants.SHUFFLE_SERVER_VERSION,
+        new ShuffleServerConf());
   }
 
   @VisibleForTesting

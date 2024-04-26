@@ -58,7 +58,7 @@ public class LocalStorageManagerTest {
 
   @BeforeAll
   public static void prepare() {
-    ShuffleServerMetrics.register(new ShuffleServerConf());
+    ShuffleServerMetrics.register();
   }
 
   @AfterAll

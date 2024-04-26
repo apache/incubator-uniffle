@@ -26,14 +26,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
 
 public abstract class BufferTestBase {
 
   @BeforeAll
   public static void setup() {
-    ShuffleServerMetrics.register(new ShuffleServerConf());
+    ShuffleServerMetrics.register();
   }
 
   @AfterAll

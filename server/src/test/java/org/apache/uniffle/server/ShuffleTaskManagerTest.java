@@ -90,7 +90,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
   @BeforeEach
   public void beforeEach() {
     ShuffleServerMetrics.clear();
-    ShuffleServerMetrics.register(new ShuffleServerConf());
+    ShuffleServerMetrics.register();
     assertTrue(this.tempDir1.isDirectory());
     assertTrue(this.tempDir2.isDirectory());
   }
