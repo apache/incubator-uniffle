@@ -21,8 +21,8 @@ public final class Constants {
 
   private Constants() {}
 
-  public static int _1kb = 1024;
-  public static int _1mb = 1024 * 1024;
+  public static int KiB = 1024;
+  public static int MiB = 1024 * 1024;
   // the value is used for client/server compatible, eg, online upgrade
   public static final String SHUFFLE_SERVER_VERSION = "ss_v5";
   public static final String METRICS_TAG_LABEL_NAME = "tags";
