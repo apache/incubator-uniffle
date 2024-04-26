@@ -154,7 +154,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    */
   private Map<String, Boolean> serverAssignedInfos;
 
-  private final int partitionReassignMaxReassignServerNum;
+  private final int partitionReassignMaxServerNum;
 
   private final ShuffleHandleInfoManager shuffleHandleInfoManager = new ShuffleHandleInfoManager();
 
@@ -288,7 +288,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             keepAliveTime);
     this.failuresShuffleServerIds = Sets.newHashSet();
     this.serverAssignedInfos = JavaUtils.newConcurrentMap();
-    this.partitionReassignMaxReassignServerNum =
+    this.partitionReassignMaxServerNum =
         rssConf.get(RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM);
   }
 
@@ -377,7 +377,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.heartBeatScheduledExecutorService = null;
     this.taskToFailedBlockSendTracker = taskToFailedBlockSendTracker;
     this.dataPusher = dataPusher;
-    this.partitionReassignMaxReassignServerNum =
+    this.partitionReassignMaxServerNum =
         rssConf.get(RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM);
   }
 
@@ -1219,7 +1219,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       // If the reassignment servers for one partition exceeds the max reassign server num,
       // it should fast fail.
       handleInfo.checkPartitionReassignServerNum(
-          partitionToFailureServers.keySet(), partitionReassignMaxReassignServerNum);
+          partitionToFailureServers.keySet(), partitionReassignMaxServerNum);
 
       Map<ShuffleServerInfo, List<PartitionRange>> newServerToPartitions = new HashMap<>();
 
