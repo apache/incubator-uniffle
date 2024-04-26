@@ -140,16 +140,16 @@ public class ShuffleServerMetrics {
       "topN_of_on_hadoop_data_size_for_app";
   public static final double[] BLOCK_SIZE_BUCKETS =
       new double[] {
-        32 * _1kb,
-        64 * _1kb,
-        128 * _1kb,
-        256 * _1kb,
-        512 * _1kb,
-        _1mb,
-        2 * _1mb,
-        4 * _1mb,
-        8 * _1mb,
-        16 * _1mb
+        32 * KiB,
+        64 * KiB,
+        128 * KiB,
+        256 * KiB,
+        512 * KiB,
+        1 * MiB,
+        2 * MiB,
+        4 * MiB,
+        8 * MiB,
+        16 * MiB
       };
 
   public static Counter.Child counterTotalAppNum;
