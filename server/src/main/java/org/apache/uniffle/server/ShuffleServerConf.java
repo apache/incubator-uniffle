@@ -584,7 +584,7 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue("32kb,64kb,128kb,256kb,512kb,1mb,2mb,4mb,8mb,16mb")
           .withDescription(
               "A comma-separated block size list, where each value"
-                  + " can be suffixed with a memory size unit, such as kb ork, mb or m, etc.");
+                  + " can be suffixed with a memory size unit, such as kb or k, mb or m, etc.");
 
   public ShuffleServerConf() {}
 
