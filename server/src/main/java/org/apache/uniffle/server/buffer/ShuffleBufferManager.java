@@ -20,6 +20,7 @@ package org.apache.uniffle.server.buffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -36,12 +37,15 @@ import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeRangeMap;
 import io.netty.util.internal.PlatformDependent;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
@@ -189,7 +193,9 @@ public class ShuffleBufferManager {
           .forEach(
               b -> {
                 int blockSize = b.getLength();
-                ShuffleServerMetrics.appHistogramWriteBlockSize.labels(appId).observe(blockSize);
+                ShuffleServerMetrics.appHistogramWriteBlockSize
+                    .labels(appId)
+                    .observe(blockSize);
               });
     }
     updateShuffleSize(appId, shuffleId, size);
@@ -727,7 +733,6 @@ public class ShuffleBufferManager {
     }
     return false;
   }
-
   public void setUsedMemory(long usedMemory) {
     this.usedMemory.set(usedMemory);
   }
