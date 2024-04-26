@@ -20,6 +20,7 @@ package org.apache.uniffle.server.buffer;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.uniffle.server.ShuffleServerConf;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -32,7 +33,7 @@ public abstract class BufferTestBase {
 
   @BeforeAll
   public static void setup() {
-    ShuffleServerMetrics.register();
+    ShuffleServerMetrics.register(new ShuffleServerConf());
   }
 
   @AfterAll

@@ -22,11 +22,14 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.proto.RssProtos;
 
@@ -45,7 +48,11 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
   private boolean recordGetShuffleResult = false;
 
   private long numOfFailedReadRequest = 0;
-  private AtomicInteger failedReadRequest = new AtomicInteger(0);
+  private AtomicInteger failedGetShuffleResultRequest = new AtomicInteger(0);
+  private AtomicInteger failedGetShuffleResultForMultiPartRequest = new AtomicInteger(0);
+  private AtomicInteger failedGetMemoryShuffleDataRequest = new AtomicInteger(0);
+  private AtomicInteger failedGetLocalShuffleDataRequest = new AtomicInteger(0);
+  private AtomicInteger failedGetLocalShuffleIndexRequest = new AtomicInteger(0);
 
   public void enableMockedTimeout(long timeout) {
     mockedTimeout = timeout;
@@ -69,7 +76,11 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 
   public void resetFirstNReadRequestToFail() {
     numOfFailedReadRequest = 0;
-    failedReadRequest.set(0);
+    failedGetShuffleResultRequest.set(0);
+    failedGetShuffleResultForMultiPartRequest.set(0);
+    failedGetMemoryShuffleDataRequest.set(0);
+    failedGetLocalShuffleDataRequest.set(0);
+    failedGetLocalShuffleIndexRequest.set(0);
   }
 
   public MockedShuffleServerGrpcService(ShuffleServer shuffleServer) {
@@ -111,7 +122,7 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
       Uninterruptibles.sleepUninterruptibly(mockedTimeout, TimeUnit.MILLISECONDS);
     }
     if (numOfFailedReadRequest > 0) {
-      int currentFailedReadRequest = failedReadRequest.getAndIncrement();
+      int currentFailedReadRequest = failedGetShuffleResultRequest.getAndIncrement();
       if (currentFailedReadRequest < numOfFailedReadRequest) {
         LOG.info(
             "This request is failed as mocked failure, current/firstN: {}/{}",
@@ -128,11 +139,11 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
       RssProtos.GetShuffleResultForMultiPartRequest request,
       StreamObserver<RssProtos.GetShuffleResultForMultiPartResponse> responseObserver) {
     if (mockedTimeout > 0) {
-      LOG.info("Add a mocked timeout on getShuffleResult");
+      LOG.info("Add a mocked timeout on getShuffleResultForMultiPart");
       Uninterruptibles.sleepUninterruptibly(mockedTimeout, TimeUnit.MILLISECONDS);
     }
     if (numOfFailedReadRequest > 0) {
-      int currentFailedReadRequest = failedReadRequest.getAndIncrement();
+      int currentFailedReadRequest = failedGetShuffleResultForMultiPartRequest.getAndIncrement();
       if (currentFailedReadRequest < numOfFailedReadRequest) {
         LOG.info(
             "This request is failed as mocked failure, current/firstN: {}/{}",
@@ -163,15 +174,81 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
       RssProtos.GetMemoryShuffleDataRequest request,
       StreamObserver<RssProtos.GetMemoryShuffleDataResponse> responseObserver) {
     if (numOfFailedReadRequest > 0) {
-      int currentFailedReadRequest = failedReadRequest.getAndIncrement();
+      int currentFailedReadRequest = failedGetMemoryShuffleDataRequest.getAndIncrement();
       if (currentFailedReadRequest < numOfFailedReadRequest) {
         LOG.info(
             "This request is failed as mocked failure, current/firstN: {}/{}",
             currentFailedReadRequest,
             numOfFailedReadRequest);
-        throw new RuntimeException("This request is failed as mocked failure");
+        StatusCode status = StatusCode.NO_BUFFER;
+        String msg =
+            "Can't require memory to get in memory shuffle data (This request is failed as mocked failure)";
+        RssProtos.GetMemoryShuffleDataResponse reply =
+            RssProtos.GetMemoryShuffleDataResponse.newBuilder()
+                .setData(UnsafeByteOperations.unsafeWrap(new byte[] {}))
+                .addAllShuffleDataBlockSegments(Lists.newArrayList())
+                .setStatus(status.toProto())
+                .setRetMsg(msg)
+                .build();
+        responseObserver.onNext(reply);
+        responseObserver.onCompleted();
+        return;
       }
     }
     super.getMemoryShuffleData(request, responseObserver);
+  }
+
+  @Override
+  public void getLocalShuffleData(
+      RssProtos.GetLocalShuffleDataRequest request,
+      StreamObserver<RssProtos.GetLocalShuffleDataResponse> responseObserver) {
+    if (numOfFailedReadRequest > 0) {
+      int currentFailedReadRequest = failedGetLocalShuffleDataRequest.getAndIncrement();
+      if (currentFailedReadRequest < numOfFailedReadRequest) {
+        LOG.info(
+            "This request is failed as mocked failure, current/firstN: {}/{}",
+            currentFailedReadRequest,
+            numOfFailedReadRequest);
+        StatusCode status = StatusCode.NO_BUFFER;
+        String msg =
+            "Can't require memory to get shuffle data (This request is failed as mocked failure)";
+        RssProtos.GetLocalShuffleDataResponse reply =
+            RssProtos.GetLocalShuffleDataResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(msg)
+                .build();
+        responseObserver.onNext(reply);
+        responseObserver.onCompleted();
+        return;
+      }
+    }
+    super.getLocalShuffleData(request, responseObserver);
+  }
+
+  @Override
+  public void getLocalShuffleIndex(
+      RssProtos.GetLocalShuffleIndexRequest request,
+      StreamObserver<RssProtos.GetLocalShuffleIndexResponse> responseObserver) {
+    if (numOfFailedReadRequest > 0) {
+      int currentFailedReadRequest = failedGetLocalShuffleIndexRequest.getAndIncrement();
+      if (currentFailedReadRequest < numOfFailedReadRequest) {
+        LOG.info(
+            "This request is failed as mocked failure, current/firstN: {}/{}",
+            currentFailedReadRequest,
+            numOfFailedReadRequest);
+        StatusCode status = StatusCode.NO_BUFFER;
+        String msg =
+            "Can't require memory to get shuffle index (This request is failed as mocked failure)";
+        RssProtos.GetLocalShuffleIndexResponse reply =
+            RssProtos.GetLocalShuffleIndexResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(msg)
+                .build();
+        responseObserver.onNext(reply);
+        responseObserver.onCompleted();
+        return;
+      }
+    }
+    super.getLocalShuffleIndex(request, responseObserver);
   }
 }

@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 public class LocalStorageCheckerTest {
   @BeforeAll
   public static void setup() {
-    ShuffleServerMetrics.register();
+    ShuffleServerMetrics.register(new ShuffleServerConf());
   }
 
   @AfterAll

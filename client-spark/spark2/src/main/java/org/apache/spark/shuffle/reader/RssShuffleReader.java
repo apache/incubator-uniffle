@@ -108,6 +108,14 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   @Override
   public Iterator<Product2<K, C>> read() {
     LOG.info("Shuffle read started:" + getReadInfo());
+    int retryMax =
+        rssConf.getInteger(
+            RssClientConfig.RSS_CLIENT_RETRY_MAX,
+            RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
+    long retryIntervalMax =
+        rssConf.getLong(
+            RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
+            RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
     ShuffleReadClient shuffleReadClient =
         ShuffleClientFactory.getInstance()
             .createShuffleReadClient(
@@ -123,6 +131,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
                     .shuffleServerInfoList(shuffleServerInfoList)
                     .hadoopConf(hadoopConf)
                     .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                    .retryMax(retryMax)
+                    .retryIntervalMax(retryIntervalMax)
                     .rssConf(rssConf));
     RssShuffleDataIterator rssShuffleDataIterator =
         new RssShuffleDataIterator<K, C>(

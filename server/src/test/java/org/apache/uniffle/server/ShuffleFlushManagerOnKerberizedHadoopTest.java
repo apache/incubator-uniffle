@@ -65,7 +65,7 @@ public class ShuffleFlushManagerOnKerberizedHadoopTest extends KerberizedHadoopB
 
   @BeforeEach
   public void prepare() throws Exception {
-    ShuffleServerMetrics.register();
+    ShuffleServerMetrics.register(new ShuffleServerConf());
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Collections.emptyList());
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     shuffleServerConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);

@@ -298,10 +298,13 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           LOG.error(errorMsg);
           hasFailureOccurred = true;
           break;
+        } finally {
+          if (hasFailureOccurred) {
+            shuffleServer
+                .getShuffleBufferManager()
+                .releaseMemory(spd.getTotalBlockSize(), false, false);
+          }
         }
-      }
-      if (hasFailureOccurred) {
-        shuffleServer.getShuffleBufferManager().releaseMemory(info.getRequireSize(), false, false);
       }
       // since the required buffer id is only used once, the shuffle client would try to require
       // another buffer whether
@@ -671,7 +674,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
     }
 
-    if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(length)) {
+    if (shuffleServer.getShuffleBufferManager().requireReadMemory(length)) {
       try {
         long start = System.currentTimeMillis();
         sdr =
@@ -690,11 +693,13 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         ShuffleServerMetrics.counterTotalReadTime.inc(readTime);
         ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getDataLength());
         ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getDataLength());
+        ShuffleServerMetrics.gaugeReadLocalDataFileThreadNum.inc();
+        ShuffleServerMetrics.gaugeReadLocalDataFileBufferSize.inc(length);
         shuffleServer
             .getGrpcMetrics()
             .recordProcessTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, readTime);
         LOG.info(
-            "Successfully getShuffleData cost {} ms for shuffle" + " data with {}",
+            "Successfully getShuffleData cost {} ms for shuffle data with {}",
             readTime,
             requestInfo);
         reply =
@@ -715,11 +720,13 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       } finally {
         if (sdr != null) {
           sdr.release();
+          ShuffleServerMetrics.gaugeReadLocalDataFileThreadNum.dec();
+          ShuffleServerMetrics.gaugeReadLocalDataFileBufferSize.dec(length);
         }
         shuffleServer.getShuffleBufferManager().releaseReadMemory(length);
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get shuffle data";
       LOG.error(msg + " for " + requestInfo);
       reply =
@@ -763,23 +770,28 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         shuffleServer
             .getShuffleServerConf()
             .getLong(ShuffleServerConf.SERVER_SHUFFLE_INDEX_SIZE_HINT);
-    if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(assumedFileSize)) {
+    if (shuffleServer.getShuffleBufferManager().requireReadMemory(assumedFileSize)) {
       ShuffleIndexResult shuffleIndexResult = null;
       try {
-        long start = System.currentTimeMillis();
+        final long start = System.currentTimeMillis();
         shuffleIndexResult =
             shuffleServer
                 .getShuffleTaskManager()
                 .getShuffleIndex(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
-        long readTime = System.currentTimeMillis() - start;
 
         ByteBuffer data = shuffleIndexResult.getIndexData();
         ShuffleServerMetrics.counterTotalReadDataSize.inc(data.remaining());
         ShuffleServerMetrics.counterTotalReadLocalIndexFileSize.inc(data.remaining());
+        ShuffleServerMetrics.gaugeReadLocalIndexFileThreadNum.inc();
+        ShuffleServerMetrics.gaugeReadLocalIndexFileBufferSize.inc(assumedFileSize);
         GetLocalShuffleIndexResponse.Builder builder =
             GetLocalShuffleIndexResponse.newBuilder().setStatus(status.toProto()).setRetMsg(msg);
+        long readTime = System.currentTimeMillis() - start;
+        shuffleServer
+            .getGrpcMetrics()
+            .recordProcessTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_INDEX_METHOD, readTime);
         LOG.info(
-            "Successfully getShuffleIndex cost {} ms for {}" + " bytes with {}",
+            "Successfully getShuffleIndex cost {} ms for {} bytes with {}",
             readTime,
             data.remaining(),
             requestInfo);
@@ -805,11 +817,13 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       } finally {
         if (shuffleIndexResult != null) {
           shuffleIndexResult.release();
+          ShuffleServerMetrics.gaugeReadLocalIndexFileThreadNum.dec();
+          ShuffleServerMetrics.gaugeReadLocalIndexFileBufferSize.dec(assumedFileSize);
         }
         shuffleServer.getShuffleBufferManager().releaseReadMemory(assumedFileSize);
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get shuffle index";
       LOG.error(msg + " for " + requestInfo);
       reply =
@@ -842,7 +856,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD, transportTime);
       }
     }
-    long start = System.currentTimeMillis();
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetMemoryShuffleDataResponse reply;
@@ -850,9 +863,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId[" + partitionId + "]";
 
     // todo: if can get the exact memory size?
-    if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(readBufferSize)) {
+    if (shuffleServer.getShuffleBufferManager().requireReadMemory(readBufferSize)) {
       ShuffleDataResult shuffleDataResult = null;
       try {
+        final long start = System.currentTimeMillis();
         Roaring64NavigableMap expectedTaskIds = null;
         if (request.getSerializedExpectedTaskIdsBitmap() != null
             && !request.getSerializedExpectedTaskIdsBitmap().isEmpty()) {
@@ -872,13 +886,15 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           bufferSegments = shuffleDataResult.getBufferSegments();
           ShuffleServerMetrics.counterTotalReadDataSize.inc(data.length);
           ShuffleServerMetrics.counterTotalReadMemoryDataSize.inc(data.length);
+          ShuffleServerMetrics.gaugeReadMemoryDataThreadNum.inc();
+          ShuffleServerMetrics.gaugeReadMemoryDataBufferSize.inc(readBufferSize);
         }
         long costTime = System.currentTimeMillis() - start;
         shuffleServer
             .getGrpcMetrics()
             .recordProcessTime(ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD, costTime);
         LOG.info(
-            "Successfully getInMemoryShuffleData cost {} ms with {} bytes shuffle" + " data for {}",
+            "Successfully getInMemoryShuffleData cost {} ms with {} bytes shuffle data for {}",
             costTime,
             data.length,
             requestInfo);
@@ -908,11 +924,13 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       } finally {
         if (shuffleDataResult != null) {
           shuffleDataResult.release();
+          ShuffleServerMetrics.gaugeReadMemoryDataThreadNum.dec();
+          ShuffleServerMetrics.gaugeReadMemoryDataBufferSize.dec(readBufferSize);
         }
         shuffleServer.getShuffleBufferManager().releaseReadMemory(readBufferSize);
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get in memory shuffle data";
       LOG.error(msg + " for " + requestInfo);
       reply =

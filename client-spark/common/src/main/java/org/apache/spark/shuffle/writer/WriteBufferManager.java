@@ -180,11 +180,13 @@ public class WriteBufferManager extends MemoryConsumer {
     // check buffer size > spill threshold
     if (usedBytes.get() - inSendListBytes.get() > spillSize) {
       LOG.info(
-          String.format(
-              "ShuffleBufferManager spill for buffer size exceeding spill threshold,"
-                  + "usedBytes[%d],inSendListBytes[%d],spillSize[%d]",
-              usedBytes.get(), inSendListBytes.get(), spillSize));
+          "ShuffleBufferManager spill for buffer size exceeding spill threshold,"
+              + "usedBytes[{}],inSendListBytes[{}],spillSize[{}]",
+          usedBytes.get(),
+          inSendListBytes.get(),
+          spillSize);
       List<ShuffleBlockInfo> multiSendingBlocks = clear();
+
       multiSendingBlocks.addAll(singleOrEmptySendingBlocks);
       writeTime += System.currentTimeMillis() - start;
       return multiSendingBlocks;
@@ -415,14 +417,18 @@ public class WriteBufferManager extends MemoryConsumer {
     }
   }
 
+  public void releaseBlockResource(ShuffleBlockInfo block) {
+    this.freeAllocatedMemory(block.getFreeMemory());
+    block.getData().release();
+  }
+
   public List<AddBlockEvent> buildBlockEvents(List<ShuffleBlockInfo> shuffleBlockInfoList) {
     long totalSize = 0;
-    long memoryUsed = 0;
     List<AddBlockEvent> events = new ArrayList<>();
     List<ShuffleBlockInfo> shuffleBlockInfosPerEvent = Lists.newArrayList();
     for (ShuffleBlockInfo sbi : shuffleBlockInfoList) {
+      sbi.withCompletionCallback((block, isSuccessful) -> this.releaseBlockResource(block));
       totalSize += sbi.getSize();
-      memoryUsed += sbi.getFreeMemory();
       shuffleBlockInfosPerEvent.add(sbi);
       // split shuffle data according to the size
       if (totalSize > sendSizeLimit) {
@@ -434,20 +440,9 @@ public class WriteBufferManager extends MemoryConsumer {
                   + totalSize
                   + " bytes");
         }
-        // Use final temporary variables for closures
-        final long memoryUsedTemp = memoryUsed;
-        final List<ShuffleBlockInfo> shuffleBlocksTemp = shuffleBlockInfosPerEvent;
-        events.add(
-            new AddBlockEvent(
-                taskId,
-                shuffleBlockInfosPerEvent,
-                () -> {
-                  freeAllocatedMemory(memoryUsedTemp);
-                  shuffleBlocksTemp.stream().forEach(x -> x.getData().release());
-                }));
+        events.add(new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));
         shuffleBlockInfosPerEvent = Lists.newArrayList();
         totalSize = 0;
-        memoryUsed = 0;
       }
     }
     if (!shuffleBlockInfosPerEvent.isEmpty()) {
@@ -460,16 +455,7 @@ public class WriteBufferManager extends MemoryConsumer {
                 + " bytes");
       }
       // Use final temporary variables for closures
-      final long memoryUsedTemp = memoryUsed;
-      final List<ShuffleBlockInfo> shuffleBlocksTemp = shuffleBlockInfosPerEvent;
-      events.add(
-          new AddBlockEvent(
-              taskId,
-              shuffleBlockInfosPerEvent,
-              () -> {
-                freeAllocatedMemory(memoryUsedTemp);
-                shuffleBlocksTemp.stream().forEach(x -> x.getData().release());
-              }));
+      events.add(new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));
     }
     return events;
   }

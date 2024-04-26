@@ -193,7 +193,8 @@ public class RssClientConf {
       ConfigOptions.key("rss.client.type")
           .enumType(ClientType.class)
           .defaultValue(ClientType.GRPC)
-          .withDescription("Supports GRPC, GRPC_NETTY");
+          .withDescription(
+              "Supports GRPC_NETTY, GRPC. The default value is GRPC. But we recommend using GRPC_NETTY to enable Netty on the client side for better stability and performance.");
 
   public static final ConfigOption<Boolean> RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED =
       ConfigOptions.key("rss.client.remote.storage.useLocalConfAsDefault")
@@ -203,10 +204,10 @@ public class RssClientConf {
               "This option is only valid when the remote storage path is specified. If ture, "
                   + "the remote storage conf will use the client side hadoop configuration loaded from the classpath.");
 
-  public static final ConfigOption<Boolean> RSS_TASK_FAILED_RETRY_ENABLED =
-      ConfigOptions.key("rss.task.failed.retry.enabled")
+  public static final ConfigOption<Boolean> RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED =
+      ConfigOptions.key("rss.client.blockSendFailureRetry.enabled")
           .booleanType()
           .defaultValue(false)
           .withDescription(
-              "Whether to support task write failed retry internal, default value is false.");
+              "Whether to support rss client block send failure retry, default value is false.");
 }

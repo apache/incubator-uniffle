@@ -30,6 +30,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.google.common.collect.RangeMap;
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.prometheus.client.Collector;
+import org.apache.uniffle.common.config.ConfigUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -743,7 +744,9 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
 
     // cache shuffle block data, and record metrics
-    Arrays.stream(ShuffleServerMetrics.BLOCK_SIZE_BUCKETS)
+    double[] buckets = ConfigUtils.convertBytesStringToDoubleArray(
+            new ShuffleServerConf().get(ShuffleServerConf.APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_BUCKETS));
+    Arrays.stream(buckets)
         .sorted()
         .forEach(
             bucket -> {
@@ -757,7 +760,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
         ShuffleServerMetrics.appHistogramWriteBlockSize.collect();
     assertEquals(samples.size(), 1);
     int index = 1;
-    Arrays.stream(ShuffleServerMetrics.BLOCK_SIZE_BUCKETS)
+    Arrays.stream(buckets)
         .sorted()
         .forEach(
             bucket -> {

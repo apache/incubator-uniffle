@@ -212,6 +212,8 @@ public class ShuffleClientFactory {
     private int indexReadLimit;
     private long readBufferSize;
     private ClientType clientType;
+    private int retryMax;
+    private long retryIntervalMax;
 
     public ReadClientBuilder appId(String appId) {
       this.appId = appId;
@@ -310,6 +312,16 @@ public class ShuffleClientFactory {
       return this;
     }
 
+    public ReadClientBuilder retryMax(int retryMax) {
+      this.retryMax = retryMax;
+      return this;
+    }
+
+    public ReadClientBuilder retryIntervalMax(long retryIntervalMax) {
+      this.retryIntervalMax = retryIntervalMax;
+      return this;
+    }
+
     public ReadClientBuilder() {}
 
     public String getAppId() {
@@ -386,6 +398,14 @@ public class ShuffleClientFactory {
 
     public ClientType getClientType() {
       return clientType;
+    }
+
+    public int getRetryMax() {
+      return retryMax;
+    }
+
+    public long getRetryIntervalMax() {
+      return retryIntervalMax;
     }
 
     public ShuffleReadClientImpl build() {

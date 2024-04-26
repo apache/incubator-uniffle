@@ -32,6 +32,12 @@ import org.apache.uniffle.common.rpc.StatusCode;
 
 public class FailedBlockSendTracker {
 
+  /**
+   * blockId -> list(trackingStatus)
+   *
+   * <p>This indicates the blockId latest sending status, and it will not store the resending
+   * history. The list data structure is to describe the multiple servers for the multiple replica
+   */
   private Map<Long, List<TrackingBlockStatus>> trackingBlockStatusMap;
 
   public FailedBlockSendTracker() {
@@ -55,7 +61,10 @@ public class FailedBlockSendTracker {
     trackingBlockStatusMap.remove(blockId);
   }
 
-  public void clear() {
+  public void clearAndReleaseBlockResources() {
+    trackingBlockStatusMap.values().stream()
+        .flatMap(x -> x.stream())
+        .forEach(x -> x.getShuffleBlockInfo().executeCompletionCallback(true));
     trackingBlockStatusMap.clear();
   }
 

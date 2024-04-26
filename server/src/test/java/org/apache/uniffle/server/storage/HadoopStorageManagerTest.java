@@ -43,7 +43,7 @@ public class HadoopStorageManagerTest {
 
   @BeforeAll
   public static void prepare() {
-    ShuffleServerMetrics.register();
+    ShuffleServerMetrics.register(new ShuffleServerConf());
   }
 
   @AfterAll

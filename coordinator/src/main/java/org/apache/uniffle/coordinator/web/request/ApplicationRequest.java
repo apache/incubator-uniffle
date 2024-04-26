@@ -80,6 +80,6 @@ public class ApplicationRequest {
 
   @Override
   public String toString() {
-    return "ApplicationRequest{" + "applications=" + StringUtils.join(applications, ",") + '}';
+    return "ApplicationRequest{applications=" + StringUtils.join(applications, ",") + '}';
   }
 }

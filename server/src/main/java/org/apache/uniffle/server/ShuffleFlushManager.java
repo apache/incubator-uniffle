@@ -111,7 +111,7 @@ public class ShuffleFlushManager {
       }
 
       if (reachRetryMax(event)) {
-        LOG.warn("The event:{] has been reached to max retry times, it will be dropped.", event);
+        LOG.error("The event:{} has been reached to max retry times, it will be dropped.", event);
         throw new EventDiscardException();
       }
 

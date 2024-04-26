@@ -246,6 +246,14 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         boolean expectedTaskIdsBitmapFilterEnable =
             !(mapStartIndex == 0 && mapEndIndex == Integer.MAX_VALUE)
                 || shuffleServerInfoList.size() > 1;
+        int retryMax =
+            rssConf.getInteger(
+                RssClientConfig.RSS_CLIENT_RETRY_MAX,
+                RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
+        long retryIntervalMax =
+            rssConf.getLong(
+                RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
+                RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
         ShuffleReadClient shuffleReadClient =
             ShuffleClientFactory.getInstance()
                 .createShuffleReadClient(
@@ -262,6 +270,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
                         .hadoopConf(hadoopConf)
                         .shuffleDataDistributionType(dataDistributionType)
                         .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                        .retryMax(retryMax)
+                        .retryIntervalMax(retryIntervalMax)
                         .rssConf(rssConf));
         RssShuffleDataIterator<K, C> iterator =
             new RssShuffleDataIterator<>(

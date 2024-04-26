@@ -66,7 +66,7 @@ public class KerberizedShuffleTaskManagerTest extends KerberizedHadoopBase {
   @BeforeEach
   public void beforeEach() {
     ShuffleServerMetrics.clear();
-    ShuffleServerMetrics.register();
+    ShuffleServerMetrics.register(new ShuffleServerConf());
   }
 
   @AfterEach

@@ -28,14 +28,12 @@ import io.prometheus.client.Histogram;
 import io.prometheus.client.Summary;
 import org.apache.commons.lang3.StringUtils;
 
+import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.metrics.MetricsManager;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.LocalStorage;
 
 import static org.apache.uniffle.common.util.Constants.METRICS_APP_LABEL_NAME;
-import static org.apache.uniffle.common.util.Constants.METRICS_TAG_LABEL_NAME;
-import static org.apache.uniffle.common.util.Constants._1kb;
-import static org.apache.uniffle.common.util.Constants._1mb;
 
 public class ShuffleServerMetrics {
 
@@ -61,6 +59,13 @@ public class ShuffleServerMetrics {
       "localfile_flush_thread_pool_queue_size";
   private static final String FALLBACK_FLUSH_THREAD_POOL_QUEUE_SIZE =
       "fallback_flush_thread_pool_queue_size";
+  private static final String READ_LOCAL_DATA_FILE_THREAD_NUM = "read_local_data_file_thread_num";
+  private static final String READ_LOCAL_INDEX_FILE_THREAD_NUM = "read_local_index_file_thread_num";
+  private static final String READ_MEMORY_DATA_THREAD_NUM = "read_memory_data_thread_num";
+  private static final String READ_LOCAL_DATA_FILE_BUFFER_SIZE = "read_local_data_file_buffer_size";
+  private static final String READ_LOCAL_INDEX_FILE_BUFFER_SIZE =
+      "read_local_index_file_buffer_size";
+  private static final String READ_MEMORY_DATA_BUFFER_SIZE = "read_memory_data_buffer_size";
   private static final String TOTAL_READ_DATA = "total_read_data";
   private static final String TOTAL_READ_LOCAL_DATA_FILE = "total_read_local_data_file";
   private static final String TOTAL_READ_LOCAL_INDEX_FILE = "total_read_local_index_file";
@@ -86,8 +91,9 @@ public class ShuffleServerMetrics {
   private static final String USED_BUFFER_SIZE = "used_buffer_size";
   private static final String READ_USED_BUFFER_SIZE = "read_used_buffer_size";
   private static final String USED_DIRECT_MEMORY_SIZE = "used_direct_memory_size";
-  private static final String ALLOCATED_DIRECT_MEMORY_SIZE = "allocated_direct_memory_size";
-  private static final String PINNED_DIRECT_MEMORY_SIZE = "pinned_direct_memory_size";
+  private static final String USED_DIRECT_MEMORY_SIZE_BY_NETTY = "used_direct_memory_size_by_netty";
+  private static final String USED_DIRECT_MEMORY_SIZE_BY_GRPC_NETTY =
+      "used_direct_memory_size_by_grpc_netty";
   private static final String TOTAL_FAILED_WRITTEN_EVENT_NUM = "total_failed_written_event_num";
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
   private static final String TOTAL_HADOOP_WRITE_DATA = "total_hadoop_write_data";
@@ -138,19 +144,6 @@ public class ShuffleServerMetrics {
       "topN_of_on_localfile_data_size_for_app";
   public static final String TOPN_OF_ON_HADOOP_DATA_SIZE_FOR_APP =
       "topN_of_on_hadoop_data_size_for_app";
-  public static final double[] BLOCK_SIZE_BUCKETS =
-      new double[] {
-        32 * KiB,
-        64 * KiB,
-        128 * KiB,
-        256 * KiB,
-        512 * KiB,
-        1 * MiB,
-        2 * MiB,
-        4 * MiB,
-        8 * MiB,
-        16 * MiB
-      };
 
   public static Counter.Child counterTotalAppNum;
   public static Counter.Child counterTotalAppWithHugePartitionNum;
@@ -207,6 +200,8 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeUsedBufferSize;
   public static Gauge.Child gaugeReadBufferUsedSize;
   public static Gauge.Child gaugeUsedDirectMemorySize;
+  public static Gauge.Child gaugeUsedDirectMemorySizeByNetty;
+  public static Gauge.Child gaugeUsedDirectMemorySizeByGrpcNetty;
   public static Gauge.Child gaugeWriteHandler;
   public static Gauge.Child gaugeEventQueueSize;
   public static Gauge.Child gaugeHadoopFlushThreadPoolQueueSize;
@@ -214,6 +209,12 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeFallbackFlushThreadPoolQueueSize;
   public static Gauge.Child gaugeAppNum;
   public static Gauge.Child gaugeTotalPartitionNum;
+  public static Gauge.Child gaugeReadLocalDataFileThreadNum;
+  public static Gauge.Child gaugeReadLocalIndexFileThreadNum;
+  public static Gauge.Child gaugeReadMemoryDataThreadNum;
+  public static Gauge.Child gaugeReadLocalDataFileBufferSize;
+  public static Gauge.Child gaugeReadLocalIndexFileBufferSize;
+  public static Gauge.Child gaugeReadMemoryDataBufferSize;
 
   public static Gauge gaugeTotalDataSizeUsage;
   public static Gauge gaugeInMemoryDataSizeUsage;
@@ -236,20 +237,21 @@ public class ShuffleServerMetrics {
   private static MetricsManager metricsManager;
   private static boolean isRegister = false;
 
-  public static synchronized void register(CollectorRegistry collectorRegistry, String tags) {
+  public static synchronized void register(
+      CollectorRegistry collectorRegistry, String tags, ShuffleServerConf serverConf) {
     if (!isRegister) {
       ShuffleServerMetrics.tags = tags;
       Map<String, String> labels = Maps.newHashMap();
       labels.put(Constants.METRICS_TAG_LABEL_NAME, ShuffleServerMetrics.tags);
       metricsManager = new MetricsManager(collectorRegistry, labels);
       isRegister = true;
-      setUpMetrics();
+      setUpMetrics(serverConf);
     }
   }
 
   @VisibleForTesting
-  public static void register() {
-    register(CollectorRegistry.defaultRegistry, Constants.SHUFFLE_SERVER_VERSION);
+  public static void register(ShuffleServerConf serverConf) {
+    register(CollectorRegistry.defaultRegistry, Constants.SHUFFLE_SERVER_VERSION, serverConf);
   }
 
   @VisibleForTesting
@@ -319,13 +321,16 @@ public class ShuffleServerMetrics {
     incHadoopStorageWriteDataSize(storageHost, size, false);
   }
 
-  private static void setUpMetrics() {
+  private static void setUpMetrics(ShuffleServerConf serverConf) {
     counterTotalReceivedDataSize = metricsManager.addLabeledCounter(TOTAL_RECEIVED_DATA);
     counterTotalWriteDataSize = metricsManager.addLabeledCounter(TOTAL_WRITE_DATA);
     counterTotalWriteBlockSize = metricsManager.addLabeledCounter(TOTAL_WRITE_BLOCK);
     appHistogramWriteBlockSize =
         metricsManager.addHistogram(
-            WRITE_BLOCK_SIZE, BLOCK_SIZE_BUCKETS, METRICS_TAG_LABEL_NAME, METRICS_APP_LABEL_NAME);
+            WRITE_BLOCK_SIZE,
+            ConfigUtils.convertBytesStringToDoubleArray(
+                serverConf.get(ShuffleServerConf.APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_BUCKETS)),
+            METRICS_APP_LABEL_NAME);
     counterTotalWriteTime = metricsManager.addLabeledCounter(TOTAL_WRITE_TIME);
     counterWriteException = metricsManager.addLabeledCounter(TOTAL_WRITE_EXCEPTION);
     counterWriteSlow = metricsManager.addLabeledCounter(TOTAL_WRITE_SLOW);
@@ -406,6 +411,10 @@ public class ShuffleServerMetrics {
     gaugeUsedBufferSize = metricsManager.addLabeledGauge(USED_BUFFER_SIZE);
     gaugeReadBufferUsedSize = metricsManager.addLabeledGauge(READ_USED_BUFFER_SIZE);
     gaugeUsedDirectMemorySize = metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE);
+    gaugeUsedDirectMemorySizeByNetty =
+        metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE_BY_NETTY);
+    gaugeUsedDirectMemorySizeByGrpcNetty =
+        metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE_BY_GRPC_NETTY);
     gaugeWriteHandler = metricsManager.addLabeledGauge(TOTAL_WRITE_HANDLER);
     gaugeEventQueueSize = metricsManager.addLabeledGauge(EVENT_QUEUE_SIZE);
     gaugeHadoopFlushThreadPoolQueueSize =
@@ -417,6 +426,17 @@ public class ShuffleServerMetrics {
 
     gaugeAppNum = metricsManager.addLabeledGauge(APP_NUM_WITH_NODE);
     gaugeTotalPartitionNum = metricsManager.addLabeledGauge(PARTITION_NUM_WITH_NODE);
+
+    gaugeReadLocalDataFileThreadNum =
+        metricsManager.addLabeledGauge(READ_LOCAL_DATA_FILE_THREAD_NUM);
+    gaugeReadLocalIndexFileThreadNum =
+        metricsManager.addLabeledGauge(READ_LOCAL_INDEX_FILE_THREAD_NUM);
+    gaugeReadMemoryDataThreadNum = metricsManager.addLabeledGauge(READ_MEMORY_DATA_THREAD_NUM);
+    gaugeReadLocalDataFileBufferSize =
+        metricsManager.addLabeledGauge(READ_LOCAL_DATA_FILE_BUFFER_SIZE);
+    gaugeReadLocalIndexFileBufferSize =
+        metricsManager.addLabeledGauge(READ_LOCAL_INDEX_FILE_BUFFER_SIZE);
+    gaugeReadMemoryDataBufferSize = metricsManager.addLabeledGauge(READ_MEMORY_DATA_BUFFER_SIZE);
 
     gaugeHugePartitionNum = metricsManager.addLabeledGauge(HUGE_PARTITION_NUM);
     gaugeAppWithHugePartitionNum = metricsManager.addLabeledGauge(APP_WITH_HUGE_PARTITION_NUM);

@@ -43,7 +43,7 @@ public class StorageCheckerTest {
 
   @BeforeAll
   public static void setup() {
-    ShuffleServerMetrics.register();
+    ShuffleServerMetrics.register(new ShuffleServerConf());
   }
 
   @AfterAll

@@ -42,7 +42,7 @@ public class ShuffleServerConf extends RssBaseConf {
           .doubleType()
           .defaultValue(0.6)
           .withDescription(
-              "JVM heap size * ratio for the maximum memory of buffer manager for shuffle server, this "
+              "JVM heap size or off-heap size(when enabling Netty) * ratio for the maximum memory of buffer manager for shuffle server, this "
                   + "is only effective when `rss.server.buffer.capacity` is not explicitly set");
 
   public static final ConfigOption<Long> SERVER_READ_BUFFER_CAPACITY =
@@ -56,7 +56,7 @@ public class ShuffleServerConf extends RssBaseConf {
           .doubleType()
           .defaultValue(0.2)
           .withDescription(
-              "JVM heap size * ratio for read buffer size, this is only effective when "
+              "JVM heap size or off-heap size(when enabling Netty) * ratio for read buffer size, this is only effective when "
                   + "`rss.server.reader.buffer.capacity.ratio` is not explicitly set");
 
   public static final ConfigOption<Long> SERVER_HEARTBEAT_DELAY =
@@ -131,12 +131,6 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(60 * 1000L)
           .withDescription(
               "Expired time (ms) for application which has no heartbeat with coordinator");
-
-  public static final ConfigOption<Integer> SERVER_MEMORY_REQUEST_RETRY_MAX =
-      ConfigOptions.key("rss.server.memory.request.retry.max")
-          .intType()
-          .defaultValue(50)
-          .withDescription("Max times to retry for memory request");
 
   public static final ConfigOption<Long> SERVER_PRE_ALLOCATION_EXPIRED =
       ConfigOptions.key("rss.server.preAllocation.expired")
@@ -392,13 +386,6 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(128 * 1024 * 1024L)
           .withDescription("The threshold of single shuffle buffer flush");
 
-  public static final ConfigOption<Long> STORAGEMANAGER_CACHE_TIMEOUT =
-      ConfigOptions.key("rss.server.hybrid.storage.storagemanager.cache.timeout")
-          .longType()
-          .defaultValue(60 * 1000L)
-          .withDescription("The timeout of the cache which record the mapping information")
-          .withDeprecatedKeys("rss.server.multistorage.storagemanager.cache.timeout");
-
   public static final ConfigOption<Long> SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL =
       ConfigOptions.key("rss.server.leak.shuffledata.check.interval")
           .longType()
@@ -481,7 +468,7 @@ public class ShuffleServerConf extends RssBaseConf {
           .intType()
           .checkValue(
               ConfigUtils.SERVER_PORT_VALIDATOR,
-              "check server port value is 0 " + "or value >= 1024 && value <= 65535")
+              "check server port value is 0 or value >= 1024 && value <= 65535")
           .defaultValue(-1)
           .withDescription("Shuffle netty server port");
 
@@ -586,10 +573,18 @@ public class ShuffleServerConf extends RssBaseConf {
               "keep alive time of thread pool that used for calc summary metric, in SECONDS.");
 
   public static final ConfigOption<Boolean> APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_ENABLED =
-      ConfigOptions.key("rss.server.block.size.metric.enabled")
+      ConfigOptions.key("rss.server.metrics.blockSizeStatisticsEnabled")
           .booleanType()
           .defaultValue(true)
           .withDescription("whether or not shuffle block size metric enabled");
+
+  public static final ConfigOption<String> APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_BUCKETS =
+      ConfigOptions.key("rss.server.metrics.blockSizeStatistics.buckets")
+          .stringType()
+          .defaultValue("32kb,64kb,128kb,256kb,512kb,1mb,2mb,4mb,8mb,16mb")
+          .withDescription(
+              "A comma-separated block size list, where each value"
+                  + " can be suffixed with a memory size unit, such as kb ork, mb or m, etc.");
 
   public ShuffleServerConf() {}
 

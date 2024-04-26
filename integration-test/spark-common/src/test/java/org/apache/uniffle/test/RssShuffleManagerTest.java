@@ -141,16 +141,16 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
       BlockIdLayout clientConfLayout,
       BlockIdLayout dynamicConfLayout,
       BlockIdLayout expectedLayout,
-      boolean enableDynamicCLientConf)
+      boolean enableDynamicClientConf)
       throws Exception {
     Map<String, String> dynamicConf = startServers(dynamicConfLayout);
 
     SparkConf conf = createSparkConf();
-    updateSparkConfWithRss(conf);
+    updateSparkConfWithRssGrpc(conf);
     // enable stage recompute
     conf.set("spark." + RssClientConfig.RSS_RESUBMIT_STAGE, "true");
     // enable dynamic client conf
-    conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED, enableDynamicCLientConf);
+    conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED, enableDynamicClientConf);
     // configure storage type
     conf.set("spark." + RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
     // restarting the coordinator may cause RssException: There isn't enough shuffle servers

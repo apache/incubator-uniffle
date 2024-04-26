@@ -35,7 +35,7 @@ public class ShuffleTaskInfoTest {
 
   @BeforeEach
   public void setup() {
-    ShuffleServerMetrics.register();
+    ShuffleServerMetrics.register(new ShuffleServerConf());
   }
 
   @AfterEach
@@ -74,7 +74,7 @@ public class ShuffleTaskInfoTest {
 
     // case2
     ShuffleServerMetrics.clear();
-    ShuffleServerMetrics.register();
+    ShuffleServerMetrics.register(new ShuffleServerConf());
     barrier.reset();
     CountDownLatch latch = new CountDownLatch(n);
     ShuffleTaskInfo taskInfo = new ShuffleTaskInfo("hugePartitionConcurrentTest_appId");
