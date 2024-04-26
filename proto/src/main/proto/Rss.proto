@@ -552,13 +552,7 @@ message PartitionToShuffleServerRequest {
 message PartitionToShuffleServerResponse {
   StatusCode status = 1;
   string msg = 2;
-  DefaultShuffleHandleInfo shuffleHandleInfo = 3;
-}
-
-message DefaultShuffleHandleInfo {
-  int32 shuffleId = 1;
-  map<int32, GetShuffleServerListResponse> partitionToServers = 2;
-  RemoteStorageInfo remoteStorageInfo = 3;
+  MutableShuffleHandleInfo shuffleHandleInfo = 3;
 }
 
 message MutableShuffleHandleInfo {

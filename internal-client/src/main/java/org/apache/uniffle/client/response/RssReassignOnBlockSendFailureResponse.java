@@ -21,15 +21,15 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.proto.RssProtos;
 
 public class RssReassignOnBlockSendFailureResponse extends ClientResponse {
-  private RssProtos.ShuffleHandleInfo handle;
+  private RssProtos.MutableShuffleHandleInfo handle;
 
   public RssReassignOnBlockSendFailureResponse(
-      StatusCode statusCode, String message, RssProtos.ShuffleHandleInfo handle) {
+      StatusCode statusCode, String message, RssProtos.MutableShuffleHandleInfo handle) {
     super(statusCode, message);
     this.handle = handle;
   }
 
-  public RssProtos.ShuffleHandleInfo getHandle() {
+  public RssProtos.MutableShuffleHandleInfo getHandle() {
     return handle;
   }
 

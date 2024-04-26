@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.spark.SparkException;
-import org.apache.spark.shuffle.MutableShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 
-import org.apache.spark.shuffle.ShuffleHandleInfoBase;
 import org.apache.uniffle.common.ReceivingFailureServer;
 
 /**
@@ -68,7 +68,7 @@ public interface RssShuffleManagerInterface {
    * @param shuffleId
    * @return ShuffleHandleInfo
    */
-  ShuffleHandleInfoBase getShuffleHandleInfoByShuffleId(int shuffleId);
+  ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId);
 
   /**
    * Add the shuffleServer that failed to write to the failure list

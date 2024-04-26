@@ -20,39 +20,35 @@ package org.apache.spark.shuffle.writer;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.annotations.VisibleForTesting;
-import org.apache.spark.shuffle.ShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 
-import org.apache.spark.shuffle.ShuffleHandleInfoBase;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 
 /** This class is to get the partition assignment for ShuffleWriter. */
 public class TaskAttemptAssignment {
-  private ShuffleHandleInfo handle;
-  private final long taskAttemptId;
-  private Map<Integer, List<ShuffleServerInfo>> latestAssignment;
+  private Map<Integer, List<ShuffleServerInfo>> assignment;
+  private boolean mutable = false;
 
-  public TaskAttemptAssignment(long taskAttemptId, ShuffleHandleInfoBase shuffleHandleInfo) {
-    this.taskAttemptId = taskAttemptId;
-    this.update(shuffleHandleInfo);
+  public TaskAttemptAssignment(long taskAttemptId, ShuffleHandleInfo shuffleHandleInfo) {
+    this.assignment = shuffleHandleInfo.getPartitionToServers();
+    if (shuffleHandleInfo instanceof MutableShuffleHandleInfo) {
+      this.mutable = true;
+    }
   }
 
-  public List<ShuffleServerInfo> retrievePartitionAssignment(int partitionId) {
-    return latestAssignment.get(partitionId);
+  public List<ShuffleServerInfo> retrieve(int partitionId) {
+    return assignment.get(partitionId);
   }
 
-  public void update(ShuffleHandleInfoBase handle) {
+  public void update(ShuffleHandleInfo handle) {
+    if (!mutable) {
+      throw new RssException("Illegal update operation on immutable shuffleHandleInfo.");
+    }
     if (handle == null) {
       throw new RssException("Errors on updating shuffle handle by the empty handleInfo.");
     }
-    this.handle = handle;
-    this.latestAssignment = handle.getLatestAssignmentByTaskAttemptId(taskAttemptId);
-  }
-
-  // Only for tests
-  @VisibleForTesting
-  public ShuffleHandleInfo getRef() {
-    return handle;
+    this.assignment = handle.getPartitionToServers();
   }
 }

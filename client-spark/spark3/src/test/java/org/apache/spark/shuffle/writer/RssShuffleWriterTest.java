@@ -49,8 +49,9 @@ import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
-import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.apache.spark.shuffle.TestUtils;
+import org.apache.spark.shuffle.handle.DefaultShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -87,7 +88,30 @@ public class RssShuffleWriterTest {
     return data;
   }
 
-  private RssShuffleWriter createMockWriter(String taskId) {
+  private MutableShuffleHandleInfo createMutableShuffleHandle() {
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
+    List<ShuffleServerInfo> ssi12 =
+        Arrays.asList(
+            new ShuffleServerInfo("id1", "0.0.0.1", 100),
+            new ShuffleServerInfo("id2", "0.0.0.2", 100));
+    partitionToServers.put(0, ssi12);
+    List<ShuffleServerInfo> ssi34 =
+        Arrays.asList(
+            new ShuffleServerInfo("id3", "0.0.0.3", 100),
+            new ShuffleServerInfo("id4", "0.0.0.4", 100));
+    partitionToServers.put(1, ssi34);
+    List<ShuffleServerInfo> ssi56 =
+        Arrays.asList(
+            new ShuffleServerInfo("id5", "0.0.0.5", 100),
+            new ShuffleServerInfo("id6", "0.0.0.6", 100));
+    partitionToServers.put(2, ssi56);
+
+    MutableShuffleHandleInfo shuffleHandleInfo =
+        new MutableShuffleHandleInfo(0, partitionToServers, RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+    return shuffleHandleInfo;
+  }
+
+  private RssShuffleWriter createMockWriter(MutableShuffleHandleInfo shuffleHandle, String taskId) {
     SparkConf conf = new SparkConf();
     conf.setAppName("testApp")
         .setMaster("local[2]")
@@ -118,23 +142,6 @@ public class RssShuffleWriterTest {
     when(mockDependency.partitioner()).thenReturn(mockPartitioner);
     when(mockPartitioner.numPartitions()).thenReturn(3);
 
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    List<ShuffleServerInfo> ssi12 =
-        Arrays.asList(
-            new ShuffleServerInfo("id1", "0.0.0.1", 100),
-            new ShuffleServerInfo("id2", "0.0.0.2", 100));
-    partitionToServers.put(0, ssi12);
-    List<ShuffleServerInfo> ssi34 =
-        Arrays.asList(
-            new ShuffleServerInfo("id3", "0.0.0.3", 100),
-            new ShuffleServerInfo("id4", "0.0.0.4", 100));
-    partitionToServers.put(1, ssi34);
-    List<ShuffleServerInfo> ssi56 =
-        Arrays.asList(
-            new ShuffleServerInfo("id5", "0.0.0.5", 100),
-            new ShuffleServerInfo("id6", "0.0.0.6", 100));
-    partitionToServers.put(2, ssi56);
-
     when(mockPartitioner.getPartition("testKey1")).thenReturn(0);
     when(mockPartitioner.getPartition("testKey2")).thenReturn(1);
     when(mockPartitioner.getPartition("testKey4")).thenReturn(0);
@@ -155,7 +162,7 @@ public class RssShuffleWriterTest {
             0,
             bufferOptions,
             kryoSerializer,
-            partitionToServers,
+            shuffleHandle.getPartitionToServers(),
             mockTaskMemoryManager,
             shuffleWriteMetrics,
             RssSparkConfig.toRssConf(conf));
@@ -163,8 +170,6 @@ public class RssShuffleWriterTest {
 
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
     TaskContext contextMock = mock(TaskContext.class);
-    ShuffleHandleInfo shuffleHandleInfo =
-        new ShuffleHandleInfo(0, partitionToServers, RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
             "appId",
@@ -177,7 +182,7 @@ public class RssShuffleWriterTest {
             conf,
             mockShuffleWriteClient,
             mockHandle,
-            shuffleHandleInfo,
+            shuffleHandle,
             contextMock);
     rssShuffleWriter.enableBlockFailSentRetry();
     doReturn(100000L).when(bufferManagerSpy).acquireMemory(anyLong());
@@ -188,21 +193,31 @@ public class RssShuffleWriterTest {
     return rssShuffleWriterSpy;
   }
 
+  private void updateShuffleHandleAssignment(
+      MutableShuffleHandleInfo handle,
+      Set<Integer> partitionIds,
+      String receivingFailureServerId,
+      Set<ShuffleServerInfo> replacements) {
+    for (int partitionId : partitionIds) {
+      handle.updateAssignment(partitionId, receivingFailureServerId, replacements);
+    }
+  }
+
   /** Test the reassign multi times for one partitionId. */
   @Test
   public void reassignMultiTimesForOnePartitionIdTest() {
     String taskId = "taskId";
-    RssShuffleWriter writer = createMockWriter(taskId);
+    MutableShuffleHandleInfo shuffleHandle = createMutableShuffleHandle();
+    RssShuffleWriter writer = createMockWriter(shuffleHandle, taskId);
     writer.setBlockFailSentRetryMaxTimes(10);
 
     // Make the id1 + id10 + id11 broken, and then finally, it will use the id12 successfully
-    ShuffleHandleInfo shuffleHandleInfo = writer.getShuffleHandleInfo();
-
     AtomicInteger failureCnt = new AtomicInteger();
     RssShuffleManager shuffleManager = writer.getShuffleManager();
     Map<String, Set<Long>> taskToSuccessBlockIds = shuffleManager.getTaskToSuccessBlockIds();
     Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker =
         shuffleManager.getTaskToFailedBlockSendTracker();
+    TaskAttemptAssignment taskAssignment = writer.getTaskAttemptAssignment();
     FakedDataPusher pusher =
         new FakedDataPusher(
             addBlockEvent -> {
@@ -219,19 +234,28 @@ public class RssShuffleWriterTest {
                   // refresh the assignment to simulate the reassign rpc.
                   if (serverId.equals("id1")) {
                     ShuffleServerInfo replacement1 = new ShuffleServerInfo("id10", "0.0.0.10", 100);
-                    shuffleHandleInfo.updateAssignment(
-                        Sets.newHashSet(0, 1, 2), "id1", Sets.newHashSet(replacement1));
-                    writer.updateAssignmentAndMarkFaultyServer(shuffleHandleInfo, "id1");
+                    updateShuffleHandleAssignment(
+                        shuffleHandle,
+                        Sets.newHashSet(0, 1, 2),
+                        "id1",
+                        Sets.newHashSet(replacement1));
+                    taskAssignment.update(shuffleHandle);
                   } else if (serverId.equals("id10")) {
                     ShuffleServerInfo replacement2 = new ShuffleServerInfo("id11", "0.0.0.10", 100);
-                    shuffleHandleInfo.updateAssignment(
-                        Sets.newHashSet(0, 1, 2), "id10", Sets.newHashSet(replacement2));
-                    writer.updateAssignmentAndMarkFaultyServer(shuffleHandleInfo, "id10");
+                    updateShuffleHandleAssignment(
+                        shuffleHandle,
+                        Sets.newHashSet(0, 1, 2),
+                        "id10",
+                        Sets.newHashSet(replacement2));
+                    taskAssignment.update(shuffleHandle);
                   } else if (serverId.equals("id11")) {
                     ShuffleServerInfo replacement3 = new ShuffleServerInfo("id12", "0.0.0.10", 100);
-                    shuffleHandleInfo.updateAssignment(
-                        Sets.newHashSet(0, 1, 2), "id11", Sets.newHashSet(replacement3));
-                    writer.updateAssignmentAndMarkFaultyServer(shuffleHandleInfo, "id11");
+                    updateShuffleHandleAssignment(
+                        shuffleHandle,
+                        Sets.newHashSet(0, 1, 2),
+                        "id11",
+                        Sets.newHashSet(replacement3));
+                    taskAssignment.update(shuffleHandle);
                   }
 
                 } else {
@@ -247,7 +271,7 @@ public class RssShuffleWriterTest {
     writer
         .getBufferManager()
         .setPartitionAssignmentRetrieveFunc(
-            partitionId -> writer.retrievePartitionAssignment(partitionId));
+            partitionId -> writer.getPartitionAssignedServers(partitionId));
 
     // case1: the reassignment will refresh the following plan. So the failure will only occur one
     // time.
@@ -264,12 +288,12 @@ public class RssShuffleWriterTest {
   @Test
   public void refreshAssignmentTest() {
     String taskId = "taskId";
-    RssShuffleWriter writer = createMockWriter(taskId);
+    MutableShuffleHandleInfo shuffleHandle = createMutableShuffleHandle();
+    RssShuffleWriter writer = createMockWriter(shuffleHandle, taskId);
 
-    ShuffleHandleInfo shuffleHandleInfo = writer.getShuffleHandleInfo();
     ShuffleServerInfo replacement = new ShuffleServerInfo("id10", "0.0.0.10", 100);
-    shuffleHandleInfo.updateAssignment(
-        Sets.newHashSet(0, 1, 2), "id1", Sets.newHashSet(replacement));
+    updateShuffleHandleAssignment(
+        shuffleHandle, Sets.newHashSet(0, 1, 2), "id1", Sets.newHashSet(replacement));
 
     AtomicInteger failureCnt = new AtomicInteger();
     RssShuffleManager shuffleManager = writer.getShuffleManager();
@@ -288,7 +312,7 @@ public class RssShuffleWriterTest {
                       .add(block, server, StatusCode.NO_BUFFER);
                   failureCnt.incrementAndGet();
                   // refresh the assignment to simulate the reassign rpc.
-                  writer.updateAssignmentAndMarkFaultyServer(shuffleHandleInfo, "id1");
+                  writer.getTaskAttemptAssignment().update(shuffleHandle);
                 } else {
                   taskToSuccessBlockIds
                       .computeIfAbsent(taskId, x -> new HashSet<>())
@@ -302,7 +326,7 @@ public class RssShuffleWriterTest {
     writer
         .getBufferManager()
         .setPartitionAssignmentRetrieveFunc(
-            partitionId -> writer.retrievePartitionAssignment(partitionId));
+            partitionId -> writer.getPartitionAssignedServers(partitionId));
 
     // case1: the reassignment will refresh the following plan. So the failure will only occur one
     // time.
@@ -415,8 +439,8 @@ public class RssShuffleWriterTest {
 
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
     TaskContext contextMock = mock(TaskContext.class);
-    ShuffleHandleInfo shuffleHandleInfo =
-        new ShuffleHandleInfo(0, partitionToServers, RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
+    MutableShuffleHandleInfo shuffleHandleInfo =
+        new MutableShuffleHandleInfo(0, partitionToServers, RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
             "appId",
@@ -435,9 +459,11 @@ public class RssShuffleWriterTest {
     doReturn(100000L).when(bufferManagerSpy).acquireMemory(anyLong());
 
     ShuffleServerInfo replacement = new ShuffleServerInfo("id10", "0.0.0.10", 100);
-    shuffleHandleInfo.updateAssignment(
-        Sets.newHashSet(0, 1, 2), "id1", Sets.newHashSet(replacement));
-    rssShuffleWriter.updateAssignmentAndMarkFaultyServer(shuffleHandleInfo, "id1");
+    shuffleHandleInfo.updateAssignment(0, "id1", Sets.newHashSet(replacement));
+    shuffleHandleInfo.updateAssignment(1, "id1", Sets.newHashSet(replacement));
+    shuffleHandleInfo.updateAssignment(2, "id1", Sets.newHashSet(replacement));
+
+    rssShuffleWriter.getTaskAttemptAssignment().update(shuffleHandleInfo);
 
     RssShuffleWriter<String, String, String> rssShuffleWriterSpy = spy(rssShuffleWriter);
     doNothing().when(rssShuffleWriterSpy).sendCommit();
@@ -551,7 +577,7 @@ public class RssShuffleWriterTest {
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
 
     TaskContext contextMock = mock(TaskContext.class);
-    ShuffleHandleInfo mockShuffleHandleInfo = mock(ShuffleHandleInfo.class);
+    DefaultShuffleHandleInfo mockShuffleHandleInfo = mock(DefaultShuffleHandleInfo.class);
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
             "appId",
@@ -697,7 +723,7 @@ public class RssShuffleWriterTest {
     when(mockDependency.partitioner()).thenReturn(mockPartitioner);
     when(mockPartitioner.numPartitions()).thenReturn(1);
     TaskContext contextMock = mock(TaskContext.class);
-    ShuffleHandleInfo mockShuffleHandleInfo = mock(ShuffleHandleInfo.class);
+    DefaultShuffleHandleInfo mockShuffleHandleInfo = mock(DefaultShuffleHandleInfo.class);
 
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
@@ -820,7 +846,7 @@ public class RssShuffleWriterTest {
 
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
     TaskContext contextMock = mock(TaskContext.class);
-    ShuffleHandleInfo mockShuffleHandleInfo = mock(ShuffleHandleInfo.class);
+    DefaultShuffleHandleInfo mockShuffleHandleInfo = mock(DefaultShuffleHandleInfo.class);
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
             "appId",
@@ -931,7 +957,7 @@ public class RssShuffleWriterTest {
     RssShuffleHandle<String, String, String> mockHandle = mock(RssShuffleHandle.class);
     when(mockHandle.getDependency()).thenReturn(mockDependency);
     TaskContext contextMock = mock(TaskContext.class);
-    ShuffleHandleInfo mockShuffleHandleInfo = mock(ShuffleHandleInfo.class);
+    DefaultShuffleHandleInfo mockShuffleHandleInfo = mock(DefaultShuffleHandleInfo.class);
     ShuffleWriteClient mockWriteClient = mock(ShuffleWriteClient.class);
 
     List<ShuffleBlockInfo> shuffleBlockInfoList = createShuffleBlockList(1, 31);

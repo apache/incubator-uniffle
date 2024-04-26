@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.shuffle;
+package org.apache.spark.shuffle.handle;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Test;
@@ -33,10 +32,9 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ShuffleHandleInfoTest {
+public class MutableShuffleHandleInfoTest {
 
   private ShuffleServerInfo createFakeServerInfo(String id) {
     return new ShuffleServerInfo(id, id, 1);
@@ -48,16 +46,14 @@ public class ShuffleHandleInfoTest {
     partitionToServers.put(1, Arrays.asList(createFakeServerInfo("a"), createFakeServerInfo("b")));
     partitionToServers.put(2, Arrays.asList(createFakeServerInfo("c")));
 
-    ShuffleHandleInfo handleInfo =
-        new ShuffleHandleInfo(1, partitionToServers, new RemoteStorageInfo(""));
+    MutableShuffleHandleInfo handleInfo =
+        new MutableShuffleHandleInfo(1, partitionToServers, new RemoteStorageInfo(""));
 
     // case1: update the replacement servers but has existing servers
-    Set<Integer> partitions = Sets.newHashSet(1);
-    Map<Integer, Set<ShuffleServerInfo>> updated =
+    Set<ShuffleServerInfo> updated =
         handleInfo.updateAssignment(
-            partitions, "a", Sets.newHashSet(createFakeServerInfo("a"), createFakeServerInfo("d")));
-    assertTrue(updated.containsKey(1));
-    assertTrue(updated.get(1).stream().findFirst().get().getId().equals("d"));
+            1, "a", Sets.newHashSet(createFakeServerInfo("a"), createFakeServerInfo("d")));
+    assertTrue(updated.stream().findFirst().get().getId().equals("d"));
 
     // case2: update when having multiple servers
     Map<Integer, Map<Integer, List<ShuffleServerInfo>>> partitionReplicaAssignedServers =
@@ -73,36 +69,18 @@ public class ShuffleHandleInfoTest {
         .computeIfAbsent(1, x -> new HashMap<>())
         .computeIfAbsent(0, x -> servers);
     handleInfo =
-        new ShuffleHandleInfo(1, new RemoteStorageInfo(""), partitionReplicaAssignedServers);
-    partitions = Sets.newHashSet(1);
+        new MutableShuffleHandleInfo(1, new RemoteStorageInfo(""), partitionReplicaAssignedServers);
+    int partitionId = 1;
     updated =
         handleInfo.updateAssignment(
-            partitions,
+            partitionId,
             "a",
             Sets.newHashSet(
                 createFakeServerInfo("b"),
                 createFakeServerInfo("d"),
                 createFakeServerInfo("e"),
                 createFakeServerInfo("f")));
-    assertTrue(updated.containsKey(1));
-    assertEquals(
-        updated.get(1).stream().collect(Collectors.toSet()),
-        Sets.newHashSet(createFakeServerInfo("e"), createFakeServerInfo("f")));
-  }
-
-  @Test
-  public void testReassignment() {
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = new HashMap<>();
-    partitionToServers.put(1, Arrays.asList(createFakeServerInfo("a"), createFakeServerInfo("b")));
-    partitionToServers.put(2, Arrays.asList(createFakeServerInfo("c")));
-
-    ShuffleHandleInfo handleInfo =
-        new ShuffleHandleInfo(1, partitionToServers, new RemoteStorageInfo(""));
-
-    assertFalse(handleInfo.isMarkedAsFaultyServer("a"));
-    Set<Integer> partitions = Sets.newHashSet(1);
-    handleInfo.updateAssignment(partitions, "a", Sets.newHashSet(createFakeServerInfo("d")));
-    assertTrue(handleInfo.isMarkedAsFaultyServer("a"));
+    assertEquals(updated, Sets.newHashSet(createFakeServerInfo("e"), createFakeServerInfo("f")));
   }
 
   @Test
@@ -111,15 +89,14 @@ public class ShuffleHandleInfoTest {
     partitionToServers.put(1, Arrays.asList(createFakeServerInfo("a"), createFakeServerInfo("b")));
     partitionToServers.put(2, Arrays.asList(createFakeServerInfo("c")));
 
-    ShuffleHandleInfo handleInfo =
-        new ShuffleHandleInfo(1, partitionToServers, new RemoteStorageInfo(""));
+    MutableShuffleHandleInfo handleInfo =
+        new MutableShuffleHandleInfo(1, partitionToServers, new RemoteStorageInfo(""));
 
     // case1
-    Set<Integer> partitions = Sets.newHashSet(2);
-    handleInfo.updateAssignment(partitions, "c", Sets.newHashSet(createFakeServerInfo("d")));
+    int partitionId = 2;
+    handleInfo.updateAssignment(partitionId, "c", Sets.newHashSet(createFakeServerInfo("d")));
 
-    Map<Integer, List<ShuffleServerInfo>> partitionAssignment =
-        handleInfo.listPartitionAssignedServers();
+    Map<Integer, List<ShuffleServerInfo>> partitionAssignment = handleInfo.listPartitionServers();
     assertEquals(2, partitionAssignment.size());
     assertEquals(
         Arrays.asList(createFakeServerInfo("c"), createFakeServerInfo("d")),
@@ -127,8 +104,8 @@ public class ShuffleHandleInfoTest {
 
     // case2: reassign multiple times for one partition, it will not append the same replacement
     // servers
-    handleInfo.updateAssignment(partitions, "c", Sets.newHashSet(createFakeServerInfo("d")));
-    partitionAssignment = handleInfo.listPartitionAssignedServers();
+    handleInfo.updateAssignment(partitionId, "c", Sets.newHashSet(createFakeServerInfo("d")));
+    partitionAssignment = handleInfo.listPartitionServers();
     assertEquals(
         Arrays.asList(createFakeServerInfo("c"), createFakeServerInfo("d")),
         partitionAssignment.get(2));
@@ -136,8 +113,8 @@ public class ShuffleHandleInfoTest {
     // case3: reassign multiple times for one partition, it will append the non-existing replacement
     // servers
     handleInfo.updateAssignment(
-        partitions, "c", Sets.newHashSet(createFakeServerInfo("d"), createFakeServerInfo("e")));
-    partitionAssignment = handleInfo.listPartitionAssignedServers();
+        partitionId, "c", Sets.newHashSet(createFakeServerInfo("d"), createFakeServerInfo("e")));
+    partitionAssignment = handleInfo.listPartitionServers();
     assertEquals(
         Arrays.asList(
             createFakeServerInfo("c"), createFakeServerInfo("d"), createFakeServerInfo("e")),
@@ -154,8 +131,8 @@ public class ShuffleHandleInfoTest {
     partitionToServers.put(1, Arrays.asList(a, b));
     partitionToServers.put(2, Arrays.asList(c));
 
-    ShuffleHandleInfo handleInfo =
-        new ShuffleHandleInfo(1, partitionToServers, new RemoteStorageInfo(""));
+    MutableShuffleHandleInfo handleInfo =
+        new MutableShuffleHandleInfo(1, partitionToServers, new RemoteStorageInfo(""));
 
     // not any replacements
     PartitionDataReplicaRequirementTracking tracking = handleInfo.createPartitionReplicaTracking();

@@ -55,8 +55,9 @@ import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.RssSparkShuffleUtils;
-import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.apache.spark.shuffle.ShuffleWriter;
+import org.apache.spark.shuffle.handle.DefaultShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 import org.apache.spark.storage.BlockManagerId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,7 +123,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
       RssShuffleHandle<K, V, C> rssHandle,
-      ShuffleHandleInfo shuffleHandleInfo,
+      DefaultShuffleHandleInfo shuffleHandleInfo,
       TaskContext context) {
     this(
         appId,
@@ -151,7 +152,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       ShuffleWriteClient shuffleWriteClient,
       RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback,
-      ShuffleHandleInfo shuffleHandleInfo,
+      DefaultShuffleHandleInfo shuffleHandleInfo,
       TaskContext context) {
     this.appId = appId;
     this.shuffleId = shuffleId;

@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.spark.shuffle;
+package org.apache.spark.shuffle.handle;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -31,13 +32,10 @@ import org.apache.uniffle.common.ShuffleServerInfo;
  *
  * <p>It's to be broadcast to executors and referenced by shuffle tasks.
  */
-public class ShuffleHandleInfo extends ShuffleHandleInfoBase implements Serializable {
+public class DefaultShuffleHandleInfo extends ShuffleHandleInfoBase implements Serializable {
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
 
-  public static final ShuffleHandleInfo EMPTY_HANDLE_INFO =
-      new ShuffleHandleInfo(-1, Collections.EMPTY_MAP, RemoteStorageInfo.EMPTY_REMOTE_STORAGE);
-
-  public ShuffleHandleInfo(
+  public DefaultShuffleHandleInfo(
       int shuffleId,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
       RemoteStorageInfo storageInfo) {
@@ -46,13 +44,25 @@ public class ShuffleHandleInfo extends ShuffleHandleInfoBase implements Serializ
   }
 
   @Override
+  public Set<ShuffleServerInfo> listServers() {
+    return partitionToServers.values().stream()
+        .flatMap(x -> x.stream())
+        .collect(Collectors.toSet());
+  }
+
+  @Override
   public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
     return partitionToServers;
   }
 
   @Override
+  public Map<Integer, List<ShuffleServerInfo>> listPartitionServers() {
+    return partitionToServers;
+  }
+
+  @Override
   public PartitionDataReplicaRequirementTracking createPartitionReplicaTracking() {
-    return null;
+    return new PartitionDataReplicaRequirementTracking(partitionToServers, shuffleId);
   }
 
   public RemoteStorageInfo getRemoteStorage() {

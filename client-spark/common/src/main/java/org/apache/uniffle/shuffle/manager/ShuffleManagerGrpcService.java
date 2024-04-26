@@ -28,9 +28,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.grpc.stub.StreamObserver;
-import org.apache.spark.shuffle.MutableShuffleHandleInfo;
-import org.apache.spark.shuffle.ShuffleHandleInfo;
-import org.apache.spark.shuffle.ShuffleHandleInfoBase;
+import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -192,22 +190,18 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     RssProtos.PartitionToShuffleServerResponse reply;
     RssProtos.StatusCode code;
     int shuffleId = request.getShuffleId();
-    ShuffleHandleInfoBase shuffleHandleInfoByShuffleId =
-        shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
-    if (shuffleHandleInfoByShuffleId != null) {
+    MutableShuffleHandleInfo shuffleHandle =
+        (MutableShuffleHandleInfo) shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
+    if (shuffleHandle != null) {
       code = RssProtos.StatusCode.SUCCESS;
       reply =
           RssProtos.PartitionToShuffleServerResponse.newBuilder()
               .setStatus(code)
-              .setShuffleHandleInfo(ShuffleHandleInfo.toProto(shuffleHandleInfoByShuffleId))
+              .setShuffleHandleInfo(MutableShuffleHandleInfo.toProto(shuffleHandle))
               .build();
     } else {
       code = RssProtos.StatusCode.INVALID_REQUEST;
-      reply =
-          RssProtos.PartitionToShuffleServerResponse.newBuilder()
-              .setStatus(code)
-              .setShuffleHandleInfo(ShuffleHandleInfo.toProto(ShuffleHandleInfo.EMPTY_HANDLE_INFO))
-              .build();
+      reply = RssProtos.PartitionToShuffleServerResponse.newBuilder().setStatus(code).build();
     }
     responseObserver.onNext(reply);
     responseObserver.onCompleted();
@@ -254,7 +248,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
       reply =
           RssProtos.RssReassignOnBlockSendFailureResponse.newBuilder()
               .setStatus(code)
-              .setHandle(ShuffleHandleInfo.toProto(handle))
+              .setHandle(MutableShuffleHandleInfo.toProto(handle))
               .build();
     } catch (Exception e) {
       LOG.error("Errors on reassigning when block send failure.", e);

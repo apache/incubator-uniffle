@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.broadcast.Broadcast;
+import org.apache.spark.shuffle.handle.DefaultShuffleHandleInfo;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -31,14 +32,14 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
   private String appId;
   private int numMaps;
   private ShuffleDependency<K, V, C> dependency;
-  private Broadcast<ShuffleHandleInfo> handlerInfoBd;
+  private Broadcast<DefaultShuffleHandleInfo> handlerInfoBd;
 
   public RssShuffleHandle(
       int shuffleId,
       String appId,
       int numMaps,
       ShuffleDependency<K, V, C> dependency,
-      Broadcast<ShuffleHandleInfo> handlerInfoBd) {
+      Broadcast<DefaultShuffleHandleInfo> handlerInfoBd) {
     super(shuffleId);
     this.appId = appId;
     this.numMaps = numMaps;
