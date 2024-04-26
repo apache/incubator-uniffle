@@ -36,6 +36,7 @@ import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.client.util.RssClientConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER;
+import static org.apache.uniffle.client.util.RssClientConfig.RSS_CLIENT_RETRY_MAX;
 import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED;
 
 /** This class is to basic test the mechanism of partition block data reassignment */
@@ -76,9 +77,14 @@ public class PartitionBlockDataReassignBasicTest extends SparkSQLTest {
 
     startServers();
 
-    // simulate one server without enough buffer
-    ShuffleServer faultyShuffleServer = grpcShuffleServers.get(0);
-    ShuffleBufferManager bufferManager = faultyShuffleServer.getShuffleBufferManager();
+    // simulate one server without enough buffer for grpc
+    ShuffleServer grpcServer = grpcShuffleServers.get(0);
+    ShuffleBufferManager bufferManager = grpcServer.getShuffleBufferManager();
+    bufferManager.setUsedMemory(bufferManager.getCapacity() + 100);
+
+    // simulate one server without enough buffer for netty server
+    ShuffleServer nettyServer = nettyShuffleServers.get(0);
+    bufferManager = nettyServer.getShuffleBufferManager();
     bufferManager.setUsedMemory(bufferManager.getCapacity() + 100);
   }
 
@@ -93,11 +99,18 @@ public class PartitionBlockDataReassignBasicTest extends SparkSQLTest {
   }
 
   @Override
-  public void updateRssStorage(SparkConf sparkConf) {
+  public void updateSparkConfCustomer(SparkConf sparkConf) {
+    sparkConf.set("spark.sql.shuffle.partitions", "4");
+    sparkConf.set("spark." + RSS_CLIENT_RETRY_MAX, "2");
     sparkConf.set(
         "spark." + RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER,
         String.valueOf(grpcShuffleServers.size()));
     sparkConf.set("spark." + RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.key(), "true");
+  }
+
+  @Override
+  public void updateRssStorage(SparkConf sparkConf) {
+    // ignore
   }
 
   @Override
