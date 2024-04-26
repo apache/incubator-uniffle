@@ -18,7 +18,6 @@
 package org.apache.uniffle.server;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -267,8 +266,8 @@ public class ShuffleTaskManager {
       ShuffleDataDistributionType dataDistType,
       int maxConcurrencyPerPartitionToWrite) {
     ReentrantReadWriteLock.WriteLock lock = getAppWriteLock(appId);
+    lock.lock();
     try {
-      lock.lock();
       refreshAppId(appId);
 
       ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
@@ -753,8 +752,8 @@ public class ShuffleTaskManager {
   @VisibleForTesting
   public void removeResources(String appId, boolean checkAppExpired) {
     Lock lock = getAppWriteLock(appId);
+    lock.lock();
     try {
-      lock.lock();
       LOG.info("Start remove resource for appId[" + appId + "]");
       if (checkAppExpired && !isAppExpired(appId)) {
         LOG.info(
@@ -763,25 +762,19 @@ public class ShuffleTaskManager {
         return;
       }
       final long start = System.currentTimeMillis();
-      String user = getUserByAppId(appId);
       ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.remove(appId);
       if (shuffleTaskInfo == null) {
         LOG.info("Resource for appId[" + appId + "] had been removed before.");
         return;
       }
 
-      final Map<Integer, Roaring64NavigableMap> shuffleToCachedBlockIds =
-          shuffleTaskInfo.getCachedBlockIds();
       partitionsToBlockIds.remove(appId);
       shuffleBufferManager.removeBuffer(appId);
       shuffleFlushManager.removeResources(appId);
-      if (!shuffleToCachedBlockIds.isEmpty()) {
-        storageManager.removeResources(
-            new AppPurgeEvent(appId, user, new ArrayList<>(shuffleToCachedBlockIds.keySet())));
-      }
+      storageManager.removeResources(new AppPurgeEvent(appId, shuffleTaskInfo.getUser()));
       if (shuffleTaskInfo.hasHugePartition()) {
         ShuffleServerMetrics.gaugeAppWithHugePartitionNum.dec();
-        ShuffleServerMetrics.gaugeHugePartitionNum.dec(shuffleTaskInfo.getHugePartitionSize());
+        ShuffleServerMetrics.gaugeHugePartitionNum.dec();
       }
       LOG.info(
           "Finish remove resource for appId["

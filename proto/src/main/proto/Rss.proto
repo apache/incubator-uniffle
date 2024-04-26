@@ -551,9 +551,22 @@ message PartitionToShuffleServerRequest {
 
 message PartitionToShuffleServerResponse {
   StatusCode status = 1;
-  map<int32,GetShuffleServerListResponse> partitionToShuffleServer = 2;
-  RemoteStorageInfo remote_storage_info = 3;
-  string msg = 4;
+  string msg = 2;
+  ShuffleHandleInfo shuffleHandleInfo = 3;
+}
+
+message ShuffleHandleInfo {
+  int32 shuffleId = 1;
+  map<int32, PartitionReplicaServers> partitionToServers = 2;
+  RemoteStorageInfo remoteStorageInfo = 3;
+}
+
+message PartitionReplicaServers {
+  map<int32, ReplicaServersItem> replicaServers = 1;
+}
+
+message ReplicaServersItem {
+  repeated ShuffleServerId serverId = 1;
 }
 
 message RemoteStorageInfo{
@@ -590,7 +603,7 @@ message ReassignServersReponse{
 
 message RssReassignFaultyShuffleServerRequest{
   int32 shuffleId  = 1;
-  repeated string partitionIds = 2;
+  repeated int32 partitionIds = 2;
   string faultyShuffleServerId = 3;
 }
 

@@ -19,7 +19,6 @@ package org.apache.spark.shuffle;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.broadcast.Broadcast;
@@ -69,9 +68,5 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
 
   public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
     return handlerInfoBd.value().getPartitionToServers();
-  }
-
-  public Set<ShuffleServerInfo> getShuffleServersForData() {
-    return handlerInfoBd.value().getShuffleServersForData();
   }
 }

@@ -54,6 +54,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
@@ -663,7 +664,8 @@ public class WriteBufferManagerTest {
         Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
         String appId,
         int shuffleId,
-        Set<Integer> failedPartitions) {
+        Set<Integer> failedPartitions,
+        PartitionDataReplicaRequirementTracking tracking) {
       return null;
     }
 

@@ -79,5 +79,5 @@ public interface RssShuffleManagerInterface {
       int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
 
   ShuffleServerInfo reassignFaultyShuffleServerForTasks(
-      int shuffleId, Set<String> partitionIds, String faultyShuffleServerId);
+      int shuffleId, Set<Integer> partitionIds, String faultyShuffleServerId);
 }

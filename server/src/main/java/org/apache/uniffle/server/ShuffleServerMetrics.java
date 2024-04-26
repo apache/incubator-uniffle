@@ -61,6 +61,13 @@ public class ShuffleServerMetrics {
       "localfile_flush_thread_pool_queue_size";
   private static final String FALLBACK_FLUSH_THREAD_POOL_QUEUE_SIZE =
       "fallback_flush_thread_pool_queue_size";
+  private static final String READ_LOCAL_DATA_FILE_THREAD_NUM = "read_local_data_file_thread_num";
+  private static final String READ_LOCAL_INDEX_FILE_THREAD_NUM = "read_local_index_file_thread_num";
+  private static final String READ_MEMORY_DATA_THREAD_NUM = "read_memory_data_thread_num";
+  private static final String READ_LOCAL_DATA_FILE_BUFFER_SIZE = "read_local_data_file_buffer_size";
+  private static final String READ_LOCAL_INDEX_FILE_BUFFER_SIZE =
+      "read_local_index_file_buffer_size";
+  private static final String READ_MEMORY_DATA_BUFFER_SIZE = "read_memory_data_buffer_size";
   private static final String TOTAL_READ_DATA = "total_read_data";
   private static final String TOTAL_READ_LOCAL_DATA_FILE = "total_read_local_data_file";
   private static final String TOTAL_READ_LOCAL_INDEX_FILE = "total_read_local_index_file";
@@ -86,8 +93,9 @@ public class ShuffleServerMetrics {
   private static final String USED_BUFFER_SIZE = "used_buffer_size";
   private static final String READ_USED_BUFFER_SIZE = "read_used_buffer_size";
   private static final String USED_DIRECT_MEMORY_SIZE = "used_direct_memory_size";
-  private static final String ALLOCATED_DIRECT_MEMORY_SIZE = "allocated_direct_memory_size";
-  private static final String PINNED_DIRECT_MEMORY_SIZE = "pinned_direct_memory_size";
+  private static final String USED_DIRECT_MEMORY_SIZE_BY_NETTY = "used_direct_memory_size_by_netty";
+  private static final String USED_DIRECT_MEMORY_SIZE_BY_GRPC_NETTY =
+      "used_direct_memory_size_by_grpc_netty";
   private static final String TOTAL_FAILED_WRITTEN_EVENT_NUM = "total_failed_written_event_num";
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
   private static final String TOTAL_HADOOP_WRITE_DATA = "total_hadoop_write_data";
@@ -207,6 +215,8 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeUsedBufferSize;
   public static Gauge.Child gaugeReadBufferUsedSize;
   public static Gauge.Child gaugeUsedDirectMemorySize;
+  public static Gauge.Child gaugeUsedDirectMemorySizeByNetty;
+  public static Gauge.Child gaugeUsedDirectMemorySizeByGrpcNetty;
   public static Gauge.Child gaugeWriteHandler;
   public static Gauge.Child gaugeEventQueueSize;
   public static Gauge.Child gaugeHadoopFlushThreadPoolQueueSize;
@@ -214,6 +224,12 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeFallbackFlushThreadPoolQueueSize;
   public static Gauge.Child gaugeAppNum;
   public static Gauge.Child gaugeTotalPartitionNum;
+  public static Gauge.Child gaugeReadLocalDataFileThreadNum;
+  public static Gauge.Child gaugeReadLocalIndexFileThreadNum;
+  public static Gauge.Child gaugeReadMemoryDataThreadNum;
+  public static Gauge.Child gaugeReadLocalDataFileBufferSize;
+  public static Gauge.Child gaugeReadLocalIndexFileBufferSize;
+  public static Gauge.Child gaugeReadMemoryDataBufferSize;
 
   public static Gauge gaugeTotalDataSizeUsage;
   public static Gauge gaugeInMemoryDataSizeUsage;
@@ -406,6 +422,10 @@ public class ShuffleServerMetrics {
     gaugeUsedBufferSize = metricsManager.addLabeledGauge(USED_BUFFER_SIZE);
     gaugeReadBufferUsedSize = metricsManager.addLabeledGauge(READ_USED_BUFFER_SIZE);
     gaugeUsedDirectMemorySize = metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE);
+    gaugeUsedDirectMemorySizeByNetty =
+        metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE_BY_NETTY);
+    gaugeUsedDirectMemorySizeByGrpcNetty =
+        metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE_BY_GRPC_NETTY);
     gaugeWriteHandler = metricsManager.addLabeledGauge(TOTAL_WRITE_HANDLER);
     gaugeEventQueueSize = metricsManager.addLabeledGauge(EVENT_QUEUE_SIZE);
     gaugeHadoopFlushThreadPoolQueueSize =
@@ -417,6 +437,17 @@ public class ShuffleServerMetrics {
 
     gaugeAppNum = metricsManager.addLabeledGauge(APP_NUM_WITH_NODE);
     gaugeTotalPartitionNum = metricsManager.addLabeledGauge(PARTITION_NUM_WITH_NODE);
+
+    gaugeReadLocalDataFileThreadNum =
+        metricsManager.addLabeledGauge(READ_LOCAL_DATA_FILE_THREAD_NUM);
+    gaugeReadLocalIndexFileThreadNum =
+        metricsManager.addLabeledGauge(READ_LOCAL_INDEX_FILE_THREAD_NUM);
+    gaugeReadMemoryDataThreadNum = metricsManager.addLabeledGauge(READ_MEMORY_DATA_THREAD_NUM);
+    gaugeReadLocalDataFileBufferSize =
+        metricsManager.addLabeledGauge(READ_LOCAL_DATA_FILE_BUFFER_SIZE);
+    gaugeReadLocalIndexFileBufferSize =
+        metricsManager.addLabeledGauge(READ_LOCAL_INDEX_FILE_BUFFER_SIZE);
+    gaugeReadMemoryDataBufferSize = metricsManager.addLabeledGauge(READ_MEMORY_DATA_BUFFER_SIZE);
 
     gaugeHugePartitionNum = metricsManager.addLabeledGauge(HUGE_PARTITION_NUM);
     gaugeAppWithHugePartitionNum = metricsManager.addLabeledGauge(APP_WITH_HUGE_PARTITION_NUM);

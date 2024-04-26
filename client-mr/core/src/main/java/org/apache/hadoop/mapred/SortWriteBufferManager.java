@@ -297,8 +297,8 @@ public class SortWriteBufferManager<K, V> {
             } catch (Throwable t) {
               LOG.warn("send shuffle data exception ", t);
             } finally {
+              memoryLock.lock();
               try {
-                memoryLock.lock();
                 if (LOG.isDebugEnabled()) {
                   LOG.debug("memoryUsedSize {} decrease {}", memoryUsedSize, size);
                 }

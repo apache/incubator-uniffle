@@ -88,14 +88,23 @@ public class DataPusher implements Closeable {
         () -> {
           String taskId = event.getTaskId();
           List<ShuffleBlockInfo> shuffleBlockInfoList = event.getShuffleDataInfoList();
+          SendShuffleDataResult result = null;
           try {
-            SendShuffleDataResult result =
+            result =
                 shuffleWriteClient.sendShuffleData(
                     rssAppId, shuffleBlockInfoList, () -> !isValidTask(taskId));
             putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
             putFailedBlockSendTracker(
                 taskToFailedBlockSendTracker, taskId, result.getFailedBlockSendTracker());
           } finally {
+            Set<Long> succeedBlockIds =
+                result.getSuccessBlockIds() == null
+                    ? Collections.emptySet()
+                    : result.getSuccessBlockIds();
+            for (ShuffleBlockInfo block : shuffleBlockInfoList) {
+              block.executeCompletionCallback(succeedBlockIds.contains(block.getBlockId()));
+            }
+
             List<Runnable> callbackChain =
                 Optional.of(event.getProcessedCallbackChain()).orElse(Collections.EMPTY_LIST);
             for (Runnable runnable : callbackChain) {

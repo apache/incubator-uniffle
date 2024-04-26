@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +43,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
@@ -815,18 +817,19 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
       String appId,
       int shuffleId,
-      Set<Integer> failedPartitions) {
-    Map<Integer, Integer> partitionReadSuccess = Maps.newHashMap();
+      Set<Integer> failedPartitions,
+      PartitionDataReplicaRequirementTracking replicaRequirementTracking) {
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    Set<Integer> allRequestedPartitionIds = new HashSet<>();
     for (Map.Entry<ShuffleServerInfo, Set<Integer>> entry : serverToPartitions.entrySet()) {
       ShuffleServerInfo shuffleServerInfo = entry.getKey();
       Set<Integer> requestPartitions = Sets.newHashSet();
       for (Integer partitionId : entry.getValue()) {
-        partitionReadSuccess.putIfAbsent(partitionId, 0);
-        if (partitionReadSuccess.get(partitionId) < replicaRead) {
+        if (!replicaRequirementTracking.isSatisfied(partitionId, replicaRead)) {
           requestPartitions.add(partitionId);
         }
       }
+      allRequestedPartitionIds.addAll(requestPartitions);
       RssGetShuffleResultForMultiPartRequest request =
           new RssGetShuffleResultForMultiPartRequest(
               appId, shuffleId, requestPartitions, blockIdLayout);
@@ -838,8 +841,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           Roaring64NavigableMap blockIdBitmapOfServer = response.getBlockIdBitmap();
           blockIdBitmap.or(blockIdBitmapOfServer);
           for (Integer partitionId : requestPartitions) {
-            Integer oldVal = partitionReadSuccess.get(partitionId);
-            partitionReadSuccess.put(partitionId, oldVal + 1);
+            replicaRequirementTracking.markPartitionOfServerSuccessful(
+                partitionId, shuffleServerInfo);
           }
         }
       } catch (Exception e) {
@@ -852,12 +855,15 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                 + "], shuffleId["
                 + shuffleId
                 + "], requestPartitions"
-                + requestPartitions);
+                + requestPartitions,
+            e);
       }
     }
     boolean isSuccessful =
-        partitionReadSuccess.entrySet().stream().allMatch(x -> x.getValue() >= replicaRead);
+        allRequestedPartitionIds.stream()
+            .allMatch(x -> replicaRequirementTracking.isSatisfied(x, replicaRead));
     if (!isSuccessful) {
+      LOG.error("Failed to meet replica requirement: {}", replicaRequirementTracking);
       throw new RssFetchFailedException(
           "Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]");
     }

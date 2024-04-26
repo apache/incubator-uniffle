@@ -444,8 +444,7 @@ public class RssShuffle implements ExceptionReporter {
         }
       } catch (Throwable e) {
         if (ignoreErrors) {
-          LOG.info(
-              srcNameTrimmed + ": " + "Exception while trying to shutdown merger, Ignoring", e);
+          LOG.info("{}: Exception while trying to shutdown merger, Ignoring", srcNameTrimmed, e);
         } else {
           throw e;
         }
@@ -467,7 +466,7 @@ public class RssShuffle implements ExceptionReporter {
       }
       cleanupMerger(true);
     } catch (Throwable t) {
-      LOG.info(srcNameTrimmed + ": " + "Error in cleaning up.., ", t);
+      LOG.info("{}: Error in cleaning up.., ", srcNameTrimmed, t);
     }
   }
 
@@ -516,15 +515,15 @@ public class RssShuffle implements ExceptionReporter {
   private class RssShuffleRunnerFutureCallback implements FutureCallback<TezRawKeyValueIterator> {
     @Override
     public void onSuccess(TezRawKeyValueIterator result) {
-      LOG.info(srcNameTrimmed + ": " + "RSSShuffle Runner thread complete");
+      LOG.info(srcNameTrimmed + ": RSSShuffle Runner thread complete");
     }
 
     @Override
     public void onFailure(Throwable t) {
       if (isShutDown.get()) {
-        LOG.info(srcNameTrimmed + ": " + "Already shutdown. Ignoring error");
+        LOG.info(srcNameTrimmed + ": Already shutdown. Ignoring error");
       } else {
-        LOG.error(srcNameTrimmed + ": " + "RSSShuffleRunner failed with error", t);
+        LOG.error(srcNameTrimmed + ": RSSShuffleRunner failed with error", t);
         // In case of an abort / Interrupt - the runtime makes sure that this is ignored.
         inputContext.reportFailure(TaskFailureType.NON_FATAL, t, "RSSShuffle Runner Failed");
         cleanupIgnoreErrors();

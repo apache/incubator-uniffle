@@ -70,7 +70,7 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
 
   @Override
   public ShuffleServerInfo reassignFaultyShuffleServerForTasks(
-      int shuffleId, Set<String> partitionIds, String faultyShuffleServerId) {
+      int shuffleId, Set<Integer> partitionIds, String faultyShuffleServerId) {
     return mock(ShuffleServerInfo.class);
   }
 }

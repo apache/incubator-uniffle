@@ -36,6 +36,9 @@ public class ShuffleBlockInfo {
   private List<ShuffleServerInfo> shuffleServerInfos;
   private int uncompressLength;
   private long freeMemory;
+  private int retryCnt = 0;
+
+  private transient BlockCompletionCallback completionCallback;
 
   public ShuffleBlockInfo(
       int shuffleId,
@@ -153,7 +156,30 @@ public class ShuffleBlockInfo {
     return sb.toString();
   }
 
+  public void incrRetryCnt() {
+    this.retryCnt += 1;
+  }
+
+  public int getRetryCnt() {
+    return retryCnt;
+  }
+
+  public void reassignShuffleServers(List<ShuffleServerInfo> replacements) {
+    this.shuffleServerInfos = replacements;
+  }
+
   public synchronized void copyDataTo(ByteBuf to) {
     ByteBufUtils.copyByteBuf(data, to);
+  }
+
+  public void withCompletionCallback(BlockCompletionCallback callback) {
+    this.completionCallback = callback;
+  }
+
+  public void executeCompletionCallback(boolean isSuccessful) {
+    if (completionCallback == null) {
+      return;
+    }
+    completionCallback.onBlockCompletion(this, isSuccessful);
   }
 }
