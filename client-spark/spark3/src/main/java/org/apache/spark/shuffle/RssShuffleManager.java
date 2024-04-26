@@ -252,6 +252,15 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             && RssSparkShuffleUtils.isStageResubmitSupported();
     this.taskBlockSendFailureRetryEnabled =
         rssConf.getBoolean(RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED);
+
+    // The feature of partition reassign is exclusive with multiple replicas and stage retry.
+    if (taskBlockSendFailureRetryEnabled) {
+      if (rssResubmitStage || dataReplica > 1) {
+        throw new RssException(
+            "The feature of partition reassign is incompatible with multiple replicas and stage retry.");
+      }
+    }
+
     this.shuffleManagerRpcServiceEnabled = taskBlockSendFailureRetryEnabled || rssResubmitStage;
     if (isDriver) {
       heartBeatScheduledExecutorService =
