@@ -321,8 +321,7 @@ public class WriteBufferManager extends MemoryConsumer {
             + dataSize
             + "], memoryUsed["
             + memoryUsed
-            + "],"
-            + "block number["
+            + "], number of blocks["
             + result.size()
             + "]");
     return result;
