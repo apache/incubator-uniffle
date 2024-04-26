@@ -549,7 +549,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               + startPartition
               + "]");
       start = System.currentTimeMillis();
-      DefaultShuffleHandleInfo shuffleHandleInfo;
+      ShuffleHandleInfo shuffleHandleInfo;
       if (shuffleManagerRpcServiceEnabled) {
         // Get the ShuffleServer list from the Driver based on the shuffleId
         shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);

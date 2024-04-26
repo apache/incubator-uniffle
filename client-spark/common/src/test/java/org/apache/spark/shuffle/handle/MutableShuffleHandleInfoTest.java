@@ -96,7 +96,8 @@ public class MutableShuffleHandleInfoTest {
     int partitionId = 2;
     handleInfo.updateAssignment(partitionId, "c", Sets.newHashSet(createFakeServerInfo("d")));
 
-    Map<Integer, List<ShuffleServerInfo>> partitionAssignment = handleInfo.getAllPartitionServersForReader();
+    Map<Integer, List<ShuffleServerInfo>> partitionAssignment =
+        handleInfo.getAllPartitionServersForReader();
     assertEquals(2, partitionAssignment.size());
     assertEquals(
         Arrays.asList(createFakeServerInfo("c"), createFakeServerInfo("d")),
