@@ -220,7 +220,7 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
               .build();
       ShuffleHandleInfo handle = shuffleManager.getShuffleHandleInfoByShuffleId(0);
       Set<ShuffleServerInfo> servers =
-          handle.getPartitionToServers().values().stream()
+          handle.getLatestPartitionServersForWriter().values().stream()
               .flatMap(Collection::stream)
               .collect(Collectors.toSet());
 

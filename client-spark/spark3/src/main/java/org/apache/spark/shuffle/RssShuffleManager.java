@@ -736,13 +736,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         readMetrics,
         RssSparkConfig.toRssConf(sparkConf),
         dataDistributionType,
-        shuffleHandleInfo.listPartitionServers());
+        shuffleHandleInfo.getAllPartitionServersForReader());
   }
 
   private Map<ShuffleServerInfo, Set<Integer>> getPartitionDataServers(
       ShuffleHandleInfo shuffleHandleInfo, int startPartition, int endPartition) {
     Map<Integer, List<ShuffleServerInfo>> allPartitionToServers =
-        shuffleHandleInfo.listPartitionServers();
+        shuffleHandleInfo.getAllPartitionServersForReader();
     Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers =
         allPartitionToServers.entrySet().stream()
             .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition)

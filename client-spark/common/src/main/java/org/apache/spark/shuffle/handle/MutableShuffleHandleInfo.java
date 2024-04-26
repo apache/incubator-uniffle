@@ -138,7 +138,7 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
   }
 
   @Override
-  public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
+  public Map<Integer, List<ShuffleServerInfo>> getLatestPartitionServersForWriter() {
     Map<Integer, List<ShuffleServerInfo>> assignment = new HashMap<>();
     for (Map.Entry<Integer, Map<Integer, List<ShuffleServerInfo>>> entry :
         partitionReplicaAssignedServers.entrySet()) {
@@ -156,7 +156,7 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
   }
 
   @Override
-  public Map<Integer, List<ShuffleServerInfo>> listPartitionServers() {
+  public Map<Integer, List<ShuffleServerInfo>> getAllPartitionServersForReader() {
     Map<Integer, List<ShuffleServerInfo>> assignment = new HashMap<>();
     for (Map.Entry<Integer, Map<Integer, List<ShuffleServerInfo>>> entry :
         partitionReplicaAssignedServers.entrySet()) {

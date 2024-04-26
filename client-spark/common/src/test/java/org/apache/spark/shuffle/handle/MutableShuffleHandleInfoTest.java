@@ -96,7 +96,7 @@ public class MutableShuffleHandleInfoTest {
     int partitionId = 2;
     handleInfo.updateAssignment(partitionId, "c", Sets.newHashSet(createFakeServerInfo("d")));
 
-    Map<Integer, List<ShuffleServerInfo>> partitionAssignment = handleInfo.listPartitionServers();
+    Map<Integer, List<ShuffleServerInfo>> partitionAssignment = handleInfo.getAllPartitionServersForReader();
     assertEquals(2, partitionAssignment.size());
     assertEquals(
         Arrays.asList(createFakeServerInfo("c"), createFakeServerInfo("d")),
@@ -105,7 +105,7 @@ public class MutableShuffleHandleInfoTest {
     // case2: reassign multiple times for one partition, it will not append the same replacement
     // servers
     handleInfo.updateAssignment(partitionId, "c", Sets.newHashSet(createFakeServerInfo("d")));
-    partitionAssignment = handleInfo.listPartitionServers();
+    partitionAssignment = handleInfo.getAllPartitionServersForReader();
     assertEquals(
         Arrays.asList(createFakeServerInfo("c"), createFakeServerInfo("d")),
         partitionAssignment.get(2));
@@ -114,7 +114,7 @@ public class MutableShuffleHandleInfoTest {
     // servers
     handleInfo.updateAssignment(
         partitionId, "c", Sets.newHashSet(createFakeServerInfo("d"), createFakeServerInfo("e")));
-    partitionAssignment = handleInfo.listPartitionServers();
+    partitionAssignment = handleInfo.getAllPartitionServersForReader();
     assertEquals(
         Arrays.asList(
             createFakeServerInfo("c"), createFakeServerInfo("d"), createFakeServerInfo("e")),

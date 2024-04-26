@@ -32,13 +32,13 @@ public interface ShuffleHandleInfo {
    * Get the latest assignment for writer to write partitioned blocks to corresponding
    * shuffleServers
    */
-  Map<Integer, List<ShuffleServerInfo>> getPartitionToServers();
+  Map<Integer, List<ShuffleServerInfo>> getLatestPartitionServersForWriter();
 
   /**
    * Get the all assigned servers group by partitionId for reader to get the data from these
    * historical and latest servers
    */
-  Map<Integer, List<ShuffleServerInfo>> listPartitionServers();
+  Map<Integer, List<ShuffleServerInfo>> getAllPartitionServersForReader();
 
   /** Create the partition replicas tracker for the writer to check data replica requirements */
   PartitionDataReplicaRequirementTracking createPartitionReplicaTracking();

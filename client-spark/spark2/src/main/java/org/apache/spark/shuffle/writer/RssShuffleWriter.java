@@ -170,7 +170,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.serverToPartitionToBlockIds = Maps.newHashMap();
     this.shuffleWriteClient = shuffleWriteClient;
     this.shuffleServersForData = shuffleHandleInfo.listAssignedServers();
-    this.partitionToServers = shuffleHandleInfo.getPartitionToServers();
+    this.partitionToServers = shuffleHandleInfo.getLatestPartitionServersForWriter();
     this.isMemoryShuffleEnabled =
         isMemoryShuffleEnabled(sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
     this.taskFailureCallback = taskFailureCallback;
@@ -212,7 +212,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             taskAttemptId,
             bufferOptions,
             rssHandle.getDependency().serializer(),
-            shuffleHandleInfo.getPartitionToServers(),
+            shuffleHandleInfo.getLatestPartitionServersForWriter(),
             context.taskMemoryManager(),
             shuffleWriteMetrics,
             RssSparkConfig.toRssConf(sparkConf),

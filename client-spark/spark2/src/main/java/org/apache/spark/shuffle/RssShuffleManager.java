@@ -561,7 +561,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                 rssShuffleHandle.getRemoteStorage());
       }
       Map<Integer, List<ShuffleServerInfo>> partitionToServers =
-          shuffleHandleInfo.getPartitionToServers();
+          shuffleHandleInfo.getLatestPartitionServersForWriter();
       Roaring64NavigableMap blockIdBitmap =
           getShuffleResult(
               clientType,

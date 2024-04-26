@@ -51,12 +51,12 @@ public class DefaultShuffleHandleInfo extends ShuffleHandleInfoBase implements S
   }
 
   @Override
-  public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
+  public Map<Integer, List<ShuffleServerInfo>> getLatestPartitionServersForWriter() {
     return partitionToServers;
   }
 
   @Override
-  public Map<Integer, List<ShuffleServerInfo>> listPartitionServers() {
+  public Map<Integer, List<ShuffleServerInfo>> getAllPartitionServersForReader() {
     return partitionToServers;
   }
 
