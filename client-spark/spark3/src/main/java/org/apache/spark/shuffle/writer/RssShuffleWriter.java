@@ -621,6 +621,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                     .get(block.getPartitionId())
                     .remove(block.getBlockId()));
     partitionLengths[block.getPartitionId()] -= block.getLength();
+    blockIds.remove(block.getBlockId());
   }
 
   @VisibleForTesting
