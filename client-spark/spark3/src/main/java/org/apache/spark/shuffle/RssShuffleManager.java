@@ -98,7 +98,6 @@ import org.apache.uniffle.shuffle.manager.RssShuffleManagerBase;
 import org.apache.uniffle.shuffle.manager.ShuffleManagerGrpcService;
 import org.apache.uniffle.shuffle.manager.ShuffleManagerServerFactory;
 
-import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_LOAD_BALANCE_SERVER_NUM;
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM;
 import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;
 import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
@@ -155,7 +154,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    */
   private Map<String, Boolean> serverAssignedInfos;
 
-  private final int partitionReassignLoadBalanceServerNum;
   private final int partitionReassignMaxReassignServerNum;
 
   private final ShuffleHandleInfoManager shuffleHandleInfoManager = new ShuffleHandleInfoManager();
@@ -290,8 +288,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             keepAliveTime);
     this.failuresShuffleServerIds = Sets.newHashSet();
     this.serverAssignedInfos = JavaUtils.newConcurrentMap();
-    this.partitionReassignLoadBalanceServerNum =
-        rssConf.get(RSS_PARTITION_REASSIGN_LOAD_BALANCE_SERVER_NUM);
     this.partitionReassignMaxReassignServerNum =
         rssConf.get(RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM);
   }
@@ -381,8 +377,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.heartBeatScheduledExecutorService = null;
     this.taskToFailedBlockSendTracker = taskToFailedBlockSendTracker;
     this.dataPusher = dataPusher;
-    this.partitionReassignLoadBalanceServerNum =
-        rssConf.get(RSS_PARTITION_REASSIGN_LOAD_BALANCE_SERVER_NUM);
     this.partitionReassignMaxReassignServerNum =
         rssConf.get(RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM);
   }
