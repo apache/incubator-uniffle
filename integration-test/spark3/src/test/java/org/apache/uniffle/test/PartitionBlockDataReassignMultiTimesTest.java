@@ -81,14 +81,10 @@ public class PartitionBlockDataReassignMultiTimesTest extends PartitionBlockData
   }
 
   @Override
-  public void updateRssStorage(SparkConf sparkConf) {
+  public void updateSparkConfCustomer(SparkConf sparkConf) {
+    sparkConf.set("spark.sql.shuffle.partitions", "4");
     sparkConf.set("spark." + RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, "1");
     sparkConf.set("spark." + RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.key(), "true");
-  }
-
-  public void updateSparkConfWithRss(SparkConf sparkConf) {
-    super.updateSparkConfWithRss(sparkConf);
-
     sparkConf.set("spark." + RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES.key(), "10");
 
     // simulate the grpc servers has different free memory
