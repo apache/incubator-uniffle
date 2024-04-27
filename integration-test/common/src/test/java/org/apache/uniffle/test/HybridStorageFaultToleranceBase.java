@@ -51,6 +51,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -94,7 +95,7 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
   @MethodSource("fallbackTestProvider")
   private void fallbackTest(boolean isNettyMode) throws Exception {
     String appId = "fallback_test_" + this.getClass().getSimpleName();
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     Map<Integer, List<Integer>> map = Maps.newHashMap();
     map.put(0, Lists.newArrayList(0));
     registerShuffle(appId, map, isNettyMode);
@@ -145,8 +146,8 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
     shuffleServerClient.sendCommit(rc);
     shuffleServerClient.finishShuffle(rf);
 
-    Map<Integer, List<Long>> partitionToBlockIds = Maps.newHashMap();
-    Set<Long> expectBlockIds = getExpectBlockIds(blocks);
+    Map<Integer, List<BlockId>> partitionToBlockIds = Maps.newHashMap();
+    Set<BlockId> expectBlockIds = getExpectBlockIds(blocks);
     partitionToBlockIds.put(shuffle, new ArrayList<>(expectBlockIds));
     RssReportShuffleResultRequest rrp =
         new RssReportShuffleResultRequest(appId, shuffle, taskAttemptId, partitionToBlockIds, 1);
@@ -159,7 +160,7 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
       int partitionId,
       BlockIdSet blockBitmap,
       Roaring64NavigableMap taskBitmap,
-      Map<Long, byte[]> expectedData,
+      Map<BlockId, byte[]> expectedData,
       boolean isNettyMode) {
     ShuffleServerInfo ssi =
         isNettyMode
@@ -189,7 +190,7 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
     BlockIdSet matched = BlockIdSet.empty();
     while (csb != null && csb.getByteBuffer() != null) {
-      for (Map.Entry<Long, byte[]> entry : expectedData.entrySet()) {
+      for (Map.Entry<BlockId, byte[]> entry : expectedData.entrySet()) {
         if (compareByte(entry.getValue(), csb.getByteBuffer())) {
           matched.add(entry.getKey());
           break;
@@ -200,8 +201,8 @@ public abstract class HybridStorageFaultToleranceBase extends ShuffleReadWriteBa
     assertTrue(blockBitmap.equals(matched));
   }
 
-  private Set<Long> getExpectBlockIds(List<ShuffleBlockInfo> blocks) {
-    List<Long> expectBlockIds = Lists.newArrayList();
+  private Set<BlockId> getExpectBlockIds(List<ShuffleBlockInfo> blocks) {
+    List<BlockId> expectBlockIds = Lists.newArrayList();
     blocks.forEach(b -> expectBlockIds.add(b.getBlockId()));
     return Sets.newHashSet(expectBlockIds);
   }

@@ -29,6 +29,7 @@ import com.google.common.collect.Maps;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 
 public class FailedBlockSendTracker {
 
@@ -38,7 +39,7 @@ public class FailedBlockSendTracker {
    * <p>This indicates the blockId latest sending status, and it will not store the resending
    * history. The list data structure is to describe the multiple servers for the multiple replica
    */
-  private Map<Long, List<TrackingBlockStatus>> trackingBlockStatusMap;
+  private Map<BlockId, List<TrackingBlockStatus>> trackingBlockStatusMap;
 
   public FailedBlockSendTracker() {
     this.trackingBlockStatusMap = Maps.newConcurrentMap();
@@ -57,7 +58,7 @@ public class FailedBlockSendTracker {
     this.trackingBlockStatusMap.putAll(failedBlockSendTracker.trackingBlockStatusMap);
   }
 
-  public void remove(long blockId) {
+  public void remove(BlockId blockId) {
     trackingBlockStatusMap.remove(blockId);
   }
 
@@ -68,11 +69,11 @@ public class FailedBlockSendTracker {
     trackingBlockStatusMap.clear();
   }
 
-  public Set<Long> getFailedBlockIds() {
+  public Set<BlockId> getFailedBlockIds() {
     return trackingBlockStatusMap.keySet();
   }
 
-  public List<TrackingBlockStatus> getFailedBlockStatus(Long blockId) {
+  public List<TrackingBlockStatus> getFailedBlockStatus(BlockId blockId) {
     return trackingBlockStatusMap.get(blockId);
   }
 

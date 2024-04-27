@@ -156,11 +156,11 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     String testAppId = "localReadTest1";
     BlockIdLayout layout = BlockIdLayout.DEFAULT;
     registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     createTestData(testAppId, expectedData, blockIdBitmap, taskIdBitmap, isNettyMode);
-    blockIdBitmap.add(layout.getBlockId(0, 1, 0));
+    blockIdBitmap.add(layout.asBlockId(0, 1, 0));
     ShuffleReadClientImpl readClient;
     readClient =
         baseReadBuilder(isNettyMode)
@@ -186,7 +186,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     String testAppId = "localReadTest2";
     registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     List<ShuffleBlockInfo> blocks =
@@ -213,7 +213,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     String testAppId = "localReadTest3";
     registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(0, 0, 0, 2, 30, blockIdBitmap, expectedData, mockSSI);
@@ -250,8 +250,8 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     String testAppId = "localReadTest4";
     registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 1)), isNettyMode);
 
-    Map<Long, byte[]> expectedData1 = Maps.newHashMap();
-    Map<Long, byte[]> expectedData2 = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData1 = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData2 = Maps.newHashMap();
     BlockIdSet blockIdBitmap1 = BlockIdSet.empty();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     List<ShuffleBlockInfo> blocks =
@@ -312,7 +312,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     BlockIdLayout layout = BlockIdLayout.DEFAULT;
     registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     List<ShuffleBlockInfo> blocks =
@@ -320,11 +320,12 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     sendTestData(testAppId, blocks, isNettyMode);
 
     BlockIdSet wrongBlockIdBitmap = BlockIdSet.empty();
-    Iterator<Long> iter = blockIdBitmap.stream().iterator();
+    Iterator<BlockId> iter = blockIdBitmap.stream().iterator();
     while (iter.hasNext()) {
-      BlockId blockId = layout.asBlockId(iter.next());
+      BlockId blockId = iter.next().withLayoutIfOpaque(layout);
       wrongBlockIdBitmap.add(
-          layout.getBlockId(blockId.sequenceNo, blockId.partitionId + 1, blockId.taskAttemptId));
+          layout.asBlockId(
+              blockId.getSequenceNo(), blockId.getPartitionId() + 1, blockId.getTaskAttemptId()));
     }
 
     ShuffleReadClientImpl readClient =
@@ -348,7 +349,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     String testAppId = "localReadTest7";
     registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0, 1);
 
@@ -381,7 +382,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     String testAppId = "localReadTest8";
     registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0, 3);
     List<ShuffleBlockInfo> blocks =
@@ -416,7 +417,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
   public void readTest9(boolean isNettyMode) throws Exception {
     String testAppId = "localReadTest9";
     registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
 
@@ -462,7 +463,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
     String testAppId = "localReadTest10";
     registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet expectedBlockIds = BlockIdSet.empty();
     BlockIdSet unexpectedBlockIds = BlockIdSet.empty();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0, 1);
@@ -523,7 +524,7 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
 
   private void createTestData(
       String testAppId,
-      Map<Long, byte[]> expectedData,
+      Map<BlockId, byte[]> expectedData,
       BlockIdSet blockIdBitmap,
       Roaring64NavigableMap taskIdBitmap,
       boolean isNettyMode) {

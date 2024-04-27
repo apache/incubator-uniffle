@@ -23,32 +23,36 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.ByteBufUtils;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class ShufflePartitionedBlockTest {
+  private final BlockId blockId3 = new OpaqueBlockId(3);
+  private final BlockId blockId4 = new OpaqueBlockId(4);
 
   @Test
   public void shufflePartitionedBlockTest() {
     byte[] buf = new byte[3];
     new Random().nextBytes(buf);
 
-    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 1, 2, 3, 1, buf);
+    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 1, 2, blockId3, 1, buf);
     assertEquals(1, b1.getLength());
     assertEquals(2, b1.getCrc());
-    assertEquals(3, b1.getBlockId());
+    assertEquals(3, b1.getBlockId().getBlockId());
 
-    ShufflePartitionedBlock b3 = new ShufflePartitionedBlock(1, 1, 2, 3, 3, buf);
+    ShufflePartitionedBlock b3 = new ShufflePartitionedBlock(1, 1, 2, blockId3, 3, buf);
     assertArrayEquals(buf, ByteBufUtils.readBytes(b3.getData()));
   }
 
   @Test
   public void testEquals() {
-    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 2, 3, 4, 5, new byte[6]);
-    ShufflePartitionedBlock b2 = new ShufflePartitionedBlock(1, 6, 3, 4, 7, new byte[6]);
+    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 2, 3, blockId4, 5, new byte[6]);
+    ShufflePartitionedBlock b2 = new ShufflePartitionedBlock(1, 6, 3, blockId4, 7, new byte[6]);
     assertEquals(b1, b1);
     assertEquals(b1.hashCode(), b1.hashCode());
     assertEquals(b1, b2);
@@ -60,15 +64,16 @@ public class ShufflePartitionedBlockTest {
   @ParameterizedTest
   @CsvSource({"5, 2, 3, 4", "1, 5, 3, 4", "1, 2, 5, 4", "1, 2, 3, 5"})
   public void testNotEquals(int length, long crc, long blockId, int dataSize) {
-    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 0, 2, 3, 0, new byte[4]);
+    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 0, 2, blockId3, 0, new byte[4]);
     ShufflePartitionedBlock b2 =
-        new ShufflePartitionedBlock(length, 0, crc, blockId, 0, new byte[dataSize]);
+        new ShufflePartitionedBlock(
+            length, 0, crc, new OpaqueBlockId(blockId), 0, new byte[dataSize]);
     assertNotEquals(b1, b2);
   }
 
   @Test
   public void testToString() {
-    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 2, 3, 4, 5, new byte[6]);
+    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 2, 3, blockId4, 5, new byte[6]);
     assertEquals(
         "ShufflePartitionedBlock{blockId["
             + b1.getBlockId()
@@ -86,7 +91,7 @@ public class ShufflePartitionedBlockTest {
 
   @Test
   public void testSize() {
-    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 2, 3, 4, 5, new byte[6]);
+    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 2, 3, blockId4, 5, new byte[6]);
     assertEquals(b1.getSize(), b1.getLength() + 3 * Long.BYTES + 2 * Integer.BYTES);
   }
 }

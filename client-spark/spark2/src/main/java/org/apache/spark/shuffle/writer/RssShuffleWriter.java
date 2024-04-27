@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.uniffle.common.util.BlockId;
 import scala.Function1;
 import scala.Option;
 import scala.Product2;
@@ -89,7 +90,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   // they will be used in commit phase
   private final Set<ShuffleServerInfo> shuffleServersForData;
   // server -> partitionId -> blockIds
-  private Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds;
+  private Map<ShuffleServerInfo, Map<Integer, Set<BlockId>>> serverToPartitionToBlockIds;
   private final ShuffleWriteClient shuffleWriteClient;
   private final Map<Integer, List<ShuffleServerInfo>> partitionToServers;
   private String appId;
@@ -108,7 +109,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private long sendCheckInterval;
   private boolean isMemoryShuffleEnabled;
   private final Function<String, Boolean> taskFailureCallback;
-  private final Set<Long> blockIds = Sets.newConcurrentHashSet();
+  private final Set<BlockId> blockIds = Sets.newConcurrentHashSet();
   private TaskContext taskContext;
   private SparkConf sparkConf;
 
@@ -336,7 +337,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       shuffleBlockInfoList.stream()
           .forEach(
               sbi -> {
-                long blockId = sbi.getBlockId();
+                BlockId blockId = sbi.getBlockId();
                 // add blockId to set, check if it is send later
                 blockIds.add(blockId);
                 // update [partition, blockIds], it will be sent to shuffle server
@@ -344,7 +345,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                 sbi.getShuffleServerInfos()
                     .forEach(
                         shuffleServerInfo -> {
-                          Map<Integer, Set<Long>> pToBlockIds =
+                          Map<Integer, Set<BlockId>> pToBlockIds =
                               serverToPartitionToBlockIds.computeIfAbsent(
                                   shuffleServerInfo, k -> Maps.newHashMap());
                           pToBlockIds
@@ -402,11 +403,11 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   @VisibleForTesting
-  protected void checkBlockSendResult(Set<Long> blockIds) {
+  protected void checkBlockSendResult(Set<BlockId> blockIds) {
     long start = System.currentTimeMillis();
     while (true) {
-      Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
-      Set<Long> successBlockIds = shuffleManager.getSuccessBlockIds(taskId);
+      Set<BlockId> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
+      Set<BlockId> successBlockIds = shuffleManager.getSuccessBlockIds(taskId);
       // if failed when send data to shuffle server, mark task as failed
       if (failedBlockIds.size() > 0) {
         String errorMsg =
@@ -486,7 +487,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   @VisibleForTesting
-  protected Map<Integer, Set<Long>> getPartitionToBlockIds() {
+  protected Map<Integer, Set<BlockId>> getPartitionToBlockIds() {
     return serverToPartitionToBlockIds.values().stream()
         .flatMap(s -> s.entrySet().stream())
         .collect(
@@ -494,7 +495,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                 Map.Entry::getKey,
                 Map.Entry::getValue,
                 (existingSet, newSet) -> {
-                  Set<Long> mergedSet = new HashSet<>(existingSet);
+                  Set<BlockId> mergedSet = new HashSet<>(existingSet);
                   mergedSet.addAll(newSet);
                   return mergedSet;
                 }));

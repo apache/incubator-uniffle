@@ -62,6 +62,7 @@ import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.Constants;
@@ -385,7 +386,7 @@ public class ShuffleTaskManager {
   }
 
   public void addFinishedBlockIds(
-      String appId, Integer shuffleId, Map<Integer, long[]> partitionToBlockIds, int bitmapNum) {
+      String appId, Integer shuffleId, Map<Integer, BlockId[]> partitionToBlockIds, int bitmapNum) {
     refreshAppId(appId);
     Map<Integer, BlockIdSet[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
     if (shuffleIdToPartitions == null) {
@@ -410,7 +411,7 @@ public class ShuffleTaskManager {
               + " bitmaps!");
     }
 
-    for (Map.Entry<Integer, long[]> entry : partitionToBlockIds.entrySet()) {
+    for (Map.Entry<Integer, BlockId[]> entry : partitionToBlockIds.entrySet()) {
       Integer partitionId = entry.getKey();
       BlockIdSet bitmap = blockIds[partitionId % bitmapNum];
       bitmap.addAll(Arrays.stream(entry.getValue()));
@@ -441,7 +442,7 @@ public class ShuffleTaskManager {
         shuffleTaskInfo.getCachedBlockIds().computeIfAbsent(shuffleId, x -> BlockIdSet.empty());
 
     long size = 0L;
-    blockIds.addAll(Arrays.stream(spbs).mapToLong(ShufflePartitionedBlock::getBlockId));
+    blockIds.addAll(Arrays.stream(spbs).map(ShufflePartitionedBlock::getBlockId));
     size += Arrays.stream(spbs).mapToLong(ShufflePartitionedBlock::getSize).sum();
     long partitionSize = shuffleTaskInfo.addPartitionDataSize(shuffleId, partitionId, size);
     if (shuffleBufferManager.isHugePartition(partitionSize)) {
@@ -575,7 +576,7 @@ public class ShuffleTaskManager {
       BlockIdLayout blockIdLayout) {
     blockIds.forEach(
         blockId -> {
-          int partitionId = blockIdLayout.getPartitionId(blockId);
+          int partitionId = blockId.withLayoutIfOpaque(blockIdLayout).getPartitionId();
           if (requestPartitions.contains(partitionId)) {
             result.add(blockId);
           }
@@ -587,7 +588,7 @@ public class ShuffleTaskManager {
       String appId,
       Integer shuffleId,
       Integer partitionId,
-      long blockId,
+      BlockId blockId,
       int readBufferSize,
       Roaring64NavigableMap expectedTaskIds) {
     refreshAppId(appId);

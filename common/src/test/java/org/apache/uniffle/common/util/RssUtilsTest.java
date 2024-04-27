@@ -239,16 +239,16 @@ public class RssUtilsTest {
   public void testShuffleBitmapToPartitionBitmap(BlockIdLayout layout) {
     BlockIdSet partition1Bitmap =
         BlockIdSet.of(
-            layout.getBlockId(0, 0, 0),
-            layout.getBlockId(1, 0, 0),
-            layout.getBlockId(0, 0, 1),
-            layout.getBlockId(1, 0, 1));
+            layout.asBlockId(0, 0, 0),
+            layout.asBlockId(1, 0, 0),
+            layout.asBlockId(0, 0, 1),
+            layout.asBlockId(1, 0, 1));
     BlockIdSet partition2Bitmap =
         BlockIdSet.of(
-            layout.getBlockId(0, 1, 0),
-            layout.getBlockId(1, 1, 0),
-            layout.getBlockId(0, 1, 1),
-            layout.getBlockId(1, 1, 1));
+            layout.asBlockId(0, 1, 0),
+            layout.asBlockId(1, 1, 0),
+            layout.asBlockId(0, 1, 1),
+            layout.asBlockId(1, 1, 1));
     BlockIdSet shuffleBitmap = BlockIdSet.empty();
     shuffleBitmap.addAll(partition1Bitmap);
     shuffleBitmap.addAll(partition2Bitmap);

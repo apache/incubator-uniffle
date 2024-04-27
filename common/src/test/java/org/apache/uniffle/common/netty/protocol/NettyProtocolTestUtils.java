@@ -28,7 +28,7 @@ public class NettyProtocolTestUtils {
   private static boolean compareShuffleBlockInfo(
       ShuffleBlockInfo blockInfo1, ShuffleBlockInfo blockInfo2) {
     return blockInfo1.getPartitionId() == blockInfo2.getPartitionId()
-        && blockInfo1.getBlockId() == blockInfo2.getBlockId()
+        && blockInfo1.getBlockId().equals(blockInfo2.getBlockId())
         && blockInfo1.getLength() == blockInfo2.getLength()
         && blockInfo1.getShuffleId() == blockInfo2.getShuffleId()
         && blockInfo1.getCrc() == blockInfo2.getCrc()

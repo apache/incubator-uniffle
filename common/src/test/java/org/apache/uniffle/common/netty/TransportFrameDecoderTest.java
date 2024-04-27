@@ -42,12 +42,16 @@ import org.apache.uniffle.common.netty.protocol.Message;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.netty.protocol.SendShuffleDataRequest;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TransportFrameDecoderTest {
+  private final BlockId blockId1 = new OpaqueBlockId(1);
+  private final BlockId blockId2 = new OpaqueBlockId(2);
 
   /** test if the RPC response should be released after decoding */
   @Test
@@ -170,7 +174,8 @@ public class TransportFrameDecoderTest {
     byte[] data4 = new byte[] {1, 2, 3, 4, 5};
     List<BufferSegment> bufferSegments =
         Lists.newArrayList(
-            new BufferSegment(1, 0, 5, 10, 123, 1), new BufferSegment(1, 0, 5, 10, 345, 1));
+            new BufferSegment(blockId1, 0, 5, 10, 123, 1),
+            new BufferSegment(blockId1, 0, 5, 10, 345, 1));
     GetMemoryShuffleDataResponse rpcResponse4 =
         new GetMemoryShuffleDataResponse(
             1, StatusCode.SUCCESS, "", bufferSegments, Unpooled.wrappedBuffer(data4).retain());
@@ -187,7 +192,7 @@ public class TransportFrameDecoderTest {
             new ShuffleBlockInfo(
                 1,
                 1,
-                1,
+                blockId1,
                 data.length,
                 123,
                 Unpooled.wrappedBuffer(data).retain(),
@@ -198,7 +203,7 @@ public class TransportFrameDecoderTest {
             new ShuffleBlockInfo(
                 1,
                 1,
-                1,
+                blockId1,
                 data.length,
                 123,
                 Unpooled.wrappedBuffer(data).retain(),
@@ -211,7 +216,7 @@ public class TransportFrameDecoderTest {
             new ShuffleBlockInfo(
                 1,
                 2,
-                1,
+                blockId1,
                 data.length,
                 123,
                 Unpooled.wrappedBuffer(data).retain(),
@@ -222,7 +227,7 @@ public class TransportFrameDecoderTest {
             new ShuffleBlockInfo(
                 1,
                 1,
-                2,
+                blockId2,
                 data.length,
                 123,
                 Unpooled.wrappedBuffer(data).retain(),

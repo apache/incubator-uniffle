@@ -33,6 +33,7 @@ import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.segment.FixedSizeSegmentSplitter;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.ChecksumUtils;
@@ -52,7 +53,7 @@ public class LocalFileHandlerTestBase {
     for (int i = 0; i < num; i++) {
       byte[] buf = new byte[length];
       new Random().nextBytes(buf);
-      long blockId = layout.getBlockId(ATOMIC_INT.incrementAndGet(), 0, 100);
+      BlockId blockId = layout.asBlockId(ATOMIC_INT.incrementAndGet(), 0, 100);
       blocks.add(
           new ShufflePartitionedBlock(
               length, length, ChecksumUtils.getCrc32(buf), blockId, 100, buf));
@@ -63,8 +64,8 @@ public class LocalFileHandlerTestBase {
   public static void writeTestData(
       List<ShufflePartitionedBlock> blocks,
       ShuffleWriteHandler handler,
-      Map<Long, byte[]> expectedData,
-      Set<Long> expectedBlockIds)
+      Map<BlockId, byte[]> expectedData,
+      Set<BlockId> expectedBlockIds)
       throws Exception {
     blocks.forEach(block -> block.getData().retain());
     handler.write(blocks);
@@ -75,9 +76,11 @@ public class LocalFileHandlerTestBase {
   }
 
   public static void validateResult(
-      ServerReadHandler readHandler, Set<Long> expectedBlockIds, Map<Long, byte[]> expectedData) {
+      ServerReadHandler readHandler,
+      Set<BlockId> expectedBlockIds,
+      Map<BlockId, byte[]> expectedData) {
     List<ShuffleDataResult> shuffleDataResults = readAll(readHandler);
-    Set<Long> actualBlockIds = Sets.newHashSet();
+    Set<BlockId> actualBlockIds = Sets.newHashSet();
     for (ShuffleDataResult sdr : shuffleDataResults) {
       byte[] buffer = sdr.getData();
       List<BufferSegment> bufferSegments = sdr.getBufferSegments();
@@ -127,7 +130,7 @@ public class LocalFileHandlerTestBase {
   }
 
   public static void checkData(
-      ShuffleDataResult shuffleDataResult, Map<Long, byte[]> expectedData) {
+      ShuffleDataResult shuffleDataResult, Map<BlockId, byte[]> expectedData) {
     byte[] buffer = shuffleDataResult.getData();
     List<BufferSegment> bufferSegments = shuffleDataResult.getBufferSegments();
 
@@ -144,16 +147,16 @@ public class LocalFileHandlerTestBase {
     byteBuffer.putInt(segment.getLength());
     byteBuffer.putInt(segment.getUncompressLength());
     byteBuffer.putLong(segment.getCrc());
-    byteBuffer.putLong(segment.getBlockId());
+    byteBuffer.putLong(segment.getBlockId().getBlockId());
     byteBuffer.putLong(segment.getTaskAttemptId());
   }
 
   public static List<byte[]> calcSegmentBytes(
-      Map<Long, byte[]> blockIdToData, int bytesPerSegment, List<Long> blockIds) {
+      Map<BlockId, byte[]> blockIdToData, int bytesPerSegment, List<BlockId> blockIds) {
     List<byte[]> res = Lists.newArrayList();
     int curSize = 0;
     ByteBuffer byteBuffer = ByteBuffer.allocate(2 * bytesPerSegment);
-    for (long i : blockIds) {
+    for (BlockId i : blockIds) {
       byte[] data = blockIdToData.get(i);
       byteBuffer.put(data, 0, data.length);
       curSize += data.length;

@@ -90,8 +90,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
     while (segmentIndex < shuffleDataSegments.size()) {
       ShuffleDataSegment segment = shuffleDataSegments.get(segmentIndex);
       BlockIdSet blocksOfSegment = BlockIdSet.empty();
-      blocksOfSegment.addAll(
-          segment.getBufferSegments().stream().mapToLong(BufferSegment::getBlockId));
+      blocksOfSegment.addAll(segment.getBufferSegments().stream().map(BufferSegment::getBlockId));
       // skip unexpected blockIds
       blocksOfSegment.retainAll(expectBlockIds);
       if (!blocksOfSegment.isEmpty()) {

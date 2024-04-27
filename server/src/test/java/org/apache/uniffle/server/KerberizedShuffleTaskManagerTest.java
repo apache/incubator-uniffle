@@ -37,6 +37,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -177,7 +178,12 @@ public class KerberizedShuffleTaskManagerTest extends KerberizedHadoopBase {
       new Random().nextBytes(buf);
       blocks[i] =
           new ShufflePartitionedBlock(
-              length, length, ChecksumUtils.getCrc32(buf), ATOMIC_INT.incrementAndGet(), 0, buf);
+              length,
+              length,
+              ChecksumUtils.getCrc32(buf),
+              new OpaqueBlockId(ATOMIC_INT.incrementAndGet()),
+              0,
+              buf);
     }
     return blocks;
   }

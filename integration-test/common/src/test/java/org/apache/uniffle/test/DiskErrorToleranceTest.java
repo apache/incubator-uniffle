@@ -53,6 +53,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -165,8 +166,8 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     ShuffleServerGrpcClient shuffleServerClient =
         isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
     String appId = "ap_disk_error_data";
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Set<Long> expectedBlock1 = Sets.newHashSet();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
+    Set<BlockId> expectedBlock1 = Sets.newHashSet();
     BlockIdSet blockIdBitmap1 = BlockIdSet.empty();
     List<ShuffleBlockInfo> blocks1 =
         createShuffleBlockList(0, 0, 1, 3, 25, blockIdBitmap1, expectedData);
@@ -214,7 +215,7 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
     partitionToBlocks.clear();
     shuffleToBlocks.clear();
     BlockIdSet blockIdBitmap2 = BlockIdSet.empty();
-    Set<Long> expectedBlock2 = Sets.newHashSet();
+    Set<BlockId> expectedBlock2 = Sets.newHashSet();
     List<ShuffleBlockInfo> blocks2 =
         createShuffleBlockList(0, 0, 2, 5, 30, blockIdBitmap2, expectedData);
     blocks2.forEach(b -> expectedBlock2.add(b.getBlockId()));

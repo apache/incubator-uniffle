@@ -30,6 +30,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.ChecksumUtils;
@@ -50,14 +51,14 @@ public class HadoopShuffleHandlerTestBase {
       int num,
       int length,
       long taskAttemptId,
-      Map<Long, byte[]> expectedData)
+      Map<BlockId, byte[]> expectedData)
       throws Exception {
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
     for (int i = 0; i < num; i++) {
       byte[] buf = new byte[length];
       new Random().nextBytes(buf);
       BlockIdLayout layout = BlockIdLayout.DEFAULT;
-      long blockId = layout.getBlockId(ATOMIC_INT.getAndIncrement(), 0, taskAttemptId);
+      BlockId blockId = layout.asBlockId(ATOMIC_INT.getAndIncrement(), 0, taskAttemptId);
       blocks.add(
           new ShufflePartitionedBlock(
               length, length, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf));
@@ -72,7 +73,7 @@ public class HadoopShuffleHandlerTestBase {
       int num,
       int length,
       long taskAttemptId,
-      Map<Long, byte[]> expectedData,
+      Map<BlockId, byte[]> expectedData,
       Map<Integer, List<ShufflePartitionedBlock>> expectedBlocks,
       Map<Integer, List<FileBasedShuffleSegment>> expectedIndexSegments,
       boolean doWrite)
@@ -83,7 +84,7 @@ public class HadoopShuffleHandlerTestBase {
     for (int i = 0; i < num; i++) {
       byte[] buf = new byte[length];
       new Random().nextBytes(buf);
-      long blockId = layout.getBlockId(ATOMIC_INT.getAndIncrement(), 0, taskAttemptId);
+      BlockId blockId = layout.asBlockId(ATOMIC_INT.getAndIncrement(), 0, taskAttemptId);
       blocks.add(
           new ShufflePartitionedBlock(
               length, length, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf));
@@ -135,7 +136,7 @@ public class HadoopShuffleHandlerTestBase {
   }
 
   public static void checkData(
-      ShuffleDataResult shuffleDataResult, Map<Long, byte[]> expectedData) {
+      ShuffleDataResult shuffleDataResult, Map<BlockId, byte[]> expectedData) {
 
     byte[] buffer = shuffleDataResult.getData();
     List<BufferSegment> bufferSegments = shuffleDataResult.getBufferSegments();

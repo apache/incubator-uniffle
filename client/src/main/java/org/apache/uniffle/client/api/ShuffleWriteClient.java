@@ -30,6 +30,7 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdSet;
 
 public interface ShuffleWriteClient {
@@ -62,7 +63,7 @@ public interface ShuffleWriteClient {
   RemoteStorageInfo fetchRemoteStorage(String appId);
 
   void reportShuffleResult(
-      Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds,
+      Map<ShuffleServerInfo, Map<Integer, Set<BlockId>>> serverToPartitionToBlockIds,
       String appId,
       int shuffleId,
       long taskAttemptId,

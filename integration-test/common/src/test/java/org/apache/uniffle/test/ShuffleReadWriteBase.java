@@ -39,6 +39,7 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.segment.FixedSizeSegmentSplitter;
 import org.apache.uniffle.common.segment.SegmentSplitter;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ChecksumUtils;
@@ -56,7 +57,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       int blockNum,
       int length,
       BlockIdSet blockIdBitmap,
-      Map<Long, byte[]> dataMap,
+      Map<BlockId, byte[]> dataMap,
       List<ShuffleServerInfo> shuffleServerInfoList) {
     List<ShuffleBlockInfo> shuffleBlockInfoList = Lists.newArrayList();
     for (int i = 0; i < blockNum; i++) {
@@ -64,7 +65,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       new Random().nextBytes(buf);
       int seqno = ATOMIC_INT.getAndIncrement();
 
-      long blockId = LAYOUT.getBlockId(seqno, 0, taskAttemptId);
+      BlockId blockId = LAYOUT.asBlockId(seqno, partitionId, taskAttemptId);
       blockIdBitmap.add(blockId);
       dataMap.put(blockId, buf);
       shuffleBlockInfoList.add(
@@ -90,7 +91,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
       int blockNum,
       int length,
       BlockIdSet blockIdBitmap,
-      Map<Long, byte[]> dataMap) {
+      Map<BlockId, byte[]> dataMap) {
     List<ShuffleServerInfo> shuffleServerInfoList =
         Lists.newArrayList(new ShuffleServerInfo("id", "host", 0));
     return createShuffleBlockList(
@@ -105,7 +106,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
   }
 
   public static Map<Integer, List<ShuffleBlockInfo>> createTestData(
-      BlockIdSet[] bitmaps, Map<Long, byte[]> expectedData) {
+      BlockIdSet[] bitmaps, Map<BlockId, byte[]> expectedData) {
     for (int i = 0; i < 4; i++) {
       bitmaps[i] = BlockIdSet.empty();
     }
@@ -129,7 +130,8 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
     return TestUtils.compareByte(expected, buffer);
   }
 
-  public static void validateResult(ShuffleReadClient readClient, Map<Long, byte[]> expectedData) {
+  public static void validateResult(
+      ShuffleReadClient readClient, Map<BlockId, byte[]> expectedData) {
     TestUtils.validateResult(readClient, expectedData);
   }
 

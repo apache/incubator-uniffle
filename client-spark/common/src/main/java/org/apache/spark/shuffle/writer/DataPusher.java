@@ -39,6 +39,7 @@ import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.ThreadUtils;
 
 /**
@@ -52,7 +53,7 @@ public class DataPusher implements Closeable {
 
   private final ShuffleWriteClient shuffleWriteClient;
   // Must be thread safe
-  private final Map<String, Set<Long>> taskToSuccessBlockIds;
+  private final Map<String, Set<BlockId>> taskToSuccessBlockIds;
   // Must be thread safe
   Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker;
   private String rssAppId;
@@ -61,7 +62,7 @@ public class DataPusher implements Closeable {
 
   public DataPusher(
       ShuffleWriteClient shuffleWriteClient,
-      Map<String, Set<Long>> taskToSuccessBlockIds,
+      Map<String, Set<BlockId>> taskToSuccessBlockIds,
       Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker,
       Set<String> failedTaskIds,
       int threadPoolSize,
@@ -97,7 +98,7 @@ public class DataPusher implements Closeable {
             putFailedBlockSendTracker(
                 taskToFailedBlockSendTracker, taskId, result.getFailedBlockSendTracker());
           } finally {
-            Set<Long> succeedBlockIds =
+            Set<BlockId> succeedBlockIds =
                 result.getSuccessBlockIds() == null
                     ? Collections.emptySet()
                     : result.getSuccessBlockIds();
@@ -120,7 +121,7 @@ public class DataPusher implements Closeable {
   }
 
   private synchronized void putBlockId(
-      Map<String, Set<Long>> taskToBlockIds, String taskAttemptId, Set<Long> blockIds) {
+      Map<String, Set<BlockId>> taskToBlockIds, String taskAttemptId, Set<BlockId> blockIds) {
     if (blockIds == null || blockIds.isEmpty()) {
       return;
     }

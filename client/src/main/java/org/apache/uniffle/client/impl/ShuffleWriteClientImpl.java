@@ -90,6 +90,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.JavaUtils;
@@ -157,8 +158,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private boolean sendShuffleDataAsync(
       String appId,
       Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
-      Map<ShuffleServerInfo, List<Long>> serverToBlockIds,
-      Map<Long, AtomicInteger> blockIdsSendSuccessTracker,
+      Map<ShuffleServerInfo, List<BlockId>> serverToBlockIds,
+      Map<BlockId, AtomicInteger> blockIdsSendSuccessTracker,
       FailedBlockSendTracker failedBlockSendTracker,
       boolean allowFastFail,
       Supplier<Boolean> needCancelRequest) {
@@ -266,7 +267,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int replicaNum,
       Collection<ShuffleServerInfo> excludeServers,
       Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
-      Map<ShuffleServerInfo, List<Long>> serverToBlockIds,
+      Map<ShuffleServerInfo, List<BlockId>> serverToBlockIds,
       boolean excludeDefectiveServers) {
     if (replicaNum <= 0) {
       return;
@@ -312,8 +313,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         primaryServerToBlocks = Maps.newHashMap();
     Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>>
         secondaryServerToBlocks = Maps.newHashMap();
-    Map<ShuffleServerInfo, List<Long>> primaryServerToBlockIds = Maps.newHashMap();
-    Map<ShuffleServerInfo, List<Long>> secondaryServerToBlockIds = Maps.newHashMap();
+    Map<ShuffleServerInfo, List<BlockId>> primaryServerToBlockIds = Maps.newHashMap();
+    Map<ShuffleServerInfo, List<BlockId>> secondaryServerToBlockIds = Maps.newHashMap();
 
     // send shuffle block to shuffle server
     // for all ShuffleBlockInfo, create the data structure as shuffleServer -> shuffleId ->
@@ -363,7 +364,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     // we assume that most of the blocks can be sent successfully
     // so initialize the map at first without concurrency insurance
     // AtomicInteger is enough to reflect value changes in other threads
-    Map<Long, AtomicInteger> blockIdsSendSuccessTracker = Maps.newHashMap();
+    Map<BlockId, AtomicInteger> blockIdsSendSuccessTracker = Maps.newHashMap();
     primaryServerToBlockIds
         .values()
         .forEach(
@@ -410,7 +411,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           needCancelRequest);
     }
 
-    Set<Long> blockIdsSendSuccessSet = Sets.newHashSet();
+    Set<BlockId> blockIdsSendSuccessSet = Sets.newHashSet();
     blockIdsSendSuccessTracker
         .entrySet()
         .forEach(
@@ -679,16 +680,17 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public void reportShuffleResult(
-      Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds,
+      Map<ShuffleServerInfo, Map<Integer, Set<BlockId>>> serverToPartitionToBlockIds,
       String appId,
       int shuffleId,
       long taskAttemptId,
       int bitmapNum) {
     // record blockId count for quora check,but this is not a good realization.
-    Map<Long, Integer> blockReportTracker = createBlockReportTracker(serverToPartitionToBlockIds);
-    for (Map.Entry<ShuffleServerInfo, Map<Integer, Set<Long>>> entry :
+    Map<BlockId, Integer> blockReportTracker =
+        createBlockReportTracker(serverToPartitionToBlockIds);
+    for (Map.Entry<ShuffleServerInfo, Map<Integer, Set<BlockId>>> entry :
         serverToPartitionToBlockIds.entrySet()) {
-      Map<Integer, Set<Long>> requestBlockIds = entry.getValue();
+      Map<Integer, Set<BlockId>> requestBlockIds = entry.getValue();
       if (requestBlockIds.isEmpty()) {
         continue;
       }
@@ -748,18 +750,18 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   private void recordFailedBlockIds(
-      Map<Long, Integer> blockReportTracker, Map<Integer, Set<Long>> requestBlockIds) {
+      Map<BlockId, Integer> blockReportTracker, Map<Integer, Set<BlockId>> requestBlockIds) {
     requestBlockIds.values().stream()
         .flatMap(Set::stream)
         .forEach(blockId -> blockReportTracker.merge(blockId, -1, Integer::sum));
   }
 
-  private Map<Long, Integer> createBlockReportTracker(
-      Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds) {
-    Map<Long, Integer> blockIdCount = new HashMap<>();
-    for (Map<Integer, Set<Long>> partitionToBlockIds : serverToPartitionToBlockIds.values()) {
-      for (Set<Long> blockIds : partitionToBlockIds.values()) {
-        for (Long blockId : blockIds) {
+  private Map<BlockId, Integer> createBlockReportTracker(
+      Map<ShuffleServerInfo, Map<Integer, Set<BlockId>>> serverToPartitionToBlockIds) {
+    Map<BlockId, Integer> blockIdCount = new HashMap<>();
+    for (Map<Integer, Set<BlockId>> partitionToBlockIds : serverToPartitionToBlockIds.values()) {
+      for (Set<BlockId> blockIds : partitionToBlockIds.values()) {
+        for (BlockId blockId : blockIds) {
           blockIdCount.put(blockId, blockIdCount.getOrDefault(blockId, 0) + 1);
         }
       }

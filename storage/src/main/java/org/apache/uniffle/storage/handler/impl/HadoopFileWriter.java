@@ -99,7 +99,7 @@ public class HadoopFileWriter implements FileWriter, Closeable {
     fsDataOutputStream.writeInt(segment.getLength());
     fsDataOutputStream.writeInt(segment.getUncompressLength());
     fsDataOutputStream.writeLong(segment.getCrc());
-    fsDataOutputStream.writeLong(segment.getBlockId());
+    fsDataOutputStream.writeLong(segment.getBlockId().getBlockId());
     fsDataOutputStream.writeLong(segment.getTaskAttemptId());
   }
 

@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.NettyUtils;
@@ -230,7 +231,7 @@ public class ShuffleBufferManager {
   }
 
   public ShuffleDataResult getShuffleData(
-      String appId, int shuffleId, int partitionId, long blockId, int readBufferSize) {
+      String appId, int shuffleId, int partitionId, BlockId blockId, int readBufferSize) {
     return getShuffleData(appId, shuffleId, partitionId, blockId, readBufferSize, null);
   }
 
@@ -238,7 +239,7 @@ public class ShuffleBufferManager {
       String appId,
       int shuffleId,
       int partitionId,
-      long blockId,
+      BlockId blockId,
       int readBufferSize,
       Roaring64NavigableMap expectedTaskIds) {
     Map.Entry<Range<Integer>, ShuffleBuffer> entry =

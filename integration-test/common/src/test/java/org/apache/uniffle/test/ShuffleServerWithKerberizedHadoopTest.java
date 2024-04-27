@@ -56,6 +56,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -192,7 +193,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
   }
 
   private Map<Integer, List<ShuffleBlockInfo>> createTestData(
-      BlockIdSet[] bitmaps, Map<Long, byte[]> expectedData) {
+      BlockIdSet[] bitmaps, Map<BlockId, byte[]> expectedData) {
     for (int i = 0; i < 4; i++) {
       bitmaps[i] = BlockIdSet.empty();
     }
@@ -267,7 +268,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     shuffleServerClient.registerShuffle(rrsr);
 
     BlockIdSet[] bitmaps = new BlockIdSet[4];
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     Map<Integer, List<ShuffleBlockInfo>> dataBlocks = createTestData(bitmaps, expectedData);
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     partitionToBlocks.put(0, dataBlocks.get(0));
@@ -377,11 +378,13 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
   }
 
   protected void validateResult(
-      ShuffleReadClientImpl readClient, Map<Long, byte[]> expectedData, BlockIdSet blockIdBitmap) {
+      ShuffleReadClientImpl readClient,
+      Map<BlockId, byte[]> expectedData,
+      BlockIdSet blockIdBitmap) {
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
     BlockIdSet matched = BlockIdSet.empty();
     while (csb != null && csb.getByteBuffer() != null) {
-      for (Map.Entry<Long, byte[]> entry : expectedData.entrySet()) {
+      for (Map.Entry<BlockId, byte[]> entry : expectedData.entrySet()) {
         if (TestUtils.compareByte(entry.getValue(), csb.getByteBuffer())) {
           matched.add(entry.getKey());
           break;

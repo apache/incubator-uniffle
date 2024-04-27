@@ -53,6 +53,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.metrics.TestUtils;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -188,7 +189,7 @@ public class TopNShuffleDataSizeOfAppCalcTaskTest {
             new ShuffleBlockInfo(
                 shuffleId,
                 partitionId,
-                0,
+                new OpaqueBlockId(0),
                 length,
                 0,
                 new byte[length],

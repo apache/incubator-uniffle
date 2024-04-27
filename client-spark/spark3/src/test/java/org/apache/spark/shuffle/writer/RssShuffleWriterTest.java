@@ -61,7 +61,9 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,6 +78,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 public class RssShuffleWriterTest {
+  private BlockId blockId(long blockId) {
+    return new OpaqueBlockId(blockId);
+  }
 
   private MutableList<Product2<String, String>> createMockRecords() {
     MutableList<Product2<String, String>> data = new MutableList<>();
@@ -354,7 +359,7 @@ public class RssShuffleWriterTest {
         .set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
 
     List<ShuffleBlockInfo> shuffleBlockInfos = Lists.newArrayList();
-    Map<String, Set<Long>> successBlockIds = JavaUtils.newConcurrentMap();
+    Map<String, Set<BlockId>> successBlockIds = JavaUtils.newConcurrentMap();
     Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker = JavaUtils.newConcurrentMap();
     taskToFailedBlockSendTracker.put("taskId", new FailedBlockSendTracker());
 
@@ -488,7 +493,7 @@ public class RssShuffleWriterTest {
 
     // check the blockId -> servers mapping.
     // server -> partitionId -> blockIds
-    Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds =
+    Map<ShuffleServerInfo, Map<Integer, Set<BlockId>>> serverToPartitionToBlockIds =
         rssShuffleWriterSpy.getServerToPartitionToBlockIds();
     assertEquals(2, serverToPartitionToBlockIds.get(replacement).get(0).size());
 
@@ -544,9 +549,9 @@ public class RssShuffleWriterTest {
         .set(RssSparkConfig.RSS_CLIENT_SEND_CHECK_INTERVAL_MS.key(), "1000")
         .set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name())
         .set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "127.0.0.1:12345,127.0.0.1:12346");
-    Map<String, Set<Long>> successBlocks = JavaUtils.newConcurrentMap();
+    Map<String, Set<BlockId>> successBlocks = JavaUtils.newConcurrentMap();
     Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker = JavaUtils.newConcurrentMap();
-    Map<String, Map<Long, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer =
+    Map<String, Map<BlockId, BlockingQueue<ShuffleServerInfo>>> taskToFailedBlockIdsAndServer =
         JavaUtils.newConcurrentMap();
     Serializer kryoSerializer = new KryoSerializer(conf);
     RssShuffleManager manager =
@@ -595,31 +600,37 @@ public class RssShuffleWriterTest {
     doReturn(1000000L).when(bufferManagerSpy).acquireMemory(anyLong());
 
     // case 1: all blocks are sent successfully
-    successBlocks.put("taskId", Sets.newHashSet(1L, 2L, 3L));
-    rssShuffleWriter.checkBlockSendResult(Sets.newHashSet(1L, 2L, 3L));
+    successBlocks.put("taskId", Sets.newHashSet(blockId(1L), blockId(2L), blockId(3L)));
+    rssShuffleWriter.checkBlockSendResult(Sets.newHashSet(blockId(1L), blockId(2L), blockId(3L)));
     successBlocks.clear();
 
     // case 2: partial blocks aren't sent before spark.rss.writer.send.check.timeout,
     // Runtime exception will be thrown
-    successBlocks.put("taskId", Sets.newHashSet(1L, 2L));
+    successBlocks.put("taskId", Sets.newHashSet(blockId(1L), blockId(2L)));
     Throwable e2 =
         assertThrows(
             RuntimeException.class,
-            () -> rssShuffleWriter.checkBlockSendResult(Sets.newHashSet(1L, 2L, 3L)));
+            () ->
+                rssShuffleWriter.checkBlockSendResult(
+                    Sets.newHashSet(blockId(1L), blockId(2L), blockId(3L))));
     assertTrue(e2.getMessage().startsWith("Timeout:"));
     successBlocks.clear();
 
     // case 3: partial blocks are sent failed, Runtime exception will be thrown
-    successBlocks.put("taskId", Sets.newHashSet(1L, 2L));
+    successBlocks.put("taskId", Sets.newHashSet(blockId(1L), blockId(2L)));
     FailedBlockSendTracker failedBlockSendTracker = new FailedBlockSendTracker();
     taskToFailedBlockSendTracker.put("taskId", failedBlockSendTracker);
     ShuffleServerInfo shuffleServerInfo = new ShuffleServerInfo("127.0.0.1", 20001);
     failedBlockSendTracker.add(
-        TestUtils.createMockBlockOnlyBlockId(3L), shuffleServerInfo, StatusCode.INTERNAL_ERROR);
+        TestUtils.createMockBlockOnlyBlockId(new OpaqueBlockId(3L)),
+        shuffleServerInfo,
+        StatusCode.INTERNAL_ERROR);
     Throwable e3 =
         assertThrows(
             RuntimeException.class,
-            () -> rssShuffleWriter.checkBlockSendResult(Sets.newHashSet(1L, 2L, 3L)));
+            () ->
+                rssShuffleWriter.checkBlockSendResult(
+                    Sets.newHashSet(blockId(1L), blockId(2L), blockId(3L))));
     assertTrue(e3.getMessage().startsWith("Fail to send the block"));
     successBlocks.clear();
     taskToFailedBlockSendTracker.clear();
@@ -634,8 +645,8 @@ public class RssShuffleWriterTest {
 
     private FakedDataPusher(
         ShuffleWriteClient shuffleWriteClient,
-        Map<String, Set<Long>> taskToSuccessBlockIds,
-        Map<String, Set<Long>> taskToFailedBlockIds,
+        Map<String, Set<BlockId>> taskToSuccessBlockIds,
+        Map<String, Set<BlockId>> taskToFailedBlockIds,
         Map<String, FailedBlockSendTracker> failedBlockSendTracker,
         Set<String> failedTaskIds,
         int threadPoolSize,
@@ -674,7 +685,7 @@ public class RssShuffleWriterTest {
         .set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY.name())
         .set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "127.0.0.1:12345,127.0.0.1:12346");
 
-    Map<String, Set<Long>> successBlockIds = Maps.newConcurrentMap();
+    Map<String, Set<BlockId>> successBlockIds = Maps.newConcurrentMap();
 
     List<Long> freeMemoryList = new ArrayList<>();
     FakedDataPusher dataPusher =
@@ -771,14 +782,14 @@ public class RssShuffleWriterTest {
         .set(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name())
         .set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "127.0.0.1:12345,127.0.0.1:12346");
     List<ShuffleBlockInfo> shuffleBlockInfos = Lists.newArrayList();
-    Map<String, Set<Long>> successBlockIds = Maps.newConcurrentMap();
+    Map<String, Set<BlockId>> successBlockIds = Maps.newConcurrentMap();
 
     FakedDataPusher dataPusher =
         new FakedDataPusher(
             event -> {
               assertEquals("taskId", event.getTaskId());
               shuffleBlockInfos.addAll(event.getShuffleDataInfoList());
-              Set<Long> blockIds =
+              Set<BlockId> blockIds =
                   event
                       .getShuffleDataInfoList()
                       .parallelStream()
@@ -900,7 +911,7 @@ public class RssShuffleWriterTest {
         throw new Exception("Shouldn't be here");
       }
     }
-    Map<Integer, Set<Long>> partitionToBlockIds = rssShuffleWriterSpy.getPartitionToBlockIds();
+    Map<Integer, Set<BlockId>> partitionToBlockIds = rssShuffleWriterSpy.getPartitionToBlockIds();
     System.out.println(11111);
     assertEquals(2, partitionToBlockIds.get(1).size());
     assertEquals(2, partitionToBlockIds.get(0).size());
@@ -1039,7 +1050,7 @@ public class RssShuffleWriterTest {
           new ShuffleBlockInfo(
               0,
               0,
-              10,
+              blockId(10),
               blockLength,
               10,
               new byte[] {1},

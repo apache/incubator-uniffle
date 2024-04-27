@@ -31,6 +31,7 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 
 /**
  * {@class LocalOrderSegmentSplitter} will be initialized only when the {@class
@@ -135,7 +136,12 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
           }
           bufferSegments.add(
               new BufferSegment(
-                  blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
+                  new OpaqueBlockId(blockId),
+                  bufferOffset,
+                  length,
+                  uncompressLength,
+                  crc,
+                  taskAttemptId));
           bufferOffset += length;
           lastExpectedBlockIndex = index;
         }

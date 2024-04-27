@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.util.OpaqueBlockId;
 import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
@@ -147,7 +148,8 @@ public class HadoopFileWriterTest extends HadoopTestBase {
 
   @Test
   public void writeSegmentTest() throws IOException {
-    FileBasedShuffleSegment segment = new FileBasedShuffleSegment(23, 128, 32, 32, 0xdeadbeef, 0);
+    FileBasedShuffleSegment segment =
+        new FileBasedShuffleSegment(new OpaqueBlockId(23), 128, 32, 32, 0xdeadbeef, 0);
 
     Path path = new Path(HDFS_URI, "writeSegmentTest");
     try (HadoopFileWriter writer = new HadoopFileWriter(fs, path, conf)) {

@@ -84,7 +84,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler =
         new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     writeTestData(writeHandler, 2, 30, 1, 0, expectedData, blockIdBitmap);
@@ -100,7 +100,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     readClient.close();
 
     BlockIdLayout layout = BlockIdLayout.DEFAULT;
-    blockIdBitmap.add(layout.getBlockId(0, 0, layout.maxTaskAttemptId - 1));
+    blockIdBitmap.add(layout.asBlockId(0, 0, layout.maxTaskAttemptId - 1));
     taskIdBitmap.addLong(layout.maxTaskAttemptId - 1);
     readClient =
         baseReadBuilder()
@@ -129,7 +129,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler2 =
         new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi2.getId(), conf);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     writeTestData(writeHandler1, 2, 30, 0, 0, expectedData, blockIdBitmap);
@@ -157,7 +157,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler2 =
         new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi2.getId(), conf);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     final BlockIdSet blockIdBitmap = BlockIdSet.empty();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     writeTestData(writeHandler1, 2, 30, 0, 0, expectedData, blockIdBitmap);
@@ -214,7 +214,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler =
         new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     writeTestData(writeHandler, 2, 30, 0, 0, expectedData, blockIdBitmap);
@@ -254,7 +254,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler =
         new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     writeTestData(writeHandler, 2, 30, 0, 0, expectedData, blockIdBitmap);
@@ -281,8 +281,8 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler =
         new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
 
-    Map<Long, byte[]> expectedData1 = Maps.newHashMap();
-    Map<Long, byte[]> expectedData2 = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData1 = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData2 = Maps.newHashMap();
     final BlockIdSet blockIdBitmap1 = BlockIdSet.empty();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     writeTestData(writeHandler, 10, 30, 0, 0, expectedData1, blockIdBitmap1);
@@ -323,7 +323,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler =
         new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     writeTestData(writeHandler, 2, 30, 0, 0, expectedData, blockIdBitmap);
@@ -354,11 +354,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
         }
         fail(EXPECTED_EXCEPTION_MESSAGE);
       } catch (Exception e) {
-        assertTrue(
-            e.getMessage()
-                .startsWith(
-                    "Unexpected crc value for blockId[5800000000000 (seq: 44, part: 0, task: 0)]"),
-            e.getMessage());
+        assertTrue(e.getMessage().startsWith("Unexpected crc value for blockId"), e.getMessage());
       }
 
       CompressedShuffleBlock block = readClient2.readShuffleBlockData();
@@ -390,16 +386,17 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
         new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
 
     BlockIdLayout layout = BlockIdLayout.DEFAULT;
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     writeTestData(writeHandler, 5, 30, 0, 0, expectedData, blockIdBitmap);
     BlockIdSet wrongBlockIdBitmap = BlockIdSet.empty();
-    Iterator<Long> iter = blockIdBitmap.stream().iterator();
+    Iterator<BlockId> iter = blockIdBitmap.stream().iterator();
     while (iter.hasNext()) {
-      BlockId blockId = layout.asBlockId(iter.next());
+      BlockId blockId = iter.next().withLayoutIfOpaque(layout);
       wrongBlockIdBitmap.add(
-          layout.getBlockId(blockId.sequenceNo, blockId.partitionId + 1, blockId.taskAttemptId));
+          layout.asBlockId(
+              blockId.getSequenceNo(), blockId.getPartitionId() + 1, blockId.getTaskAttemptId()));
     }
 
     ShuffleReadClientImpl readClient =
@@ -425,7 +422,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler =
         new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     writeTestData(writeHandler, 10, 30, 1, 0, expectedData, blockIdBitmap);
@@ -497,7 +494,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler =
         new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     final BlockIdSet blockIdBitmap = BlockIdSet.empty();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0, 1);
     writeTestData(writeHandler, 5, 30, 1, 0, expectedData, blockIdBitmap);
@@ -539,7 +536,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler =
         new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     final BlockIdSet blockIdBitmap = BlockIdSet.empty();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0, 3);
     writeTestData(writeHandler, 5, 30, 1, 0, expectedData, blockIdBitmap, layout);
@@ -596,7 +593,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler =
         new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     final BlockIdSet blockIdBitmap = BlockIdSet.empty();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0, 2);
     writeDuplicatedData(writeHandler, 5, 30, 1, 0, expectedData, blockIdBitmap);
@@ -623,7 +620,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler =
         new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi1.getId(), conf);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     final BlockIdSet blockIdBitmap = BlockIdSet.empty();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     writeTestData(writeHandler, 5, 30, 1, 0, expectedData, blockIdBitmap);
@@ -654,8 +651,8 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler1 =
         new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi2.getId(), conf);
 
-    Map<Long, byte[]> expectedData0 = Maps.newHashMap();
-    Map<Long, byte[]> expectedData1 = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData0 = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData1 = Maps.newHashMap();
     BlockIdSet blockIdBitmap0 = BlockIdSet.empty();
     BlockIdSet blockIdBitmap1 = BlockIdSet.empty();
     writeTestData(writeHandler0, 2, 30, 0, 0, expectedData0, blockIdBitmap0);
@@ -694,7 +691,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
       int length,
       int partitionId,
       long taskAttemptId,
-      Map<Long, byte[]> expectedData,
+      Map<BlockId, byte[]> expectedData,
       BlockIdSet blockIdBitmap,
       BlockIdLayout layout)
       throws Exception {
@@ -702,7 +699,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     for (int i = 0; i < num; i++) {
       byte[] buf = new byte[length];
       new Random().nextBytes(buf);
-      long blockId = layout.getBlockId(ATOMIC_INT.getAndIncrement(), partitionId, taskAttemptId);
+      BlockId blockId = layout.asBlockId(ATOMIC_INT.getAndIncrement(), partitionId, taskAttemptId);
       blocks.add(
           new ShufflePartitionedBlock(
               length, length, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf));
@@ -718,7 +715,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
       int length,
       int partitionId,
       long taskAttemptId,
-      Map<Long, byte[]> expectedData,
+      Map<BlockId, byte[]> expectedData,
       BlockIdSet blockIdBitmap)
       throws Exception {
     writeTestData(
@@ -738,7 +735,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
       int length,
       int partitionId,
       long taskAttemptId,
-      Map<Long, byte[]> expectedData,
+      Map<BlockId, byte[]> expectedData,
       BlockIdSet blockIdBitmap)
       throws Exception {
     BlockIdLayout layout = BlockIdLayout.DEFAULT;
@@ -746,7 +743,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
     for (int i = 0; i < num; i++) {
       byte[] buf = new byte[length];
       new Random().nextBytes(buf);
-      long blockId = layout.getBlockId(ATOMIC_INT.getAndIncrement(), partitionId, taskAttemptId);
+      BlockId blockId = layout.asBlockId(ATOMIC_INT.getAndIncrement(), partitionId, taskAttemptId);
       ShufflePartitionedBlock spb =
           new ShufflePartitionedBlock(
               length, length, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf);

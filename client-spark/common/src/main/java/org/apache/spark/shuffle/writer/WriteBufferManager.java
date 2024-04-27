@@ -50,6 +50,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 
@@ -382,8 +383,8 @@ public class WriteBufferManager extends MemoryConsumer {
       compressTime += System.currentTimeMillis() - start;
     }
     final long crc32 = ChecksumUtils.getCrc32(compressed);
-    final long blockId =
-        blockIdLayout.getBlockId(getNextSeqNo(partitionId), partitionId, taskAttemptId);
+    final BlockId blockId =
+        blockIdLayout.asBlockId(getNextSeqNo(partitionId), partitionId, taskAttemptId);
     blockCounter.incrementAndGet();
     uncompressedDataLen += data.length;
     shuffleWriteMetrics.incBytesWritten(compressed.length);

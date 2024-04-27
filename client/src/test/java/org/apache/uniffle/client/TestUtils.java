@@ -26,6 +26,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.util.BlockId;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,15 +37,16 @@ public class TestUtils {
 
   private TestUtils() {}
 
-  public static void validateResult(ShuffleReadClient readClient, Map<Long, byte[]> expectedData) {
-    Map<Long, byte[]> pendingData = new HashMap<>(expectedData);
+  public static void validateResult(
+      ShuffleReadClient readClient, Map<BlockId, byte[]> expectedData) {
+    Map<BlockId, byte[]> pendingData = new HashMap<>(expectedData);
 
     ByteBuffer data = readClient.readShuffleBlockData().getByteBuffer();
     int blockNum = 0;
     while (data != null) {
       blockNum++;
       boolean match = false;
-      for (Map.Entry<Long, byte[]> expected : pendingData.entrySet()) {
+      for (Map.Entry<BlockId, byte[]> expected : pendingData.entrySet()) {
         if (compareByte(expected.getValue(), data)) {
           match = true;
           pendingData.remove(expected.getKey());
@@ -63,11 +65,11 @@ public class TestUtils {
     assertEquals(expectedData.size(), blockNum);
   }
 
-  public static void validateResult(Map<Long, byte[]> expectedData, ShuffleDataResult sdr) {
+  public static void validateResult(Map<BlockId, byte[]> expectedData, ShuffleDataResult sdr) {
     byte[] buffer = sdr.getData();
     List<BufferSegment> bufferSegments = sdr.getBufferSegments();
     assertEquals(expectedData.size(), bufferSegments.size());
-    for (Map.Entry<Long, byte[]> entry : expectedData.entrySet()) {
+    for (Map.Entry<BlockId, byte[]> entry : expectedData.entrySet()) {
       BufferSegment bs = findBufferSegment(entry.getKey(), bufferSegments);
       assertNotNull(bs);
       byte[] data = new byte[bs.getLength()];
@@ -76,9 +78,10 @@ public class TestUtils {
     }
   }
 
-  private static BufferSegment findBufferSegment(long blockId, List<BufferSegment> bufferSegments) {
+  private static BufferSegment findBufferSegment(
+      BlockId blockId, List<BufferSegment> bufferSegments) {
     for (BufferSegment bs : bufferSegments) {
-      if (bs.getBlockId() == blockId) {
+      if (bs.getBlockId().equals(blockId)) {
         return bs;
       }
     }

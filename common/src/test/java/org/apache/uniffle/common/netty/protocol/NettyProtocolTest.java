@@ -33,6 +33,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -49,7 +50,7 @@ public class NettyProtocolTest {
             new ShuffleBlockInfo(
                 1,
                 1,
-                1,
+                new OpaqueBlockId(1),
                 data.length,
                 123,
                 Unpooled.wrappedBuffer(data).retain(),
@@ -60,7 +61,7 @@ public class NettyProtocolTest {
             new ShuffleBlockInfo(
                 1,
                 1,
-                1,
+                new OpaqueBlockId(1),
                 data.length,
                 123,
                 Unpooled.wrappedBuffer(data).retain(),
@@ -73,7 +74,7 @@ public class NettyProtocolTest {
             new ShuffleBlockInfo(
                 1,
                 2,
-                1,
+                new OpaqueBlockId(1),
                 data.length,
                 123,
                 Unpooled.wrappedBuffer(data).retain(),
@@ -84,7 +85,7 @@ public class NettyProtocolTest {
             new ShuffleBlockInfo(
                 1,
                 1,
-                2,
+                new OpaqueBlockId(2),
                 data.length,
                 123,
                 Unpooled.wrappedBuffer(data).retain(),
@@ -273,7 +274,8 @@ public class NettyProtocolTest {
     byte[] data = new byte[] {1, 2, 3, 4, 5};
     List<BufferSegment> bufferSegments =
         Lists.newArrayList(
-            new BufferSegment(1, 0, 5, 10, 123, 1), new BufferSegment(1, 0, 5, 10, 345, 1));
+            new BufferSegment(new OpaqueBlockId(1), 0, 5, 10, 123, 1),
+            new BufferSegment(new OpaqueBlockId(1), 0, 5, 10, 345, 1));
     GetMemoryShuffleDataResponse getMemoryShuffleDataResponse =
         new GetMemoryShuffleDataResponse(
             1, StatusCode.SUCCESS, "", bufferSegments, Unpooled.wrappedBuffer(data).retain());

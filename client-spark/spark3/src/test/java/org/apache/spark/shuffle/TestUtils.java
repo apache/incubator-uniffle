@@ -26,6 +26,7 @@ import org.apache.spark.shuffle.writer.DataPusher;
 
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.util.BlockId;
 
 public class TestUtils {
 
@@ -35,7 +36,7 @@ public class TestUtils {
       SparkConf conf,
       Boolean isDriver,
       DataPusher dataPusher,
-      Map<String, Set<Long>> successBlockIds,
+      Map<String, Set<BlockId>> successBlockIds,
       Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker) {
     return new RssShuffleManager(
         conf, isDriver, dataPusher, successBlockIds, taskToFailedBlockSendTracker);
@@ -45,7 +46,7 @@ public class TestUtils {
     return SystemUtils.IS_OS_MAC_OSX && SystemUtils.OS_ARCH.equals("aarch64");
   }
 
-  public static ShuffleBlockInfo createMockBlockOnlyBlockId(long blockId) {
+  public static ShuffleBlockInfo createMockBlockOnlyBlockId(BlockId blockId) {
     return new ShuffleBlockInfo(1, 1, blockId, 1, 1, new byte[1], null, 1, 100, 1);
   }
 }

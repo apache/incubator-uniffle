@@ -37,6 +37,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
@@ -45,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class LocalFileServerReadHandlerTest {
   @Test
   public void testDataInconsistent() throws Exception {
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     int expectTotalBlockNum = 4;
     int blockSize = 7;
 
@@ -95,7 +96,7 @@ public class LocalFileServerReadHandlerTest {
 
     int readBufferSize = 13;
     int bytesPerSegment = ((readBufferSize / blockSize) + 1) * blockSize;
-    List<Long> actualWriteBlockIds =
+    List<BlockId> actualWriteBlockIds =
         blocks.stream()
             .map(ShufflePartitionedBlock::getBlockId)
             .limit(actualWriteDataBlock)

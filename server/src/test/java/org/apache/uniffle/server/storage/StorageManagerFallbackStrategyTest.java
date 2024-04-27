@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.util.BlockId;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -34,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class StorageManagerFallbackStrategyTest {
   private ShuffleServerConf conf;
+  private final BlockId blockId = new OpaqueBlockId(1);
 
   @BeforeEach
   public void prepare() {
@@ -56,7 +59,7 @@ public class StorageManagerFallbackStrategyTest {
     String appId = "testDefaultFallbackStrategy_appId";
     coldStorageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
     List<ShufflePartitionedBlock> blocks =
-        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
+        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, blockId, 1L, (byte[]) null));
     ShuffleDataFlushEvent event =
         new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
     event.increaseRetryTimes();
@@ -98,7 +101,7 @@ public class StorageManagerFallbackStrategyTest {
     String appId = "testHdfsFallbackStrategy_appId";
     coldStorageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
     List<ShufflePartitionedBlock> blocks =
-        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
+        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, blockId, 1L, (byte[]) null));
     ShuffleDataFlushEvent event =
         new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
     event.increaseRetryTimes();
@@ -123,7 +126,7 @@ public class StorageManagerFallbackStrategyTest {
     String appId = "testLocalFallbackStrategy_appId";
     coldStorageManager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
     List<ShufflePartitionedBlock> blocks =
-        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
+        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, blockId, 1L, (byte[]) null));
     ShuffleDataFlushEvent event =
         new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
     event.increaseRetryTimes();

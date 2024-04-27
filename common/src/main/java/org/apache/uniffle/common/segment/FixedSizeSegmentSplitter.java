@@ -29,6 +29,7 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 
 public class FixedSizeSegmentSplitter implements SegmentSplitter {
   private static final Logger LOGGER = LoggerFactory.getLogger(FixedSizeSegmentSplitter.class);
@@ -92,7 +93,13 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
         }
 
         bufferSegments.add(
-            new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
+            new BufferSegment(
+                new OpaqueBlockId(blockId),
+                bufferOffset,
+                length,
+                uncompressLength,
+                crc,
+                taskAttemptId));
         bufferOffset += length;
 
         if (bufferOffset >= readBufferSize) {

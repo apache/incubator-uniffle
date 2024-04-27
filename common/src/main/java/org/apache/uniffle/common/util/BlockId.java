@@ -17,8 +17,6 @@
 
 package org.apache.uniffle.common.util;
 
-import java.util.Objects;
-
 /**
  * This represents a block id and all its constituents. This is particularly useful for logging and
  * debugging block ids.
@@ -27,49 +25,24 @@ import java.util.Objects;
  * that order from highest to lowest bits. The number of bits is defined by a {@link BlockIdLayout}.
  * Values of partitionId, taskAttemptId and AtomicInteger are always positive.
  */
-public class BlockId {
-  public final long blockId;
-  public final BlockIdLayout layout;
-  public final int sequenceNo;
-  public final int partitionId;
-  public final int taskAttemptId;
+public interface BlockId extends Comparable<BlockId> {
+  long getBlockId();
 
-  protected BlockId(
-      long blockId, BlockIdLayout layout, int sequenceNo, int partitionId, int taskAttemptId) {
-    this.blockId = blockId;
-    this.layout = layout;
-    this.sequenceNo = sequenceNo;
-    this.partitionId = partitionId;
-    this.taskAttemptId = taskAttemptId;
-  }
+  int getSequenceNo();
 
-  @Override
-  public String toString() {
-    return "blockId["
-        + Long.toHexString(blockId)
-        + " (seq: "
-        + sequenceNo
-        + ", part: "
-        + partitionId
-        + ", task: "
-        + taskAttemptId
-        + ")]";
-  }
+  int getPartitionId();
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
+  int getTaskAttemptId();
+
+  default BlockId withLayoutIfOpaque(BlockIdLayout layout) {
+    if (this instanceof OpaqueBlockId) {
+      return ((OpaqueBlockId) this).withLayout(layout);
     }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    BlockId blockId1 = (BlockId) o;
-    return blockId == blockId1.blockId && Objects.equals(layout, blockId1.layout);
+    return this;
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(blockId, layout);
+  default int compareTo(BlockId other) {
+    return Long.compare(this.getBlockId(), other.getBlockId());
   }
 }

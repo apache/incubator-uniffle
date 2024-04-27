@@ -20,10 +20,11 @@ package org.apache.uniffle.common;
 import java.util.Objects;
 
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.BlockId;
 
 public class BufferSegment {
 
-  private long blockId;
+  private BlockId blockId;
   private long offset;
   private int length;
   private int uncompressLength;
@@ -31,7 +32,12 @@ public class BufferSegment {
   private long taskAttemptId;
 
   public BufferSegment(
-      long blockId, long offset, int length, int uncompressLength, long crc, long taskAttemptId) {
+      BlockId blockId,
+      long offset,
+      int length,
+      int uncompressLength,
+      long crc,
+      long taskAttemptId) {
     this.blockId = blockId;
     this.offset = offset;
     this.length = length;
@@ -43,7 +49,7 @@ public class BufferSegment {
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof BufferSegment) {
-      return blockId == ((BufferSegment) obj).getBlockId()
+      return blockId.equals(((BufferSegment) obj).getBlockId())
           && offset == ((BufferSegment) obj).getOffset()
           && length == ((BufferSegment) obj).getLength()
           && uncompressLength == ((BufferSegment) obj).getUncompressLength()
@@ -86,7 +92,7 @@ public class BufferSegment {
     return length;
   }
 
-  public long getBlockId() {
+  public BlockId getBlockId() {
     return blockId;
   }
 

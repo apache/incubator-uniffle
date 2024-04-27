@@ -35,6 +35,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.NettyUtils;
@@ -147,7 +148,7 @@ public class ShuffleBuffer {
     return inFlushBlockMap;
   }
 
-  public synchronized ShuffleDataResult getShuffleData(long lastBlockId, int readBufferSize) {
+  public synchronized ShuffleDataResult getShuffleData(BlockId lastBlockId, int readBufferSize) {
     return getShuffleData(lastBlockId, readBufferSize, null);
   }
 
@@ -155,7 +156,7 @@ public class ShuffleBuffer {
   // 2. according to info from step 1, generate data
   // todo: if block was flushed, it's possible to get duplicated data
   public synchronized ShuffleDataResult getShuffleData(
-      long lastBlockId, int readBufferSize, Roaring64NavigableMap expectedTaskIds) {
+      BlockId lastBlockId, int readBufferSize, Roaring64NavigableMap expectedTaskIds) {
     try {
       List<BufferSegment> bufferSegments = Lists.newArrayList();
       List<ShufflePartitionedBlock> readBlocks = Lists.newArrayList();
@@ -181,12 +182,12 @@ public class ShuffleBuffer {
   // 1. read from inFlushBlockMap order by eventId asc, then from blocks
   // 2. if can't find lastBlockId, means related data may be flushed to storage, repeat step 1
   private void updateBufferSegmentsAndResultBlocks(
-      long lastBlockId,
+      BlockId lastBlockId,
       long readBufferSize,
       List<BufferSegment> bufferSegments,
       List<ShufflePartitionedBlock> resultBlocks,
       Roaring64NavigableMap expectedTaskIds) {
-    long nextBlockId = lastBlockId;
+    BlockId nextBlockId = lastBlockId;
     List<Long> sortedEventId = sortFlushingEventId();
     int offset = 0;
     boolean hasLastBlockId = false;
@@ -197,7 +198,7 @@ public class ShuffleBuffer {
     if (!inFlushBlockMap.isEmpty()) {
       for (Long eventId : sortedEventId) {
         // update bufferSegments with different strategy according to lastBlockId
-        if (nextBlockId == Constants.INVALID_BLOCK_ID) {
+        if (nextBlockId == null) {
           updateSegmentsWithoutBlockId(
               offset,
               inFlushBlockMap.get(eventId),
@@ -219,7 +220,7 @@ public class ShuffleBuffer {
           // if last blockId is found, read from begin with next cached blocks
           if (hasLastBlockId) {
             // reset blockId to read from begin in next cached blocks
-            nextBlockId = Constants.INVALID_BLOCK_ID;
+            nextBlockId = null;
           }
         }
         if (!bufferSegments.isEmpty()) {
@@ -232,7 +233,7 @@ public class ShuffleBuffer {
     }
     // try to read from cached blocks which is not in flush queue
     if (blocks.size() > 0 && offset < readBufferSize) {
-      if (nextBlockId == Constants.INVALID_BLOCK_ID) {
+      if (nextBlockId == null) {
         updateSegmentsWithoutBlockId(
             offset, blocks, readBufferSize, bufferSegments, resultBlocks, expectedTaskIds);
         hasLastBlockId = true;
@@ -253,11 +254,7 @@ public class ShuffleBuffer {
       // but there still has data in memory
       // try read again with blockId = Constants.INVALID_BLOCK_ID
       updateBufferSegmentsAndResultBlocks(
-          Constants.INVALID_BLOCK_ID,
-          readBufferSize,
-          bufferSegments,
-          resultBlocks,
-          expectedTaskIds);
+          null, readBufferSize, bufferSegments, resultBlocks, expectedTaskIds);
     }
   }
 
@@ -336,7 +333,7 @@ public class ShuffleBuffer {
       int offset,
       List<ShufflePartitionedBlock> cachedBlocks,
       long readBufferSize,
-      long lastBlockId,
+      BlockId lastBlockId,
       List<BufferSegment> bufferSegments,
       List<ShufflePartitionedBlock> readBlocks,
       Roaring64NavigableMap expectedTaskIds) {
@@ -346,7 +343,7 @@ public class ShuffleBuffer {
     for (ShufflePartitionedBlock block : cachedBlocks) {
       if (!foundBlockId) {
         // find lastBlockId
-        if (block.getBlockId() == lastBlockId) {
+        if (block.getBlockId().equals(lastBlockId)) {
           foundBlockId = true;
         }
         continue;

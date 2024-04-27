@@ -48,6 +48,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServer;
@@ -139,7 +140,7 @@ public class ShuffleServerWithHadoopTest extends ShuffleReadWriteBase {
     shuffleServerClient.registerShuffle(rrsr);
 
     BlockIdSet[] bitmaps = new BlockIdSet[4];
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     Map<Integer, List<ShuffleBlockInfo>> dataBlocks = createTestData(bitmaps, expectedData);
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
     partitionToBlocks.put(0, dataBlocks.get(0));
@@ -249,11 +250,13 @@ public class ShuffleServerWithHadoopTest extends ShuffleReadWriteBase {
   }
 
   protected void validateResult(
-      ShuffleReadClientImpl readClient, Map<Long, byte[]> expectedData, BlockIdSet blockIdBitmap) {
+      ShuffleReadClientImpl readClient,
+      Map<BlockId, byte[]> expectedData,
+      BlockIdSet blockIdBitmap) {
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
     BlockIdSet matched = BlockIdSet.empty();
     while (csb != null && csb.getByteBuffer() != null) {
-      for (Entry<Long, byte[]> entry : expectedData.entrySet()) {
+      for (Entry<BlockId, byte[]> entry : expectedData.entrySet()) {
         if (compareByte(entry.getValue(), csb.getByteBuffer())) {
           matched.add(entry.getKey());
           break;

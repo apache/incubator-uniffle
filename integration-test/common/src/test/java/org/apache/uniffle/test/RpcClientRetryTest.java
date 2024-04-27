@@ -43,6 +43,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -152,7 +153,7 @@ public class RpcClientRetryTest extends ShuffleReadWriteBase {
   public void testRpcRetryLogic(StorageType storageType) {
     String testAppId = "testRpcRetryLogic";
     registerShuffleServer(testAppId, 3, 2, 2, true);
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet blockIdBitmap = BlockIdSet.empty();
 
     List<ShuffleBlockInfo> blocks =
@@ -169,10 +170,10 @@ public class RpcClientRetryTest extends ShuffleReadWriteBase {
     SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
     BlockIdSet failedBlockIdBitmap = BlockIdSet.empty();
     BlockIdSet successfulBlockIdBitmap = BlockIdSet.empty();
-    for (Long blockId : result.getSuccessBlockIds()) {
+    for (BlockId blockId : result.getSuccessBlockIds()) {
       successfulBlockIdBitmap.add(blockId);
     }
-    for (Long blockId : result.getFailedBlockIds()) {
+    for (BlockId blockId : result.getFailedBlockIds()) {
       failedBlockIdBitmap.add(blockId);
     }
     assertEquals(0, failedBlockIdBitmap.getLongCardinality());

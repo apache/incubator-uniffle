@@ -23,6 +23,7 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.util.BlockId;
 
 public class DataFileSegment extends FileSegment {
 
@@ -37,8 +38,8 @@ public class DataFileSegment extends FileSegment {
     return bufferSegments;
   }
 
-  public Set<Long> getBlockIds() {
-    Set<Long> blockIds = Sets.newHashSet();
+  public Set<BlockId> getBlockIds() {
+    Set<BlockId> blockIds = Sets.newHashSet();
     for (BufferSegment bs : bufferSegments) {
       blockIds.add(bs.getBlockId());
     }

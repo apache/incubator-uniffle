@@ -55,6 +55,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.segment.LocalOrderSegmentSplitter;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ChecksumUtils;
@@ -128,7 +129,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
   }
 
   public static Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> createTestDataWithMultiMapIdx(
-      BlockIdSet[] bitmaps, Map<Long, byte[]> expectedData) {
+      BlockIdSet[] bitmaps, Map<BlockId, byte[]> expectedData) {
     for (int i = 0; i < 4; i++) {
       bitmaps[i] = BlockIdSet.empty();
     }
@@ -192,7 +193,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     }
 
     /** Write the data to shuffle-servers */
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet[] bitMaps = new BlockIdSet[4];
 
     // Create the shuffle block with the mapIdx
@@ -226,11 +227,11 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
 
     /** Read the single partition data by specified [startMapIdx, endMapIdx) */
     // case1: get the mapIdx range [0, 1) of partition0
-    final Set<Long> expectedBlockIds1 =
+    final Set<BlockId> expectedBlockIds1 =
         partitionToBlocksWithMapIdx.get(0).get(0).stream()
             .map(x -> x.getBlockId())
             .collect(Collectors.toSet());
-    final Map<Long, byte[]> expectedData1 =
+    final Map<BlockId, byte[]> expectedData1 =
         expectedData.entrySet().stream()
             .filter(x -> expectedBlockIds1.contains(x.getKey()))
             .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
@@ -250,12 +251,12 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     validate(sdr, expectedBlockIds1, expectedData1, new HashSet<>(Arrays.asList(0L)));
 
     // case2: get the mapIdx range [0, 2) of partition0
-    final Set<Long> expectedBlockIds2 =
+    final Set<BlockId> expectedBlockIds2 =
         partitionToBlocksWithMapIdx.get(0).get(1).stream()
             .map(x -> x.getBlockId())
             .collect(Collectors.toSet());
     expectedBlockIds2.addAll(expectedBlockIds1);
-    final Map<Long, byte[]> expectedData2 =
+    final Map<BlockId, byte[]> expectedData2 =
         expectedData.entrySet().stream()
             .filter(x -> expectedBlockIds2.contains(x.getKey()))
             .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
@@ -274,7 +275,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     validate(sdr, expectedBlockIds2, expectedData2, new HashSet<>(Arrays.asList(0L, 1L)));
 
     // case2: get the mapIdx range [1, 3) of partition0
-    final Set<Long> expectedBlockIds3 =
+    final Set<BlockId> expectedBlockIds3 =
         partitionToBlocksWithMapIdx.get(0).get(1).stream()
             .map(x -> x.getBlockId())
             .collect(Collectors.toSet());
@@ -283,7 +284,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
             .map(x -> x.getBlockId())
             .collect(Collectors.toSet()));
     expectedBlockIds2.addAll(expectedBlockIds1);
-    final Map<Long, byte[]> expectedData3 =
+    final Map<BlockId, byte[]> expectedData3 =
         expectedData.entrySet().stream()
             .filter(x -> expectedBlockIds3.contains(x.getKey()))
             .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
@@ -303,16 +304,16 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
 
     // case3: get the mapIdx range [0, Integer.MAX_VALUE) of partition0, it should always return all
     // data
-    final Set<Long> expectedBlockIds4 =
+    final Set<BlockId> expectedBlockIds4 =
         partitionToBlocks.get(0).stream().map(x -> x.getBlockId()).collect(Collectors.toSet());
-    final Map<Long, byte[]> expectedData4 =
+    final Map<BlockId, byte[]> expectedData4 =
         expectedData.entrySet().stream()
             .filter(x -> expectedBlockIds4.contains(x.getKey()))
             .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
     taskIds = Roaring64NavigableMap.bitmapOf();
     BlockIdLayout layout = BlockIdLayout.DEFAULT;
-    for (long blockId : expectedBlockIds4) {
-      taskIds.add(new DefaultIdHelper(layout).getTaskAttemptId(blockId));
+    for (BlockId blockId : expectedBlockIds4) {
+      taskIds.add(new DefaultIdHelper(layout).getTaskAttemptId(blockId.getBlockId()));
     }
     sdr =
         readShuffleData(
@@ -330,8 +331,8 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
 
   private void validate(
       ShuffleDataResult sdr,
-      Set<Long> expectedBlockIds,
-      Map<Long, byte[]> expectedData,
+      Set<BlockId> expectedBlockIds,
+      Map<BlockId, byte[]> expectedData,
       Set<Long> expectedTaskAttemptIds) {
     byte[] buffer = sdr.getData();
     List<BufferSegment> bufferSegments = sdr.getBufferSegments();

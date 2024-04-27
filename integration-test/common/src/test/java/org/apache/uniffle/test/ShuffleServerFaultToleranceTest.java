@@ -48,6 +48,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -133,7 +134,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
           client.registerShuffle(rrsr);
         });
     BlockIdSet expectBlockIds = BlockIdSet.empty();
-    Map<Long, byte[]> dataMap = Maps.newHashMap();
+    Map<BlockId, byte[]> dataMap = Maps.newHashMap();
     Roaring64NavigableMap[] bitmaps = new Roaring64NavigableMap[1];
     bitmaps[0] = Roaring64NavigableMap.bitmapOf();
     List<ShuffleBlockInfo> blocks =
@@ -162,7 +163,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     AbstractClientReadHandler clientReadHandler =
         (AbstractClientReadHandler)
             ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     expectedData.clear();
     blocks.forEach(
         (block) -> {

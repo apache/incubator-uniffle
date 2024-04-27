@@ -18,8 +18,8 @@
 package org.apache.uniffle.common.util;
 
 import java.io.IOException;
-import java.util.function.LongConsumer;
-import java.util.stream.LongStream;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -35,8 +35,8 @@ public class RoaringBitmapBlockIdSet implements BlockIdSet {
   }
 
   @Override
-  public synchronized BlockIdSet add(long blockId) {
-    bitmap.addLong(blockId);
+  public synchronized BlockIdSet add(BlockId blockId) {
+    bitmap.addLong(blockId.getBlockId());
     return this;
   }
 
@@ -51,8 +51,8 @@ public class RoaringBitmapBlockIdSet implements BlockIdSet {
   }
 
   @Override
-  public synchronized BlockIdSet remove(long blockId) {
-    bitmap.removeLong(blockId);
+  public synchronized BlockIdSet remove(BlockId blockId) {
+    bitmap.removeLong(blockId.getBlockId());
     return this;
   }
 
@@ -77,8 +77,8 @@ public class RoaringBitmapBlockIdSet implements BlockIdSet {
   }
 
   @Override
-  public boolean contains(long blockId) {
-    return bitmap.contains(blockId);
+  public boolean contains(BlockId blockId) {
+    return bitmap.contains(blockId.getBlockId());
   }
 
   @Override
@@ -89,7 +89,8 @@ public class RoaringBitmapBlockIdSet implements BlockIdSet {
     }
     Roaring64NavigableMap expecteds = ((RoaringBitmapBlockIdSet) blockIds).bitmap;
 
-    // first a quick check: no need for expensive bitwise AND when this is equal to the other BlockIdSet
+    // first a quick check: no need for expensive bitwise AND when this is equal to the other
+    // BlockIdSet
     if (this.bitmap.equals(expecteds)) {
       return true;
     }
@@ -131,13 +132,13 @@ public class RoaringBitmapBlockIdSet implements BlockIdSet {
   }
 
   @Override
-  public synchronized void forEach(LongConsumer func) {
-    bitmap.forEach(func::accept);
+  public synchronized void forEach(Consumer<BlockId> func) {
+    bitmap.stream().mapToObj(OpaqueBlockId::new).forEach(func);
   }
 
   @Override
-  public LongStream stream() {
-    return bitmap.stream();
+  public Stream<BlockId> stream() {
+    return bitmap.stream().mapToObj(OpaqueBlockId::new);
   }
 
   @Override
