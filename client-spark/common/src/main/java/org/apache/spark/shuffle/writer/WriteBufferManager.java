@@ -181,10 +181,9 @@ public class WriteBufferManager extends MemoryConsumer {
     // check buffer size > spill threshold
     if (usedBytes.get() - inSendListBytes.get() > spillSize) {
       LOG.info(
-          String.format(
-              "ShuffleBufferManager spill for buffer size exceeding spill threshold,"
-                  + "usedBytes[%d],inSendListBytes[%d],spill size threshold[%d]",
-              usedBytes.get(), inSendListBytes.get(), spillSize));
+              "ShuffleBufferManager spill for buffer size exceeding spill threshold, "
+                  + "usedBytes[{}], inSendListBytes[{}], spill size threshold[{}]",
+              usedBytes.get(), inSendListBytes.get(), spillSize);
       List<ShuffleBlockInfo> multiSendingBlocks = clear(bufferSpillRatio);
       multiSendingBlocks.addAll(singleOrEmptySendingBlocks);
       writeTime += System.currentTimeMillis() - start;
@@ -310,18 +309,7 @@ public class WriteBufferManager extends MemoryConsumer {
           }
         };
     if (bufferSpillRatio < 1.0) {
-      Collections.sort(
-          partitionList,
-          new Comparator<Integer>() {
-            WriterBuffer defaultBuffer = new WriterBuffer(0);
-
-            @Override
-            public int compare(Integer o1, Integer o2) {
-              int partSize1 = buffers.getOrDefault(o1, defaultBuffer).getMemoryUsed();
-              int partSize2 = buffers.getOrDefault(o2, defaultBuffer).getMemoryUsed();
-              return partSize2 - partSize1;
-            }
-          });
+      partitionList.sort(Comparator.comparingInt(o -> buffers.get(o) == null ? 0 : buffers.get(o).getMemoryUsed()).reversed());
     }
     long targetSpillSize = (long) ((usedBytes.get() - inSendListBytes.get()) * bufferSpillRatio);
     for (int partitionId : partitionList) {
@@ -350,9 +338,9 @@ public class WriteBufferManager extends MemoryConsumer {
             + dataSize
             + "], memoryUsed["
             + memoryUsed
-            + "],number of blocks["
+            + "], number of blocks["
             + result.size()
-            + "],flush ratio["
+            + "], flush ratio["
             + bufferSpillRatio
             + "]");
     return result;
