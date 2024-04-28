@@ -1257,9 +1257,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           Set<ShuffleServerInfo> updatedReassignServers =
               handleInfo.updateAssignment(partitionId, serverId, replacements);
 
-          reassignResult.computeIfAbsent(serverId, x -> new HashMap<>())
+          reassignResult
+              .computeIfAbsent(serverId, x -> new HashMap<>())
               .computeIfAbsent(partitionId, x -> new HashSet<>())
-              .addAll(updatedReassignServers.stream().map(x -> x.getId()).collect(Collectors.toSet()));
+              .addAll(
+                  updatedReassignServers.stream().map(x -> x.getId()).collect(Collectors.toSet()));
 
           if (serverHasReplaced) {
             for (ShuffleServerInfo serverInfo : updatedReassignServers) {
@@ -1278,7 +1280,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       }
 
       if (!reassignResult.isEmpty()) {
-        LOG.info("Accepted reassignOnBlockSendFailure request. Reassign result: {}", reassignResult);
+        LOG.info(
+            "Accepted reassignOnBlockSendFailure request. Reassign result: {}", reassignResult);
       }
 
       return handleInfo;

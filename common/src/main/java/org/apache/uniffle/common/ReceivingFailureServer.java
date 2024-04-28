@@ -44,6 +44,17 @@ public class ReceivingFailureServer {
     return statusCode;
   }
 
+  @Override
+  public String toString() {
+    return "ReceivingFailureServer{"
+        + "serverId='"
+        + serverId
+        + '\''
+        + ", statusCode="
+        + statusCode
+        + '}';
+  }
+
   public static List<ReceivingFailureServer> fromProto(RssProtos.ReceivingFailureServers proto) {
     List<ReceivingFailureServer> servers = new ArrayList<>();
     for (RssProtos.ReceivingFailureServer protoServer : proto.getServerList()) {

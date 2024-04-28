@@ -550,6 +550,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private void doReassignOnBlockSendFailure(
       Map<Integer, List<ReceivingFailureServer>> failurePartitionToServers) {
+    LOG.info(
+        "Initiate reassignOnBlockSendFailure. failure partition servers: {}",
+        failurePartitionToServers);
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     String driver = rssConf.getString("driver.host", "");
     int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
