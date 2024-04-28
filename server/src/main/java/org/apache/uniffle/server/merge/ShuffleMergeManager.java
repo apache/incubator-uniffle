@@ -1,6 +1,7 @@
 package org.apache.uniffle.server.merge;
 
 import static org.apache.uniffle.common.util.RssUtils.getConfiguredLocalDirs;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_GET_SEGMENT_V2;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_MAX_OPEN_FILE;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -52,6 +53,8 @@ public class ShuffleMergeManager {
     }
   };
 
+  private boolean getSegmentV2 = true;
+
   public ShuffleMergeManager(ShuffleServerConf serverConf, ShuffleTaskManager taskManager) {
     this.serverConf = serverConf;
     this.taskManager = taskManager;
@@ -59,6 +62,8 @@ public class ShuffleMergeManager {
     this.localDirs = getConfiguredLocalDirs(this.serverConf);
     this.openFileSemaphore = new Semaphore(serverConf.get(SERVER_MERGE_MAX_OPEN_FILE));
     ShuffleServerMetrics.gaugeMergeOpenFileAvailable.set(ShuffleMergeManager.openFileSemaphore.availablePermits());
+    this.getSegmentV2 = serverConf.get(SERVER_MERGE_GET_SEGMENT_V2);
+    LOG.warn("getSegmentV2 is {}", getSegmentV2);
   }
 
   public StatusCode registerShuffle(String appId, int shuffleId, String keyClassName, String valueClassName,
@@ -112,7 +117,10 @@ public class ShuffleMergeManager {
 
   public void processEvent(MergeEvent event) {
     try {
-      Pair<List<AbstractSegment>, Integer> pairs =
+      Pair<List<AbstractSegment>, Integer> pairs = getSegmentV2 ?
+          this.entities.get(event.getAppId()).get(event.getShuffleId()).getPartitionEntity(event.getPartitionId())
+              .getSegmentsV2(serverConf, event.getExpectedBlockIdMap().iterator(), event.getKeyClass(),
+                  event.getValueClass()) :
           this.entities.get(event.getAppId()).get(event.getShuffleId()).getPartitionEntity(event.getPartitionId())
               .getSegments(serverConf, event.getExpectedBlockIdMap().iterator(), event.getKeyClass(),
                   event.getValueClass());

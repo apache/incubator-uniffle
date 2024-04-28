@@ -38,7 +38,7 @@ public class WritableDeserializationStream<K extends Writable, V extends Writabl
 
   @Override
   public long getTotalBytesRead() {
-    return inputStream.getPos();
+    return inputStream.getLoadPos();
   }
 
   @Override

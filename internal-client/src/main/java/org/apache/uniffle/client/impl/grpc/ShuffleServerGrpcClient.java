@@ -1030,10 +1030,12 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setPartitionId(request.getPartitionId())
             .setUniqueBlocksBitmap(serializedBlockIdsBytes)
             .build();
+    long start = System.currentTimeMillis();
     RssProtos.ReportUniqueBlocksResponse rpcResponse = getBlockingStub().reportUniqueBlocks(rpcRequest);
     String requestInfo = "appId[" + request.getAppId() + "], shuffleId[" + request.getShuffleId() + "], partitionId[" +
         request.getPartitionId() + "]";
-    LOG.info("reportUniqueBlocks to {}:{} for {} cost {} ms", host, port, requestInfo);
+    LOG.info("reportUniqueBlocks to {}:{} for {} cost {} ms", host, port, requestInfo,
+        (System.currentTimeMillis() - start));
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
     RssReportUniqueBlocksResponse response;
     switch (statusCode) {

@@ -151,4 +151,12 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
     long dataFileSize = new File(dataFileName).length();
     return new ShuffleIndexResult(new FileSegmentManagedBuffer(indexFile, 0, len), dataFileSize, dataFileName);
   }
+
+  public String getDataFileName() {
+    return dataFileName;
+  }
+
+  public String getIndexFileName() {
+    return indexFileName;
+  }
 }

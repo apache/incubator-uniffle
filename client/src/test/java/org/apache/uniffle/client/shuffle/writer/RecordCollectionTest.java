@@ -11,7 +11,7 @@ import org.apache.uniffle.client.shuffle.RecordBuffer;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.records.RecordsReader;
 import org.apache.uniffle.common.records.RecordsWriter;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -55,7 +55,7 @@ public class RecordCollectionTest {
 
     // 5 check the serialized data
     RecordsReader reader = new RecordsReader<>(rssConf,
-        PartialInputStream.newInputStream(outputStream.toByteArray(), 0, outputStream.size()), keyClass, valueClass);
+        PartialInputStreamImpl.newInputStream(outputStream.toByteArray(), 0, outputStream.size()), keyClass, valueClass);
     int index = 0;
     while (reader.hasNext()) {
       reader.next();
@@ -109,7 +109,7 @@ public class RecordCollectionTest {
 
     // 5 check the serialized data
     RecordsReader reader = new RecordsReader<>(rssConf,
-        PartialInputStream.newInputStream(outputStream.toByteArray(), 0, outputStream.size()), keyClass, valueClass);
+        PartialInputStreamImpl.newInputStream(outputStream.toByteArray(), 0, outputStream.size()), keyClass, valueClass);
     int index = 0;
     while (reader.hasNext()) {
       reader.next();

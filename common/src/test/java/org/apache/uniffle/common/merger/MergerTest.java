@@ -9,7 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.records.RecordsReader;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,7 +50,7 @@ public class MergerTest {
 
     // 3 Check the merged file
     RecordsReader reader = new RecordsReader(rssConf,
-        PartialInputStream.newInputStream(mergedFile, 0, mergedFile.length()), keyClass, valueClass);
+        PartialInputStreamImpl.newInputStream(mergedFile, 0, mergedFile.length()), keyClass, valueClass);
     int index = 0;
     while (reader.hasNext()) {
       reader.next();

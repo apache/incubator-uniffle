@@ -47,9 +47,9 @@ public class WritableSerializerTest {
     // 3 Random read
     for (int i = 0; i < LOOP; i++) {
       long off = offsets[i];
-      PartialInputStream inputStream = isFileMode ?
-          PartialInputStream.newInputStream(new File(tmpDir, "tmp.data"), off, Long.MAX_VALUE) :
-          PartialInputStream.newInputStream(((ByteArrayOutputStream) outputStream).toByteArray(), off,
+      PartialInputStreamImpl inputStream = isFileMode ?
+          PartialInputStreamImpl.newInputStream(new File(tmpDir, "tmp.data"), off, Long.MAX_VALUE) :
+          PartialInputStreamImpl.newInputStream(((ByteArrayOutputStream) outputStream).toByteArray(), off,
               Long.MAX_VALUE);
       DeserializationStream deserializationStream = instance.deserializeStream(inputStream, keyClass, valueClass);
       for (int j = i + 1; j < LOOP; j++) {

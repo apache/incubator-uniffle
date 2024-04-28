@@ -633,6 +633,12 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(655350)
           .withDescription("The maximum open file is used for merge.");
 
+  public static final ConfigOption<Boolean> SERVER_MERGE_GET_SEGMENT_V2 =
+      ConfigOptions.key("rss.server.merge.get.segment.v2")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription("get segment v2");
+
   public ShuffleServerConf() {}
 
   public ShuffleServerConf(String fileName) {

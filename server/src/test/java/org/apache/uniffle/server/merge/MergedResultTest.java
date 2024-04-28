@@ -16,7 +16,7 @@ import org.apache.uniffle.common.merger.AbstractSegment;
 import org.apache.uniffle.common.merger.Merger;
 import org.apache.uniffle.common.merger.Recordable;
 import org.apache.uniffle.common.records.RecordsReader;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -111,7 +111,7 @@ public class MergedResultTest {
     for (int i = 0; i < blocks.size(); i++) {
       int length = blocks.get(i).getLeft();
       byte[] buffer = blocks.get(i).getRight();
-      RecordsReader reader = new RecordsReader(rssConf, PartialInputStream.newInputStream(buffer, 0, length),
+      RecordsReader reader = new RecordsReader(rssConf, PartialInputStreamImpl.newInputStream(buffer, 0, length),
           keyClass, valueClass);
       while (reader.hasNext()) {
         reader.next();

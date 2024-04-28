@@ -6,6 +6,7 @@ import static org.apache.uniffle.common.merger.MergeState.INTERNAL_ERROR;
 import static org.apache.uniffle.common.merger.MergeState.MERGING;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_CACHE_MERGED_BLOCK_INIT_SLEEP_MS;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_CACHE_MERGED_BLOCK_MAX_SLEEP_MS;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_GET_SEGMENT_V2;
 import static org.apache.uniffle.server.merge.ShuffleMergeManager.MERGE_APP_SUFFIX;
 
 import io.netty.buffer.ByteBuf;
@@ -42,6 +43,7 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.storage.common.Storage;
+import org.apache.uniffle.storage.handler.impl.LocalFileServerReadHandler;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.util.StorageType;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -152,6 +154,53 @@ public class PartitionEntity<K, V> {
     } catch (Throwable throwable) {
       ShuffleMergeManager.openFileSemaphore.release(openFiles);
       ShuffleServerMetrics.gaugeMergeOpenFileAvailable.set(ShuffleMergeManager.openFileSemaphore.availablePermits());
+      throw new IOException(throwable);
+    }
+  }
+
+  // getSegments is used to get segments from original shuffle blocks
+  public Pair<List<AbstractSegment>, Integer> getSegmentsV2(RssConf rssConf, Iterator<Long> blockIds, Class keyClass,
+                                                          Class valueClass) throws IOException {
+    List<AbstractSegment> segments = new ArrayList<>();
+    Set<Long> blocksFlushed = new HashSet<>();
+    while (blockIds.hasNext()) {
+      long blockId = blockIds.next();
+      ByteBuf buf = null;
+      if (cachedblockMap.containsKey(blockId)) {
+        buf = cachedblockMap.get(blockId).getData();
+      }
+      if (buf != null && buf.refCnt() > 0) {
+        try {
+          Segment segment = new Segment(rssConf, buf, blockId, keyClass, valueClass);
+          segments.add(segment);
+        } catch (Exception e) {
+          // If ByteBuf is released by flush cleanup before we retain in Segment,
+          // will throw ConcurrentModificationException. So we need get block buffer
+          // from file
+          LOG.warn("construct segment failed, caused by ", e);
+          blocksFlushed.add(blockId);
+        }
+      } else {
+        blocksFlushed.add(blockId);
+      }
+    }
+    if (blocksFlushed.isEmpty()) {
+      return Pair.of(segments, 0);
+    }
+    int openFiles = 1;
+    try {
+      LocalFileServerReadHandler handler = getLocalFileServerReadHandler(rssConf, shuffle.appId);
+      handler.getDataFileName();
+      BlockFlushFileReader reader = new BlockFlushFileReader(handler.getDataFileName(), handler.getIndexFileName());
+      for (Long blockId : blocksFlushed) {
+        BlockFlushFileReader.BlockInputStream inputStream = reader.registerBlockInputStream(blockId);
+        if (inputStream == null) {
+          throw new IOException("Can not find any buffer or file for block " + blockId);
+        }
+        segments.add(new Segment(rssConf, inputStream, blockId, keyClass, valueClass));
+      }
+      return Pair.of(segments, openFiles);
+    } catch (Throwable throwable) {
       throw new IOException(throwable);
     }
   }
@@ -325,6 +374,23 @@ public class PartitionEntity<K, V> {
     }
     ShuffleIndexResult index = storage.getOrCreateReadHandler(request).getShuffleIndex();
     return index;
+  }
+
+  private LocalFileServerReadHandler getLocalFileServerReadHandler(RssConf rssConf, String appId) {
+    CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
+    request.setAppId(appId);
+    request.setShuffleId(shuffle.shuffleId);
+    request.setPartitionId(partitionId);
+    request.setPartitionNumPerRange(1);
+    request.setPartitionNum(Integer.MAX_VALUE);     // ignore check partition number
+    request.setStorageType(StorageType.LOCALFILE.name());
+    request.setRssBaseConf((RssBaseConf) rssConf);
+    Storage storage = shuffle.taskManager.getStorageManager()
+        .selectStorage(new ShuffleDataReadEvent(appId, shuffle.shuffleId, partitionId, partitionId));
+    if (storage == null) {
+      throw new FileNotFoundException("No such data in current storage manager.");
+    }
+    return (LocalFileServerReadHandler) storage.getOrCreateReadHandler(request);
   }
 
   void cleanup() {

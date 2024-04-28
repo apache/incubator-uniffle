@@ -2,6 +2,7 @@ package org.apache.uniffle.test
 
 import org.apache.spark.shuffle.RssSparkConfig
 import org.apache.spark.sql.SparkSession
+import org.apache.uniffle.common.rpc.ServerType
 import org.apache.uniffle.coordinator.CoordinatorConf
 import org.apache.uniffle.server.ShuffleServerConf
 import org.apache.uniffle.storage.util.StorageType

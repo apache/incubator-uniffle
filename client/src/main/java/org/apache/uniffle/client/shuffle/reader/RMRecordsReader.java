@@ -33,7 +33,7 @@ import org.apache.uniffle.common.merger.MergeState;
 import org.apache.uniffle.common.merger.Merger;
 import org.apache.uniffle.common.records.RecordsReader;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -342,7 +342,7 @@ public class RMRecordsReader<K, V, C> {
             // different threads, then will be asynchronous processes. Although it seems to save time, it actually
             // consumes more memory.
             RecordsReader<K, V> reader = new RecordsReader(rssConf,
-                PartialInputStream.newInputStream(byteBuffer.array(), 0, byteBuffer.limit()), keyClass, valueClass);
+                PartialInputStreamImpl.newInputStream(byteBuffer.array(), 0, byteBuffer.limit()), keyClass, valueClass);
             while(reader.hasNext()) {
               reader.next();
               if (metrics != null) {

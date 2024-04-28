@@ -30,7 +30,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.records.RecordsReader;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.junit.jupiter.api.Test;
@@ -116,7 +116,7 @@ public class RMSortWriteBufferManagerTest {
     byte[] bytes = new byte[blockInfos.get(0).getLength()];
     buf.readBytes(bytes);
     RecordsReader<Text, IntWritable> reader = new RecordsReader<>(rssConf,
-        PartialInputStream.newInputStream(bytes, 0, bytes.length), Text.class, IntWritable.class);
+        PartialInputStreamImpl.newInputStream(bytes, 0, bytes.length), Text.class, IntWritable.class);
     int index = 0;
     while (reader.hasNext()) {
       reader.next();
@@ -192,7 +192,7 @@ public class RMSortWriteBufferManagerTest {
     byte[] bytes = new byte[blockInfos.get(0).getLength()];
     buf.readBytes(bytes);
     RecordsReader<Text, IntWritable> reader = new RecordsReader<>(rssConf,
-        PartialInputStream.newInputStream(bytes, 0, bytes.length), Text.class, IntWritable.class);
+        PartialInputStreamImpl.newInputStream(bytes, 0, bytes.length), Text.class, IntWritable.class);
     int index = 0;
 
     while (reader.hasNext()) {

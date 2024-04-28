@@ -75,7 +75,7 @@ public class PartialInputStreamTest {
     }
 
     // Test when bytes is byte[0]
-    PartialInputStream input = PartialInputStream.newInputStream(new byte[0], 0, bytes.length);
+    PartialInputStreamImpl input = PartialInputStreamImpl.newInputStream(new byte[0], 0, bytes.length);
     assertEquals(0, input.available());
     assertEquals(-1, input.read());
     input.close();
@@ -118,26 +118,26 @@ public class PartialInputStreamTest {
   }
 
   private void testRandomReadMemory(byte[] bytes, long start, long end) throws IOException {
-    PartialInputStream input = PartialInputStream.newInputStream(bytes, start, end);
+    PartialInputStreamImpl input = PartialInputStreamImpl.newInputStream(bytes, start, end);
     testRandomReadOneBytePerTime(input, start, end);
     input.close();
 
-    input = PartialInputStream.newInputStream(bytes, start, end);
+    input = PartialInputStreamImpl.newInputStream(bytes, start, end);
     testRandomReadMultiBytesPerTime(input, start, end);
     input.close();
   }
 
   private void testRandomReadFile(File file, long start, long end) throws IOException {
-    PartialInputStream input = PartialInputStream.newInputStream(file, start, end);
+    PartialInputStreamImpl input = PartialInputStreamImpl.newInputStream(file, start, end);
     testRandomReadOneBytePerTime(input, start, end);
     input.close();
 
-    input = PartialInputStream.newInputStream(file, start, end);
+    input = PartialInputStreamImpl.newInputStream(file, start, end);
     testRandomReadMultiBytesPerTime(input, start, end);
     input.close();
   }
 
-  private void testRandomReadOneBytePerTime(PartialInputStream input, long start, long end) throws IOException {
+  private void testRandomReadOneBytePerTime(PartialInputStreamImpl input, long start, long end) throws IOException {
     // test read one byte per time
     long index = start;
     while (input.available() > 0) {
@@ -154,7 +154,7 @@ public class PartialInputStreamTest {
     }
   }
 
-  void testRandomReadMultiBytesPerTime(PartialInputStream input, long start, long end) throws IOException {
+  void testRandomReadMultiBytesPerTime(PartialInputStreamImpl input, long start, long end) throws IOException {
     // test read multi bytes per times
     long index = start;
     Random random = new Random();

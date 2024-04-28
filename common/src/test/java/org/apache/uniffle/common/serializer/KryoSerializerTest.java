@@ -41,8 +41,8 @@ public class KryoSerializerTest {
     for (int i = 0; i < LOOP; i++) {
       long off = offsets[i];
       Input input = isFileMode ?
-          new Input(PartialInputStream.newInputStream(new File(tmpDir, "tmp.kryo"), off, Long.MAX_VALUE)) :
-          new Input(PartialInputStream.newInputStream(((ByteArrayOutputStream) outputStream).toByteArray(), off,
+          new Input(PartialInputStreamImpl.newInputStream(new File(tmpDir, "tmp.kryo"), off, Long.MAX_VALUE)) :
+          new Input(PartialInputStreamImpl.newInputStream(((ByteArrayOutputStream) outputStream).toByteArray(), off,
               Long.MAX_VALUE));
       for (int j = i + 1; j < LOOP; j++) {
         SomeClass object = kryo.readObject(input, SomeClass.class);
@@ -84,9 +84,9 @@ public class KryoSerializerTest {
     // 3 Random read
     for (int i = 0; i < LOOP; i++) {
       long off = offsets[i];
-      PartialInputStream inputStream = isFileMode ?
-          PartialInputStream.newInputStream(new File(tmpDir, "tmp.kryo"), off, Long.MAX_VALUE) :
-          PartialInputStream.newInputStream(((ByteArrayOutputStream) outputStream).toByteArray(), off, Long.MAX_VALUE);
+      PartialInputStreamImpl inputStream = isFileMode ?
+          PartialInputStreamImpl.newInputStream(new File(tmpDir, "tmp.kryo"), off, Long.MAX_VALUE) :
+          PartialInputStreamImpl.newInputStream(((ByteArrayOutputStream) outputStream).toByteArray(), off, Long.MAX_VALUE);
       DeserializationStream deserializationStream = instance.deserializeStream(inputStream, keyClass, valueClass);
       for (int j = i + 1; j < LOOP; j++) {
         assertEquals(genData(keyClass, j), deserializationStream.readKey());

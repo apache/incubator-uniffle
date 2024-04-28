@@ -20,7 +20,7 @@ import org.apache.spark.shuffle.SparkCombiner;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.records.RecordsReader;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.junit.jupiter.api.Test;
@@ -80,7 +80,7 @@ public class RMWriteBufferManagerTest {
     buf.readBytes(bytes);
 
     RecordsReader<String, Integer> reader = new RecordsReader<>(rssConf,
-        PartialInputStream.newInputStream(bytes, 0, bytes.length), String.class, Integer.class);
+        PartialInputStreamImpl.newInputStream(bytes, 0, bytes.length), String.class, Integer.class);
     int index = 0;
     while (reader.hasNext()) {
       reader.next();
@@ -149,7 +149,7 @@ public class RMWriteBufferManagerTest {
     buf.readBytes(bytes);
 
     RecordsReader<String, String> reader = new RecordsReader<>(rssConf,
-        PartialInputStream.newInputStream(bytes, 0, bytes.length), String.class, String.class);
+        PartialInputStreamImpl.newInputStream(bytes, 0, bytes.length), String.class, String.class);
     int index = 0;
     while (reader.hasNext()) {
       reader.next();

@@ -9,7 +9,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.Random;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,9 +50,9 @@ public class RecordsReaderWriterTest {
 
     // 3 Read
     // 3.1 read from start
-    PartialInputStream inputStream = isFileMode ?
-        PartialInputStream.newInputStream(tmpFile, 0, tmpFile.length()) :
-        PartialInputStream.newInputStream(((ByteArrayOutputStream) outputStream).toByteArray(), 0,
+    PartialInputStreamImpl inputStream = isFileMode ?
+        PartialInputStreamImpl.newInputStream(tmpFile, 0, tmpFile.length()) :
+        PartialInputStreamImpl.newInputStream(((ByteArrayOutputStream) outputStream).toByteArray(), 0,
             Long.MAX_VALUE);
     RecordsReader reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass);
     int index = 0;
@@ -66,8 +66,8 @@ public class RecordsReaderWriterTest {
     reader.close();
 
     // 3.2 read from end
-    inputStream = isFileMode ? PartialInputStream.newInputStream(tmpFile, tmpFile.length(), tmpFile.length()) :
-        PartialInputStream.newInputStream(((ByteArrayOutputStream) outputStream).toByteArray(),
+    inputStream = isFileMode ? PartialInputStreamImpl.newInputStream(tmpFile, tmpFile.length(), tmpFile.length()) :
+        PartialInputStreamImpl.newInputStream(((ByteArrayOutputStream) outputStream).toByteArray(),
             ((ByteArrayOutputStream) outputStream).size(), Long.MAX_VALUE);
     reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass);
     assertFalse(reader.hasNext());
@@ -86,8 +86,8 @@ public class RecordsReaderWriterTest {
     for (long[] indexAndOffset : indexAndOffsets) {
       index = (int) indexAndOffset[0];
       long offset = indexAndOffset[1];
-      inputStream = isFileMode ? PartialInputStream.newInputStream(tmpFile, offset, tmpFile.length()) :
-          PartialInputStream.newInputStream(((ByteArrayOutputStream) outputStream).toByteArray(), offset,
+      inputStream = isFileMode ? PartialInputStreamImpl.newInputStream(tmpFile, offset, tmpFile.length()) :
+          PartialInputStreamImpl.newInputStream(((ByteArrayOutputStream) outputStream).toByteArray(), offset,
               Long.MAX_VALUE);
       reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass);
       while(reader.hasNext()) {

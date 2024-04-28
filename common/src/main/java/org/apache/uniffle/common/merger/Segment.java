@@ -7,11 +7,18 @@ import java.io.IOException;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.records.RecordsReader;
 import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
 
 public class Segment<K, V> extends AbstractSegment<K, V> {
 
   private RecordsReader<K, V> reader;
   ByteBuf byteBuf = null;
+
+  public Segment(RssConf rssConf, PartialInputStream inputStream, long blockId, Class<K> keyClass,
+                 Class<V> valueClass) {
+    super(blockId);
+    this.reader = new RecordsReader<>(rssConf, inputStream, keyClass, valueClass);
+  }
 
   public Segment(RssConf rssConf, ByteBuf byteBuf, long blockId, Class<K> keyClass, Class<V> valueClass)
       throws IOException {
@@ -19,7 +26,7 @@ public class Segment<K, V> extends AbstractSegment<K, V> {
     this.byteBuf = byteBuf;
     this.byteBuf.retain();
     byte[] buffer = byteBuf.array();
-    this.reader = new RecordsReader<>(rssConf, PartialInputStream.newInputStream(buffer, 0, buffer.length),
+    this.reader = new RecordsReader<>(rssConf, PartialInputStreamImpl.newInputStream(buffer, 0, buffer.length),
         keyClass, valueClass);
   }
 
@@ -28,13 +35,13 @@ public class Segment<K, V> extends AbstractSegment<K, V> {
       throws IOException {
     super(blockId);
     this.reader =
-        new RecordsReader<>(rssConf, PartialInputStream.newInputStream(buffer, 0, buffer.length), keyClass, valueClass);
+        new RecordsReader<>(rssConf, PartialInputStreamImpl.newInputStream(buffer, 0, buffer.length), keyClass, valueClass);
   }
 
   public Segment(RssConf rssConf, File file, long start, long end, long blockId, Class<K> keyClass, Class<V> valueClass)
       throws IOException {
     super(blockId);
-    this.reader = new RecordsReader<K, V>(rssConf, PartialInputStream.newInputStream(file, start, end), keyClass,
+    this.reader = new RecordsReader<K, V>(rssConf, PartialInputStreamImpl.newInputStream(file, start, end), keyClass,
         valueClass);
   }
 
