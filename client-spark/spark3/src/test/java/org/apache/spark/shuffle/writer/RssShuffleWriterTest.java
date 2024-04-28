@@ -50,7 +50,7 @@ import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.TestUtils;
-import org.apache.spark.shuffle.handle.DefaultShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -577,7 +577,7 @@ public class RssShuffleWriterTest {
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
 
     TaskContext contextMock = mock(TaskContext.class);
-    DefaultShuffleHandleInfo mockShuffleHandleInfo = mock(DefaultShuffleHandleInfo.class);
+    SimpleShuffleHandleInfo mockShuffleHandleInfo = mock(SimpleShuffleHandleInfo.class);
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
             "appId",
@@ -723,7 +723,7 @@ public class RssShuffleWriterTest {
     when(mockDependency.partitioner()).thenReturn(mockPartitioner);
     when(mockPartitioner.numPartitions()).thenReturn(1);
     TaskContext contextMock = mock(TaskContext.class);
-    DefaultShuffleHandleInfo mockShuffleHandleInfo = mock(DefaultShuffleHandleInfo.class);
+    SimpleShuffleHandleInfo mockShuffleHandleInfo = mock(SimpleShuffleHandleInfo.class);
 
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
@@ -846,7 +846,7 @@ public class RssShuffleWriterTest {
 
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
     TaskContext contextMock = mock(TaskContext.class);
-    DefaultShuffleHandleInfo mockShuffleHandleInfo = mock(DefaultShuffleHandleInfo.class);
+    SimpleShuffleHandleInfo mockShuffleHandleInfo = mock(SimpleShuffleHandleInfo.class);
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
             "appId",
@@ -957,7 +957,7 @@ public class RssShuffleWriterTest {
     RssShuffleHandle<String, String, String> mockHandle = mock(RssShuffleHandle.class);
     when(mockHandle.getDependency()).thenReturn(mockDependency);
     TaskContext contextMock = mock(TaskContext.class);
-    DefaultShuffleHandleInfo mockShuffleHandleInfo = mock(DefaultShuffleHandleInfo.class);
+    SimpleShuffleHandleInfo mockShuffleHandleInfo = mock(SimpleShuffleHandleInfo.class);
     ShuffleWriteClient mockWriteClient = mock(ShuffleWriteClient.class);
 
     List<ShuffleBlockInfo> shuffleBlockInfoList = createShuffleBlockList(1, 31);

@@ -41,7 +41,7 @@ import org.apache.spark.SparkException;
 import org.apache.spark.TaskContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.executor.ShuffleWriteMetrics;
-import org.apache.spark.shuffle.handle.DefaultShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 import org.apache.spark.shuffle.reader.RssShuffleReader;
@@ -324,7 +324,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               + shuffleId
               + "], partitionNum is 0, "
               + "return the empty RssShuffleHandle directly");
-      Broadcast<DefaultShuffleHandleInfo> hdlInfoBd =
+      Broadcast<SimpleShuffleHandleInfo> hdlInfoBd =
           RssSparkShuffleUtils.broadcastShuffleHdlInfo(
               RssSparkShuffleUtils.getActiveSparkContext(),
               shuffleId,
@@ -388,7 +388,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           new MutableShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
       shuffleIdToShuffleHandleInfo.put(shuffleId, handleInfo);
     }
-    Broadcast<DefaultShuffleHandleInfo> hdlInfoBd =
+    Broadcast<SimpleShuffleHandleInfo> hdlInfoBd =
         RssSparkShuffleUtils.broadcastShuffleHdlInfo(
             RssSparkShuffleUtils.getActiveSparkContext(),
             shuffleId,
@@ -485,7 +485,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);
       } else {
         shuffleHandleInfo =
-            new DefaultShuffleHandleInfo(
+            new SimpleShuffleHandleInfo(
                 shuffleId, rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
       }
       ShuffleWriteMetrics writeMetrics = context.taskMetrics().shuffleWriteMetrics();
@@ -555,7 +555,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);
       } else {
         shuffleHandleInfo =
-            new DefaultShuffleHandleInfo(
+            new SimpleShuffleHandleInfo(
                 shuffleId,
                 rssShuffleHandle.getPartitionToServers(),
                 rssShuffleHandle.getRemoteStorage());

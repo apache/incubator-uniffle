@@ -35,7 +35,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.deploy.SparkHadoopUtil;
-import org.apache.spark.shuffle.handle.DefaultShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
 import org.apache.spark.storage.BlockManagerId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,8 +63,8 @@ public class RssSparkShuffleUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssSparkShuffleUtils.class);
 
-  public static final ClassTag<DefaultShuffleHandleInfo> DEFAULT_SHUFFLE_HANDLER_INFO_CLASS_TAG =
-      scala.reflect.ClassTag$.MODULE$.apply(DefaultShuffleHandleInfo.class);
+  public static final ClassTag<SimpleShuffleHandleInfo> DEFAULT_SHUFFLE_HANDLER_INFO_CLASS_TAG =
+      scala.reflect.ClassTag$.MODULE$.apply(SimpleShuffleHandleInfo.class);
   public static final ClassTag<byte[]> BYTE_ARRAY_CLASS_TAG =
       scala.reflect.ClassTag$.MODULE$.apply(byte[].class);
 
@@ -257,7 +257,7 @@ public class RssSparkShuffleUtils {
   }
 
   /**
-   * create broadcast variable of {@link DefaultShuffleHandleInfo}
+   * create broadcast variable of {@link SimpleShuffleHandleInfo}
    *
    * @param sc expose for easy unit-test
    * @param shuffleId
@@ -265,13 +265,13 @@ public class RssSparkShuffleUtils {
    * @param storageInfo
    * @return Broadcast variable registered for auto cleanup
    */
-  public static Broadcast<DefaultShuffleHandleInfo> broadcastShuffleHdlInfo(
+  public static Broadcast<SimpleShuffleHandleInfo> broadcastShuffleHdlInfo(
       SparkContext sc,
       int shuffleId,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
       RemoteStorageInfo storageInfo) {
-    DefaultShuffleHandleInfo handleInfo =
-        new DefaultShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
+    SimpleShuffleHandleInfo handleInfo =
+        new SimpleShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
     return sc.broadcast(handleInfo, DEFAULT_SHUFFLE_HANDLER_INFO_CLASS_TAG);
   }
 

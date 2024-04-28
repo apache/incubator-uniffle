@@ -32,10 +32,10 @@ import org.apache.uniffle.common.ShuffleServerInfo;
  *
  * <p>It's to be broadcast to executors and referenced by shuffle tasks.
  */
-public class DefaultShuffleHandleInfo extends ShuffleHandleInfoBase implements Serializable {
+public class SimpleShuffleHandleInfo extends ShuffleHandleInfoBase implements Serializable {
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
 
-  public DefaultShuffleHandleInfo(
+  public SimpleShuffleHandleInfo(
       int shuffleId,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
       RemoteStorageInfo storageInfo) {
