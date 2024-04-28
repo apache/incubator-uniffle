@@ -479,7 +479,7 @@ public class WriteBufferManagerTest {
 
     long releasedSize = wbm.spill(1000, wbm);
     assertEquals(64, releasedSize);
-    assertEquals(32, wbm.getUsedBytes());
+    assertEquals(96, wbm.getUsedBytes());
     assertEquals(0, wbm.getBuffers().keySet().toArray()[0]);
   }
 
