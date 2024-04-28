@@ -32,7 +32,7 @@ public class TaskAttemptAssignment {
   private boolean mutable = false;
 
   public TaskAttemptAssignment(long taskAttemptId, ShuffleHandleInfo shuffleHandleInfo) {
-    this.assignment = shuffleHandleInfo.getLatestPartitionServersForWriter();
+    this.assignment = shuffleHandleInfo.getAvailablePartitionServersForWriter();
     if (shuffleHandleInfo instanceof MutableShuffleHandleInfo) {
       this.mutable = true;
     }
@@ -49,6 +49,6 @@ public class TaskAttemptAssignment {
     if (handle == null) {
       throw new RssException("Errors on updating shuffle handle by the empty handleInfo.");
     }
-    this.assignment = handle.getLatestPartitionServersForWriter();
+    this.assignment = handle.getAvailablePartitionServersForWriter();
   }
 }

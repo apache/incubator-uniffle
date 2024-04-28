@@ -44,14 +44,14 @@ public class SimpleShuffleHandleInfo extends ShuffleHandleInfoBase implements Se
   }
 
   @Override
-  public Set<ShuffleServerInfo> listServers() {
+  public Set<ShuffleServerInfo> getServers() {
     return partitionToServers.values().stream()
         .flatMap(x -> x.stream())
         .collect(Collectors.toSet());
   }
 
   @Override
-  public Map<Integer, List<ShuffleServerInfo>> getLatestPartitionServersForWriter() {
+  public Map<Integer, List<ShuffleServerInfo>> getAvailablePartitionServersForWriter() {
     return partitionToServers;
   }
 

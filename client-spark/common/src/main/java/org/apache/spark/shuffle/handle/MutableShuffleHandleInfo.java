@@ -131,14 +131,14 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
   }
 
   @Override
-  public Set<ShuffleServerInfo> listServers() {
+  public Set<ShuffleServerInfo> getServers() {
     return partitionReplicaAssignedServers.values().stream()
         .flatMap(x -> x.values().stream().flatMap(k -> k.stream()))
         .collect(Collectors.toSet());
   }
 
   @Override
-  public Map<Integer, List<ShuffleServerInfo>> getLatestPartitionServersForWriter() {
+  public Map<Integer, List<ShuffleServerInfo>> getAvailablePartitionServersForWriter() {
     Map<Integer, List<ShuffleServerInfo>> assignment = new HashMap<>();
     for (Map.Entry<Integer, Map<Integer, List<ShuffleServerInfo>>> entry :
         partitionReplicaAssignedServers.entrySet()) {

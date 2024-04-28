@@ -162,7 +162,7 @@ public class RssShuffleWriterTest {
             0,
             bufferOptions,
             kryoSerializer,
-            shuffleHandle.getLatestPartitionServersForWriter(),
+            shuffleHandle.getAvailablePartitionServersForWriter(),
             mockTaskMemoryManager,
             shuffleWriteMetrics,
             RssSparkConfig.toRssConf(conf));

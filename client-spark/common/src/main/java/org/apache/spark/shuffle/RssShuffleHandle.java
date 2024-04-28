@@ -68,6 +68,6 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
   }
 
   public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
-    return handlerInfoBd.value().getLatestPartitionServersForWriter();
+    return handlerInfoBd.value().getAvailablePartitionServersForWriter();
   }
 }

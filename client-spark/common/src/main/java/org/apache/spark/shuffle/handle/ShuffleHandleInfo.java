@@ -26,18 +26,18 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 public interface ShuffleHandleInfo {
-  /** List all the assigned servers including the excluded servers. */
-  Set<ShuffleServerInfo> listServers();
+  /** Get all the assigned servers including the excluded servers. */
+  Set<ShuffleServerInfo> getServers();
 
   /**
-   * Get the latest assignment for writer to write partitioned blocks to corresponding
-   * shuffleServers
+   * Get the assignment of available servers for writer to write partitioned blocks to corresponding
+   * shuffleServers. Implementations might return dynamic, up-to-date information here.
    */
-  Map<Integer, List<ShuffleServerInfo>> getLatestPartitionServersForWriter();
+  Map<Integer, List<ShuffleServerInfo>> getAvailablePartitionServersForWriter();
 
   /**
-   * Get the all assigned servers group by partitionId for reader to get the data from these
-   * historical and latest servers
+   * Get all servers ever assigned to writers group by partitionId for reader to get the data
+   * written to these servers
    */
   Map<Integer, List<ShuffleServerInfo>> getAllPartitionServersForReader();
 
