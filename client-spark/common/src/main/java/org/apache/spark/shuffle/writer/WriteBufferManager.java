@@ -337,7 +337,7 @@ public class WriteBufferManager extends MemoryConsumer {
       copyTime += wb.getCopyTime();
       buffers.remove(partitionId);
       // got enough buffer to spill
-      if (memoryUsed >= targetSpillSize) {
+      if (memoryUsed >= spillSize) {
         break;
       }
     }
