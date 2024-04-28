@@ -1231,6 +1231,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           partitionToFailureServers.keySet(), partitionReassignMaxServerNum);
 
       Map<ShuffleServerInfo, List<PartitionRange>> newServerToPartitions = new HashMap<>();
+      // receivingFailureServer -> partitionId -> replacementServerIds. For logging
+      Map<String, Map<Integer, Set<String>>> reassignResult = new HashMap<>();
 
       for (Map.Entry<Integer, List<ReceivingFailureServer>> entry :
           partitionToFailureServers.entrySet()) {
@@ -1254,6 +1256,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
           Set<ShuffleServerInfo> updatedReassignServers =
               handleInfo.updateAssignment(partitionId, serverId, replacements);
+
+          reassignResult.computeIfAbsent(serverId, x -> new HashMap<>())
+              .computeIfAbsent(partitionId, x -> new HashSet<>())
+              .addAll(updatedReassignServers.stream().map(x -> x.getId()).collect(Collectors.toSet()));
+
           if (serverHasReplaced) {
             for (ShuffleServerInfo serverInfo : updatedReassignServers) {
               newServerToPartitions
@@ -1269,6 +1276,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             newServerToPartitions);
         registerShuffleServers(id.get(), shuffleId, newServerToPartitions, getRemoteStorageInfo());
       }
+
+      if (!reassignResult.isEmpty()) {
+        LOG.info("Accepted reassignOnBlockSendFailure request. Reassign result: {}", reassignResult);
+      }
+
       return handleInfo;
     }
   }
