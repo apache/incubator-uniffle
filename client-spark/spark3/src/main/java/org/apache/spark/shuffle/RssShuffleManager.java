@@ -1222,6 +1222,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   @Override
   public MutableShuffleHandleInfo reassignOnBlockSendFailure(
       int shuffleId, Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
+    long startTime = System.currentTimeMillis();
     MutableShuffleHandleInfo handleInfo =
         (MutableShuffleHandleInfo) shuffleHandleInfoManager.get(shuffleId);
     synchronized (handleInfo) {
@@ -1279,10 +1280,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         registerShuffleServers(id.get(), shuffleId, newServerToPartitions, getRemoteStorageInfo());
       }
 
-      if (!reassignResult.isEmpty()) {
-        LOG.info(
-            "Accepted reassignOnBlockSendFailure request. Reassign result: {}", reassignResult);
-      }
+      LOG.info(
+          "Finished reassignOnBlockSendFailure request and cost {}(ms). Reassign result: {}",
+          System.currentTimeMillis() - startTime,
+          reassignResult);
 
       return handleInfo;
     }
@@ -1312,7 +1313,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
   /** Request the new shuffle-servers to replace faulty server. */
   private Set<ShuffleServerInfo> reassignServerForTask(
-      int shuffleId, Set<Integer> partitionIds, Set<String> faultyServers, int requiredServerNum) {
+      int shuffleId,
+      Set<Integer> partitionIds,
+      Set<String> excludedServers,
+      int requiredServerNum) {
     AtomicReference<Set<ShuffleServerInfo>> replacementsRef =
         new AtomicReference<>(new HashSet<>());
     requestShuffleAssignment(
@@ -1321,7 +1325,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         1,
         requiredServerNum,
         1,
-        faultyServers,
+        excludedServers,
         shuffleAssignmentsInfo -> {
           if (shuffleAssignmentsInfo == null) {
             return null;
