@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
-import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.buffer.FileSegmentManagedBuffer;
 import org.apache.uniffle.common.serializer.PartialInputStream;
 import org.apache.uniffle.common.util.JavaUtils;
@@ -35,15 +34,21 @@ public class BlockFlushFileReader {
   private FlushFileReader flushFileReader;
   private volatile Throwable readThrowable = null;
   // Even though there are many BlockInputStream, these BlockInputStream must
-  // be executed in the same thread. When BlockInputStream have been read out,
-  // we can notify flushFileReader by lock. Then flushFileReader load the buffer,
-  // and block BlockInputStream by lock until flushFileReader load done.
+  // be executed in the same thread, we called the Merge Thread. When the buffer
+  // of BlockInputStream have been read out, we can notify flushFileReader by
+  // unlock. Then flushFileReader will load the buffer, and Merge will read the
+  // buffer of BlockInputStream until flushFileReader load done and unlock.
   private final ReentrantLock lock = new ReentrantLock(true);
 
-  public BlockFlushFileReader(String dataFile, String indexFile) throws IOException {
+  private final int ringBufferSize;
+  private final int mask;
+
+  public BlockFlushFileReader(String dataFile, String indexFile, int ringBufferSize) throws IOException {
     // Make sure flush file will not be updated
     this.dataFile = dataFile;
     this.indexFile = indexFile;
+    this.ringBufferSize = ringBufferSize;
+    this.mask = ringBufferSize - 1;
     loadShuffleIndex();
     this.dataInput = new FileInputStream(dataFile);
     this.dataFileChannel = (FileChannelImpl) dataInput.getChannel();
@@ -111,15 +116,15 @@ public class BlockFlushFileReader {
               continue;
             }
             available ++;
-            if (inputStream.getCacheBuffer().readable()) {
+            if (inputStream.isBufferFull()) {
               continue;
             }
             process ++;
-            long off = segment.getOffset() + inputStream.getLoadPos();
+            long off = segment.getOffset() + inputStream.getOffsetInThisBlock();
             if (dataFileChannel.position() != off) {
               dataFileChannel.position(off);
             }
-            inputStream.loadCacheBuffer();
+            inputStream.writeBuffer();
           }
         } catch (Throwable throwable) {
           readThrowable = throwable;
@@ -139,39 +144,101 @@ public class BlockFlushFileReader {
     private int cap = BUFFER_SIZE;
     private int pos = cap;
 
-
     public int get() {
       return this.bytes[pos++] & 0xFF;
+    }
+
+    public int get(byte[] bs, int off, int len) {
+      int r = Math.min(cap - pos, len);
+      System.arraycopy(bytes, pos, bs, off, r);
+      pos += r;
+      return r;
     }
 
     public boolean readable() {
       return pos < cap;
     }
 
-    public void writeBuffer(FileChannelImpl fc, int length) throws IOException {
-      fc.read(ByteBuffer.wrap(this.bytes, 0, length));
+    public void writeBuffer(int length) throws IOException {
+      dataFileChannel.read(ByteBuffer.wrap(this.bytes, 0, length));
       this.pos = 0;
       this.cap = length;
+    }
+  }
+
+  class RingBuffer {
+
+    Buffer[] buffers;
+    // The max of int is 2147483647, the maximum bocksize supported by RingBuffer is 7.999 TB,
+    // the block can't be that big. so readIndex and writeIndex cannot overflow, there's no
+    // modulo operator for readIndex and writeIndex.
+    int readIndex = 0;
+    int writeIndex = 0;
+
+    RingBuffer() {
+      this.buffers = new Buffer[ringBufferSize];
+      for (int i = 0; i < ringBufferSize; i++) {
+        this.buffers[i] = new Buffer();
+      }
+    }
+
+    boolean full() {
+      return (writeIndex - readIndex) == ringBufferSize;
+    }
+
+    boolean empty() {
+      return writeIndex == readIndex;
+    }
+
+    int write(int available) throws IOException {
+      int left = available;
+      while (!full() && left > 0) {
+        int size = Math.min(available, BUFFER_SIZE);
+        this.buffers[writeIndex & mask].writeBuffer(size);
+        left -= size;
+        writeIndex++;
+      }
+      return available - left;
+    }
+
+    int read() {
+      int ret = this.buffers[readIndex & mask].get();
+      if (!this.buffers[readIndex & mask].readable()) {
+        readIndex++;
+      }
+      return ret;
+    }
+
+    int read(byte[] bs, int off, int len) {
+      int total = 0;
+      int end = off + len;
+      while (off < end && !this.empty()) {
+        Buffer buffer = this.buffers[readIndex & mask];
+        int r = buffer.get(bs, off, len);
+        if (!this.buffers[readIndex & mask].readable()) {
+          readIndex++;
+        }
+        off += r;
+        len -= r;
+        total += r;
+      }
+      return total;
     }
   }
 
   public class BlockInputStream extends PartialInputStream {
 
     private long blockId;
-    private volatile Buffer readBuffer;
-    private volatile Buffer cacheBuffer;
+    private RingBuffer ringBuffer;
     private boolean eof = false;
     private final int length;
-    // pos is read position
     private int pos = 0;
-    // loadPos is the position which have been loaded.
-    private int loadPos = 0;
+    private int offsetInThisBlock = 0;
 
     public BlockInputStream(long blockId, int length) {
       this.blockId = blockId;
       this.length = length;
-      this.readBuffer = new Buffer();
-      this.cacheBuffer = new Buffer();
+      this.ringBuffer = new RingBuffer();
     }
 
     @Override
@@ -179,16 +246,23 @@ public class BlockFlushFileReader {
       return length - pos;
     }
 
+    @Override
     public long getStart() {
       return 0;
     }
 
+    @Override
     public long getEnd() {
       return length;
     }
 
-    public long getLoadPos() {
-      return this.loadPos;
+    @Override
+    public long getPos() {
+      return this.pos;
+    }
+
+    public long getOffsetInThisBlock() {
+      return this.offsetInThisBlock;
     }
 
     @Override
@@ -203,49 +277,63 @@ public class BlockFlushFileReader {
       }
     }
 
-    public void loadCacheBuffer() throws IOException {
-      int size = Math.min(available(), BUFFER_SIZE);
-      this.loadPos += size;
-      cacheBuffer.writeBuffer(dataFileChannel, size);
+    public boolean isBufferFull() {
+      return ringBuffer.full();
     }
 
-    public void flipBuffer() {
-      Buffer tmp = this.readBuffer;
-      this.readBuffer = this.cacheBuffer;
-      this.cacheBuffer = tmp;
+    public void writeBuffer() throws IOException {
+      int size = this.ringBuffer.write(length - offsetInThisBlock);
+      this.offsetInThisBlock += size;
     }
 
-    public Buffer getCacheBuffer() {
-      return cacheBuffer;
+    public int read(byte[] bs, int off, int len) throws IOException {
+      if (readThrowable != null) {
+        throw new IOException("Read flush file failed!", readThrowable);
+      }
+      if (bs == null) {
+        throw new NullPointerException();
+      } else if (off < 0 || len < 0 || len > bs.length - off) {
+        throw new IndexOutOfBoundsException();
+      } else if (len == 0) {
+        return 0;
+      }
+      if (eof) {
+        return -1;
+      }
+      while (ringBuffer.empty()) {
+        if (lock.isHeldByCurrentThread()) {
+          lock.unlock();
+        }
+        lock.lock();
+      }
+      int c = this.ringBuffer.read(bs, off, len);
+      pos += c;
+      if (pos >= length) {
+        eof = true;
+      }
+      return c;
     }
 
     @Override
     public int read() throws IOException {
-      try {
-        if (readThrowable != null) {
-          throw new IOException("Read flush file failed!", readThrowable);
-        }
-        if (eof) {
-          return -1;
-        }
-        while (!this.readBuffer.readable() && !this.cacheBuffer.readable()) {
-          if (lock.isHeldByCurrentThread()) {
-            lock.unlock();
-          }
-          lock.lock();
-        }
-        if (!this.readBuffer.readable()) {
-          flipBuffer();
-        }
-        int c = this.readBuffer.get();
-        pos++;
-        if (pos >= length) {
-          eof = true;
-        }
-        return c;
-      } catch (Throwable e) {
-        throw new IOException(e);
+      if (readThrowable != null) {
+        throw new IOException("Read flush file failed!", readThrowable);
       }
+      if (eof) {
+        return -1;
+      }
+      while (ringBuffer.empty()) {
+        if (lock.isHeldByCurrentThread()) {
+          lock.unlock();
+        }
+        lock.lock();
+      }
+      int c = this.ringBuffer.read();
+      pos++;
+      if (pos >= length) {
+        eof = true;
+      }
+      return c;
     }
   }
 }

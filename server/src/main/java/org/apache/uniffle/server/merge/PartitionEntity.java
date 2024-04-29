@@ -4,9 +4,9 @@ import static org.apache.uniffle.common.merger.MergeState.DONE;
 import static org.apache.uniffle.common.merger.MergeState.INITED;
 import static org.apache.uniffle.common.merger.MergeState.INTERNAL_ERROR;
 import static org.apache.uniffle.common.merger.MergeState.MERGING;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_BLOCK_RING_BUFFER_SIZE;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_CACHE_MERGED_BLOCK_INIT_SLEEP_MS;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_CACHE_MERGED_BLOCK_MAX_SLEEP_MS;
-import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_GET_SEGMENT_V2;
 import static org.apache.uniffle.server.merge.ShuffleMergeManager.MERGE_APP_SUFFIX;
 
 import io.netty.buffer.ByteBuf;
@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -66,9 +65,12 @@ public class PartitionEntity<K, V> {
   private MergedResult result;
   private ShuffleMeta shuffleMeta = new ShuffleMeta();
 
+  // These variable should be moved to ShuffleMergeManager, it is
+  // not necessary to use partition granularity
   private final long initSleepTime;
   private final long maxSleepTime;
   private long sleepTime;
+  private int ringBufferSize;
 
   public PartitionEntity(ShuffleEntity shuffle, int partitionId) {
     this.shuffle = shuffle;
@@ -76,6 +78,12 @@ public class PartitionEntity<K, V> {
     this.result = new MergedResult(shuffle.serverConf, this::cachedMergedBlock, shuffle.mergedBlockSize);
     this.initSleepTime = shuffle.serverConf.get(SERVER_MERGE_CACHE_MERGED_BLOCK_INIT_SLEEP_MS);
     this.maxSleepTime = shuffle.serverConf.get(SERVER_MERGE_CACHE_MERGED_BLOCK_MAX_SLEEP_MS);
+    int tmpRingBufferSize = shuffle.serverConf.get(SERVER_MERGE_BLOCK_RING_BUFFER_SIZE);
+    this.ringBufferSize = Integer.highestOneBit((Math.min(32, Math.max(2, tmpRingBufferSize)) - 1) << 1);
+    if (tmpRingBufferSize != this.ringBufferSize) {
+      LOG.info("The ring buffer size will transient from {} to {}", tmpRingBufferSize,
+          this.ringBufferSize);
+    }
   }
 
   // reportUniqueBlockIds is used to trigger to merger
@@ -191,7 +199,8 @@ public class PartitionEntity<K, V> {
     try {
       LocalFileServerReadHandler handler = getLocalFileServerReadHandler(rssConf, shuffle.appId);
       handler.getDataFileName();
-      BlockFlushFileReader reader = new BlockFlushFileReader(handler.getDataFileName(), handler.getIndexFileName());
+      BlockFlushFileReader reader = new BlockFlushFileReader(handler.getDataFileName(), handler.getIndexFileName(),
+          ringBufferSize);
       for (Long blockId : blocksFlushed) {
         BlockFlushFileReader.BlockInputStream inputStream = reader.registerBlockInputStream(blockId);
         if (inputStream == null) {

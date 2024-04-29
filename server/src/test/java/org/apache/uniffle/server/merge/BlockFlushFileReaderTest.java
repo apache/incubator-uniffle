@@ -26,6 +26,7 @@ import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.handler.impl.LocalFileServerReadHandler;
 import org.apache.uniffle.storage.handler.impl.LocalFileWriteHandler;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -36,15 +37,19 @@ public class BlockFlushFileReaderTest {
 
   @ParameterizedTest
   @ValueSource(strings = {
-      "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable",
-      "java.lang.String,java.lang.Integer",
-      "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer",
+      "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,2",
+      "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,4",
+      "java.lang.String,java.lang.Integer,2",
+      "java.lang.String,java.lang.Integer,8",
+      "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer,2",
+      "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer,32",
   })
   public void writeTestWithMerge(String classes, @TempDir File tmpDir) throws Exception {
     String[] classArray = classes.split(",");
     Class keyClass = SerializerUtils.getClassByName(classArray[0]);
     Class valueClass = SerializerUtils.getClassByName(classArray[1]);
     Comparator comparator = SerializerUtils.getComparator(keyClass);
+    int ringBufferSize = Integer.parseInt(classArray[2]);
 
     File dataOutput = new File(tmpDir, "dataOutput");
     File dataDir = new File(tmpDir, "data");
@@ -64,7 +69,7 @@ public class BlockFlushFileReaderTest {
     String dataFileName = readHandler.getDataFileName();
     String indexFileName = readHandler.getIndexFileName();
 
-    BlockFlushFileReader blockFlushFileReader = new BlockFlushFileReader(dataFileName, indexFileName);
+    BlockFlushFileReader blockFlushFileReader = new BlockFlushFileReader(dataFileName, indexFileName, ringBufferSize);
 
     List<AbstractSegment> segments = new ArrayList<>();
     for (Long blockId : expectedBlockIds) {
@@ -105,6 +110,34 @@ public class BlockFlushFileReaderTest {
     long blockId = layout.getBlockId(ATOMIC_INT.incrementAndGet(), 0, 100);
     blocks.add(new ShufflePartitionedBlock(bytes.length, bytes.length, 0, blockId, 100, bytes));
     return blocks;
+  }
+
+  @Test
+  public void test2() {
+    int size = 1;
+    assertEquals(2, Integer.highestOneBit((Math.min(32, Math.max(2, size)) - 1) << 1));
+    size = 2;
+    assertEquals(2, Integer.highestOneBit((Math.min(32, Math.max(2, size)) - 1) << 1));
+    size = 3;
+    assertEquals(4, Integer.highestOneBit((Math.min(32, Math.max(2, size)) - 1) << 1));
+    size = 4;
+    assertEquals(4, Integer.highestOneBit((Math.min(32, Math.max(2, size)) - 1) << 1));
+    size = 5;
+    assertEquals(8, Integer.highestOneBit((Math.min(32, Math.max(2, size)) - 1) << 1));
+    size = 8;
+    assertEquals(8, Integer.highestOneBit((Math.min(32, Math.max(2, size)) - 1) << 1));
+    size = 9;
+    assertEquals(16, Integer.highestOneBit((Math.min(32, Math.max(2, size)) - 1) << 1));
+    size = 15;
+    assertEquals(16, Integer.highestOneBit((Math.min(32, Math.max(2, size)) - 1) << 1));
+    size = 16;
+    assertEquals(16, Integer.highestOneBit((Math.min(32, Math.max(2, size)) - 1) << 1));
+    size = 20;
+    assertEquals(32, Integer.highestOneBit((Math.min(32, Math.max(2, size)) - 1) << 1));
+    size = 32;
+    assertEquals(32, Integer.highestOneBit((Math.min(32, Math.max(2, size)) - 1) << 1));
+    size = 100;
+    assertEquals(32, Integer.highestOneBit((Math.min(32, Math.max(2, size)) - 1) << 1));
   }
 
 //  @Test

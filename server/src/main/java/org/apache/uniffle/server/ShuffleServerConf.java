@@ -639,6 +639,12 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(true)
           .withDescription("get segment v2");
 
+  public static final ConfigOption<Integer> SERVER_MERGE_BLOCK_RING_BUFFER_SIZE =
+      ConfigOptions.key("rss.server.merge.block.ring.buffer.size")
+          .intType()
+          .defaultValue(2)
+          .withDescription("The ring buffer size for read block when merge");
+
   public ShuffleServerConf() {}
 
   public ShuffleServerConf(String fileName) {

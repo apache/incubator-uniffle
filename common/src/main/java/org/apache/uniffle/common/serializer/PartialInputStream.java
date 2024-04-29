@@ -16,5 +16,5 @@ public abstract class PartialInputStream extends InputStream {
 
   public abstract long getEnd();
 
-  public abstract long getLoadPos();
+  public abstract long getPos();
 }

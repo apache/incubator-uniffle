@@ -84,7 +84,7 @@ public class PartialInputStreamImpl extends PartialInputStream {
     return end;
   }
 
-  public long getLoadPos() {
+  public long getPos() {
     return this.pos;
   }
 
