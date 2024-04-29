@@ -157,7 +157,7 @@ public class SortWriteBufferTest {
     assertEquals(bigWritableValue, valueRead);
   }
 
-  @org.junit.Test
+  @Test
   public void testSortBufferIterator() throws IOException {
     SerializationFactory serializationFactory =
         new SerializationFactory(new JobConf(new Configuration()));
