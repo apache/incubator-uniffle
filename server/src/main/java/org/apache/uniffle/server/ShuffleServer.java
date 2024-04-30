@@ -316,7 +316,7 @@ public class ShuffleServer {
     LOG.info("Register metrics");
     CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
     String rawTags = getEncodedTags();
-    ShuffleServerMetrics.register(shuffleServerCollectorRegistry, rawTags);
+    ShuffleServerMetrics.register(shuffleServerCollectorRegistry, rawTags, shuffleServerConf);
     grpcMetrics = new ShuffleServerGrpcMetrics(this.shuffleServerConf, rawTags);
     grpcMetrics.register(new CollectorRegistry(true));
     nettyMetrics = new ShuffleServerNettyMetrics(shuffleServerConf, rawTags);

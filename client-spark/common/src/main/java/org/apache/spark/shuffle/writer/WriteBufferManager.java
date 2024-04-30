@@ -179,7 +179,14 @@ public class WriteBufferManager extends MemoryConsumer {
 
     // check buffer size > spill threshold
     if (usedBytes.get() - inSendListBytes.get() > spillSize) {
+      LOG.info(
+          "ShuffleBufferManager spill for buffer size exceeding spill threshold,"
+              + "usedBytes[{}],inSendListBytes[{}],spillSize[{}]",
+          usedBytes.get(),
+          inSendListBytes.get(),
+          spillSize);
       List<ShuffleBlockInfo> multiSendingBlocks = clear();
+
       multiSendingBlocks.addAll(singleOrEmptySendingBlocks);
       writeTime += System.currentTimeMillis() - start;
       return multiSendingBlocks;
@@ -316,6 +323,8 @@ public class WriteBufferManager extends MemoryConsumer {
             + dataSize
             + "], memoryUsed["
             + memoryUsed
+            + "], number of blocks["
+            + result.size()
             + "]");
     return result;
   }

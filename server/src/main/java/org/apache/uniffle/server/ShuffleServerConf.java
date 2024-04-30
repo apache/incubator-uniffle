@@ -572,6 +572,20 @@ public class ShuffleServerConf extends RssBaseConf {
           .withDescription(
               "keep alive time of thread pool that used for calc summary metric, in SECONDS.");
 
+  public static final ConfigOption<Boolean> APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_ENABLED =
+      ConfigOptions.key("rss.server.metrics.blockSizeStatisticsEnabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("whether or not shuffle block size metric is enabled");
+
+  public static final ConfigOption<String> APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_BUCKETS =
+      ConfigOptions.key("rss.server.metrics.blockSizeStatistics.buckets")
+          .stringType()
+          .defaultValue("32kb,64kb,128kb,256kb,512kb,1mb,2mb,4mb,8mb,16mb")
+          .withDescription(
+              "A comma-separated block size list, where each value"
+                  + " can be suffixed with a memory size unit, such as kb or k, mb or m, etc.");
+
   public ShuffleServerConf() {}
 
   public ShuffleServerConf(String fileName) {
