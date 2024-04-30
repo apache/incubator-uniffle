@@ -341,22 +341,51 @@ public class SortWriteBuffer<K, V> extends OutputStream {
       this.iterator = sortWriteBuffer.records.iterator();
     }
 
+    private byte[] fetchDataFromBuffers(int index, int offset, int length) {
+      // Adjust start index and offset for the start of the value
+      while (offset >= sortWriteBuffer.buffers.get(index).getSize()) {
+        offset -= sortWriteBuffer.buffers.get(index).getSize();
+        index++;
+      }
+
+      byte[] data = new byte[length]; // Create a new array to store the complete data
+      int copyDestPos = 0;
+
+      while (length > 0) {
+        WrappedBuffer currentBuffer = sortWriteBuffer.buffers.get(index);
+        byte[] currentBufferData = currentBuffer.getBuffer();
+        int currentBufferCapacity = currentBuffer.getSize();
+        int copyLength = Math.min(currentBufferCapacity - offset, length);
+
+        // Copy data from the current buffer to the data array
+        System.arraycopy(currentBufferData, offset, data, copyDestPos, copyLength);
+        length -= copyLength;
+        copyDestPos += copyLength;
+
+        // Move to the next buffer
+        index++;
+        offset = 0; // Start position in the new buffer is 0
+      }
+      return data;
+    }
+
     @Override
     public DataInputBuffer getKey() {
-      SortWriteBuffer.WrappedBuffer keyWrappedBuffer =
-          sortWriteBuffer.buffers.get(currentRecord.getKeyIndex());
-      byte[] rawData = keyWrappedBuffer.getBuffer();
-      keyBuffer.reset(rawData, currentRecord.getKeyOffSet(), currentRecord.getKeyLength());
+      int keyIndex = currentRecord.getKeyIndex();
+      int keyOffset = currentRecord.getKeyOffSet();
+      int keyLength = currentRecord.getKeyLength();
+      byte[] keyData = fetchDataFromBuffers(keyIndex, keyOffset, keyLength);
+      keyBuffer.reset(keyData, 0, keyLength);
       return keyBuffer;
     }
 
     @Override
     public DataInputBuffer getValue() {
-      SortWriteBuffer.WrappedBuffer valueWrappedBuffer =
-          sortWriteBuffer.buffers.get(currentRecord.getKeyIndex());
-      byte[] rawData = valueWrappedBuffer.getBuffer();
+      int keyIndex = currentRecord.getKeyIndex();
       int valueOffset = currentRecord.getKeyOffSet() + currentRecord.getKeyLength();
-      valueBuffer.reset(rawData, valueOffset, currentRecord.getValueLength());
+      int valueLength = currentRecord.getValueLength();
+      byte[] valueData = fetchDataFromBuffers(keyIndex, valueOffset, valueLength);
+      valueBuffer.reset(valueData, 0, valueLength);
       return valueBuffer;
     }
 
