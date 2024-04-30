@@ -49,6 +49,7 @@ public class RegisterHeartBeat {
   private final ScheduledExecutorService service =
       ThreadUtils.getDaemonSingleThreadScheduledExecutor("startHeartBeat");
   private final ExecutorService heartBeatExecutorService;
+  private volatile boolean shutdown = false;
 
   public RegisterHeartBeat(ShuffleServer shuffleServer) {
     ShuffleServerConf conf = shuffleServer.getShuffleServerConf();
@@ -87,7 +88,9 @@ public class RegisterHeartBeat {
                 shuffleServer.getStorageManager().getStorageInfo(),
                 shuffleServer.getNettyPort());
           } catch (Exception e) {
-            LOG.warn("Error happened when send heart beat to coordinator");
+            if (!shutdown) {
+              LOG.warn("Error happened when send heart beat to coordinator");
+            }
           }
         };
     service.scheduleAtFixedRate(
@@ -137,7 +140,9 @@ public class RegisterHeartBeat {
               sendSuccessfully.set(true);
             }
           } catch (Exception e) {
-            LOG.error(e.getMessage());
+            if (!shutdown) {
+              LOG.error(e.getMessage());
+            }
             return null;
           }
           return null;
@@ -149,5 +154,6 @@ public class RegisterHeartBeat {
   public void shutdown() {
     heartBeatExecutorService.shutdownNow();
     service.shutdownNow();
+    shutdown = true;
   }
 }
