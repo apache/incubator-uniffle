@@ -38,6 +38,12 @@ public class TaskAttemptAssignment {
     }
   }
 
+  /**
+   * Retrieving the partition's current available shuffleServers.
+   *
+   * @param partitionId
+   * @return
+   */
   public List<ShuffleServerInfo> retrieve(int partitionId) {
     return assignment.get(partitionId);
   }
