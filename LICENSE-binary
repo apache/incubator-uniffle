@@ -248,6 +248,8 @@ com.google.api.grpc:proto-google-common-protos
 org.javassist:javassist
 com.google.code.findbugs:jsr305
 jakarta.validation:jakarta.validation-api
+org.yaml:snakeyaml
+org.eclipse.jetty:jetty-proxy
 
 -----------------------------------------------------------------------------------
 This product bundles various third-party components under other open source licenses.
