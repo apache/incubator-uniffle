@@ -52,6 +52,7 @@ import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.shuffle.BlockIdManager;
 
 import static org.apache.uniffle.common.config.RssClientConf.HADOOP_CONFIG_KEY_PREFIX;
 import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED;
@@ -61,6 +62,28 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   private AtomicBoolean isInitialized = new AtomicBoolean(false);
   private Method unregisterAllMapOutputMethod;
   private Method registerShuffleMethod;
+  private volatile BlockIdManager blockIdManager;
+  private Object blockIdManagerLock = new Object();
+
+  public BlockIdManager getBlockIdManager() {
+    if (blockIdManager == null) {
+      synchronized (blockIdManagerLock) {
+        if (blockIdManager == null) {
+          blockIdManager = new BlockIdManager();
+          LOG.info("BlockId manager has been initialized.");
+        }
+      }
+    }
+    return blockIdManager;
+  }
+
+  @Override
+  public boolean unregisterShuffle(int shuffleId) {
+    if (blockIdManager != null) {
+      blockIdManager.remove(shuffleId);
+    }
+    return true;
+  }
 
   /** See static overload of this method. */
   public abstract void configureBlockIdLayout(SparkConf sparkConf, RssConf rssConf);

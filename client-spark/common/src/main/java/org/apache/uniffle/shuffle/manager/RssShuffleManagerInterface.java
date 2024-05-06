@@ -25,6 +25,7 @@ import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 
 import org.apache.uniffle.common.ReceivingFailureServer;
+import org.apache.uniffle.shuffle.BlockIdManager;
 
 /**
  * This is a proxy interface that mainly delegates the un-registration of shuffles to the
@@ -82,4 +83,6 @@ public interface RssShuffleManagerInterface {
 
   MutableShuffleHandleInfo reassignOnBlockSendFailure(
       int shuffleId, Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers);
+
+  BlockIdManager getBlockIdManager();
 }

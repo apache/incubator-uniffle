@@ -29,14 +29,18 @@ import java.util.stream.Collectors;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
+import com.google.protobuf.UnsafeByteOperations;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ReceivingFailureServer;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleManagerGrpc.ShuffleManagerImplBase;
+import org.apache.uniffle.shuffle.BlockIdManager;
 
 public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleManagerGrpcService.class);
@@ -436,5 +440,123 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
             }
           });
     }
+  }
+
+  @Override
+  public void getShuffleResult(
+      RssProtos.GetShuffleResultRequest request,
+      StreamObserver<RssProtos.GetShuffleResultResponse> responseObserver) {
+    String appId = request.getAppId();
+    if (!appId.equals(shuffleManager.getAppId())) {
+      RssProtos.GetShuffleResultResponse reply =
+          RssProtos.GetShuffleResultResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.ACCESS_DENIED)
+              .setRetMsg("Illegal appId: " + appId)
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+      return;
+    }
+
+    int shuffleId = request.getShuffleId();
+    int partitionId = request.getPartitionId();
+
+    BlockIdManager blockIdManager = shuffleManager.getBlockIdManager();
+    Roaring64NavigableMap blockIdBitmap = blockIdManager.get(shuffleId, partitionId);
+    RssProtos.GetShuffleResultResponse reply;
+    try {
+      byte[] serializeBitmap = RssUtils.serializeBitMap(blockIdBitmap);
+      reply =
+          RssProtos.GetShuffleResultResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.SUCCESS)
+              .setSerializedBitmap(UnsafeByteOperations.unsafeWrap(serializeBitmap))
+              .build();
+    } catch (Exception exception) {
+      LOG.error("Errors on getting the blockId bitmap.", exception);
+      reply =
+          RssProtos.GetShuffleResultResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.INTERNAL_ERROR)
+              .build();
+    }
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void getShuffleResultForMultiPart(
+      RssProtos.GetShuffleResultForMultiPartRequest request,
+      StreamObserver<RssProtos.GetShuffleResultForMultiPartResponse> responseObserver) {
+    String appId = request.getAppId();
+    if (!appId.equals(shuffleManager.getAppId())) {
+      RssProtos.GetShuffleResultForMultiPartResponse reply =
+          RssProtos.GetShuffleResultForMultiPartResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.ACCESS_DENIED)
+              .setRetMsg("Illegal appId: " + appId)
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+      return;
+    }
+
+    BlockIdManager blockIdManager = shuffleManager.getBlockIdManager();
+    int shuffleId = request.getShuffleId();
+    List<Integer> partitionIds = request.getPartitionsList();
+
+    Roaring64NavigableMap blockIdBitmapCollection = Roaring64NavigableMap.bitmapOf();
+    for (int partitionId : partitionIds) {
+      Roaring64NavigableMap blockIds = blockIdManager.get(shuffleId, partitionId);
+      blockIds.forEach(x -> blockIdBitmapCollection.add(x));
+    }
+
+    RssProtos.GetShuffleResultForMultiPartResponse reply;
+    try {
+      byte[] serializeBitmap = RssUtils.serializeBitMap(blockIdBitmapCollection);
+      reply =
+          RssProtos.GetShuffleResultForMultiPartResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.SUCCESS)
+              .setSerializedBitmap(UnsafeByteOperations.unsafeWrap(serializeBitmap))
+              .build();
+    } catch (Exception exception) {
+      LOG.error("Errors on getting the blockId bitmap.", exception);
+      reply =
+          RssProtos.GetShuffleResultForMultiPartResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.INTERNAL_ERROR)
+              .build();
+    }
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void reportShuffleResult(
+      RssProtos.ReportShuffleResultRequest request,
+      StreamObserver<RssProtos.ReportShuffleResultResponse> responseObserver) {
+    String appId = request.getAppId();
+    if (!appId.equals(shuffleManager.getAppId())) {
+      RssProtos.ReportShuffleResultResponse reply =
+          RssProtos.ReportShuffleResultResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.ACCESS_DENIED)
+              .setRetMsg("Illegal appId: " + appId)
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+      return;
+    }
+
+    BlockIdManager blockIdManager = shuffleManager.getBlockIdManager();
+    int shuffleId = request.getShuffleId();
+
+    for (RssProtos.PartitionToBlockIds partitionToBlockIds : request.getPartitionToBlockIdsList()) {
+      int partitionId = partitionToBlockIds.getPartitionId();
+      List<Long> blockIds = partitionToBlockIds.getBlockIdsList();
+      blockIdManager.add(shuffleId, partitionId, blockIds);
+    }
+
+    RssProtos.ReportShuffleResultResponse reply =
+        RssProtos.ReportShuffleResultResponse.newBuilder()
+            .setStatus(RssProtos.StatusCode.SUCCESS)
+            .build();
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
   }
 }

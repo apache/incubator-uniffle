@@ -525,6 +525,9 @@ service ShuffleManager {
   rpc reassignShuffleServers(ReassignServersRequest) returns (ReassignServersReponse);
   // Reassign on block send failure that occurs in writer
   rpc reassignOnBlockSendFailure(RssReassignOnBlockSendFailureRequest) returns (RssReassignOnBlockSendFailureResponse);
+  rpc reportShuffleResult (ReportShuffleResultRequest) returns (ReportShuffleResultResponse);
+  rpc getShuffleResult (GetShuffleResultRequest) returns (GetShuffleResultResponse);
+  rpc getShuffleResultForMultiPart (GetShuffleResultForMultiPartRequest) returns (GetShuffleResultForMultiPartResponse);
 }
 
 message ReportShuffleFetchFailureRequest {
