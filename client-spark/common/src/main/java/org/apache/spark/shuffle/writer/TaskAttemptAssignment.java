@@ -20,7 +20,6 @@ package org.apache.spark.shuffle.writer;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -29,13 +28,9 @@ import org.apache.uniffle.common.exception.RssException;
 /** This class is to get the partition assignment for ShuffleWriter. */
 public class TaskAttemptAssignment {
   private Map<Integer, List<ShuffleServerInfo>> assignment;
-  private boolean mutable = false;
 
   public TaskAttemptAssignment(long taskAttemptId, ShuffleHandleInfo shuffleHandleInfo) {
-    this.assignment = shuffleHandleInfo.getAvailablePartitionServersForWriter();
-    if (shuffleHandleInfo instanceof MutableShuffleHandleInfo) {
-      this.mutable = true;
-    }
+    this.update(shuffleHandleInfo);
   }
 
   /**
@@ -49,9 +44,6 @@ public class TaskAttemptAssignment {
   }
 
   public void update(ShuffleHandleInfo handle) {
-    if (!mutable) {
-      throw new RssException("Illegal update operation on immutable shuffleHandleInfo.");
-    }
     if (handle == null) {
       throw new RssException("Errors on updating shuffle handle by the empty handleInfo.");
     }
