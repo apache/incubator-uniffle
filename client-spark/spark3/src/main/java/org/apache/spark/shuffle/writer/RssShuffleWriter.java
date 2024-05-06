@@ -133,7 +133,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   // Will be updated when the reassignment is triggered.
   private TaskAttemptAssignment taskAttemptAssignment;
 
-  private static final Set<StatusCode> ILLEGAL_STATUS_CODE_WITHOUT_BLOCK_RESEND =
+  private static final Set<StatusCode> STATUS_CODE_WITHOUT_BLOCK_RESEND =
       Sets.newHashSet(StatusCode.NO_REGISTER);
 
   // Only for tests
@@ -516,7 +516,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
       for (TrackingBlockStatus status : failedBlockStatus) {
         StatusCode code = status.getStatusCode();
-        if (ILLEGAL_STATUS_CODE_WITHOUT_BLOCK_RESEND.contains(code)) {
+        if (STATUS_CODE_WITHOUT_BLOCK_RESEND.contains(code)) {
           LOG.error(
               "Partial blocks for taskId: [{}] failed on the illegal status code: [{}] without resend on server: {}",
               taskId,
