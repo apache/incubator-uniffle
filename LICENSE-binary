@@ -248,6 +248,8 @@ com.google.api.grpc:proto-google-common-protos
 org.javassist:javassist
 com.google.code.findbugs:jsr305
 jakarta.validation:jakarta.validation-api
+org.yaml:snakeyaml
+org.eclipse.jetty:jetty-proxy
 
 -----------------------------------------------------------------------------------
 This product bundles various third-party components under other open source licenses.
@@ -273,6 +275,14 @@ org.slf4j:slf4j-reload4j
 org.codehaus.mojo:animal-sniffer-annotations
 org.checkerframework:checker-qual
 
+axios
+core-js
+element-plus
+moment
+vue
+vue-resource
+vue-router
+
 Common Development and Distribution License (CDDL) 1.0
 ------------------------------------------------------
 
@@ -290,3 +300,7 @@ Eclipse Public License (EPL) 2.0
 jakarta.annotation:jakarta.annotation-api
 org.glassfish.hk2.external:jakarta.inject
 org.apache.hbase.thirdparty:hbase-shaded-jersey
+
+The ISC License
+---------------
+rimraf
