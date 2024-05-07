@@ -196,8 +196,6 @@ public class LocalStorageManagerTest {
     final File storageBaseDir2 = Files.createTempDirectory("rss-data-2").toFile();
     final File rootRestrictedDir1 = new File("/proc/rss-data-mock-restricted-dir-1");
     final File rootRestrictedDir2 = new File("/proc/rss-data-mock-restricted-dir-2");
-    FileUtils.forceMkdir(storageBaseDir1);
-    FileUtils.forceMkdir(storageBaseDir2);
 
     // case1: when no candidates, it should throw exception.
     ShuffleServerConf conf = new ShuffleServerConf();
