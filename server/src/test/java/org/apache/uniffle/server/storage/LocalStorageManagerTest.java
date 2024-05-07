@@ -192,8 +192,8 @@ public class LocalStorageManagerTest {
 
   @Test
   public void testInitializeLocalStorage() throws IOException {
-    final File storageBaseDir1 = new File("/tmp/rss-data-1");
-    final File storageBaseDir2 = new File("/tmp/rss-data-2");
+    final File storageBaseDir1 = Files.createTempDirectory("rss-data-1").toFile();
+    final File storageBaseDir2 = Files.createTempDirectory("rss-data-2").toFile();
     final File rootRestrictedDir1 = new File("/proc/rss-data-mock-restricted-dir-1");
     final File rootRestrictedDir2 = new File("/proc/rss-data-mock-restricted-dir-2");
     FileUtils.forceMkdir(storageBaseDir1);
