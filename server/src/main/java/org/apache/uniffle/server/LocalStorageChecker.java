@@ -122,7 +122,7 @@ public class LocalStorageChecker extends Checker {
                     .labels(storageInfo.storage.getBasePath())
                     .set(isWritable ? 0 : 1);
 
-                if (storageInfo.checkIsSpaceEnough(total, free) && isWritable) {
+                if (storageInfo.checkIsSpaceEnough(total, free)) {
                   num.incrementAndGet();
                 }
                 return null;
