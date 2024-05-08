@@ -131,8 +131,7 @@ public class HadoopStorageManagerTest {
     Map<String, HadoopStorage> appStorageMap = hadoopStorageManager.getAppIdToStorages();
 
     HadoopStorage storage = appStorageMap.get(appId);
-    String appPath =
-        ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
+    String appPath = ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
     File appPathFile = new File(appPath);
     appPathFile.mkdirs();
     assertTrue(appPathFile.exists());
