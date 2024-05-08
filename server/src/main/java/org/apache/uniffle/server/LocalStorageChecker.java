@@ -116,6 +116,12 @@ public class LocalStorageChecker extends Checker {
                 serviceUsedSpace.addAndGet(getServiceUsedSpace(storageInfo.storageDir));
 
                 storageInfo.updateStorageFreeSpace(free);
+
+                boolean isWritable = storageInfo.canWrite();
+                ShuffleServerMetrics.gaugeLocalStorageIsWritable
+                    .labels(storageInfo.storage.getBasePath())
+                    .set(isWritable ? 0 : 1);
+
                 if (storageInfo.checkIsSpaceEnough(total, free)) {
                   num.incrementAndGet();
                 }
@@ -253,6 +259,10 @@ public class LocalStorageChecker extends Checker {
         }
       }
       return isHealthy;
+    }
+
+    boolean canWrite() {
+      return storage.canWrite();
     }
 
     boolean checkStorageReadAndWrite() {
