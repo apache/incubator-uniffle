@@ -17,7 +17,11 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.io.IOException;
+
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.ContentSummary;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
@@ -37,7 +41,7 @@ public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
   }
 
   @Override
-  public void delete(String[] storageBasePaths, String appId, String user) {
+  public void delete(String[] storageBasePaths, String appId, String user, String shuffleServerId) {
     for (String deletePath : storageBasePaths) {
       final Path path = new Path(deletePath);
       boolean isSuccess = false;
@@ -52,7 +56,7 @@ public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
       while (!isSuccess && times < retryMax) {
         try {
           FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(user, path, hadoopConf);
-          fileSystem.delete(path, true);
+          delete(fileSystem, path, shuffleServerId);
           isSuccess = true;
         } catch (Exception e) {
           times++;
@@ -84,6 +88,27 @@ public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
                 + (System.currentTimeMillis() - start)
                 + " ms");
       }
+    }
+  }
+
+  private void delete(FileSystem fileSystem, Path path, String filePrefix) throws IOException {
+    if (filePrefix == null) {
+      fileSystem.delete(path, true);
+      return;
+    }
+    FileStatus[] fileStatuses = fileSystem.listStatus(path);
+    for (FileStatus fileStatus : fileStatuses) {
+      if (fileStatus.isDirectory()) {
+        delete(fileSystem, fileStatus.getPath(), filePrefix);
+      } else {
+        if (fileStatus.getPath().getName().startsWith(filePrefix)) {
+          fileSystem.delete(fileStatus.getPath(), true);
+        }
+      }
+    }
+    ContentSummary contentSummary = fileSystem.getContentSummary(path);
+    if (contentSummary.getFileCount() == 0) {
+      fileSystem.delete(path, true);
     }
   }
 }

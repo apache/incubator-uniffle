@@ -57,12 +57,14 @@ public class HadoopStorageManager extends SingleStorageManager {
   private static final Logger LOG = LoggerFactory.getLogger(HadoopStorageManager.class);
 
   private final Configuration hadoopConf;
+  private final String shuffleServerId;
   private Map<String, HadoopStorage> appIdToStorages = JavaUtils.newConcurrentMap();
   private Map<String, HadoopStorage> pathToStorages = JavaUtils.newConcurrentMap();
 
   HadoopStorageManager(ShuffleServerConf conf) {
     super(conf);
     hadoopConf = conf.getHadoopConf();
+    shuffleServerId = conf.getString(ShuffleServerConf.SHUFFLE_SERVER_ID, "shuffleServerId");
   }
 
   @Override
@@ -97,12 +99,6 @@ public class HadoopStorageManager extends SingleStorageManager {
       if (event instanceof AppPurgeEvent) {
         storage.removeHandlers(appId);
         appIdToStorages.remove(appId);
-        if (((AppPurgeEvent) event).isAppExpired()) {
-          LOG.info(
-              "{} is purged for expired, so there is no need to delete data on hdfs.",
-              event.getAppId());
-          return;
-        }
       }
       ShuffleDeleteHandler deleteHandler =
           ShuffleHandlerFactory.getInstance()
@@ -114,7 +110,9 @@ public class HadoopStorageManager extends SingleStorageManager {
           ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
       List<String> deletePaths = new ArrayList<>();
 
+      boolean purgeForExpired = false;
       if (event instanceof AppPurgeEvent) {
+        purgeForExpired = ((AppPurgeEvent) event).isAppExpired();
         deletePaths.add(basicPath);
       } else {
         for (Integer shuffleId : event.getShuffleIds()) {
@@ -122,7 +120,11 @@ public class HadoopStorageManager extends SingleStorageManager {
               ShuffleStorageUtils.getFullShuffleDataFolder(basicPath, String.valueOf(shuffleId)));
         }
       }
-      deleteHandler.delete(deletePaths.toArray(new String[0]), appId, event.getUser());
+      deleteHandler.delete(
+          deletePaths.toArray(new String[0]),
+          appId,
+          event.getUser(),
+          purgeForExpired ? shuffleServerId : null);
     } else {
       LOG.warn("Storage gotten is null when removing resources for event: {}", event);
     }
