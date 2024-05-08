@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -26,6 +27,7 @@ import com.google.common.collect.Sets;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -33,11 +35,14 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.event.ShufflePurgeEvent;
 import org.apache.uniffle.storage.common.HadoopStorage;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HadoopStorageManagerTest {
 
@@ -111,5 +116,37 @@ public class HadoopStorageManagerTest {
     assertNull(hs3.getConf().get("k1"));
     assertNull(hs3.getConf().get("k2"));
     assertNull(hs3.getConf().get("k3"));
+  }
+
+  @Test
+  public void testRemoveExpiredResources(@TempDir File remoteBasePath) {
+    ShuffleServerConf conf = new ShuffleServerConf();
+    conf.setString(
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
+    HadoopStorageManager hadoopStorageManager = new HadoopStorageManager(conf);
+    final String remoteStoragePath1 = new File(remoteBasePath, "path1").getAbsolutePath();
+    String appId = "testRemoveExpiredResources";
+    hadoopStorageManager.registerRemoteStorage(
+        appId, new RemoteStorageInfo(remoteStoragePath1, ImmutableMap.of("k1", "v1", "k2", "v2")));
+    Map<String, HadoopStorage> appStorageMap = hadoopStorageManager.getAppIdToStorages();
+
+    HadoopStorage storage = appStorageMap.get(appId);
+    String appPath =
+        ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
+    File appPathFile = new File(appPath);
+    appPathFile.mkdirs();
+    assertTrue(appPathFile.exists());
+    // purged for expired
+    assertEquals(1, appStorageMap.size());
+    AppPurgeEvent shufflePurgeEvent = new AppPurgeEvent(appId, "", true);
+    hadoopStorageManager.removeResources(shufflePurgeEvent);
+    assertEquals(0, appStorageMap.size());
+    assertTrue(appPathFile.exists());
+
+    // purged for unregister
+    AppPurgeEvent appPurgeEvent = new AppPurgeEvent(appId, "");
+    hadoopStorageManager.removeResources(appPurgeEvent);
+    assertEquals(0, appStorageMap.size());
+    assertFalse(appPathFile.exists());
   }
 }

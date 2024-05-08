@@ -97,6 +97,11 @@ public class HadoopStorageManager extends SingleStorageManager {
       if (event instanceof AppPurgeEvent) {
         storage.removeHandlers(appId);
         appIdToStorages.remove(appId);
+        if (((AppPurgeEvent) event).isAppExpired()) {
+          LOG.info("{} is purged for expired, so there is no need to delete data on hdfs.",
+              event.getAppId());
+          return;
+        }
       }
       ShuffleDeleteHandler deleteHandler =
           ShuffleHandlerFactory.getInstance()

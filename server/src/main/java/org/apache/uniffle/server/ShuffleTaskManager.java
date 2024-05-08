@@ -771,7 +771,7 @@ public class ShuffleTaskManager {
       partitionsToBlockIds.remove(appId);
       shuffleBufferManager.removeBuffer(appId);
       shuffleFlushManager.removeResources(appId);
-      storageManager.removeResources(new AppPurgeEvent(appId, shuffleTaskInfo.getUser()));
+      storageManager.removeResources(new AppPurgeEvent(appId, shuffleTaskInfo.getUser(), checkAppExpired));
       if (shuffleTaskInfo.hasHugePartition()) {
         ShuffleServerMetrics.gaugeAppWithHugePartitionNum.dec();
         ShuffleServerMetrics.gaugeHugePartitionNum.dec();

@@ -20,12 +20,22 @@ package org.apache.uniffle.server.event;
 import java.util.List;
 
 public class AppPurgeEvent extends PurgeEvent {
+  private boolean appExpired;
 
   public AppPurgeEvent(String appId, String user, List<Integer> shuffleIds) {
     super(appId, user, shuffleIds);
   }
 
   public AppPurgeEvent(String appId, String user) {
+    this(appId, user, false);
+  }
+
+  public AppPurgeEvent(String appId, String user, boolean appExpired) {
     super(appId, user, null);
+    this.appExpired = appExpired;
+  }
+
+  public boolean isAppExpired() {
+    return appExpired;
   }
 }
