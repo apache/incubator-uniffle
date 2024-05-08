@@ -104,9 +104,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     ShuffleServerMetrics.clear();
   }
 
-  /** Test the shuffleMeta's diskSize when app is removed. */
-  @Test
-  public void appPurgeWithLocalfileTest() throws Exception {
+  private ShuffleServerConf constructServerConfWithLocalfile() {
     String confFile = ClassLoader.getSystemResource("server.conf").getFile();
     ShuffleServerConf conf = new ShuffleServerConf(confFile);
     conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
@@ -120,12 +118,18 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 100000L);
     conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
 
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), "LOCALFILE");
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
     conf.setString(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH.key(),
         tempDir1.getAbsolutePath() + "," + tempDir2.getAbsolutePath());
+    return conf;
+  }
 
+  /** Test the shuffleMeta's diskSize when app is removed. */
+  @Test
+  public void appPurgeWithLocalfileTest() throws Exception {
+    ShuffleServerConf conf = constructServerConfWithLocalfile();
     shuffleServer = new ShuffleServer(conf);
     ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
 
@@ -540,25 +544,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
 
   @Test
   public void removeShuffleDataWithLocalfileTest() throws Exception {
-    String confFile = ClassLoader.getSystemResource("server.conf").getFile();
-    ShuffleServerConf conf = new ShuffleServerConf(confFile);
-    conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
-    conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
-    conf.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
-    conf.set(ShuffleServerConf.JETTY_CORE_POOL_SIZE, 64);
-    conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1000L);
-    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
-    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
-    conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
-    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 100000L);
-    conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
-
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), "LOCALFILE");
-    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
-    conf.setString(
-        ShuffleServerConf.RSS_STORAGE_BASE_PATH.key(),
-        tempDir1.getAbsolutePath() + "," + tempDir2.getAbsolutePath());
-
+    ShuffleServerConf conf = constructServerConfWithLocalfile();
     shuffleServer = new ShuffleServer(conf);
     ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
 
