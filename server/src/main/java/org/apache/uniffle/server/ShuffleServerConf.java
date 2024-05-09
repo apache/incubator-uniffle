@@ -89,6 +89,13 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(10 * 1000L)
           .withDescription("Direct memory usage tracker interval to MetricSystem (ms)");
 
+  public static final ConfigOption<Long> SERVER_NETTY_PENDING_TASKS_NUM_TRACKER_INTERVAL =
+      ConfigOptions.key("rss.server.netty.pending.tasks.num.updateMetricsIntervalMs")
+          .longType()
+          .defaultValue(10 * 1000L)
+          .withDescription(
+              "How often to collect Netty pending tasks number metrics (in milliseconds)");
+
   public static final ConfigOption<Integer> SERVER_FLUSH_LOCALFILE_THREAD_POOL_SIZE =
       ConfigOptions.key("rss.server.flush.localfile.threadPool.size")
           .intType()
