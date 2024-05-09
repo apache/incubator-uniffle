@@ -113,8 +113,9 @@ public class LocalStorageChecker extends Checker {
 
                 totalSpace.addAndGet(total);
                 wholeDiskUsedSpace.addAndGet(total - free);
-                serviceUsedSpace.addAndGet(getServiceUsedSpace(storageInfo.storageDir));
-
+                long used = getServiceUsedSpace(storageInfo.storageDir);
+                serviceUsedSpace.addAndGet(used);
+                storageInfo.updateServiceUsedSpace(used);
                 storageInfo.updateStorageFreeSpace(free);
 
                 boolean isWritable = storageInfo.canWrite();
@@ -239,6 +240,10 @@ public class LocalStorageChecker extends Checker {
 
     void updateStorageFreeSpace(long free) {
       storage.updateDiskFree(free);
+    }
+
+    void updateServiceUsedSpace(long used) {
+      storage.updateServiceUsed(used);
     }
 
     boolean checkIsSpaceEnough(long total, long free) {
