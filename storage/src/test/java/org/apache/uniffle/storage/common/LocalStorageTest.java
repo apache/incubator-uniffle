@@ -76,15 +76,15 @@ public class LocalStorageTest {
   public void canWriteTest() {
     LocalStorage item = createTestStorage(testBaseDir);
 
-    item.getMetaData().updateDiskSize(20);
+    item.updateServiceUsed(20);
     assertTrue(item.canWrite());
-    item.getMetaData().updateDiskSize(65);
+    item.updateServiceUsed(item.getServiceUsed() + 65);
     assertTrue(item.canWrite());
-    item.getMetaData().updateDiskSize(10);
+    item.updateServiceUsed(item.getServiceUsed() + 10);
     assertFalse(item.canWrite());
-    item.getMetaData().updateDiskSize(-10);
+    item.updateServiceUsed(item.getServiceUsed() + -10);
     assertFalse(item.canWrite());
-    item.getMetaData().updateDiskSize(-10);
+    item.updateServiceUsed(item.getServiceUsed() + -10);
     assertTrue(item.canWrite());
   }
 
@@ -178,9 +178,9 @@ public class LocalStorageTest {
             .enableDiskCapacityWatermarkCheck()
             .build();
 
-    localStorage.getMetaData().updateDiskSize(20);
+    localStorage.updateServiceUsed(localStorage.getServiceUsed() + 20);
     assertTrue(localStorage.canWrite());
-    localStorage.getMetaData().updateDiskSize(65);
+    localStorage.updateServiceUsed(localStorage.getServiceUsed() + 65);
     assertTrue(localStorage.canWrite());
 
     final long diskCapacity = localStorage.getDiskCapacity();
@@ -189,7 +189,7 @@ public class LocalStorageTest {
 
     localStorage.updateDiskFree((long) (diskCapacity * (1 - 0.60)));
     assertFalse(localStorage.canWrite());
-    localStorage.getMetaData().updateDiskSize(-10);
+    localStorage.updateServiceUsed(localStorage.getServiceUsed() - 10);
     assertTrue(localStorage.canWrite());
 
     // capacity = diskCapacity

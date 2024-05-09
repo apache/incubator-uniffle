@@ -273,6 +273,10 @@ public class LocalStorage extends AbstractStorage {
     this.serviceUsed = used;
   }
 
+  public long getServiceUsed() {
+    return serviceUsed;
+  }
+
   // Only for test
   @VisibleForTesting
   public void markSpaceFull() {
