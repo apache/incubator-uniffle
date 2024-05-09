@@ -82,9 +82,9 @@ public class LocalStorageTest {
     assertTrue(item.canWrite());
     item.updateServiceUsedBytes(item.getServiceUsedBytes() + 10);
     assertFalse(item.canWrite());
-    item.updateServiceUsedBytes(item.getServiceUsedBytes() + 10);
+    item.updateServiceUsedBytes(item.getServiceUsedBytes() - 10);
     assertFalse(item.canWrite());
-    item.updateServiceUsedBytes(item.getServiceUsedBytes() + 10);
+    item.updateServiceUsedBytes(item.getServiceUsedBytes() - 10);
     assertTrue(item.canWrite());
   }
 

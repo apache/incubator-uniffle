@@ -242,8 +242,8 @@ public class LocalStorageChecker extends Checker {
       storage.updateDiskFree(free);
     }
 
-    void updateServiceUsedBytes(long used) {
-      storage.updateServiceUsedBytes(used);
+    void updateServiceUsedBytes(long usedBytes) {
+      storage.updateServiceUsedBytes(usedBytes);
     }
 
     boolean checkIsSpaceEnough(long total, long free) {

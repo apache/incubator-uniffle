@@ -266,8 +266,8 @@ public class LocalStorage extends AbstractStorage {
     this.diskFree = free;
   }
 
-  public void updateServiceUsedBytes(long used) {
-    this.serviceUsedBytes = used;
+  public void updateServiceUsedBytes(long usedBytes) {
+    this.serviceUsedBytes = usedBytes;
   }
 
   public long getServiceUsedBytes() {
