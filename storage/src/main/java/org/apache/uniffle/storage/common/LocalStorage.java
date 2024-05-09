@@ -47,7 +47,7 @@ public class LocalStorage extends AbstractStorage {
 
   private final long diskCapacity;
   private volatile long diskFree;
-  private volatile long serviceUsed;
+  private volatile long serviceUsedBytes;
   // for test cases
   private boolean enableDiskCapacityCheck = false;
 
@@ -167,11 +167,12 @@ public class LocalStorage extends AbstractStorage {
     boolean diskUsedCapacityCheck;
 
     if (isSpaceEnough) {
-      serviceUsedCapacityCheck = (double) (serviceUsed * 100) / capacity < highWaterMarkOfWrite;
+      serviceUsedCapacityCheck =
+          (double) (serviceUsedBytes * 100) / capacity < highWaterMarkOfWrite;
       diskUsedCapacityCheck =
           ((double) (diskCapacity - diskFree)) * 100 / diskCapacity < highWaterMarkOfWrite;
     } else {
-      serviceUsedCapacityCheck = (double) (serviceUsed * 100) / capacity < lowWaterMarkOfWrite;
+      serviceUsedCapacityCheck = (double) (serviceUsedBytes * 100) / capacity < lowWaterMarkOfWrite;
       diskUsedCapacityCheck =
           ((double) (diskCapacity - diskFree)) * 100 / diskCapacity < lowWaterMarkOfWrite;
     }
@@ -200,10 +201,6 @@ public class LocalStorage extends AbstractStorage {
 
   public void updateShuffleLastReadTs(String shuffleKey) {
     metaData.updateShuffleLastReadTs(shuffleKey);
-  }
-
-  public long getServiceUsedSize() {
-    return serviceUsed;
   }
 
   @VisibleForTesting
@@ -269,12 +266,12 @@ public class LocalStorage extends AbstractStorage {
     this.diskFree = free;
   }
 
-  public void updateServiceUsed(long used) {
-    this.serviceUsed = used;
+  public void updateServiceUsedBytes(long used) {
+    this.serviceUsedBytes = used;
   }
 
-  public long getServiceUsed() {
-    return serviceUsed;
+  public long getServiceUsedBytes() {
+    return serviceUsedBytes;
   }
 
   // Only for test
