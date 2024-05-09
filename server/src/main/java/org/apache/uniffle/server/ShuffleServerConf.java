@@ -468,7 +468,7 @@ public class ShuffleServerConf extends RssBaseConf {
           .booleanType()
           .defaultValue(false)
           .withDescription(
-              "Whether to activate client partition reassign mechanism for server quick decommission");
+              "Whether to activate client partition reassign mechanism for server quick decommission or inactive.");
 
   public static final ConfigOption<Integer> NETTY_SERVER_PORT =
       ConfigOptions.key("rss.server.netty.port")

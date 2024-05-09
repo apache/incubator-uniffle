@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -94,7 +95,7 @@ import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcService.class);
-  private final ShuffleServer shuffleServer;
+  private ShuffleServer shuffleServer;
 
   public ShuffleServerGrpcService(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
@@ -1033,5 +1034,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
     }
     return shuffleDataBlockSegments;
+  }
+
+  // only for tests
+  @VisibleForTesting
+  public void setShuffleServer(ShuffleServer shuffleServer) {
+    this.shuffleServer = shuffleServer;
   }
 }

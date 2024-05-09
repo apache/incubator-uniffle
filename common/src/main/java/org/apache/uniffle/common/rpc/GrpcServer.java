@@ -232,4 +232,8 @@ public class GrpcServer implements ServerInterface {
   public int getPort() {
     return listenPort;
   }
+
+  public List<Pair<BindableService, List<ServerInterceptor>>> getServicesWithInterceptors() {
+    return servicesWithInterceptors;
+  }
 }
