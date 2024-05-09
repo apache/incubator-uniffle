@@ -234,6 +234,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         appId, 0, Collections.emptyList(), requireSize, retryMax, retryIntervalMax);
   }
 
+  @VisibleForTesting
   public long requirePreAllocation(
       String appId,
       int shuffleId,
@@ -241,6 +242,24 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       int requireSize,
       int retryMax,
       long retryIntervalMax) {
+    return requirePreAllocation(
+        appId,
+        shuffleId,
+        partitionIds,
+        requireSize,
+        retryMax,
+        retryIntervalMax,
+        new AtomicReference<>(StatusCode.INTERNAL_ERROR));
+  }
+
+  public long requirePreAllocation(
+      String appId,
+      int shuffleId,
+      List<Integer> partitionIds,
+      int requireSize,
+      int retryMax,
+      long retryIntervalMax,
+      AtomicReference<StatusCode> failedStatusCodeRef) {
     RequireBufferRequest rpcRequest =
         RequireBufferRequest.newBuilder()
             .setShuffleId(shuffleId)
@@ -275,6 +294,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           && rpcResponse.getStatus() != RssProtos.StatusCode.NO_BUFFER_FOR_HUGE_PARTITION) {
         break;
       }
+      failedStatusCodeRef.set(StatusCode.fromCode(rpcResponse.getStatus().getNumber()));
       if (retry >= retryMax) {
         LOG.warn(
             "ShuffleServer "
@@ -492,7 +512,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                       partitionIds,
                       allocateSize,
                       request.getRetryMax() / maxRetryAttempts,
-                      request.getRetryIntervalMax());
+                      request.getRetryIntervalMax(),
+                      failedStatusCode);
               if (requireId == FAILED_REQUIRE_ID) {
                 throw new RssException(
                     String.format(
