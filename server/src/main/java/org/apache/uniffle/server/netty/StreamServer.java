@@ -64,9 +64,9 @@ public class StreamServer implements ServerInterface {
   private ShuffleServerConf shuffleServerConf;
   private ChannelFuture channelFuture;
 
-  private final ScheduledExecutorService nettyPendingTasksTracker =
+  private final ScheduledExecutorService nettyPendingTasksNumTracker =
       Executors.newSingleThreadScheduledExecutor(
-          ThreadUtils.getThreadFactory("NettyPendingTasksTracker"));
+          ThreadUtils.getThreadFactory("NettyPendingTasksNumTracker"));
   /** Interval to poll for Netty pending tasks number for Netty metrics, in milliseconds */
   private final long pendingTasksNumMetricsPollingInterval;
 
@@ -98,7 +98,7 @@ public class StreamServer implements ServerInterface {
   }
 
   private void startMonitoringPendingTasks() {
-    nettyPendingTasksTracker.scheduleAtFixedRate(
+    nettyPendingTasksNumTracker.scheduleAtFixedRate(
         () -> {
           int pendingTasksNumForBossGroup = getPendingTasksForEventLoopGroup(shuffleBossGroup);
           shuffleServer
@@ -219,8 +219,8 @@ public class StreamServer implements ServerInterface {
       shuffleBossGroup = null;
       shuffleWorkerGroup = null;
     }
-    if (!nettyPendingTasksTracker.isShutdown()) {
-      nettyPendingTasksTracker.shutdown();
+    if (!nettyPendingTasksNumTracker.isShutdown()) {
+      nettyPendingTasksNumTracker.shutdown();
     }
   }
 
