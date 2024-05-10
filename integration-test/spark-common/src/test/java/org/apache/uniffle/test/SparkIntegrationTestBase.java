@@ -138,7 +138,7 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     sparkConf.set(RssSparkConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
     sparkConf.set(
         RssSparkConfig.SPARK_RSS_CONFIG_PREFIX
-            + RssSparkConfig.RSS_CLIENT_BLOCK_ID_SELF_MANAGED_ENABLED.key(),
+            + RssSparkConfig.RSS_CLIENT_BLOCK_ID_SELF_MANAGEMENT_ENABLED.key(),
         "true");
   }
 

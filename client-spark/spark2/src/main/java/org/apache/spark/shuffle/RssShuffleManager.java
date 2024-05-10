@@ -84,7 +84,7 @@ import org.apache.uniffle.shuffle.manager.RssShuffleManagerBase;
 import org.apache.uniffle.shuffle.manager.ShuffleManagerGrpcService;
 import org.apache.uniffle.shuffle.manager.ShuffleManagerServerFactory;
 
-import static org.apache.spark.shuffle.RssSparkConfig.RSS_CLIENT_BLOCK_ID_SELF_MANAGED_ENABLED;
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_CLIENT_BLOCK_ID_SELF_MANAGEMENT_ENABLED;
 import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;
 import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
 
@@ -213,7 +213,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             && RssSparkShuffleUtils.isStageResubmitSupported();
     this.taskBlockSendFailureRetry =
         rssConf.getBoolean(RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED);
-    this.blockIdSelfManagedEnabled = rssConf.getBoolean(RSS_CLIENT_BLOCK_ID_SELF_MANAGED_ENABLED);
+    this.blockIdSelfManagedEnabled = rssConf.getBoolean(RSS_CLIENT_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
     this.shuffleManagerRpcServiceEnabled =
         taskBlockSendFailureRetry || rssResubmitStage || blockIdSelfManagedEnabled;
     if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key(), false)) {
