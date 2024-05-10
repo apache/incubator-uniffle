@@ -20,6 +20,7 @@ package org.apache.uniffle.shuffle;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,11 +40,18 @@ public class BlockIdManager {
   }
 
   public void add(int shuffleId, int partitionId, List<Long> ids) {
+    if (CollectionUtils.isEmpty(ids)) {
+      return;
+    }
     Map<Integer, Roaring64NavigableMap> partitionedBlockIds =
         blockIds.computeIfAbsent(shuffleId, (k) -> JavaUtils.newConcurrentMap());
-    Roaring64NavigableMap partitionedIds =
-        partitionedBlockIds.computeIfAbsent(partitionId, (j) -> Roaring64NavigableMap.bitmapOf());
-    ids.stream().forEach(x -> partitionedIds.add(x));
+    partitionedBlockIds.compute(
+        partitionId,
+        (id, bitmap) -> {
+          Roaring64NavigableMap store = bitmap == null ? Roaring64NavigableMap.bitmapOf() : bitmap;
+          ids.stream().forEach(x -> store.add(x));
+          return store;
+        });
   }
 
   public Roaring64NavigableMap get(int shuffleId, int partitionId) {
