@@ -61,19 +61,18 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     start = System.currentTimeMillis();
     Map resultWithRssGrpc = runSparkApp(sparkConf, fileName);
     final long durationWithRssGrpc = System.currentTimeMillis() - start;
+    verifyTestResult(resultWithoutRss, resultWithRssGrpc);
 
     updateSparkConfWithRssNetty(sparkConf);
     start = System.currentTimeMillis();
     Map resultWithRssNetty = runSparkApp(sparkConf, fileName);
     final long durationWithRssNetty = System.currentTimeMillis() - start;
+    verifyTestResult(resultWithoutRss, resultWithRssNetty);
 
     updateSparkConfWithBlockIdSelfManaged(sparkConf);
     start = System.currentTimeMillis();
     Map resultWithBlockIdSelfManaged = runSparkApp(sparkConf, fileName);
     final long durationWithBlockIdSelfManaged = System.currentTimeMillis() - start;
-
-    verifyTestResult(resultWithoutRss, resultWithRssGrpc);
-    verifyTestResult(resultWithoutRss, resultWithRssNetty);
     verifyTestResult(resultWithoutRss, resultWithBlockIdSelfManaged);
 
     LOG.info(
