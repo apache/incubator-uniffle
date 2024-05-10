@@ -239,7 +239,7 @@ public class LocalStorageChecker extends Checker {
     }
 
     void updateStorageFreeSpace(long free) {
-      storage.updateDiskFree(free);
+      storage.updateDiskAvailableBytes(free);
     }
 
     void updateServiceUsedBytes(long usedBytes) {
