@@ -18,11 +18,14 @@
 package org.apache.uniffle.shuffle.manager;
 
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import org.apache.spark.shuffle.ShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfoBase;
 
-import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.ReceivingFailureServer;
 
 import static org.mockito.Mockito.mock;
 
@@ -55,7 +58,7 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   }
 
   @Override
-  public ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId) {
+  public ShuffleHandleInfoBase getShuffleHandleInfoByShuffleId(int shuffleId) {
     return null;
   }
 
@@ -69,8 +72,8 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   }
 
   @Override
-  public ShuffleServerInfo reassignFaultyShuffleServerForTasks(
-      int shuffleId, Set<Integer> partitionIds, String faultyShuffleServerId) {
-    return mock(ShuffleServerInfo.class);
+  public MutableShuffleHandleInfo reassignOnBlockSendFailure(
+      int shuffleId, Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
+    return mock(MutableShuffleHandleInfo.class);
   }
 }

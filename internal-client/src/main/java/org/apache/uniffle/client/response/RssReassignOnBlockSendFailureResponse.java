@@ -17,33 +17,25 @@
 
 package org.apache.uniffle.client.response;
 
-import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.proto.RssProtos;
 
-public class RssReassignFaultyShuffleServerResponse extends ClientResponse {
+public class RssReassignOnBlockSendFailureResponse extends ClientResponse {
+  private RssProtos.MutableShuffleHandleInfo handle;
 
-  private ShuffleServerInfo shuffleServer;
-
-  public RssReassignFaultyShuffleServerResponse(
-      StatusCode statusCode, String message, ShuffleServerInfo shuffleServer) {
+  public RssReassignOnBlockSendFailureResponse(
+      StatusCode statusCode, String message, RssProtos.MutableShuffleHandleInfo handle) {
     super(statusCode, message);
-    this.shuffleServer = shuffleServer;
+    this.handle = handle;
   }
 
-  public ShuffleServerInfo getShuffleServer() {
-    return shuffleServer;
+  public RssProtos.MutableShuffleHandleInfo getHandle() {
+    return handle;
   }
 
-  public static RssReassignFaultyShuffleServerResponse fromProto(
-      RssProtos.RssReassignFaultyShuffleServerResponse response) {
-    return new RssReassignFaultyShuffleServerResponse(
-        StatusCode.valueOf(response.getStatus().name()),
-        response.getMsg(),
-        new ShuffleServerInfo(
-            response.getServer().getId(),
-            response.getServer().getIp(),
-            response.getServer().getPort(),
-            response.getServer().getNettyPort()));
+  public static RssReassignOnBlockSendFailureResponse fromProto(
+      RssProtos.RssReassignOnBlockSendFailureResponse response) {
+    return new RssReassignOnBlockSendFailureResponse(
+        StatusCode.valueOf(response.getStatus().name()), response.getMsg(), response.getHandle());
   }
 }

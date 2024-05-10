@@ -95,7 +95,7 @@ public class RegisterHeartBeat {
   }
 
   @VisibleForTesting
-  boolean sendHeartBeat(
+  public boolean sendHeartBeat(
       String id,
       String ip,
       int grpcPort,

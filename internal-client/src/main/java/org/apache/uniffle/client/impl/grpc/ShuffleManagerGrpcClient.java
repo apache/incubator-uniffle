@@ -24,12 +24,12 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.request.RssPartitionToShuffleServerRequest;
-import org.apache.uniffle.client.request.RssReassignFaultyShuffleServerRequest;
+import org.apache.uniffle.client.request.RssReassignOnBlockSendFailureRequest;
 import org.apache.uniffle.client.request.RssReassignServersRequest;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
 import org.apache.uniffle.client.response.RssPartitionToShuffleServerResponse;
-import org.apache.uniffle.client.response.RssReassignFaultyShuffleServerResponse;
+import org.apache.uniffle.client.response.RssReassignOnBlockSendFailureResponse;
 import org.apache.uniffle.client.response.RssReassignServersReponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
@@ -119,12 +119,12 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
   }
 
   @Override
-  public RssReassignFaultyShuffleServerResponse reassignFaultyShuffleServer(
-      RssReassignFaultyShuffleServerRequest request) {
-    RssProtos.RssReassignFaultyShuffleServerRequest rssReassignFaultyShuffleServerRequest =
-        request.toProto();
-    RssProtos.RssReassignFaultyShuffleServerResponse response =
-        getBlockingStub().reassignFaultyShuffleServer(rssReassignFaultyShuffleServerRequest);
-    return RssReassignFaultyShuffleServerResponse.fromProto(response);
+  public RssReassignOnBlockSendFailureResponse reassignOnBlockSendFailure(
+      RssReassignOnBlockSendFailureRequest request) {
+    RssProtos.RssReassignOnBlockSendFailureRequest protoReq =
+        RssReassignOnBlockSendFailureRequest.toProto(request);
+    RssProtos.RssReassignOnBlockSendFailureResponse response =
+        getBlockingStub().reassignOnBlockSendFailure(protoReq);
+    return RssReassignOnBlockSendFailureResponse.fromProto(response);
   }
 }

@@ -35,7 +35,7 @@ import org.apache.spark.SparkEnv;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.RssSparkShuffleUtils;
-import org.apache.spark.shuffle.ShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -220,7 +220,7 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
               .build();
       ShuffleHandleInfo handle = shuffleManager.getShuffleHandleInfoByShuffleId(0);
       Set<ShuffleServerInfo> servers =
-          handle.getPartitionToServers().values().stream()
+          handle.getAvailablePartitionServersForWriter().values().stream()
               .flatMap(Collection::stream)
               .collect(Collectors.toSet());
 

@@ -523,8 +523,8 @@ service ShuffleManager {
   rpc reportShuffleWriteFailure (ReportShuffleWriteFailureRequest) returns (ReportShuffleWriteFailureResponse);
   // Reassign the RPC interface of the ShuffleServer list
   rpc reassignShuffleServers(ReassignServersRequest) returns (ReassignServersReponse);
-  // Reassign a new server instead a faulty server the RPC interface
-  rpc reassignFaultyShuffleServer(RssReassignFaultyShuffleServerRequest) returns (RssReassignFaultyShuffleServerResponse);
+  // Reassign on block send failure that occurs in writer
+  rpc reassignOnBlockSendFailure(RssReassignOnBlockSendFailureRequest) returns (RssReassignOnBlockSendFailureResponse);
 }
 
 message ReportShuffleFetchFailureRequest {
@@ -552,10 +552,10 @@ message PartitionToShuffleServerRequest {
 message PartitionToShuffleServerResponse {
   StatusCode status = 1;
   string msg = 2;
-  ShuffleHandleInfo shuffleHandleInfo = 3;
+  MutableShuffleHandleInfo shuffleHandleInfo = 3;
 }
 
-message ShuffleHandleInfo {
+message MutableShuffleHandleInfo {
   int32 shuffleId = 1;
   map<int32, PartitionReplicaServers> partitionToServers = 2;
   RemoteStorageInfo remoteStorageInfo = 3;
@@ -601,16 +601,24 @@ message ReassignServersReponse{
   string msg = 3;
 }
 
-message RssReassignFaultyShuffleServerRequest{
+message RssReassignOnBlockSendFailureRequest{
   int32 shuffleId  = 1;
-  repeated int32 partitionIds = 2;
-  string faultyShuffleServerId = 3;
+  map<int32, ReceivingFailureServers> failurePartitionToServerIds = 2;
 }
 
-message RssReassignFaultyShuffleServerResponse{
+message ReceivingFailureServers {
+  repeated ReceivingFailureServer server = 1;
+}
+
+message ReceivingFailureServer {
+  string serverId = 1;
+  StatusCode statusCode = 2;
+}
+
+message RssReassignOnBlockSendFailureResponse {
   StatusCode status = 1;
-  ShuffleServerId server = 2;
-  string msg = 3;
+  string msg = 2;
+  MutableShuffleHandleInfo handle = 3;
 }
 
 

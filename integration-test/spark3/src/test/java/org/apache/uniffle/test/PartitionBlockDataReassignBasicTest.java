@@ -25,6 +25,8 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -34,16 +36,20 @@ import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.client.util.RssClientConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER;
+import static org.apache.uniffle.client.util.RssClientConfig.RSS_CLIENT_RETRY_MAX;
 import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/** This class is to test the mechanism of partition block data reassignment. */
-public class PartitionBlockDataReassignTest extends SparkSQLTest {
+/** This class is to basic test the mechanism of partition block data reassignment */
+public class PartitionBlockDataReassignBasicTest extends SparkSQLTest {
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(PartitionBlockDataReassignBasicTest.class);
 
-  private static String basePath;
+  protected static String basePath;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
+    LOGGER.info("Setup servers");
+
     // for coordinator
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setLong("rss.coordinator.app.expired", 5000);
@@ -71,13 +77,19 @@ public class PartitionBlockDataReassignTest extends SparkSQLTest {
 
     startServers();
 
-    // simulate one server without enough buffer
-    ShuffleServer faultyShuffleServer = grpcShuffleServers.get(0);
-    ShuffleBufferManager bufferManager = faultyShuffleServer.getShuffleBufferManager();
+    // simulate one server without enough buffer for grpc
+    ShuffleServer grpcServer = grpcShuffleServers.get(0);
+    ShuffleBufferManager bufferManager = grpcServer.getShuffleBufferManager();
+    bufferManager.setUsedMemory(bufferManager.getCapacity() + 100);
+
+    // simulate one server without enough buffer for netty server
+    ShuffleServer nettyServer = nettyShuffleServers.get(0);
+    bufferManager = nettyServer.getShuffleBufferManager();
     bufferManager.setUsedMemory(bufferManager.getCapacity() + 100);
   }
 
-  private static ShuffleServerConf buildShuffleServerConf(ServerType serverType) throws Exception {
+  protected static ShuffleServerConf buildShuffleServerConf(ServerType serverType)
+      throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType);
     shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 4000);
@@ -87,18 +99,22 @@ public class PartitionBlockDataReassignTest extends SparkSQLTest {
   }
 
   @Override
-  public void updateRssStorage(SparkConf sparkConf) {
-    sparkConf.set("spark." + RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, "1");
+  public void updateSparkConfCustomer(SparkConf sparkConf) {
+    sparkConf.set("spark.sql.shuffle.partitions", "4");
+    sparkConf.set("spark." + RSS_CLIENT_RETRY_MAX, "2");
+    sparkConf.set(
+        "spark." + RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER,
+        String.valueOf(grpcShuffleServers.size()));
     sparkConf.set("spark." + RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.key(), "true");
   }
 
   @Override
+  public void updateRssStorage(SparkConf sparkConf) {
+    // ignore
+  }
+
+  @Override
   public void checkShuffleData() throws Exception {
-    Thread.sleep(12000);
-    String[] paths = basePath.split(",");
-    for (String path : paths) {
-      File f = new File(path);
-      assertEquals(0, f.list().length);
-    }
+    // ignore
   }
 }

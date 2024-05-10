@@ -21,15 +21,17 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.proto.RssProtos;
 
 public class RssPartitionToShuffleServerResponse extends ClientResponse {
-  private RssProtos.ShuffleHandleInfo shuffleHandleInfoProto;
+  private RssProtos.MutableShuffleHandleInfo shuffleHandleInfoProto;
 
   public RssPartitionToShuffleServerResponse(
-      StatusCode statusCode, String message, RssProtos.ShuffleHandleInfo shuffleHandleInfoProto) {
+      StatusCode statusCode,
+      String message,
+      RssProtos.MutableShuffleHandleInfo shuffleHandleInfoProto) {
     super(statusCode, message);
     this.shuffleHandleInfoProto = shuffleHandleInfoProto;
   }
 
-  public RssProtos.ShuffleHandleInfo getShuffleHandleInfoProto() {
+  public RssProtos.MutableShuffleHandleInfo getShuffleHandleInfoProto() {
     return shuffleHandleInfoProto;
   }
 

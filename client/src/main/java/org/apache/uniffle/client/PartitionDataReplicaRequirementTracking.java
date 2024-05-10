@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.client;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,27 @@ public class PartitionDataReplicaRequirementTracking {
       int shuffleId, Map<Integer, Map<Integer, List<ShuffleServerInfo>>> inventory) {
     this.shuffleId = shuffleId;
     this.inventory = inventory;
+  }
+
+  // for the DefaultShuffleHandleInfo
+  public PartitionDataReplicaRequirementTracking(
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers, int shuffleId) {
+    this.shuffleId = shuffleId;
+    this.inventory = toPartitionReplicaServers(partitionToServers);
+  }
+
+  private Map<Integer, Map<Integer, List<ShuffleServerInfo>>> toPartitionReplicaServers(
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers) {
+    Map<Integer, Map<Integer, List<ShuffleServerInfo>>> inventory = new HashMap<>();
+    for (Map.Entry<Integer, List<ShuffleServerInfo>> entry : partitionToServers.entrySet()) {
+      int partitionId = entry.getKey();
+      Map<Integer, List<ShuffleServerInfo>> replicas =
+          inventory.computeIfAbsent(partitionId, x -> new HashMap<>());
+      for (int i = 0; i < entry.getValue().size(); i++) {
+        replicas.computeIfAbsent(i, x -> new ArrayList<>()).add(entry.getValue().get(i));
+      }
+    }
+    return inventory;
   }
 
   public boolean isSatisfied(int partitionId, int minReplica) {

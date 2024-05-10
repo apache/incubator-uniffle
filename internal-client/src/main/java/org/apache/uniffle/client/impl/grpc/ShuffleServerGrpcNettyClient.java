@@ -17,9 +17,11 @@
 
 package org.apache.uniffle.client.impl.grpc;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
@@ -107,6 +109,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks =
         request.getShuffleIdToBlocks();
     boolean isSuccessful = true;
+    AtomicReference<StatusCode> failedStatusCode = new AtomicReference<>(StatusCode.INTERNAL_ERROR);
 
     for (Map.Entry<Integer, Map<Integer, List<ShuffleBlockInfo>>> stb :
         shuffleIdToBlocks.entrySet()) {
@@ -137,9 +140,12 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
               long requireId =
                   requirePreAllocation(
                       request.getAppId(),
+                      0,
+                      Collections.emptyList(),
                       allocateSize,
                       request.getRetryMax(),
-                      request.getRetryIntervalMax());
+                      request.getRetryIntervalMax(),
+                      failedStatusCode);
               if (requireId == FAILED_REQUIRE_ID) {
                 throw new RssException(
                     String.format(
@@ -164,6 +170,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
                     port);
               }
               if (rpcResponse.getStatusCode() != StatusCode.SUCCESS) {
+                failedStatusCode.set(StatusCode.fromCode(rpcResponse.getStatusCode().statusCode()));
                 String msg =
                     "Can't send shuffle data with "
                         + finalBlockNum
@@ -198,7 +205,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     if (isSuccessful) {
       response = new RssSendShuffleDataResponse(StatusCode.SUCCESS);
     } else {
-      response = new RssSendShuffleDataResponse(StatusCode.INTERNAL_ERROR);
+      response = new RssSendShuffleDataResponse(failedStatusCode.get());
     }
     return response;
   }
