@@ -128,7 +128,7 @@ The bits reserved for sequence number, partition id and task attempt id are best
 
 ### Block id self management (experimental)
 
-Now, the block id could be managed by the spark driver self when specifying the `spark.rss.client.blockId.selfManagementEnabled=true`.
+Now, the block id could be managed by the spark driver self when specifying the `spark.rss.blockId.selfManagementEnabled=true`.
 And this will reduce shuffle server pressure but significantly increase memory consumption on the Spark driver side.
 
 ### Adaptive Remote Shuffle Enabling 
