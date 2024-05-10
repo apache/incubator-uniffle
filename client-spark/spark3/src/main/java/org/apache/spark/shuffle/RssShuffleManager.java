@@ -1139,6 +1139,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     return shuffleHandleInfoManager.get(shuffleId);
   }
 
+  // todo: automatic close client when the client is idle to avoid too much connections for spark driver.
   private ShuffleManagerClient getOrCreateShuffleManagerClient() {
     if (shuffleManagerClient == null) {
       RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
