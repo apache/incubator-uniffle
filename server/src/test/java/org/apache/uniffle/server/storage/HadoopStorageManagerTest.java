@@ -145,7 +145,7 @@ public class HadoopStorageManagerTest {
     assertTrue(partitionDir.exists());
     // purged for expired
     assertEquals(1, appStorageMap.size());
-    AppPurgeEvent shufflePurgeEvent = new AppPurgeEvent(appId, "", true);
+    AppPurgeEvent shufflePurgeEvent = new AppPurgeEvent(appId, "", null, true);
     hadoopStorageManager.removeResources(shufflePurgeEvent);
     assertEquals(0, appStorageMap.size());
     assertTrue(partitionDir.exists());
@@ -184,7 +184,7 @@ public class HadoopStorageManagerTest {
     assertTrue(partitionDir.exists());
     // purged for expired
     assertEquals(1, appStorageMap.size());
-    AppPurgeEvent shufflePurgeEvent = new AppPurgeEvent(appId, "", true);
+    AppPurgeEvent shufflePurgeEvent = new AppPurgeEvent(appId, "", null, true);
     hadoopStorageManager.removeResources(shufflePurgeEvent);
     assertEquals(0, appStorageMap.size());
     assertFalse(partitionDir.exists());

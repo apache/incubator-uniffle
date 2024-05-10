@@ -22,17 +22,17 @@ import java.util.List;
 public class AppPurgeEvent extends PurgeEvent {
   private boolean appExpired;
 
-  public AppPurgeEvent(String appId, String user, List<Integer> shuffleIds) {
+  public AppPurgeEvent(String appId, String user, List<Integer> shuffleIds, boolean appExpired) {
     super(appId, user, shuffleIds);
+    this.appExpired = appExpired;
+  }
+
+  public AppPurgeEvent(String appId, String user, List<Integer> shuffleIds) {
+    this(appId, user, shuffleIds, false);
   }
 
   public AppPurgeEvent(String appId, String user) {
-    this(appId, user, false);
-  }
-
-  public AppPurgeEvent(String appId, String user, boolean appExpired) {
-    super(appId, user, null);
-    this.appExpired = appExpired;
+    this(appId, user, null);
   }
 
   public boolean isAppExpired() {
