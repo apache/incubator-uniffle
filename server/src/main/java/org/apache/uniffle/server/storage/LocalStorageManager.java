@@ -302,7 +302,7 @@ public class LocalStorageManager extends SingleStorageManager {
                 })
             .collect(Collectors.toList());
 
-    deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user, null);
+    deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user);
   }
 
   private void cleanupStorageSelectionCache(PurgeEvent event) {
@@ -369,7 +369,7 @@ public class LocalStorageManager extends SingleStorageManager {
           deletePaths[i] =
               ShuffleStorageUtils.getFullShuffleDataFolder(storageBasePaths.get(i), appId);
         }
-        deleteHandler.delete(deletePaths, appId, UNKNOWN_USER_NAME, null);
+        deleteHandler.delete(deletePaths, appId, UNKNOWN_USER_NAME);
       }
     }
   }

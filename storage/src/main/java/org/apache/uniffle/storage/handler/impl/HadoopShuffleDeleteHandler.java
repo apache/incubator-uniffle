@@ -33,15 +33,17 @@ import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(HadoopShuffleDeleteHandler.class);
+  private final String shuffleServerId;
 
   private Configuration hadoopConf;
 
-  public HadoopShuffleDeleteHandler(Configuration hadoopConf) {
+  public HadoopShuffleDeleteHandler(Configuration hadoopConf, String shuffleServerId) {
     this.hadoopConf = hadoopConf;
+    this.shuffleServerId = shuffleServerId;
   }
 
   @Override
-  public void delete(String[] storageBasePaths, String appId, String user, String shuffleServerId) {
+  public void delete(String[] storageBasePaths, String appId, String user) {
     for (String deletePath : storageBasePaths) {
       final Path path = new Path(deletePath);
       boolean isSuccess = false;

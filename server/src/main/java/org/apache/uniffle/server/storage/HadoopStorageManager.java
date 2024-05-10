@@ -96,23 +96,25 @@ public class HadoopStorageManager extends SingleStorageManager {
     String appId = event.getAppId();
     HadoopStorage storage = getStorageByAppId(appId);
     if (storage != null) {
+      boolean purgeForExpired = false;
       if (event instanceof AppPurgeEvent) {
         storage.removeHandlers(appId);
         appIdToStorages.remove(appId);
+        purgeForExpired = ((AppPurgeEvent) event).isAppExpired();
       }
       ShuffleDeleteHandler deleteHandler =
           ShuffleHandlerFactory.getInstance()
               .createShuffleDeleteHandler(
                   new CreateShuffleDeleteHandlerRequest(
-                      StorageType.HDFS.name(), storage.getConf()));
+                      StorageType.HDFS.name(),
+                      storage.getConf(),
+                      purgeForExpired ? shuffleServerId : null));
 
       String basicPath =
           ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
       List<String> deletePaths = new ArrayList<>();
 
-      boolean purgeForExpired = false;
       if (event instanceof AppPurgeEvent) {
-        purgeForExpired = ((AppPurgeEvent) event).isAppExpired();
         deletePaths.add(basicPath);
       } else {
         for (Integer shuffleId : event.getShuffleIds()) {
@@ -120,11 +122,7 @@ public class HadoopStorageManager extends SingleStorageManager {
               ShuffleStorageUtils.getFullShuffleDataFolder(basicPath, String.valueOf(shuffleId)));
         }
       }
-      deleteHandler.delete(
-          deletePaths.toArray(new String[0]),
-          appId,
-          event.getUser(),
-          purgeForExpired ? shuffleServerId : null);
+      deleteHandler.delete(deletePaths.toArray(new String[0]), appId, event.getUser());
     } else {
       LOG.warn("Storage gotten is null when removing resources for event: {}", event);
     }
