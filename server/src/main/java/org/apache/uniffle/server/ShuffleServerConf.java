@@ -90,7 +90,7 @@ public class ShuffleServerConf extends RssBaseConf {
           .withDescription("Direct memory usage tracker interval to MetricSystem (ms)");
 
   public static final ConfigOption<Long> SERVER_NETTY_PENDING_TASKS_NUM_TRACKER_INTERVAL =
-      ConfigOptions.key("rss.server.netty.pending.tasks.num.updateMetricsIntervalMs")
+      ConfigOptions.key("rss.server.netty.metrics.pendingTaskNumPollingIntervalMs")
           .longType()
           .defaultValue(10 * 1000L)
           .withDescription(
