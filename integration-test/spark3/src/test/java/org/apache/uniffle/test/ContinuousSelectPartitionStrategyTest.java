@@ -244,7 +244,7 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
               .get(RSS_CLIENT_BLOCK_ID_SELF_MANAGED_ENABLED);
       if (ClientType.GRPC == clientType && !blockIdSelfManagedEnabled) {
         // TODO skip validating for GRPC_NETTY, needs to mock ShuffleServerNettyHandler
-        // TODO: skip validating when blockId is managed in spark driver side.
+        // skip validating when blockId is managed in spark driver side.
         validateRequestCount(
             spark.sparkContext().applicationId(), expectRequestNum * replicateRead);
       }
