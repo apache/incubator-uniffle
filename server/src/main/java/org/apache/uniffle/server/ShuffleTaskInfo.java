@@ -194,6 +194,10 @@ public class ShuffleTaskInfo {
     }
   }
 
+  public Set<Integer> getShuffleIds() {
+    return partitionDataSizes.keySet();
+  }
+
   @Override
   public String toString() {
     return "ShuffleTaskInfo{"

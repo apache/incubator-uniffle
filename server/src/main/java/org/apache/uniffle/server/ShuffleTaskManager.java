@@ -18,6 +18,7 @@
 package org.apache.uniffle.server;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -772,7 +773,8 @@ public class ShuffleTaskManager {
       shuffleBufferManager.removeBuffer(appId);
       shuffleFlushManager.removeResources(appId);
       storageManager.removeResources(
-          new AppPurgeEvent(appId, shuffleTaskInfo.getUser(), checkAppExpired));
+          new AppPurgeEvent(
+              appId, shuffleTaskInfo.getUser(), new ArrayList<>(shuffleTaskInfo.getShuffleIds())));
       if (shuffleTaskInfo.hasHugePartition()) {
         ShuffleServerMetrics.gaugeAppWithHugePartitionNum.dec();
         ShuffleServerMetrics.gaugeHugePartitionNum.dec();
