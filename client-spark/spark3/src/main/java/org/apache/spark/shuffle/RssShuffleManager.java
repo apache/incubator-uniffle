@@ -239,7 +239,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       }
     }
 
-    this.blockIdSelfManagedEnabled = rssConf.getBoolean(RSS_CLIENT_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
+    this.blockIdSelfManagedEnabled =
+        rssConf.getBoolean(RSS_CLIENT_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
     this.shuffleManagerRpcServiceEnabled =
         taskBlockSendFailureRetryEnabled || rssResubmitStage || blockIdSelfManagedEnabled;
     if (isDriver) {

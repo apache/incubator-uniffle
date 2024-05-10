@@ -213,7 +213,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             && RssSparkShuffleUtils.isStageResubmitSupported();
     this.taskBlockSendFailureRetry =
         rssConf.getBoolean(RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED);
-    this.blockIdSelfManagedEnabled = rssConf.getBoolean(RSS_CLIENT_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
+    this.blockIdSelfManagedEnabled =
+        rssConf.getBoolean(RSS_CLIENT_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
     this.shuffleManagerRpcServiceEnabled =
         taskBlockSendFailureRetry || rssResubmitStage || blockIdSelfManagedEnabled;
     if (!sparkConf.getBoolean(RssSparkConfig.RSS_TEST_FLAG.key(), false)) {
