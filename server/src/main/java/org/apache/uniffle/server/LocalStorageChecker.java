@@ -109,21 +109,21 @@ public class LocalStorageChecker extends Checker {
                 }
 
                 long total = getTotalSpace(storageInfo.storageDir);
-                long free = getFreeSpace(storageInfo.storageDir);
+                long availableBytes = getFreeSpace(storageInfo.storageDir);
 
                 totalSpace.addAndGet(total);
-                wholeDiskUsedSpace.addAndGet(total - free);
+                wholeDiskUsedSpace.addAndGet(total - availableBytes);
                 long usedBytes = getServiceUsedSpace(storageInfo.storageDir);
                 serviceUsedSpace.addAndGet(usedBytes);
                 storageInfo.updateServiceUsedBytes(usedBytes);
-                storageInfo.updateStorageFreeSpace(free);
+                storageInfo.updateStorageFreeSpace(availableBytes);
 
                 boolean isWritable = storageInfo.canWrite();
                 ShuffleServerMetrics.gaugeLocalStorageIsWritable
                     .labels(storageInfo.storage.getBasePath())
                     .set(isWritable ? 0 : 1);
 
-                if (storageInfo.checkIsSpaceEnough(total, free)) {
+                if (storageInfo.checkIsSpaceEnough(total, availableBytes)) {
                   num.incrementAndGet();
                 }
                 return null;
@@ -238,20 +238,20 @@ public class LocalStorageChecker extends Checker {
       this.storage = storage;
     }
 
-    void updateStorageFreeSpace(long free) {
-      storage.updateDiskAvailableBytes(free);
+    void updateStorageFreeSpace(long availableBytes) {
+      storage.updateDiskAvailableBytes(availableBytes);
     }
 
     void updateServiceUsedBytes(long usedBytes) {
       storage.updateServiceUsedBytes(usedBytes);
     }
 
-    boolean checkIsSpaceEnough(long total, long free) {
+    boolean checkIsSpaceEnough(long total, long availableBytes) {
       if (Double.compare(0.0, total) == 0) {
         this.isHealthy = false;
         return false;
       }
-      double usagePercent = (total - free) * 100.0 / total;
+      double usagePercent = (total - availableBytes) * 100.0 / total;
       if (isHealthy) {
         if (Double.compare(usagePercent, diskMaxUsagePercentage) >= 0) {
           isHealthy = false;
