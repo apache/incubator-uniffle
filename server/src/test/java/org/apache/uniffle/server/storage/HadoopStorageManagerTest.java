@@ -119,7 +119,8 @@ public class HadoopStorageManagerTest {
   }
 
   @Test
-  public void testRemoveExpiredResources(@TempDir File remoteBasePath) throws Exception {
+  public void testRemoveExpiredResourcesWithTwoReplicas(@TempDir File remoteBasePath)
+      throws Exception {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
@@ -143,16 +144,17 @@ public class HadoopStorageManagerTest {
     File dataFile2 = new File(partitionDir, "shuffleserver2_1.data");
     dataFile2.createNewFile();
     assertTrue(partitionDir.exists());
-    // purged for expired
+    // Purged for expired
     assertEquals(1, appStorageMap.size());
     AppPurgeEvent shufflePurgeEvent = new AppPurgeEvent(appId, "", null, true);
     hadoopStorageManager.removeResources(shufflePurgeEvent);
     assertEquals(0, appStorageMap.size());
+    // The directory of the partition should have not been deleted, for it was not empty.
     assertTrue(partitionDir.exists());
     assertFalse(dataFile.exists());
     assertTrue(dataFile2.exists());
 
-    // purged for unregister
+    // Purged for unregister
     AppPurgeEvent appPurgeEvent = new AppPurgeEvent(appId, "");
     hadoopStorageManager.removeResources(appPurgeEvent);
     assertEquals(0, appStorageMap.size());
@@ -160,7 +162,8 @@ public class HadoopStorageManagerTest {
   }
 
   @Test
-  public void testRemoveExpiredResources2(@TempDir File remoteBasePath) throws Exception {
+  public void testRemoveExpiredResourcesWithOneReplica(@TempDir File remoteBasePath)
+      throws Exception {
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
@@ -178,7 +181,7 @@ public class HadoopStorageManagerTest {
     File appPathFile = new File(appPath);
     File partitionDir = new File(appPathFile, "1/1-1/");
     partitionDir.mkdirs();
-    // Simulate the case that only one shuffle server writes data
+    // Simulate the case that only one shuffle server writes data.
     File dataFile = new File(partitionDir, shuffleServerId + "_1.data");
     dataFile.createNewFile();
     assertTrue(partitionDir.exists());
@@ -187,6 +190,7 @@ public class HadoopStorageManagerTest {
     AppPurgeEvent shufflePurgeEvent = new AppPurgeEvent(appId, "", null, true);
     hadoopStorageManager.removeResources(shufflePurgeEvent);
     assertEquals(0, appStorageMap.size());
+    // The directory of the application should have been deleted, for it was empty.
     assertFalse(partitionDir.exists());
 
     // purged for unregister
