@@ -109,20 +109,20 @@ public class LocalStorageChecker extends Checker {
                 }
 
                 long total = getTotalSpace(storageInfo.storageDir);
-                long availableBytes = getFreeSpace(storageInfo.storageDir);
+                long free = getFreeSpace(storageInfo.storageDir);
 
                 totalSpace.addAndGet(total);
-                wholeDiskUsedSpace.addAndGet(total - availableBytes);
+                wholeDiskUsedSpace.addAndGet(total - free);
                 serviceUsedSpace.addAndGet(getServiceUsedSpace(storageInfo.storageDir));
 
-                storageInfo.updateStorageFreeSpace(availableBytes);
+                storageInfo.updateStorageFreeSpace(free);
 
                 boolean isWritable = storageInfo.canWrite();
                 ShuffleServerMetrics.gaugeLocalStorageIsWritable
                     .labels(storageInfo.storage.getBasePath())
                     .set(isWritable ? 0 : 1);
 
-                if (storageInfo.checkIsSpaceEnough(total, availableBytes)) {
+                if (storageInfo.checkIsSpaceEnough(total, free)) {
                   num.incrementAndGet();
                 }
                 return null;
@@ -237,16 +237,16 @@ public class LocalStorageChecker extends Checker {
       this.storage = storage;
     }
 
-    void updateStorageFreeSpace(long availableBytes) {
-      storage.updateDiskFree(availableBytes);
+    void updateStorageFreeSpace(long free) {
+      storage.updateDiskFree(free);
     }
 
-    boolean checkIsSpaceEnough(long total, long availableBytes) {
+    boolean checkIsSpaceEnough(long total, long free) {
       if (Double.compare(0.0, total) == 0) {
         this.isHealthy = false;
         return false;
       }
-      double usagePercent = (total - availableBytes) * 100.0 / total;
+      double usagePercent = (total - free) * 100.0 / total;
       if (isHealthy) {
         if (Double.compare(usagePercent, diskMaxUsagePercentage) >= 0) {
           isHealthy = false;
