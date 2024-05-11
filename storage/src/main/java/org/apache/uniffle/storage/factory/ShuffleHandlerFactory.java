@@ -185,7 +185,7 @@ public class ShuffleHandlerFactory {
   public ShuffleDeleteHandler createShuffleDeleteHandler(
       CreateShuffleDeleteHandlerRequest request) {
     if (StorageType.HDFS.name().equals(request.getStorageType())) {
-      return new HadoopShuffleDeleteHandler(request.getConf());
+      return new HadoopShuffleDeleteHandler(request.getConf(), request.getShuffleServerId());
     } else if (StorageType.LOCALFILE.name().equals(request.getStorageType())) {
       return new LocalFileDeleteHandler();
     } else {

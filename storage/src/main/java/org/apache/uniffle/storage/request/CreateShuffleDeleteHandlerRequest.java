@@ -23,10 +23,17 @@ public class CreateShuffleDeleteHandlerRequest {
 
   private String storageType;
   private Configuration conf;
+  private String shuffleServerId;
 
   public CreateShuffleDeleteHandlerRequest(String storageType, Configuration conf) {
+    this(storageType, conf, null);
+  }
+
+  public CreateShuffleDeleteHandlerRequest(
+      String storageType, Configuration conf, String shuffleServerId) {
     this.storageType = storageType;
     this.conf = conf;
+    this.shuffleServerId = shuffleServerId;
   }
 
   public String getStorageType() {
@@ -35,5 +42,9 @@ public class CreateShuffleDeleteHandlerRequest {
 
   public Configuration getConf() {
     return conf;
+  }
+
+  public String getShuffleServerId() {
+    return shuffleServerId;
   }
 }
