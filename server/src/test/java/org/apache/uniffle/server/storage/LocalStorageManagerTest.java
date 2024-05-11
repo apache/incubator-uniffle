@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -190,12 +191,18 @@ public class LocalStorageManagerTest {
   }
 
   @Test
-  public void testInitializeLocalStorage() {
+  public void testInitializeLocalStorage() throws IOException {
+    final File storageBaseDir1 = Files.createTempDirectory("rss-data-1").toFile();
+    final File storageBaseDir2 = Files.createTempDirectory("rss-data-2").toFile();
+    final File rootRestrictedDir1 = new File("/proc/rss-data-mock-restricted-dir-1");
+    final File rootRestrictedDir2 = new File("/proc/rss-data-mock-restricted-dir-2");
 
     // case1: when no candidates, it should throw exception.
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 2000L);
-    conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/a/rss-data", "/b/rss-data"));
+    conf.set(
+        ShuffleServerConf.RSS_STORAGE_BASE_PATH,
+        Arrays.asList(rootRestrictedDir1.getAbsolutePath(), rootRestrictedDir2.getAbsolutePath()));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
     conf.setLong(ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER, 1);
     conf.setString(
@@ -209,21 +216,33 @@ public class LocalStorageManagerTest {
 
     // case2: when candidates exist, it should initialize successfully.
     conf.set(
-        ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/a/rss-data", "/tmp/rss-data-1"));
+        ShuffleServerConf.RSS_STORAGE_BASE_PATH,
+        Arrays.asList(storageBaseDir1.getAbsolutePath(), rootRestrictedDir1.getAbsolutePath()));
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
     assertEquals(1, localStorageManager.getStorages().size());
 
     // case3: all ok
     conf.set(
         ShuffleServerConf.RSS_STORAGE_BASE_PATH,
-        Arrays.asList("/tmp/rss-data-1", "/tmp/rss-data-2"));
+        Arrays.asList(storageBaseDir1.getAbsolutePath(), storageBaseDir2.getAbsolutePath()));
     localStorageManager = new LocalStorageManager(conf);
     assertEquals(2, localStorageManager.getStorages().size());
 
-    // case4: only have 1 candidate, but exceed the number of
+    // case4: after https://github.com/apache/incubator-uniffle/pull/616
+    // dirs will be created automatically if they do not exist
+    FileUtils.deleteQuietly(storageBaseDir1);
+    FileUtils.deleteQuietly(storageBaseDir2);
+    conf.set(
+        ShuffleServerConf.RSS_STORAGE_BASE_PATH,
+        Arrays.asList(storageBaseDir1.getAbsolutePath(), storageBaseDir2.getAbsolutePath()));
+    localStorageManager = new LocalStorageManager(conf);
+    assertEquals(2, localStorageManager.getStorages().size());
+
+    // case5: only have 1 candidate, but exceed the number of
     // rss.server.localstorage.initialize.max.fail.number
     conf.set(
-        ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/a/rss-data", "/tmp/rss-data-1"));
+        ShuffleServerConf.RSS_STORAGE_BASE_PATH,
+        Arrays.asList(storageBaseDir1.getAbsolutePath(), rootRestrictedDir1.getAbsolutePath()));
     conf.setLong(ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER, 0L);
     try {
       localStorageManager = new LocalStorageManager(conf);
@@ -232,10 +251,11 @@ public class LocalStorageManagerTest {
       // ignore
     }
 
-    // case5: if failed=2, but lower than rss.server.localstorage.initialize.max.fail.number, should
-    // exit
+    // case6: if failed=2, but lower than rss.server.localstorage.initialize.max.fail.number,
+    // it should fail too
     conf.set(
-        ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("/a/rss-data", "/b/rss-data-1"));
+        ShuffleServerConf.RSS_STORAGE_BASE_PATH,
+        Arrays.asList(rootRestrictedDir1.getAbsolutePath(), rootRestrictedDir2.getAbsolutePath()));
     conf.setLong(ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER, 10L);
     try {
       localStorageManager = new LocalStorageManager(conf);
@@ -243,6 +263,10 @@ public class LocalStorageManagerTest {
     } catch (Exception e) {
       // ignore
     }
+
+    // clear temp dirs
+    FileUtils.deleteQuietly(storageBaseDir1);
+    FileUtils.deleteQuietly(storageBaseDir2);
   }
 
   @Test
