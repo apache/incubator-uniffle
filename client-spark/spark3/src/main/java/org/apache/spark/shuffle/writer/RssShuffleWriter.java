@@ -311,6 +311,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     if (shuffleBlockInfos != null && !shuffleBlockInfos.isEmpty()) {
       processShuffleBlockInfos(shuffleBlockInfos);
     }
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     long checkStartTs = System.currentTimeMillis();
     checkSentRecordCount(recordCount);
     checkSentBlockCount();
@@ -352,12 +353,11 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private void checkSentBlockCount() {
     long tracked = 0;
     if (serverToPartitionToBlockIds != null) {
-      tracked =
-          serverToPartitionToBlockIds.values().stream()
-              .flatMap(x -> x.values().stream())
-              .map(x -> x.size())
-              .reduce((a, b) -> a + b)
-              .orElse(0);
+      Set<Long> blockIds = new HashSet<>();
+      for (Map<Integer, Set<Long>> partitionBlockIds : serverToPartitionToBlockIds.values()) {
+        partitionBlockIds.values().forEach(x -> blockIds.addAll(x));
+      }
+      tracked = blockIds.size();
     }
     if (tracked != bufferManager.getBlockCount()) {
       throw new RssSendFailedException(
