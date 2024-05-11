@@ -472,7 +472,8 @@ func TestGenerateDeploy(t *testing.T) {
 }
 
 // generateServiceCuntMap generates a map with service type and its corresponding count. The headless svc is treated
-//   differently: the service type for headless is treated as an empty service.
+//
+//	differently: the service type for headless is treated as an empty service.
 func generateServiceCountMap(services []*corev1.Service) map[corev1.ServiceType]int {
 	result := make(map[corev1.ServiceType]int)
 	var empty corev1.ServiceType
