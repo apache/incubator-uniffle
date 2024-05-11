@@ -150,3 +150,19 @@ Other configuration:
 |spark.rss.access.timeout.ms|10000|The timeout to access Uniffle coordinator|
 |spark.rss.client.access.retry.interval.ms|20000|The interval between retries fallback to SortShuffleManager|
 |spark.rss.client.access.retry.times|0|The number of retries fallback to SortShuffleManager|
+
+### Partition reassign in one shuffle attempt
+
+To achieve better task stability, partition's reassign mechanism that requests the new replacement shuffleServers is introduced to overcome server instability 
+that is in unhealthy or high memory pressure in one shuffle attempt. On current stage, this feature is not compatible with stage retry and multiple replicas mechanism (More tests should be added).
+
+Using the following configs to enable this feature 
+
+```bash
+# whether to enable reassign mechanism
+spark.rss.client.reassign.enabled                  true
+# The max reassign server num for one partition when using partition reassign mechanism.
+spark.rss.client.reassign.maxReassignServerNum     10
+# The block retry max times when partition reassign is enabled. 
+spark.rss.client.reassign.blockRetryMaxTimes       1
+```

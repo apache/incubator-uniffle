@@ -38,7 +38,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES;
 import static org.apache.uniffle.client.util.RssClientConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER;
 import static org.apache.uniffle.client.util.RssClientConfig.RSS_CLIENT_RETRY_MAX;
-import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED;
+import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_REASSIGN_ENABLED;
 import static org.apache.uniffle.coordinator.CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY;
 
 /** This class is to test the partition reassign mechanism of multiple retries. */
@@ -86,7 +86,7 @@ public class PartitionBlockDataReassignMultiTimesTest extends PartitionBlockData
     sparkConf.set("spark.sql.shuffle.partitions", "4");
     sparkConf.set("spark." + RSS_CLIENT_RETRY_MAX, "2");
     sparkConf.set("spark." + RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, "1");
-    sparkConf.set("spark." + RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.key(), "true");
+    sparkConf.set("spark." + RSS_CLIENT_REASSIGN_ENABLED.key(), "true");
     sparkConf.set("spark." + RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES.key(), "10");
 
     // simulate the grpc servers has different free memory
