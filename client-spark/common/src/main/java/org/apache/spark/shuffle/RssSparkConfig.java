@@ -37,6 +37,13 @@ import org.apache.uniffle.common.config.RssConf;
 
 public class RssSparkConfig {
 
+  public static final ConfigOption<Boolean> RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED =
+      ConfigOptions.key("rss.blockId.selfManagementEnabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "Whether to enable the blockId self management in spark driver side. Default value is false.");
+
   public static final ConfigOption<Long> RSS_CLIENT_SEND_SIZE_LIMITATION =
       ConfigOptions.key("rss.client.send.size.limit")
           .longType()
@@ -70,6 +77,18 @@ public class RssSparkConfig {
           .defaultValue(1.0d)
           .withDescription(
               "The buffer size to spill when spill triggered by config spark.rss.writer.buffer.spill.size");
+  public static final ConfigOption<Integer> RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM =
+      ConfigOptions.key("rss.client.reassign.maxReassignServerNum")
+          .intType()
+          .defaultValue(10)
+          .withDescription(
+              "The max reassign server num for one partition when using partition reassign mechanism.");
+
+  public static final ConfigOption<Integer> RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES =
+      ConfigOptions.key("rss.client.reassign.blockRetryMaxTimes")
+          .intType()
+          .defaultValue(1)
+          .withDescription("The block retry max times when partition reassign is enabled.");
 
   public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
 

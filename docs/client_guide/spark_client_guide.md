@@ -62,7 +62,7 @@ and Continuous partition assignment mechanism.
 
     It can be enabled by the following config
       ```bash
-        # Default value is ROUND, it will poll to allocate partitions to ShuffleServer
+        # Another value is ROUND, it will poll to allocate partitions to ShuffleServer
         rss.coordinator.select.partition.strategy CONTINUOUS
         
         # Default value is 1.0, used to estimate task concurrency, how likely is this part of the resource between spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors to be allocated
@@ -125,6 +125,11 @@ The bits reserved for sequence number, partition id and task attempt id are best
    speculative execution enabled via Spark conf `spark.speculation` (default is false), that `max attempts` has to be incremented by one.
    For example: `22` bits is sufficient for `taskAttemptIdBits` with `partitionIdBits=20`, and Spark conf `spark.task.maxFailures=4` and `spark.speculation=false`.
 3. Reserve the remaining bits to `sequenceNoBits`: `sequenceNoBits = 63 - partitionIdBits - taskAttemptIdBits`.
+
+### Block id self management (experimental)
+
+Now, the block id could be managed by the spark driver self when specifying the `spark.rss.blockId.selfManagementEnabled=true`.
+And this will reduce shuffle server pressure but significantly increase memory consumption on the Spark driver side.
 
 ### Adaptive Remote Shuffle Enabling 
 Currently, this feature only supports Spark. 

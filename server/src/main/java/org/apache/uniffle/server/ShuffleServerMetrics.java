@@ -24,18 +24,23 @@ import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
+import io.prometheus.client.Histogram;
 import io.prometheus.client.Summary;
 import org.apache.commons.lang3.StringUtils;
 
+import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.metrics.MetricsManager;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.LocalStorage;
+
+import static org.apache.uniffle.common.util.Constants.METRICS_APP_LABEL_NAME;
 
 public class ShuffleServerMetrics {
 
   private static final String TOTAL_RECEIVED_DATA = "total_received_data";
   private static final String TOTAL_WRITE_DATA = "total_write_data";
   private static final String TOTAL_WRITE_BLOCK = "total_write_block";
+  private static final String WRITE_BLOCK_SIZE = "write_block_size";
   private static final String TOTAL_WRITE_TIME = "total_write_time";
   private static final String TOTAL_WRITE_HANDLER = "total_write_handler";
   private static final String TOTAL_WRITE_EXCEPTION = "total_write_exception";
@@ -72,6 +77,7 @@ public class ShuffleServerMetrics {
   private static final String TOTAL_REQUIRE_READ_MEMORY_FAILED =
       "total_require_read_memory_failed_num";
 
+  private static final String LOCAL_STORAGE_IS_WRITABLE = "local_storage_is_writable";
   private static final String LOCAL_STORAGE_TOTAL_DIRS_NUM = "local_storage_total_dirs_num";
   private static final String LOCAL_STORAGE_CORRUPTED_DIRS_NUM = "local_storage_corrupted_dirs_num";
   private static final String LOCAL_STORAGE_TOTAL_SPACE = "local_storage_total_space";
@@ -148,6 +154,7 @@ public class ShuffleServerMetrics {
   public static Counter.Child counterTotalReceivedDataSize;
   public static Counter.Child counterTotalWriteDataSize;
   public static Counter.Child counterTotalWriteBlockSize;
+  public static Histogram appHistogramWriteBlockSize;
   public static Counter.Child counterTotalWriteTime;
   public static Counter.Child counterWriteException;
   public static Counter.Child counterWriteSlow;
@@ -181,6 +188,7 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeHugePartitionNum;
   public static Gauge.Child gaugeAppWithHugePartitionNum;
 
+  public static Gauge gaugeLocalStorageIsWritable;
   public static Gauge.Child gaugeLocalStorageTotalDirsNum;
   public static Gauge.Child gaugeLocalStorageCorruptedDirsNum;
   public static Gauge.Child gaugeLocalStorageTotalSpace;
@@ -231,20 +239,28 @@ public class ShuffleServerMetrics {
   private static MetricsManager metricsManager;
   private static boolean isRegister = false;
 
-  public static synchronized void register(CollectorRegistry collectorRegistry, String tags) {
+  public static synchronized void register(
+      CollectorRegistry collectorRegistry, String tags, ShuffleServerConf serverConf) {
     if (!isRegister) {
       ShuffleServerMetrics.tags = tags;
       Map<String, String> labels = Maps.newHashMap();
       labels.put(Constants.METRICS_TAG_LABEL_NAME, ShuffleServerMetrics.tags);
       metricsManager = new MetricsManager(collectorRegistry, labels);
       isRegister = true;
-      setUpMetrics();
+      setUpMetrics(serverConf);
     }
+  }
+
+  public static void register(ShuffleServerConf serverConf) {
+    register(CollectorRegistry.defaultRegistry, Constants.SHUFFLE_SERVER_VERSION, serverConf);
   }
 
   @VisibleForTesting
   public static void register() {
-    register(CollectorRegistry.defaultRegistry, Constants.SHUFFLE_SERVER_VERSION);
+    register(
+        CollectorRegistry.defaultRegistry,
+        Constants.SHUFFLE_SERVER_VERSION,
+        new ShuffleServerConf());
   }
 
   @VisibleForTesting
@@ -314,10 +330,16 @@ public class ShuffleServerMetrics {
     incHadoopStorageWriteDataSize(storageHost, size, false);
   }
 
-  private static void setUpMetrics() {
+  private static void setUpMetrics(ShuffleServerConf serverConf) {
     counterTotalReceivedDataSize = metricsManager.addLabeledCounter(TOTAL_RECEIVED_DATA);
     counterTotalWriteDataSize = metricsManager.addLabeledCounter(TOTAL_WRITE_DATA);
     counterTotalWriteBlockSize = metricsManager.addLabeledCounter(TOTAL_WRITE_BLOCK);
+    appHistogramWriteBlockSize =
+        metricsManager.addHistogram(
+            WRITE_BLOCK_SIZE,
+            ConfigUtils.convertBytesStringToDoubleArray(
+                serverConf.get(ShuffleServerConf.APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_BUCKETS)),
+            METRICS_APP_LABEL_NAME);
     counterTotalWriteTime = metricsManager.addLabeledCounter(TOTAL_WRITE_TIME);
     counterWriteException = metricsManager.addLabeledCounter(TOTAL_WRITE_EXCEPTION);
     counterWriteSlow = metricsManager.addLabeledCounter(TOTAL_WRITE_SLOW);
@@ -381,6 +403,8 @@ public class ShuffleServerMetrics {
     counterTotalPartitionNum = metricsManager.addLabeledCounter(TOTAL_PARTITION_NUM);
     counterTotalHugePartitionNum = metricsManager.addLabeledCounter(TOTAL_HUGE_PARTITION_NUM);
 
+    gaugeLocalStorageIsWritable =
+        metricsManager.addGauge(LOCAL_STORAGE_IS_WRITABLE, LOCAL_DISK_PATH_LABEL);
     gaugeLocalStorageTotalDirsNum = metricsManager.addLabeledGauge(LOCAL_STORAGE_TOTAL_DIRS_NUM);
     gaugeLocalStorageCorruptedDirsNum =
         metricsManager.addLabeledGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM);

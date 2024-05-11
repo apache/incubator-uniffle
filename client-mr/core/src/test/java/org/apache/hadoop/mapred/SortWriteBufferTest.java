@@ -20,11 +20,15 @@ package org.apache.hadoop.mapred;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.io.serializer.Deserializer;
@@ -151,6 +155,55 @@ public class SortWriteBufferTest {
     valueRead = valDeserializer.deserialize(null);
     assertEquals(bigWritableKey, keyRead);
     assertEquals(bigWritableValue, valueRead);
+  }
+
+  @Test
+  public void testSortBufferIterator() throws IOException {
+    SerializationFactory serializationFactory =
+        new SerializationFactory(new JobConf(new Configuration()));
+    Serializer<Text> keySerializer = serializationFactory.getSerializer(Text.class);
+    Deserializer<Text> keyDeserializer = serializationFactory.getDeserializer(Text.class);
+    Serializer<IntWritable> valueSerializer = serializationFactory.getSerializer(IntWritable.class);
+    Deserializer<IntWritable> valueDeserializer =
+        serializationFactory.getDeserializer(IntWritable.class);
+
+    SortWriteBuffer<Text, IntWritable> buffer =
+        new SortWriteBuffer<Text, IntWritable>(1, null, 3072, keySerializer, valueSerializer);
+
+    List<String> wordTable =
+        Lists.newArrayList(
+            "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
+
+    List<String> keys = Lists.newArrayList();
+
+    Random random = new Random();
+    for (int i = 0; i < 8; i++) {
+      buffer.addRecord(new Text(wordTable.get(i)), new IntWritable(1));
+      keys.add(wordTable.get(i));
+    }
+    for (int i = 0; i < 10000; i++) {
+      int index = random.nextInt(wordTable.size());
+      buffer.addRecord(new Text(wordTable.get(index)), new IntWritable(1));
+      keys.add(wordTable.get(index));
+    }
+
+    SortWriteBuffer.SortBufferIterator<Text, IntWritable> iterator =
+        new SortWriteBuffer.SortBufferIterator<>(buffer);
+
+    int ind = 0;
+
+    Text key = new Text();
+    IntWritable value = new IntWritable();
+    while (iterator.next()) {
+      iterator.getKey().getData();
+      iterator.getValue().getData();
+      keyDeserializer.open(iterator.getKey());
+      valueDeserializer.open(iterator.getValue());
+      keyDeserializer.deserialize(key);
+      valueDeserializer.deserialize(value);
+      assertEquals(keys.get(ind), key.toString());
+      ind++;
+    }
   }
 
   int readInt(DataInputStream dStream) throws IOException {

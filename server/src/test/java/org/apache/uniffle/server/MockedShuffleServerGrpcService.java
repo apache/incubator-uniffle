@@ -45,6 +45,9 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 
   private boolean mockSendDataFailed = false;
 
+  private boolean mockRequireBufferFailedWithNoBuffer = false;
+  private boolean isMockRequireBufferFailedWithNoBufferForHugePartition = false;
+
   private boolean recordGetShuffleResult = false;
 
   private long numOfFailedReadRequest = 0;
@@ -60,6 +63,14 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 
   public void enableMockSendDataFailed(boolean mockSendDataFailed) {
     this.mockSendDataFailed = mockSendDataFailed;
+  }
+
+  public void enableMockRequireBufferFailWithNoBuffer() {
+    this.mockRequireBufferFailedWithNoBuffer = true;
+  }
+
+  public void enableMockRequireBufferFailWithNoBufferForHugePartition() {
+    this.isMockRequireBufferFailedWithNoBufferForHugePartition = true;
   }
 
   public void enableRecordGetShuffleResult() {
@@ -85,6 +96,30 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 
   public MockedShuffleServerGrpcService(ShuffleServer shuffleServer) {
     super(shuffleServer);
+  }
+
+  @Override
+  public void requireBuffer(
+      RssProtos.RequireBufferRequest request,
+      StreamObserver<RssProtos.RequireBufferResponse> responseObserver) {
+    if (mockRequireBufferFailedWithNoBuffer
+        || isMockRequireBufferFailedWithNoBufferForHugePartition) {
+      LOG.info("Make require buffer mocked failed.");
+      StatusCode code =
+          mockRequireBufferFailedWithNoBuffer
+              ? StatusCode.NO_BUFFER
+              : StatusCode.NO_BUFFER_FOR_HUGE_PARTITION;
+      RssProtos.RequireBufferResponse response =
+          RssProtos.RequireBufferResponse.newBuilder()
+              .setStatus(code.toProto())
+              .setRequireBufferId(-1)
+              .build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+      return;
+    }
+
+    super.requireBuffer(request, responseObserver);
   }
 
   @Override

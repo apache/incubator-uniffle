@@ -56,6 +56,7 @@ import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -227,8 +228,12 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
       // Validate getShuffleResultForMultiPart is correct before return result
       ClientType clientType =
           ClientType.valueOf(spark.sparkContext().getConf().get(RssSparkConfig.RSS_CLIENT_TYPE));
-      if (ClientType.GRPC == clientType) {
+      boolean blockIdSelfManagedEnabled =
+          RssSparkConfig.toRssConf(spark.sparkContext().getConf())
+              .get(RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
+      if (ClientType.GRPC == clientType && !blockIdSelfManagedEnabled) {
         // TODO skip validating for GRPC_NETTY, needs to mock ShuffleServerNettyHandler
+        // skip validating when blockId is managed in spark driver side.
         validateRequestCount(
             spark.sparkContext().applicationId(), expectRequestNum * replicateRead);
       }

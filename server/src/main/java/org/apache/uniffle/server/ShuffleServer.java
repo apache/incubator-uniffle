@@ -316,7 +316,7 @@ public class ShuffleServer {
     LOG.info("Register metrics");
     CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
     String rawTags = getEncodedTags();
-    ShuffleServerMetrics.register(shuffleServerCollectorRegistry, rawTags);
+    ShuffleServerMetrics.register(shuffleServerCollectorRegistry, rawTags, shuffleServerConf);
     grpcMetrics = new ShuffleServerGrpcMetrics(this.shuffleServerConf, rawTags);
     grpcMetrics.register(new CollectorRegistry(true));
     nettyMetrics = new ShuffleServerNettyMetrics(shuffleServerConf, rawTags);
@@ -526,5 +526,22 @@ public class ShuffleServer {
 
   public String getEncodedTags() {
     return StringUtils.join(tags, ",");
+  }
+
+  @VisibleForTesting
+  public void sendHeartbeat() {
+    ShuffleServer shuffleServer = this;
+    registerHeartBeat.sendHeartBeat(
+        shuffleServer.getId(),
+        shuffleServer.getIp(),
+        shuffleServer.getGrpcPort(),
+        shuffleServer.getUsedMemory(),
+        shuffleServer.getPreAllocatedMemory(),
+        shuffleServer.getAvailableMemory(),
+        shuffleServer.getEventNumInFlush(),
+        shuffleServer.getTags(),
+        shuffleServer.getServerStatus(),
+        shuffleServer.getStorageManager().getStorageInfo(),
+        shuffleServer.getNettyPort());
   }
 }

@@ -55,8 +55,9 @@ import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.RssSparkShuffleUtils;
-import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.apache.spark.shuffle.ShuffleWriter;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
 import org.apache.spark.storage.BlockManagerId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,7 +123,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
       RssShuffleHandle<K, V, C> rssHandle,
-      ShuffleHandleInfo shuffleHandleInfo,
+      SimpleShuffleHandleInfo shuffleHandleInfo,
       TaskContext context) {
     this(
         appId,
@@ -168,8 +169,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.bitmapSplitNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM);
     this.serverToPartitionToBlockIds = Maps.newHashMap();
     this.shuffleWriteClient = shuffleWriteClient;
-    this.shuffleServersForData = shuffleHandleInfo.listAssignedServers();
-    this.partitionToServers = shuffleHandleInfo.getPartitionToServers();
+    this.shuffleServersForData = shuffleHandleInfo.getServers();
+    this.partitionToServers = shuffleHandleInfo.getAvailablePartitionServersForWriter();
     this.isMemoryShuffleEnabled =
         isMemoryShuffleEnabled(sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
     this.taskFailureCallback = taskFailureCallback;
@@ -211,7 +212,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             taskAttemptId,
             bufferOptions,
             rssHandle.getDependency().serializer(),
-            shuffleHandleInfo.getPartitionToServers(),
+            shuffleHandleInfo.getAvailablePartitionServersForWriter(),
             context.taskMemoryManager(),
             shuffleWriteMetrics,
             RssSparkConfig.toRssConf(sparkConf),

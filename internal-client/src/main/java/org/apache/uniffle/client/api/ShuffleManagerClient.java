@@ -19,15 +19,20 @@ package org.apache.uniffle.client.api;
 
 import java.io.Closeable;
 
+import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
+import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
 import org.apache.uniffle.client.request.RssPartitionToShuffleServerRequest;
-import org.apache.uniffle.client.request.RssReassignFaultyShuffleServerRequest;
+import org.apache.uniffle.client.request.RssReassignOnBlockSendFailureRequest;
 import org.apache.uniffle.client.request.RssReassignServersRequest;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
+import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
+import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssPartitionToShuffleServerResponse;
-import org.apache.uniffle.client.response.RssReassignFaultyShuffleServerResponse;
+import org.apache.uniffle.client.response.RssReassignOnBlockSendFailureResponse;
 import org.apache.uniffle.client.response.RssReassignServersReponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
+import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
 
 public interface ShuffleManagerClient extends Closeable {
@@ -48,6 +53,13 @@ public interface ShuffleManagerClient extends Closeable {
 
   RssReassignServersReponse reassignShuffleServers(RssReassignServersRequest req);
 
-  RssReassignFaultyShuffleServerResponse reassignFaultyShuffleServer(
-      RssReassignFaultyShuffleServerRequest request);
+  RssReassignOnBlockSendFailureResponse reassignOnBlockSendFailure(
+      RssReassignOnBlockSendFailureRequest request);
+
+  RssGetShuffleResultResponse getShuffleResult(RssGetShuffleResultRequest request);
+
+  RssGetShuffleResultResponse getShuffleResultForMultiPart(
+      RssGetShuffleResultForMultiPartRequest request);
+
+  RssReportShuffleResultResponse reportShuffleResult(RssReportShuffleResultRequest request);
 }

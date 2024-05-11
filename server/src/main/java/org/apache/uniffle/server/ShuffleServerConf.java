@@ -89,6 +89,13 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(10 * 1000L)
           .withDescription("Direct memory usage tracker interval to MetricSystem (ms)");
 
+  public static final ConfigOption<Long> SERVER_NETTY_PENDING_TASKS_NUM_TRACKER_INTERVAL =
+      ConfigOptions.key("rss.server.netty.metrics.pendingTaskNumPollingIntervalMs")
+          .longType()
+          .defaultValue(10 * 1000L)
+          .withDescription(
+              "How often to collect Netty pending tasks number metrics (in milliseconds)");
+
   public static final ConfigOption<Integer> SERVER_FLUSH_LOCALFILE_THREAD_POOL_SIZE =
       ConfigOptions.key("rss.server.flush.localfile.threadPool.size")
           .intType()
@@ -571,6 +578,20 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(60)
           .withDescription(
               "keep alive time of thread pool that used for calc summary metric, in SECONDS.");
+
+  public static final ConfigOption<Boolean> APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_ENABLED =
+      ConfigOptions.key("rss.server.metrics.blockSizeStatisticsEnabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("whether or not shuffle block size metric is enabled");
+
+  public static final ConfigOption<String> APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_BUCKETS =
+      ConfigOptions.key("rss.server.metrics.blockSizeStatistics.buckets")
+          .stringType()
+          .defaultValue("32kb,64kb,128kb,256kb,512kb,1mb,2mb,4mb,8mb,16mb")
+          .withDescription(
+              "A comma-separated block size list, where each value"
+                  + " can be suffixed with a memory size unit, such as kb or k, mb or m, etc.");
 
   public ShuffleServerConf() {}
 

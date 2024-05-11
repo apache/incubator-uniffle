@@ -18,10 +18,16 @@
 package org.apache.uniffle.client.response;
 
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.proto.RssProtos;
 
 public class RssReportShuffleResultResponse extends ClientResponse {
 
   public RssReportShuffleResultResponse(StatusCode statusCode) {
     super(statusCode);
+  }
+
+  public static RssReportShuffleResultResponse fromProto(
+      RssProtos.ReportShuffleResultResponse rpcResponse) {
+    return new RssReportShuffleResultResponse(StatusCode.fromProto(rpcResponse.getStatus()));
   }
 }

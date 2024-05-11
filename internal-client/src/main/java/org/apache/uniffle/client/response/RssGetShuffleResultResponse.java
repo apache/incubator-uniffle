@@ -21,8 +21,10 @@ import java.io.IOException;
 
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.proto.RssProtos;
 
 public class RssGetShuffleResultResponse extends ClientResponse {
 
@@ -36,5 +38,27 @@ public class RssGetShuffleResultResponse extends ClientResponse {
 
   public Roaring64NavigableMap getBlockIdBitmap() {
     return blockIdBitmap;
+  }
+
+  public static RssGetShuffleResultResponse fromProto(
+      RssProtos.GetShuffleResultResponse rpcResponse) {
+    try {
+      return new RssGetShuffleResultResponse(
+          StatusCode.fromProto(rpcResponse.getStatus()),
+          rpcResponse.getSerializedBitmap().toByteArray());
+    } catch (Exception e) {
+      throw new RssException(e);
+    }
+  }
+
+  public static RssGetShuffleResultResponse fromProto(
+      RssProtos.GetShuffleResultForMultiPartResponse rpcResponse) {
+    try {
+      return new RssGetShuffleResultResponse(
+          StatusCode.fromProto(rpcResponse.getStatus()),
+          rpcResponse.getSerializedBitmap().toByteArray());
+    } catch (Exception e) {
+      throw new RssException(e);
+    }
   }
 }
