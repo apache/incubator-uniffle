@@ -93,7 +93,7 @@ public class ServerInActivateReassignTest extends PartitionBlockDataReassignBasi
         (ShuffleServerGrpcService)
             ((GrpcServer) shuffleServer.getServer()).getServicesWithInterceptors().get(0).getKey();
     ShuffleServer spy = spy(shuffleServer);
-    when(spy.isActivateClientPartitionReassign()).thenReturn(true);
+    when(spy.isActivateClientReassign()).thenReturn(true);
     grpcServer.setShuffleServer(spy);
   }
 }

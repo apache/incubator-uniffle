@@ -428,15 +428,17 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void requireBuffer(
       RequireBufferRequest request, StreamObserver<RequireBufferResponse> responseObserver) {
     String appId = request.getAppId();
-    if (shuffleServer.isActivateClientPartitionReassign()
+    if (shuffleServer.isActivateClientReassign()
         && shuffleServer
             .getShuffleTaskManager()
             .getShuffleTaskInfo(appId)
             .isBlockFailureReassignEnabled()) {
       responseObserver.onNext(
           RequireBufferResponse.newBuilder()
-              .setStatus(StatusCode.SERVER_INACTIVE.toProto())
-              .setRetMsg("Server is inactive, status: " + shuffleServer.getServerStatus())
+              .setStatus(StatusCode.ACCESS_DENIED.toProto())
+              .setRetMsg(
+                  "Access is denied that server is inactive, status: "
+                      + shuffleServer.getServerStatus())
               .build());
       responseObserver.onCompleted();
       return;

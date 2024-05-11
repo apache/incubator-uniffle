@@ -551,7 +551,7 @@ public class ShuffleServer {
         shuffleServer.getNettyPort());
   }
 
-  public boolean isActivateClientPartitionReassign() {
+  public boolean isActivateClientReassign() {
     if (decommissionActivateClientReassignEnabled && serverStatus.get() != ServerStatus.ACTIVE) {
       return true;
     }
