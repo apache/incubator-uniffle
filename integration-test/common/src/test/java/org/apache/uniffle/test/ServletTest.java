@@ -105,7 +105,9 @@ public class ServletTest extends IntegrationTestBase {
     shuffleServerConf.set(
         RssBaseConf.RPC_SERVER_PORT,
         shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT) + 1);
-    shuffleServerConf.set(RssBaseConf.JETTY_HTTP_PORT, 18081);
+    shuffleServerConf.set(
+        RssBaseConf.JETTY_HTTP_PORT,
+        shuffleServerConf.getInteger(ShuffleServerConf.JETTY_HTTP_PORT) + 1);
     rpcPort2 = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     createShuffleServer(shuffleServerConf);
     File dataDir5 = new File(tmpDir, "data5");
@@ -115,7 +117,9 @@ public class ServletTest extends IntegrationTestBase {
     shuffleServerConf.set(
         RssBaseConf.RPC_SERVER_PORT,
         shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT) + 1);
-    shuffleServerConf.set(RssBaseConf.JETTY_HTTP_PORT, 18082);
+    shuffleServerConf.set(
+        RssBaseConf.JETTY_HTTP_PORT,
+        shuffleServerConf.getInteger(ShuffleServerConf.JETTY_HTTP_PORT) + 1);
     rpcPort3 = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     createShuffleServer(shuffleServerConf);
     File dataDir7 = new File(tmpDir, "data7");
@@ -125,7 +129,9 @@ public class ServletTest extends IntegrationTestBase {
     shuffleServerConf.set(
         RssBaseConf.RPC_SERVER_PORT,
         shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT) + 1);
-    shuffleServerConf.set(RssBaseConf.JETTY_HTTP_PORT, 18083);
+    shuffleServerConf.set(
+        RssBaseConf.JETTY_HTTP_PORT,
+        shuffleServerConf.getInteger(ShuffleServerConf.JETTY_HTTP_PORT) + 1);
     rpcPort4 = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     createShuffleServer(shuffleServerConf);
     startServers();

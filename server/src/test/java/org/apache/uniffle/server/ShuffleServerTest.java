@@ -154,6 +154,7 @@ public class ShuffleServerTest {
     } catch (Exception e) {
       assertEquals(expectMessage, e.getMessage());
       assertEquals(expectStatus, ((ExitException) e).getStatus());
+      ss1.stopServer();
       return;
     }
     fail();
