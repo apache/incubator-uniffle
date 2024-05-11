@@ -62,7 +62,7 @@ and Continuous partition assignment mechanism.
 
     It can be enabled by the following config
       ```bash
-        # Default value is ROUND, it will poll to allocate partitions to ShuffleServer
+        # Another value is ROUND, it will poll to allocate partitions to ShuffleServer
         rss.coordinator.select.partition.strategy CONTINUOUS
         
         # Default value is 1.0, used to estimate task concurrency, how likely is this part of the resource between spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors to be allocated
