@@ -85,7 +85,7 @@
     <spotless-maven-plugin.version>2.30.0</spotless-maven-plugin.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>3.12.4</mockito.version>
-    <netty.version>4.1.106.Final</netty.version>
+    <netty.version>4.1.109.Final</netty.version>
     <picocli.version>4.5.2</picocli.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <prometheus.simpleclient.version>0.9.0</prometheus.simpleclient.version>
