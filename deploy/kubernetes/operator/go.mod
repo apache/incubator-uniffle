@@ -1,6 +1,6 @@
 module github.com/apache/incubator-uniffle/deploy/kubernetes/operator
 
-go 1.17
+go 1.19
 
 require (
 	github.com/onsi/ginkgo/v2 v2.1.4
