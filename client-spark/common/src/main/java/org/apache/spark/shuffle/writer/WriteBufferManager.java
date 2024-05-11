@@ -67,6 +67,8 @@ public class WriteBufferManager extends MemoryConsumer {
   private AtomicLong inSendListBytes = new AtomicLong(0);
   /** An atomic counter used to keep track of the number of records */
   private AtomicLong recordCounter = new AtomicLong(0);
+  /** An atomic counter used to keep track of the number of blocks */
+  private AtomicLong blockCounter = new AtomicLong(0);
   // it's part of blockId
   private Map<Integer, Integer> partitionToSeqNo = Maps.newHashMap();
   private long askExecutorMemory;
@@ -366,6 +368,7 @@ public class WriteBufferManager extends MemoryConsumer {
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     final long blockId =
         blockIdLayout.getBlockId(getNextSeqNo(partitionId), partitionId, taskAttemptId);
+    blockCounter.incrementAndGet();
     uncompressedDataLen += data.length;
     shuffleWriteMetrics.incBytesWritten(compressed.length);
     // add memory to indicate bytes which will be sent to shuffle server
@@ -538,6 +541,10 @@ public class WriteBufferManager extends MemoryConsumer {
 
   protected long getRecordCount() {
     return recordCounter.get();
+  }
+
+  public long getBlockCount() {
+    return blockCounter.get();
   }
 
   public void freeAllocatedMemory(long freeMemory) {
