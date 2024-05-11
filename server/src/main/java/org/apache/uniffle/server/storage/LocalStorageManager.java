@@ -380,7 +380,7 @@ public class LocalStorageManager extends SingleStorageManager {
     for (LocalStorage storage : localStorages) {
       String mountPoint = storage.getMountPoint();
       long capacity = storage.getCapacity();
-      long wroteBytes = storage.getDiskSize();
+      long wroteBytes = storage.getServiceUsedBytes();
       StorageStatus status = StorageStatus.NORMAL;
       if (storage.isCorrupted()) {
         status = StorageStatus.UNHEALTHY;

@@ -76,15 +76,15 @@ public class LocalStorageTest {
   public void canWriteTest() {
     LocalStorage item = createTestStorage(testBaseDir);
 
-    item.getMetaData().updateDiskSize(20);
+    item.updateServiceUsedBytes(20);
     assertTrue(item.canWrite());
-    item.getMetaData().updateDiskSize(65);
+    item.updateServiceUsedBytes(item.getServiceUsedBytes() + 65);
     assertTrue(item.canWrite());
-    item.getMetaData().updateDiskSize(10);
+    item.updateServiceUsedBytes(item.getServiceUsedBytes() + 10);
     assertFalse(item.canWrite());
-    item.getMetaData().updateDiskSize(-10);
+    item.updateServiceUsedBytes(item.getServiceUsedBytes() - 10);
     assertFalse(item.canWrite());
-    item.getMetaData().updateDiskSize(-10);
+    item.updateServiceUsedBytes(item.getServiceUsedBytes() - 10);
     assertTrue(item.canWrite());
   }
 
@@ -178,18 +178,18 @@ public class LocalStorageTest {
             .enableDiskCapacityWatermarkCheck()
             .build();
 
-    localStorage.getMetaData().updateDiskSize(20);
+    localStorage.updateServiceUsedBytes(localStorage.getServiceUsedBytes() + 20);
     assertTrue(localStorage.canWrite());
-    localStorage.getMetaData().updateDiskSize(65);
+    localStorage.updateServiceUsedBytes(localStorage.getServiceUsedBytes() + 65);
     assertTrue(localStorage.canWrite());
 
     final long diskCapacity = localStorage.getDiskCapacity();
-    localStorage.updateDiskFree((long) (diskCapacity * (1 - 0.96)));
+    localStorage.updateDiskAvailableBytes((long) (diskCapacity * (1 - 0.96)));
     assertFalse(localStorage.canWrite());
 
-    localStorage.updateDiskFree((long) (diskCapacity * (1 - 0.60)));
+    localStorage.updateDiskAvailableBytes((long) (diskCapacity * (1 - 0.60)));
     assertFalse(localStorage.canWrite());
-    localStorage.getMetaData().updateDiskSize(-10);
+    localStorage.updateServiceUsedBytes(localStorage.getServiceUsedBytes() - 10);
     assertTrue(localStorage.canWrite());
 
     // capacity = diskCapacity
@@ -203,10 +203,10 @@ public class LocalStorageTest {
             .enableDiskCapacityWatermarkCheck()
             .build();
 
-    localStorage.updateDiskFree((long) (diskCapacity * (1 - 0.96)));
+    localStorage.updateDiskAvailableBytes((long) (diskCapacity * (1 - 0.96)));
     assertFalse(localStorage.canWrite());
 
-    localStorage.updateDiskFree((long) (diskCapacity * (1 - 0.60)));
+    localStorage.updateDiskAvailableBytes((long) (diskCapacity * (1 - 0.60)));
     assertTrue(localStorage.canWrite());
   }
 }
