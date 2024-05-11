@@ -37,6 +37,13 @@ import org.apache.uniffle.common.config.RssConf;
 
 public class RssSparkConfig {
 
+  public static final ConfigOption<Boolean> RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED =
+      ConfigOptions.key("rss.blockId.selfManagementEnabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "Whether to enable the blockId self management in spark driver side. Default value is false.");
+
   public static final ConfigOption<Long> RSS_CLIENT_SEND_SIZE_LIMITATION =
       ConfigOptions.key("rss.client.send.size.limit")
           .longType()

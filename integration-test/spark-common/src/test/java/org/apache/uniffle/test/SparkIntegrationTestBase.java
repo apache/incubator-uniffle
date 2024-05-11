@@ -61,22 +61,29 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     start = System.currentTimeMillis();
     Map resultWithRssGrpc = runSparkApp(sparkConf, fileName);
     final long durationWithRssGrpc = System.currentTimeMillis() - start;
+    verifyTestResult(resultWithoutRss, resultWithRssGrpc);
 
     updateSparkConfWithRssNetty(sparkConf);
     start = System.currentTimeMillis();
     Map resultWithRssNetty = runSparkApp(sparkConf, fileName);
     final long durationWithRssNetty = System.currentTimeMillis() - start;
-    verifyTestResult(resultWithoutRss, resultWithRssGrpc);
     verifyTestResult(resultWithoutRss, resultWithRssNetty);
+
+    updateSparkConfWithBlockIdSelfManaged(sparkConf);
+    start = System.currentTimeMillis();
+    Map resultWithBlockIdSelfManaged = runSparkApp(sparkConf, fileName);
+    final long durationWithBlockIdSelfManaged = System.currentTimeMillis() - start;
+    verifyTestResult(resultWithoutRss, resultWithBlockIdSelfManaged);
 
     LOG.info(
         "Test: durationWithoutRss["
             + durationWithoutRss
             + "], durationWithRssGrpc["
             + durationWithRssGrpc
-            + "]"
             + "], durationWithRssNetty["
             + durationWithRssNetty
+            + "], durationWithBlockIdSelfManaged["
+            + durationWithBlockIdSelfManaged
             + "]");
   }
 
@@ -125,6 +132,14 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
 
   public void updateSparkConfWithRssNetty(SparkConf sparkConf) {
     sparkConf.set(RssSparkConfig.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY.name());
+  }
+
+  public void updateSparkConfWithBlockIdSelfManaged(SparkConf sparkConf) {
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
+    sparkConf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX
+            + RssSparkConfig.RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED.key(),
+        "true");
   }
 
   protected void verifyTestResult(Map expected, Map actual) {

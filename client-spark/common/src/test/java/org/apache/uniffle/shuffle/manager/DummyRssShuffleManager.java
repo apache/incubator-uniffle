@@ -26,6 +26,7 @@ import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.ShuffleHandleInfoBase;
 
 import org.apache.uniffle.common.ReceivingFailureServer;
+import org.apache.uniffle.shuffle.BlockIdManager;
 
 import static org.mockito.Mockito.mock;
 
@@ -75,5 +76,10 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   public MutableShuffleHandleInfo reassignOnBlockSendFailure(
       int shuffleId, Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
     return mock(MutableShuffleHandleInfo.class);
+  }
+
+  @Override
+  public BlockIdManager getBlockIdManager() {
+    return null;
   }
 }

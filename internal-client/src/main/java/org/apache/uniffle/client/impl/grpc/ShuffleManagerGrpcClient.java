@@ -23,15 +23,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleManagerClient;
+import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
+import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
 import org.apache.uniffle.client.request.RssPartitionToShuffleServerRequest;
 import org.apache.uniffle.client.request.RssReassignOnBlockSendFailureRequest;
 import org.apache.uniffle.client.request.RssReassignServersRequest;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
+import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
+import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssPartitionToShuffleServerResponse;
 import org.apache.uniffle.client.response.RssReassignOnBlockSendFailureResponse;
 import org.apache.uniffle.client.response.RssReassignServersReponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
+import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.RssException;
@@ -126,5 +131,27 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
     RssProtos.RssReassignOnBlockSendFailureResponse response =
         getBlockingStub().reassignOnBlockSendFailure(protoReq);
     return RssReassignOnBlockSendFailureResponse.fromProto(response);
+  }
+
+  @Override
+  public RssGetShuffleResultResponse getShuffleResult(RssGetShuffleResultRequest request) {
+    RssProtos.GetShuffleResultResponse response =
+        getBlockingStub().getShuffleResult(request.toProto());
+    return RssGetShuffleResultResponse.fromProto(response);
+  }
+
+  @Override
+  public RssGetShuffleResultResponse getShuffleResultForMultiPart(
+      RssGetShuffleResultForMultiPartRequest request) {
+    RssProtos.GetShuffleResultForMultiPartResponse response =
+        getBlockingStub().getShuffleResultForMultiPart(request.toProto());
+    return RssGetShuffleResultResponse.fromProto(response);
+  }
+
+  @Override
+  public RssReportShuffleResultResponse reportShuffleResult(RssReportShuffleResultRequest request) {
+    RssProtos.ReportShuffleResultResponse response =
+        getBlockingStub().reportShuffleResult(request.toProto());
+    return RssReportShuffleResultResponse.fromProto(response);
   }
 }

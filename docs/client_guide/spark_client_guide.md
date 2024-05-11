@@ -126,6 +126,11 @@ The bits reserved for sequence number, partition id and task attempt id are best
    For example: `22` bits is sufficient for `taskAttemptIdBits` with `partitionIdBits=20`, and Spark conf `spark.task.maxFailures=4` and `spark.speculation=false`.
 3. Reserve the remaining bits to `sequenceNoBits`: `sequenceNoBits = 63 - partitionIdBits - taskAttemptIdBits`.
 
+### Block id self management (experimental)
+
+Now, the block id could be managed by the spark driver self when specifying the `spark.rss.blockId.selfManagementEnabled=true`.
+And this will reduce shuffle server pressure but significantly increase memory consumption on the Spark driver side.
+
 ### Adaptive Remote Shuffle Enabling 
 Currently, this feature only supports Spark. 
 
