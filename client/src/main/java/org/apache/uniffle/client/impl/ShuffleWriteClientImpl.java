@@ -915,8 +915,14 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               LOG.warn("Failed to send heartbeat to " + shuffleServerInfo);
             }
           } catch (Exception e) {
-            if (!closed) {
-              // this client has been closed, so we are not interested in failing heartbeat calls
+            if (closed) {
+              // this client has been closed, so failing heartbeat calls are expected
+              LOG.info(
+                  "Error happened when send heartbeat to "
+                      + shuffleServerInfo
+                      + " after shuffle write client has been closed",
+                  e);
+            } else {
               LOG.warn("Error happened when send heartbeat to " + shuffleServerInfo, e);
             }
           }
@@ -937,8 +943,14 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               LOG.info("Successfully send heartbeat to " + coordinatorClient.getDesc());
             }
           } catch (Exception e) {
-            if (!closed) {
-              // this client has been closed, so we are not interested in failing heartbeat calls
+            if (closed) {
+              // this client has been closed, so failing heartbeat calls are expected
+              LOG.info(
+                  "Error happened when send heartbeat to "
+                      + coordinatorClient.getDesc()
+                      + " after shuffle write client has been closed",
+                  e);
+            } else {
               LOG.warn("Error happened when send heartbeat to " + coordinatorClient.getDesc(), e);
             }
           }
@@ -988,8 +1000,14 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                 LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
               }
             } catch (Exception e) {
-              if (!closed) {
-                // this client has been closed, so we are not interested in failing unregister calls
+              if (closed) {
+                // this client has been closed, so failing unregister calls are expected
+                LOG.info(
+                    "Error happened when unregistering to "
+                        + shuffleServerInfo
+                        + " after shuffle write client has been closed",
+                    e);
+              } else {
                 LOG.warn("Error happened when unregistering to " + shuffleServerInfo, e);
               }
             }
@@ -1039,8 +1057,14 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                 LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
               }
             } catch (Exception e) {
-              if (!closed) {
-                // this client has been closed, so we are not interested in failing unregister calls
+              if (closed) {
+                // this client has been closed, so failing unregister calls are expected
+                LOG.info(
+                    "Error happened when unregistering to "
+                        + shuffleServerInfo
+                        + " after shuffle write client has been closed",
+                    e);
+              } else {
                 LOG.warn("Error happened when unregistering to " + shuffleServerInfo, e);
               }
             }
