@@ -20,6 +20,9 @@ package org.apache.uniffle.client.request;
 import java.util.Collections;
 import java.util.Map;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang3.StringUtils;
+
 import org.apache.uniffle.proto.RssProtos;
 
 public class RssFetchClientConfRequest {
@@ -33,8 +36,10 @@ public class RssFetchClientConfRequest {
     this.properties = properties;
   }
 
+  @VisibleForTesting
   public RssFetchClientConfRequest(int timeoutMs) {
     this.timeoutMs = timeoutMs;
+    this.user = StringUtils.EMPTY;
   }
 
   public int getTimeoutMs() {
