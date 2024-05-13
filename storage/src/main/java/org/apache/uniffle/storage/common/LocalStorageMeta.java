@@ -71,7 +71,7 @@ public class LocalStorageMeta {
     }
   }
 
-  public void remoteShuffle(String shuffleKey) {
+  public void removeShuffle(String shuffleKey) {
     shuffleMetaMap.remove(shuffleKey);
   }
 

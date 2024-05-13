@@ -230,7 +230,7 @@ public class LocalStorage extends AbstractStorage {
     LOG.info("Start to remove resource of {}", shuffleKey);
     try {
       metaData.updateDiskSize(-metaData.getShuffleSize(shuffleKey));
-      metaData.remoteShuffle(shuffleKey);
+      metaData.removeShuffle(shuffleKey);
       LOG.info(
           "Finish remove resource of {}, disk size is {} and {} shuffle metadata",
           shuffleKey,
