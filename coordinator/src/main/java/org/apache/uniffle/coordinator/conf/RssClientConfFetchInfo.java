@@ -28,7 +28,7 @@ public class RssClientConfFetchInfo {
   public static final RssClientConfFetchInfo EMPTY_CLIENT_CONF_FETCH_INFO =
       new RssClientConfFetchInfo(null, null);
 
-  private RssClientConfFetchInfo(String user, Map<String, String> properties) {
+  public RssClientConfFetchInfo(String user, Map<String, String> properties) {
     this.user = user;
     this.properties = properties;
   }

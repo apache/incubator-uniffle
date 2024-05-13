@@ -21,6 +21,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 
@@ -46,6 +48,11 @@ public class RssClientConfApplyManager implements Closeable {
       return dynamicClientConfService.getRssClientConf();
     }
     return strategy.apply(rssClientConfFetchInfo);
+  }
+
+  @VisibleForTesting
+  protected AbstractRssClientConfApplyStrategy getStrategy() {
+    return strategy;
   }
 
   @Override
