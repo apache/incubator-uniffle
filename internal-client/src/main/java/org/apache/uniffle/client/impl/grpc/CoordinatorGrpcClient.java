@@ -351,7 +351,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       rpcResponse =
           blockingStub
               .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS)
-              .fetchClientConf(Empty.getDefaultInstance());
+              .fetchClientConfV2(request.toProto());
       Map<String, String> clientConf =
           rpcResponse.getClientConfList().stream()
               .collect(Collectors.toMap(ClientConfItem::getKey, ClientConfItem::getValue));

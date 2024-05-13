@@ -20,6 +20,7 @@ package org.apache.uniffle.shuffle.manager;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.spark.MapOutputTracker;
 import org.apache.spark.MapOutputTrackerMaster;
 import org.apache.spark.SparkConf;
@@ -356,9 +358,16 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
         sparkConf.getInt(
             RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.key(),
             RssSparkConfig.RSS_ACCESS_TIMEOUT_MS.defaultValue().get());
+    String user;
+    try {
+      user = UserGroupInformation.getCurrentUser().getShortUserName();
+    } catch (Exception e) {
+      throw new RssException("Errors on getting current user.", e);
+    }
+    RssFetchClientConfRequest request =
+        new RssFetchClientConfRequest(timeoutMs, user, Collections.emptyMap());
     for (CoordinatorClient client : coordinatorClients) {
-      RssFetchClientConfResponse response =
-          client.fetchClientConf(new RssFetchClientConfRequest(timeoutMs));
+      RssFetchClientConfResponse response = client.fetchClientConf(request);
       if (response.getStatusCode() == StatusCode.SUCCESS) {
         LOG.info("Success to get conf from {}", client.getDesc());
         RssSparkShuffleUtils.applyDynamicClientConf(sparkConf, response.getClientConf());

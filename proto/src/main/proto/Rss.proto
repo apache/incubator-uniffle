@@ -367,6 +367,7 @@ service CoordinatorServer {
 
   // Get basic client conf from coordinator
   rpc fetchClientConf(google.protobuf.Empty) returns (FetchClientConfResponse);
+  rpc fetchClientConfV2(FetchClientConfRequest) returns (FetchClientConfResponse);
 
   // Get remote storage from coordinator
   rpc fetchRemoteStorage(FetchRemoteStorageRequest) returns (FetchRemoteStorageResponse);
@@ -461,6 +462,12 @@ message AccessClusterResponse {
   StatusCode status = 1;
   string retMsg = 2;
   string uuid = 3;
+}
+
+message FetchClientConfRequest {
+  string user = 1;
+  // for the potential extension for customize delegation shuffle manager
+  map<string, string> properties = 2;
 }
 
 message FetchClientConfResponse {
