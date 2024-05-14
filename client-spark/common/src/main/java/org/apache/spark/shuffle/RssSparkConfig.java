@@ -71,6 +71,12 @@ public class RssSparkConfig {
           .withDescription(
               "The memory spill switch triggered by Spark TaskMemoryManager, default value is false.");
 
+  public static final ConfigOption<Double> RSS_MEMORY_SPILL_RATIO =
+      ConfigOptions.key("rss.client.memory.spill.ratio")
+          .doubleType()
+          .defaultValue(1.0d)
+          .withDescription(
+              "The buffer size to spill when spill triggered by config spark.rss.writer.buffer.spill.size");
   public static final ConfigOption<Integer> RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM =
       ConfigOptions.key("rss.client.reassign.maxReassignServerNum")
           .intType()

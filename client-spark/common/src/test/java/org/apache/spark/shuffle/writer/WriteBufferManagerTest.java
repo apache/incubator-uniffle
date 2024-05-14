@@ -185,7 +185,7 @@ public class WriteBufferManagerTest {
     wbm.addRecord(0, testKey, testValue);
     wbm.addRecord(1, testKey, testValue);
     wbm.addRecord(2, testKey, testValue);
-    result = wbm.clear();
+    result = wbm.clear(1.0);
     assertEquals(3, result.size());
     assertEquals(224, wbm.getAllocatedBytes());
     assertEquals(96, wbm.getUsedBytes());
@@ -431,6 +431,56 @@ public class WriteBufferManagerTest {
     releasedSize = spyManager.spill(1000, spyManager);
     assertEquals(0, releasedSize);
     Awaitility.await().timeout(5, TimeUnit.SECONDS).until(() -> spyManager.getUsedBytes() == 0);
+  }
+
+  @Test
+  public void spillPartial() {
+    SparkConf conf = getConf();
+    conf.set("spark.rss.client.send.size.limit", "1000");
+    conf.set("spark.rss.client.memory.spill.ratio", "0.5");
+    conf.set("spark.rss.client.memory.spill.enabled", "true");
+    TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
+    BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
+
+    WriteBufferManager wbm =
+        new WriteBufferManager(
+            0,
+            "taskId_spillPartialTest",
+            0,
+            bufferOptions,
+            new KryoSerializer(conf),
+            Maps.newHashMap(),
+            mockTaskMemoryManager,
+            new ShuffleWriteMetrics(),
+            RssSparkConfig.toRssConf(conf),
+            null);
+
+    Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc =
+        blocks -> {
+          long sum = 0L;
+          List<AddBlockEvent> events = wbm.buildBlockEvents(blocks);
+          for (AddBlockEvent event : events) {
+            event.getProcessedCallbackChain().stream().forEach(x -> x.run());
+            sum += event.getShuffleDataInfoList().stream().mapToLong(x -> x.getFreeMemory()).sum();
+          }
+          return Arrays.asList(CompletableFuture.completedFuture(sum));
+        };
+    wbm.setSpillFunc(spillFunc);
+
+    when(wbm.acquireMemory(512)).thenReturn(512L);
+
+    String testKey = "Key";
+    String testValue = "Value";
+    wbm.addRecord(0, testKey, testValue);
+    wbm.addRecord(1, testKey, testValue);
+    wbm.addRecord(1, testKey, testValue);
+    wbm.addRecord(1, testKey, testValue);
+    wbm.addRecord(1, testKey, testValue);
+
+    long releasedSize = wbm.spill(1000, wbm);
+    assertEquals(64, releasedSize);
+    assertEquals(96, wbm.getUsedBytes());
+    assertEquals(0, wbm.getBuffers().keySet().toArray()[0]);
   }
 
   public static class FakedTaskMemoryManager extends TaskMemoryManager {
