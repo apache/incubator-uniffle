@@ -204,8 +204,8 @@ public class RssClientConf {
               "This option is only valid when the remote storage path is specified. If ture, "
                   + "the remote storage conf will use the client side hadoop configuration loaded from the classpath.");
 
-  public static final ConfigOption<Boolean> RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED =
-      ConfigOptions.key("rss.client.blockSendFailureRetry.enabled")
+  public static final ConfigOption<Boolean> RSS_CLIENT_REASSIGN_ENABLED =
+      ConfigOptions.key("rss.client.reassign.enabled")
           .booleanType()
           .defaultValue(false)
           .withDescription(

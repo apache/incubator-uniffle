@@ -229,7 +229,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
             && RssSparkShuffleUtils.isStageResubmitSupported();
     this.taskBlockSendFailureRetryEnabled =
-        rssConf.getBoolean(RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED);
+        rssConf.getBoolean(RssClientConf.RSS_CLIENT_REASSIGN_ENABLED);
 
     // The feature of partition reassign is exclusive with multiple replicas and stage retry.
     if (taskBlockSendFailureRetryEnabled) {

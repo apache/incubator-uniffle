@@ -208,8 +208,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.blockFailSentRetryEnabled =
         sparkConf.getBoolean(
             RssSparkConfig.SPARK_RSS_CONFIG_PREFIX
-                + RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.key(),
-            RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.defaultValue());
+                + RssClientConf.RSS_CLIENT_REASSIGN_ENABLED.key(),
+            RssClientConf.RSS_CLIENT_REASSIGN_ENABLED.defaultValue());
     this.blockFailSentRetryMaxTimes =
         RssSparkConfig.toRssConf(sparkConf).get(RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES);
   }

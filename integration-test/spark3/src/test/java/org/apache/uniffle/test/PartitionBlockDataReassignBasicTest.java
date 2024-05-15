@@ -37,7 +37,7 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.client.util.RssClientConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER;
 import static org.apache.uniffle.client.util.RssClientConfig.RSS_CLIENT_RETRY_MAX;
-import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED;
+import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_REASSIGN_ENABLED;
 
 /** This class is to basic test the mechanism of partition block data reassignment */
 public class PartitionBlockDataReassignBasicTest extends SparkSQLTest {
@@ -105,7 +105,7 @@ public class PartitionBlockDataReassignBasicTest extends SparkSQLTest {
     sparkConf.set(
         "spark." + RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER,
         String.valueOf(grpcShuffleServers.size()));
-    sparkConf.set("spark." + RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.key(), "true");
+    sparkConf.set("spark." + RSS_CLIENT_REASSIGN_ENABLED.key(), "true");
   }
 
   @Override
