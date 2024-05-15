@@ -90,6 +90,14 @@ public class RssSparkConfig {
           .defaultValue(1)
           .withDescription("The block retry max times when partition reassign is enabled.");
 
+  public static final ConfigOption<Integer>
+      RSS_PARTITION_REASSIGN_BLOCK_ACCESS_DENIED_RETRY_MAX_TIMES =
+          ConfigOptions.key("rss.client.reassign.blockAccessDeniedRetryMaxTimes")
+              .intType()
+              .defaultValue(1)
+              .withDescription(
+                  "The block access denied retry max times when partition reassign is enabled.");
+
   public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
 
   public static final ConfigEntry<Integer> RSS_PARTITION_NUM_PER_RANGE =

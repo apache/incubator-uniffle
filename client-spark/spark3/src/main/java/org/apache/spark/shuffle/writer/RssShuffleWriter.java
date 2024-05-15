@@ -90,6 +90,7 @@ import org.apache.uniffle.common.exception.RssWaitFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_BLOCK_ACCESS_DENIED_RETRY_MAX_TIMES;
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES;
 
 public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
@@ -122,6 +123,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private SparkConf sparkConf;
   private boolean blockFailSentRetryEnabled;
   private int blockFailSentRetryMaxTimes = 1;
+  private int blockAccessDeniedRetryMaxTimes = 1;
 
   /** used by columnar rss shuffle writer implementation */
   protected final long taskAttemptId;
@@ -212,6 +214,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.defaultValue());
     this.blockFailSentRetryMaxTimes =
         RssSparkConfig.toRssConf(sparkConf).get(RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES);
+    this.blockAccessDeniedRetryMaxTimes =
+        RssSparkConfig.toRssConf(sparkConf)
+            .get(RSS_PARTITION_REASSIGN_BLOCK_ACCESS_DENIED_RETRY_MAX_TIMES);
   }
 
   public RssShuffleWriter(
@@ -502,11 +507,27 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               .map(x -> x.getShuffleBlockInfo().getRetryCnt())
               .max(Comparator.comparing(Integer::valueOf))
               .get();
+      int accessDeniedRetryCnt =
+          failedBlockStatus.stream()
+              .map(x -> x.getShuffleBlockInfo().getAccessDeniedRetryCnt())
+              .max(Comparator.comparing(Integer::valueOf))
+              .get();
       if (retryIndex >= blockFailSentRetryMaxTimes) {
         LOG.error(
             "Partial blocks for taskId: [{}] retry exceeding the max retry times: [{}]. Fast fail! faulty server list: {}",
             taskId,
             blockFailSentRetryMaxTimes,
+            failedBlockStatus.stream()
+                .map(x -> x.getShuffleServerInfo())
+                .collect(Collectors.toSet()));
+        isFastFail = true;
+        break;
+      }
+      if (accessDeniedRetryCnt >= blockAccessDeniedRetryMaxTimes) {
+        LOG.error(
+            "Partial blocks for taskId: [{}] access denied retry exceeding the max retry times: [{}]. Fast fail! access denied server list: {}",
+            taskId,
+            blockAccessDeniedRetryMaxTimes,
             failedBlockStatus.stream()
                 .map(x -> x.getShuffleServerInfo())
                 .collect(Collectors.toSet()));
@@ -626,7 +647,11 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       // clear the previous retry state of block
       clearFailedBlockState(block);
       final ShuffleBlockInfo newBlock = block;
-      newBlock.incrRetryCnt();
+      if (StatusCode.ACCESS_DENIED.equals(blockStatus.getStatusCode())) {
+        newBlock.incrAccessDeniedRetryCnt();
+      } else {
+        newBlock.incrRetryCnt();
+      }
       newBlock.reassignShuffleServers(Arrays.asList(replacement));
       resendCandidates.add(newBlock);
     }

@@ -37,6 +37,7 @@ public class ShuffleBlockInfo {
   private int uncompressLength;
   private long freeMemory;
   private int retryCnt = 0;
+  private int accessDeniedRetryCnt = 0;
 
   private transient BlockCompletionCallback completionCallback;
 
@@ -162,6 +163,14 @@ public class ShuffleBlockInfo {
 
   public int getRetryCnt() {
     return retryCnt;
+  }
+
+  public void incrAccessDeniedRetryCnt() {
+    this.accessDeniedRetryCnt += 1;
+  }
+
+  public int getAccessDeniedRetryCnt() {
+    return accessDeniedRetryCnt;
   }
 
   public void reassignShuffleServers(List<ShuffleServerInfo> replacements) {
