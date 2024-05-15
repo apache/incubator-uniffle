@@ -153,8 +153,8 @@ Other configuration:
 
 ### Partition reassign in one shuffle attempt
 
-To achieve better task stability, partition's reassign mechanism that requests the new replacement shuffleServers is introduced to overcome server instability 
-that is in unhealthy or high memory pressure in one shuffle attempt. On current stage, this feature is not compatible with stage retry and multiple replicas mechanism (More tests should be added).
+To achieve better task stability, the partition reassignment mechanism has been introduced, which requests new replacement shuffle servers to overcome server instability caused by unhealthy conditions or high memory pressure in a single shuffle attempt. 
+Currently, this feature is not compatible with stage retry and multiple replica mechanisms (additional testing is required).
 
 Using the following configs to enable this feature 
 
