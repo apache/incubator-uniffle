@@ -311,8 +311,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     if (shuffleBlockInfos != null && !shuffleBlockInfos.isEmpty()) {
       processShuffleBlockInfos(shuffleBlockInfos);
     }
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     long checkStartTs = System.currentTimeMillis();
     checkSentRecordCount(recordCount);
+    checkSentBlockCount();
     checkBlockSendResult(blockIds);
     long commitStartTs = System.currentTimeMillis();
     long checkDuration = commitStartTs - checkStartTs;
@@ -345,6 +347,21 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               + taskId
               + "]";
       throw new RssSendFailedException(errorMsg);
+    }
+  }
+
+  private void checkSentBlockCount() {
+    long tracked = 0;
+    if (serverToPartitionToBlockIds != null) {
+      Set<Long> blockIds = new HashSet<>();
+      for (Map<Integer, Set<Long>> partitionBlockIds : serverToPartitionToBlockIds.values()) {
+        partitionBlockIds.values().forEach(x -> blockIds.addAll(x));
+      }
+      tracked = blockIds.size();
+    }
+    if (tracked != bufferManager.getBlockCount()) {
+      throw new RssSendFailedException(
+          "Potential block loss may occur when preparing to send blocks for task[" + taskId + "]");
     }
   }
 
