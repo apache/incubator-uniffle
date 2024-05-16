@@ -42,7 +42,7 @@ public class RssClientConfFetchInfo {
   }
 
   public boolean isEmpty() {
-    return user == null && properties == null;
+    return user == null && (properties == null || properties.isEmpty());
   }
 
   public static RssClientConfFetchInfo fromProto(RssProtos.FetchClientConfRequest request) {
