@@ -355,6 +355,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               + ", errorMsg:"
               + rpcResponse.getRetMsg();
       throw new NotRetryException(msg);
+    } else if (rpcResponse.getStatus() == RssProtos.StatusCode.ACCESS_DENIED) {
+      failedStatusCodeRef.set(StatusCode.fromCode(rpcResponse.getStatus().getNumber()));
     }
     return result;
   }
