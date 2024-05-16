@@ -952,7 +952,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                   remoteMergeEnable ? keyClass : null,
                   remoteMergeEnable ? valueClass : null,
                   remoteMergeEnable ? comparatorClass: null,
-                  sparkConf.get(RssSparkConfig.RSS_MERGED_BLOCK_SZIE));
+                  sparkConf.get(RssSparkConfig.RSS_MERGED_BLOCK_SZIE),
+                  sparkConf.get(RssSparkConfig.RSS_REMOTE_MERGE_CLASS_LOADER));
             });
     LOG.info(
         "Finish register shuffleId["

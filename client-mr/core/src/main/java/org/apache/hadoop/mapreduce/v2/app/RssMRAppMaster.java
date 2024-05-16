@@ -82,6 +82,7 @@ import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.hadoop.shim.HadoopShimImpl;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.hadoop.mapreduce.RssMRConfig.RSS_REMOTE_MERGE_CLASS_LOADER;
 import static org.apache.hadoop.mapreduce.RssMRConfig.RSS_REMOTE_MERGE_ENABLE;
 import static org.apache.hadoop.mapreduce.RssMRConfig.RSS_REMOTE_MERGE_ENABLE_DEFAULT;
 import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
@@ -286,7 +287,8 @@ public class RssMRAppMaster extends MRAppMaster {
                                   remoteMergeEnable ? conf.getMapOutputValueClass().getName() : null,
                                   remoteMergeEnable ? conf.getOutputKeyComparator().getClass().getName() : null,
                                   conf.getInt(RssMRConfig.RSS_MERGED_BLOCK_SZIE,
-                                      RssMRConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT)));
+                                      RssMRConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT),
+                                  conf.get(RSS_REMOTE_MERGE_CLASS_LOADER)));
                   LOG.info(
                       "Finish register shuffle with "
                           + (System.currentTimeMillis() - start)

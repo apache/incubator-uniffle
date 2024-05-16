@@ -507,7 +507,8 @@ public class FetcherTest {
         String keyClassName,
         String valueClassName,
         String comparatorClassName,
-        int mergedBlockSize) {}
+        int mergedBlockSize,
+        String mergeClassLoader) {}
 
     @Override
     public boolean sendCommit(

@@ -195,7 +195,8 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
         null,
         null,
         null,
-        -1);
+        -1,
+        null);
     shuffleWriteClient.registerApplicationInfo("application_clearResourceTest1", 500L, "user");
     shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest1", 500L);
     shuffleWriteClient.registerApplicationInfo("application_clearResourceTest2", 500L, "user");

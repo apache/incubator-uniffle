@@ -190,6 +190,7 @@ message ShuffleRegisterRequest {
   string valueClass = 9;
   string comparatorClass = 10;
   int32 mergedBlockSize = 11;
+  string mergeClassLoader = 12;
 }
 
 enum DataDistribution {

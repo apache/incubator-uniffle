@@ -374,7 +374,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
           null,
           null,
           null,
-          -1);
+          -1,
+          null);
     }
   }
 

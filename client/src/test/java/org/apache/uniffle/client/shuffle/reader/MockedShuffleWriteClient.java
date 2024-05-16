@@ -41,7 +41,7 @@ public class MockedShuffleWriteClient implements ShuffleWriteClient {
                               List<PartitionRange> partitionRanges, RemoteStorageInfo remoteStorage,
                               ShuffleDataDistributionType dataDistributionType, int maxConcurrencyPerPartitionToWrite,
                               String keyClassName, String valueClassName, String comparatorClassName,
-                              int mergedBlockSize) {
+                              int mergedBlockSize, String mergeClassLoader) {
 
   }
 

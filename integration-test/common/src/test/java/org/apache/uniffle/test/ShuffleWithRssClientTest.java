@@ -139,7 +139,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         null,
         null,
         null,
-        -1);
+        -1,
+        null);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
 
@@ -204,7 +205,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         null,
         null,
         null,
-        -1);
+        -1,
+        null);
 
     shuffleWriteClientImpl.registerShuffle(
         shuffleServerInfo2,
@@ -217,7 +219,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         null,
         null,
         null,
-        -1);
+        -1,
+        null);
 
     Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds = Maps.newHashMap();
     Map<Integer, Set<Long>> partitionToBlocks = Maps.newHashMap();
@@ -260,7 +263,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         null,
         null,
         null,
-        -1);
+        -1,
+        null);
 
     shuffleWriteClientImpl.registerShuffle(
         shuffleServerInfo2,
@@ -273,7 +277,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         null,
         null,
         null,
-        -1);
+        -1,
+        null);
 
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
     partitionToServers.putIfAbsent(1, Lists.newArrayList(shuffleServerInfo1));
@@ -348,7 +353,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         null,
         null,
         null,
-        -1);
+        -1,
+        null);
     shuffleWriteClientImpl.registerShuffle(
         shuffleServerInfo2,
         testAppId,
@@ -360,7 +366,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         null,
         null,
         null,
-        -1);
+        -1,
+        null);
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
@@ -458,7 +465,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         null,
         null,
         null,
-        -1);
+        -1,
+        null);
     boolean commitResult =
         shuffleWriteClientImpl.sendCommit(Sets.newHashSet(shuffleServerInfo1), testAppId, 0, 2);
     assertTrue(commitResult);
@@ -516,7 +524,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
                             null,
                             null,
                             null,
-                            -1);
+                            -1,
+                            null);
                       });
               return shuffleAssignments;
             },

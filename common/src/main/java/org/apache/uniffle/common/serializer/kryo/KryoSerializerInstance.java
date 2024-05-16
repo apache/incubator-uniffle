@@ -2,7 +2,9 @@ package org.apache.uniffle.common.serializer.kryo;
 
 import com.esotericsoftware.kryo.Kryo;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import org.apache.commons.lang3.ClassUtils;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.uniffle.common.config.RssBaseConf;
@@ -12,48 +14,35 @@ import org.apache.uniffle.common.serializer.DeserializationStream;
 import org.apache.uniffle.common.serializer.PartialInputStream;
 import org.apache.uniffle.common.serializer.SerializationStream;
 import org.apache.uniffle.common.serializer.SerializerInstance;
-import org.apache.uniffle.common.serializer.PartialInputStream;
 
 public class KryoSerializerInstance extends SerializerInstance {
 
   private boolean unsafe;
-  private boolean usePool;
-  private volatile Kryo cachedKryo = null;
   private PoolWrapper pool;
 
   public KryoSerializerInstance(RssConf rssConf) {
     this.pool = new PoolWrapper(rssConf);
     this.unsafe = rssConf.getBoolean(RssBaseConf.RSS_KRYO_UNSAFE);
-    this.usePool = rssConf.getBoolean(RssBaseConf.RSS_USE_POOL);
   }
 
   public Kryo borrowKryo() {
-    if (usePool) {
-      Kryo kryo = pool.borrow();
-      kryo.reset();
-      // TODO: To remove, use isolated class loader
-      kryo.register(scala.Tuple2.class, new com.twitter.chill.Tuple2Serializer());
-      return kryo;
-    } else {
-      if (cachedKryo != null) {
-        Kryo kryo = cachedKryo;
-        kryo.reset();
-        cachedKryo = null;
-        return kryo;
-      } else {
-        return pool.newKryo();
-      }
+    Kryo kryo = pool.borrow();
+    kryo.reset();
+    try {
+      Class cls = ClassUtils.getClass("com.twitter.chill.AllScalaRegistrar");
+      Object obj = cls.newInstance();
+      Method method = cls.getDeclaredMethod("apply", Kryo.class);
+      kryo.setClassLoader(Thread.currentThread().getContextClassLoader());
+      method.invoke(obj, kryo);
+    } catch (ClassNotFoundException | InvocationTargetException | InstantiationException | IllegalAccessException |
+             NoSuchMethodException e) {
+      throw new RssException(e);
     }
+    return kryo;
   }
 
   void releaseKryo(Kryo kryo) {
-    if (usePool) {
-      pool.release(kryo);
-    } else {
-      if (cachedKryo == null) {
-        cachedKryo = kryo;
-      }
-    }
+    pool.release(kryo);
   }
 
   public boolean isUnsafe() {

@@ -167,13 +167,13 @@
       <groupId>com.esotericsoftware</groupId>
       <artifactId>kryo-shaded</artifactId>
     </dependency>
-    <!--TODO: To remove, use isolated class loader  -->
-    <dependency>
-      <groupId>com.twitter</groupId>
-      <artifactId>chill_2.12</artifactId>
-      <version>0.9.5</version>
-      <scope>compile</scope>
-    </dependency>
+<!--    &lt;!&ndash;TODO: To remove, use isolated class loader  &ndash;&gt;-->
+<!--    <dependency>-->
+<!--      <groupId>com.twitter</groupId>-->
+<!--      <artifactId>chill_2.12</artifactId>-->
+<!--      <version>0.9.5</version>-->
+<!--      <scope>compile</scope>-->
+<!--    </dependency>-->
   </dependencies>
 
   <build>

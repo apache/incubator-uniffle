@@ -168,7 +168,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       String keyClassName,
       String valueClassName,
       String comparatorClassName,
-      int mergedBlockSize) {
+      int mergedBlockSize,
+      String mergeClassLoader) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
@@ -184,6 +185,9 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         reqBuilder.setComparatorClass(comparatorClassName);
       }
       reqBuilder.setMergedBlockSize(mergedBlockSize);
+      if (StringUtils.isNotBlank(mergeClassLoader)) {
+        reqBuilder.setMergeClassLoader(mergeClassLoader);
+      }
     }
     RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
     rsBuilder.setPath(remoteStorageInfo.getPath());
@@ -421,7 +425,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             request.getKeyClassName(),
             request.getValueClassName(),
             request.getComparatorClassName(),
-            request.getMergedBlockSize());
+            request.getMergedBlockSize(),
+            request.getMergeClassLoader());
 
     RssRegisterShuffleResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();

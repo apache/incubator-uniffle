@@ -395,6 +395,13 @@ public class RssSparkConfig {
               .doc("The merged block size."))
           .createWithDefault(RssClientConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT);
 
+  public static final ConfigEntry<String> RSS_REMOTE_MERGE_CLASS_LOADER =
+      createStringBuilder(
+          new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_MERGE_CLASS_LOADER)
+              .internal()
+              .doc("The class loader label for remote merge"))
+          .createWithDefault(null);
+
   public static final ConfigEntry<Integer> RSS_MERGED_WRITE_MAX_RECORDS_PER_BUFFER =
       createIntegerBuilder(
           new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + "rm.write.max.records.per.buffer")

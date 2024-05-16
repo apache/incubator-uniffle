@@ -39,6 +39,7 @@ public class RssRegisterShuffleRequest {
   private String valueClassName;
   private String comparatorClassName;
   private int mergedBlockSize;
+  private String mergeClassLoader;
 
   public RssRegisterShuffleRequest(
       String appId,
@@ -51,7 +52,8 @@ public class RssRegisterShuffleRequest {
       String keyClassName,
       String valueClassName,
       String comparatorClassName,
-      int mergedBlockSize) {
+      int mergedBlockSize,
+      String mergeClassLoader) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionRanges = partitionRanges;
@@ -63,6 +65,7 @@ public class RssRegisterShuffleRequest {
     this.valueClassName = valueClassName;
     this.comparatorClassName = comparatorClassName;
     this.mergedBlockSize = mergedBlockSize;
+    this.mergeClassLoader = mergeClassLoader;
   }
 
   public RssRegisterShuffleRequest(
@@ -74,7 +77,7 @@ public class RssRegisterShuffleRequest {
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite) {
     this(appId, shuffleId, partitionRanges, remoteStorageInfo, user, dataDistributionType,
-        maxConcurrencyPerPartitionToWrite, null, null, null, -1);
+        maxConcurrencyPerPartitionToWrite, null, null, null, -1, null);
   }
 
   public RssRegisterShuffleRequest(
@@ -148,5 +151,9 @@ public class RssRegisterShuffleRequest {
 
   public int getMergedBlockSize() {
     return mergedBlockSize;
+  }
+
+  public String getMergeClassLoader() {
+    return mergeClassLoader;
   }
 }

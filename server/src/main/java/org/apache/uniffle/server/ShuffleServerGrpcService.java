@@ -165,6 +165,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int shuffleId = req.getShuffleId();
     String remoteStoragePath = req.getRemoteStorage().getPath();
     String user = req.getUser();
+    String classLoader = req.getMergeClassLoader();
 
     ShuffleDataDistributionType shuffleDataDistributionType =
         ShuffleDataDistributionType.valueOf(
@@ -220,7 +221,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       if (result == StatusCode.SUCCESS) {
         int mergedBlockSize = req.getMergedBlockSize();
         result = shuffleServer.getShuffleMergeManager().registerShuffle(appId, shuffleId, req.getKeyClass(),
-            req.getValueClass(), req.getComparatorClass(), mergedBlockSize);
+            req.getValueClass(), req.getComparatorClass(), mergedBlockSize, classLoader);
       }
     }
 

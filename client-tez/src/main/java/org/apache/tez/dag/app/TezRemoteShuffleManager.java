@@ -294,7 +294,8 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
                                           valueClassName,
                                           comparatorClassName,
                                           conf.getInt(RssTezConfig.RSS_MERGED_BLOCK_SZIE,
-                                              RssTezConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT)));
+                                              RssTezConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT),
+                                          conf.get(RssTezConfig.RSS_REMOTE_MERGE_CLASS_LOADER)));
                           LOG.info(
                               "Finish register shuffle with "
                                   + (System.currentTimeMillis() - start)

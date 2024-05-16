@@ -271,11 +271,6 @@ public class RssBaseConf extends RssConf {
           .booleanType()
           .defaultValue(true)
           .withDescription("Whether to use unsafe based Kryo serializer.");
-  public static final ConfigOption<Boolean> RSS_USE_POOL =
-      ConfigOptions.key("rss.kryo.pool")
-          .booleanType()
-          .defaultValue(true)
-          .withDescription("Whether to use kryo pool.");
   public static final ConfigOption<String> RSS_IO_SERIALIZATIONS =
       ConfigOptions.key("rss.io.serializations")
           .stringType()

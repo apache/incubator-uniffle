@@ -204,6 +204,7 @@ public class RssMRConfig {
   public static final int RSS_MERGED_WRITE_MAX_RECORDS_DEFAULT = 10000;
   public static final String RSS_MERGED_WRITE_MAX_RECORDS_PER_BUFFER = MR_RSS_CONFIG_PREFIX + "rm.write.max.records.per.buffer";
   public static final int RSS_MERGED_WRITE_MAX_RECORDS_PER_BUFFER_DEFAULT = 5000;
+  public static final String RSS_REMOTE_MERGE_CLASS_LOADER = MR_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_MERGE_CLASS_LOADER;
 
   public static RssConf toRssConf(Configuration jobConf) {
     RssConf rssConf = new RssConf();

@@ -29,10 +29,11 @@ public class ShuffleEntity<K, V> {
   // partition --> PartitionEntity
   private final Map<Integer, PartitionEntity<K, V>> entities = JavaUtils.newConcurrentMap();
   final int mergedBlockSize;
+  final ClassLoader classLoader;
 
   public ShuffleEntity(RssConf rssConf, MergeEventHandler eventHandler, ShuffleTaskManager taskManager,
                        List<String> localDirs, String appId, int shuffleId, Class<K> kClass, Class<V> vClass,
-                       Comparator<K> comparator, int mergedBlockSize) {
+                       Comparator<K> comparator, int mergedBlockSize, ClassLoader classLoader) {
     this.serverConf = rssConf;
     this.eventHandler = eventHandler;
     this.taskManager = taskManager;
@@ -43,6 +44,7 @@ public class ShuffleEntity<K, V> {
     this.vClass = vClass;
     this.comparator = comparator;
     this.mergedBlockSize = mergedBlockSize;
+    this.classLoader = classLoader;
   }
 
   public void reportUniqueBlockIds(int partitionId, Roaring64NavigableMap expectedBlockIdMap) throws IOException {
@@ -69,6 +71,10 @@ public class ShuffleEntity<K, V> {
     for (ShufflePartitionedBlock block : spd.getBlockList()) {
       this.entities.get(partitionId).cacheBlock(block);
     }
+  }
+
+  public ClassLoader getClassLoader() {
+    return classLoader;
   }
 
   @VisibleForTesting

@@ -54,7 +54,8 @@ public interface ShuffleWriteClient {
       String keyClassName,
       String valueClassName,
       String comparatorClassName,
-      int mergedBlockSize);
+      int mergedBlockSize,
+      String mergeClassLoader);
 
   boolean sendCommit(
       Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);

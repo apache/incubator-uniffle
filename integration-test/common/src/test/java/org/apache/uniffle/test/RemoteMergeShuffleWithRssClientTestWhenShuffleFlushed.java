@@ -130,7 +130,8 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
         keyClass.getName(),
         valueClass.getName(),
         comparator.getClass().getName(),
-        -1);
+        -1,
+        null);
 
     // 3 report shuffle result
     // task 0 attempt 0 generate three blocks
@@ -216,7 +217,8 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
         keyClass.getName(),
         valueClass.getName(),
         comparator.getClass().getName(),
-        -1);
+        -1,
+        null);
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
 
     // 3 report shuffle result
@@ -313,7 +315,8 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
         keyClass.getName(),
         valueClass.getName(),
         comparator.getClass().getName(),
-        -1);
+        -1,
+        null);
 
     // 3 report shuffle result
     // this shuffle have three partition, which is hash by key index mode 3
@@ -417,7 +420,8 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
         keyClass.getName(),
         valueClass.getName(),
         comparator.getClass().getName(),
-        -1);
+        -1,
+        null);
 
     // 3 report shuffle result
     // this shuffle have three partition, which is hash by key index mode 3

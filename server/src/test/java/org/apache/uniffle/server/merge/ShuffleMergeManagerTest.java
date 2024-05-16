@@ -102,7 +102,7 @@ public class ShuffleMergeManagerTest {
     shuffleTaskManager.registerShuffle(APP_ID, SHUFFLE_ID, partitionRanges, new RemoteStorageInfo(""), USER);
     shuffleTaskManager.registerShuffle(APP_ID + ShuffleMergeManager.MERGE_APP_SUFFIX, SHUFFLE_ID, partitionRanges,
         new RemoteStorageInfo(""), USER);
-    mergeManager.registerShuffle(APP_ID, SHUFFLE_ID, keyClassName, valueClassName, comparatorClassName, -1);
+    mergeManager.registerShuffle(APP_ID, SHUFFLE_ID, keyClassName, valueClassName, comparatorClassName, -1, "");
 
     // 4 report blocks
     // 4.1 send shuffle data
