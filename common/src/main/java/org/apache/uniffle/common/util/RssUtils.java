@@ -279,7 +279,7 @@ public class RssUtils {
     if (exts != null && exts.size() == 1) {
       return exts.get(0);
     }
-    return null;
+    throw new IllegalArgumentException("No such extension for " + clsPackage);
   }
 
   @SuppressWarnings("unchecked")

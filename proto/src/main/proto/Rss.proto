@@ -466,7 +466,11 @@ message AccessClusterResponse {
 
 message FetchClientConfRequest {
   string user = 1;
-  // for the potential extension for customize delegation shuffle manager
+  /**
+   For the potential extension for customize delegation shuffle manager.
+   You could put more internal properties in customize delegation shuffle manager,
+   and then it could be as metadata in your own customize ClientConfApplyStrategy.
+   */
   map<string, string> properties = 2;
 }
 
