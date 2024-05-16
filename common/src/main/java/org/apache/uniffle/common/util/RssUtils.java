@@ -274,6 +274,14 @@ public class RssUtils {
         Constants.KEY_SPLIT_CHAR, appId, String.valueOf(shuffleId), String.valueOf(partition));
   }
 
+  public static <T> T loadExtension(Class<T> extCls, String clsPackage, Object obj) {
+    List<T> exts = loadExtensions(extCls, Arrays.asList(clsPackage), obj);
+    if (exts != null && exts.size() == 1) {
+      return exts.get(0);
+    }
+    throw new IllegalArgumentException("No such extension for " + clsPackage);
+  }
+
   @SuppressWarnings("unchecked")
   public static <T> List<T> loadExtensions(Class<T> extClass, List<String> classes, Object obj) {
     if (classes == null || classes.isEmpty()) {

@@ -15,35 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.request;
+package org.apache.uniffle.coordinator.conf;
 
-import java.util.Collections;
 import java.util.Map;
-
-import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.proto.RssProtos;
 
-public class RssFetchClientConfRequest {
-  private final int timeoutMs;
+public class RssClientConfFetchInfo {
   private String user;
-  private Map<String, String> properties = Collections.emptyMap();
+  private Map<String, String> properties;
 
-  public RssFetchClientConfRequest(int timeoutMs, String user, Map<String, String> properties) {
-    this.timeoutMs = timeoutMs;
+  public static final RssClientConfFetchInfo EMPTY_CLIENT_CONF_FETCH_INFO =
+      new RssClientConfFetchInfo(null, null);
+
+  public RssClientConfFetchInfo(String user, Map<String, String> properties) {
     this.user = user;
     this.properties = properties;
-  }
-
-  @VisibleForTesting
-  public RssFetchClientConfRequest(int timeoutMs) {
-    this.timeoutMs = timeoutMs;
-    this.user = StringUtils.EMPTY;
-  }
-
-  public int getTimeoutMs() {
-    return timeoutMs;
   }
 
   public String getUser() {
@@ -54,10 +41,11 @@ public class RssFetchClientConfRequest {
     return properties;
   }
 
-  public RssProtos.FetchClientConfRequest toProto() {
-    return RssProtos.FetchClientConfRequest.newBuilder()
-        .setUser(user)
-        .putAllProperties(properties)
-        .build();
+  public boolean isEmpty() {
+    return user == null && (properties == null || properties.isEmpty());
+  }
+
+  public static RssClientConfFetchInfo fromProto(RssProtos.FetchClientConfRequest request) {
+    return new RssClientConfFetchInfo(request.getUser(), request.getPropertiesMap());
   }
 }
