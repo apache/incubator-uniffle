@@ -17,18 +17,22 @@
 
 package org.apache.uniffle.server.buffer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
-import com.google.common.collect.Sets;
 import com.google.common.collect.TreeRangeMap;
 import io.netty.util.internal.PlatformDependent;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -38,10 +42,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.NettyUtils;
-import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleFlushManager;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -77,7 +79,7 @@ public class ShuffleBufferManager {
   // appId -> shuffleId -> partitionId -> ShuffleBuffer to avoid too many appId
   protected Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool;
   // appId -> shuffleId -> shuffle size in buffer
-  protected Map<String, Map<Integer, AtomicLong>> shuffleSizeMap = JavaUtils.newConcurrentMap();
+  private final boolean appBlockSizeMetricEnabled;
 
   public ShuffleBufferManager(
       ShuffleServerConf conf, ShuffleFlushManager shuffleFlushManager, boolean nettyServerEnabled) {
@@ -127,6 +129,8 @@ public class ShuffleBufferManager {
     this.hugePartitionMemoryLimitSize =
         Math.round(
             capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO));
+    appBlockSizeMetricEnabled =
+        conf.getBoolean(ShuffleServerConf.APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_ENABLED);
     this.maxBuffersFlushedPerTime = conf.get(ShuffleServerConf.MAX_BUFFERS_TO_FLUSH);
   }
 
@@ -331,7 +335,6 @@ public class ShuffleBufferManager {
       return;
     }
     removeBufferByShuffleId(appId, shuffleIdToBuffers.keySet());
-    shuffleSizeMap.remove(appId);
     bufferPool.remove(appId);
     if (appBlockSizeMetricEnabled) {
       ShuffleServerMetrics.appHistogramWriteBlockSize.remove(appId);
@@ -536,6 +539,24 @@ public class ShuffleBufferManager {
 
   @VisibleForTesting
   public Map<String, Map<Integer, AtomicLong>> getShuffleSizeMap() {
+    // appId -> shuffleId -> shuffle size in buffer
+    Map<String, Map<Integer, AtomicLong>> shuffleSizeMap = JavaUtils.newConcurrentMap();
+    for (Map.Entry<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> appIdToBuffers :
+        bufferPool.entrySet()) {
+      String appId = appIdToBuffers.getKey();
+      Map<Integer, AtomicLong> shuffleIdToSize =
+          shuffleSizeMap.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());
+      for (Map.Entry<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers :
+          appIdToBuffers.getValue().entrySet()) {
+        int shuffleId = shuffleIdToBuffers.getKey();
+        AtomicLong size = shuffleIdToSize.computeIfAbsent(shuffleId, key -> new AtomicLong(0));
+        for (Map.Entry<Range<Integer>, ShuffleBuffer> rangeEntry :
+            shuffleIdToBuffers.getValue().asMapOfRanges().entrySet()) {
+          ShuffleBuffer shuffleBuffer = rangeEntry.getValue();
+          size.addAndGet(shuffleBuffer.getSize());
+        }
+      }
+    }
     return shuffleSizeMap;
   }
 
@@ -641,7 +662,6 @@ public class ShuffleBufferManager {
       return;
     }
 
-    Map<Integer, AtomicLong> shuffleIdToSizeMap = shuffleSizeMap.get(appId);
     for (int shuffleId : shuffleIds) {
       long size = 0;
 
@@ -658,9 +678,6 @@ public class ShuffleBufferManager {
         }
       }
       releaseMemory(size, false, false);
-      if (shuffleIdToSizeMap != null) {
-        shuffleIdToSizeMap.remove(shuffleId);
-      }
     }
   }
 
