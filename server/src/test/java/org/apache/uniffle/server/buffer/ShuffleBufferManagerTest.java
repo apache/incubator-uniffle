@@ -248,6 +248,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     ShufflePartitionedData spd5 = createData(0, 68);
     shuffleBufferManager.cacheShuffleData(appId2, 2, false, spd5);
     // flush happen
+    shuffleSizeMap = shuffleBufferManager.getShuffleSizeMap();
     assertEquals(99, shuffleSizeMap.get(appId1).get(1).get());
     assertEquals(0, shuffleSizeMap.get(appId1).get(2).get());
     assertEquals(0, shuffleSizeMap.get(appId2).get(1).get());
@@ -257,6 +258,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     ShufflePartitionedData spd6 = createData(0, 300);
     shuffleBufferManager.cacheShuffleData(appId1, 1, false, spd6);
     // flush happen
+    shuffleSizeMap = shuffleBufferManager.getShuffleSizeMap();
     assertEquals(0, shuffleSizeMap.get(appId1).get(1).get());
     shuffleBufferManager.releaseMemory(463, true, false);
 
@@ -264,6 +266,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.cacheShuffleData(appId1, 2, false, spd2);
     shuffleBufferManager.cacheShuffleData(appId2, 1, false, spd4);
     shuffleBufferManager.removeBuffer(appId1);
+
+    shuffleSizeMap = shuffleBufferManager.getShuffleSizeMap();
     assertNull(shuffleSizeMap.get(appId1));
     assertEquals(100, shuffleSizeMap.get(appId2).get(1).get());
   }
@@ -447,10 +451,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(6, 64));
     assertEquals(384, shuffleBufferManager.getUsedMemory());
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(8, 64));
-    waitForFlush(shuffleFlushManager, appId, shuffleId, 5);
-    assertEquals(0, shuffleBufferManager.getUsedMemory());
+    waitForFlush(shuffleFlushManager, appId, shuffleId, 4, 96);
     assertEquals(0, shuffleBufferManager.getInFlushSize());
 
+    shuffleBufferManager.removeBuffer(appId);
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     shuffleBufferManager.registerBuffer("bufferSizeTest1", shuffleId, 0, 1);
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 32));
     assertEquals(64, shuffleBufferManager.getUsedMemory());
@@ -630,6 +635,16 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   private void waitForFlush(
       ShuffleFlushManager shuffleFlushManager, String appId, int shuffleId, int expectedBlockNum)
       throws Exception {
+    waitForFlush(shuffleFlushManager, appId, shuffleId, expectedBlockNum, 0);
+  }
+
+  private void waitForFlush(
+      ShuffleFlushManager shuffleFlushManager,
+      String appId,
+      int shuffleId,
+      int expectedBlockNum,
+      long expectedUsedMemory)
+      throws Exception {
     int retry = 0;
     long committedCount = 0;
     do {
@@ -649,7 +664,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     // `shuffleBufferManager.getUsedMemory()` and `shuffleBufferManager.getInFlushSize()`.
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
-        .until(() -> shuffleBufferManager.getUsedMemory() == 0);
+        .until(() -> shuffleBufferManager.getUsedMemory() == expectedUsedMemory);
   }
 
   @Test

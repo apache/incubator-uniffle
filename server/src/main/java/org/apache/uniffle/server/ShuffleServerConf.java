@@ -393,6 +393,12 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(128 * 1024 * 1024L)
           .withDescription("The threshold of single shuffle buffer flush");
 
+  public static final ConfigOption<Integer> MAX_BUFFERS_TO_FLUSH =
+      ConfigOptions.key("rss.server.buffer.flush.batch.max")
+          .intType()
+          .defaultValue(100)
+          .withDescription("The max buffers picked for flushing per time.");
+
   public static final ConfigOption<Long> SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL =
       ConfigOptions.key("rss.server.leak.shuffledata.check.interval")
           .longType()
