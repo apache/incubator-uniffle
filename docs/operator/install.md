@@ -21,8 +21,8 @@ This section shows us how to install operator in our cluster.
 
 ## Requirements
 
-1. Kubernetes 1.14+
-2. Kubectl 1.14+
+1. Kubernetes 1.24+
+2. Kubectl 1.24+
 
 Please make sure the kubectl is properly configured to interact with the Kubernetes environment.
 

@@ -136,7 +136,8 @@ func GenerateHeadlessSvc(rss *unifflev1alpha1.RemoteShuffleService, index int) *
 }
 
 // GenerateSvc generates NodePort service used by specific coordinator. If no RPCNodePort/HTTPNodePort is specified,
-//   this function is skipped.
+//
+//	this function is skipped.
 func GenerateSvc(rss *unifflev1alpha1.RemoteShuffleService, index int) *corev1.Service {
 	name := GenerateNameByIndex(rss, index)
 	svc := &corev1.Service{
