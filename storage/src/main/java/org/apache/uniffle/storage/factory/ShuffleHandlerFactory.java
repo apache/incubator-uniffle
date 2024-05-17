@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;

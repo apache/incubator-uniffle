@@ -56,7 +56,7 @@
     <version.checksum-maven-plugin>1.11</version.checksum-maven-plugin>
     <awaitility.version>4.2.0</awaitility.version>
     <checkstyle.version>9.3</checkstyle.version>
-    <commons-collections.version>3.2.2</commons-collections.version>
+    <commons-collections4.version>4.4</commons-collections4.version>
     <commons-logging.version>1.2</commons-logging.version>
     <commons-lang3.version>3.10</commons-lang3.version>
     <commons-codec.version>1.9</commons-codec.version>
@@ -321,6 +321,11 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
         <version>${commons-lang3.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-collections4</artifactId>
+        <version>${commons-collections4.version}</version>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>

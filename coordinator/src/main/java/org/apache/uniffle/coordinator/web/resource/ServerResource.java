@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.servlet.ServletContext;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hbase.thirdparty.javax.ws.rs.GET;
 import org.apache.hbase.thirdparty.javax.ws.rs.POST;
 import org.apache.hbase.thirdparty.javax.ws.rs.Path;
