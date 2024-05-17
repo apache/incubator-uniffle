@@ -119,7 +119,7 @@ func (c *FakeRemoteShuffleServices) UpdateStatus(ctx context.Context, remoteShuf
 // Delete takes name of the remoteShuffleService and deletes it. Returns an error if one occurs.
 func (c *FakeRemoteShuffleServices) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(remoteshuffleservicesResource, c.ns, name), &v1alpha1.RemoteShuffleService{})
+		Invokes(testing.NewDeleteActionWithOptions(remoteshuffleservicesResource, c.ns, name, opts), &v1alpha1.RemoteShuffleService{})
 
 	return err
 }

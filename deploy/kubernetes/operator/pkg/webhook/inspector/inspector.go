@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	appslisters "k8s.io/client-go/listers/apps/v1"
-	auotscalinglisters "k8s.io/client-go/listers/autoscaling/v2beta2"
+	auotscalinglisters "k8s.io/client-go/listers/autoscaling/v2"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -71,8 +71,8 @@ func newInspector(cfg *config.Config, tlsConfig *tls.Config) *inspector {
 		cmInformer:                   cmInformerFactory.Core().V1().ConfigMaps().Informer(),
 		cmLister:                     cmInformerFactory.Core().V1().ConfigMaps().Lister(),
 		shuffleServerInformerFactory: shuffleInformerFactory,
-		hpaInformer:                  shuffleInformerFactory.Autoscaling().V2beta2().HorizontalPodAutoscalers().Informer(),
-		hpaLister:                    shuffleInformerFactory.Autoscaling().V2beta2().HorizontalPodAutoscalers().Lister(),
+		hpaInformer:                  shuffleInformerFactory.Autoscaling().V2().HorizontalPodAutoscalers().Informer(),
+		hpaLister:                    shuffleInformerFactory.Autoscaling().V2().HorizontalPodAutoscalers().Lister(),
 		stsInformer:                  shuffleInformerFactory.Apps().V1().StatefulSets().Informer(),
 		stsLister:                    shuffleInformerFactory.Apps().V1().StatefulSets().Lister(),
 	}
