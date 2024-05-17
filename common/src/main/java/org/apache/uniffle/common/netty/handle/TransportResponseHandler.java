@@ -19,7 +19,6 @@ package org.apache.uniffle.common.netty.handle;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import io.netty.channel.Channel;
@@ -28,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.netty.client.RpcResponseCallback;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.NettyUtils;
 
 public class TransportResponseHandler extends MessageHandler<RpcResponse> {
@@ -41,7 +41,7 @@ public class TransportResponseHandler extends MessageHandler<RpcResponse> {
 
   public TransportResponseHandler(Channel channel) {
     this.channel = channel;
-    this.outstandingRpcRequests = new ConcurrentHashMap<>();
+    this.outstandingRpcRequests = JavaUtils.newConcurrentMap();
     this.timeOfLastRequestNs = new AtomicLong(0);
   }
 

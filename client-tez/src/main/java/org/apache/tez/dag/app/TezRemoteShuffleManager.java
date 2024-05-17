@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
@@ -64,6 +63,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 
 import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
@@ -154,7 +154,7 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
 
   private class TezRemoteShuffleUmbilicalProtocolImpl implements TezRemoteShuffleUmbilicalProtocol {
     private Map<Integer, ShuffleAssignmentsInfo> shuffleIdToShuffleAssignsInfo =
-        new ConcurrentHashMap<>();
+        JavaUtils.newConcurrentMap();
 
     @Override
     public long getProtocolVersion(String s, long l) throws IOException {

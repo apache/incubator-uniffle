@@ -19,7 +19,6 @@ package org.apache.uniffle.coordinator;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,6 +29,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
 import static org.awaitility.Awaitility.await;
@@ -95,7 +95,7 @@ public class QuotaManagerTest {
     conf.setInteger(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM, 5);
     final ApplicationManager applicationManager = new ApplicationManager(conf);
     final AtomicInteger uuid = new AtomicInteger();
-    Map<String, Long> uuidAndTime = new ConcurrentHashMap<>();
+    Map<String, Long> uuidAndTime = JavaUtils.newConcurrentMap();
     uuidAndTime.put(String.valueOf(uuid.incrementAndGet()), System.currentTimeMillis());
     uuidAndTime.put(String.valueOf(uuid.incrementAndGet()), System.currentTimeMillis());
     uuidAndTime.put(String.valueOf(uuid.incrementAndGet()), System.currentTimeMillis());
@@ -137,7 +137,7 @@ public class QuotaManagerTest {
     final int i2 = uuid.incrementAndGet();
     final int i3 = uuid.incrementAndGet();
     final int i4 = uuid.incrementAndGet();
-    Map<String, Long> uuidAndTime = new ConcurrentHashMap<>();
+    Map<String, Long> uuidAndTime = JavaUtils.newConcurrentMap();
     uuidAndTime.put(String.valueOf(i1), System.currentTimeMillis());
     uuidAndTime.put(String.valueOf(i2), System.currentTimeMillis());
     uuidAndTime.put(String.valueOf(i3), System.currentTimeMillis());
@@ -207,7 +207,7 @@ public class QuotaManagerTest {
   }
 
   private Map<String, Long> mockUUidAppAndTime(int mockAppNum) {
-    Map<String, Long> uuidAndTime = new ConcurrentHashMap<>();
+    Map<String, Long> uuidAndTime = JavaUtils.newConcurrentMap();
     for (int i = 0; i < mockAppNum; i++) {
       uuidAndTime.put(mockUUidAppId(), System.currentTimeMillis());
     }
