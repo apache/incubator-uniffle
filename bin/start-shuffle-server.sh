@@ -118,7 +118,7 @@ JVM_ARGS=" -server \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
 JAVA11_EXTRA_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
-          -Xlog:gc:tags,time,uptime,level"
+          -Xlog:gc=trace:file=${RSS_LOG_DIR}/gc-%t.log:tags,time,uptime,level:filecount=10,filesize=100m"
 
 ARGS=""
 
