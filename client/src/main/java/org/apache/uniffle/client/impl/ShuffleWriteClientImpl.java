@@ -640,7 +640,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       try {
         response = coordinatorClient.getShuffleAssignments(request);
       } catch (Exception e) {
-        LOG.error(e.getMessage());
+        LOG.error("Failed to get shuffle assignment via " + coordinatorClient.getDesc(), e);
       }
 
       if (response.getStatusCode() == StatusCode.SUCCESS) {
