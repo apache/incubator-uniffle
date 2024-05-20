@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 import org.apache.uniffle.server.ShuffleServerMetrics;
 
 public abstract class BufferTestBase {
@@ -58,7 +59,7 @@ public abstract class BufferTestBase {
             len,
             len,
             ChecksumUtils.getCrc32(buf),
-            atomBlockId.incrementAndGet(),
+            new OpaqueBlockId(atomBlockId.incrementAndGet()),
             taskAttemptId,
             buf);
     ShufflePartitionedData data =

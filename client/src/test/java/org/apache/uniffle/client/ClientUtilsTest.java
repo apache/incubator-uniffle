@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.client.util.DefaultIdHelper;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.RssUtils;
@@ -56,7 +57,7 @@ public class ClientUtilsTest {
     for (int i = 0; i < taskSize; i++) {
       except[i] = i;
       for (int j = 0; j < 100; j++) {
-        long blockId = layout.getBlockId(j, partitionId, i);
+        BlockId blockId = layout.asBlockId(j, partitionId, i);
         blockIdMap.add(blockId);
       }
     }

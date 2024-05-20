@@ -52,7 +52,7 @@ public class LocalFileWriter implements FileWriter, Closeable {
     dataOutputStream.writeInt(segment.getLength());
     dataOutputStream.writeInt(segment.getUncompressLength());
     dataOutputStream.writeLong(segment.getCrc());
-    dataOutputStream.writeLong(segment.getBlockId());
+    dataOutputStream.writeLong(segment.getBlockId().getBlockId());
     dataOutputStream.writeLong(segment.getTaskAttemptId());
   }
 

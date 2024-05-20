@@ -31,6 +31,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,9 +60,9 @@ public class LocalFileHandlerTest {
         writeHandler1.getBasePath().endsWith(possiblePath1)
             || writeHandler1.getBasePath().endsWith(possiblePath2));
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
-    final Set<Long> expectedBlockIds1 = Sets.newHashSet();
-    final Set<Long> expectedBlockIds2 = Sets.newHashSet();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
+    final Set<BlockId> expectedBlockIds1 = Sets.newHashSet();
+    final Set<BlockId> expectedBlockIds2 = Sets.newHashSet();
 
     LocalFileHandlerTestBase.writeTestData(
         LocalFileHandlerTestBase.generateBlocks(1, 32),

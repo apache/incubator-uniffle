@@ -37,7 +37,7 @@ public class Encoders {
 
   public static void encodeShuffleBlockInfo(ShuffleBlockInfo shuffleBlockInfo, ByteBuf byteBuf) {
     byteBuf.writeInt(shuffleBlockInfo.getPartitionId());
-    byteBuf.writeLong(shuffleBlockInfo.getBlockId());
+    byteBuf.writeLong(shuffleBlockInfo.getBlockId().getBlockId());
     byteBuf.writeInt(shuffleBlockInfo.getLength());
     byteBuf.writeInt(shuffleBlockInfo.getShuffleId());
     byteBuf.writeLong(shuffleBlockInfo.getCrc());
@@ -83,7 +83,7 @@ public class Encoders {
   public static void encodeBufferSegments(List<BufferSegment> bufferSegments, ByteBuf byteBuf) {
     byteBuf.writeInt(bufferSegments.size());
     for (BufferSegment bufferSegment : bufferSegments) {
-      byteBuf.writeLong(bufferSegment.getBlockId());
+      byteBuf.writeLong(bufferSegment.getBlockId().getBlockId());
       byteBuf.writeInt(bufferSegment.getOffset());
       byteBuf.writeInt(bufferSegment.getLength());
       byteBuf.writeInt(bufferSegment.getUncompressLength());

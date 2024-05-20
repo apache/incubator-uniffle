@@ -116,7 +116,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final boolean dataReplicaSkipEnabled;
   private final int dataTransferPoolSize;
   private final int dataCommitPoolSize;
-  private final Map<String, Set<Long>> taskToSuccessBlockIds;
+  private final Map<String, Set<org.apache.uniffle.common.util.BlockId>> taskToSuccessBlockIds;
   private final Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker;
   private ScheduledExecutorService heartBeatScheduledExecutorService;
   private boolean heartbeatStarted = false;
@@ -336,7 +336,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       SparkConf conf,
       boolean isDriver,
       DataPusher dataPusher,
-      Map<String, Set<Long>> taskToSuccessBlockIds,
+      Map<String, Set<org.apache.uniffle.common.util.BlockId>> taskToSuccessBlockIds,
       Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker) {
     this.sparkConf = conf;
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
@@ -1002,7 +1002,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
   }
 
-  public Set<Long> getFailedBlockIds(String taskId) {
+  public Set<org.apache.uniffle.common.util.BlockId> getFailedBlockIds(String taskId) {
     FailedBlockSendTracker blockIdsFailedSendTracker = getBlockIdsFailedSendTracker(taskId);
     if (blockIdsFailedSendTracker == null) {
       return Collections.emptySet();
@@ -1010,8 +1010,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     return blockIdsFailedSendTracker.getFailedBlockIds();
   }
 
-  public Set<Long> getSuccessBlockIds(String taskId) {
-    Set<Long> result = taskToSuccessBlockIds.get(taskId);
+  public Set<org.apache.uniffle.common.util.BlockId> getSuccessBlockIds(String taskId) {
+    Set<org.apache.uniffle.common.util.BlockId> result = taskToSuccessBlockIds.get(taskId);
     if (result == null) {
       result = Collections.emptySet();
     }

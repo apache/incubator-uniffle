@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ChecksumUtils;
@@ -54,7 +55,7 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler =
         new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, "test", conf, user);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
 
     int readBufferSize = 13;
     int totalBlockNum = 0;
@@ -76,7 +77,7 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
         new HadoopShuffleReadHandler(
             "appId", 0, 1, fileNamePrefix, readBufferSize, expectBlockIds, processBlockIds, conf);
 
-    Set<Long> actualBlockIds = Sets.newHashSet();
+    Set<BlockId> actualBlockIds = Sets.newHashSet();
     for (int i = 0; i < total; ++i) {
       ShuffleDataResult shuffleDataResult = handler.readShuffleData();
       totalBlockNum += shuffleDataResult.getBufferSegments().size();
@@ -104,7 +105,7 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
         new TestHadoopShuffleWriteHandler(
             "appId", 0, 1, 1, basePath, "test", conf, StringUtils.EMPTY);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     int totalBlockNum = 0;
     int expectTotalBlockNum = 6;
     int blockSize = 7;
@@ -119,7 +120,7 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
     byte[] buf = new byte[blockSize];
     new Random().nextBytes(buf);
     BlockIdLayout layout = BlockIdLayout.DEFAULT;
-    long blockId = layout.getBlockId(expectTotalBlockNum, 0, taskAttemptId);
+    BlockId blockId = layout.asBlockId(expectTotalBlockNum, 0, taskAttemptId);
     blocks.add(
         new ShufflePartitionedBlock(
             blockSize, blockSize, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf));
@@ -140,7 +141,7 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
         new HadoopShuffleReadHandler(
             "appId", 0, 1, fileNamePrefix, readBufferSize, expectBlockIds, processBlockIds, conf);
 
-    Set<Long> actualBlockIds = Sets.newHashSet();
+    Set<BlockId> actualBlockIds = Sets.newHashSet();
     for (int i = 0; i < total; ++i) {
       ShuffleDataResult shuffleDataResult = handler.readShuffleData();
       totalBlockNum += shuffleDataResult.getBufferSegments().size();
@@ -204,7 +205,7 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
               ShuffleStorageUtils.generateIndexFileName(fileNamePrefix + "_" + failTimes);
           indexWriter = createWriter(indexFileName);
           for (ShufflePartitionedBlock block : shuffleBlocks) {
-            long blockId = block.getBlockId();
+            BlockId blockId = block.getBlockId();
             long crc = block.getCrc();
             long startOffset = indexWriter.nextOffset();
 

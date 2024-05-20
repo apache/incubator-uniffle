@@ -53,6 +53,7 @@ import org.apache.uniffle.common.netty.protocol.RequestMessage;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.netty.protocol.SendShuffleDataRequest;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -274,7 +275,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                     appId,
                     shuffleId,
                     partitionId,
-                    blockId,
+                    new OpaqueBlockId(blockId),
                     readBufferSize,
                     req.getExpectedTaskIdsBitmap());
         ManagedBuffer data = NettyManagedBuffer.EMPTY_BUFFER;

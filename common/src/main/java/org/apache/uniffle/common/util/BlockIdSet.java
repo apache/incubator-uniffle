@@ -19,46 +19,31 @@ package org.apache.uniffle.common.util;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.function.LongConsumer;
-import java.util.stream.LongStream;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /** Implementations are thread-safe. */
 public interface BlockIdSet {
-  BlockIdSet add(long blockId);
+  BlockIdSet add(BlockId blockId);
 
   default BlockIdSet addAll(BlockIdSet blockIds) {
     return addAll(blockIds.stream());
   }
 
-  default BlockIdSet addAll(Stream<Long> blockIds) {
+  default BlockIdSet addAll(Stream<BlockId> blockIds) {
     synchronized (this) {
       blockIds.forEach(this::add);
     }
     return this;
   }
 
-  default BlockIdSet addAll(LongStream blockIds) {
-    synchronized (this) {
-      blockIds.forEach(this::add);
-    }
-    return this;
-  }
-
-  BlockIdSet remove(long blockId);
+  BlockIdSet remove(BlockId blockId);
 
   default BlockIdSet removeAll(BlockIdSet blockIds) {
     return removeAll(blockIds.stream());
   }
 
-  default BlockIdSet removeAll(Stream<Long> blockIds) {
-    synchronized (this) {
-      blockIds.forEach(this::remove);
-    }
-    return this;
-  }
-
-  default BlockIdSet removeAll(LongStream blockIds) {
+  default BlockIdSet removeAll(Stream<BlockId> blockIds) {
     synchronized (this) {
       blockIds.forEach(this::remove);
     }
@@ -67,7 +52,7 @@ public interface BlockIdSet {
 
   BlockIdSet retainAll(BlockIdSet blockIds);
 
-  boolean contains(long blockId);
+  boolean contains(BlockId blockId);
 
   boolean containsAll(BlockIdSet blockIds);
 
@@ -77,9 +62,9 @@ public interface BlockIdSet {
 
   boolean isEmpty();
 
-  void forEach(LongConsumer func);
+  void forEach(Consumer<BlockId> func);
 
-  LongStream stream();
+  Stream<BlockId> stream();
 
   BlockIdSet copy();
 
@@ -91,9 +76,16 @@ public interface BlockIdSet {
   }
 
   // create new instance from given block ids using default implementation
-  static BlockIdSet of(long... blockIds) {
+  static BlockIdSet of(BlockId... blockIds) {
     BlockIdSet set = empty();
     set.addAll(Arrays.stream(blockIds));
+    return set;
+  }
+
+  // create new instance from given block ids stream using default implementation
+  static BlockIdSet from(Stream<Long> blockIds) {
+    BlockIdSet set = empty();
+    set.addAll(blockIds.map(OpaqueBlockId::new));
     return set;
   }
 }

@@ -22,16 +22,20 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.util.BlockId;
+import org.apache.uniffle.common.util.OpaqueBlockId;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ShuffleBlockInfoTest {
+  private final BlockId blockId3 = new OpaqueBlockId(3);
 
   @Test
   public void testToString() {
     List<ShuffleServerInfo> shuffleServerInfos =
         Collections.singletonList(new ShuffleServerInfo("0", "localhost", 1234));
     ShuffleBlockInfo info =
-        new ShuffleBlockInfo(1, 2, 3, 4, 5, new byte[6], shuffleServerInfos, 7, 8, 9);
+        new ShuffleBlockInfo(1, 2, blockId3, 4, 5, new byte[6], shuffleServerInfos, 7, 8, 9);
     assertEquals(
         "ShuffleBlockInfo:shuffleId["
             + info.getShuffleId()
@@ -48,7 +52,7 @@ public class ShuffleBlockInfoTest {
             + "],shuffleServer[0,]",
         info.toString());
 
-    ShuffleBlockInfo info2 = new ShuffleBlockInfo(1, 2, 3, 4, 5, new byte[6], null, 7, 8, 9);
+    ShuffleBlockInfo info2 = new ShuffleBlockInfo(1, 2, blockId3, 4, 5, new byte[6], null, 7, 8, 9);
     assertEquals(
         "ShuffleBlockInfo:shuffleId["
             + info2.getShuffleId()

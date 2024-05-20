@@ -54,6 +54,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -122,14 +123,14 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
     shuffleServerClient.registerShuffle(rrsr);
 
     List<BlockIdSet> bitmaps = new ArrayList<>();
-    Map<Long, byte[]> expectedDataList = new HashMap<>();
+    Map<BlockId, byte[]> expectedDataList = new HashMap<>();
     IntStream.range(0, 20)
         .forEach(
             x -> {
               BlockIdSet bitmap = BlockIdSet.empty();
               bitmaps.add(bitmap);
 
-              Map<Long, byte[]> expectedData = Maps.newHashMap();
+              Map<BlockId, byte[]> expectedData = Maps.newHashMap();
 
               List<ShuffleBlockInfo> blocks =
                   createShuffleBlockList(0, 0, 0, 1, 1024 * 1025, bitmap, expectedData, mockSSI);
@@ -172,7 +173,7 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
     bitmaps.stream()
         .forEach(
             x -> {
-              Iterator<Long> iterator = x.stream().iterator();
+              Iterator<BlockId> iterator = x.stream().iterator();
               while (iterator.hasNext()) {
                 blocksBitmap.add(iterator.next());
               }

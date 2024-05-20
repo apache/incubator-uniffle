@@ -49,7 +49,9 @@ import org.apache.uniffle.common.netty.protocol.NettyProtocolTestUtils;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.netty.protocol.SendShuffleDataRequest;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.NettyUtils;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -63,6 +65,8 @@ public class EncoderAndDecoderTest {
   private static final long REQUEST_ID = 1;
   private static final StatusCode STATUS_CODE = StatusCode.SUCCESS;
   private static final int PORT = 12345;
+  private static final BlockId blockId1 = new OpaqueBlockId(1);
+  private static final BlockId blockId2 = new OpaqueBlockId(2);
 
   static class MockResponseHandler extends ChannelInboundHandlerAdapter {
     @Override
@@ -137,7 +141,7 @@ public class EncoderAndDecoderTest {
             new ShuffleBlockInfo(
                 1,
                 1,
-                1,
+                blockId1,
                 data.length,
                 123,
                 Unpooled.wrappedBuffer(data).retain(),
@@ -148,7 +152,7 @@ public class EncoderAndDecoderTest {
             new ShuffleBlockInfo(
                 1,
                 1,
-                1,
+                blockId1,
                 data.length,
                 123,
                 Unpooled.wrappedBuffer(data).retain(),
@@ -161,7 +165,7 @@ public class EncoderAndDecoderTest {
             new ShuffleBlockInfo(
                 1,
                 2,
-                1,
+                blockId1,
                 data.length,
                 123,
                 Unpooled.wrappedBuffer(data).retain(),
@@ -172,7 +176,7 @@ public class EncoderAndDecoderTest {
             new ShuffleBlockInfo(
                 1,
                 1,
-                2,
+                blockId2,
                 data.length,
                 123,
                 Unpooled.wrappedBuffer(data).retain(),

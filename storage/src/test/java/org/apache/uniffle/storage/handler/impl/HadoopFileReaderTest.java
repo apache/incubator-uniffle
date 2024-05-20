@@ -24,7 +24,9 @@ import java.util.Random;
 import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
@@ -34,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HadoopFileReaderTest extends HadoopTestBase {
+  private static final BlockId blockId = new OpaqueBlockId(23);
 
   @Test
   public void createStreamTest() throws Exception {
@@ -71,7 +74,7 @@ public class HadoopFileReaderTest extends HadoopTestBase {
       writer.writeData(data);
     }
     FileBasedShuffleSegment segment =
-        new FileBasedShuffleSegment(23, offset, length, length, 0xdeadbeef, 1);
+        new FileBasedShuffleSegment(blockId, offset, length, length, 0xdeadbeef, 1);
     try (HadoopFileReader reader = new HadoopFileReader(path, conf)) {
       byte[] actual = reader.read(segment.getOffset(), segment.getLength());
       long crc22 = ChecksumUtils.getCrc32(actual);
@@ -81,7 +84,7 @@ public class HadoopFileReaderTest extends HadoopTestBase {
       }
       assertEquals(crc11, crc22);
       // EOF exception is expected
-      segment = new FileBasedShuffleSegment(23, offset * 2, length, length, 1, 1);
+      segment = new FileBasedShuffleSegment(blockId, offset * 2, length, length, 1, 1);
       assertEquals(0, reader.read(segment.getOffset(), segment.getLength()).length);
     }
   }

@@ -22,6 +22,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.util.OpaqueBlockId;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -29,7 +31,8 @@ public class ShuffleDataResultTest {
 
   @Test
   public void testEmpty() {
-    List<BufferSegment> segments = Collections.singletonList(new BufferSegment(1, 2, 3, 4, 5, 6));
+    List<BufferSegment> segments =
+        Collections.singletonList(new BufferSegment(new OpaqueBlockId(1), 2, 3, 4, 5, 6));
     byte[] bytes = null;
     assertTrue(new ShuffleDataResult().isEmpty());
     assertTrue(new ShuffleDataResult(new byte[1]).isEmpty());

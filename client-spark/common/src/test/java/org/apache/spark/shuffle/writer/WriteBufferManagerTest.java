@@ -48,7 +48,9 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -144,7 +146,7 @@ public class WriteBufferManagerTest {
     result = wbm.addRecord(0, testKey, testValue);
     // single buffer is full
     assertEquals(1, result.size());
-    assertEquals(layout.asBlockId(0, 0, 0), layout.asBlockId(result.get(0).getBlockId()));
+    assertEquals(layout.asBlockId(0, 0, 0), result.get(0).getBlockId().withLayoutIfOpaque(layout));
     assertEquals(512, wbm.getAllocatedBytes());
     assertEquals(96, wbm.getUsedBytes());
     assertEquals(96, wbm.getInSendListBytes());
@@ -162,12 +164,12 @@ public class WriteBufferManagerTest {
     wbm.addRecord(4, testKey, testValue);
     result = wbm.addRecord(5, testKey, testValue);
     assertEquals(6, result.size());
-    assertEquals(layout.asBlockId(1, 0, 0), layout.asBlockId(result.get(0).getBlockId()));
-    assertEquals(layout.asBlockId(0, 1, 0), layout.asBlockId(result.get(1).getBlockId()));
-    assertEquals(layout.asBlockId(0, 2, 0), layout.asBlockId(result.get(2).getBlockId()));
-    assertEquals(layout.asBlockId(0, 3, 0), layout.asBlockId(result.get(3).getBlockId()));
-    assertEquals(layout.asBlockId(0, 4, 0), layout.asBlockId(result.get(4).getBlockId()));
-    assertEquals(layout.asBlockId(0, 5, 0), layout.asBlockId(result.get(5).getBlockId()));
+    assertEquals(layout.asBlockId(1, 0, 0), result.get(0).getBlockId().withLayoutIfOpaque(layout));
+    assertEquals(layout.asBlockId(0, 1, 0), result.get(1).getBlockId().withLayoutIfOpaque(layout));
+    assertEquals(layout.asBlockId(0, 2, 0), result.get(2).getBlockId().withLayoutIfOpaque(layout));
+    assertEquals(layout.asBlockId(0, 3, 0), result.get(3).getBlockId().withLayoutIfOpaque(layout));
+    assertEquals(layout.asBlockId(0, 4, 0), result.get(4).getBlockId().withLayoutIfOpaque(layout));
+    assertEquals(layout.asBlockId(0, 5, 0), result.get(5).getBlockId().withLayoutIfOpaque(layout));
     assertEquals(512, wbm.getAllocatedBytes());
     assertEquals(288, wbm.getUsedBytes());
     assertEquals(288, wbm.getInSendListBytes());
@@ -271,19 +273,19 @@ public class WriteBufferManagerTest {
     ShuffleBlockInfo sbi = wbm.createShuffleBlock(0, mockWriterBuffer);
 
     // seqNo = 0, partitionId = 0, taskId = 0
-    assertEquals(layout.asBlockId(0, 0, 0), layout.asBlockId(sbi.getBlockId()));
+    assertEquals(layout.asBlockId(0, 0, 0), sbi.getBlockId().withLayoutIfOpaque(layout));
 
     // seqNo = 1, partitionId = 0, taskId = 0
     sbi = wbm.createShuffleBlock(0, mockWriterBuffer);
-    assertEquals(layout.asBlockId(1, 0, 0), layout.asBlockId(sbi.getBlockId()));
+    assertEquals(layout.asBlockId(1, 0, 0), sbi.getBlockId().withLayoutIfOpaque(layout));
 
     // seqNo = 0, partitionId = 1, taskId = 0
     sbi = wbm.createShuffleBlock(1, mockWriterBuffer);
-    assertEquals(layout.asBlockId(0, 1, 0), layout.asBlockId(sbi.getBlockId()));
+    assertEquals(layout.asBlockId(0, 1, 0), sbi.getBlockId().withLayoutIfOpaque(layout));
 
     // seqNo = 1, partitionId = 1, taskId = 0
     sbi = wbm.createShuffleBlock(1, mockWriterBuffer);
-    assertEquals(layout.asBlockId(1, 1, 0), layout.asBlockId(sbi.getBlockId()));
+    assertEquals(layout.asBlockId(1, 1, 0), sbi.getBlockId().withLayoutIfOpaque(layout));
   }
 
   @Test
@@ -306,9 +308,10 @@ public class WriteBufferManagerTest {
             RssSparkConfig.toRssConf(conf));
 
     // every block: length=4, memoryUsed=12
-    ShuffleBlockInfo info1 = new ShuffleBlockInfo(1, 1, 1, 4, 1, new byte[1], null, 1, 12, 1);
-    ShuffleBlockInfo info2 = new ShuffleBlockInfo(1, 1, 1, 4, 1, new byte[1], null, 1, 12, 1);
-    ShuffleBlockInfo info3 = new ShuffleBlockInfo(1, 1, 1, 4, 1, new byte[1], null, 1, 12, 1);
+    BlockId blockId = new OpaqueBlockId(1);
+    ShuffleBlockInfo info1 = new ShuffleBlockInfo(1, 1, blockId, 4, 1, new byte[1], null, 1, 12, 1);
+    ShuffleBlockInfo info2 = new ShuffleBlockInfo(1, 1, blockId, 4, 1, new byte[1], null, 1, 12, 1);
+    ShuffleBlockInfo info3 = new ShuffleBlockInfo(1, 1, blockId, 4, 1, new byte[1], null, 1, 12, 1);
     List<AddBlockEvent> events = wbm.buildBlockEvents(Arrays.asList(info1, info2, info3));
     assertEquals(3, events.size());
   }

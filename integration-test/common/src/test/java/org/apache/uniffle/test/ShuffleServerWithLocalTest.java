@@ -19,15 +19,14 @@ package org.apache.uniffle.test;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +48,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -147,7 +147,7 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
             testAppId, 0, Lists.newArrayList(new PartitionRange(3, 3)), "");
     shuffleServerClient.registerShuffle(rrsr);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
 
     BlockIdSet[] bitmaps = new BlockIdSet[4];
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = createTestData(bitmaps, expectedData);
@@ -164,10 +164,10 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
     RssFinishShuffleRequest rfsr = new RssFinishShuffleRequest(testAppId, 0);
     shuffleServerClient.finishShuffle(rfsr);
 
-    final Set<Long> expectedBlockIds1 = transBitmapToSet(bitmaps[0]);
-    final Set<Long> expectedBlockIds2 = transBitmapToSet(bitmaps[1]);
-    final Set<Long> expectedBlockIds3 = transBitmapToSet(bitmaps[2]);
-    final Set<Long> expectedBlockIds4 = transBitmapToSet(bitmaps[3]);
+    final Set<BlockId> expectedBlockIds1 = transBitmapToSet(bitmaps[0]);
+    final Set<BlockId> expectedBlockIds2 = transBitmapToSet(bitmaps[1]);
+    final Set<BlockId> expectedBlockIds3 = transBitmapToSet(bitmaps[2]);
+    final Set<BlockId> expectedBlockIds4 = transBitmapToSet(bitmaps[3]);
     ShuffleDataResult sdr = readShuffleData(shuffleServerClient, testAppId, 0, 0, 1, 4, 1000, 0);
     validateResult(sdr, expectedBlockIds1, expectedData, 0);
     sdr = readShuffleData(shuffleServerClient, testAppId, 0, 1, 1, 4, 1000, 0);
@@ -187,8 +187,8 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
 
   protected void validateResult(
       ShuffleDataResult sdr,
-      Set<Long> expectedBlockIds,
-      Map<Long, byte[]> expectedData,
+      Set<BlockId> expectedBlockIds,
+      Map<BlockId, byte[]> expectedData,
       long expectedTaskAttemptId) {
     byte[] buffer = sdr.getData();
     List<BufferSegment> bufferSegments = sdr.getBufferSegments();
@@ -207,12 +207,7 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
     assertEquals(expectedBlockIds.size(), matched);
   }
 
-  private Set<Long> transBitmapToSet(BlockIdSet blockIdBitmap) {
-    Set<Long> blockIds = Sets.newHashSet();
-    Iterator<Long> iter = blockIdBitmap.stream().iterator();
-    while (iter.hasNext()) {
-      blockIds.add(iter.next());
-    }
-    return blockIds;
+  private Set<BlockId> transBitmapToSet(BlockIdSet blockIdBitmap) {
+    return blockIdBitmap.stream().collect(Collectors.toSet());
   }
 }

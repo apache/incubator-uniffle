@@ -21,6 +21,8 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.util.OpaqueBlockId;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ShufflePartitionedDataTest {
@@ -39,7 +41,7 @@ public class ShufflePartitionedDataTest {
         new ShufflePartitionedData(
             1,
             new ShufflePartitionedBlock[] {
-              new ShufflePartitionedBlock(2, 3, 4, 5, 6, new byte[0])
+              new ShufflePartitionedBlock(2, 3, 4, new OpaqueBlockId(5), 6, new byte[0])
             });
     assertEquals(
         "ShufflePartitionedData{partitionId="

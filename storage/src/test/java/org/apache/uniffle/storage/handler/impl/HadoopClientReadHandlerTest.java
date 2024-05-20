@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
@@ -51,7 +52,7 @@ public class HadoopClientReadHandlerTest extends HadoopTestBase {
     HadoopShuffleWriteHandler writeHandler =
         new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, "test", hadoopConf, writeUser);
 
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     BlockIdSet expectBlockIds = BlockIdSet.empty();
 
     int readBufferSize = 13;
@@ -108,7 +109,7 @@ public class HadoopClientReadHandlerTest extends HadoopTestBase {
             processBlockIds,
             basePath,
             hadoopConf);
-    Set<Long> actualBlockIds = Sets.newHashSet();
+    Set<BlockId> actualBlockIds = Sets.newHashSet();
 
     for (int i = 0; i < total; ++i) {
       ShuffleDataResult shuffleDataResult = handler.readShuffleData();

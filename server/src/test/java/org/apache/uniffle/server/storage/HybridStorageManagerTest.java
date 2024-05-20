@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.util.BlockId;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.common.HadoopStorage;
@@ -35,6 +37,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HybridStorageManagerTest {
+  private final BlockId blockId = new OpaqueBlockId(1);
 
   /**
    * this tests the fallback strategy when encountering the local storage is invalid. 1. When
@@ -67,7 +70,7 @@ public class HybridStorageManagerTest {
     String appId = "selectStorageManagerWithSelectorAndFallbackStrategy_appId";
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
     List<ShufflePartitionedBlock> blocks =
-        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
+        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, blockId, 1L, (byte[]) null));
     ShuffleDataFlushEvent event =
         new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
     assertTrue((manager.selectStorage(event) instanceof HadoopStorage));
@@ -97,7 +100,7 @@ public class HybridStorageManagerTest {
     String appId = "selectStorageManagerTest_appId";
     manager.registerRemoteStorage(appId, new RemoteStorageInfo(remoteStorage));
     List<ShufflePartitionedBlock> blocks =
-        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
+        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, blockId, 1L, (byte[]) null));
     ShuffleDataFlushEvent event =
         new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
     assertTrue((manager.selectStorage(event) instanceof LocalStorage));
@@ -130,7 +133,7 @@ public class HybridStorageManagerTest {
      * is enabled.
      */
     List<ShufflePartitionedBlock> blocks =
-        Lists.newArrayList(new ShufflePartitionedBlock(10001, 1000, 1, 1, 1L, (byte[]) null));
+        Lists.newArrayList(new ShufflePartitionedBlock(10001, 1000, 1, blockId, 1L, (byte[]) null));
     ShuffleDataFlushEvent event =
         new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 100000, blocks, null, null);
     Storage storage = manager.selectStorage(event);
@@ -161,13 +164,14 @@ public class HybridStorageManagerTest {
 
     /** case1: big event should be written into cold storage directly */
     List<ShufflePartitionedBlock> blocks =
-        Lists.newArrayList(new ShufflePartitionedBlock(10001, 1000, 1, 1, 1L, (byte[]) null));
+        Lists.newArrayList(new ShufflePartitionedBlock(10001, 1000, 1, blockId, 1L, (byte[]) null));
     ShuffleDataFlushEvent hugeEvent =
         new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 10001, blocks, null, null);
     assertTrue(manager.selectStorage(hugeEvent) instanceof HadoopStorage);
 
     /** case2: fallback when disk can not write */
-    blocks = Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, 1, 1L, (byte[]) null));
+    blocks =
+        Lists.newArrayList(new ShufflePartitionedBlock(100, 1000, 1, blockId, 1L, (byte[]) null));
     ShuffleDataFlushEvent event =
         new ShuffleDataFlushEvent(1, appId, 1, 1, 1, 1000, blocks, null, null);
     Storage storage = manager.selectStorage(event);

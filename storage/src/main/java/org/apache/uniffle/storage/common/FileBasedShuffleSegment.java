@@ -19,6 +19,8 @@ package org.apache.uniffle.storage.common;
 
 import java.util.Objects;
 
+import org.apache.uniffle.common.util.BlockId;
+
 public class FileBasedShuffleSegment extends ShuffleSegment
     implements Comparable<FileBasedShuffleSegment> {
 
@@ -27,11 +29,16 @@ public class FileBasedShuffleSegment extends ShuffleSegment
   private int length;
   private int uncompressLength;
   private long crc;
-  private long blockId;
+  private BlockId blockId;
   private long taskAttemptId;
 
   public FileBasedShuffleSegment(
-      long blockId, long offset, int length, int uncompressLength, long crc, long taskAttemptId) {
+      BlockId blockId,
+      long offset,
+      int length,
+      int uncompressLength,
+      long crc,
+      long taskAttemptId) {
     this.offset = offset;
     this.length = length;
     this.uncompressLength = uncompressLength;
@@ -60,11 +67,11 @@ public class FileBasedShuffleSegment extends ShuffleSegment
     return crc;
   }
 
-  public long getBlockId() {
+  public BlockId getBlockId() {
     return blockId;
   }
 
-  public void setBlockId(long blockId) {
+  public void setBlockId(BlockId blockId) {
     this.blockId = blockId;
   }
 
@@ -88,7 +95,7 @@ public class FileBasedShuffleSegment extends ShuffleSegment
     return offset == that.offset
         && length == that.length
         && crc == that.crc
-        && blockId == that.blockId
+        && blockId.equals(that.blockId)
         && uncompressLength == that.uncompressLength
         && taskAttemptId == that.taskAttemptId;
   }
@@ -119,9 +126,9 @@ public class FileBasedShuffleSegment extends ShuffleSegment
         + uncompressLength
         + "], crc["
         + crc
-        + "], blockid["
+        + "], "
         + blockId
-        + "], taskAttemptId["
+        + ", taskAttemptId["
         + taskAttemptId
         + "]}";
   }

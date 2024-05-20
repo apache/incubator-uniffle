@@ -211,7 +211,7 @@ public class ShuffleFlushManager {
     Map<Integer, BlockIdSet> shuffleToBlockIds = committedBlockIds.get(appId);
     shuffleToBlockIds.computeIfAbsent(shuffleId, key -> BlockIdSet.empty());
     BlockIdSet blockIds = shuffleToBlockIds.get(shuffleId);
-    blockIds.addAll(blocks.stream().mapToLong(ShufflePartitionedBlock::getBlockId));
+    blockIds.addAll(blocks.stream().map(ShufflePartitionedBlock::getBlockId));
   }
 
   public BlockIdSet getCommittedBlockIds(String appId, Integer shuffleId) {

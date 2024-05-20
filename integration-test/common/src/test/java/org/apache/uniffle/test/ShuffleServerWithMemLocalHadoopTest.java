@@ -49,6 +49,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -168,7 +169,7 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
             String.format(REMOTE_STORAGE, isNettyMode));
     shuffleServerClient.registerShuffle(rrsr);
     BlockIdSet expectBlockIds = BlockIdSet.empty();
-    Map<Long, byte[]> dataMap = Maps.newHashMap();
+    Map<BlockId, byte[]> dataMap = Maps.newHashMap();
     Roaring64NavigableMap[] bitmaps = new Roaring64NavigableMap[1];
     bitmaps[0] = Roaring64NavigableMap.bitmapOf();
     List<ShuffleBlockInfo> blocks =
@@ -230,7 +231,7 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
                 LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
     ComposedClientReadHandler composedClientReadHandler =
         new ComposedClientReadHandler(ssi, handlers);
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
+    Map<BlockId, byte[]> expectedData = Maps.newHashMap();
     expectedData.clear();
     expectedData.put(blocks.get(0).getBlockId(), ByteBufUtils.readBytes(blocks.get(0).getData()));
     expectedData.put(blocks.get(1).getBlockId(), ByteBufUtils.readBytes(blocks.get(1).getData()));
@@ -354,11 +355,11 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     }
   }
 
-  protected void validateResult(Map<Long, byte[]> expectedData, ShuffleDataResult sdr) {
+  protected void validateResult(Map<BlockId, byte[]> expectedData, ShuffleDataResult sdr) {
     byte[] buffer = sdr.getData();
     List<BufferSegment> bufferSegments = sdr.getBufferSegments();
     assertEquals(expectedData.size(), bufferSegments.size());
-    for (Map.Entry<Long, byte[]> entry : expectedData.entrySet()) {
+    for (Map.Entry<BlockId, byte[]> entry : expectedData.entrySet()) {
       BufferSegment bs = findBufferSegment(entry.getKey(), bufferSegments);
       assertNotNull(bs);
       byte[] data = new byte[bs.getLength()];
@@ -366,9 +367,9 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     }
   }
 
-  private BufferSegment findBufferSegment(long blockId, List<BufferSegment> bufferSegments) {
+  private BufferSegment findBufferSegment(BlockId blockId, List<BufferSegment> bufferSegments) {
     for (BufferSegment bs : bufferSegments) {
-      if (bs.getBlockId() == blockId) {
+      if (bs.getBlockId().equals(blockId)) {
         return bs;
       }
     }

@@ -54,9 +54,11 @@ import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ChecksumUtils;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
@@ -776,7 +778,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     for (int taskId = 1; taskId < 10; taskId++) {
       for (int partitionId = 1; partitionId < 10; partitionId++) {
         for (int i = 0; i < 2; i++) {
-          long blockId = layout.getBlockId(i, partitionId, taskId);
+          BlockId blockId = layout.asBlockId(i, partitionId, taskId);
           bitmapBlockIds.add(blockId);
           if (partitionId == expectedPartitionId) {
             expectedBlockIds.add(blockId);
@@ -789,14 +791,14 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
             Sets.newHashSet(expectedPartitionId), bitmapBlockIds, BlockIdSet.empty(), layout);
     assertEquals(expectedBlockIds, resultBlockIds);
 
-    bitmapBlockIds.add(layout.getBlockId(0, 0, 0));
+    bitmapBlockIds.add(layout.asBlockId(0, 0, 0));
     resultBlockIds =
         shuffleTaskManager.getBlockIdsByPartitionId(
             Sets.newHashSet(0), bitmapBlockIds, BlockIdSet.empty(), layout);
-    assertEquals(BlockIdSet.of(0L), resultBlockIds);
+    assertEquals(BlockIdSet.of(new OpaqueBlockId(0L)), resultBlockIds);
 
-    long expectedBlockId =
-        layout.getBlockId(layout.maxSequenceNo, layout.maxPartitionId, layout.maxTaskAttemptId);
+    BlockId expectedBlockId =
+        layout.asBlockId(layout.maxSequenceNo, layout.maxPartitionId, layout.maxTaskAttemptId);
     bitmapBlockIds.add(expectedBlockId);
     resultBlockIds =
         shuffleTaskManager.getBlockIdsByPartitionId(
@@ -817,7 +819,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     for (int taskId = 1; taskId < 10; taskId++) {
       for (int partitionId = 1; partitionId < 10; partitionId++) {
         for (int i = 0; i < 2; i++) {
-          long blockId = layout.getBlockId(i, partitionId, taskId);
+          BlockId blockId = layout.asBlockId(i, partitionId, taskId);
           bitmapBlockIds.add(blockId);
           if (partitionId >= startPartition && partitionId <= endPartition) {
             expectedBlockIds.add(blockId);
@@ -878,8 +880,8 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     int startPartition = 6;
     int endPartition = 9;
     BlockIdLayout layout = BlockIdLayout.DEFAULT;
-    Roaring64NavigableMap expectedBlockIds = Roaring64NavigableMap.bitmapOf();
-    Map<Integer, long[]> blockIdsToReport = Maps.newHashMap();
+    BlockIdSet expectedBlockIds = BlockIdSet.empty();
+    Map<Integer, BlockId[]> blockIdsToReport = Maps.newHashMap();
 
     for (int partitionId = 0; partitionId < partitionNum; partitionId++) {
       shuffleTaskManager.registerShuffle(
@@ -888,16 +890,16 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
           Lists.newArrayList(new PartitionRange(partitionId, partitionId)),
           new RemoteStorageInfo(storageBasePath),
           StringUtils.EMPTY);
-      long[] blockIds = new long[taskNum * blocksPerTask];
+      BlockId[] blockIds = new BlockId[taskNum * blocksPerTask];
       for (int taskId = 0; taskId < taskNum; taskId++) {
         for (int i = 0; i < blocksPerTask; i++) {
-          long blockId = layout.getBlockId(i, partitionId, taskId);
+          BlockId blockId = layout.asBlockId(i, partitionId, taskId);
           blockIds[taskId * blocksPerTask + i] = blockId;
         }
       }
       blockIdsToReport.putIfAbsent(partitionId, blockIds);
       if (partitionId >= startPartition) {
-        expectedBlockIds.add(blockIds);
+        expectedBlockIds.addAll(Arrays.stream(blockIds));
       }
     }
     assertEquals(
@@ -912,7 +914,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     byte[] serializeBitMap =
         shuffleTaskManager.getFinishedBlockIds(appId, shuffleId, requestPartitions, layout);
     Roaring64NavigableMap resBlockIds = RssUtils.deserializeBitMap(serializeBitMap);
-    assertEquals(expectedBlockIds, resBlockIds);
+    assertEquals(expectedBlockIds, BlockIdSet.from(resBlockIds.stream().boxed()));
 
     try {
       // calling with same appId and shuffleId but different bitmapNum should fail
@@ -950,7 +952,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     StorageManager storageManager = shuffleServer.getStorageManager();
     ShuffleTaskManager shuffleTaskManager =
         new ShuffleTaskManager(conf, shuffleFlushManager, shuffleBufferManager, storageManager);
-    Map<Integer, long[]> blockIdsToReport = Maps.newHashMap();
+    Map<Integer, BlockId[]> blockIdsToReport = Maps.newHashMap();
     try {
       shuffleTaskManager.addFinishedBlockIds(appId, shuffleId, blockIdsToReport, bitNum);
       fail("Exception should be thrown");
@@ -1085,7 +1087,12 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
       new Random().nextBytes(buf);
       blocks[i] =
           new ShufflePartitionedBlock(
-              length, length, ChecksumUtils.getCrc32(buf), ATOMIC_INT.incrementAndGet(), 0, buf);
+              length,
+              length,
+              ChecksumUtils.getCrc32(buf),
+              new OpaqueBlockId(ATOMIC_INT.incrementAndGet()),
+              0,
+              buf);
     }
     return blocks;
   }
@@ -1098,7 +1105,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
       String basePath) {
     BlockIdSet expectBlockIds = BlockIdSet.empty();
     BlockIdSet processBlockIds = BlockIdSet.empty();
-    Set<Long> remainIds = Sets.newHashSet();
+    Set<BlockId> remainIds = Sets.newHashSet();
     for (ShufflePartitionedBlock spb : blocks) {
       expectBlockIds.add(spb.getBlockId());
       remainIds.add(spb.getBlockId());
@@ -1122,7 +1129,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     int matchNum = 0;
     for (ShufflePartitionedBlock block : blocks) {
       for (BufferSegment bs : bufferSegments) {
-        if (bs.getBlockId() == block.getBlockId()) {
+        if (bs.getBlockId().equals(block.getBlockId())) {
           assertEquals(block.getLength(), bs.getLength());
           assertEquals(block.getCrc(), bs.getCrc());
           matchNum++;

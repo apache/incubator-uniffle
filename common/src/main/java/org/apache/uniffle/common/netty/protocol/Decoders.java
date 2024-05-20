@@ -29,6 +29,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.NettyUtils;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 
 public class Decoders {
   public static ShuffleServerInfo decodeShuffleServerInfo(ByteBuf byteBuf) {
@@ -59,7 +60,7 @@ public class Decoders {
     return new ShuffleBlockInfo(
         shuffleId,
         partId,
-        blockId,
+        new OpaqueBlockId(blockId),
         length,
         crc,
         data,
@@ -95,7 +96,8 @@ public class Decoders {
       long crc = byteBuf.readLong();
       long taskAttemptId = byteBuf.readLong();
       BufferSegment bufferSegment =
-          new BufferSegment(blockId, offset, length, uncompressLength, crc, taskAttemptId);
+          new BufferSegment(
+              new OpaqueBlockId(blockId), offset, length, uncompressLength, crc, taskAttemptId);
       bufferSegments.add(bufferSegment);
     }
     return bufferSegments;

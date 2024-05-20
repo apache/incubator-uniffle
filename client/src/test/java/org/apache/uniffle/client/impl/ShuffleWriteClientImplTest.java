@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
@@ -48,8 +49,10 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.IOMode;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.BlockIdSet;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 import org.apache.uniffle.common.util.RssUtils;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -63,6 +66,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class ShuffleWriteClientImplTest {
+  private final BlockId blockId = new OpaqueBlockId(10);
 
   @Test
   public void testAbandonEventWhenTaskFailed() {
@@ -98,7 +102,7 @@ public class ShuffleWriteClientImplTest {
     List<ShuffleBlockInfo> shuffleBlockInfoList =
         Lists.newArrayList(
             new ShuffleBlockInfo(
-                0, 0, 10, 10, 10, new byte[] {10}, shuffleServerInfoList, 10, 100, 0));
+                0, 0, blockId, 10, 10, new byte[] {10}, shuffleServerInfoList, 10, 100, 0));
 
     // It should directly exit and wont do rpc request.
     Awaitility.await()
@@ -138,11 +142,15 @@ public class ShuffleWriteClientImplTest {
     List<ShuffleBlockInfo> shuffleBlockInfoList =
         Lists.newArrayList(
             new ShuffleBlockInfo(
-                0, 0, 10, 10, 10, new byte[] {10}, shuffleServerInfoList, 10, 100, 0));
+                0, 0, blockId, 10, 10, new byte[] {10}, shuffleServerInfoList, 10, 100, 0));
     SendShuffleDataResult result =
         spyClient.sendShuffleData("appId", shuffleBlockInfoList, () -> false);
 
-    assertTrue(result.getFailedBlockIds().contains(10L));
+    assertTrue(
+        result.getFailedBlockIds().stream()
+            .map(BlockId::getBlockId)
+            .collect(Collectors.toList())
+            .contains(10L));
   }
 
   @Test
@@ -217,7 +225,7 @@ public class ShuffleWriteClientImplTest {
     List<ShuffleBlockInfo> shuffleBlockInfoList =
         Lists.newArrayList(
             new ShuffleBlockInfo(
-                0, 0, 10, 10, 10, new byte[] {10}, shuffleServerInfoList, 10, 100, 0));
+                0, 0, blockId, 10, 10, new byte[] {10}, shuffleServerInfoList, 10, 100, 0));
     SendShuffleDataResult result =
         spyClient.sendShuffleData(appId, shuffleBlockInfoList, () -> false);
     assertEquals(0, result.getFailedBlockIds().size());
@@ -263,7 +271,7 @@ public class ShuffleWriteClientImplTest {
     List<ShuffleBlockInfo> shuffleBlockInfoList2 =
         Lists.newArrayList(
             new ShuffleBlockInfo(
-                0, 0, 10, 10, 10, new byte[] {10}, shuffleServerInfoList2, 10, 100, 0));
+                0, 0, blockId, 10, 10, new byte[] {10}, shuffleServerInfoList2, 10, 100, 0));
     result = spyClient.sendShuffleData(appId, shuffleBlockInfoList2, () -> false);
     assertEquals(0, result.getFailedBlockIds().size());
     assertEquals(1, spyClient.getDefectiveServers().size());
@@ -379,6 +387,7 @@ public class ShuffleWriteClientImplTest {
 
     verify(mockShuffleServerClient)
         .getShuffleResult(argThat(request -> request.getBlockIdLayout().equals(layout)));
-    assertArrayEquals(result.stream().sorted().toArray(), new long[] {1L, 2L, 5L});
+    assertArrayEquals(
+        result.stream().mapToLong(BlockId::getBlockId).sorted().toArray(), new long[] {1L, 2L, 5L});
   }
 }

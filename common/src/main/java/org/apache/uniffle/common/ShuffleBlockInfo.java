@@ -22,12 +22,13 @@ import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.ByteBufUtils;
 
 public class ShuffleBlockInfo {
 
   private int partitionId;
-  private long blockId;
+  private BlockId blockId;
   private int length;
   private int shuffleId;
   private long crc;
@@ -43,7 +44,7 @@ public class ShuffleBlockInfo {
   public ShuffleBlockInfo(
       int shuffleId,
       int partitionId,
-      long blockId,
+      BlockId blockId,
       int length,
       long crc,
       byte[] data,
@@ -67,7 +68,7 @@ public class ShuffleBlockInfo {
   public ShuffleBlockInfo(
       int shuffleId,
       int partitionId,
-      long blockId,
+      BlockId blockId,
       int length,
       long crc,
       ByteBuf data,
@@ -87,7 +88,7 @@ public class ShuffleBlockInfo {
     this.taskAttemptId = taskAttemptId;
   }
 
-  public long getBlockId() {
+  public BlockId getBlockId() {
     return blockId;
   }
 

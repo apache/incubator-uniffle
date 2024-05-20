@@ -99,7 +99,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private String appId = "";
   private String clientType;
   private ShuffleWriteClient shuffleWriteClient;
-  private Map<String, Set<Long>> taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
+  private Map<String, Set<org.apache.uniffle.common.util.BlockId>> taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
   private Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker =
       JavaUtils.newConcurrentMap();
   private final int dataReplica;
@@ -694,7 +694,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     return taskIdBitmap;
   }
 
-  public Set<Long> getFailedBlockIds(String taskId) {
+  public Set<org.apache.uniffle.common.util.BlockId> getFailedBlockIds(String taskId) {
     FailedBlockSendTracker blockIdsFailedSendTracker = getBlockIdsFailedSendTracker(taskId);
     if (blockIdsFailedSendTracker == null) {
       return Collections.emptySet();
@@ -702,8 +702,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     return blockIdsFailedSendTracker.getFailedBlockIds();
   }
 
-  public Set<Long> getSuccessBlockIds(String taskId) {
-    Set<Long> result = taskToSuccessBlockIds.get(taskId);
+  public Set<org.apache.uniffle.common.util.BlockId> getSuccessBlockIds(String taskId) {
+    Set<org.apache.uniffle.common.util.BlockId> result = taskToSuccessBlockIds.get(taskId);
     if (result == null) {
       result = Collections.emptySet();
     }
@@ -711,7 +711,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   }
 
   @VisibleForTesting
-  public void addSuccessBlockIds(String taskId, Set<Long> blockIds) {
+  public void addSuccessBlockIds(String taskId, Set<org.apache.uniffle.common.util.BlockId> blockIds) {
     if (taskToSuccessBlockIds.get(taskId) == null) {
       taskToSuccessBlockIds.put(taskId, Sets.newHashSet());
     }

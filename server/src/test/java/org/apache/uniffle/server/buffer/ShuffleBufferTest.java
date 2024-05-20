@@ -28,8 +28,9 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.ByteBufUtils;
-import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.OpaqueBlockId;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -96,8 +97,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     shuffleBuffer.append(spd4);
 
     Roaring64NavigableMap expectedTasks = Roaring64NavigableMap.bitmapOf(1, 2);
-    ShuffleDataResult result =
-        shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 1000, expectedTasks);
+    ShuffleDataResult result = shuffleBuffer.getShuffleData(null, 1000, expectedTasks);
     assertEquals(3, result.getBufferSegments().size());
     for (BufferSegment segment : result.getBufferSegments()) {
       assertTrue(expectedTasks.contains(segment.getTaskAttemptId()));
@@ -110,7 +110,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     assertEquals(45, result.getBufferSegments().get(2).getLength());
 
     expectedTasks = Roaring64NavigableMap.bitmapOf(0);
-    result = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 1000, expectedTasks);
+    result = shuffleBuffer.getShuffleData(null, 1000, expectedTasks);
     assertEquals(1, result.getBufferSegments().size());
     assertEquals(15, result.getBufferSegments().get(0).getLength());
 
@@ -121,7 +121,7 @@ public class ShuffleBufferTest extends BufferTestBase {
      * <p>required blocks size list: 15, 55, 45
      */
     expectedTasks = Roaring64NavigableMap.bitmapOf(1, 2);
-    result = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 60, expectedTasks);
+    result = shuffleBuffer.getShuffleData(null, 60, expectedTasks);
     assertEquals(2, result.getBufferSegments().size());
     assertEquals(0, result.getBufferSegments().get(0).getOffset());
     assertEquals(15, result.getBufferSegments().get(0).getLength());
@@ -129,7 +129,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     assertEquals(55, result.getBufferSegments().get(1).getLength());
 
     // 2nd read
-    long lastBlockId = result.getBufferSegments().get(1).getBlockId();
+    BlockId lastBlockId = result.getBufferSegments().get(1).getBlockId();
     result = shuffleBuffer.getShuffleData(lastBlockId, 60, expectedTasks);
     assertEquals(1, result.getBufferSegments().size());
     assertEquals(0, result.getBufferSegments().get(0).getOffset());
@@ -139,7 +139,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     expectedTasks = Roaring64NavigableMap.bitmapOf(1, 2);
     ShuffleDataFlushEvent event1 =
         shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null, ShuffleDataDistributionType.LOCAL_ORDER);
-    result = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 1000, expectedTasks);
+    result = shuffleBuffer.getShuffleData(null, 1000, expectedTasks);
     assertEquals(3, result.getBufferSegments().size());
     for (BufferSegment segment : result.getBufferSegments()) {
       assertTrue(expectedTasks.contains(segment.getTaskAttemptId()));
@@ -153,7 +153,7 @@ public class ShuffleBufferTest extends BufferTestBase {
 
     /** case4: all blocks in flushed map and size > readBufferSize, it will read multiple times */
     expectedTasks = Roaring64NavigableMap.bitmapOf(1, 2);
-    result = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 60, expectedTasks);
+    result = shuffleBuffer.getShuffleData(null, 60, expectedTasks);
     assertEquals(2, result.getBufferSegments().size());
     assertEquals(0, result.getBufferSegments().get(0).getOffset());
     assertEquals(15, result.getBufferSegments().get(0).getLength());
@@ -182,7 +182,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     shuffleBuffer.append(spd8);
 
     expectedTasks = Roaring64NavigableMap.bitmapOf(1, 2);
-    result = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 60, expectedTasks);
+    result = shuffleBuffer.getShuffleData(null, 60, expectedTasks);
     assertEquals(2, result.getBufferSegments().size());
 
     // 2nd read
@@ -206,7 +206,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     shuffleBuffer.append(spd3);
 
     // First read from the cached data
-    ShuffleDataResult sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 16);
+    ShuffleDataResult sdr = shuffleBuffer.getShuffleData(null, 16);
     byte[] expectedData = getExpectedData(spd1, spd2);
     compareBufferSegment(shuffleBuffer.getBlocks(), sdr.getBufferSegments(), 0, 2);
     assertArrayEquals(expectedData, sdr.getData());
@@ -214,7 +214,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     // Second read after flushed
     ShuffleDataFlushEvent event1 =
         shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null, ShuffleDataDistributionType.LOCAL_ORDER);
-    long lastBlockId = sdr.getBufferSegments().get(1).getBlockId();
+    BlockId lastBlockId = sdr.getBufferSegments().get(1).getBlockId();
     sdr = shuffleBuffer.getShuffleData(lastBlockId, 16);
     expectedData = getExpectedData(spd3);
     compareBufferSegment(
@@ -242,7 +242,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     shuffleBuffer.append(spd1);
     shuffleBuffer.append(spd2);
     byte[] expectedData = getExpectedData(spd1, spd2);
-    ShuffleDataResult sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 40);
+    ShuffleDataResult sdr = shuffleBuffer.getShuffleData(null, 40);
     compareBufferSegment(shuffleBuffer.getBlocks(), sdr.getBufferSegments(), 0, 2);
     assertArrayEquals(expectedData, sdr.getData());
 
@@ -253,7 +253,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     shuffleBuffer.append(spd1);
     shuffleBuffer.append(spd2);
     expectedData = getExpectedData(spd1, spd2);
-    sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 40);
+    sdr = shuffleBuffer.getShuffleData(null, 40);
     compareBufferSegment(shuffleBuffer.getBlocks(), sdr.getBufferSegments(), 0, 2);
     assertArrayEquals(expectedData, sdr.getData());
 
@@ -264,7 +264,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     shuffleBuffer.append(spd1);
     shuffleBuffer.append(spd2);
     expectedData = getExpectedData(spd1, spd2);
-    sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 40);
+    sdr = shuffleBuffer.getShuffleData(null, 40);
     compareBufferSegment(shuffleBuffer.getBlocks(), sdr.getBufferSegments(), 0, 2);
     assertArrayEquals(expectedData, sdr.getData());
 
@@ -277,12 +277,12 @@ public class ShuffleBufferTest extends BufferTestBase {
     shuffleBuffer.append(spd2);
     shuffleBuffer.append(spd3);
     expectedData = getExpectedData(spd1, spd2);
-    sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 25);
+    sdr = shuffleBuffer.getShuffleData(null, 25);
     compareBufferSegment(shuffleBuffer.getBlocks(), sdr.getBufferSegments(), 0, 2);
     assertArrayEquals(expectedData, sdr.getData());
 
     // case4: cached data only, blockId != -1 && exist, readBufferSize < buffer size
-    long lastBlockId = spd2.getBlockList()[0].getBlockId();
+    BlockId lastBlockId = spd2.getBlockList()[0].getBlockId();
     sdr = shuffleBuffer.getShuffleData(lastBlockId, 25);
     expectedData = getExpectedData(spd3);
     compareBufferSegment(shuffleBuffer.getBlocks(), sdr.getBufferSegments(), 2, 1);
@@ -296,7 +296,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     shuffleBuffer.append(spd2);
     ShuffleDataFlushEvent event1 = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
     assertEquals(0, shuffleBuffer.getBlocks().size());
-    sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 20);
+    sdr = shuffleBuffer.getShuffleData(null, 20);
     compareBufferSegment(
         shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()), sdr.getBufferSegments(), 0, 2);
     expectedData = getExpectedData(spd1, spd2);
@@ -308,7 +308,7 @@ public class ShuffleBufferTest extends BufferTestBase {
 
     // case6: no data in buffer & flush buffer
     shuffleBuffer = new ShuffleBuffer(200);
-    sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 10);
+    sdr = shuffleBuffer.getShuffleData(null, 10);
     assertEquals(0, sdr.getBufferSegments().size());
     assertEquals(0, sdr.getDataLength());
 
@@ -361,7 +361,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     List<ShufflePartitionedBlock> expectedBlocks =
         Lists.newArrayList(shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()));
     expectedData = getExpectedData(spd1);
-    sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 10);
+    sdr = shuffleBuffer.getShuffleData(null, 10);
     compareBufferSegment(expectedBlocks, sdr.getBufferSegments(), 0, 1);
     assertArrayEquals(expectedData, sdr.getData());
 
@@ -377,7 +377,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     expectedBlocks =
         Lists.newArrayList(shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()));
     expectedData = getExpectedData(spd1, spd2);
-    sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 20);
+    sdr = shuffleBuffer.getShuffleData(null, 20);
     compareBufferSegment(expectedBlocks, sdr.getBufferSegments(), 0, 2);
     assertArrayEquals(expectedData, sdr.getData());
 
@@ -394,7 +394,7 @@ public class ShuffleBufferTest extends BufferTestBase {
         Lists.newArrayList(shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()));
     expectedBlocks.addAll(shuffleBuffer.getInFlushBlockMap().get(event2.getEventId()));
     expectedData = getExpectedData(spd1, spd2, spd3, spd4);
-    sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 50);
+    sdr = shuffleBuffer.getShuffleData(null, 50);
     compareBufferSegment(expectedBlocks, sdr.getBufferSegments(), 0, 4);
     assertArrayEquals(expectedData, sdr.getData());
 
@@ -545,7 +545,7 @@ public class ShuffleBufferTest extends BufferTestBase {
         getExpectedData(
             spd1, spd2, spd3, spd4, spd5, spd6, spd7, spd8, spd9, spd10, spd11, spd12, spd13, spd14,
             spd15);
-    sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 220);
+    sdr = shuffleBuffer.getShuffleData(null, 220);
     compareBufferSegment(expectedBlocks, sdr.getBufferSegments(), 0, 15);
     assertArrayEquals(expectedData, sdr.getData());
 
@@ -557,7 +557,7 @@ public class ShuffleBufferTest extends BufferTestBase {
     expectedBlocks =
         Lists.newArrayList(shuffleBuffer.getInFlushBlockMap().get(event1.getEventId()));
     expectedData = getExpectedData(spd1, spd2);
-    sdr = shuffleBuffer.getShuffleData(-200, 20);
+    sdr = shuffleBuffer.getShuffleData(new OpaqueBlockId(-200), 20);
     compareBufferSegment(expectedBlocks, sdr.getBufferSegments(), 0, 2);
     assertArrayEquals(expectedData, sdr.getData());
   }

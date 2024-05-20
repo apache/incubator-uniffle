@@ -30,12 +30,13 @@ import org.apache.uniffle.client.response.RssGetInMemoryShuffleDataResponse;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.Constants;
 
 public class MemoryClientReadHandler extends AbstractClientReadHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(MemoryClientReadHandler.class);
-  private long lastBlockId = Constants.INVALID_BLOCK_ID;
+  private BlockId lastBlockId = null;
   private ShuffleServerClient shuffleServerClient;
   private Roaring64NavigableMap expectTaskIds;
   private int retryMax;
@@ -74,6 +75,10 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
   @Override
   public ShuffleDataResult readShuffleData() {
     ShuffleDataResult result = null;
+    long lastBlockId = Constants.INVALID_BLOCK_ID;
+    if (this.lastBlockId != null) {
+      lastBlockId = this.lastBlockId.getBlockId();
+    }
 
     RssGetInMemoryShuffleDataRequest request =
         new RssGetInMemoryShuffleDataRequest(
@@ -101,7 +106,7 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
     // update lastBlockId for next rpc call
     if (!result.isEmpty()) {
       List<BufferSegment> bufferSegments = result.getBufferSegments();
-      lastBlockId = bufferSegments.get(bufferSegments.size() - 1).getBlockId();
+      this.lastBlockId = bufferSegments.get(bufferSegments.size() - 1).getBlockId();
     }
 
     return result;

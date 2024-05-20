@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -123,7 +124,7 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
       try (HadoopFileWriter dataWriter = createWriter(dataFileName);
           HadoopFileWriter indexWriter = createWriter(indexFileName)) {
         for (ShufflePartitionedBlock block : shuffleBlocks) {
-          long blockId = block.getBlockId();
+          BlockId blockId = block.getBlockId();
           long crc = block.getCrc();
           long startOffset = dataWriter.nextOffset();
           dataWriter.writeData(ByteBufUtils.readBytes(block.getData()));

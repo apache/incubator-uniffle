@@ -42,6 +42,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
+import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ChecksumUtils;
@@ -181,10 +182,10 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       request.enableOffHeap();
     }
 
-    List<Long> removeBlockIds = Lists.newArrayList();
+    List<BlockId> removeBlockIds = Lists.newArrayList();
     blockIdBitmap.forEach(
         bid -> {
-          if (!taskIdBitmap.contains(idHelper.getTaskAttemptId(bid))) {
+          if (!taskIdBitmap.contains(idHelper.getTaskAttemptId(bid.getBlockId()))) {
             removeBlockIds.add(bid);
           }
         });
@@ -241,14 +242,14 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
             actualCrc = ChecksumUtils.getCrc32(readBuffer, bs.getOffset(), bs.getLength());
             crcCheckTime.addAndGet(System.currentTimeMillis() - start);
           } catch (Exception e) {
-            LOG.warn("Can't read data for " + blockIdLayout.asBlockId(bs.getBlockId()), e);
+            LOG.warn("Can't read data for " + bs.getBlockId().withLayoutIfOpaque(blockIdLayout), e);
           }
 
           if (expectedCrc != actualCrc) {
             String errMsg =
-                "Unexpected crc value for "
-                    + blockIdLayout.asBlockId(bs.getBlockId())
-                    + ", expected:"
+                "Unexpected crc value for blockId["
+                    + bs.getBlockId().withLayoutIfOpaque(blockIdLayout)
+                    + "], expected:"
                     + expectedCrc
                     + ", actual:"
                     + actualCrc;
