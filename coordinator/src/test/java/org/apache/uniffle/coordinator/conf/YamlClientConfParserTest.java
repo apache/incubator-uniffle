@@ -32,6 +32,11 @@ public class YamlClientConfParserTest {
             getClass().getClassLoader().getResource("dynamicClientConf.yaml").openStream());
     assertEquals("v1", conf.getRssClientConf().get("k1"));
     assertEquals("v2", conf.getRssClientConf().get("k2"));
+    assertEquals("true", conf.getRssClientConf().get("k3"));
+    assertEquals("false", conf.getRssClientConf().get("k4"));
+    assertEquals("1", conf.getRssClientConf().get("k5"));
+    assertEquals("2", conf.getRssClientConf().get("k6"));
+
     assertEquals(
         "v1,v2,v3", conf.getRemoteStorageInfos().get("hdfs://a-ns01").getConfItems().get("k1"));
     assertEquals("v1", conf.getRemoteStorageInfos().get("hdfs://x-ns01").getConfItems().get("k1"));
