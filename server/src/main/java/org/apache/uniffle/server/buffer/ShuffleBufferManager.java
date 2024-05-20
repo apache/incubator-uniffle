@@ -108,7 +108,7 @@ public class ShuffleBufferManager {
         capacity,
         readCapacity);
     this.shuffleFlushManager = shuffleFlushManager;
-    this.bufferPool = new ConcurrentHashMap<>();
+    this.bufferPool = JavaUtils.newConcurrentMap();
     this.highWaterMark =
         (long)
             (capacity

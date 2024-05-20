@@ -32,7 +32,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
@@ -98,6 +97,7 @@ import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.UnitConverter;
 
 class RssShuffleScheduler extends ShuffleScheduler {
@@ -180,7 +180,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   // TODO Clean this and other maps at some point
   @VisibleForTesting
   final ConcurrentMap<PathPartition, InputAttemptIdentifier> pathToIdentifierMap =
-      new ConcurrentHashMap<>();
+      JavaUtils.newConcurrentMap();
 
   // To track shuffleInfo events when finalMerge is disabled in source or pipelined shuffle is
   // enabled in source.
@@ -216,7 +216,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
   private final int numFetchers;
   private final Set<RssTezShuffleDataFetcher> rssRunningFetchers =
-      Collections.newSetFromMap(new ConcurrentHashMap<>());
+      Collections.newSetFromMap(JavaUtils.newConcurrentMap());
 
   private final ListeningExecutorService fetcherExecutor;
 

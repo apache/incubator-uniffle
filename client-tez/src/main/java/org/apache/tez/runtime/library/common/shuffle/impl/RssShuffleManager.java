@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -100,6 +99,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.util.JavaUtils;
 
 // This only knows how to deal with a single srcIndex for a given targetIndex.
 // In case the src task generates multiple outputs for the same target Index
@@ -211,9 +211,9 @@ public class RssShuffleManager extends ShuffleManager {
   private final BlockingQueue<Integer> pendingPartition = new LinkedBlockingQueue<>();
   Map<Integer, List<InputAttemptIdentifier>> partitionToInput = new HashMap<>();
   private final Map<Integer, Roaring64NavigableMap> rssAllBlockIdBitmapMap =
-      new ConcurrentHashMap<>();
+      JavaUtils.newConcurrentMap();
   private final Map<Integer, Roaring64NavigableMap> rssSuccessBlockIdBitmapMap =
-      new ConcurrentHashMap<>();
+      JavaUtils.newConcurrentMap();
   private final AtomicInteger numNoDataInput = new AtomicInteger(0);
   private final AtomicInteger numWithDataInput = new AtomicInteger(0);
 
@@ -292,10 +292,10 @@ public class RssShuffleManager extends ShuffleManager {
      * not know upfront the number of spills from source.
      */
     completedInputs = new LinkedBlockingDeque<>();
-    knownSrcHosts = new ConcurrentHashMap<>();
+    knownSrcHosts = JavaUtils.newConcurrentMap();
     pendingHosts = new LinkedBlockingQueue<>();
-    obsoletedInputs = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    rssRunningFetchers = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    obsoletedInputs = Collections.newSetFromMap(JavaUtils.newConcurrentMap());
+    rssRunningFetchers = Collections.newSetFromMap(JavaUtils.newConcurrentMap());
 
     int maxConfiguredFetchers =
         conf.getInt(
@@ -372,7 +372,7 @@ public class RssShuffleManager extends ShuffleManager {
       Arrays.sort(this.localDisks);
     }
 
-    shuffleInfoEventsMap = new ConcurrentHashMap<>();
+    shuffleInfoEventsMap = JavaUtils.newConcurrentMap();
 
     LOG.info(
         srcNameTrimmed
