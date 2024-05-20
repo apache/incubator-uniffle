@@ -250,7 +250,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
 
-    // case1: When only 1 server is failed, the block sending should success
+    // case1: When only 1 server failed, the block sending should success
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(
             0,
@@ -312,7 +312,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertEquals(blockIdBitmap, failedBlockIdBitmap);
     assertEquals(0, succBlockIdBitmap.getLongCardinality());
 
-    // The client should not read any data, because write is failed
+    // The client should not read any data, because write failed
     assertEquals(readClient.readShuffleBlockData(), null);
   }
 
@@ -472,7 +472,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
       shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 0, 0L, 1);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
-      assertTrue(e.getMessage().startsWith("Quorum check of report shuffle result is failed"));
+      assertTrue(e.getMessage().startsWith("Quorum check of report shuffle result failed"));
     }
     //  get result should also fail
     try {
@@ -484,7 +484,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
           0);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
-      assertTrue(e.getMessage().startsWith("Get shuffle result is failed"));
+      assertTrue(e.getMessage().startsWith("Get shuffle result failed"));
     }
   }
 
@@ -496,7 +496,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     disableTimeout((MockedShuffleServer) grpcShuffleServers.get(1));
     disableTimeout((MockedShuffleServer) grpcShuffleServers.get(2));
 
-    // When 1 server is timeout and 1 server is failed after sending, the block sending should fail
+    // When 1 server is timeout and 1 server failed after sending, the block sending should fail
     enableTimeout((MockedShuffleServer) grpcShuffleServers.get(2), 500);
 
     Map<Long, byte[]> expectedData = Maps.newHashMap();
@@ -553,7 +553,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
               0);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
-      assertTrue(e.getMessage().startsWith("Get shuffle result is failed"));
+      assertTrue(e.getMessage().startsWith("Get shuffle result failed"));
     }
 
     // When the timeout of one server is recovered, the block sending should success
@@ -677,7 +677,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
               0);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
-      assertTrue(e.getMessage().startsWith("Get shuffle result is failed"));
+      assertTrue(e.getMessage().startsWith("Get shuffle result failed"));
     }
   }
 
@@ -737,12 +737,12 @@ public class QuorumTest extends ShuffleReadWriteBase {
     partitionToBlockIds2.put(2, Sets.newHashSet(blockIdBitmap2.stream().iterator()));
     serverToPartitionToBlockIds.put(shuffleServerInfo3, partitionToBlockIds2);
     serverToPartitionToBlockIds.put(shuffleServerInfo4, partitionToBlockIds2);
-    // report result should fail because partition2 is failed to report server 3,4
+    // report result should fail because partition2 failed to report server 3,4
     try {
       shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 0, 0L, 1);
       fail(EXPECTED_EXCEPTION_MESSAGE);
     } catch (Exception e) {
-      assertTrue(e.getMessage().startsWith("Quorum check of report shuffle result is failed"));
+      assertTrue(e.getMessage().startsWith("Quorum check of report shuffle result failed"));
     }
   }
 
