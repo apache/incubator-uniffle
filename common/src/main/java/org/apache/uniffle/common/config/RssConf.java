@@ -57,6 +57,10 @@ public class RssConf implements Cloneable {
     return Sets.newHashSet();
   }
 
+  public Object getObject(String key, Object defaultValue) {
+    return getRawValue(key).orElse(defaultValue);
+  }
+
   /**
    * Returns the value associated with the given key as a string.
    *
@@ -569,7 +573,7 @@ public class RssConf implements Cloneable {
     return this;
   }
 
-  <T> void setValueInternal(String key, T value) {
+  public <T> void setValueInternal(String key, T value) {
     if (key == null) {
       throw new NullPointerException("Key must not be null.");
     }

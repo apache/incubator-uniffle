@@ -2,7 +2,7 @@ package org.apache.uniffle.common;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.uniffle.common.config.RssBaseConf.JETTY_HTTP_PORT;
@@ -13,12 +13,12 @@ public class ReconfigurableConfManagerTest {
     @Test
     public void test() throws InterruptedException {
         AtomicInteger i = new AtomicInteger();
-        Supplier<RssBaseConf> supplier = () -> {
+        Supplier<RssConf> supplier = () -> {
             if (i.get() == 0) {
                 i.getAndIncrement();
-                return new RssBaseConf();
+                return new RssConf();
             }
-            RssBaseConf conf = new RssBaseConf();
+            RssConf conf = new RssConf();
             conf.set(JETTY_HTTP_PORT, 100);
             return conf;
         };
