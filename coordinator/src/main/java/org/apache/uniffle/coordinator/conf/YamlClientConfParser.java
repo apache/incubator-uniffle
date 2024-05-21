@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -58,7 +59,11 @@ public class YamlClientConfParser implements ClientConfParser {
 
   private Map<String, String> parseKVItems(Object confRaw) throws Exception {
     if (confRaw instanceof Map) {
-      return (Map<String, String>) confRaw;
+      return ((Map<?, ?>) confRaw)
+          .entrySet().stream()
+              .collect(
+                  Collectors.toMap(
+                      x -> String.valueOf(x.getKey()), x -> String.valueOf(x.getValue())));
     }
 
     // todo: currently only xml format is supported
