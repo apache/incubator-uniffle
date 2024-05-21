@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
+import org.apache.uniffle.common.ReconfigurableConfManager;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.InvalidRequestException;
@@ -122,6 +123,8 @@ public class ShuffleServer {
     LOG.info("Start to init shuffle server using config {}", configFile);
 
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf(configFile);
+    ReconfigurableConfManager.init(shuffleServerConf, configFile);
+
     final ShuffleServer shuffleServer = new ShuffleServer(shuffleServerConf);
     shuffleServer.start();
 

@@ -53,7 +53,7 @@ public class ReconfigurableConfManagerTest {
 
     RssConf base = new RssConf();
     base.set(RSS_RECONFIGURE_INTERVAL_SEC, 1L);
-    ReconfigurableConfManager.init(base, supplier);
+    ReconfigurableConfManager.initForTest(base, supplier);
 
     ReconfigurableConfManager.Reconfigurable<Integer> portReconfigurable =
         ReconfigurableConfManager.register(JETTY_HTTP_PORT);
