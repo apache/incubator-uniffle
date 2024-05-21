@@ -190,23 +190,12 @@ public class QuorumTest extends ShuffleReadWriteBase {
     Thread.sleep(2000);
   }
 
-  public static void cleanCluster() throws Exception {
-    for (CoordinatorServer coordinator : coordinators) {
-      coordinator.stopServer();
-    }
-    for (ShuffleServer shuffleServer : grpcShuffleServers) {
-      shuffleServer.stopServer();
-    }
-    grpcShuffleServers = Lists.newArrayList();
-    coordinators = Lists.newArrayList();
-  }
-
   @AfterEach
   public void cleanEnv() throws Exception {
     if (shuffleWriteClientImpl != null) {
       shuffleWriteClientImpl.close();
     }
-    cleanCluster();
+    shutdownServers();
     // we need recovery `rpcTime`, or some unit tests may fail
     ((ShuffleServerGrpcClient)
             ShuffleServerClientFactory.getInstance()

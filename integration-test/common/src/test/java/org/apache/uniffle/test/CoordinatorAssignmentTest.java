@@ -129,19 +129,20 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
 
     // Case2: Enable silent period mechanism, it should fallback to slave coordinator.
-    SimpleClusterManager clusterManager =
-        (SimpleClusterManager) coordinators.get(0).getClusterManager();
-    clusterManager.setReadyForServe(false);
-    clusterManager.setStartupSilentPeriodEnabled(true);
-    clusterManager.setStartTime(System.currentTimeMillis() - 1);
+    try (SimpleClusterManager clusterManager =
+        (SimpleClusterManager) coordinators.get(0).getClusterManager()) {
+      clusterManager.setReadyForServe(false);
+      clusterManager.setStartupSilentPeriodEnabled(true);
+      clusterManager.setStartTime(System.currentTimeMillis() - 1);
 
-    if (clusterManager.getNodesNum() < 10) {
-      info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, -1, -1);
-      assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
+      if (clusterManager.getNodesNum() < 10) {
+        info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, -1, -1);
+        assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
+      }
+
+      // recover
+      clusterManager.setReadyForServe(true);
     }
-
-    // recover
-    clusterManager.setReadyForServe(true);
   }
 
   @Test
