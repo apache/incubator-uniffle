@@ -18,6 +18,10 @@
 rssClientConf:
   k1: v1
   k2: v2
+  k3: true
+  k4: false
+  k5: 1
+  k6: 2
 
 remoteStorageInfos:
   hdfs://a-ns01: |+
