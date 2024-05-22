@@ -177,7 +177,7 @@
                         </systemProperties>
                         <redirectTestOutputToFile>${test.redirectToFile}</redirectTestOutputToFile>
                         <useFile>${test.redirectToFile}</useFile>
-                        <argLine>-ea -Xmx3g</argLine>
+                        <argLine>-ea -Xmx5g</argLine>
                         <failIfNoTests>false</failIfNoTests>
                     </configuration>
                 </plugin>
