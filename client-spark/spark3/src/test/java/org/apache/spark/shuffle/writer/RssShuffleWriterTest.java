@@ -334,7 +334,7 @@ public class RssShuffleWriterTest {
     rssShuffleWriter.checkBlockSendResult(Sets.newHashSet(1L, 2L, 3L));
     successBlocks.clear();
 
-    // case 2: partial blocks aren't sent before spark.rss.writer.send.check.timeout,
+    // case 2: partial blocks aren't sent before spark.rss.client.send.check.timeout.ms,
     // Runtime exception will be thrown
     successBlocks.put("taskId", Sets.newHashSet(1L, 2L));
     Throwable e2 =
