@@ -58,21 +58,24 @@ public class ReconfigurableConfManager<T> {
 
   private void initialize(RssConf rssConf, Supplier<RssConf> confSupplier) {
     this.rssConf = new RssConf(rssConf);
-    this.updateConfOptions = new ArrayList<>();
-    this.scheduledThreadPoolExecutor =
-        ThreadUtils.getDaemonSingleThreadScheduledExecutor("Refresh-rss-conf");
-    scheduledThreadPoolExecutor.scheduleAtFixedRate(
-        () -> {
-          try {
-            RssConf latestConf = confSupplier.get();
-            update(latestConf);
-          } catch (Exception e) {
-            LOGGER.error("Errors on refreshing the rss conf.", e);
-          }
-        },
-        1,
-        rssConf.get(RSS_RECONFIGURE_INTERVAL_SEC),
-        TimeUnit.SECONDS);
+    if (confSupplier != null) {
+      this.updateConfOptions = new ArrayList<>();
+      this.scheduledThreadPoolExecutor =
+          ThreadUtils.getDaemonSingleThreadScheduledExecutor("Refresh-rss-conf");
+      LOGGER.info("Starting scheduled reconfigurable conf checker...");
+      scheduledThreadPoolExecutor.scheduleAtFixedRate(
+          () -> {
+            try {
+              RssConf latestConf = confSupplier.get();
+              update(latestConf);
+            } catch (Exception e) {
+              LOGGER.error("Errors on refreshing the rss conf.", e);
+            }
+          },
+          1,
+          rssConf.get(RSS_RECONFIGURE_INTERVAL_SEC),
+          TimeUnit.SECONDS);
+    }
   }
 
   private Supplier<RssConf> getConfFromFile(String rssConfFilePath, Class confCls) {

@@ -33,6 +33,7 @@ import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_RECONFIGURE_INTERVAL_SEC;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_STORAGE_BASE_PATH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ReconfigurableConfManagerTest {
 
@@ -63,6 +64,7 @@ public class ReconfigurableConfManagerTest {
         ReconfigurableConfManager.register(base, RSS_STORAGE_BASE_PATH);
     assertEquals(19998, portReconfigurable.get());
     assertEquals(19999, rpcReconfigurable.get());
+    assertNull(typeReconfigurable.get());
 
     Awaitility.await()
         .timeout(5, TimeUnit.SECONDS)
