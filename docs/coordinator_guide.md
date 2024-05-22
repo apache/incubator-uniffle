@@ -58,7 +58,7 @@ This document will introduce how to deploy Uniffle coordinators.
     rss.coordinator.remote.storage.path hdfs://cluster1/path,hdfs://cluster2/path
     rss.writer.require.memory.retryMax 1200
     rss.client.retry.max 100
-    rss.writer.send.check.timeout 600000
+    rss.client.send.check.timeout.ms 600000
     rss.client.read.buffer.size 14m
    ```
    
