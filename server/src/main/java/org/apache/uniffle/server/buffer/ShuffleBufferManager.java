@@ -39,6 +39,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ReconfigurableConfManager;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -69,7 +70,7 @@ public class ShuffleBufferManager {
   // reduce small I/Os to persistent storage, especially for local HDDs.
   private long shuffleFlushThreshold;
   // Huge partition vars
-  private long hugePartitionSizeThreshold;
+  private ReconfigurableConfManager.Reconfigurable<Long> hugePartitionSizeThresholdRef;
   private long hugePartitionMemoryLimitSize;
 
   protected long bufferSize = 0;
@@ -126,8 +127,8 @@ public class ShuffleBufferManager {
         conf.getSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD);
     this.shuffleFlushThreshold =
         conf.getSizeAsBytes(ShuffleServerConf.SERVER_SHUFFLE_FLUSH_THRESHOLD);
-    this.hugePartitionSizeThreshold =
-        conf.getSizeAsBytes(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD);
+    this.hugePartitionSizeThresholdRef =
+        ReconfigurableConfManager.register(conf, ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD);
     this.hugePartitionMemoryLimitSize =
         Math.round(
             capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO));
@@ -702,16 +703,16 @@ public class ShuffleBufferManager {
   boolean isHugePartition(String appId, int shuffleId, int partitionId) {
     return shuffleTaskManager != null
         && shuffleTaskManager.getPartitionDataSize(appId, shuffleId, partitionId)
-            > hugePartitionSizeThreshold;
+            > hugePartitionSizeThresholdRef.getSizeAsBytes();
   }
 
   public boolean isHugePartition(long usedPartitionDataSize) {
-    return usedPartitionDataSize > hugePartitionSizeThreshold;
+    return usedPartitionDataSize > hugePartitionSizeThresholdRef.getSizeAsBytes();
   }
 
   public boolean limitHugePartition(
       String appId, int shuffleId, int partitionId, long usedPartitionDataSize) {
-    if (usedPartitionDataSize > hugePartitionSizeThreshold) {
+    if (usedPartitionDataSize > hugePartitionSizeThresholdRef.getSizeAsBytes()) {
       long memoryUsed = getShuffleBufferEntry(appId, shuffleId, partitionId).getValue().getSize();
       if (memoryUsed > hugePartitionMemoryLimitSize) {
         LOG.warn(
