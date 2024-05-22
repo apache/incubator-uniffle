@@ -123,6 +123,9 @@ public class RssUtils {
       }
       return ip;
     }
+    // Unit tests are executed on a single machine and do not interact with other machines.
+    // Therefore, unit tests should not require a valid broadcast address.
+    // When running UTs, we will still return the IP address whose broadcast address is invalid.
     boolean isTestMode = Boolean.parseBoolean(System.getProperty("test.mode", "false"));
     Enumeration<NetworkInterface> nif = NetworkInterface.getNetworkInterfaces();
     String siteLocalAddress = null;
