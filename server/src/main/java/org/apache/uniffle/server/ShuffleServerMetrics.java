@@ -78,6 +78,7 @@ public class ShuffleServerMetrics {
       "total_require_read_memory_failed_num";
 
   private static final String LOCAL_STORAGE_IS_WRITABLE = "local_storage_is_writable";
+  private static final String LOCAL_STORAGE_IS_TIMEOUT = "local_storage_is_timeout";
   private static final String LOCAL_STORAGE_TOTAL_DIRS_NUM = "local_storage_total_dirs_num";
   private static final String LOCAL_STORAGE_CORRUPTED_DIRS_NUM = "local_storage_corrupted_dirs_num";
   private static final String LOCAL_STORAGE_TOTAL_SPACE = "local_storage_total_space";
@@ -189,6 +190,7 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeAppWithHugePartitionNum;
 
   public static Gauge gaugeLocalStorageIsWritable;
+  public static Gauge gaugeLocalStorageIsTimeout;
   public static Gauge.Child gaugeLocalStorageTotalDirsNum;
   public static Gauge.Child gaugeLocalStorageCorruptedDirsNum;
   public static Gauge.Child gaugeLocalStorageTotalSpace;
@@ -405,6 +407,8 @@ public class ShuffleServerMetrics {
 
     gaugeLocalStorageIsWritable =
         metricsManager.addGauge(LOCAL_STORAGE_IS_WRITABLE, LOCAL_DISK_PATH_LABEL);
+    gaugeLocalStorageIsTimeout =
+        metricsManager.addGauge(LOCAL_STORAGE_IS_TIMEOUT, LOCAL_DISK_PATH_LABEL);
     gaugeLocalStorageTotalDirsNum = metricsManager.addLabeledGauge(LOCAL_STORAGE_TOTAL_DIRS_NUM);
     gaugeLocalStorageCorruptedDirsNum =
         metricsManager.addLabeledGauge(LOCAL_STORAGE_CORRUPTED_DIRS_NUM);
