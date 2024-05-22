@@ -728,7 +728,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     } else {
       status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get shuffle data";
-      LOG.warn(msg + " for " + requestInfo);
+      LOG.warn("{} for {}", msg, requestInfo);
       reply =
           GetLocalShuffleDataResponse.newBuilder()
               .setStatus(status.toProto())
@@ -825,7 +825,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     } else {
       status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get shuffle index";
-      LOG.warn(msg + " for " + requestInfo);
+      LOG.warn("{} for {}", msg, requestInfo);
       reply =
           GetLocalShuffleIndexResponse.newBuilder()
               .setStatus(status.toProto())
@@ -932,7 +932,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     } else {
       status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get in memory shuffle data";
-      LOG.warn(msg + " for " + requestInfo);
+      LOG.warn("{} for {}", msg, requestInfo);
       reply =
           GetMemoryShuffleDataResponse.newBuilder()
               .setData(UnsafeByteOperations.unsafeWrap(new byte[] {}))
