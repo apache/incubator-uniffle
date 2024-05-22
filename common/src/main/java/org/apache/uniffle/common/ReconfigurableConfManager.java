@@ -20,6 +20,7 @@ package org.apache.uniffle.common;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -101,7 +102,7 @@ public class ReconfigurableConfManager<T> {
     }
     for (ConfigOption<T> configOption : updateConfOptions) {
       T val = latestConf.get(configOption);
-      if (!isSame(val, rssConf.get(configOption))) {
+      if (!Objects.equals(val, rssConf.get(configOption))) {
         LOGGER.info(
             "Update the config option: {} from {} -> {}",
             configOption.key(),
@@ -110,19 +111,6 @@ public class ReconfigurableConfManager<T> {
         rssConf.set(configOption, val);
       }
     }
-  }
-
-  private boolean isSame(Object v1, Object v2) {
-    if (v1 == null && v2 == null) {
-      return true;
-    }
-    if (v1 != null && v1.equals(v2)) {
-      return true;
-    }
-    if (v2 != null && v2.equals(v1)) {
-      return true;
-    }
-    return false;
   }
 
   private RssConf getConfRef() {
