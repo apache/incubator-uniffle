@@ -516,7 +516,7 @@ public class ShuffleTaskManager {
           new PreAllocatedBufferInfo(appId, requireId, System.currentTimeMillis(), requireSize));
       return requireId;
     } else {
-      LOG.error("Failed to require buffer, require size: {}", requireSize);
+      LOG.warn("Failed to require buffer, require size: {}", requireSize);
       throw new NoBufferException("No Buffer For Regular Partition, requireSize: " + requireSize);
     }
   }

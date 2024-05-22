@@ -454,7 +454,7 @@ public class ShuffleBufferManager {
     } while (true);
 
     if (!isSuccessful) {
-      LOG.error(
+      LOG.warn(
           "Can't require["
               + size
               + "] for read data, current["
