@@ -40,7 +40,7 @@ import java.util.stream.Stream;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
@@ -72,6 +72,7 @@ import org.apache.uniffle.storage.request.CreateShuffleDeleteHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.server.ShuffleServerConf.DISK_CAPACITY_WATERMARK_CHECK_ENABLED;
 import static org.apache.uniffle.server.ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER;
 
 public class LocalStorageManager extends SingleStorageManager {
@@ -113,6 +114,7 @@ public class LocalStorageManager extends SingleStorageManager {
     }
     ExecutorService executorService = ThreadUtils.getDaemonCachedThreadPool("LocalStorage-check");
     LocalStorage[] localStorageArray = new LocalStorage[storageBasePaths.size()];
+    boolean isDiskCapacityWatermarkCheckEnabled = conf.get(DISK_CAPACITY_WATERMARK_CHECK_ENABLED);
     for (int i = 0; i < storageBasePaths.size(); i++) {
       final int idx = i;
       String storagePath = storageBasePaths.get(i);
@@ -120,15 +122,18 @@ public class LocalStorageManager extends SingleStorageManager {
           () -> {
             try {
               StorageMedia storageType = getStorageTypeForBasePath(storagePath);
-              localStorageArray[idx] =
+              LocalStorage.Builder builder =
                   LocalStorage.newBuilder()
                       .basePath(storagePath)
                       .capacity(capacity)
                       .ratio(ratio)
                       .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
                       .highWaterMarkOfWrite(highWaterMarkOfWrite)
-                      .localStorageMedia(storageType)
-                      .build();
+                      .localStorageMedia(storageType);
+              if (isDiskCapacityWatermarkCheckEnabled) {
+                builder.enableDiskCapacityWatermarkCheck();
+              }
+              localStorageArray[idx] = builder.build();
               successCount.incrementAndGet();
             } catch (Exception e) {
               LOG.error("LocalStorage init failed!", e);
@@ -304,12 +309,12 @@ public class LocalStorageManager extends SingleStorageManager {
     Function<String, Boolean> deleteConditionFunc = null;
     String prefixKey = null;
     if (event instanceof AppPurgeEvent) {
-      prefixKey = UnionKey.buildKey(event.getAppId());
+      prefixKey = UnionKey.buildKey(event.getAppId(), "");
       deleteConditionFunc =
           partitionUnionKey -> UnionKey.startsWith(partitionUnionKey, event.getAppId());
     } else if (event instanceof ShufflePurgeEvent) {
       int shuffleId = event.getShuffleIds().get(0);
-      prefixKey = UnionKey.buildKey(event.getAppId(), shuffleId);
+      prefixKey = UnionKey.buildKey(event.getAppId(), shuffleId, "");
       deleteConditionFunc =
           partitionUnionKey -> UnionKey.startsWith(partitionUnionKey, event.getAppId(), shuffleId);
     }
@@ -375,7 +380,7 @@ public class LocalStorageManager extends SingleStorageManager {
     for (LocalStorage storage : localStorages) {
       String mountPoint = storage.getMountPoint();
       long capacity = storage.getCapacity();
-      long wroteBytes = storage.getDiskSize();
+      long wroteBytes = storage.getServiceUsedBytes();
       StorageStatus status = StorageStatus.NORMAL;
       if (storage.isCorrupted()) {
         status = StorageStatus.UNHEALTHY;

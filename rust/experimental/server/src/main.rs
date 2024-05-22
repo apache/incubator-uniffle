@@ -17,24 +17,31 @@
 
 #![feature(impl_trait_in_assoc_type)]
 
-use crate::app::{AppManager, AppManagerRef};
+use crate::app::{AppManager, AppManagerRef, SHUFFLE_SERVER_ID};
 use crate::await_tree::AWAIT_TREE_REGISTRY;
 use crate::config::{Config, LogConfig, RotationConfig};
-use crate::grpc::grpc_middleware::AwaitTreeMiddlewareLayer;
+use crate::grpc::await_tree_middleware::AwaitTreeMiddlewareLayer;
+use crate::grpc::metrics_middleware::MetricsMiddlewareLayer;
 use crate::grpc::{DefaultShuffleServer, MAX_CONNECTION_WINDOW_SIZE, STREAM_WINDOW_SIZE};
 use crate::http::{HTTPServer, HTTP_SERVICE};
-use crate::metric::init_metric_service;
+use crate::metric::{init_metric_service, GRPC_LATENCY_TIME_SEC};
 use crate::proto::uniffle::coordinator_server_client::CoordinatorServerClient;
 use crate::proto::uniffle::shuffle_server_server::ShuffleServerServer;
 use crate::proto::uniffle::{ShuffleServerHeartBeatRequest, ShuffleServerId};
 use crate::runtime::manager::RuntimeManager;
-use crate::signal::details::wait_for_signal;
+use crate::signal::details::graceful_wait_for_signal;
 use crate::util::{gen_worker_uid, get_local_ip};
 
+use crate::mem_allocator::ALLOCATOR;
+use crate::readable_size::ReadableSize;
 use anyhow::Result;
-use log::info;
+use clap::{App, Arg};
+use log::{debug, error, info};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::str::FromStr;
 use std::time::Duration;
+use tokio::net::TcpListener;
+use tokio::sync::broadcast;
 use tonic::transport::{Channel, Server};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::layer::SubscriberExt;
@@ -56,6 +63,7 @@ pub mod signal;
 pub mod store;
 mod util;
 
+const MAX_MEMORY_ALLOCATION_SIZE_ENV_KEY: &str = "MAX_MEMORY_ALLOCATION_SIZE";
 const DEFAULT_SHUFFLE_SERVER_TAG: &str = "ss_v4";
 
 fn start_coordinator_report(
@@ -166,7 +174,24 @@ fn init_log(log: &LogConfig) -> WorkerGuard {
 }
 
 fn main() -> Result<()> {
-    let config = Config::create_from_env();
+    setup_max_memory_allocation();
+
+    let args_match = App::new("Uniffle Worker")
+        .version("0.9.0-SNAPSHOT")
+        .about("Rust based shuffle server for Apache Uniffle")
+        .arg(
+            Arg::with_name("config")
+                .short('c')
+                .long("config")
+                .value_name("FILE")
+                .default_value("./config.toml")
+                .help("Sets a custom config file")
+                .takes_value(true),
+        )
+        .get_matches();
+
+    let config_path = args_match.value_of("config").unwrap_or("./config.toml");
+    let config = Config::from(config_path);
 
     let runtime_manager = RuntimeManager::from(config.runtime_config.clone());
 
@@ -176,6 +201,8 @@ fn main() -> Result<()> {
 
     let rpc_port = config.grpc_port.unwrap_or(19999);
     let worker_uid = gen_worker_uid(rpc_port);
+    // todo: remove some unnecessary worker_id transfer.
+    SHUFFLE_SERVER_ID.get_or_init(|| worker_uid.clone());
 
     let metric_config = config.metrics.clone();
     init_metric_service(runtime_manager.clone(), &metric_config, worker_uid.clone());
@@ -199,29 +226,79 @@ fn main() -> Result<()> {
     );
     HTTP_SERVICE.start(runtime_manager.clone(), http_port);
 
+    let (tx, _) = broadcast::channel(1);
+
     info!("Starting GRpc server with port:[{}] ......", rpc_port);
-    let shuffle_server = DefaultShuffleServer::from(app_manager_ref);
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), rpc_port as u16);
-    let service = ShuffleServerServer::new(shuffle_server)
-        .max_decoding_message_size(usize::MAX)
-        .max_encoding_message_size(usize::MAX);
 
-    let _grpc_service_handle = runtime_manager.grpc_runtime.spawn(async move {
-        Server::builder()
-            .initial_connection_window_size(MAX_CONNECTION_WINDOW_SIZE)
-            .initial_stream_window_size(STREAM_WINDOW_SIZE)
-            .tcp_nodelay(true)
-            .layer(AwaitTreeMiddlewareLayer::new_optional(Some(
-                AWAIT_TREE_REGISTRY.clone(),
-            )))
-            .add_service(service)
-            .serve(addr)
-            .await
-    });
+    let available_cores = std::thread::available_parallelism()?;
+    debug!("GRpc service with parallelism: [{}]", &available_cores);
 
-    wait_for_signal();
+    for _ in 0..available_cores.into() {
+        let shuffle_server = DefaultShuffleServer::from(app_manager_ref.clone());
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), rpc_port as u16);
+        let service = ShuffleServerServer::new(shuffle_server)
+            .max_decoding_message_size(usize::MAX)
+            .max_encoding_message_size(usize::MAX);
+        let service_tx = tx.subscribe();
+        runtime_manager
+            .grpc_runtime
+            .spawn(async move { grpc_serve(service, addr, service_tx).await });
+    }
+
+    graceful_wait_for_signal(tx);
 
     Ok(())
+}
+
+fn setup_max_memory_allocation() {
+    let _ = std::env::var(MAX_MEMORY_ALLOCATION_SIZE_ENV_KEY).map(|v| {
+        let readable_size = ReadableSize::from_str(v.as_str()).unwrap();
+        ALLOCATOR.set_limit(readable_size.as_bytes() as usize)
+    });
+}
+
+async fn grpc_serve(
+    service: ShuffleServerServer<DefaultShuffleServer>,
+    addr: SocketAddr,
+    mut rx: broadcast::Receiver<()>,
+) {
+    let sock = socket2::Socket::new(
+        match addr {
+            SocketAddr::V4(_) => socket2::Domain::IPV4,
+            SocketAddr::V6(_) => socket2::Domain::IPV6,
+        },
+        socket2::Type::STREAM,
+        None,
+    )
+    .unwrap();
+
+    sock.set_reuse_address(true).unwrap();
+    sock.set_reuse_port(true).unwrap();
+    sock.set_nonblocking(true).unwrap();
+    sock.bind(&addr.into()).unwrap();
+    sock.listen(8192).unwrap();
+
+    let incoming =
+        tokio_stream::wrappers::TcpListenerStream::new(TcpListener::from_std(sock.into()).unwrap());
+
+    Server::builder()
+        .initial_connection_window_size(MAX_CONNECTION_WINDOW_SIZE)
+        .initial_stream_window_size(STREAM_WINDOW_SIZE)
+        .tcp_nodelay(true)
+        .layer(MetricsMiddlewareLayer::new(GRPC_LATENCY_TIME_SEC.clone()))
+        .layer(AwaitTreeMiddlewareLayer::new_optional(Some(
+            AWAIT_TREE_REGISTRY.clone(),
+        )))
+        .add_service(service)
+        .serve_with_incoming_shutdown(incoming, async {
+            if let Err(err) = rx.recv().await {
+                error!("Errors on stopping the GRPC service, err: {:?}.", err);
+            } else {
+                debug!("GRPC service has been graceful stopped.");
+            }
+        })
+        .await
+        .unwrap();
 }
 
 #[cfg(test)]

@@ -21,8 +21,13 @@ import java.io.File;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 
+import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -34,8 +39,26 @@ public class HybridStorageHadoopFallbackTest extends HybridStorageFaultTolerance
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
     final CoordinatorConf coordinatorConf = getCoordinatorConf();
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    createCoordinatorServer(coordinatorConf);
+
     String basePath = generateBasePath(tmpDir);
+
+    ShuffleServerConf grpcShuffleServerConf = buildShuffleServerConf(ServerType.GRPC, basePath);
+    createShuffleServer(grpcShuffleServerConf);
+
+    ShuffleServerConf nettyShuffleServerConf =
+        buildShuffleServerConf(ServerType.GRPC_NETTY, basePath);
+    createShuffleServer(nettyShuffleServerConf);
+
+    startServers();
+
+    grpcShuffleServerConfig = grpcShuffleServerConf;
+    nettyShuffleServerConfig = nettyShuffleServerConf;
+  }
+
+  private static ShuffleServerConf buildShuffleServerConf(ServerType serverType, String basePath)
+      throws Exception {
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType);
     shuffleServerConf.setDouble(ShuffleServerConf.CLEANUP_THRESHOLD, 0.0);
     shuffleServerConf.setDouble(ShuffleServerConf.HIGH_WATER_MARK_OF_WRITE, 100.0);
     shuffleServerConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 100);
@@ -48,7 +71,20 @@ public class HybridStorageHadoopFallbackTest extends HybridStorageFaultTolerance
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
     shuffleServerConf.setLong(
         ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1L * 1024L * 1024L);
-    createAndStartServers(shuffleServerConf, coordinatorConf);
+    return shuffleServerConf;
+  }
+
+  @BeforeEach
+  public void createClient() throws Exception {
+    ShuffleServerClientFactory.getInstance().cleanupCache();
+    grpcShuffleServerClient =
+        new ShuffleServerGrpcClient(
+            LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
+    nettyShuffleServerClient =
+        new ShuffleServerGrpcNettyClient(
+            LOCALHOST,
+            nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
+            nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
   }
 
   @Override

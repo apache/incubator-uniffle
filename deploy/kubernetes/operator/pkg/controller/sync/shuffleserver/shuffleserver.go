@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -236,7 +236,7 @@ func generateStorageBasePath(rss *unifflev1alpha1.RemoteShuffleService) string {
 		if k == rss.Spec.ShuffleServer.LogHostPath {
 			continue
 		}
-		paths = append(paths, strings.TrimSuffix(v, "/")+"/rssdata")
+		paths = append(paths, strings.TrimSuffix(v, "/")+"/"+controllerconstants.RssDataDir)
 	}
 	sort.Strings(paths)
 	return strings.Join(paths, ",")

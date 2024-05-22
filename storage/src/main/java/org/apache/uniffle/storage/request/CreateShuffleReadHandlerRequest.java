@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
@@ -38,6 +39,8 @@ public class CreateShuffleReadHandlerRequest {
   private int partitionNumPerRange;
   private int partitionNum;
   private int readBufferSize;
+  private int retryMax;
+  private long retryIntervalMax;
   private String storageBasePath;
   private RssBaseConf rssBaseConf;
   private Configuration hadoopConf;
@@ -51,6 +54,8 @@ public class CreateShuffleReadHandlerRequest {
   private RssConf clientConf;
 
   private IdHelper idHelper;
+
+  private ClientType clientType;
 
   public CreateShuffleReadHandlerRequest() {}
 
@@ -124,6 +129,22 @@ public class CreateShuffleReadHandlerRequest {
 
   public void setReadBufferSize(int readBufferSize) {
     this.readBufferSize = readBufferSize;
+  }
+
+  public int getRetryMax() {
+    return retryMax;
+  }
+
+  public void setRetryMax(int retryMax) {
+    this.retryMax = retryMax;
+  }
+
+  public long getRetryIntervalMax() {
+    return retryIntervalMax;
+  }
+
+  public void setRetryIntervalMax(long retryIntervalMax) {
+    this.retryIntervalMax = retryIntervalMax;
   }
 
   public String getStorageBasePath() {
@@ -212,5 +233,13 @@ public class CreateShuffleReadHandlerRequest {
 
   public void setClientConf(RssConf clientConf) {
     this.clientConf = clientConf;
+  }
+
+  public ClientType getClientType() {
+    return clientType;
+  }
+
+  public void setClientType(ClientType clientType) {
+    this.clientType = clientType;
   }
 }

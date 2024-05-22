@@ -20,8 +20,8 @@ use crate::runtime::manager::RuntimeManager;
 use log::{error, info};
 use once_cell::sync::Lazy;
 use prometheus::{
-    labels, register_int_gauge_vec, Histogram, HistogramOpts, IntCounter, IntGauge, IntGaugeVec,
-    Registry,
+    histogram_opts, labels, register_histogram_vec_with_registry, register_int_gauge_vec,
+    Histogram, HistogramOpts, HistogramVec, IntCounter, IntGauge, IntGaugeVec, Registry,
 };
 use std::time::Duration;
 
@@ -33,6 +33,23 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(Registry::new);
 
 pub static TOTAL_RECEIVED_DATA: Lazy<IntCounter> = Lazy::new(|| {
     IntCounter::new("total_received_data", "Incoming Requests").expect("metric should be created")
+});
+
+pub static TOTAL_READ_DATA: Lazy<IntCounter> = Lazy::new(|| {
+    IntCounter::new("total_read_data", "Reading Data").expect("metric should be created")
+});
+
+pub static TOTAL_READ_DATA_FROM_MEMORY: Lazy<IntCounter> = Lazy::new(|| {
+    IntCounter::new("total_read_data_from_memory", "Reading Data from memory")
+        .expect("metric should be created")
+});
+
+pub static TOTAL_READ_DATA_FROM_LOCALFILE: Lazy<IntCounter> = Lazy::new(|| {
+    IntCounter::new(
+        "total_read_data_from_localfile",
+        "Reading Data from localfile",
+    )
+    .expect("metric should be created")
 });
 
 pub static GRPC_GET_MEMORY_DATA_TRANSPORT_TIME: Lazy<Histogram> = Lazy::new(|| {
@@ -88,6 +105,16 @@ pub static GRPC_BUFFER_REQUIRE_PROCESS_TIME: Lazy<Histogram> = Lazy::new(|| {
 
     let histogram = Histogram::with_opts(opts).unwrap();
     histogram
+});
+
+pub static GRPC_LATENCY_TIME_SEC: Lazy<HistogramVec> = Lazy::new(|| {
+    let opts = histogram_opts!(
+        "grpc_duration_seconds",
+        "gRPC latency",
+        Vec::from(DEFAULT_BUCKETS as &'static [f64])
+    );
+    let grpc_latency = register_histogram_vec_with_registry!(opts, &["path"], REGISTRY).unwrap();
+    grpc_latency
 });
 
 pub static TOTAL_MEMORY_USED: Lazy<IntCounter> = Lazy::new(|| {
@@ -161,6 +188,33 @@ pub static TOTAL_HUGE_PARTITION_REQUIRE_BUFFER_FAILED: Lazy<IntCounter> = Lazy::
     .expect("metrics should be created")
 });
 
+pub static GAUGE_LOCAL_DISK_CAPACITY: Lazy<IntGaugeVec> = Lazy::new(|| {
+    register_int_gauge_vec!(
+        "local_disk_capacity",
+        "local disk capacity for root path",
+        &["root"]
+    )
+    .unwrap()
+});
+
+pub static GAUGE_LOCAL_DISK_USED: Lazy<IntGaugeVec> = Lazy::new(|| {
+    register_int_gauge_vec!(
+        "local_disk_used",
+        "local disk used for root path",
+        &["root"]
+    )
+    .unwrap()
+});
+
+pub static GAUGE_LOCAL_DISK_IS_HEALTHY: Lazy<IntGaugeVec> = Lazy::new(|| {
+    register_int_gauge_vec!(
+        "local_disk_is_healthy",
+        "local disk is_healthy for root path",
+        &["root"]
+    )
+    .unwrap()
+});
+
 pub static GAUGE_RUNTIME_ALIVE_THREAD_NUM: Lazy<IntGaugeVec> = Lazy::new(|| {
     register_int_gauge_vec!(
         "runtime_thread_alive_gauge",
@@ -179,7 +233,73 @@ pub static GAUGE_RUNTIME_IDLE_THREAD_NUM: Lazy<IntGaugeVec> = Lazy::new(|| {
     .unwrap()
 });
 
+pub static GAUGE_TOPN_APP_RESIDENT_DATA_SIZE: Lazy<IntGaugeVec> = Lazy::new(|| {
+    register_int_gauge_vec!(
+        "topN_app_resident_data_size",
+        "topN app resident data size",
+        &["app_id"]
+    )
+    .unwrap()
+});
+
+pub static GAUGE_IN_SPILL_DATA_SIZE: Lazy<IntGauge> =
+    Lazy::new(|| IntGauge::new("in_spill_data_size", "total data size in spill").unwrap());
+
+pub static TOTAL_GRPC_REQUEST: Lazy<IntCounter> =
+    Lazy::new(|| IntCounter::new("total_grpc_request_number", "total request number").expect(""));
+
+pub static GAUGE_GRPC_REQUEST_QUEUE_SIZE: Lazy<IntGauge> =
+    Lazy::new(|| IntGauge::new("grpc_request_number", "current grpc request queue size").unwrap());
+
+pub static TOTAL_SPILL_EVENTS_DROPPED: Lazy<IntCounter> = Lazy::new(|| {
+    IntCounter::new(
+        "total_spill_events_dropped",
+        "total spill events dropped number",
+    )
+    .expect("")
+});
+
 fn register_custom_metrics() {
+    REGISTRY
+        .register(Box::new(TOTAL_GRPC_REQUEST.clone()))
+        .expect("");
+
+    REGISTRY
+        .register(Box::new(GAUGE_GRPC_REQUEST_QUEUE_SIZE.clone()))
+        .expect("");
+
+    REGISTRY
+        .register(Box::new(TOTAL_SPILL_EVENTS_DROPPED.clone()))
+        .expect("");
+
+    REGISTRY
+        .register(Box::new(GAUGE_TOPN_APP_RESIDENT_DATA_SIZE.clone()))
+        .expect("");
+
+    REGISTRY
+        .register(Box::new(TOTAL_READ_DATA_FROM_LOCALFILE.clone()))
+        .expect("total_read_data must be registered");
+
+    REGISTRY
+        .register(Box::new(TOTAL_READ_DATA_FROM_MEMORY.clone()))
+        .expect("total_read_data must be registered");
+
+    REGISTRY
+        .register(Box::new(GAUGE_IN_SPILL_DATA_SIZE.clone()))
+        .expect("");
+
+    REGISTRY
+        .register(Box::new(GAUGE_LOCAL_DISK_CAPACITY.clone()))
+        .expect("");
+
+    REGISTRY
+        .register(Box::new(GAUGE_LOCAL_DISK_USED.clone()))
+        .expect("");
+
+    REGISTRY
+        .register(Box::new(GAUGE_LOCAL_DISK_IS_HEALTHY.clone()))
+        .expect("");
+
     REGISTRY
         .register(Box::new(GAUGE_RUNTIME_ALIVE_THREAD_NUM.clone()))
         .expect("");
@@ -191,6 +311,9 @@ fn register_custom_metrics() {
     REGISTRY
         .register(Box::new(TOTAL_RECEIVED_DATA.clone()))
         .expect("total_received_data must be registered");
+    REGISTRY
+        .register(Box::new(TOTAL_READ_DATA.clone()))
+        .expect("total_read_data must be registered");
     REGISTRY
         .register(Box::new(TOTAL_MEMORY_USED.clone()))
         .expect("total_memory_used must be registered");

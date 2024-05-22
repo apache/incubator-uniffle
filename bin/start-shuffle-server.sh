@@ -28,9 +28,8 @@ cd "$RSS_HOME"
 
 SHUFFLE_SERVER_CONF_FILE="${RSS_CONF_DIR}/server.conf"
 JAR_DIR="${RSS_HOME}/jars"
-LOG_CONF_FILE="${RSS_CONF_DIR}/log4j.properties"
+LOG_CONF_FILE="${RSS_CONF_DIR}/log4j2.xml"
 LOG_PATH="${RSS_LOG_DIR}/shuffle_server.log"
-OUT_PATH="${RSS_LOG_DIR}/shuffle_server.out"
 
 if [ -z "${XMX_SIZE:-}" ]; then
   echo "No env XMX_SIZE."
@@ -51,14 +50,13 @@ export MALLOC_ARENA_MAX=${MALLOC_ARENA_MAX:-4}
 
 MAIN_CLASS="org.apache.uniffle.server.ShuffleServer"
 
-HADOOP_DEPENDENCY="$("$HADOOP_HOME/bin/hadoop" classpath --glob)"
-
 echo "Check process existence"
 RPC_PORT=`grep '^rss.rpc.server.port' $SHUFFLE_SERVER_CONF_FILE |awk '{print $2}'`
 is_port_in_use $RPC_PORT
 
 
 CLASSPATH=""
+JAVA_LIB_PATH=""
 
 for file in $(ls ${JAR_DIR}/server/*.jar 2>/dev/null); do
   CLASSPATH=$CLASSPATH:$file
@@ -67,8 +65,17 @@ done
 mkdir -p "${RSS_LOG_DIR}"
 mkdir -p "${RSS_PID_DIR}"
 
-CLASSPATH=$CLASSPATH:$HADOOP_CONF_DIR:$HADOOP_DEPENDENCY
-JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native"
+set +u
+if [ $HADOOP_HOME ]; then
+  HADOOP_DEPENDENCY="$("$HADOOP_HOME/bin/hadoop" classpath --glob)"
+  CLASSPATH=$CLASSPATH:$HADOOP_DEPENDENCY
+  JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native"
+fi
+
+if [ "$HADOOP_CONF_DIR" ]; then
+  CLASSPATH=$CLASSPATH:$HADOOP_CONF_DIR
+fi
+set -u
 
 echo "class path is $CLASSPATH"
 
@@ -77,10 +84,17 @@ if [ -n "${MAX_DIRECT_MEMORY_SIZE:-}" ]; then
   MAX_DIRECT_MEMORY_OPTS="-XX:MaxDirectMemorySize=$MAX_DIRECT_MEMORY_SIZE"
 fi
 
+# Attention, the OOM dump file may be very big !
+JAVA_OPTS=""
+if [ -n "${OOM_DUMP_PATH:-}" ]; then
+  JAVA_OPTS="-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$OOM_DUMP_PATH"
+fi
+
 JVM_ARGS=" -server \
           -Xmx${XMX_SIZE} \
           -Xms${XMX_SIZE} \
           ${MAX_DIRECT_MEMORY_OPTS} \
+          ${JAVA_OPTS} \
           -XX:+UseG1GC \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
@@ -94,6 +108,13 @@ JAVA8_GC_ARGS= " -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
+          -XX:+CrashOnOutOfMemoryError \
+          -XX:+ExitOnOutOfMemoryError \
+          -XX:+PrintTenuringDistribution \
+          -XX:+PrintPromotionFailure \
+          -XX:+PrintGCApplicationStoppedTime \
+          -XX:+PrintCommandLineFlags \
+          -XX:+PrintGCCause \
           -XX:+PrintGCDetails \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
@@ -103,7 +124,7 @@ JAVA11_GC_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
 ARGS=""
 
 if [ -f ${LOG_CONF_FILE} ]; then
-  ARGS="$ARGS -Dlog4j.configuration=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH}"
+  ARGS="$ARGS -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH}"
 else
   echo "Exit with error: ${LOG_CONF_FILE} file doesn't exist."
   exit 1
@@ -119,7 +140,7 @@ else
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS $GC_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &> $OUT_PATH &
+$RUNNER $ARGS $JVM_ARGS $GC_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &
 
 get_pid_file_name shuffle-server
 echo $! >${RSS_PID_DIR}/${pid_file}

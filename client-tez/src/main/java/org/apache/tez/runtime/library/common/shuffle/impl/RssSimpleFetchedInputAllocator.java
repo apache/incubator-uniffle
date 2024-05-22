@@ -18,10 +18,16 @@
 package org.apache.tez.runtime.library.common.shuffle.impl;
 
 import java.io.IOException;
+import java.util.Map;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.classification.InterfaceAudience.Private;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalDirAllocator;
+import org.apache.hadoop.fs.Path;
+import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
 import org.apache.tez.runtime.library.common.Constants;
@@ -30,17 +36,25 @@ import org.apache.tez.runtime.library.common.shuffle.DiskFetchedInput;
 import org.apache.tez.runtime.library.common.shuffle.FetchedInput;
 import org.apache.tez.runtime.library.common.shuffle.FetchedInput.Type;
 import org.apache.tez.runtime.library.common.shuffle.MemoryFetchedInput;
+import org.apache.tez.runtime.library.common.shuffle.RemoteFetchedInput;
 import org.apache.tez.runtime.library.common.task.local.output.TezTaskOutputFiles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
+
+import static org.apache.tez.common.RssTezConfig.RSS_REMOTE_SPILL_STORAGE_PATH;
 
 /** Usage: Create instance, setInitialMemoryAvailable(long), configureAndStart() */
 @Private
 public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssSimpleFetchedInputAllocator.class);
+  // In order to be compatible with the Tez IFile file format, the decoded data needs to be added
+  // with the corresponding HEADER and CHECKSUM, which occupy 8 bytes.
+  private static final int IFILE_HEAD_CHECKSUM_LEN = 8;
 
   private final Configuration conf;
 
@@ -58,18 +72,27 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
 
   private volatile long usedMemory = 0;
 
+  private final String uniqueIdentifier;
+  private final String appAttemptId;
+  private final boolean remoteSpillEnable;
+  private FileSystem remoteFS;
+  private String remoteSpillBasePath;
+
   public RssSimpleFetchedInputAllocator(
       String srcNameTrimmed,
       String uniqueIdentifier,
       int dagID,
       Configuration conf,
       long maxTaskAvailableMemory,
-      long memoryAvailable) {
+      long memoryAvailable,
+      String appAttemptId) {
     super(srcNameTrimmed, uniqueIdentifier, dagID, conf, maxTaskAvailableMemory, memoryAvailable);
     this.srcNameTrimmed = srcNameTrimmed;
     this.conf = conf;
     this.maxAvailableTaskMemory = maxTaskAvailableMemory;
     this.initialMemoryAvailable = memoryAvailable;
+    this.uniqueIdentifier = uniqueIdentifier;
+    this.appAttemptId = appAttemptId;
 
     this.fileNameAllocator = new TezTaskOutputFiles(conf, uniqueIdentifier, dagID);
     this.localDirAllocator = new LocalDirAllocator(TezRuntimeFrameworkConfigs.LOCAL_DIRS);
@@ -113,6 +136,38 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
     }
     this.maxSingleShuffleLimit =
         (long) Math.min((memoryLimit * singleShuffleMemoryLimitPercent), Integer.MAX_VALUE);
+    this.remoteSpillEnable = conf.getBoolean(RssTezConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED, false);
+    if (this.remoteSpillEnable) {
+      this.remoteSpillBasePath = conf.get(RSS_REMOTE_SPILL_STORAGE_PATH);
+      if (StringUtils.isBlank(this.remoteSpillBasePath)) {
+        throw new RssException("You must set remote spill path!");
+      }
+      // construct remote configuration
+      String remoteStorageConf = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_CONF);
+      Map<String, String> remoteStorageConfMap =
+          RemoteStorageInfo.parseRemoteStorageConf(remoteStorageConf);
+      Configuration remoteConf = new Configuration(this.conf);
+      for (Map.Entry<String, String> entry : remoteStorageConfMap.entrySet()) {
+        remoteConf.set(entry.getKey(), entry.getValue());
+      }
+      // construct remote filesystem
+      int replication =
+          this.conf.getInt(
+              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION,
+              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION_DEFAULT);
+      int retries =
+          this.conf.getInt(
+              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES,
+              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES_DEFAULT);
+      try {
+        remoteConf.setInt("dfs.replication", replication);
+        remoteConf.setInt("dfs.client.block.write.retries", retries);
+        remoteFS =
+            HadoopFilesystemProvider.getFilesystem(new Path(this.remoteSpillBasePath), remoteConf);
+      } catch (Exception e) {
+        throw new RssException("Cannot init remoteFS on path:" + this.remoteSpillBasePath);
+      }
+    }
 
     LOG.info(
         srcNameTrimmed
@@ -150,9 +205,26 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
       long actualSize, long compressedSize, InputAttemptIdentifier inputAttemptIdentifier)
       throws IOException {
     if (actualSize > maxSingleShuffleLimit || this.usedMemory + actualSize > this.memoryLimit) {
-      LOG.info("Allocate DiskFetchedInput, length:{}", actualSize);
-      return new DiskFetchedInput(
-          actualSize + 8, inputAttemptIdentifier, this, conf, localDirAllocator, fileNameAllocator);
+      if (remoteSpillEnable) {
+        LOG.info("Allocate RemoteFetchedInput, length:{}", actualSize);
+        return new RemoteFetchedInput(
+            actualSize + IFILE_HEAD_CHECKSUM_LEN,
+            inputAttemptIdentifier,
+            this,
+            remoteFS,
+            remoteSpillBasePath,
+            uniqueIdentifier,
+            appAttemptId);
+      } else {
+        LOG.info("Allocate DiskFetchedInput, length:{}", actualSize);
+        return new DiskFetchedInput(
+            actualSize + IFILE_HEAD_CHECKSUM_LEN,
+            inputAttemptIdentifier,
+            this,
+            conf,
+            localDirAllocator,
+            fileNameAllocator);
+      }
     } else {
       this.usedMemory += actualSize;
       if (LOG.isDebugEnabled()) {
@@ -178,14 +250,27 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
 
     switch (type) {
       case DISK:
-        LOG.info("AllocateType DiskFetchedInput, compressedSize:{}", compressedSize);
-        return new DiskFetchedInput(
-            compressedSize + 8,
-            inputAttemptIdentifier,
-            this,
-            conf,
-            localDirAllocator,
-            fileNameAllocator);
+        // It should not be called here.
+        if (remoteSpillEnable) {
+          LOG.info("AllocateType RemoteFetchedInput, compressedSize:{}", compressedSize);
+          return new RemoteFetchedInput(
+              actualSize + IFILE_HEAD_CHECKSUM_LEN,
+              inputAttemptIdentifier,
+              this,
+              remoteFS,
+              remoteSpillBasePath,
+              uniqueIdentifier,
+              appAttemptId);
+        } else {
+          LOG.info("AllocateType DiskFetchedInput, compressedSize:{}", compressedSize);
+          return new DiskFetchedInput(
+              actualSize + IFILE_HEAD_CHECKSUM_LEN,
+              inputAttemptIdentifier,
+              this,
+              conf,
+              localDirAllocator,
+              fileNameAllocator);
+        }
       default:
         return allocate(actualSize, compressedSize, inputAttemptIdentifier);
     }
@@ -231,7 +316,12 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
   private synchronized void unreserve(long size) {
     this.usedMemory -= size;
     if (LOG.isDebugEnabled()) {
-      LOG.debug(srcNameTrimmed + ": " + "Used memory after freeing " + size + " : " + usedMemory);
+      LOG.debug("{}: Used memory after freeing {}: {}", srcNameTrimmed, size, usedMemory);
     }
+  }
+
+  @VisibleForTesting
+  public void setRemoteFS(FileSystem remoteFS) {
+    this.remoteFS = remoteFS;
   }
 }

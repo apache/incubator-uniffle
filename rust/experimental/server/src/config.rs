@@ -45,7 +45,6 @@ impl MemoryStoreConfig {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
 pub struct HdfsStoreConfig {
-    pub data_path: String,
     pub max_concurrency: Option<i32>,
 }
 
@@ -88,8 +87,8 @@ impl Default for RuntimeConfig {
     fn default() -> Self {
         RuntimeConfig {
             read_thread_num: 10,
-            write_thread_num: 10,
-            grpc_thread_num: 20,
+            write_thread_num: 40,
+            grpc_thread_num: 100,
             http_thread_num: 5,
             default_thread_num: 5,
         }
@@ -232,6 +231,15 @@ impl StorageType {
 const CONFIG_FILE_PATH_KEY: &str = "WORKER_CONFIG_PATH";
 
 impl Config {
+    pub fn from(cfg_path: &str) -> Self {
+        let path = Path::new(cfg_path);
+
+        // Read the file content as a string
+        let file_content = fs::read_to_string(path).expect("Failed to read file");
+
+        toml::from_str(&file_content).unwrap()
+    }
+
     pub fn create_from_env() -> Config {
         let path = match std::env::var(CONFIG_FILE_PATH_KEY) {
             Ok(val) => val,
@@ -241,12 +249,7 @@ impl Config {
             ),
         };
 
-        let path = Path::new(&path);
-
-        // Read the file content as a string
-        let file_content = fs::read_to_string(path).expect("Failed to read file");
-
-        toml::from_str(&file_content).unwrap()
+        Config::from(&path)
     }
 }
 

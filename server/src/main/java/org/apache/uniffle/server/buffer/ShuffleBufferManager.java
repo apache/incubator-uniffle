@@ -17,13 +17,15 @@
 
 package org.apache.uniffle.server.buffer;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -32,6 +34,7 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeRangeMap;
+import io.netty.util.internal.PlatformDependent;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +44,7 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleFlushManager;
@@ -56,7 +60,6 @@ public class ShuffleBufferManager {
   private final ShuffleFlushManager shuffleFlushManager;
   private long capacity;
   private long readCapacity;
-  private int retryNum;
   private long highWaterMark;
   private long lowWaterMark;
   private boolean bufferFlushEnabled;
@@ -78,26 +81,36 @@ public class ShuffleBufferManager {
   protected Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool;
   // appId -> shuffleId -> shuffle size in buffer
   protected Map<String, Map<Integer, AtomicLong>> shuffleSizeMap = JavaUtils.newConcurrentMap();
+  private final boolean appBlockSizeMetricEnabled;
 
-  public ShuffleBufferManager(ShuffleServerConf conf, ShuffleFlushManager shuffleFlushManager) {
+  public ShuffleBufferManager(
+      ShuffleServerConf conf, ShuffleFlushManager shuffleFlushManager, boolean nettyServerEnabled) {
     long heapSize = Runtime.getRuntime().maxMemory();
     this.capacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_BUFFER_CAPACITY);
     if (this.capacity < 0) {
       this.capacity =
-          (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO));
+          nettyServerEnabled
+              ? (long)
+                  (NettyUtils.getMaxDirectMemory()
+                      * conf.getDouble(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO))
+              : (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO));
     }
     this.readCapacity = conf.getSizeAsBytes(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY);
     if (this.readCapacity < 0) {
       this.readCapacity =
-          (long) (heapSize * conf.getDouble(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO));
+          nettyServerEnabled
+              ? (long)
+                  (NettyUtils.getMaxDirectMemory()
+                      * conf.getDouble(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO))
+              : (long)
+                  (heapSize * conf.getDouble(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO));
     }
     LOG.info(
         "Init shuffle buffer manager with capacity: {}, read buffer capacity: {}.",
         capacity,
         readCapacity);
     this.shuffleFlushManager = shuffleFlushManager;
-    this.bufferPool = new ConcurrentHashMap<>();
-    this.retryNum = conf.getInteger(ShuffleServerConf.SERVER_MEMORY_REQUEST_RETRY_MAX);
+    this.bufferPool = JavaUtils.newConcurrentMap();
     this.highWaterMark =
         (long)
             (capacity
@@ -118,6 +131,8 @@ public class ShuffleBufferManager {
     this.hugePartitionMemoryLimitSize =
         Math.round(
             capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO));
+    appBlockSizeMetricEnabled =
+        conf.getBoolean(ShuffleServerConf.APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_ENABLED);
   }
 
   public void setShuffleTaskManager(ShuffleTaskManager taskManager) {
@@ -167,6 +182,14 @@ public class ShuffleBufferManager {
     long size = buffer.append(spd);
     if (!isPreAllocated) {
       updateUsedMemory(size);
+    }
+    if (appBlockSizeMetricEnabled) {
+      Arrays.stream(spd.getBlockList())
+          .forEach(
+              b -> {
+                int blockSize = b.getLength();
+                ShuffleServerMetrics.appHistogramWriteBlockSize.labels(appId).observe(blockSize);
+              });
     }
     updateShuffleSize(appId, shuffleId, size);
     synchronized (this) {
@@ -284,23 +307,36 @@ public class ShuffleBufferManager {
       int startPartition,
       int endPartition,
       boolean isHugePartition) {
-    ShuffleDataFlushEvent event =
-        buffer.toFlushEvent(
-            appId,
+    ReentrantReadWriteLock.ReadLock readLock = shuffleTaskManager.getAppReadLock(appId);
+    readLock.lock();
+    try {
+      if (!bufferPool.getOrDefault(appId, new HashMap<>()).containsKey(shuffleId)) {
+        LOG.info(
+            "Shuffle[{}] for app[{}] has already been removed, no need to flush the buffer",
             shuffleId,
-            startPartition,
-            endPartition,
-            () -> bufferPool.containsKey(appId),
-            shuffleFlushManager.getDataDistributionType(appId));
-    if (event != null) {
-      event.addCleanupCallback(() -> releaseMemory(event.getSize(), true, false));
-      updateShuffleSize(appId, shuffleId, -event.getSize());
-      inFlushSize.addAndGet(event.getSize());
-      if (isHugePartition) {
-        event.markOwnedByHugePartition();
+            appId);
+        return;
       }
-      ShuffleServerMetrics.gaugeInFlushBufferSize.set(inFlushSize.get());
-      shuffleFlushManager.addToFlushQueue(event);
+      ShuffleDataFlushEvent event =
+          buffer.toFlushEvent(
+              appId,
+              shuffleId,
+              startPartition,
+              endPartition,
+              () -> bufferPool.getOrDefault(appId, new HashMap<>()).containsKey(shuffleId),
+              shuffleFlushManager.getDataDistributionType(appId));
+      if (event != null) {
+        event.addCleanupCallback(() -> releaseMemory(event.getSize(), true, false));
+        updateShuffleSize(appId, shuffleId, -event.getSize());
+        inFlushSize.addAndGet(event.getSize());
+        if (isHugePartition) {
+          event.markOwnedByHugePartition();
+        }
+        ShuffleServerMetrics.gaugeInFlushBufferSize.set(inFlushSize.get());
+        shuffleFlushManager.addToFlushQueue(event);
+      }
+    } finally {
+      readLock.unlock();
     }
   }
 
@@ -312,6 +348,9 @@ public class ShuffleBufferManager {
     removeBufferByShuffleId(appId, shuffleIdToBuffers.keySet());
     shuffleSizeMap.remove(appId);
     bufferPool.remove(appId);
+    if (appBlockSizeMetricEnabled) {
+      ShuffleServerMetrics.appHistogramWriteBlockSize.remove(appId);
+    }
   }
 
   public synchronized boolean requireMemory(long size, boolean isPreAllocated) {
@@ -320,6 +359,25 @@ public class ShuffleBufferManager {
       ShuffleServerMetrics.gaugeUsedBufferSize.set(usedMemory.get());
       if (isPreAllocated) {
         requirePreAllocatedSize(size);
+      }
+      if (LOG.isDebugEnabled()) {
+        long usedDirectMemory = PlatformDependent.usedDirectMemory();
+        long usedHeapMemory =
+            Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        LOG.debug(
+            "Require memory succeeded with "
+                + size
+                + " bytes, usedMemory["
+                + usedMemory.get()
+                + "] include preAllocation["
+                + preAllocatedSize.get()
+                + "], inFlushSize["
+                + inFlushSize.get()
+                + "], usedDirectMemory["
+                + usedDirectMemory
+                + "], usedHeapMemory["
+                + usedHeapMemory
+                + "]");
       }
       return true;
     }
@@ -372,41 +430,43 @@ public class ShuffleBufferManager {
               + inFlushSize.get()
               + "] is less than released["
               + size
-              + "], set allocated memory to 0");
+              + "], set in flush memory to 0");
       inFlushSize.set(0L);
     }
     ShuffleServerMetrics.gaugeInFlushBufferSize.set(inFlushSize.get());
   }
 
-  public boolean requireReadMemoryWithRetry(long size) {
+  public boolean requireReadMemory(long size) {
     ShuffleServerMetrics.counterTotalRequireReadMemoryNum.inc();
-    for (int i = 0; i < retryNum; i++) {
-      synchronized (this) {
-        if (readDataMemory.get() + size < readCapacity) {
-          readDataMemory.addAndGet(size);
-          ShuffleServerMetrics.gaugeReadBufferUsedSize.inc(size);
-          return true;
-        }
+    boolean isSuccessful = false;
+
+    do {
+      long currentReadDataMemory = readDataMemory.get();
+      long newReadDataMemory = currentReadDataMemory + size;
+      if (newReadDataMemory >= readCapacity) {
+        break;
       }
-      LOG.info(
+      if (readDataMemory.compareAndSet(currentReadDataMemory, newReadDataMemory)) {
+        ShuffleServerMetrics.gaugeReadBufferUsedSize.inc(size);
+        isSuccessful = true;
+        break;
+      }
+    } while (true);
+
+    if (!isSuccessful) {
+      LOG.error(
           "Can't require["
               + size
               + "] for read data, current["
               + readDataMemory.get()
               + "], capacity["
               + readCapacity
-              + "], re-try "
-              + i
-              + " times");
+              + "]");
       ShuffleServerMetrics.counterTotalRequireReadMemoryRetryNum.inc();
-      try {
-        Thread.sleep(1000);
-      } catch (Exception e) {
-        LOG.warn("Error happened when require memory", e);
-      }
+      ShuffleServerMetrics.counterTotalRequireReadMemoryFailedNum.inc();
     }
-    ShuffleServerMetrics.counterTotalRequireReadMemoryFailedNum.inc();
-    return false;
+
+    return isSuccessful;
   }
 
   public void releaseReadMemory(long size) {
@@ -465,7 +525,17 @@ public class ShuffleBufferManager {
   }
 
   public void releasePreAllocatedSize(long delta) {
-    preAllocatedSize.addAndGet(-delta);
+    if (preAllocatedSize.get() >= delta) {
+      preAllocatedSize.addAndGet(-delta);
+    } else {
+      LOG.warn(
+          "Current pre-allocated memory["
+              + preAllocatedSize.get()
+              + "] is less than released["
+              + delta
+              + "], set pre-allocated memory to 0");
+      preAllocatedSize.set(0L);
+    }
     ShuffleServerMetrics.gaugeAllocatedBufferSize.set(preAllocatedSize.get());
   }
 
@@ -655,5 +725,9 @@ public class ShuffleBufferManager {
       }
     }
     return false;
+  }
+
+  public void setUsedMemory(long usedMemory) {
+    this.usedMemory.set(usedMemory);
   }
 }

@@ -16,33 +16,31 @@
 // under the License.
 
 use crate::app::{
-    PartitionedUId, ReadingIndexViewContext, ReadingViewContext, RequireBufferContext,
-    WritingViewContext,
+    PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingViewContext,
+    RegisterAppContext, ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
-use crate::config::HdfsStoreConfig;
+use crate::config::{HdfsStoreConfig, StorageType};
 use crate::error::WorkerError;
+use std::collections::HashMap;
 
 use crate::metric::TOTAL_HDFS_USED;
 use crate::store::{Persistent, RequireBufferResponse, ResponseData, ResponseDataIndex, Store};
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use async_trait::async_trait;
 use await_tree::InstrumentAwait;
 use bytes::{BufMut, Bytes, BytesMut};
 use dashmap::DashMap;
 
-use futures::AsyncWriteExt;
-use hdrs::{Client, ClientBuilder};
-use log::{error, info};
+use log::info;
 
 use std::path::Path;
 
+use hdfs_native::{Client, WriteOptions};
 use std::sync::Arc;
-use std::{env, io};
 use tokio::sync::{Mutex, Semaphore};
 
 use tracing::debug;
-
 use url::Url;
 
 struct PartitionCachedMeta {
@@ -66,9 +64,10 @@ impl Default for PartitionCachedMeta {
 }
 
 pub struct HdfsStore {
-    root: String,
-    filesystem: Box<Hdrs>,
     concurrency_access_limiter: Semaphore,
+
+    // key: app_id, value: hdfs_native_client
+    app_remote_clients: DashMap<String, HdfsNativeClient>,
 
     partition_file_locks: DashMap<String, Arc<Mutex<()>>>,
     partition_cached_meta: DashMap<String, PartitionCachedMeta>,
@@ -80,34 +79,21 @@ impl Persistent for HdfsStore {}
 
 impl HdfsStore {
     pub fn from(conf: HdfsStoreConfig) -> Self {
-        let data_path = conf.data_path;
-        let data_url = Url::parse(data_path.as_str()).unwrap();
-
-        let name_node = match data_url.host_str() {
-            Some(host) => format!("{}://{}", data_url.scheme(), host),
-            _ => "default".to_string(),
-        };
-        let krb5_cache = env::var("KRB5CACHE_PATH").map_or(None, |v| Some(v));
-        let hdfs_user = env::var("HDFS_USER").map_or(None, |v| Some(v));
-
-        let fs = Hdrs::new(name_node.as_str(), krb5_cache, hdfs_user);
-        if fs.is_err() {
-            error!("Errors on connecting the hdfs. error: {:?}", fs.err());
-            panic!();
-        }
-        let filesystem = fs.unwrap();
-
         HdfsStore {
-            root: data_url.to_string(),
-            filesystem: Box::new(filesystem),
             partition_file_locks: DashMap::new(),
             concurrency_access_limiter: Semaphore::new(conf.max_concurrency.unwrap_or(1) as usize),
             partition_cached_meta: Default::default(),
+            app_remote_clients: Default::default(),
         }
     }
 
     fn get_app_dir(&self, app_id: &str) -> String {
-        format!("{}/{}/", &self.root, app_id)
+        format!("{}/", app_id)
+    }
+
+    /// the dir created with app_id/shuffle_id
+    fn get_shuffle_dir(&self, app_id: &str, shuffle_id: i32) -> String {
+        format!("{}/{}/", app_id, shuffle_id)
     }
 
     fn get_file_path_by_uid(&self, uid: &PartitionedUId) -> (String, String) {
@@ -115,14 +101,15 @@ impl HdfsStore {
         let shuffle_id = &uid.shuffle_id;
         let p_id = &uid.partition_id;
 
+        let worker_id = crate::app::SHUFFLE_SERVER_ID.get().unwrap();
         (
             format!(
-                "{}/{}/{}/{}-{}/partition-{}.data",
-                &self.root, app_id, shuffle_id, p_id, p_id, p_id
+                "{}/{}/{}-{}/{}.data",
+                app_id, shuffle_id, p_id, p_id, worker_id
             ),
             format!(
-                "{}/{}/{}/{}-{}/partition-{}.index",
-                &self.root, app_id, shuffle_id, p_id, p_id, p_id
+                "{}/{}/{}-{}/{}.index",
+                app_id, shuffle_id, p_id, p_id, worker_id
             ),
         )
     }
@@ -163,17 +150,22 @@ impl Store for HdfsStore {
             ))
             .await;
 
+        let filesystem = self.app_remote_clients.get(&uid.app_id).ok_or(
+            WorkerError::HDFS_NATIVE_CLIENT_NOT_FOUND(uid.app_id.to_string()),
+        )?;
+
         let mut next_offset = match self.partition_cached_meta.get(&data_file_path) {
             None => {
                 // setup the parent folder
                 let parent_dir = Path::new(data_file_path.as_str()).parent().unwrap();
                 let parent_path_str = format!("{}/", parent_dir.to_str().unwrap());
                 debug!("creating dir: {}", parent_path_str.as_str());
-                self.filesystem.create_dir(parent_path_str.as_str()).await?;
+
+                filesystem.create_dir(parent_path_str.as_str()).await?;
 
                 // setup the file
-                self.filesystem.touch(&data_file_path).await?;
-                self.filesystem.touch(&index_file_path).await?;
+                filesystem.touch(&data_file_path).await?;
+                filesystem.touch(&index_file_path).await?;
 
                 self.partition_cached_meta
                     .insert(data_file_path.to_string(), Default::default());
@@ -208,11 +200,11 @@ impl Store for HdfsStore {
             total_flushed += length;
         }
 
-        self.filesystem
+        filesystem
             .append(&data_file_path, data_bytes_holder.freeze())
             .instrument_await(format!("hdfs writing data. path: {}", data_file_path))
             .await?;
-        self.filesystem
+        filesystem
             .append(&index_file_path, index_bytes_holder.freeze())
             .instrument_await(format!("hdfs writing index. path: {}", data_file_path))
             .await?;
@@ -229,14 +221,14 @@ impl Store for HdfsStore {
     }
 
     async fn get(&self, _ctx: ReadingViewContext) -> Result<ResponseData, WorkerError> {
-        todo!()
+        Err(WorkerError::NOT_READ_HDFS_DATA_FROM_SERVER)
     }
 
     async fn get_index(
         &self,
         _ctx: ReadingIndexViewContext,
     ) -> Result<ResponseDataIndex, WorkerError> {
-        todo!()
+        Err(WorkerError::NOT_READ_HDFS_DATA_FROM_SERVER)
     }
 
     async fn require_buffer(
@@ -246,27 +238,71 @@ impl Store for HdfsStore {
         todo!()
     }
 
-    async fn purge(&self, app_id: String) -> Result<()> {
-        let app_dir = self.get_app_dir(app_id.as_str());
+    async fn release_buffer(&self, _ctx: ReleaseBufferContext) -> Result<i64, WorkerError> {
+        todo!()
+    }
+
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<i64> {
+        let app_id = ctx.app_id;
+        let filesystem = self.app_remote_clients.get(&app_id).ok_or(
+            WorkerError::HDFS_NATIVE_CLIENT_NOT_FOUND(app_id.to_string()),
+        )?;
+
+        let dir = match ctx.shuffle_id {
+            Some(shuffle_id) => self.get_shuffle_dir(app_id.as_str(), shuffle_id),
+            _ => self.get_app_dir(app_id.as_str()),
+        };
 
         let keys_to_delete: Vec<_> = self
             .partition_file_locks
             .iter()
-            .filter(|entry| entry.key().contains(app_dir.as_str()))
+            .filter(|entry| entry.key().starts_with(dir.as_str()))
             .map(|entry| entry.key().to_string())
             .collect();
 
+        let mut removed_size = 0i64;
         for deleted_key in keys_to_delete {
             self.partition_file_locks.remove(&deleted_key);
-            self.partition_cached_meta.remove(&deleted_key);
+            if let Some(meta) = self.partition_cached_meta.remove(&deleted_key) {
+                removed_size += meta.1.data_len;
+            }
         }
 
-        info!("The hdfs data for {} has been deleted", &app_dir);
-        self.filesystem.delete_dir(app_dir.as_str()).await
+        info!("The hdfs data for {} has been deleted", &dir);
+        filesystem.delete_dir(dir.as_str()).await?;
+        drop(filesystem);
+
+        if ctx.shuffle_id.is_none() {
+            self.app_remote_clients.remove(&app_id);
+        }
+
+        Ok(removed_size)
     }
 
-    async fn is_healthy(&self) -> anyhow::Result<bool> {
+    async fn is_healthy(&self) -> Result<bool> {
         Ok(true)
+    }
+
+    async fn register_app(&self, ctx: RegisterAppContext) -> Result<()> {
+        let remote_storage_conf_option = ctx.app_config_options.remote_storage_config_option;
+        if remote_storage_conf_option.is_none() {
+            return Err(anyhow!(
+                "The remote config must be populated by app registry action!"
+            ));
+        }
+
+        let remote_storage_conf = remote_storage_conf_option.unwrap();
+        let client = HdfsNativeClient::new(remote_storage_conf.root, remote_storage_conf.configs)?;
+
+        let app_id = ctx.app_id.clone();
+        self.app_remote_clients
+            .entry(app_id)
+            .or_insert_with(|| client);
+        Ok(())
+    }
+
+    async fn name(&self) -> StorageType {
+        StorageType::HDFS
     }
 }
 
@@ -280,79 +316,88 @@ trait HdfsDelegator {
     async fn delete_dir(&self, dir: &str) -> Result<()>;
 }
 
-struct Hdrs {
+struct HdfsNativeClient {
     client: Client,
+    root: String,
+}
+
+impl HdfsNativeClient {
+    fn new(root: String, configs: HashMap<String, String>) -> Result<Self> {
+        // todo: do more optimizations!
+        let url = Url::parse(root.as_str())?;
+        let url_header = format!("{}://{}", url.scheme(), url.host().unwrap());
+
+        let root_path = url.path();
+
+        info!(
+            "Created hdfs client, header: {}, path: {}",
+            &url_header, root_path
+        );
+
+        let client = Client::new_with_config(url_header.as_str(), configs)?;
+        Ok(Self {
+            client,
+            root: root_path.to_string(),
+        })
+    }
+
+    fn wrap_root(&self, path: &str) -> String {
+        format!("{}/{}", &self.root, path)
+    }
 }
 
 #[async_trait]
-impl HdfsDelegator for Hdrs {
+impl HdfsDelegator for HdfsNativeClient {
     async fn touch(&self, file_path: &str) -> Result<()> {
-        let metadata = self.client.metadata(file_path);
-        if metadata.is_err() && metadata.unwrap_err().kind() == io::ErrorKind::NotFound {
-            debug!("Creating the file, path: {}", file_path);
-            let mut write = self
-                .client
-                .open_file()
-                .create(true)
-                .write(true)
-                .async_open(file_path)
-                .await?;
-            write.write("".as_bytes()).await?;
-            write.flush().await?;
-            write.close().await?;
-            debug!("the file: {} is created!", file_path);
-        }
+        let file_path = &self.wrap_root(file_path);
+        self.client
+            .create(file_path, WriteOptions::default())
+            .await?
+            .close()
+            .await?;
         Ok(())
     }
 
     async fn append(&self, file_path: &str, data: Bytes) -> Result<()> {
-        let mut data_writer = self
-            .client
-            .open_file()
-            .create(true)
-            .append(true)
-            .async_open(file_path)
-            .await?;
-        data_writer.write_all(data.as_ref()).await?;
-        data_writer.flush().await?;
-        data_writer.close().await?;
-        debug!("data has been flushed. path: {}", file_path);
-        Ok(())
-    }
-
-    async fn create_dir(&self, dir: &str) -> Result<()> {
-        self.client.create_dir(dir)?;
+        let file_path = &self.wrap_root(file_path);
+        let mut file_writer = self.client.append(file_path).await?;
+        file_writer.write(data).await?;
+        file_writer.close().await?;
         Ok(())
     }
 
     async fn len(&self, file_path: &str) -> Result<u64> {
-        let meta = self.client.metadata(file_path)?;
-        Ok(meta.len())
+        let file_path = &self.wrap_root(file_path);
+        let file_info = self.client.get_file_info(file_path).await?;
+        Ok(file_info.length as u64)
+    }
+
+    async fn create_dir(&self, dir: &str) -> Result<()> {
+        let dir = &self.wrap_root(dir);
+        let _ = self.client.mkdirs(dir, 777, true).await?;
+        Ok(())
     }
 
     async fn delete_dir(&self, dir: &str) -> Result<()> {
-        self.client.remove_dir_all(dir)?;
+        let dir = &self.wrap_root(dir);
+        self.client.delete(dir, true).await?;
         Ok(())
-    }
-}
-
-impl Hdrs {
-    fn new(name_node: &str, krb5_cache: Option<String>, user: Option<String>) -> Result<Self> {
-        let mut builder = ClientBuilder::new(name_node);
-        if krb5_cache.is_some() {
-            builder = builder.with_kerberos_ticket_cache_path(krb5_cache.unwrap().as_str());
-        }
-        if user.is_some() {
-            builder = builder.with_user(user.unwrap().as_str())
-        }
-        let client = builder.connect()?;
-        Ok(Hdrs { client })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use std::path::Path;
+    use url::Url;
+
+    #[test]
+    fn url_test() {
+        let url = Url::parse("hdfs://rbf-1:19999/a/b").unwrap();
+        assert_eq!("hdfs", url.scheme());
+        assert_eq!("rbf-1", url.host().unwrap().to_string());
+        assert_eq!(19999, url.port().unwrap());
+        assert_eq!("/a/b", url.path());
+    }
 
     #[test]
     fn dir_test() -> anyhow::Result<()> {

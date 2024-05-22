@@ -130,11 +130,24 @@ public class SendShuffleDataRequest extends RequestMessage {
     return requireId;
   }
 
+  public void setRequireId(long requireId) {
+    this.requireId = requireId;
+  }
+
   public Map<Integer, List<ShuffleBlockInfo>> getPartitionToBlocks() {
     return partitionToBlocks;
   }
 
   public long getTimestamp() {
     return timestamp;
+  }
+
+  public void setTimestamp(long timestamp) {
+    this.timestamp = timestamp;
+  }
+
+  @Override
+  public String getOperationType() {
+    return "sendShuffleData";
   }
 }

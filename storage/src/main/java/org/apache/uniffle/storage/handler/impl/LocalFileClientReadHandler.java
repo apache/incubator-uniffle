@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,8 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
   private final int partitionNumPerRange;
   private final int partitionNum;
   private ShuffleServerClient shuffleServerClient;
+  private int retryMax;
+  private long retryIntervalMax;
 
   public LocalFileClientReadHandler(
       String appId,
@@ -50,7 +53,9 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
       Roaring64NavigableMap processBlockIds,
       ShuffleServerClient shuffleServerClient,
       ShuffleDataDistributionType distributionType,
-      Roaring64NavigableMap expectTaskIds) {
+      Roaring64NavigableMap expectTaskIds,
+      int retryMax,
+      long retryIntervalMax) {
     super(
         appId,
         shuffleId,
@@ -63,9 +68,11 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     this.shuffleServerClient = shuffleServerClient;
     this.partitionNumPerRange = partitionNumPerRange;
     this.partitionNum = partitionNum;
+    this.retryMax = retryMax;
+    this.retryIntervalMax = retryIntervalMax;
   }
 
-  /** Only for test */
+  @VisibleForTesting
   public LocalFileClientReadHandler(
       String appId,
       int shuffleId,
@@ -89,7 +96,9 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
         processBlockIds,
         shuffleServerClient,
         ShuffleDataDistributionType.NORMAL,
-        Roaring64NavigableMap.bitmapOf());
+        Roaring64NavigableMap.bitmapOf(),
+        1,
+        0);
   }
 
   @Override
@@ -97,7 +106,13 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     ShuffleIndexResult shuffleIndexResult = null;
     RssGetShuffleIndexRequest request =
         new RssGetShuffleIndexRequest(
-            appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
+            appId,
+            shuffleId,
+            partitionId,
+            partitionNumPerRange,
+            partitionNum,
+            retryMax,
+            retryIntervalMax);
     try {
       shuffleIndexResult = shuffleServerClient.getShuffleIndex(request).getShuffleIndexResult();
     } catch (RssFetchFailedException e) {
@@ -141,17 +156,16 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
             partitionNumPerRange,
             partitionNum,
             shuffleDataSegment.getOffset(),
-            expectedLength);
+            expectedLength,
+            retryMax,
+            retryIntervalMax);
     try {
       RssGetShuffleDataResponse response = shuffleServerClient.getShuffleData(request);
       result =
           new ShuffleDataResult(response.getShuffleData(), shuffleDataSegment.getBufferSegments());
     } catch (Exception e) {
       throw new RssException(
-          "Failed to read shuffle data with "
-              + shuffleServerClient.getClientInfo()
-              + " due to "
-              + e.getMessage());
+          "Failed to read shuffle data with " + shuffleServerClient.getClientInfo(), e);
     }
     if (result.getDataBuffer().remaining() != expectedLength) {
       throw new RssException(

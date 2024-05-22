@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,15 +88,13 @@ public class HealthCheck {
   public void check() {
     for (Checker checker : checkers) {
       if (!checker.checkIsHealthy()) {
-        serverStatus.set(ServerStatus.UNHEALTHY);
+        serverStatus.compareAndSet(ServerStatus.ACTIVE, ServerStatus.UNHEALTHY);
         ShuffleServerMetrics.gaugeIsHealthy.set(1);
         return;
       }
     }
     ShuffleServerMetrics.gaugeIsHealthy.set(0);
-    if (serverStatus.get() == ServerStatus.UNHEALTHY) {
-      serverStatus.set(ServerStatus.ACTIVE);
-    }
+    serverStatus.compareAndSet(ServerStatus.UNHEALTHY, ServerStatus.ACTIVE);
   }
 
   public ServerStatus getServerStatus() {

@@ -18,6 +18,12 @@
 package org.apache.uniffle.common;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import com.google.common.annotations.VisibleForTesting;
+
+import org.apache.uniffle.proto.RssProtos;
 
 public class ShuffleServerInfo implements Serializable {
 
@@ -29,11 +35,19 @@ public class ShuffleServerInfo implements Serializable {
 
   private int nettyPort = -1;
 
-  // Only for test
+  @VisibleForTesting
   public ShuffleServerInfo(String host, int port) {
     this.id = host + "-" + port;
     this.host = host;
     this.grpcPort = port;
+  }
+
+  @VisibleForTesting
+  public ShuffleServerInfo(String host, int grpcPort, int nettyPort) {
+    this.id = host + "-" + grpcPort + "-" + nettyPort;
+    this.host = host;
+    this.grpcPort = grpcPort;
+    this.nettyPort = nettyPort;
   }
 
   public ShuffleServerInfo(String id, String host, int port) {
@@ -87,9 +101,7 @@ public class ShuffleServerInfo implements Serializable {
   @Override
   public String toString() {
     if (nettyPort > 0) {
-      return "ShuffleServerInfo{id["
-          + id
-          + "], host["
+      return "ShuffleServerInfo{host["
           + host
           + "],"
           + " grpc port["
@@ -98,14 +110,43 @@ public class ShuffleServerInfo implements Serializable {
           + nettyPort
           + "]}";
     } else {
-      return "ShuffleServerInfo{id["
-          + id
-          + "], host["
-          + host
-          + "],"
-          + " grpc port["
-          + grpcPort
-          + "]}";
+      return "ShuffleServerInfo{host[" + host + "], grpc port[" + grpcPort + "]}";
     }
+  }
+
+  private static ShuffleServerInfo convertFromShuffleServerId(
+      RssProtos.ShuffleServerId shuffleServerId) {
+    ShuffleServerInfo shuffleServerInfo =
+        new ShuffleServerInfo(
+            shuffleServerId.getId(),
+            shuffleServerId.getIp(),
+            shuffleServerId.getPort(),
+            shuffleServerId.getNettyPort());
+    return shuffleServerInfo;
+  }
+
+  public static RssProtos.ShuffleServerId convertToShuffleServerId(
+      ShuffleServerInfo shuffleServerInfo) {
+    RssProtos.ShuffleServerId shuffleServerId =
+        RssProtos.ShuffleServerId.newBuilder()
+            .setId(shuffleServerInfo.getId())
+            .setIp(shuffleServerInfo.getHost())
+            .setPort(shuffleServerInfo.grpcPort)
+            .setNettyPort(shuffleServerInfo.nettyPort)
+            .build();
+    return shuffleServerId;
+  }
+
+  public static List<ShuffleServerInfo> fromProto(List<RssProtos.ShuffleServerId> servers) {
+    return servers.stream()
+        .map(server -> convertFromShuffleServerId(server))
+        .collect(Collectors.toList());
+  }
+
+  public static List<RssProtos.ShuffleServerId> toProto(
+      List<ShuffleServerInfo> shuffleServerInfos) {
+    return shuffleServerInfos.stream()
+        .map(server -> convertToShuffleServerId(server))
+        .collect(Collectors.toList());
   }
 }

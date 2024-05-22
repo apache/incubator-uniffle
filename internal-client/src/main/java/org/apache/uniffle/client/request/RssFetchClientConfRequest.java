@@ -17,14 +17,47 @@
 
 package org.apache.uniffle.client.request;
 
+import java.util.Collections;
+import java.util.Map;
+
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang3.StringUtils;
+
+import org.apache.uniffle.proto.RssProtos;
+
 public class RssFetchClientConfRequest {
   private final int timeoutMs;
+  private String user;
+  private Map<String, String> properties = Collections.emptyMap();
 
+  public RssFetchClientConfRequest(int timeoutMs, String user, Map<String, String> properties) {
+    this.timeoutMs = timeoutMs;
+    this.user = user;
+    this.properties = properties;
+  }
+
+  @VisibleForTesting
   public RssFetchClientConfRequest(int timeoutMs) {
     this.timeoutMs = timeoutMs;
+    this.user = StringUtils.EMPTY;
   }
 
   public int getTimeoutMs() {
     return timeoutMs;
+  }
+
+  public String getUser() {
+    return user;
+  }
+
+  public Map<String, String> getProperties() {
+    return properties;
+  }
+
+  public RssProtos.FetchClientConfRequest toProto() {
+    return RssProtos.FetchClientConfRequest.newBuilder()
+        .setUser(user)
+        .putAllProperties(properties)
+        .build();
   }
 }

@@ -16,8 +16,9 @@
 // under the License.
 
 use crate::app::{
-    AppManagerRef, GetBlocksContext, PartitionedUId, ReadingIndexViewContext, ReadingOptions,
-    ReadingViewContext, ReportBlocksContext, RequireBufferContext, WritingViewContext,
+    AppConfigOptions, AppManagerRef, DataDistribution, GetBlocksContext, PartitionedUId,
+    ReadingIndexViewContext, ReadingOptions, ReadingViewContext, RemoteStorageConfig,
+    ReportBlocksContext, RequireBufferContext, WritingViewContext,
 };
 use crate::proto::uniffle::shuffle_server_server::ShuffleServer;
 use crate::proto::uniffle::{
@@ -28,12 +29,14 @@ use crate::proto::uniffle::{
     GetShuffleResultRequest, GetShuffleResultResponse, ReportShuffleResultRequest,
     ReportShuffleResultResponse, RequireBufferRequest, RequireBufferResponse,
     SendShuffleDataRequest, SendShuffleDataResponse, ShuffleCommitRequest, ShuffleCommitResponse,
-    ShuffleRegisterRequest, ShuffleRegisterResponse, ShuffleUnregisterRequest,
-    ShuffleUnregisterResponse,
+    ShuffleRegisterRequest, ShuffleRegisterResponse, ShuffleUnregisterByAppIdRequest,
+    ShuffleUnregisterByAppIdResponse, ShuffleUnregisterRequest, ShuffleUnregisterResponse,
 };
 use crate::store::{PartitionedData, ResponseDataIndex};
 use await_tree::InstrumentAwait;
 use bytes::{BufMut, BytesMut};
+use croaring::treemap::JvmSerializer;
+use croaring::Treemap;
 use std::collections::HashMap;
 
 use log::{debug, error, info, warn};
@@ -63,6 +66,7 @@ enum StatusCode {
     NO_PARTITION = 5,
     INTERNAL_ERROR = 6,
     TIMEOUT = 7,
+    NO_BUFFER_FOR_HUGE_PARTITION = 8,
 }
 
 impl Into<i32> for StatusCode {
@@ -88,9 +92,17 @@ impl ShuffleServer for DefaultShuffleServer {
         request: Request<ShuffleRegisterRequest>,
     ) -> Result<Response<ShuffleRegisterResponse>, Status> {
         let inner = request.into_inner();
+        // todo: fast fail when hdfs is enabled but empty remote storage info.
+        let remote_storage_info = inner.remote_storage.map(|x| RemoteStorageConfig::from(x));
+        // todo: add more options: huge_partition_threshold. and so on...
+        let app_config_option = AppConfigOptions::new(
+            DataDistribution::LOCAL_ORDER,
+            inner.max_concurrency_per_partition_to_write,
+            remote_storage_info,
+        );
         let status = self
             .app_manager_ref
-            .register(inner.app_id, inner.shuffle_id)
+            .register(inner.app_id, inner.shuffle_id, app_config_option)
             .map_or(StatusCode::INTERNAL_ERROR, |_| StatusCode::SUCCESS)
             .into();
         Ok(Response::new(ShuffleRegisterResponse {
@@ -101,12 +113,46 @@ impl ShuffleServer for DefaultShuffleServer {
 
     async fn unregister_shuffle(
         &self,
-        _request: Request<ShuffleUnregisterRequest>,
+        request: Request<ShuffleUnregisterRequest>,
     ) -> Result<Response<ShuffleUnregisterResponse>, Status> {
-        // todo: implement shuffle level deletion
-        info!("Accepted unregister shuffle info....");
+        let request = request.into_inner();
+        let shuffle_id = request.shuffle_id;
+        let app_id = request.app_id;
+
+        info!(
+            "Accepted unregister shuffle info for [app:{:?}, shuffle_id:{:?}]",
+            &app_id, shuffle_id
+        );
+        let status_code = self
+            .app_manager_ref
+            .unregister_shuffle(app_id, shuffle_id)
+            .await
+            .map_or_else(|_e| StatusCode::INTERNAL_ERROR, |_| StatusCode::SUCCESS);
+
         Ok(Response::new(ShuffleUnregisterResponse {
-            status: StatusCode::SUCCESS.into(),
+            status: status_code.into(),
+            ret_msg: "".to_string(),
+        }))
+    }
+
+    // Once unregister app accepted, the data could be purged.
+    async fn unregister_shuffle_by_app_id(
+        &self,
+        request: Request<ShuffleUnregisterByAppIdRequest>,
+    ) -> Result<Response<ShuffleUnregisterByAppIdResponse>, Status> {
+        let request = request.into_inner();
+        let app_id = request.app_id;
+
+        info!("Accepted unregister app rpc. app_id: {:?}", &app_id);
+
+        let code = self
+            .app_manager_ref
+            .unregister_app(app_id)
+            .await
+            .map_or_else(|_e| StatusCode::INTERNAL_ERROR, |_| StatusCode::SUCCESS);
+
+        Ok(Response::new(ShuffleUnregisterByAppIdResponse {
+            status: code.into(),
             ret_msg: "".to_string(),
         }))
     }
@@ -135,14 +181,15 @@ impl ShuffleServer for DefaultShuffleServer {
 
         let app = app_option.unwrap();
 
-        if !app.is_buffer_ticket_exist(ticket_id) {
+        let release_result = app.release_buffer(ticket_id).await;
+        if release_result.is_err() {
             return Ok(Response::new(SendShuffleDataResponse {
                 status: StatusCode::NO_BUFFER.into(),
                 ret_msg: "No such buffer ticket id, it may be discarded due to timeout".to_string(),
             }));
-        } else {
-            app.discard_tickets(ticket_id);
         }
+
+        let ticket_required_size = release_result.unwrap();
 
         let mut blocks_map = HashMap::new();
         for shuffle_data in req.shuffle_data {
@@ -154,16 +201,21 @@ impl ShuffleServer for DefaultShuffleServer {
             blocks.extend(partitioned_blocks);
         }
 
+        let mut inserted_failure_occurs = false;
+        let mut inserted_failure_error = None;
+        let mut inserted_total_size = 0;
+
         for (partition_id, blocks) in blocks_map.into_iter() {
+            if inserted_failure_occurs {
+                continue;
+            }
+
             let uid = PartitionedUId {
                 app_id: app_id.clone(),
                 shuffle_id,
                 partition_id,
             };
-            let ctx = WritingViewContext {
-                uid: uid.clone(),
-                data_blocks: blocks,
-            };
+            let ctx = WritingViewContext::from(uid.clone(), blocks);
 
             let inserted = app
                 .insert(ctx)
@@ -176,11 +228,33 @@ impl ShuffleServer for DefaultShuffleServer {
                     inserted.err()
                 );
                 error!("{}", &err);
-                return Ok(Response::new(SendShuffleDataResponse {
-                    status: StatusCode::INTERNAL_ERROR.into(),
-                    ret_msg: err,
-                }));
+
+                inserted_failure_error = Some(err);
+                inserted_failure_occurs = true;
+                continue;
             }
+
+            let inserted_size = inserted.unwrap();
+            inserted_total_size += inserted_size as i64;
+        }
+
+        let unused_allocated_size = ticket_required_size - inserted_total_size;
+        if unused_allocated_size != 0 {
+            debug!("The required buffer size:[{:?}] has remaining allocated size:[{:?}] of unused, this should not happen",
+                ticket_required_size, unused_allocated_size);
+            if let Err(e) = app.free_allocated_memory_size(unused_allocated_size).await {
+                warn!(
+                    "Errors on free allocated size: {:?} for app: {:?}. err: {:#?}",
+                    unused_allocated_size, &app_id, e
+                );
+            }
+        }
+
+        if inserted_failure_occurs {
+            return Ok(Response::new(SendShuffleDataResponse {
+                status: StatusCode::INTERNAL_ERROR.into(),
+                ret_msg: inserted_failure_error.unwrap(),
+            }));
         }
 
         timer.observe_duration();
@@ -284,6 +358,7 @@ impl ShuffleServer for DefaultShuffleServer {
             .select(ReadingViewContext {
                 uid: partition_id.clone(),
                 reading_options: ReadingOptions::FILE_OFFSET_AND_LEN(req.offset, req.length as i64),
+                serialized_expected_task_ids_bitmap: Default::default(),
             })
             .instrument_await(format!(
                 "select data from localfile. uid: {:?}",
@@ -341,6 +416,20 @@ impl ShuffleServer for DefaultShuffleServer {
             shuffle_id,
             partition_id,
         };
+
+        let serialized_expected_task_ids_bitmap =
+            if !req.serialized_expected_task_ids_bitmap.is_empty() {
+                match Treemap::deserialize(&req.serialized_expected_task_ids_bitmap) {
+                    Ok(filter) => Some(filter),
+                    Err(e) => {
+                        error!("Failed to deserialize: {}", e);
+                        None
+                    }
+                }
+            } else {
+                None
+            };
+
         let data_fetched_result = app
             .unwrap()
             .select(ReadingViewContext {
@@ -349,6 +438,7 @@ impl ShuffleServer for DefaultShuffleServer {
                     req.last_block_id,
                     req.read_buffer_size as i64,
                 ),
+                serialized_expected_task_ids_bitmap,
             })
             .instrument_await(format!("select data from memory. uid: {:?}", &partition_id))
             .await;
@@ -428,7 +518,16 @@ impl ShuffleServer for DefaultShuffleServer {
                 },
                 blocks: partition_to_block_id.block_ids,
             };
-            let _ = app.report_block_ids(ctx).await;
+
+            match app.report_block_ids(ctx).await {
+                Err(e) => {
+                    return Ok(Response::new(ReportShuffleResultResponse {
+                        status: StatusCode::INTERNAL_ERROR.into(),
+                        ret_msg: e.to_string(),
+                    }))
+                }
+                _ => (),
+            }
         }
 
         Ok(Response::new(ReportShuffleResultResponse {
@@ -460,16 +559,9 @@ impl ShuffleServer for DefaultShuffleServer {
             shuffle_id,
             partition_id,
         };
-        let block_ids_result = app
-            .unwrap()
-            .get_block_ids(GetBlocksContext {
-                uid: partition_id.clone(),
-            })
-            .instrument_await(format!(
-                "getting shuffle blocks ids. uid: {:?}",
-                &partition_id
-            ))
-            .await;
+        let block_ids_result = app.unwrap().get_block_ids(GetBlocksContext {
+            uid: partition_id.clone(),
+        });
 
         if block_ids_result.is_err() {
             let err_msg = block_ids_result.err();
@@ -511,15 +603,13 @@ impl ShuffleServer for DefaultShuffleServer {
 
         let mut bytes_mut = BytesMut::new();
         for partition_id in req.partitions {
-            let block_ids_result = app
-                .get_block_ids(GetBlocksContext {
-                    uid: PartitionedUId {
-                        app_id: app_id.clone(),
-                        shuffle_id,
-                        partition_id,
-                    },
-                })
-                .await;
+            let block_ids_result = app.get_block_ids(GetBlocksContext {
+                uid: PartitionedUId {
+                    app_id: app_id.clone(),
+                    shuffle_id,
+                    partition_id,
+                },
+            });
             if block_ids_result.is_err() {
                 let err_msg = block_ids_result.err();
                 error!(
@@ -629,7 +719,84 @@ impl ShuffleServer for DefaultShuffleServer {
     }
 }
 
-pub mod grpc_middleware {
+pub mod metrics_middleware {
+    use crate::metric::{GAUGE_GRPC_REQUEST_QUEUE_SIZE, TOTAL_GRPC_REQUEST};
+    use hyper::service::Service;
+    use hyper::Body;
+    use prometheus::HistogramVec;
+    use std::task::{Context, Poll};
+    use tower::Layer;
+
+    #[derive(Clone)]
+    pub struct MetricsMiddlewareLayer {
+        metric: HistogramVec,
+    }
+
+    impl MetricsMiddlewareLayer {
+        pub fn new(metric: HistogramVec) -> Self {
+            Self { metric }
+        }
+    }
+
+    impl<S> Layer<S> for MetricsMiddlewareLayer {
+        type Service = MetricsMiddleware<S>;
+
+        fn layer(&self, service: S) -> Self::Service {
+            MetricsMiddleware {
+                inner: service,
+                metric: self.metric.clone(),
+            }
+        }
+    }
+
+    #[derive(Clone)]
+    pub struct MetricsMiddleware<S> {
+        inner: S,
+        metric: HistogramVec,
+    }
+
+    impl<S> Service<hyper::Request<Body>> for MetricsMiddleware<S>
+    where
+        S: Service<hyper::Request<Body>> + Clone + Send + 'static,
+        S::Future: Send + 'static,
+    {
+        type Response = S::Response;
+        type Error = S::Error;
+        type Future = futures::future::BoxFuture<'static, Result<Self::Response, Self::Error>>;
+
+        fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+            self.inner.poll_ready(cx)
+        }
+
+        fn call(&mut self, req: hyper::Request<Body>) -> Self::Future {
+            TOTAL_GRPC_REQUEST.inc();
+            GAUGE_GRPC_REQUEST_QUEUE_SIZE.inc();
+
+            // This is necessary because tonic internally uses `tower::buffer::Buffer`.
+            // See https://github.com/tower-rs/tower/issues/547#issuecomment-767629149
+            // for details on why this is necessary
+            let clone = self.inner.clone();
+            let mut inner = std::mem::replace(&mut self.inner, clone);
+
+            let metrics = self.metric.clone();
+
+            Box::pin(async move {
+                let path = req.uri().path();
+                let timer = metrics.with_label_values(&[path]).start_timer();
+
+                let response = inner.call(req).await?;
+
+                timer.observe_duration();
+
+                GAUGE_GRPC_REQUEST_QUEUE_SIZE.dec();
+
+                Ok(response)
+            })
+        }
+    }
+}
+
+pub mod await_tree_middleware {
     use std::task::{Context, Poll};
 
     use crate::await_tree::AwaitTreeInner;

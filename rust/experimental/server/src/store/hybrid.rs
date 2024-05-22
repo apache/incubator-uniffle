@@ -16,17 +16,18 @@
 // under the License.
 
 use crate::app::{
-    PartitionedUId, ReadingIndexViewContext, ReadingOptions, ReadingViewContext,
-    RequireBufferContext, WritingViewContext,
+    PartitionedUId, PurgeDataContext, ReadingIndexViewContext, ReadingOptions, ReadingViewContext,
+    RegisterAppContext, ReleaseBufferContext, RequireBufferContext, WritingViewContext,
 };
 use crate::await_tree::AWAIT_TREE_REGISTRY;
 
 use crate::config::{Config, HybridStoreConfig, StorageType};
 use crate::error::WorkerError;
 use crate::metric::{
-    GAUGE_MEMORY_SPILL_OPERATION, GAUGE_MEMORY_SPILL_TO_HDFS, GAUGE_MEMORY_SPILL_TO_LOCALFILE,
-    TOTAL_MEMORY_SPILL_OPERATION, TOTAL_MEMORY_SPILL_OPERATION_FAILED, TOTAL_MEMORY_SPILL_TO_HDFS,
-    TOTAL_MEMORY_SPILL_TO_LOCALFILE,
+    GAUGE_IN_SPILL_DATA_SIZE, GAUGE_MEMORY_SPILL_OPERATION, GAUGE_MEMORY_SPILL_TO_HDFS,
+    GAUGE_MEMORY_SPILL_TO_LOCALFILE, TOTAL_MEMORY_SPILL_OPERATION,
+    TOTAL_MEMORY_SPILL_OPERATION_FAILED, TOTAL_MEMORY_SPILL_TO_HDFS,
+    TOTAL_MEMORY_SPILL_TO_LOCALFILE, TOTAL_SPILL_EVENTS_DROPPED,
 };
 use crate::readable_size::ReadableSize;
 #[cfg(feature = "hdfs")]
@@ -40,18 +41,19 @@ use crate::store::{
 use anyhow::{anyhow, Result};
 
 use async_trait::async_trait;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use prometheus::core::{Atomic, AtomicU64};
 use std::any::Any;
 
 use std::collections::VecDeque;
 
 use await_tree::InstrumentAwait;
+use spin::mutex::Mutex;
 use std::str::FromStr;
 use std::sync::Arc;
 
 use crate::runtime::manager::RuntimeManager;
-use tokio::sync::{Mutex, Semaphore};
+use tokio::sync::Semaphore;
 
 trait PersistentStore: Store + Persistent + Send + Sync {}
 impl PersistentStore for LocalFileStore {}
@@ -84,9 +86,12 @@ pub struct HybridStore {
     runtime_manager: RuntimeManager,
 }
 
+#[derive(Clone)]
 struct SpillMessage {
     ctx: WritingViewContext,
     id: i64,
+    retry_cnt: i32,
+    previous_spilled_storage: Option<Arc<Box<dyn PersistentStore>>>,
 }
 
 unsafe impl Send for HybridStore {}
@@ -154,17 +159,6 @@ impl HybridStore {
         self.cold_store.is_none() && self.warm_store.is_none()
     }
 
-    fn get_store_type(&self, store: &dyn Any) -> StorageType {
-        if store.is::<LocalFileStore>() {
-            return StorageType::LOCALFILE;
-        }
-        #[cfg(feature = "hdfs")]
-        if store.is::<HdfsStore>() {
-            return StorageType::HDFS;
-        }
-        return StorageType::MEMORY;
-    }
-
     fn is_localfile(&self, store: &dyn Any) -> bool {
         store.is::<LocalFileStore>()
     }
@@ -180,10 +174,16 @@ impl HybridStore {
 
     async fn memory_spill_to_persistent_store(
         &self,
-        mut ctx: WritingViewContext,
-        in_flight_blocks_id: i64,
+        spill_message: SpillMessage,
     ) -> Result<String, WorkerError> {
-        let uid = ctx.uid.clone();
+        let mut ctx: WritingViewContext = spill_message.ctx;
+        let retry_cnt = spill_message.retry_cnt;
+
+        if retry_cnt > 3 {
+            let app_id = ctx.uid.app_id;
+            return Err(WorkerError::SPILL_EVENT_EXCEED_RETRY_MAX_LIMIT(app_id));
+        }
+
         let blocks = &ctx.data_blocks;
         let mut spill_size = 0i64;
         for block in blocks {
@@ -196,9 +196,15 @@ impl HybridStore {
             .ok_or(anyhow!("empty warm store. It should not happen"))?;
         let cold = self.cold_store.as_ref().unwrap_or(warm);
 
-        let candidate_store = if warm.is_healthy().await? {
+        // we should cover the following cases
+        // 1. local store is unhealthy. spill to hdfs
+        // 2. event flushed to localfile failed. and exceed retry max cnt, fallback to hdfs
+        // 3. huge partition directly flush to hdfs
+
+        // normal assignment
+        let mut candidate_store = if warm.is_healthy().await? {
             let cold_spilled_size = self.memory_spill_to_cold_threshold_size.unwrap_or(u64::MAX);
-            if cold_spilled_size < spill_size as u64 {
+            if cold_spilled_size < spill_size as u64 || ctx.owned_by_huge_partition {
                 cold
             } else {
                 warm
@@ -207,7 +213,12 @@ impl HybridStore {
             cold
         };
 
-        match self.get_store_type(candidate_store) {
+        // fallback assignment. propose hdfs always is active and stable
+        if retry_cnt >= 1 {
+            candidate_store = cold;
+        }
+
+        match candidate_store.name().await {
             StorageType::LOCALFILE => {
                 TOTAL_MEMORY_SPILL_TO_LOCALFILE.inc();
                 GAUGE_MEMORY_SPILL_TO_LOCALFILE.inc();
@@ -229,7 +240,10 @@ impl HybridStore {
         ctx.data_blocks.sort_by_key(|block| block.task_attempt_id);
 
         // when throwing the data lost error, it should fast fail for this partition data.
-        let inserted = candidate_store.insert(ctx).await;
+        let inserted = candidate_store
+            .insert(ctx)
+            .instrument_await("inserting into the persistent store, invoking [write]")
+            .await;
         if let Err(err) = inserted {
             match err {
                 WorkerError::PARTIAL_DATA_LOST(msg) => {
@@ -243,12 +257,7 @@ impl HybridStore {
             }
         }
 
-        self.hot_store
-            .release_in_flight_blocks_in_underlying_staging_buffer(uid, in_flight_blocks_id)
-            .await?;
-        self.hot_store.free_memory(spill_size).await?;
-
-        match self.get_store_type(candidate_store) {
+        match candidate_store.name().await {
             StorageType::LOCALFILE => {
                 GAUGE_MEMORY_SPILL_TO_LOCALFILE.dec();
             }
@@ -261,13 +270,8 @@ impl HybridStore {
         Ok(message)
     }
 
-    // For app to check the ticket allocated existence and discard if it has been used
-    pub fn is_buffer_ticket_exist(&self, app_id: &str, ticket_id: i64) -> bool {
-        self.hot_store.is_ticket_exist(app_id, ticket_id)
-    }
-
-    pub fn discard_tickets(&self, app_id: &str, ticket_id: i64) -> i64 {
-        self.hot_store.discard_tickets(app_id, Some(ticket_id))
+    pub async fn free_hot_store_allocated_memory_size(&self, size: i64) -> Result<bool> {
+        self.hot_store.free_allocated(size).await
     }
 
     pub async fn get_hot_store_memory_snapshot(&self) -> Result<MemorySnapshot> {
@@ -291,16 +295,15 @@ impl HybridStore {
         blocks: Vec<PartitionedDataBlock>,
         uid: PartitionedUId,
     ) -> Result<()> {
-        let writing_ctx = WritingViewContext {
-            uid,
-            data_blocks: blocks,
-        };
+        let writing_ctx = WritingViewContext::from(uid, blocks);
 
         if self
             .memory_spill_send
             .send(SpillMessage {
                 ctx: writing_ctx,
                 id: in_flight_uid,
+                retry_cnt: 0,
+                previous_spilled_storage: None,
             })
             .await
             .is_err()
@@ -310,6 +313,17 @@ impl HybridStore {
             self.memory_spill_event_num.inc_by(1);
         }
 
+        Ok(())
+    }
+
+    async fn release_data_in_memory(&self, data_size: u64, message: &SpillMessage) -> Result<()> {
+        let uid = &message.ctx.uid;
+        let in_flight_id = message.id;
+        self.hot_store
+            .release_in_flight_blocks_in_underlying_staging_buffer(uid.clone(), in_flight_id)
+            .await?;
+        self.hot_store.free_used(data_size as i64).await?;
+        self.hot_store.desc_to_in_flight_buffer_size(data_size);
         Ok(())
     }
 }
@@ -339,19 +353,23 @@ impl Store for HybridStore {
         let store = self.clone();
         let concurrency_limiter =
             Arc::new(Semaphore::new(store.memory_spill_max_concurrency as usize));
-        self.runtime_manager.default_runtime.spawn(async move {
-            while let Ok(message) = store.memory_spill_recv.recv().await {
+        self.runtime_manager.write_runtime.spawn(async move {
+            while let Ok(mut message) = store.memory_spill_recv.recv().await {
                 let await_root = await_tree_registry
-                    .register(format!("hot->warm flush."))
+                    .register(format!("hot->warm flush. uid: {:#?}", &message.ctx.uid))
                     .await;
 
                 // using acquire_owned(), refer to https://github.com/tokio-rs/tokio/issues/1998
-                let concurrency_guarder =
-                    concurrency_limiter.clone().acquire_owned().await.unwrap();
+                let concurrency_guarder = concurrency_limiter
+                    .clone()
+                    .acquire_owned()
+                    .instrument_await("waiting for the spill concurrent lock.")
+                    .await
+                    .unwrap();
 
                 TOTAL_MEMORY_SPILL_OPERATION.inc();
                 GAUGE_MEMORY_SPILL_OPERATION.inc();
-                let store_cloned = store.clone();
+                let store_ref = store.clone();
                 store
                     .runtime_manager
                     .write_runtime
@@ -360,25 +378,40 @@ impl Store for HybridStore {
                         for block in &message.ctx.data_blocks {
                             size += block.length as u64;
                         }
-                        match store_cloned
-                            .memory_spill_to_persistent_store(message.ctx.clone(), message.id)
+
+                        GAUGE_IN_SPILL_DATA_SIZE.add(size as i64);
+                        match store_ref
+                            .memory_spill_to_persistent_store(message.clone())
+                            .instrument_await("memory_spill_to_persistent_store.")
                             .await
                         {
                             Ok(msg) => {
-                                store_cloned.hot_store.desc_to_in_flight_buffer_size(size);
-                                debug!("{}", msg)
+                                debug!("{}", msg);
+                                if let Err(err) = store_ref.release_data_in_memory(size, &message).await {
+                                    error!("Errors on releasing memory data, that should not happen. err: {:#?}", err);
+                                }
+                            }
+                            Err(WorkerError::SPILL_EVENT_EXCEED_RETRY_MAX_LIMIT(_)) | Err(WorkerError::PARTIAL_DATA_LOST(_)) => {
+                                warn!("Dropping the spill event for app: {:?}. Attention: this will make data lost!", message.ctx.uid.app_id);
+                                if let Err(err) = store_ref.release_data_in_memory(size, &message).await {
+                                    error!("Errors on releasing memory data when dropping the spill event, that should not happen. err: {:#?}", err);
+                                }
+                                TOTAL_SPILL_EVENTS_DROPPED.inc();
                             }
                             Err(error) => {
                                 TOTAL_MEMORY_SPILL_OPERATION_FAILED.inc();
                                 error!(
-                                "Errors on spill memory data to persistent storage. error: {:#?}",
-                                error
-                            );
+                                "Errors on spill memory data to persistent storage for event_id:{:?}. The error: {:#?}",
+                                    message.id,
+                                    error);
+
+                                message.retry_cnt = message.retry_cnt + 1;
                                 // re-push to the queue to execute
-                                let _ = store_cloned.memory_spill_send.send(message).await;
+                                let _ = store_ref.memory_spill_send.send(message).await;
                             }
                         }
-                        store_cloned.memory_spill_event_num.dec_by(1);
+                        store_ref.memory_spill_event_num.dec_by(1);
+                        GAUGE_IN_SPILL_DATA_SIZE.sub(size as i64);
                         GAUGE_MEMORY_SPILL_OPERATION.dec();
                         drop(concurrency_guarder);
                     }));
@@ -404,7 +437,7 @@ impl Store for HybridStore {
                 let buffer = self
                     .hot_store
                     .get_or_create_underlying_staging_buffer(uid.clone());
-                let mut buffer_inner = buffer.lock().await;
+                let mut buffer_inner = buffer.lock();
                 if size.as_bytes() < buffer_inner.get_staging_size()? as u64 {
                     let (in_flight_uid, blocks) = buffer_inner.migrate_staging_to_in_flight()?;
                     self.make_memory_buffer_flush(in_flight_uid, blocks, uid.clone())
@@ -415,7 +448,7 @@ impl Store for HybridStore {
 
         // if the used size exceed the ratio of high watermark,
         // then send watermark flush trigger
-        if let Ok(_lock) = self.memory_spill_lock.try_lock() {
+        if let Some(_lock) = self.memory_spill_lock.try_lock() {
             let used_ratio = self.hot_store.memory_used_ratio().await;
             if used_ratio > self.config.memory_spill_high_watermark {
                 if let Err(e) = self.memory_watermark_flush_trigger_sender.send(()).await {
@@ -457,26 +490,25 @@ impl Store for HybridStore {
             .await
     }
 
-    async fn purge(&self, app_id: String) -> Result<()> {
-        self.hot_store.purge(app_id.clone()).await?;
-        info!("Removed data of app:[{}] in hot store", &app_id);
+    async fn release_buffer(&self, ctx: ReleaseBufferContext) -> Result<i64, WorkerError> {
+        self.hot_store.release_buffer(ctx).await
+    }
+
+    async fn purge(&self, ctx: PurgeDataContext) -> Result<i64> {
+        let app_id = &ctx.app_id;
+        let mut removed_size = 0i64;
+
+        removed_size += self.hot_store.purge(ctx.clone()).await?;
+        info!("Removed data of app:[{}] in hot store", app_id);
         if self.warm_store.is_some() {
-            self.warm_store
-                .as_ref()
-                .unwrap()
-                .purge(app_id.clone())
-                .await?;
-            info!("Removed data of app:[{}] in warm store", &app_id);
+            removed_size += self.warm_store.as_ref().unwrap().purge(ctx.clone()).await?;
+            info!("Removed data of app:[{}] in warm store", app_id);
         }
         if self.cold_store.is_some() {
-            self.cold_store
-                .as_ref()
-                .unwrap()
-                .purge(app_id.clone())
-                .await?;
-            info!("Removed data of app:[{}] in cold store", &app_id);
+            removed_size += self.cold_store.as_ref().unwrap().purge(ctx.clone()).await?;
+            info!("Removed data of app:[{}] in cold store", app_id);
         }
-        Ok(())
+        Ok(removed_size)
     }
 
     async fn is_healthy(&self) -> Result<bool> {
@@ -493,6 +525,29 @@ impl Store for HybridStore {
             .await
             .unwrap_or(false);
         Ok(self.hot_store.is_healthy().await? && (warm || cold))
+    }
+
+    async fn register_app(&self, ctx: RegisterAppContext) -> Result<()> {
+        self.hot_store.register_app(ctx.clone()).await?;
+        if self.warm_store.is_some() {
+            self.warm_store
+                .as_ref()
+                .unwrap()
+                .register_app(ctx.clone())
+                .await?;
+        }
+        if self.cold_store.is_some() {
+            self.cold_store
+                .as_ref()
+                .unwrap()
+                .register_app(ctx.clone())
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn name(&self) -> StorageType {
+        unimplemented!()
     }
 }
 
@@ -511,7 +566,7 @@ pub async fn watermark_flush(store: Arc<HybridStore>) -> Result<()> {
 
     let mut flushed_size = 0u64;
     for (partition_id, buffer) in buffers {
-        let mut buffer_inner = buffer.lock().await;
+        let mut buffer_inner = buffer.lock();
         let (in_flight_uid, blocks) = buffer_inner.migrate_staging_to_in_flight()?;
         drop(buffer_inner);
         for block in &blocks {
@@ -566,6 +621,10 @@ mod tests {
 
         assert_eq!(true, is_apple(&Apple {}));
         assert_eq!(false, is_apple(&Banana {}));
+
+        let boxed_apple = Box::new(Apple {});
+        assert_eq!(true, is_apple(&*boxed_apple));
+        assert_eq!(false, is_apple(&boxed_apple));
     }
 
     #[test]
@@ -627,9 +686,9 @@ mod tests {
         let mut block_ids = vec![];
         for i in 0..batch_size {
             block_ids.push(i);
-            let writing_ctx = WritingViewContext {
-                uid: uid.clone(),
-                data_blocks: vec![PartitionedDataBlock {
+            let writing_ctx = WritingViewContext::from(
+                uid.clone(),
+                vec![PartitionedDataBlock {
                     block_id: i,
                     length: data_len as i32,
                     uncompress_length: 100,
@@ -637,7 +696,7 @@ mod tests {
                     data: Bytes::copy_from_slice(data),
                     task_attempt_id: 0,
                 }],
-            };
+            );
             let _ = store.insert(writing_ctx).await;
         }
 
@@ -676,6 +735,7 @@ mod tests {
         let response_data = runtime.wait(store.get(ReadingViewContext {
             uid: uid.clone(),
             reading_options: MEMORY_LAST_BLOCK_ID_AND_MAX_SIZE(-1, 1024 * 1024 * 1024),
+            serialized_expected_task_ids_bitmap: Default::default(),
         }))?;
 
         let mut accepted_block_ids = vec![];
@@ -739,6 +799,7 @@ mod tests {
                 last_block_id,
                 data_len as i64,
             ),
+            serialized_expected_task_ids_bitmap: Default::default(),
         };
 
         let read_data = store.get(reading_view_ctx).await;
@@ -773,7 +834,9 @@ mod tests {
                     let reading_view_ctx = ReadingViewContext {
                         uid: uid.clone(),
                         reading_options: ReadingOptions::FILE_OFFSET_AND_LEN(offset, length as i64),
+                        serialized_expected_task_ids_bitmap: None,
                     };
+                    println!("reading. offset: {:?}. len: {:?}", offset, length);
                     let read_data = store.get(reading_view_ctx).await.unwrap();
                     match read_data {
                         ResponseData::Local(local_data) => {
@@ -829,6 +892,7 @@ mod tests {
                     last_block_id,
                     data_len as i64,
                 ),
+                serialized_expected_task_ids_bitmap: Default::default(),
             };
 
             let read_data = runtime.wait(store.get(reading_view_ctx));

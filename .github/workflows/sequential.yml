@@ -68,20 +68,23 @@ jobs:
         key: mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
           mvn-${{ inputs.java-version }}-${{ inputs.cache-key }}-
-    - name: Execute `mvn ${{ inputs.maven-args }} -Pspark3`
-      run: mvn -B -fae ${{ inputs.maven-args }} -Pspark3 | tee -a /tmp/maven.log;
+    - name: Execute `./mvnw ${{ inputs.maven-args }} -Pspark3`
+      run: ./mvnw -B -fae ${{ inputs.maven-args }} -Pspark3 | tee -a /tmp/maven.log;
       shell: bash
-    - name: Execute `mvn ${{ inputs.maven-args }} -Pspark2`
-      run: mvn -B -fae ${{ inputs.maven-args }} -Pspark2 | tee -a /tmp/maven.log;
+    - name: Execute `./mvnw ${{ inputs.maven-args }} -Pspark2`
+      run: ./mvnw -B -fae ${{ inputs.maven-args }} -Pspark2 | tee -a /tmp/maven.log;
       shell: bash
-    - name: Execute `mvn ${{ inputs.maven-args }} -Pmr,hadoop2.8`
-      run: mvn -B -fae ${{ inputs.maven-args }} -Pmr,hadoop2.8 | tee -a /tmp/maven.log;
+    - name: Execute `./mvnw ${{ inputs.maven-args }} -Pmr,hadoop2.8`
+      run: ./mvnw -B -fae ${{ inputs.maven-args }} -Pmr,hadoop2.8 | tee -a /tmp/maven.log;
       shell: bash
-    - name: Execute `mvn ${{ inputs.maven-args }} -Pmr,hadoop3.2`
-      run: mvn -B -fae ${{ inputs.maven-args }} -Pmr,hadoop3.2 | tee -a /tmp/maven.log;
+    - name: Execute `./mvnw ${{ inputs.maven-args }} -Pmr,hadoop3.2`
+      run: ./mvnw -B -fae ${{ inputs.maven-args }} -Pmr,hadoop3.2 | tee -a /tmp/maven.log;
       shell: bash
-    - name: Execute `mvn ${{ inputs.maven-args }} -Ptez`
-      run: mvn -B -fae ${{ inputs.maven-args }} -Ptez | tee -a /tmp/maven.log;
+    - name: Execute `./mvnw ${{ inputs.maven-args }} -Ptez`
+      run: ./mvnw -B -fae ${{ inputs.maven-args }} -Ptez | tee -a /tmp/maven.log;
+      shell: bash
+    - name: Execute `./mvnw ${{ inputs.maven-args }} -Pdashboard`
+      run: ./mvnw -B -fae ${{ inputs.maven-args }} -Pdashboard | tee -a /tmp/maven.log;
       shell: bash
     - name: Summary of failures
       if: ${{ failure() && inputs.summary != '' }}

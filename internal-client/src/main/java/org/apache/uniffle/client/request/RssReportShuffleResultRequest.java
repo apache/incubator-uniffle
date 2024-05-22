@@ -20,6 +20,10 @@ package org.apache.uniffle.client.request;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Lists;
+
+import org.apache.uniffle.proto.RssProtos;
+
 public class RssReportShuffleResultRequest {
 
   private String appId;
@@ -59,5 +63,30 @@ public class RssReportShuffleResultRequest {
 
   public Map<Integer, List<Long>> getPartitionToBlockIds() {
     return partitionToBlockIds;
+  }
+
+  public RssProtos.ReportShuffleResultRequest toProto() {
+    RssReportShuffleResultRequest request = this;
+    List<RssProtos.PartitionToBlockIds> partitionToBlockIds = Lists.newArrayList();
+    for (Map.Entry<Integer, List<Long>> entry : request.getPartitionToBlockIds().entrySet()) {
+      List<Long> blockIds = entry.getValue();
+      if (blockIds != null && !blockIds.isEmpty()) {
+        partitionToBlockIds.add(
+            RssProtos.PartitionToBlockIds.newBuilder()
+                .setPartitionId(entry.getKey())
+                .addAllBlockIds(entry.getValue())
+                .build());
+      }
+    }
+
+    RssProtos.ReportShuffleResultRequest rpcRequest =
+        RssProtos.ReportShuffleResultRequest.newBuilder()
+            .setAppId(request.getAppId())
+            .setShuffleId(request.getShuffleId())
+            .setTaskAttemptId(request.getTaskAttemptId())
+            .setBitmapNum(request.getBitmapNum())
+            .addAllPartitionToBlockIds(partitionToBlockIds)
+            .build();
+    return rpcRequest;
   }
 }

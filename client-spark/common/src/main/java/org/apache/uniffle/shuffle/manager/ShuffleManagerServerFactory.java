@@ -43,13 +43,13 @@ public class ShuffleManagerServerFactory {
 
   public GrpcServer getServer(ShuffleManagerGrpcService service) {
     ServerType type = conf.get(RssBaseConf.RPC_SERVER_TYPE);
-    if (type == ServerType.GRPC) {
+    if (type == ServerType.GRPC || type == ServerType.GRPC_NETTY) {
       if (service == null) {
         service = new ShuffleManagerGrpcService(shuffleManager);
       }
       return GrpcServer.Builder.newBuilder()
           .conf(conf)
-          .grpcMetrics(GRPCMetrics.getEmptyGRPCMetrics())
+          .grpcMetrics(GRPCMetrics.getEmptyGRPCMetrics(conf))
           .addService(service)
           .build();
     } else {

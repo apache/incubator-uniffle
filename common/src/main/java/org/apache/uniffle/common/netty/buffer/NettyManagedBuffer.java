@@ -24,6 +24,9 @@ import io.netty.buffer.Unpooled;
 
 public class NettyManagedBuffer extends ManagedBuffer {
 
+  public static final NettyManagedBuffer EMPTY_BUFFER =
+      new NettyManagedBuffer(Unpooled.EMPTY_BUFFER);
+
   private ByteBuf buf;
 
   public NettyManagedBuffer(ByteBuf byteBuf) {
@@ -43,6 +46,12 @@ public class NettyManagedBuffer extends ManagedBuffer {
   @Override
   public ByteBuffer nioByteBuffer() {
     return buf.nioBuffer();
+  }
+
+  @Override
+  public ManagedBuffer retain() {
+    buf.retain();
+    return this;
   }
 
   @Override

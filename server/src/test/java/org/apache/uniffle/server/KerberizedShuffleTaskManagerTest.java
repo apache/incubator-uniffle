@@ -75,6 +75,7 @@ public class KerberizedShuffleTaskManagerTest extends KerberizedHadoopBase {
       shuffleServer.stopServer();
       shuffleServer = null;
     }
+    ShuffleServerMetrics.clear();
   }
 
   /**

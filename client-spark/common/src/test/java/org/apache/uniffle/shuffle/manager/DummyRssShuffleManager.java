@@ -18,7 +18,17 @@
 package org.apache.uniffle.shuffle.manager;
 
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfoBase;
+
+import org.apache.uniffle.common.ReceivingFailureServer;
+import org.apache.uniffle.shuffle.BlockIdManager;
+
+import static org.mockito.Mockito.mock;
 
 public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   public Set<Integer> unregisteredShuffleIds = new LinkedHashSet<>();
@@ -46,5 +56,30 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   @Override
   public void unregisterAllMapOutput(int shuffleId) {
     unregisteredShuffleIds.add(shuffleId);
+  }
+
+  @Override
+  public ShuffleHandleInfoBase getShuffleHandleInfoByShuffleId(int shuffleId) {
+    return null;
+  }
+
+  @Override
+  public void addFailuresShuffleServerInfos(String shuffleServerId) {}
+
+  @Override
+  public boolean reassignAllShuffleServersForWholeStage(
+      int stageId, int stageAttemptNumber, int shuffleId, int numMaps) {
+    return false;
+  }
+
+  @Override
+  public MutableShuffleHandleInfo reassignOnBlockSendFailure(
+      int shuffleId, Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
+    return mock(MutableShuffleHandleInfo.class);
+  }
+
+  @Override
+  public BlockIdManager getBlockIdManager() {
+    return null;
   }
 }

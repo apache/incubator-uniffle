@@ -64,6 +64,7 @@ jobs:
           - mr-hadoop3.2
           - tez
           - tez-hadoop3.2
+          - dashboard
       fail-fast: false
     name: -P${{ matrix.profile }}
     steps:
@@ -84,18 +85,18 @@ jobs:
         restore-keys: |
           mvn-${{ inputs.java-version }}-package-${{ matrix.profile }}-
           mvn-${{ inputs.java-version }}-package-
-    - name: Execute `mvn ${{ inputs.maven-args }} -P${{ matrix.profile }}`
+    - name: Execute `./mvnw ${{ inputs.maven-args }} -P${{ matrix.profile }}`
       run: |
         PROFILES="${{ matrix.profile }}"
         PROFILES=${PROFILES/-/,}
-        mvn -B -fae ${{ inputs.maven-args }} -P${PROFILES} | tee /tmp/maven.log
+        ./mvnw -B -fae ${{ inputs.maven-args }} -P${PROFILES} | tee /tmp/maven.log
       shell: bash
     - name: Summary of failures
-      if: ${{ failure() && inputs.summary != '' }}
+      if: failure() && inputs.summary != ''
       run: ${{ inputs.summary }}
       continue-on-error: true
     - name: Upload test reports
-      if: ${{ failure() && inputs.reports-path != '' }}
+      if: always() && inputs.reports-path != ''
       uses: actions/upload-artifact@v3
       with:
         name: ${{ inputs.reports-name }}-${{ matrix.profile }}

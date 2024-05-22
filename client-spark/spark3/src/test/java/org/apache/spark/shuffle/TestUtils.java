@@ -24,6 +24,9 @@ import org.apache.commons.lang3.SystemUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.writer.DataPusher;
 
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
+import org.apache.uniffle.common.ShuffleBlockInfo;
+
 public class TestUtils {
 
   private TestUtils() {}
@@ -33,11 +36,16 @@ public class TestUtils {
       Boolean isDriver,
       DataPusher dataPusher,
       Map<String, Set<Long>> successBlockIds,
-      Map<String, Set<Long>> failBlockIds) {
-    return new RssShuffleManager(conf, isDriver, dataPusher, successBlockIds, failBlockIds);
+      Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker) {
+    return new RssShuffleManager(
+        conf, isDriver, dataPusher, successBlockIds, taskToFailedBlockSendTracker);
   }
 
   public static boolean isMacOnAppleSilicon() {
     return SystemUtils.IS_OS_MAC_OSX && SystemUtils.OS_ARCH.equals("aarch64");
+  }
+
+  public static ShuffleBlockInfo createMockBlockOnlyBlockId(long blockId) {
+    return new ShuffleBlockInfo(1, 1, blockId, 1, 1, new byte[1], null, 1, 100, 1);
   }
 }

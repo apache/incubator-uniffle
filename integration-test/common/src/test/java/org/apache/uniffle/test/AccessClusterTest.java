@@ -37,6 +37,7 @@ import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.request.RssAccessClusterRequest;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.AccessManager;
@@ -146,7 +147,7 @@ public class AccessClusterTest extends CoordinatorTestBase {
             + "org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker");
     createCoordinatorServer(coordinatorConf);
 
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     createShuffleServer(shuffleServerConf);
     startServers();
     Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
@@ -166,15 +167,17 @@ public class AccessClusterTest extends CoordinatorTestBase {
     assertEquals(StatusCode.ACCESS_DENIED, response.getStatusCode());
     assertTrue(response.getMessage().startsWith("Denied by AccessClusterLoadChecker"));
 
-    shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 2);
-    shuffleServerConf.setInteger("rss.jetty.http.port", 18082);
+    shuffleServerConf.setInteger(
+        "rss.rpc.server.port", shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT) + 2);
+    shuffleServerConf.setInteger(
+        "rss.jetty.http.port", shuffleServerConf.getInteger(ShuffleServerConf.JETTY_HTTP_PORT) + 1);
     ShuffleServer shuffleServer = new ShuffleServer(shuffleServerConf);
     shuffleServer.start();
     Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
 
     CoordinatorClient client =
-        new CoordinatorClientFactory(ClientType.GRPC)
-            .createCoordinatorClient(LOCALHOST, COORDINATOR_PORT_1 + 13);
+        CoordinatorClientFactory.getInstance()
+            .createCoordinatorClient(ClientType.GRPC, LOCALHOST, COORDINATOR_PORT_1 + 13);
     request =
         new RssAccessClusterRequest(
             accessId, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION), 2000, "user");

@@ -64,7 +64,7 @@ public class RssTezShuffleDataFetcher extends CallableWithNdc<Void> {
   private long copyTime = 0; // the sum of readTime + decompressTime + serializeTime + waitTime
   private long unCompressionLength = 0;
   private final InputAttemptIdentifier inputAttemptIdentifier;
-  private int uniqueMapId = 0;
+  private static int uniqueMapId = 0;
 
   private boolean hasPendingData = false;
   private long startWait;
@@ -241,7 +241,7 @@ public class RssTezShuffleDataFetcher extends CallableWithNdc<Void> {
     }
     // Check if we can shuffle *now* ...
     if (mapOutput == null || mapOutput.getType() == MapOutput.Type.WAIT) {
-      LOG.info("RssMRFetcher" + " - MergeManager returned status WAIT ...");
+      LOG.info("RssMRFetcher - MergeManager returned status WAIT ...");
       // Not an error but wait to process data.
       // Use a retry flag to avoid re-fetch and re-uncompress.
       hasPendingData = true;

@@ -55,6 +55,7 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
   private int partitions;
   private SortWriteBufferManager bufferManager;
   private ShuffleWriteClient shuffleClient;
+  private Task.CombinerRunner<K, V> combinerRunner;
 
   @Override
   public void init(Context context) throws IOException, ClassNotFoundException {
@@ -77,6 +78,13 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     if (sortThreshold <= 0 || Double.compare(sortThreshold, 1.0) > 0) {
       throw new IOException("Invalid  sort memory use threshold : " + sortThreshold);
     }
+
+    // combiner
+    final Counters.Counter combineInputCounter =
+        reporter.getCounter(TaskCounter.COMBINE_INPUT_RECORDS);
+    combinerRunner =
+        Task.CombinerRunner.create(
+            mrJobConf, mapTask.getTaskID(), combineInputCounter, reporter, null);
 
     int batch =
         RssMRUtils.getInt(
@@ -165,7 +173,8 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
             sendThreadNum,
             sendThreshold,
             maxBufferSize,
-            RssMRConfig.toRssConf(rssJobConf));
+            RssMRConfig.toRssConf(rssJobConf),
+            combinerRunner);
   }
 
   private Map<Integer, List<ShuffleServerInfo>> createAssignmentMap(Configuration jobConf) {

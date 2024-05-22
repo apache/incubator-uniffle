@@ -80,43 +80,47 @@ Currently supports the MapReduce framework of Hadoop 2.8.5, Hadoop 3.2.1
 Uniffle is built using [Apache Maven](https://maven.apache.org/).
 To build it, run:
 
-    mvn -DskipTests clean package
+    ./mvnw -DskipTests clean package
 
 To fix code style issues, run:
 
-    mvn spotless:apply -Pspark3 -Pspark2 -Ptez -Pmr -Phadoop2.8
+    ./mvnw spotless:apply -Pspark3 -Pspark2 -Ptez -Pmr -Phadoop2.8 -Pdashboard
 
 Build against profile Spark 2 (2.4.6)
 
-    mvn -DskipTests clean package -Pspark2
+    ./mvnw -DskipTests clean package -Pspark2
 
 Build against profile Spark 3 (3.1.2)
 
-    mvn -DskipTests clean package -Pspark3
+    ./mvnw -DskipTests clean package -Pspark3
 
 Build against Spark 3.2.x, Except 3.2.0
 
-    mvn -DskipTests clean package -Pspark3.2
+    ./mvnw -DskipTests clean package -Pspark3.2
 
 Build against Spark 3.2.0
 
-    mvn -DskipTests clean package -Pspark3.2.0
+    ./mvnw -DskipTests clean package -Pspark3.2.0
 
 Build against Hadoop MapReduce 2.8.5
 
-    mvn -DskipTests clean package -Pmr,hadoop2.8
+    ./mvnw -DskipTests clean package -Pmr,hadoop2.8
 
 Build against Hadoop MapReduce 3.2.1
 
-    mvn -DskipTests clean package -Pmr,hadoop3.2
+    ./mvnw -DskipTests clean package -Pmr,hadoop3.2
 
 Build against Tez 0.9.1
 
-    mvn -DskipTests clean package -Ptez
+    ./mvnw -DskipTests clean package -Ptez
 
 Build against Tez 0.9.1 and Hadoop 3.2.1
 
-    mvn -DskipTests clean package -Ptez,hadoop3.2
+    ./mvnw -DskipTests clean package -Ptez,hadoop3.2
+
+Build with dashboard
+
+    ./mvnw -DskipTests clean package -Pdashboard
 
 To package the Uniffle, run:
 
@@ -134,9 +138,15 @@ Package will build against Hadoop 2.8.5 in default. If you want to build package
 
     ./build_distribution.sh --hadoop-profile 'hadoop3.2'
 
+Package with hadoop jars, If you want to build package against Hadoop 3.2.1, run:
+
+    ./build_distribution.sh --hadoop-profile 'hadoop3.2' -Phadoop-dependencies-included
+
 rss-xxx.tgz will be generated for deployment
 
 ## Deploy
+
+If you have packaged tgz with hadoop jars, the env of `HADOOP_HOME` is needn't specified in `rss-env.sh`.
 
 ### Deploy Coordinator
 
@@ -169,7 +179,7 @@ rss-xxx.tgz will be generated for deployment
     rss.coordinator.remote.storage.path hdfs://cluster1/path,hdfs://cluster2/path
     rss.writer.require.memory.retryMax 1200
     rss.client.retry.max 50
-    rss.writer.send.check.timeout 600000
+    rss.client.send.check.timeout.ms 600000
     rss.client.read.buffer.size 14m
    ```
 5. start Coordinator
@@ -232,9 +242,9 @@ Deploy Steps:
 ### Deploy Spark Client
 1. Add client jar to Spark classpath, e.g., SPARK_HOME/jars/
 
-   The jar for Spark2 is located in <RSS_HOME>/jars/client/spark2/rss-client-XXXXX-shaded.jar
+   The jar for Spark2 is located in <RSS_HOME>/jars/client/spark2/rss-client-spark2-shaded-${version}.jar
 
-   The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-XXXXX-shaded.jar
+   The jar for Spark3 is located in <RSS_HOME>/jars/client/spark3/rss-client-spark3-shaded-${version}.jar
 
 2. Update Spark conf to enable Uniffle, e.g.,
 
@@ -250,7 +260,7 @@ Deploy Steps:
 ### Support Spark dynamic allocation
 
 To support spark dynamic allocation with Uniffle, spark code should be updated.
-There are 4 patches for spark (2.4.6/3.1.2/3.2.1/3.3.1/3.4.1) in patch/spark folder for reference.
+There are 7 patches for spark (2.3.4/2.4.6/3.0.1/3.1.2/3.2.1/3.3.1/3.4.1) in patch/spark folder for reference.
 
 After apply the patch and rebuild spark, add following configuration in spark conf to enable dynamic allocation:
   ```
@@ -312,7 +322,7 @@ The important configuration is listed as follows.
 |---|---|
 |coordinator|[Uniffle Coordinator Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/coordinator_guide.md)|
 |shuffle server|[Uniffle Shuffle Server Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/server_guide.md)|
-|client|[Uniffle Shuffle Client Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/client_guide.md)|
+|client|[Uniffle Shuffle Client Guide](https://github.com/apache/incubator-uniffle/blob/master/docs/client_guide/client_guide.md)|
 
 ## Security: Hadoop kerberos authentication
 The primary goals of the Uniffle Kerberos security are:
@@ -336,7 +346,7 @@ The following security configurations are introduced.
   please see [Proxy user - Superusers Acting On Behalf Of Other Users](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/Superusers.html)
 
 ## Benchmark
-We provide some benchmark tests for Uniffle. For details, you can see [Uniffle Benchmark](docs/benchmark.md)
+We provide some benchmark tests for Uniffle. For details, you can see [Uniffle 0.2.0 Benchmark](docs/benchmark.md), [Uniffle 0.9.0 Benchmark](docs/benchmark_netty_case_report.md).
 
 ## LICENSE
 

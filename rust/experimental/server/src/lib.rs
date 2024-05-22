@@ -40,16 +40,20 @@ use crate::proto::uniffle::shuffle_server_client::ShuffleServerClient;
 use crate::proto::uniffle::shuffle_server_server::ShuffleServerServer;
 use crate::proto::uniffle::{
     GetLocalShuffleDataRequest, GetLocalShuffleIndexRequest, GetMemoryShuffleDataRequest,
-    RequireBufferRequest, SendShuffleDataRequest, ShuffleBlock, ShuffleData,
-    ShuffleRegisterRequest,
+    GetShuffleResultRequest, PartitionToBlockIds, ReportShuffleResultRequest, RequireBufferRequest,
+    SendShuffleDataRequest, ShuffleBlock, ShuffleData, ShuffleRegisterRequest,
 };
 use crate::runtime::manager::RuntimeManager;
 use crate::util::gen_worker_uid;
 use anyhow::Result;
 use bytes::{Buf, Bytes, BytesMut};
+use croaring::treemap::JvmSerializer;
+use croaring::Treemap;
 use log::info;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
+use tokio::signal::unix::{signal, SignalKind};
+use tokio::sync::oneshot;
 use tonic::transport::{Channel, Server};
 
 pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
@@ -64,6 +68,8 @@ pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
     let http_port = config.http_monitor_service_port.unwrap_or(20010);
     HTTP_SERVICE.start(runtime_manager.clone(), http_port);
 
+    let (tx, rx) = oneshot::channel::<()>();
+
     // implement server startup
     let cloned_runtime_manager = runtime_manager.clone();
     runtime_manager.grpc_runtime.spawn(async move {
@@ -75,8 +81,24 @@ pub async fn start_uniffle_worker(config: config::Config) -> Result<()> {
         let service = ShuffleServerServer::new(shuffle_server)
             .max_decoding_message_size(usize::MAX)
             .max_encoding_message_size(usize::MAX);
-        let _ = Server::builder().add_service(service).serve(addr).await;
+        let _ = Server::builder()
+            .add_service(service)
+            .serve_with_shutdown(addr, async {
+                rx.await.expect("graceful_shutdown fail");
+                println!("Successfully received the shutdown signal.");
+            })
+            .await;
     });
+
+    runtime_manager.default_runtime.spawn(async move {
+        let _ = signal(SignalKind::terminate())
+            .expect("Failed to register signal handlers")
+            .recv()
+            .await;
+
+        let _ = tx.send(());
+    });
+
     Ok(())
 }
 
@@ -144,6 +166,20 @@ pub async fn write_read_for_one_time(mut client: ShuffleServerClient<Channel>) -
 
         let response = response.into_inner();
         assert_eq!(0, response.status);
+
+        // report the finished block ids
+        client
+            .report_shuffle_result(ReportShuffleResultRequest {
+                app_id: app_id.clone(),
+                shuffle_id: 0,
+                task_attempt_id: 0,
+                bitmap_num: 0,
+                partition_to_block_ids: vec![PartitionToBlockIds {
+                    partition_id: idx,
+                    block_ids: vec![idx as i64],
+                }],
+            })
+            .await?;
     }
 
     tokio::time::sleep(Duration::from_secs(1)).await;
@@ -153,6 +189,21 @@ pub async fn write_read_for_one_time(mut client: ShuffleServerClient<Channel>) -
 
     // firstly. read from the memory
     for idx in 0..batch_size {
+        let block_id_result = client
+            .get_shuffle_result(GetShuffleResultRequest {
+                app_id: app_id.clone(),
+                shuffle_id: 0,
+                partition_id: idx,
+            })
+            .await?
+            .into_inner();
+
+        assert_eq!(0, block_id_result.status);
+
+        let block_id_bitmap = Treemap::deserialize(&*block_id_result.serialized_bitmap)?;
+        assert_eq!(1, block_id_bitmap.iter().count());
+        assert!(block_id_bitmap.contains(idx as u64));
+
         let response_data = client
             .get_memory_shuffle_data(GetMemoryShuffleDataRequest {
                 app_id: app_id.clone(),

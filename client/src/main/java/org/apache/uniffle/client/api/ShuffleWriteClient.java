@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -62,11 +63,10 @@ public interface ShuffleWriteClient {
   RemoteStorageInfo fetchRemoteStorage(String appId);
 
   void reportShuffleResult(
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds,
       String appId,
       int shuffleId,
       long taskAttemptId,
-      Map<Integer, List<Long>> partitionToBlockIds,
       int bitmapNum);
 
   default ShuffleAssignmentsInfo getShuffleAssignments(
@@ -104,7 +104,8 @@ public interface ShuffleWriteClient {
       Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
       String appId,
       int shuffleId,
-      Set<Integer> failedPartitions);
+      Set<Integer> failedPartitions,
+      PartitionDataReplicaRequirementTracking replicaRequirementTracking);
 
   void close();
 

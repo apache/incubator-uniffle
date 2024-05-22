@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -26,6 +27,7 @@ import com.google.common.collect.Sets;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -33,11 +35,14 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.event.ShufflePurgeEvent;
 import org.apache.uniffle.storage.common.HadoopStorage;
+import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HadoopStorageManagerTest {
 
@@ -111,5 +116,87 @@ public class HadoopStorageManagerTest {
     assertNull(hs3.getConf().get("k1"));
     assertNull(hs3.getConf().get("k2"));
     assertNull(hs3.getConf().get("k3"));
+  }
+
+  @Test
+  public void testRemoveExpiredResourcesWithTwoReplicas(@TempDir File remoteBasePath)
+      throws Exception {
+    ShuffleServerConf conf = new ShuffleServerConf();
+    conf.setString(
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
+    String shuffleServerId = "127.0.0.1:19999";
+    conf.setString(ShuffleServerConf.SHUFFLE_SERVER_ID, shuffleServerId);
+    HadoopStorageManager hadoopStorageManager = new HadoopStorageManager(conf);
+    final String remoteStoragePath1 = new File(remoteBasePath, "path1").getAbsolutePath();
+    String appId = "testRemoveExpiredResources";
+    hadoopStorageManager.registerRemoteStorage(
+        appId, new RemoteStorageInfo(remoteStoragePath1, ImmutableMap.of("k1", "v1", "k2", "v2")));
+    Map<String, HadoopStorage> appStorageMap = hadoopStorageManager.getAppIdToStorages();
+
+    HadoopStorage storage = appStorageMap.get(appId);
+    String appPath = ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
+    File appPathFile = new File(appPath);
+    File partitionDir = new File(appPathFile, "1/1-1/");
+    partitionDir.mkdirs();
+    // Simulate the case that there are two shuffle servers write data.
+    File dataFile = new File(partitionDir, shuffleServerId + "_1.data");
+    dataFile.createNewFile();
+    File dataFile2 = new File(partitionDir, "shuffleserver2_1.data");
+    dataFile2.createNewFile();
+    assertTrue(partitionDir.exists());
+    // Purged for expired
+    assertEquals(1, appStorageMap.size());
+    AppPurgeEvent shufflePurgeEvent = new AppPurgeEvent(appId, "", null, true);
+    hadoopStorageManager.removeResources(shufflePurgeEvent);
+    assertEquals(0, appStorageMap.size());
+    // The directory of the partition should have not been deleted, for it was not empty.
+    assertTrue(partitionDir.exists());
+    assertFalse(dataFile.exists());
+    assertTrue(dataFile2.exists());
+
+    // Purged for unregister
+    AppPurgeEvent appPurgeEvent = new AppPurgeEvent(appId, "");
+    hadoopStorageManager.removeResources(appPurgeEvent);
+    assertEquals(0, appStorageMap.size());
+    assertFalse(appPathFile.exists());
+  }
+
+  @Test
+  public void testRemoveExpiredResourcesWithOneReplica(@TempDir File remoteBasePath)
+      throws Exception {
+    ShuffleServerConf conf = new ShuffleServerConf();
+    conf.setString(
+        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
+    String shuffleServerId = "127.0.0.1:19999";
+    conf.setString(ShuffleServerConf.SHUFFLE_SERVER_ID, shuffleServerId);
+    HadoopStorageManager hadoopStorageManager = new HadoopStorageManager(conf);
+    final String remoteStoragePath1 = new File(remoteBasePath, "path1").getAbsolutePath();
+    String appId = "testRemoveExpiredResources2";
+    hadoopStorageManager.registerRemoteStorage(
+        appId, new RemoteStorageInfo(remoteStoragePath1, ImmutableMap.of("k1", "v1", "k2", "v2")));
+    Map<String, HadoopStorage> appStorageMap = hadoopStorageManager.getAppIdToStorages();
+
+    HadoopStorage storage = appStorageMap.get(appId);
+    String appPath = ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
+    File appPathFile = new File(appPath);
+    File partitionDir = new File(appPathFile, "1/1-1/");
+    partitionDir.mkdirs();
+    // Simulate the case that only one shuffle server writes data.
+    File dataFile = new File(partitionDir, shuffleServerId + "_1.data");
+    dataFile.createNewFile();
+    assertTrue(partitionDir.exists());
+    // purged for expired
+    assertEquals(1, appStorageMap.size());
+    AppPurgeEvent shufflePurgeEvent = new AppPurgeEvent(appId, "", null, true);
+    hadoopStorageManager.removeResources(shufflePurgeEvent);
+    assertEquals(0, appStorageMap.size());
+    // The directory of the application should have been deleted, for it was empty.
+    assertFalse(partitionDir.exists());
+
+    // purged for unregister
+    AppPurgeEvent appPurgeEvent = new AppPurgeEvent(appId, "");
+    hadoopStorageManager.removeResources(appPurgeEvent);
+    assertEquals(0, appStorageMap.size());
+    assertFalse(appPathFile.exists());
   }
 }

@@ -59,5 +59,5 @@ const (
 	// CoordinatorConfigKey represents coordinator configuration key in configMap used by a rss object.
 	CoordinatorConfigKey = "coordinator.conf"
 	// Log4jPropertiesKey represents log4j properties key in configMap used by a rss object.
-	Log4jPropertiesKey = "log4j.properties"
+	Log4jPropertiesKey = "log4j2.xml"
 )

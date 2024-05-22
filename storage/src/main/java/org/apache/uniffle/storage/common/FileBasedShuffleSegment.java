@@ -119,7 +119,7 @@ public class FileBasedShuffleSegment extends ShuffleSegment
         + uncompressLength
         + "], crc["
         + crc
-        + "], blockId["
+        + "], blockid["
         + blockId
         + "], taskAttemptId["
         + taskAttemptId

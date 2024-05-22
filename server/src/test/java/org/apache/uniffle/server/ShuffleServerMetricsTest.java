@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.metrics.TestUtils;
-import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -52,6 +51,8 @@ public class ShuffleServerMetricsTest {
   private static final String STORAGE_HOST = "hdfs1";
   private static ShuffleServer shuffleServer;
 
+  private static String encodedTagsForMetricLabel;
+
   @BeforeAll
   public static void setUp() throws Exception {
     ShuffleServerConf ssc = new ShuffleServerConf();
@@ -60,8 +61,7 @@ public class ShuffleServerMetricsTest {
     ssc.set(ShuffleServerConf.RPC_SERVER_PORT, 12346);
     ssc.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList("tmp"));
     ssc.set(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
-    ssc.setString(
-        ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
+    ssc.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
     ssc.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "fake.coordinator:123");
     ssc.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1000L);
     shuffleServer = new ShuffleServer(ssc);
@@ -69,6 +69,7 @@ public class ShuffleServerMetricsTest {
         .getStorageManager()
         .registerRemoteStorage("metricsTest", new RemoteStorageInfo(REMOTE_STORAGE_PATH));
     shuffleServer.start();
+    encodedTagsForMetricLabel = shuffleServer.getEncodedTags();
   }
 
   @AfterAll
@@ -88,16 +89,16 @@ public class ShuffleServerMetricsTest {
   @Test
   public void testServerMetrics() throws Exception {
     ShuffleServerMetrics.counterRemoteStorageFailedWrite
-        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST)
+        .labels(encodedTagsForMetricLabel, STORAGE_HOST)
         .inc(0);
     ShuffleServerMetrics.counterRemoteStorageSuccessWrite
-        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST)
+        .labels(encodedTagsForMetricLabel, STORAGE_HOST)
         .inc(0);
     ShuffleServerMetrics.counterRemoteStorageTotalWrite
-        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST)
+        .labels(encodedTagsForMetricLabel, STORAGE_HOST)
         .inc(0);
     ShuffleServerMetrics.counterRemoteStorageRetryWrite
-        .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST)
+        .labels(encodedTagsForMetricLabel, STORAGE_HOST)
         .inc(0);
     String content = TestUtils.httpGet(SERVER_METRICS_URL);
     ObjectMapper mapper = new ObjectMapper();
@@ -112,7 +113,7 @@ public class ShuffleServerMetricsTest {
             ShuffleServerMetrics.STORAGE_RETRY_WRITE_REMOTE);
     for (String expectMetricName : expectedMetricNames) {
       validateMetrics(
-          mapper, metricsNode, expectMetricName, Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST);
+          mapper, metricsNode, expectMetricName, encodedTagsForMetricLabel, STORAGE_HOST);
     }
   }
 
@@ -140,7 +141,7 @@ public class ShuffleServerMetricsTest {
     assertEquals(
         1000.0,
         ShuffleServerMetrics.counterTotalHadoopWriteDataSize
-            .labels(Constants.SHUFFLE_SERVER_VERSION, host1)
+            .labels(encodedTagsForMetricLabel, host1)
             .get());
 
     // case2
@@ -148,7 +149,7 @@ public class ShuffleServerMetricsTest {
     assertEquals(
         1500.0,
         ShuffleServerMetrics.counterTotalHadoopWriteDataSize
-            .labels(Constants.SHUFFLE_SERVER_VERSION, host1)
+            .labels(encodedTagsForMetricLabel, host1)
             .get());
 
     // case3
@@ -157,14 +158,14 @@ public class ShuffleServerMetricsTest {
     assertEquals(
         2000.0,
         ShuffleServerMetrics.counterTotalHadoopWriteDataSize
-            .labels(Constants.SHUFFLE_SERVER_VERSION, host2)
+            .labels(encodedTagsForMetricLabel, host2)
             .get());
 
     // case4
     assertEquals(
         3500.0,
         ShuffleServerMetrics.counterTotalHadoopWriteDataSize
-            .labels(Constants.SHUFFLE_SERVER_VERSION, ShuffleServerMetrics.STORAGE_HOST_LABEL_ALL)
+            .labels(encodedTagsForMetricLabel, ShuffleServerMetrics.STORAGE_HOST_LABEL_ALL)
             .get());
   }
 
@@ -186,39 +187,39 @@ public class ShuffleServerMetricsTest {
     assertEquals(
         1.0,
         ShuffleServerMetrics.counterRemoteStorageTotalWrite
-            .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST)
+            .labels(encodedTagsForMetricLabel, STORAGE_HOST)
             .get(),
         0.5);
     assertEquals(
         1.0,
         ShuffleServerMetrics.counterRemoteStorageRetryWrite
-            .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST)
+            .labels(encodedTagsForMetricLabel, STORAGE_HOST)
             .get(),
         0.5);
     ShuffleServerMetrics.incStorageSuccessCounter(STORAGE_HOST);
     assertEquals(
         2.0,
         ShuffleServerMetrics.counterRemoteStorageTotalWrite
-            .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST)
+            .labels(encodedTagsForMetricLabel, STORAGE_HOST)
             .get(),
         0.5);
     assertEquals(
         1.0,
         ShuffleServerMetrics.counterRemoteStorageSuccessWrite
-            .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST)
+            .labels(encodedTagsForMetricLabel, STORAGE_HOST)
             .get(),
         0.5);
     ShuffleServerMetrics.incStorageFailedCounter(STORAGE_HOST);
     assertEquals(
         3.0,
         ShuffleServerMetrics.counterRemoteStorageTotalWrite
-            .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST)
+            .labels(encodedTagsForMetricLabel, STORAGE_HOST)
             .get(),
         0.5);
     assertEquals(
         1.0,
         ShuffleServerMetrics.counterRemoteStorageFailedWrite
-            .labels(Constants.SHUFFLE_SERVER_VERSION, STORAGE_HOST)
+            .labels(encodedTagsForMetricLabel, STORAGE_HOST)
             .get(),
         0.5);
   }
@@ -238,7 +239,7 @@ public class ShuffleServerMetricsTest {
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
-    assertEquals(66, actualObj.get("metrics").size());
+    assertEquals(68, actualObj.get("metrics").size());
   }
 
   @Test

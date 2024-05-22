@@ -83,6 +83,10 @@ public class MetricsManager {
     return addHistogram(name, "Histogram " + name, buckets, labels);
   }
 
+  public Histogram addHistogram(String name, double[] buckets) {
+    return addHistogram(name, "Histogram " + name, buckets, defaultLabelNames);
+  }
+
   public Histogram addHistogram(String name, String help, double[] buckets, String[] labels) {
     return Histogram.build()
         .name(name)

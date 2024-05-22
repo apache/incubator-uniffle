@@ -19,14 +19,17 @@ package org.apache.uniffle.client.response;
 
 import java.util.Set;
 
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
+
 public class SendShuffleDataResult {
 
   private Set<Long> successBlockIds;
-  private Set<Long> failedBlockIds;
+  private FailedBlockSendTracker failedBlockSendTracker;
 
-  public SendShuffleDataResult(Set<Long> successBlockIds, Set<Long> failedBlockIds) {
+  public SendShuffleDataResult(
+      Set<Long> successBlockIds, FailedBlockSendTracker failedBlockSendTracker) {
     this.successBlockIds = successBlockIds;
-    this.failedBlockIds = failedBlockIds;
+    this.failedBlockSendTracker = failedBlockSendTracker;
   }
 
   public Set<Long> getSuccessBlockIds() {
@@ -34,6 +37,10 @@ public class SendShuffleDataResult {
   }
 
   public Set<Long> getFailedBlockIds() {
-    return failedBlockIds;
+    return failedBlockSendTracker.getFailedBlockIds();
+  }
+
+  public FailedBlockSendTracker getFailedBlockSendTracker() {
+    return failedBlockSendTracker;
   }
 }

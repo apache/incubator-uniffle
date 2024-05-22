@@ -33,6 +33,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -50,9 +51,12 @@ public class ShuffleUnregisterWithLocalfileTest extends SparkIntegrationTestBase
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
-    createShuffleServer(shuffleServerConf);
+    ShuffleServerConf grpcShuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+    grpcShuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
+    ShuffleServerConf nettyShuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
+    nettyShuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
+    createShuffleServer(grpcShuffleServerConf);
+    createShuffleServer(nettyShuffleServerConf);
     startServers();
   }
 
@@ -84,7 +88,7 @@ public class ShuffleUnregisterWithLocalfileTest extends SparkIntegrationTestBase
     // method.
     if (runCounter == 1) {
       String path =
-          shuffleServers
+          grpcShuffleServers
               .get(0)
               .getShuffleServerConf()
               .get(RssBaseConf.RSS_STORAGE_BASE_PATH)

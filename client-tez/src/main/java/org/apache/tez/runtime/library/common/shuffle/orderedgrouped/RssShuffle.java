@@ -20,6 +20,7 @@ package org.apache.tez.runtime.library.common.shuffle.orderedgrouped;
 import java.io.IOException;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,6 +46,7 @@ import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
+import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.common.counters.TaskCounter;
@@ -62,6 +64,8 @@ import org.apache.tez.runtime.library.common.sort.impl.TezRawKeyValueIterator;
 import org.apache.tez.runtime.library.exceptions.InputAlreadyClosedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.RemoteStorageInfo;
 
 /** Usage: Create instance, setInitialMemoryAllocated(long), run() */
 @InterfaceAudience.Private
@@ -98,6 +102,7 @@ public class RssShuffle implements ExceptionReporter {
   private final long startTime;
   private final TezCounter mergePhaseTime;
   private final TezCounter shufflePhaseTime;
+  private Configuration remoteConf;
 
   /** Usage: Create instance, RssShuffle */
   public RssShuffle(
@@ -134,20 +139,7 @@ public class RssShuffle implements ExceptionReporter {
     } else {
       this.ifileReadAheadLength = 0;
     }
-
-    Combiner combiner = TezRuntimeUtils.instantiateCombiner(conf, inputContext);
-
-    FileSystem localFS = FileSystem.getLocal(this.conf);
-    LocalDirAllocator localDirAllocator =
-        new LocalDirAllocator(TezRuntimeFrameworkConfigs.LOCAL_DIRS);
-
-    // TODO TEZ Get rid of Map / Reduce references.
-    TezCounter spilledRecordsCounter =
-        inputContext.getCounters().findCounter(TaskCounter.SPILLED_RECORDS);
-    TezCounter reduceCombineInputCounter =
-        inputContext.getCounters().findCounter(TaskCounter.COMBINE_INPUT_RECORDS);
-    TezCounter mergedMapOutputsCounter =
-        inputContext.getCounters().findCounter(TaskCounter.MERGED_MAP_OUTPUTS);
+    this.remoteConf = getRemoteConf(conf);
 
     LOG.info(
         srcNameTrimmed
@@ -161,22 +153,7 @@ public class RssShuffle implements ExceptionReporter {
             + ifileReadAhead);
 
     startTime = System.currentTimeMillis();
-    merger =
-        new MergeManager(
-            this.conf,
-            localFS,
-            localDirAllocator,
-            inputContext,
-            combiner,
-            spilledRecordsCounter,
-            reduceCombineInputCounter,
-            mergedMapOutputsCounter,
-            this,
-            initialMemoryAvailable,
-            codec,
-            ifileReadAhead,
-            ifileReadAheadLength);
-
+    merger = createMergeManager(initialMemoryAvailable, applicationAttemptId);
     rssScheduler =
         new RssShuffleScheduler(
             this.inputContext,
@@ -210,6 +187,83 @@ public class RssShuffle implements ExceptionReporter {
 
     executor = MoreExecutors.listeningDecorator(rawExecutor);
     rssRunShuffleCallable = new RssRunShuffleCallable();
+  }
+
+  protected MergeManager createMergeManager(
+      long initialMemoryAvailable, ApplicationAttemptId appAttemptId) throws IOException {
+    Combiner combiner = TezRuntimeUtils.instantiateCombiner(conf, inputContext);
+    FileSystem localFS = FileSystem.getLocal(this.conf);
+    LocalDirAllocator localDirAllocator =
+        new LocalDirAllocator(TezRuntimeFrameworkConfigs.LOCAL_DIRS);
+    TezCounter spilledRecordsCounter =
+        inputContext.getCounters().findCounter(TaskCounter.SPILLED_RECORDS);
+    TezCounter reduceCombineInputCounter =
+        inputContext.getCounters().findCounter(TaskCounter.COMBINE_INPUT_RECORDS);
+    TezCounter mergedMapOutputsCounter =
+        inputContext.getCounters().findCounter(TaskCounter.MERGED_MAP_OUTPUTS);
+
+    boolean useRemoteSpill =
+        conf.getBoolean(
+            RssTezConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED,
+            RssTezConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED_DEFAULT);
+    if (useRemoteSpill) {
+      // Use minimized replica, because spilled data can be recomputed by reduce task.
+      // Instead, we use more retries on HDFS client.
+      int replication =
+          conf.getInt(
+              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION,
+              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_REPLICATION_DEFAULT);
+      int retries =
+          conf.getInt(
+              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES,
+              RssTezConfig.RSS_REDUCE_REMOTE_SPILL_RETRIES_DEFAULT);
+      LOG.info("Tez RssShuffle will use RssMergeManager!");
+      return new RssMergeManager(
+          this.conf,
+          localFS,
+          inputContext,
+          combiner,
+          spilledRecordsCounter,
+          reduceCombineInputCounter,
+          mergedMapOutputsCounter,
+          this,
+          initialMemoryAvailable,
+          codec,
+          ifileReadAhead,
+          ifileReadAheadLength,
+          this.remoteConf,
+          replication,
+          retries,
+          appAttemptId.toString());
+    } else {
+      return new MergeManager(
+          this.conf,
+          localFS,
+          localDirAllocator,
+          inputContext,
+          combiner,
+          spilledRecordsCounter,
+          reduceCombineInputCounter,
+          mergedMapOutputsCounter,
+          this,
+          initialMemoryAvailable,
+          codec,
+          ifileReadAhead,
+          ifileReadAheadLength);
+    }
+  }
+
+  private static Configuration getRemoteConf(Configuration conf) {
+    String basePath = conf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH);
+    String remoteStorageConf = conf.get(RssTezConfig.RSS_REMOTE_STORAGE_CONF);
+    RemoteStorageInfo remoteStorageInfo = new RemoteStorageInfo(basePath, remoteStorageConf);
+    Configuration remoteConf = new Configuration(conf);
+    if (!remoteStorageInfo.isEmpty()) {
+      for (Map.Entry<String, String> entry : remoteStorageInfo.getConfItems().entrySet()) {
+        remoteConf.set(entry.getKey(), entry.getValue());
+      }
+    }
+    return remoteConf;
   }
 
   public void handleEvents(List<Event> events) throws IOException {
@@ -390,8 +444,7 @@ public class RssShuffle implements ExceptionReporter {
         }
       } catch (Throwable e) {
         if (ignoreErrors) {
-          LOG.info(
-              srcNameTrimmed + ": " + "Exception while trying to shutdown merger, Ignoring", e);
+          LOG.info("{}: Exception while trying to shutdown merger, Ignoring", srcNameTrimmed, e);
         } else {
           throw e;
         }
@@ -413,7 +466,7 @@ public class RssShuffle implements ExceptionReporter {
       }
       cleanupMerger(true);
     } catch (Throwable t) {
-      LOG.info(srcNameTrimmed + ": " + "Error in cleaning up.., ", t);
+      LOG.info("{}: Error in cleaning up.., ", srcNameTrimmed, t);
     }
   }
 
@@ -462,15 +515,15 @@ public class RssShuffle implements ExceptionReporter {
   private class RssShuffleRunnerFutureCallback implements FutureCallback<TezRawKeyValueIterator> {
     @Override
     public void onSuccess(TezRawKeyValueIterator result) {
-      LOG.info(srcNameTrimmed + ": " + "RSSShuffle Runner thread complete");
+      LOG.info(srcNameTrimmed + ": RSSShuffle Runner thread complete");
     }
 
     @Override
     public void onFailure(Throwable t) {
       if (isShutDown.get()) {
-        LOG.info(srcNameTrimmed + ": " + "Already shutdown. Ignoring error");
+        LOG.info(srcNameTrimmed + ": Already shutdown. Ignoring error");
       } else {
-        LOG.error(srcNameTrimmed + ": " + "RSSShuffleRunner failed with error", t);
+        LOG.error(srcNameTrimmed + ": RSSShuffleRunner failed with error", t);
         // In case of an abort / Interrupt - the runtime makes sure that this is ignored.
         inputContext.reportFailure(TaskFailureType.NON_FATAL, t, "RSSShuffle Runner Failed");
         cleanupIgnoreErrors();

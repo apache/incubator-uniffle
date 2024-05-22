@@ -29,6 +29,8 @@ import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ClientType;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
@@ -54,27 +56,34 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     final long durationWithoutRss = System.currentTimeMillis() - start;
 
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
-    updateSparkConfWithRss(sparkConf);
+    updateSparkConfWithRssGrpc(sparkConf);
     updateSparkConfCustomer(sparkConf);
     start = System.currentTimeMillis();
-    Map resultWithRss = runSparkApp(sparkConf, fileName);
-    final long durationWithRss = System.currentTimeMillis() - start;
+    Map resultWithRssGrpc = runSparkApp(sparkConf, fileName);
+    final long durationWithRssGrpc = System.currentTimeMillis() - start;
+    verifyTestResult(resultWithoutRss, resultWithRssGrpc);
 
     updateSparkConfWithRssNetty(sparkConf);
     start = System.currentTimeMillis();
     Map resultWithRssNetty = runSparkApp(sparkConf, fileName);
     final long durationWithRssNetty = System.currentTimeMillis() - start;
-    verifyTestResult(resultWithoutRss, resultWithRss);
     verifyTestResult(resultWithoutRss, resultWithRssNetty);
+
+    updateSparkConfWithBlockIdSelfManaged(sparkConf);
+    start = System.currentTimeMillis();
+    Map resultWithBlockIdSelfManaged = runSparkApp(sparkConf, fileName);
+    final long durationWithBlockIdSelfManaged = System.currentTimeMillis() - start;
+    verifyTestResult(resultWithoutRss, resultWithBlockIdSelfManaged);
 
     LOG.info(
         "Test: durationWithoutRss["
             + durationWithoutRss
-            + "], durationWithRss["
-            + durationWithRss
-            + "]"
+            + "], durationWithRssGrpc["
+            + durationWithRssGrpc
             + "], durationWithRssNetty["
             + durationWithRssNetty
+            + "], durationWithBlockIdSelfManaged["
+            + durationWithBlockIdSelfManaged
             + "]");
   }
 
@@ -90,16 +99,16 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
       spark.close();
     }
     spark = SparkSession.builder().config(sparkConf).getOrCreate();
-    Map resultWithRss = runTest(spark, testFileName);
+    Map result = runTest(spark, testFileName);
     spark.stop();
-    return resultWithRss;
+    return result;
   }
 
   protected SparkConf createSparkConf() {
     return new SparkConf().setAppName(this.getClass().getSimpleName()).setMaster("local[4]");
   }
 
-  public void updateSparkConfWithRss(SparkConf sparkConf) {
+  public void updateSparkConfWithRssGrpc(SparkConf sparkConf) {
     sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
     sparkConf.set(
         "spark.shuffle.sort.io.plugin.class", "org.apache.spark.shuffle.RssShuffleDataIo");
@@ -118,10 +127,19 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     sparkConf.set(RssSparkConfig.RSS_CLIENT_READ_BUFFER_SIZE.key(), "1m");
     sparkConf.set(RssSparkConfig.RSS_HEARTBEAT_INTERVAL.key(), "2000");
     sparkConf.set(RssSparkConfig.RSS_TEST_MODE_ENABLE.key(), "true");
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
   }
 
   public void updateSparkConfWithRssNetty(SparkConf sparkConf) {
-    sparkConf.set(RssSparkConfig.RSS_CLIENT_TYPE, "GRPC_NETTY");
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY.name());
+  }
+
+  public void updateSparkConfWithBlockIdSelfManaged(SparkConf sparkConf) {
+    sparkConf.set(RssSparkConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
+    sparkConf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX
+            + RssSparkConfig.RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED.key(),
+        "true");
   }
 
   protected void verifyTestResult(Map expected, Map actual) {

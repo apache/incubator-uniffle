@@ -17,14 +17,17 @@
 
 package org.apache.uniffle.coordinator.web.resource;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.servlet.ServletContext;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hbase.thirdparty.javax.ws.rs.GET;
 import org.apache.hbase.thirdparty.javax.ws.rs.POST;
 import org.apache.hbase.thirdparty.javax.ws.rs.Path;
@@ -69,6 +72,11 @@ public class ServerResource extends BaseResource {
       serverList = clusterManager.getUnhealthyServerList();
     } else if (ServerStatus.LOST.name().equalsIgnoreCase(status)) {
       serverList = clusterManager.getLostServerList();
+    } else if (ServerStatus.EXCLUDED.name().equalsIgnoreCase(status)) {
+      serverList =
+          clusterManager.getExcludeNodes().stream()
+              .map(excludeNodeStr -> new ServerNode(excludeNodeStr))
+              .collect(Collectors.toList());
     } else {
       serverList = clusterManager.list();
     }
@@ -76,7 +84,7 @@ public class ServerResource extends BaseResource {
         serverList.stream()
             .filter(
                 server -> {
-                  if (status != null && !server.getStatus().toString().equals(status)) {
+                  if (status != null && !server.getStatus().name().equalsIgnoreCase(status)) {
                     return false;
                   }
                   return true;
@@ -160,6 +168,31 @@ public class ServerResource extends BaseResource {
     } catch (Exception e) {
       return Response.fail(e.getMessage());
     }
+  }
+
+  @GET
+  @Path("/nodes/summary")
+  public Response<Map<String, Integer>> getNodeStatusTotal() {
+    return execute(
+        () -> {
+          ClusterManager clusterManager = getClusterManager();
+          List<ServerNode> excludeNodes =
+              clusterManager.getExcludeNodes().stream()
+                  .map(exclude -> new ServerNode(exclude))
+                  .collect(Collectors.toList());
+          Map<String, Integer> stringIntegerHash =
+              Stream.of(
+                      clusterManager.list(),
+                      clusterManager.getLostServerList(),
+                      excludeNodes,
+                      clusterManager.getUnhealthyServerList())
+                  .flatMap(Collection::stream)
+                  .distinct()
+                  .collect(
+                      Collectors.groupingBy(
+                          n -> n.getStatus().name(), Collectors.reducing(0, n -> 1, Integer::sum)));
+          return stringIntegerHash;
+        });
   }
 
   private ClusterManager getClusterManager() {

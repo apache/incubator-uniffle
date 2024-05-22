@@ -22,12 +22,11 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
-import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RssUtils;
@@ -121,7 +120,7 @@ public class ShuffleHandlerFactory {
       CreateShuffleReadHandlerRequest request, ShuffleServerInfo ssi) {
     ShuffleServerClient shuffleServerClient =
         ShuffleServerClientFactory.getInstance()
-            .getShuffleServerClient(ClientType.GRPC.name(), ssi, request.getClientConf());
+            .getShuffleServerClient(request.getClientType().name(), ssi, request.getClientConf());
     Roaring64NavigableMap expectTaskIds = null;
     if (request.isExpectedTaskIdsBitmapFilterEnable()) {
       Roaring64NavigableMap realExceptBlockIds = RssUtils.cloneBitMap(request.getExpectBlockIds());
@@ -135,7 +134,9 @@ public class ShuffleHandlerFactory {
             request.getPartitionId(),
             request.getReadBufferSize(),
             shuffleServerClient,
-            expectTaskIds);
+            expectTaskIds,
+            request.getRetryMax(),
+            request.getRetryIntervalMax());
     return memoryClientReadHandler;
   }
 
@@ -143,7 +144,7 @@ public class ShuffleHandlerFactory {
       CreateShuffleReadHandlerRequest request, ShuffleServerInfo ssi) {
     ShuffleServerClient shuffleServerClient =
         ShuffleServerClientFactory.getInstance()
-            .getShuffleServerClient(ClientType.GRPC.name(), ssi, request.getClientConf());
+            .getShuffleServerClient(request.getClientType().name(), ssi, request.getClientConf());
     return new LocalFileClientReadHandler(
         request.getAppId(),
         request.getShuffleId(),
@@ -156,7 +157,9 @@ public class ShuffleHandlerFactory {
         request.getProcessBlockIds(),
         shuffleServerClient,
         request.getDistributionType(),
-        request.getExpectTaskIds());
+        request.getExpectTaskIds(),
+        request.getRetryMax(),
+        request.getRetryIntervalMax());
   }
 
   private ClientReadHandler getHadoopClientReadHandler(
@@ -182,7 +185,7 @@ public class ShuffleHandlerFactory {
   public ShuffleDeleteHandler createShuffleDeleteHandler(
       CreateShuffleDeleteHandlerRequest request) {
     if (StorageType.HDFS.name().equals(request.getStorageType())) {
-      return new HadoopShuffleDeleteHandler(request.getConf());
+      return new HadoopShuffleDeleteHandler(request.getConf(), request.getShuffleServerId());
     } else if (StorageType.LOCALFILE.name().equals(request.getStorageType())) {
       return new LocalFileDeleteHandler();
     } else {

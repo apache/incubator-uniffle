@@ -20,6 +20,7 @@ package org.apache.spark.shuffle.reader;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -33,6 +34,9 @@ import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -40,11 +44,11 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
-import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.handler.impl.HadoopShuffleWriteHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -65,8 +69,14 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
   private ShuffleServerInfo ssi1 = new ShuffleServerInfo("host1-0", "host1", 0);
   private ShuffleServerInfo ssi2 = new ShuffleServerInfo("host2-0", "host2", 0);
 
-  @Test
-  public void readTest1() throws Exception {
+  public static Stream<Arguments> testBlockIdLayouts() {
+    return Stream.of(
+        Arguments.of(BlockIdLayout.DEFAULT), Arguments.of(BlockIdLayout.from(20, 21, 22)));
+  }
+
+  @ParameterizedTest
+  @MethodSource("testBlockIdLayouts")
+  public void readTest1(BlockIdLayout layout) throws Exception {
     String basePath = HDFS_URI + "readTest1";
     HadoopShuffleWriteHandler writeHandler =
         new HadoopShuffleWriteHandler("appId", 0, 0, 1, basePath, ssi1.getId(), conf);
@@ -74,14 +84,15 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
     Map<String, String> expectedData = Maps.newHashMap();
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    writeTestData(writeHandler, 2, 5, expectedData, blockIdBitmap, "key", KRYO_SERIALIZER, 0);
+    writeTestData(
+        writeHandler, 2, 5, layout, expectedData, blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
     RssShuffleDataIterator rssShuffleDataIterator =
         getDataIterator(basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1));
 
     validateResult(rssShuffleDataIterator, expectedData, 10);
 
-    blockIdBitmap.add(ClientUtils.getBlockId(0, 0, Constants.MAX_SEQUENCE_NO));
+    blockIdBitmap.add(layout.getBlockId(layout.maxSequenceNo, 0, 0));
     rssShuffleDataIterator =
         getDataIterator(basePath, blockIdBitmap, taskIdBitmap, Lists.newArrayList(ssi1));
     int recNum = 0;
@@ -114,6 +125,7 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
       boolean compress) {
     ShuffleReadClientImpl readClient =
         ShuffleClientFactory.newReadBuilder()
+            .clientType(ClientType.GRPC)
             .storageType(StorageType.HDFS.name())
             .appId("appId")
             .shuffleId(0)
@@ -270,7 +282,9 @@ public class RssShuffleDataIteratorTest extends AbstractRssReaderTest {
         }
         fail(EXPECTED_EXCEPTION_MESSAGE);
       } catch (Exception e) {
-        assertTrue(e.getMessage().startsWith("Unexpected crc value"));
+        assertTrue(
+            e.getMessage()
+                .startsWith("Unexpected crc value for blockId[0 (seq: 0, part: 0, task: 0)]"));
       }
 
       try {

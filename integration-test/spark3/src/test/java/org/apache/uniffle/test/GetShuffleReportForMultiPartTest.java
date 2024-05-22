@@ -45,7 +45,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.MockedGrpcServer;
@@ -54,6 +56,7 @@ import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -81,32 +84,42 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
   private static void createShuffleServers() throws Exception {
     for (int i = 0; i < 4; i++) {
       // Copy from IntegrationTestBase#getShuffleServerConf
-      ShuffleServerConf serverConf = new ShuffleServerConf();
-      serverConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + i);
-      serverConf.setInteger("rss.server.netty.port", NETTY_PORT + i);
-      serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
-      serverConf.setString("rss.storage.basePath", tempDir.getAbsolutePath());
-      serverConf.setString("rss.server.buffer.capacity", "671088640");
-      serverConf.setString("rss.server.memory.shuffle.highWaterMark", "50.0");
-      serverConf.setString("rss.server.memory.shuffle.lowWaterMark", "0.0");
-      serverConf.setString("rss.server.read.buffer.capacity", "335544320");
-      serverConf.setString("rss.coordinator.quorum", COORDINATOR_QUORUM);
-      serverConf.setString("rss.server.heartbeat.delay", "1000");
-      serverConf.setString("rss.server.heartbeat.interval", "1000");
-      serverConf.setInteger("rss.jetty.http.port", 18080 + i);
-      serverConf.setInteger("rss.jetty.corePool.size", 64);
-      serverConf.setInteger("rss.rpc.executor.size", 10);
-      serverConf.setString("rss.server.hadoop.dfs.replication", "2");
-      serverConf.setLong("rss.server.disk.capacity", 10L * 1024L * 1024L * 1024L);
-      serverConf.setBoolean("rss.server.health.check.enable", false);
-      serverConf.setString("rss.server.tags", "GRPC,GRPC_NETTY");
-      createMockedShuffleServer(serverConf);
+      ShuffleServerConf grpcServerConf = buildShuffleServerConf(ServerType.GRPC);
+      createMockedShuffleServer(grpcServerConf);
+      ShuffleServerConf nettyServerConf = buildShuffleServerConf(ServerType.GRPC_NETTY);
+      createMockedShuffleServer(nettyServerConf);
     }
     enableRecordGetShuffleResult();
   }
 
+  private static ShuffleServerConf buildShuffleServerConf(ServerType serverType) {
+    ShuffleServerConf serverConf = new ShuffleServerConf();
+    serverConf.setInteger("rss.rpc.server.port", IntegrationTestBase.getNextRpcServerPort());
+    serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
+    serverConf.setString("rss.storage.basePath", tempDir.getAbsolutePath());
+    serverConf.setString("rss.server.buffer.capacity", "671088640");
+    serverConf.setString("rss.server.memory.shuffle.highWaterMark", "50.0");
+    serverConf.setString("rss.server.memory.shuffle.lowWaterMark", "0.0");
+    serverConf.setString("rss.server.read.buffer.capacity", "335544320");
+    serverConf.setString("rss.coordinator.quorum", COORDINATOR_QUORUM);
+    serverConf.setString("rss.server.heartbeat.delay", "1000");
+    serverConf.setString("rss.server.heartbeat.interval", "1000");
+    serverConf.setInteger("rss.jetty.http.port", IntegrationTestBase.getNextJettyServerPort());
+    serverConf.setInteger("rss.jetty.corePool.size", 64);
+    serverConf.setInteger("rss.rpc.executor.size", 10);
+    serverConf.setString("rss.server.hadoop.dfs.replication", "2");
+    serverConf.setLong("rss.server.disk.capacity", 10L * 1024L * 1024L * 1024L);
+    serverConf.setBoolean("rss.server.health.check.enable", false);
+    serverConf.set(ShuffleServerConf.RPC_SERVER_TYPE, serverType);
+    if (serverType == ServerType.GRPC_NETTY) {
+      serverConf.setInteger(
+          ShuffleServerConf.NETTY_SERVER_PORT, IntegrationTestBase.getNextNettyServerPort());
+    }
+    return serverConf;
+  }
+
   private static void enableRecordGetShuffleResult() {
-    for (ShuffleServer shuffleServer : shuffleServers) {
+    for (ShuffleServer shuffleServer : grpcShuffleServers) {
       ((MockedGrpcServer) shuffleServer.getServer()).getService().enableRecordGetShuffleResult();
     }
   }
@@ -128,8 +141,8 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
   }
 
   @Override
-  public void updateSparkConfWithRss(SparkConf sparkConf) {
-    super.updateSparkConfWithRss(sparkConf);
+  public void updateSparkConfWithRssGrpc(SparkConf sparkConf) {
+    super.updateSparkConfWithRssGrpc(sparkConf);
     // Add multi replica conf
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA.key(), String.valueOf(replicateWrite));
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA_WRITE.key(), String.valueOf(replicateWrite));
@@ -213,13 +226,23 @@ public class GetShuffleReportForMultiPartTest extends SparkIntegrationTestBase {
               .mapToInt(x -> x.get())
               .sum();
       // Validate getShuffleResultForMultiPart is correct before return result
-      validateRequestCount(spark.sparkContext().applicationId(), expectRequestNum * replicateRead);
+      ClientType clientType =
+          ClientType.valueOf(spark.sparkContext().getConf().get(RssSparkConfig.RSS_CLIENT_TYPE));
+      boolean blockIdSelfManagedEnabled =
+          RssSparkConfig.toRssConf(spark.sparkContext().getConf())
+              .get(RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
+      if (ClientType.GRPC == clientType && !blockIdSelfManagedEnabled) {
+        // TODO skip validating for GRPC_NETTY, needs to mock ShuffleServerNettyHandler
+        // skip validating when blockId is managed in spark driver side.
+        validateRequestCount(
+            spark.sparkContext().applicationId(), expectRequestNum * replicateRead);
+      }
     }
     return map;
   }
 
   public void validateRequestCount(String appId, int expectRequestNum) {
-    for (ShuffleServer shuffleServer : shuffleServers) {
+    for (ShuffleServer shuffleServer : grpcShuffleServers) {
       MockedShuffleServerGrpcService service =
           ((MockedGrpcServer) shuffleServer.getServer()).getService();
       Map<String, Map<Integer, AtomicInteger>> serviceRequestCount =

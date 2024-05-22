@@ -17,7 +17,15 @@
 
 package org.apache.uniffle.shuffle.manager;
 
+import java.util.List;
+import java.util.Map;
+
 import org.apache.spark.SparkException;
+import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
+
+import org.apache.uniffle.common.ReceivingFailureServer;
+import org.apache.uniffle.shuffle.BlockIdManager;
 
 /**
  * This is a proxy interface that mainly delegates the un-registration of shuffles to the
@@ -54,4 +62,27 @@ public interface RssShuffleManagerInterface {
    * @throws SparkException
    */
   void unregisterAllMapOutput(int shuffleId) throws SparkException;
+
+  /**
+   * Get ShuffleHandleInfo with ShuffleId
+   *
+   * @param shuffleId
+   * @return ShuffleHandleInfo
+   */
+  ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId);
+
+  /**
+   * Add the shuffleServer that failed to write to the failure list
+   *
+   * @param shuffleServerId
+   */
+  void addFailuresShuffleServerInfos(String shuffleServerId);
+
+  boolean reassignAllShuffleServersForWholeStage(
+      int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
+
+  MutableShuffleHandleInfo reassignOnBlockSendFailure(
+      int shuffleId, Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers);
+
+  BlockIdManager getBlockIdManager();
 }

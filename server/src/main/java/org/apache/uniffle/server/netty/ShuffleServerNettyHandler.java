@@ -17,13 +17,16 @@
 
 package org.apache.uniffle.server.netty;
 
-import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +39,7 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.netty.client.TransportClient;
 import org.apache.uniffle.common.netty.handle.BaseMessageHandler;
@@ -55,6 +59,7 @@ import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.ShuffleTaskManager;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
+import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -113,15 +118,21 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       }
     }
     int requireSize = shuffleServer.getShuffleTaskManager().getRequireBufferSize(requireBufferId);
+    int requireBlocksSize =
+        requireSize - req.encodedLength() < 0 ? 0 : requireSize - req.encodedLength();
 
     StatusCode ret = StatusCode.SUCCESS;
     String responseMessage = "OK";
     if (req.getPartitionToBlocks().size() > 0) {
-      ShuffleServerMetrics.counterTotalReceivedDataSize.inc(requireSize);
+      ShuffleServerMetrics.counterTotalReceivedDataSize.inc(requireBlocksSize);
       ShuffleTaskManager manager = shuffleServer.getShuffleTaskManager();
       PreAllocatedBufferInfo info = manager.getAndRemovePreAllocatedBuffer(requireBufferId);
       boolean isPreAllocated = info != null;
       if (!isPreAllocated) {
+        req.getPartitionToBlocks().values().stream()
+            .flatMap(Collection::stream)
+            .forEach(block -> block.getData().release());
+
         String errorMsg =
             "Can't find requireBufferId["
                 + requireBufferId
@@ -129,17 +140,21 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 + appId
                 + "], shuffleId["
                 + shuffleId
-                + "]";
+                + "], probably because the pre-allocated buffer has expired. "
+                + "Please increase the expiration time using "
+                + ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED.key()
+                + " in ShuffleServer's configuration";
         LOG.warn(errorMsg);
-        responseMessage = errorMsg;
-        rpcResponse =
-            new RpcResponse(req.getRequestId(), StatusCode.INTERNAL_ERROR, responseMessage);
+        rpcResponse = new RpcResponse(req.getRequestId(), StatusCode.INTERNAL_ERROR, errorMsg);
         client.getChannel().writeAndFlush(rpcResponse);
         return;
       }
       final long start = System.currentTimeMillis();
+      ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
+      shuffleBufferManager.releaseMemory(req.encodedLength(), false, true);
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
       long alreadyReleasedSize = 0;
+      boolean hasFailureOccurred = false;
       for (ShufflePartitionedData spd : shufflePartitionedData) {
         String shuffleDataInfo =
             "appId["
@@ -150,6 +165,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 + spd.getPartitionId()
                 + "]";
         try {
+          if (hasFailureOccurred) {
+            continue;
+          }
           ret = manager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
           if (ret != StatusCode.SUCCESS) {
             String errorMsg =
@@ -159,7 +177,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                     + ret;
             LOG.error(errorMsg);
             responseMessage = errorMsg;
-            break;
+            hasFailureOccurred = true;
           } else {
             long toReleasedSize = spd.getTotalBlockSize();
             // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
@@ -177,7 +195,13 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           ret = StatusCode.INTERNAL_ERROR;
           responseMessage = errorMsg;
           LOG.error(errorMsg);
-          break;
+          hasFailureOccurred = true;
+        } finally {
+          // Once the cache failure occurs, we should explicitly release data held by byteBuf
+          if (hasFailureOccurred) {
+            Arrays.stream(spd.getBlockList()).forEach(block -> block.getData().release());
+            shuffleBufferManager.releaseMemory(spd.getTotalBlockSize(), false, false);
+          }
         }
       }
       // since the required buffer id is only used once, the shuffle client would try to require
@@ -185,8 +209,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       // current connection succeeded or not. Therefore, the preAllocatedBuffer is first get and
       // removed, then after
       // cacheShuffleData finishes, the preAllocatedSize should be updated accordingly.
-      if (info.getRequireSize() > alreadyReleasedSize) {
-        manager.releasePreAllocatedSize(info.getRequireSize() - alreadyReleasedSize);
+      if (requireBlocksSize > alreadyReleasedSize) {
+        manager.releasePreAllocatedSize(requireBlocksSize - alreadyReleasedSize);
       }
       rpcResponse = new RpcResponse(req.getRequestId(), ret, responseMessage);
       long costTime = System.currentTimeMillis() - start;
@@ -204,7 +228,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                 + " ms with "
                 + shufflePartitionedData.size()
                 + " blocks and "
-                + requireSize
+                + requireBlocksSize
                 + " bytes");
       }
     } else {
@@ -232,7 +256,6 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             .recordTransportTime(GetMemoryShuffleDataRequest.class.getName(), transportTime);
       }
     }
-    long start = System.currentTimeMillis();
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetMemoryShuffleDataResponse response;
@@ -240,9 +263,11 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId[" + partitionId + "]";
 
     // todo: if can get the exact memory size?
-    if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(readBufferSize)) {
+    if (shuffleServer.getShuffleBufferManager().requireReadMemory(readBufferSize)) {
+      ShuffleDataResult shuffleDataResult = null;
       try {
-        ShuffleDataResult shuffleDataResult =
+        final long start = System.currentTimeMillis();
+        shuffleDataResult =
             shuffleServer
                 .getShuffleTaskManager()
                 .getInMemoryShuffleData(
@@ -252,27 +277,28 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                     blockId,
                     readBufferSize,
                     req.getExpectedTaskIdsBitmap());
-        ByteBuf data = Unpooled.EMPTY_BUFFER;
+        ManagedBuffer data = NettyManagedBuffer.EMPTY_BUFFER;
         List<BufferSegment> bufferSegments = Lists.newArrayList();
         if (shuffleDataResult != null) {
-          data = Unpooled.wrappedBuffer(shuffleDataResult.getDataBuffer());
+          data = shuffleDataResult.getManagedBuffer();
           bufferSegments = shuffleDataResult.getBufferSegments();
-          ShuffleServerMetrics.counterTotalReadDataSize.inc(data.readableBytes());
-          ShuffleServerMetrics.counterTotalReadMemoryDataSize.inc(data.readableBytes());
+          ShuffleServerMetrics.counterTotalReadDataSize.inc(data.size());
+          ShuffleServerMetrics.counterTotalReadMemoryDataSize.inc(data.size());
+          ShuffleServerMetrics.gaugeReadMemoryDataThreadNum.inc();
+          ShuffleServerMetrics.gaugeReadMemoryDataBufferSize.inc(readBufferSize);
         }
-        long costTime = System.currentTimeMillis() - start;
-        shuffleServer
-            .getNettyMetrics()
-            .recordProcessTime(GetMemoryShuffleDataRequest.class.getName(), costTime);
-        LOG.info(
-            "Successfully getInMemoryShuffleData cost {} ms with {} bytes shuffle" + " data for {}",
-            costTime,
-            data.readableBytes(),
-            requestInfo);
-
         response =
             new GetMemoryShuffleDataResponse(req.getRequestId(), status, msg, bufferSegments, data);
+        ReleaseMemoryAndRecordReadTimeListener listener =
+            new ReleaseMemoryAndRecordReadTimeListener(
+                start, readBufferSize, data.size(), requestInfo, req, response, client);
+        client.getChannel().writeAndFlush(response).addListener(listener);
+        return;
       } catch (Exception e) {
+        shuffleServer.getShuffleBufferManager().releaseReadMemory(readBufferSize);
+        if (shuffleDataResult != null) {
+          shuffleDataResult.release();
+        }
         status = StatusCode.INTERNAL_ERROR;
         msg =
             "Error happened when get in memory shuffle data for "
@@ -283,11 +309,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         response =
             new GetMemoryShuffleDataResponse(
                 req.getRequestId(), status, msg, Lists.newArrayList(), Unpooled.EMPTY_BUFFER);
-      } finally {
-        shuffleServer.getShuffleBufferManager().releaseReadMemory(readBufferSize);
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get in memory shuffle data";
       LOG.error(msg + " for " + requestInfo);
       response =
@@ -326,31 +350,33 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         shuffleServer
             .getShuffleServerConf()
             .getLong(ShuffleServerConf.SERVER_SHUFFLE_INDEX_SIZE_HINT);
-    if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(assumedFileSize)) {
+    if (shuffleServer.getShuffleBufferManager().requireReadMemory(assumedFileSize)) {
+      ShuffleIndexResult shuffleIndexResult = null;
       try {
         final long start = System.currentTimeMillis();
-        ShuffleIndexResult shuffleIndexResult =
+        shuffleIndexResult =
             shuffleServer
                 .getShuffleTaskManager()
                 .getShuffleIndex(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum);
 
-        ByteBuffer data = shuffleIndexResult.getIndexData();
-        ShuffleServerMetrics.counterTotalReadDataSize.inc(data.remaining());
-        ShuffleServerMetrics.counterTotalReadLocalIndexFileSize.inc(data.remaining());
+        ManagedBuffer data = shuffleIndexResult.getManagedBuffer();
+        ShuffleServerMetrics.counterTotalReadDataSize.inc(data.size());
+        ShuffleServerMetrics.counterTotalReadLocalIndexFileSize.inc(data.size());
+        ShuffleServerMetrics.gaugeReadLocalIndexFileThreadNum.inc();
+        ShuffleServerMetrics.gaugeReadLocalIndexFileBufferSize.inc(assumedFileSize);
         response =
             new GetLocalShuffleIndexResponse(
-                req.getRequestId(),
-                status,
-                msg,
-                Unpooled.wrappedBuffer(data),
-                shuffleIndexResult.getDataFileLen());
-        long readTime = System.currentTimeMillis() - start;
-        LOG.info(
-            "Successfully getShuffleIndex cost {} ms for {}" + " bytes with {}",
-            readTime,
-            data.remaining(),
-            requestInfo);
+                req.getRequestId(), status, msg, data, shuffleIndexResult.getDataFileLen());
+        ReleaseMemoryAndRecordReadTimeListener listener =
+            new ReleaseMemoryAndRecordReadTimeListener(
+                start, assumedFileSize, data.size(), requestInfo, req, response, client);
+        client.getChannel().writeAndFlush(response).addListener(listener);
+        return;
       } catch (FileNotFoundException indexFileNotFoundException) {
+        shuffleServer.getShuffleBufferManager().releaseReadMemory(assumedFileSize);
+        if (shuffleIndexResult != null) {
+          shuffleIndexResult.release();
+        }
         LOG.warn(
             "Index file for {} is not found, maybe the data has been flushed to cold storage.",
             requestInfo,
@@ -359,17 +385,19 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             new GetLocalShuffleIndexResponse(
                 req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER, 0L);
       } catch (Exception e) {
+        shuffleServer.getShuffleBufferManager().releaseReadMemory(assumedFileSize);
+        if (shuffleIndexResult != null) {
+          shuffleIndexResult.release();
+        }
         status = StatusCode.INTERNAL_ERROR;
         msg = "Error happened when get shuffle index for " + requestInfo + ", " + e.getMessage();
         LOG.error(msg, e);
         response =
             new GetLocalShuffleIndexResponse(
                 req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER, 0L);
-      } finally {
-        shuffleServer.getShuffleBufferManager().releaseReadMemory(assumedFileSize);
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get shuffle index";
       LOG.error(msg + " for " + requestInfo);
       response =
@@ -401,7 +429,6 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetLocalShuffleDataResponse response;
-    ShuffleDataResult sdr;
     String requestInfo =
         "appId["
             + appId
@@ -409,11 +436,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             + shuffleId
             + "], partitionId["
             + partitionId
-            + "]"
-            + "offset["
+            + "], offset["
             + offset
-            + "]"
-            + "length["
+            + "], length["
             + length
             + "]";
 
@@ -427,9 +452,10 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
     }
 
-    if (shuffleServer.getShuffleBufferManager().requireReadMemoryWithRetry(length)) {
+    if (shuffleServer.getShuffleBufferManager().requireReadMemory(length)) {
+      ShuffleDataResult sdr = null;
       try {
-        long start = System.currentTimeMillis();
+        final long start = System.currentTimeMillis();
         sdr =
             shuffleServer
                 .getShuffleTaskManager()
@@ -442,32 +468,32 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                     storageType,
                     offset,
                     length);
-        long readTime = System.currentTimeMillis() - start;
-        ShuffleServerMetrics.counterTotalReadTime.inc(readTime);
         ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getDataLength());
         ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getDataLength());
-        shuffleServer
-            .getNettyMetrics()
-            .recordProcessTime(GetLocalShuffleDataRequest.class.getName(), readTime);
-        LOG.info(
-            "Successfully getShuffleData cost {} ms for shuffle" + " data with {}",
-            readTime,
-            requestInfo);
+        ShuffleServerMetrics.gaugeReadLocalDataFileThreadNum.inc();
+        ShuffleServerMetrics.gaugeReadLocalDataFileBufferSize.inc(length);
         response =
             new GetLocalShuffleDataResponse(
                 req.getRequestId(), status, msg, sdr.getManagedBuffer());
+        ReleaseMemoryAndRecordReadTimeListener listener =
+            new ReleaseMemoryAndRecordReadTimeListener(
+                start, length, sdr.getDataLength(), requestInfo, req, response, client);
+        client.getChannel().writeAndFlush(response).addListener(listener);
+        return;
       } catch (Exception e) {
+        shuffleServer.getShuffleBufferManager().releaseReadMemory(length);
+        if (sdr != null) {
+          sdr.release();
+        }
         status = StatusCode.INTERNAL_ERROR;
         msg = "Error happened when get shuffle data for " + requestInfo + ", " + e.getMessage();
         LOG.error(msg, e);
         response =
             new GetLocalShuffleDataResponse(
                 req.getRequestId(), status, msg, new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
-      } finally {
-        shuffleServer.getShuffleBufferManager().releaseReadMemory(length);
       }
     } else {
-      status = StatusCode.INTERNAL_ERROR;
+      status = StatusCode.NO_BUFFER;
       msg = "Can't require memory to get shuffle data";
       LOG.error(msg + " for " + requestInfo);
       response =
@@ -504,5 +530,111 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       i++;
     }
     return ret;
+  }
+
+  class ReleaseMemoryAndRecordReadTimeListener implements ChannelFutureListener {
+    private final long readStartedTime;
+    private final long readBufferSize;
+    private final long dataSize;
+    private final String requestInfo;
+    private final RequestMessage request;
+    private final RpcResponse response;
+    private final TransportClient client;
+
+    ReleaseMemoryAndRecordReadTimeListener(
+        long readStartedTime,
+        long readBufferSize,
+        long dataSize,
+        String requestInfo,
+        RequestMessage request,
+        RpcResponse response,
+        TransportClient client) {
+      this.readStartedTime = readStartedTime;
+      this.readBufferSize = readBufferSize;
+      this.dataSize = dataSize;
+      this.requestInfo = requestInfo;
+      this.request = request;
+      this.response = response;
+      this.client = client;
+    }
+
+    @Override
+    public void operationComplete(ChannelFuture future) {
+      shuffleServer.getShuffleBufferManager().releaseReadMemory(readBufferSize);
+      long readTime = System.currentTimeMillis() - readStartedTime;
+      ShuffleServerMetrics.counterTotalReadTime.inc(readTime);
+      shuffleServer.getNettyMetrics().recordProcessTime(request.getClass().getName(), readTime);
+      if (request instanceof GetLocalShuffleDataRequest) {
+        ShuffleServerMetrics.gaugeReadLocalDataFileThreadNum.dec();
+        ShuffleServerMetrics.gaugeReadLocalDataFileBufferSize.dec(readBufferSize);
+      } else if (request instanceof GetLocalShuffleIndexRequest) {
+        ShuffleServerMetrics.gaugeReadLocalIndexFileThreadNum.dec();
+        ShuffleServerMetrics.gaugeReadLocalIndexFileBufferSize.dec(readBufferSize);
+      } else if (request instanceof GetMemoryShuffleDataRequest) {
+        GetMemoryShuffleDataResponse getMemoryShuffleDataResponse =
+            (GetMemoryShuffleDataResponse) response;
+        if (CollectionUtils.isNotEmpty(getMemoryShuffleDataResponse.getBufferSegments())) {
+          ShuffleServerMetrics.gaugeReadMemoryDataThreadNum.dec();
+          ShuffleServerMetrics.gaugeReadMemoryDataBufferSize.dec(readBufferSize);
+        }
+      }
+      if (!future.isSuccess()) {
+        Throwable cause = future.cause();
+        String errorMsg =
+            "Error happened when executing "
+                + request.getOperationType()
+                + " for "
+                + requestInfo
+                + ", "
+                + cause.getMessage();
+        if (future.channel().isWritable()) {
+          RpcResponse errorResponse;
+          if (request instanceof GetLocalShuffleDataRequest) {
+            errorResponse =
+                new GetLocalShuffleDataResponse(
+                    request.getRequestId(),
+                    StatusCode.INTERNAL_ERROR,
+                    errorMsg,
+                    new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
+          } else if (request instanceof GetLocalShuffleIndexRequest) {
+            errorResponse =
+                new GetLocalShuffleIndexResponse(
+                    request.getRequestId(),
+                    StatusCode.INTERNAL_ERROR,
+                    errorMsg,
+                    Unpooled.EMPTY_BUFFER,
+                    0L);
+          } else if (request instanceof GetMemoryShuffleDataRequest) {
+            errorResponse =
+                new GetMemoryShuffleDataResponse(
+                    request.getRequestId(),
+                    StatusCode.INTERNAL_ERROR,
+                    errorMsg,
+                    Lists.newArrayList(),
+                    Unpooled.EMPTY_BUFFER);
+          } else {
+            LOG.error("Cannot handle request {}", request.type(), cause);
+            return;
+          }
+          client.getChannel().writeAndFlush(errorResponse);
+        }
+        LOG.error(
+            "Failed to execute {} for {}. Took {} ms and could not retrieve {} bytes of data",
+            request.getOperationType(),
+            requestInfo,
+            readTime,
+            dataSize,
+            cause);
+      } else {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(
+              "Successfully executed {} for {}. Took {} ms and retrieved {} bytes of data",
+              request.getOperationType(),
+              requestInfo,
+              readTime,
+              dataSize);
+        }
+      }
+    }
   }
 }

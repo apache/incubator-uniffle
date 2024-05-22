@@ -17,16 +17,22 @@
 
 package org.apache.uniffle.client.request;
 
+import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.proto.RssProtos;
+
 public class RssGetShuffleResultRequest {
 
   private String appId;
   private int shuffleId;
   private int partitionId;
+  private BlockIdLayout layout;
 
-  public RssGetShuffleResultRequest(String appId, int shuffleId, int partitionId) {
+  public RssGetShuffleResultRequest(
+      String appId, int shuffleId, int partitionId, BlockIdLayout layout) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
+    this.layout = layout;
   }
 
   public String getAppId() {
@@ -39,5 +45,26 @@ public class RssGetShuffleResultRequest {
 
   public int getPartitionId() {
     return partitionId;
+  }
+
+  public BlockIdLayout getBlockIdLayout() {
+    return layout;
+  }
+
+  public RssProtos.GetShuffleResultRequest toProto() {
+    RssGetShuffleResultRequest request = this;
+    RssProtos.GetShuffleResultRequest rpcRequest =
+        RssProtos.GetShuffleResultRequest.newBuilder()
+            .setAppId(request.getAppId())
+            .setShuffleId(request.getShuffleId())
+            .setPartitionId(request.getPartitionId())
+            .setBlockIdLayout(
+                RssProtos.BlockIdLayout.newBuilder()
+                    .setSequenceNoBits(request.getBlockIdLayout().sequenceNoBits)
+                    .setPartitionIdBits(request.getBlockIdLayout().partitionIdBits)
+                    .setTaskAttemptIdBits(request.getBlockIdLayout().taskAttemptIdBits)
+                    .build())
+            .build();
+    return rpcRequest;
   }
 }

@@ -17,6 +17,10 @@
 # limitations under the License.
 #
 
+set -o pipefail
+set -o nounset   # exit the script if you try to use an uninitialised variable
+set -o errexit   # exit the script if any statement returns a non-true return value
+
 function exit_with_usage() {
   set +x
   echo "./build.sh - Tool for building docker images of Remote Shuffle Service"
@@ -109,7 +113,7 @@ fi
 
 RSS_DIR=../../..
 cd $RSS_DIR || exit
-RSS_VERSION=$(mvn help:evaluate -Dexpression=project.version 2>/dev/null | grep -v "INFO" | grep -v "WARNING" | tail -n 1)
+RSS_VERSION=$(./mvnw help:evaluate -Dexpression=project.version 2>/dev/null | grep -v "INFO" | grep -v "WARNING" | tail -n 1)
 RSS_FILE=rss-${RSS_VERSION}-hadoop${HADOOP_SHORT_VERSION}.tgz
 echo "RSS_VERSION: $RSS_VERSION"
 echo "RSS_FILE: $RSS_FILE"

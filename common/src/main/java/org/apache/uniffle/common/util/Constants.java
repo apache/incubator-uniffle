@@ -22,21 +22,14 @@ public final class Constants {
   private Constants() {}
 
   // the value is used for client/server compatible, eg, online upgrade
-  public static final String SHUFFLE_SERVER_VERSION = "ss_v4";
-  public static final String METRICS_TAG_LABEL_NAME = "label";
+  public static final String SHUFFLE_SERVER_VERSION = "ss_v5";
+  public static final String METRICS_TAG_LABEL_NAME = "tags";
+  public static final String METRICS_APP_LABEL_NAME = "appId";
   public static final String COORDINATOR_TAG = "coordinator";
   public static final String SHUFFLE_DATA_FILE_SUFFIX = ".data";
   public static final String SHUFFLE_INDEX_FILE_SUFFIX = ".index";
-  // BlockId is long and consist of partitionId, taskAttemptId, atomicInt
-  // the length of them are ATOMIC_INT_MAX_LENGTH + PARTITION_ID_MAX_LENGTH +
-  // TASK_ATTEMPT_ID_MAX_LENGTH = 63
-  public static final int PARTITION_ID_MAX_LENGTH = 24;
-  public static final int TASK_ATTEMPT_ID_MAX_LENGTH = 21;
-  public static final int ATOMIC_INT_MAX_LENGTH = 18;
-  public static final long MAX_SEQUENCE_NO = (1 << Constants.ATOMIC_INT_MAX_LENGTH) - 1;
-  public static final long MAX_PARTITION_ID = (1 << Constants.PARTITION_ID_MAX_LENGTH) - 1;
-  public static final long MAX_TASK_ATTEMPT_ID = (1 << Constants.TASK_ATTEMPT_ID_MAX_LENGTH) - 1;
   public static final long INVALID_BLOCK_ID = -1L;
+
   public static final String KEY_SPLIT_CHAR = "/";
   public static final String COMMA_SPLIT_CHAR = ",";
   public static final String EQUAL_SPLIT_CHAR = "=";

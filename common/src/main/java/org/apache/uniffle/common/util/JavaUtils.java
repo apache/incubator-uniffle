@@ -19,9 +19,11 @@ package org.apache.uniffle.common.util;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import com.google.common.base.Enums;
 import org.apache.commons.lang3.JavaVersion;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
@@ -29,6 +31,16 @@ import org.slf4j.LoggerFactory;
 
 public class JavaUtils {
   private static final Logger logger = LoggerFactory.getLogger(JavaUtils.class);
+  private static final String JAVA_9 = "JAVA_9";
+
+  public static boolean isJavaVersionAtLeastJava9() {
+    if (Enums.getIfPresent(JavaVersion.class, JAVA_9).isPresent()
+        && SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_9)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   /** Closes the given object, ignoring IOExceptions. */
   public static void closeQuietly(Closeable closeable) {
@@ -42,10 +54,18 @@ public class JavaUtils {
   }
 
   public static <K, V> ConcurrentHashMap<K, V> newConcurrentMap() {
-    if (SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_9)) {
+    if (isJavaVersionAtLeastJava9()) {
       return new ConcurrentHashMap<>();
     } else {
       return new ConcurrentHashMapForJDK8<>();
+    }
+  }
+
+  public static <K, V> ConcurrentHashMap<K, V> newConcurrentMap(Map<? extends K, ? extends V> m) {
+    if (isJavaVersionAtLeastJava9()) {
+      return new ConcurrentHashMap<>(m);
+    } else {
+      return new ConcurrentHashMapForJDK8<>(m);
     }
   }
 
@@ -54,6 +74,14 @@ public class JavaUtils {
    * speed up. See details in issue #519
    */
   private static class ConcurrentHashMapForJDK8<K, V> extends ConcurrentHashMap<K, V> {
+    ConcurrentHashMapForJDK8() {
+      super();
+    }
+
+    ConcurrentHashMapForJDK8(Map<? extends K, ? extends V> m) {
+      super(m);
+    }
+
     @Override
     public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
       V result;

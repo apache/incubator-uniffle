@@ -19,10 +19,10 @@ package org.apache.spark.shuffle;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.broadcast.Broadcast;
+import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -32,14 +32,14 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
   private String appId;
   private int numMaps;
   private ShuffleDependency<K, V, C> dependency;
-  private Broadcast<ShuffleHandleInfo> handlerInfoBd;
+  private Broadcast<SimpleShuffleHandleInfo> handlerInfoBd;
 
   public RssShuffleHandle(
       int shuffleId,
       String appId,
       int numMaps,
       ShuffleDependency<K, V, C> dependency,
-      Broadcast<ShuffleHandleInfo> handlerInfoBd) {
+      Broadcast<SimpleShuffleHandleInfo> handlerInfoBd) {
     super(shuffleId);
     this.appId = appId;
     this.numMaps = numMaps;
@@ -68,10 +68,6 @@ public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
   }
 
   public Map<Integer, List<ShuffleServerInfo>> getPartitionToServers() {
-    return handlerInfoBd.value().getPartitionToServers();
-  }
-
-  public Set<ShuffleServerInfo> getShuffleServersForData() {
-    return handlerInfoBd.value().getShuffleServersForData();
+    return handlerInfoBd.value().getAvailablePartitionServersForWriter();
   }
 }
