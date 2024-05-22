@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -116,6 +117,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private final ExecutorService dataTransferPool;
   private final int unregisterThreadPoolSize;
   private final int unregisterRequestTimeSec;
+  private ExecutorService unregisterExecutorService;
   private Set<ShuffleServerInfo> defectiveServers;
   private RssConf rssConf;
   private BlockIdLayout blockIdLayout;
@@ -946,6 +948,21 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     heartBeatExecutorService.shutdownNow();
     coordinatorClients.forEach(CoordinatorClient::close);
     dataTransferPool.shutdownNow();
+    // wait for all services graceful termination
+    awaitExecutorServiceTermination(5000, heartBeatExecutorService, dataTransferPool, unregisterExecutorService);
+  }
+
+  private void awaitExecutorServiceTermination(long timeoutMs, ExecutorService... services) {
+    for (ExecutorService service : services) {
+      try {
+        if (service == null) continue;
+        if (!service.awaitTermination(timeoutMs, TimeUnit.MILLISECONDS)) {
+          LOG.warn("Executor service did not terminate within timeout: {}", service);
+        }
+      } catch (InterruptedException e) {
+        LOG.warn("Got interrupted while waiting for executor service to terminate", e);
+      }
+    }
   }
 
   @Override
@@ -961,14 +978,14 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       return;
     }
 
-    ExecutorService executorService = null;
     try {
-      executorService =
+      unregisterExecutorService = null;
+      unregisterExecutorService =
           ThreadUtils.getDaemonFixedThreadPool(
               Math.min(unregisterThreadPoolSize, shuffleServerInfos.size()), "unregister-shuffle");
 
       ThreadUtils.executeTasks(
-          executorService,
+          unregisterExecutorService,
           shuffleServerInfos,
           shuffleServerInfo -> {
             try {
@@ -988,8 +1005,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           "unregister shuffle server");
 
     } finally {
-      if (executorService != null) {
-        executorService.shutdownNow();
+      if (unregisterExecutorService != null) {
+        unregisterExecutorService.shutdownNow();
       }
       removeShuffleServer(appId, shuffleId);
     }
