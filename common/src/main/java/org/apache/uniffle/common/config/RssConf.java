@@ -57,10 +57,6 @@ public class RssConf implements Cloneable {
     return Sets.newHashSet();
   }
 
-  public Object getObject(String key, Object defaultValue) {
-    return getRawValue(key).orElse(defaultValue);
-  }
-
   /**
    * Returns the value associated with the given key as a string.
    *
