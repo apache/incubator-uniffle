@@ -56,11 +56,11 @@ public class ReconfigurableConfManagerTest {
     ReconfigurableConfManager.initForTest(base, supplier);
 
     ReconfigurableConfManager.Reconfigurable<Integer> portReconfigurable =
-        ReconfigurableConfManager.register(JETTY_HTTP_PORT);
+        ReconfigurableConfManager.register(base, JETTY_HTTP_PORT);
     ReconfigurableConfManager.Reconfigurable<Integer> rpcReconfigurable =
-        ReconfigurableConfManager.register(RPC_SERVER_PORT);
+        ReconfigurableConfManager.register(base, RPC_SERVER_PORT);
     ReconfigurableConfManager.Reconfigurable<List<String>> typeReconfigurable =
-        ReconfigurableConfManager.register(RSS_STORAGE_BASE_PATH);
+        ReconfigurableConfManager.register(base, RSS_STORAGE_BASE_PATH);
     assertEquals(19998, portReconfigurable.get());
     assertEquals(19999, rpcReconfigurable.get());
 
@@ -69,5 +69,14 @@ public class ReconfigurableConfManagerTest {
         .until(() -> portReconfigurable.get().equals(100));
     assertEquals(200, rpcReconfigurable.get());
     assertEquals(Arrays.asList("/d1"), typeReconfigurable.get());
+  }
+
+  @Test
+  public void testWithoutInitialization() {
+    RssConf base = new RssConf();
+    base.set(JETTY_HTTP_PORT, 100);
+    ReconfigurableConfManager.Reconfigurable<Integer> portReconfigurable =
+        ReconfigurableConfManager.register(base, JETTY_HTTP_PORT);
+    assertEquals(100, portReconfigurable.get());
   }
 }

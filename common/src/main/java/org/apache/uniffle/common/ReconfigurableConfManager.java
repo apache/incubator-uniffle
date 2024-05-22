@@ -57,7 +57,7 @@ public class ReconfigurableConfManager<T> {
   }
 
   private void initialize(RssConf rssConf, Supplier<RssConf> confSupplier) {
-    this.rssConf = rssConf;
+    this.rssConf = new RssConf(rssConf);
     this.updateConfOptions = new ArrayList<>();
     this.scheduledThreadPoolExecutor =
         ThreadUtils.getDaemonSingleThreadScheduledExecutor("Refresh-rss-conf");
@@ -142,16 +142,46 @@ public class ReconfigurableConfManager<T> {
     reconfigurableConfManager = manager;
   }
 
-  public static <T> Reconfigurable<T> register(ConfigOption<T> configOption) {
+  public static <T> Reconfigurable<T> register(RssConf conf, ConfigOption<T> configOption) {
+    if (reconfigurableConfManager == null) {
+      LOGGER.warn(
+          "{} is not initialized. The conf of [{}] will not be updated.",
+          ReconfigurableConfManager.class.getSimpleName(),
+          configOption.key());
+      return new FixedReconfigurable<>(conf, configOption);
+    }
+
     reconfigurableConfManager.registerInternal(configOption);
     Reconfigurable<T> reconfigurable =
         new Reconfigurable<T>(reconfigurableConfManager, configOption);
     return reconfigurable;
   }
 
+  public static class FixedReconfigurable<T> extends Reconfigurable<T> {
+    RssConf conf;
+    ConfigOption<T> option;
+
+    FixedReconfigurable(RssConf conf, ConfigOption<T> option) {
+      this.conf = conf;
+      this.option = option;
+    }
+
+    @Override
+    public T get() {
+      return conf.get(option);
+    }
+
+    @Override
+    public long getSizeAsBytes() {
+      return conf.getSizeAsBytes((ConfigOption<Long>) option);
+    }
+  }
+
   public static class Reconfigurable<T> {
     ReconfigurableConfManager reconfigurableConfManager;
     ConfigOption<T> option;
+
+    Reconfigurable() {}
 
     Reconfigurable(ReconfigurableConfManager reconfigurableConfManager, ConfigOption<T> option) {
       this.reconfigurableConfManager = reconfigurableConfManager;
