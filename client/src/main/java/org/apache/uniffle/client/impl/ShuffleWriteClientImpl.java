@@ -997,11 +997,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                   ShuffleServerClientFactory.getInstance()
                       .getShuffleServerClient(clientType, shuffleServerInfo, rssConf);
               RssUnregisterShuffleResponse response = client.unregisterShuffle(request);
-              if (response.getStatusCode() != StatusCode.SUCCESS) {
-                LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
+              if (response.getStatusCode() == StatusCode.SUCCESS) {
+                LOG.debug("Successfully unregistered shuffle from {}", shuffleServerInfo);
+              } else {
+                LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
               }
             } catch (Exception e) {
-              LOG.warn("Error happened when unregistering to " + shuffleServerInfo, e);
+              LOG.warn("Error happened when unregistering from " + shuffleServerInfo, e);
             }
             return null;
           },
@@ -1052,11 +1054,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                       .getShuffleServerClient(clientType, shuffleServerInfo, rssConf);
               RssUnregisterShuffleByAppIdResponse response =
                   client.unregisterShuffleByAppId(request);
-              if (response.getStatusCode() != StatusCode.SUCCESS) {
-                LOG.warn("Failed to unregister shuffle to " + shuffleServerInfo);
+              if (response.getStatusCode() == StatusCode.SUCCESS) {
+                LOG.debug("Successfully unregistered shuffle from {}", shuffleServerInfo);
+              } else {
+                LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
               }
             } catch (Exception e) {
-              LOG.warn("Error happened when unregistering to " + shuffleServerInfo, e);
+              LOG.warn("Error happened when unregistering from " + shuffleServerInfo, e);
             }
             return null;
           },
