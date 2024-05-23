@@ -104,7 +104,7 @@ JVM_ARGS=" -server \
           -XX:+UnlockExperimentalVMOptions \
           -XX:G1NewSizePercent=10"
 
-JAVA8_GC_ARGS= " -XX:+PrintGC \
+JAVA8_GC_ARGS=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
@@ -132,15 +132,15 @@ fi
 
 version=$($RUNNER -version 2>&1 | awk -F '"' '/version/ {print $2}')
 if [[ $version == "1.8"* ]]; then
-    GC_ARGS=$JAVA8_GC_ARGS
+  GC_ARGS=$JAVA8_GC_ARGS
 elif [[ $version == "11"* ]]; then
-    GC_ARGS=$JAVA11_GC_ARGS
+  GC_ARGS=$JAVA11_GC_ARGS
 else
   echo "Exit with error: unknown java version ${version} ."
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS $GC_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &
+$RUNNER $ARGS $JVM_ARGS $GC_ARGS $JAVA_LIB_PATH -cp $CLASSPATH $MAIN_CLASS --conf "$SHUFFLE_SERVER_CONF_FILE" $@ &
 
 get_pid_file_name shuffle-server
 echo $! >${RSS_PID_DIR}/${pid_file}

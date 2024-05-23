@@ -62,7 +62,7 @@ function uniffle_cmd_case
           -XX:+UnlockExperimentalVMOptions \
           -XX:G1NewSizePercent=10"
 
-      JAVA8_GC_ARGS= " -XX:+PrintGC \
+      JAVA8_GC_ARGS=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
@@ -99,7 +99,7 @@ function uniffle_cmd_case
           -XX:ConcGCThreads=5 \
           -XX:InitiatingHeapOccupancyPercent=45”
 
-      JAVA8_GC_ARGS= " -XX:+PrintGC \
+      JAVA8_GC_ARGS=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \

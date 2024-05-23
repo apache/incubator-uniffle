@@ -69,7 +69,7 @@ JVM_ARGS=" -server \
           -XX:ConcGCThreads=5 \
           -XX:InitiatingHeapOccupancyPercent=45"
 
-JAVA8_GC_ARGS= " -XX:+PrintGC \
+JAVA8_GC_ARGS=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
@@ -95,9 +95,9 @@ fi
 
 version=$($RUNNER -version 2>&1 | awk -F '"' '/version/ {print $2}')
 if [[ $version == "1.8"* ]]; then
-    GC_ARGS=$JAVA8_GC_ARGS
+  GC_ARGS=$JAVA8_GC_ARGS
 elif [[ $version == "11"* ]]; then
-    GC_ARGS=$JAVA11_GC_ARGS
+  GC_ARGS=$JAVA11_GC_ARGS
 else
   echo "Exit with error: unknown java version ${version} ."
   exit 1
