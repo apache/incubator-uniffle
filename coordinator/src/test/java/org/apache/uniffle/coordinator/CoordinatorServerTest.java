@@ -46,7 +46,7 @@ public class CoordinatorServerTest {
       assertEquals(expectMessage, e.getMessage());
       assertEquals(expectStatus, ((ExitException) e).getStatus());
     } finally {
-      // Always call stopServer after new CoordinatorServer to stop ExecutorService
+      // Always call stopServer after new CoordinatorServer to shut down ExecutorService
       cs2.stopServer();
     }
 
@@ -59,7 +59,7 @@ public class CoordinatorServerTest {
       assertEquals(expectMessage, e.getMessage());
       assertEquals(expectStatus, ((ExitException) e).getStatus());
     } finally {
-      // Always call stopServer after new CoordinatorServer to stop ExecutorService
+      // Always call stopServer after new CoordinatorServer to shut down ExecutorService
       cs2.stopServer();
       cs1.stopServer();
     }
