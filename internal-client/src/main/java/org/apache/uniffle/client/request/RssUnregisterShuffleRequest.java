@@ -36,5 +36,7 @@ public class RssUnregisterShuffleRequest {
     return shuffleId;
   }
 
-  public int getTimeoutSec() { return timeoutSec; }
+  public int getTimeoutSec() {
+    return timeoutSec;
+  }
 }

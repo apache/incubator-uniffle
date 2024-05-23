@@ -359,10 +359,13 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     return result;
   }
 
-  private RssProtos.ShuffleUnregisterByAppIdResponse doUnregisterShuffleByAppId(String appId, int timeoutSec) {
+  private RssProtos.ShuffleUnregisterByAppIdResponse doUnregisterShuffleByAppId(
+      String appId, int timeoutSec) {
     RssProtos.ShuffleUnregisterByAppIdRequest request =
         RssProtos.ShuffleUnregisterByAppIdRequest.newBuilder().setAppId(appId).build();
-    return blockingStub.withDeadlineAfter(timeoutSec, TimeUnit.SECONDS).unregisterShuffleByAppId(request);
+    return blockingStub
+        .withDeadlineAfter(timeoutSec, TimeUnit.SECONDS)
+        .unregisterShuffleByAppId(request);
   }
 
   @Override
@@ -390,7 +393,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     return response;
   }
 
-  private RssProtos.ShuffleUnregisterResponse doUnregisterShuffle(String appId, int shuffleId, int timeoutSec) {
+  private RssProtos.ShuffleUnregisterResponse doUnregisterShuffle(
+      String appId, int shuffleId, int timeoutSec) {
     RssProtos.ShuffleUnregisterRequest request =
         RssProtos.ShuffleUnregisterRequest.newBuilder()
             .setAppId(appId)
@@ -415,7 +419,12 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         String msg =
             String.format(
                 "Errors on unregister shuffle to %s:%s for appId[%s].shuffleId[%s] and timeout[%ss], error: %s",
-                host, port, request.getAppId(), request.getShuffleId(), request.getTimeoutSec(), rpcResponse.getRetMsg());
+                host,
+                port,
+                request.getAppId(),
+                request.getShuffleId(),
+                request.getTimeoutSec(),
+                rpcResponse.getRetMsg());
         LOG.error(msg);
         throw new RssException(msg);
     }
