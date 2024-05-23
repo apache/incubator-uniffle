@@ -76,37 +76,39 @@ public class AccessQuotaCheckerTest {
     conf.set(
         COORDINATOR_ACCESS_CHECKERS, Collections.singletonList(AccessQuotaChecker.class.getName()));
     conf.set(COORDINATOR_QUOTA_DEFAULT_APP_NUM, 3);
-    ApplicationManager applicationManager = new ApplicationManager(conf);
-    AccessManager accessManager =
-        new AccessManager(
-            conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
-
-    AccessQuotaChecker accessQuotaChecker =
-        (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);
+    Map<String, String> properties = new HashMap<>();
 
     /**
      * case1: when user set default app num is 5, and commit 6 app which current app num is greater
      * than default app num, it will reject 1 app and return false.
      */
-    Map<String, String> properties = new HashMap<>();
-    AccessInfo accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
-    assertTrue(accessQuotaChecker.check(accessInfo).isSuccess());
-    assertTrue(accessQuotaChecker.check(accessInfo).isSuccess());
-    assertTrue(accessQuotaChecker.check(accessInfo).isSuccess());
-    assertFalse(accessQuotaChecker.check(accessInfo).isSuccess());
+    try (ApplicationManager applicationManager = new ApplicationManager(conf)) {
+      AccessManager accessManager =
+          new AccessManager(
+              conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
+      AccessQuotaChecker accessQuotaChecker =
+          (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);
+      AccessInfo accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
+      assertTrue(accessQuotaChecker.check(accessInfo).isSuccess());
+      assertTrue(accessQuotaChecker.check(accessInfo).isSuccess());
+      assertTrue(accessQuotaChecker.check(accessInfo).isSuccess());
+      assertFalse(accessQuotaChecker.check(accessInfo).isSuccess());
+    }
 
     /**
      * case2: when setting the valid required shuffle nodes number of job and available servers
      * greater than the COORDINATOR_SHUFFLE_NODES_MAX, it should return true
      */
     conf.set(COORDINATOR_QUOTA_DEFAULT_APP_NUM, 0);
-    applicationManager = new ApplicationManager(conf);
-    accessManager =
-        new AccessManager(
-            conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
-    accessQuotaChecker = (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);
-    accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
-    assertFalse(accessQuotaChecker.check(accessInfo).isSuccess());
+    try (ApplicationManager applicationManager = new ApplicationManager(conf)) {
+      AccessManager accessManager =
+          new AccessManager(
+              conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
+      AccessQuotaChecker accessQuotaChecker =
+          (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);
+      AccessInfo accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
+      assertFalse(accessQuotaChecker.check(accessInfo).isSuccess());
+    }
 
     /**
      * case3: when setting two checkers and the valid required shuffle nodes number of job and
@@ -118,16 +120,18 @@ public class AccessQuotaCheckerTest {
         Arrays.asList(
             "org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker",
             "org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker"));
-    applicationManager = new ApplicationManager(conf);
-    accessManager =
-        new AccessManager(
-            conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
-    accessQuotaChecker = (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);
-    final AccessClusterLoadChecker accessClusterLoadChecker =
-        (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(1);
-    properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "100");
-    accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
-    assertTrue(accessQuotaChecker.check(accessInfo).isSuccess());
-    assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
+    try (ApplicationManager applicationManager = new ApplicationManager(conf)) {
+      AccessManager accessManager =
+          new AccessManager(
+              conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
+      AccessQuotaChecker accessQuotaChecker =
+          (AccessQuotaChecker) accessManager.getAccessCheckers().get(0);
+      final AccessClusterLoadChecker accessClusterLoadChecker =
+          (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(1);
+      properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "100");
+      AccessInfo accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
+      assertTrue(accessQuotaChecker.check(accessInfo).isSuccess());
+      assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
+    }
   }
 }

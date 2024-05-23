@@ -80,46 +80,47 @@ public class AccessClusterLoadCheckerTest {
     conf.set(COORDINATOR_ACCESS_CHECKERS, Collections.singletonList(clusterLoaderCheckerName));
     conf.set(COORDINATOR_SHUFFLE_NODES_MAX, 3);
     conf.set(COORDINATOR_ACCESS_LOADCHECKER_MEMORY_PERCENTAGE, 20.0);
-    ApplicationManager applicationManager = new ApplicationManager(conf);
-    AccessManager accessManager =
-        new AccessManager(
-            conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
+    try (ApplicationManager applicationManager = new ApplicationManager(conf)) {
+      AccessManager accessManager =
+          new AccessManager(
+              conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
 
-    AccessClusterLoadChecker accessClusterLoadChecker =
-        (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(0);
+      AccessClusterLoadChecker accessClusterLoadChecker =
+          (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(0);
 
-    /**
-     * case1: when setting the invalid required shuffle nodes number of job and available servers
-     * less than the COORDINATOR_SHUFFLE_NODES_MAX, it should return false
-     */
-    Map<String, String> properties = new HashMap<>();
-    properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "-1");
-    AccessInfo accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
-    assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
+      /**
+       * case1: when setting the invalid required shuffle nodes number of job and available servers
+       * less than the COORDINATOR_SHUFFLE_NODES_MAX, it should return false
+       */
+      Map<String, String> properties = new HashMap<>();
+      properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "-1");
+      AccessInfo accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
+      assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
 
-    /**
-     * case2: when setting the valid required shuffle nodes number of job and available servers
-     * greater than the COORDINATOR_SHUFFLE_NODES_MAX, it should return true
-     */
-    properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "1");
-    accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
-    assertTrue(accessClusterLoadChecker.check(accessInfo).isSuccess());
+      /**
+       * case2: when setting the valid required shuffle nodes number of job and available servers
+       * greater than the COORDINATOR_SHUFFLE_NODES_MAX, it should return true
+       */
+      properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "1");
+      accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
+      assertTrue(accessClusterLoadChecker.check(accessInfo).isSuccess());
 
-    /**
-     * case3: when setting the valid required shuffle nodes number of job and available servers less
-     * than the COORDINATOR_SHUFFLE_NODES_MAX, it should return false
-     */
-    properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "100");
-    accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
-    assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
+      /**
+       * case3: when setting the valid required shuffle nodes number of job and available servers
+       * less than the COORDINATOR_SHUFFLE_NODES_MAX, it should return false
+       */
+      properties.put(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, "100");
+      accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
+      assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
 
-    /**
-     * case4: when the required shuffle nodes number is not specified in access info, it should use
-     * the default shuffle nodes max from coordinator conf.
-     */
-    properties = new HashMap<>();
-    accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
-    assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
+      /**
+       * case4: when the required shuffle nodes number is not specified in access info, it should
+       * use the default shuffle nodes max from coordinator conf.
+       */
+      properties = new HashMap<>();
+      accessInfo = new AccessInfo("test", new HashSet<>(), properties, "user");
+      assertFalse(accessClusterLoadChecker.check(accessInfo).isSuccess());
+    }
   }
 
   @Test
@@ -133,23 +134,24 @@ public class AccessClusterLoadCheckerTest {
             .getFile();
     CoordinatorConf conf = new CoordinatorConf(filePath);
     conf.setString(COORDINATOR_ACCESS_CHECKERS.key(), clusterLoaderCheckerName);
-    ApplicationManager applicationManager = new ApplicationManager(conf);
-    AccessManager accessManager =
-        new AccessManager(
-            conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
-    AccessClusterLoadChecker accessClusterLoadChecker =
-        (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(0);
-    when(clusterManager.getServerList(any())).thenReturn(serverNodeList);
-    assertFalse(accessClusterLoadChecker.check(new AccessInfo("test")).isSuccess());
-    assertEquals(2, accessClusterLoadChecker.getAvailableServerNumThreshold());
-    assertEquals(0, Double.compare(accessClusterLoadChecker.getMemoryPercentThreshold(), 20.0));
-    ServerNode node2 = new ServerNode("1", "1", 0, 90, 40, 10, 0, null);
-    serverNodeList.add(node2);
-    ServerNode node3 = new ServerNode("1", "1", 0, 80, 25, 20, 0, null);
-    serverNodeList.add(node3);
-    assertFalse(accessClusterLoadChecker.check(new AccessInfo("test")).isSuccess());
-    ServerNode node4 = new ServerNode("1", "1", 0, 75, 25, 25, 0, null);
-    serverNodeList.add(node4);
-    assertTrue(accessClusterLoadChecker.check(new AccessInfo("test")).isSuccess());
+    try (ApplicationManager applicationManager = new ApplicationManager(conf)) {
+      AccessManager accessManager =
+          new AccessManager(
+              conf, clusterManager, applicationManager.getQuotaManager(), new Configuration());
+      AccessClusterLoadChecker accessClusterLoadChecker =
+          (AccessClusterLoadChecker) accessManager.getAccessCheckers().get(0);
+      when(clusterManager.getServerList(any())).thenReturn(serverNodeList);
+      assertFalse(accessClusterLoadChecker.check(new AccessInfo("test")).isSuccess());
+      assertEquals(2, accessClusterLoadChecker.getAvailableServerNumThreshold());
+      assertEquals(0, Double.compare(accessClusterLoadChecker.getMemoryPercentThreshold(), 20.0));
+      ServerNode node2 = new ServerNode("1", "1", 0, 90, 40, 10, 0, null);
+      serverNodeList.add(node2);
+      ServerNode node3 = new ServerNode("1", "1", 0, 80, 25, 20, 0, null);
+      serverNodeList.add(node3);
+      assertFalse(accessClusterLoadChecker.check(new AccessInfo("test")).isSuccess());
+      ServerNode node4 = new ServerNode("1", "1", 0, 75, 25, 25, 0, null);
+      serverNodeList.add(node4);
+      assertTrue(accessClusterLoadChecker.check(new AccessInfo("test")).isSuccess());
+    }
   }
 }

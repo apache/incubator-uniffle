@@ -63,8 +63,8 @@ public class DynamicClientConfServiceTest {
 
     // file load checking at startup
     Exception expectedException = null;
-    try {
-      new DynamicClientConfService(conf, new Configuration());
+    try (DynamicClientConfService dynamicClientConfService =
+        new DynamicClientConfService(conf, new Configuration())) {
     } catch (RuntimeException e) {
       expectedException = e;
     }
