@@ -955,6 +955,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     dataTransferPool.shutdownNow();
   }
 
+  @VisibleForTesting
+  // Given some number of tasks and the concurrency (number of threads),
+  // computes how many tasks may be executed sequentially
+  protected static int sequentiality(int tasks, int concurrency) {
+    return (int) Math.ceil((float) tasks / concurrency);
+  }
+
   @Override
   public void unregisterShuffle(String appId, int shuffleId) {
     int unregisterTimeMs = unregisterRequestTimeSec * 1000;
@@ -974,10 +981,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     try {
       // we send unregister request with this concurrency (this many concurrent threads)
       int concurrency = Math.min(unregisterThreadPoolSize, shuffleServerInfos.size());
-      // therefore we have at most this many requests in a sequence for one thread
-      int sequentiality =
-          (int) Math.ceil((float) shuffleServerInfos.size() / unregisterThreadPoolSize);
-      // therefore we should wait this many seconds for all requests to finish
+      // therefore, we have at most this many requests in a sequence for one thread
+      int sequentiality = sequentiality(shuffleServerInfos.size(), concurrency);
+      // therefore, we should wait this many seconds for all requests to finish
       int unregisterTaskTimeoutSec = unregisterRequestTimeSec * sequentiality;
 
       executorService = ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
@@ -1029,10 +1035,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     try {
       // we send unregister request with this concurrency (this many concurrent threads)
       int concurrency = Math.min(unregisterThreadPoolSize, shuffleServerInfos.size());
-      // therefore we have at most this many requests in a sequence for one thread
-      int sequentiality =
-          (int) Math.ceil((float) shuffleServerInfos.size() / unregisterThreadPoolSize);
-      // therefore we should wait this many seconds for all requests to finish
+      // therefore, we have at most this many requests in a sequence for one thread
+      int sequentiality = sequentiality(shuffleServerInfos.size(), concurrency);
+      // therefore, we should wait this many seconds for all requests to finish
       int unregisterTaskTimeoutSec = unregisterRequestTimeSec * sequentiality;
 
       executorService = ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
