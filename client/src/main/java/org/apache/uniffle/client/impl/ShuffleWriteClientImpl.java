@@ -981,6 +981,12 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (shuffleServerInfos == null) {
       return;
     }
+    LOG.info(
+        "Unregistering shuffleId[{}] from {} shuffle servers with individual timeout[{}s] and overall timeout[{}s]",
+        shuffleId,
+        shuffleServerInfos.size(),
+        unregisterRequestTimeSec,
+        unregisterTimeSec);
 
     ExecutorService executorService = null;
     try {
@@ -1015,7 +1021,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                       .getShuffleServerClient(clientType, shuffleServerInfo, rssConf);
               RssUnregisterShuffleResponse response = client.unregisterShuffle(request);
               if (response.getStatusCode() == StatusCode.SUCCESS) {
-                LOG.debug("Successfully unregistered shuffle from {}", shuffleServerInfo);
+                LOG.info("Successfully unregistered shuffle from {}", shuffleServerInfo);
               } else {
                 LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
               }
@@ -1049,6 +1055,12 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       return;
     }
     Set<ShuffleServerInfo> shuffleServerInfos = getAllShuffleServers(appId);
+    LOG.info(
+        "Unregistering shuffles of appId[{}] from {} shuffle servers with individual timeout[{}s] and overall timeout[{}s]",
+        appId,
+        shuffleServerInfos.size(),
+        unregisterRequestTimeSec,
+        unregisterTimeSec);
 
     ExecutorService executorService = null;
     try {
@@ -1085,7 +1097,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               RssUnregisterShuffleByAppIdResponse response =
                   client.unregisterShuffleByAppId(request);
               if (response.getStatusCode() == StatusCode.SUCCESS) {
-                LOG.debug("Successfully unregistered shuffle from {}", shuffleServerInfo);
+                LOG.info("Successfully unregistered shuffle from {}", shuffleServerInfo);
               } else {
                 LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
               }
