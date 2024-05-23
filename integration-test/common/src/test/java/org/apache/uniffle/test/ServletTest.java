@@ -170,26 +170,27 @@ public class ServletTest extends IntegrationTestBase {
 
   @Test
   public void testLostNodesServlet() throws IOException {
-    SimpleClusterManager clusterManager =
-        (SimpleClusterManager) coordinatorServer.getClusterManager();
-    ShuffleServer shuffleServer3 = grpcShuffleServers.get(2);
-    ShuffleServer shuffleServer4 = grpcShuffleServers.get(3);
-    Map<String, ServerNode> servers = clusterManager.getServers();
-    servers.get(shuffleServer3.getId()).setTimestamp(System.currentTimeMillis() - 40000);
-    servers.get(shuffleServer4.getId()).setTimestamp(System.currentTimeMillis() - 40000);
-    clusterManager.nodesCheckTest();
-    List<String> expectShuffleIds = Arrays.asList(shuffleServer3.getId(), shuffleServer4.getId());
-    List<String> shuffleIds = new ArrayList<>();
-    Response<List<HashMap<String, Object>>> response =
-        objectMapper.readValue(
-            TestUtils.httpGet(LOSTNODES_URL),
-            new TypeReference<Response<List<HashMap<String, Object>>>>() {});
-    List<HashMap<String, Object>> serverList = response.getData();
-    for (HashMap<String, Object> stringObjectHashMap : serverList) {
-      String shuffleId = (String) stringObjectHashMap.get("id");
-      shuffleIds.add(shuffleId);
+    try (SimpleClusterManager clusterManager =
+        (SimpleClusterManager) coordinatorServer.getClusterManager()) {
+      ShuffleServer shuffleServer3 = grpcShuffleServers.get(2);
+      ShuffleServer shuffleServer4 = grpcShuffleServers.get(3);
+      Map<String, ServerNode> servers = clusterManager.getServers();
+      servers.get(shuffleServer3.getId()).setTimestamp(System.currentTimeMillis() - 40000);
+      servers.get(shuffleServer4.getId()).setTimestamp(System.currentTimeMillis() - 40000);
+      clusterManager.nodesCheckTest();
+      List<String> expectShuffleIds = Arrays.asList(shuffleServer3.getId(), shuffleServer4.getId());
+      List<String> shuffleIds = new ArrayList<>();
+      Response<List<HashMap<String, Object>>> response =
+          objectMapper.readValue(
+              TestUtils.httpGet(LOSTNODES_URL),
+              new TypeReference<Response<List<HashMap<String, Object>>>>() {});
+      List<HashMap<String, Object>> serverList = response.getData();
+      for (HashMap<String, Object> stringObjectHashMap : serverList) {
+        String shuffleId = (String) stringObjectHashMap.get("id");
+        shuffleIds.add(shuffleId);
+      }
+      assertTrue(CollectionUtils.isEqualCollection(expectShuffleIds, shuffleIds));
     }
-    assertTrue(CollectionUtils.isEqualCollection(expectShuffleIds, shuffleIds));
   }
 
   @Test

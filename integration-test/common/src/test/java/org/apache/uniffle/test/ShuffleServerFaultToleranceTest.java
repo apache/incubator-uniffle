@@ -50,7 +50,6 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.server.MockedShuffleServer;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -107,7 +106,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
         (client) -> {
           client.close();
         });
-    cleanCluster();
+    shutdownServers();
   }
 
   private static Stream<Arguments> testReadFaultToleranceProvider() {
@@ -329,20 +328,5 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
       Thread.sleep(1000);
       retry++;
     }
-  }
-
-  public static void cleanCluster() throws Exception {
-    for (CoordinatorServer coordinator : coordinators) {
-      coordinator.stopServer();
-    }
-    for (ShuffleServer shuffleServer : grpcShuffleServers) {
-      shuffleServer.stopServer();
-    }
-    for (ShuffleServer shuffleServer : nettyShuffleServers) {
-      shuffleServer.stopServer();
-    }
-    grpcShuffleServers = Lists.newArrayList();
-    nettyShuffleServers = Lists.newArrayList();
-    coordinators = Lists.newArrayList();
   }
 }

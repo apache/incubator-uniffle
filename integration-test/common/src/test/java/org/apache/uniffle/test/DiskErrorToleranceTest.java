@@ -54,8 +54,6 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.coordinator.CoordinatorServer;
-import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -136,22 +134,7 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
   public void closeClient() throws Exception {
     grpcShuffleServerClient.close();
     nettyShuffleServerClient.close();
-    cleanCluster();
-  }
-
-  public static void cleanCluster() throws Exception {
-    for (CoordinatorServer coordinator : coordinators) {
-      coordinator.stopServer();
-    }
-    for (ShuffleServer shuffleServer : grpcShuffleServers) {
-      shuffleServer.stopServer();
-    }
-    for (ShuffleServer shuffleServer : nettyShuffleServers) {
-      shuffleServer.stopServer();
-    }
-    grpcShuffleServers = Lists.newArrayList();
-    nettyShuffleServers = Lists.newArrayList();
-    coordinators = Lists.newArrayList();
+    shutdownServers();
   }
 
   private static Stream<Arguments> diskErrorTestProvider() {
