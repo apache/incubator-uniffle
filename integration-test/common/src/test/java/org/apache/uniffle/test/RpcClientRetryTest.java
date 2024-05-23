@@ -119,23 +119,12 @@ public class RpcClientRetryTest extends ShuffleReadWriteBase {
     }
   }
 
-  public static void cleanCluster() throws Exception {
-    for (CoordinatorServer coordinator : coordinators) {
-      coordinator.stopServer();
-    }
-    for (ShuffleServer shuffleServer : grpcShuffleServers) {
-      shuffleServer.stopServer();
-    }
-    grpcShuffleServers = Lists.newArrayList();
-    coordinators = Lists.newArrayList();
-  }
-
   @AfterAll
   public static void cleanEnv() throws Exception {
     if (shuffleWriteClientImpl != null) {
       shuffleWriteClientImpl.close();
     }
-    cleanCluster();
+    shutdownServers();
   }
 
   private static Stream<Arguments> testRpcRetryLogicProvider() {

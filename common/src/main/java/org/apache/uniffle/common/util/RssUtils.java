@@ -123,6 +123,10 @@ public class RssUtils {
       }
       return ip;
     }
+    // Unit tests are executed on a single machine and do not interact with other machines.
+    // Therefore, unit tests should not require a valid broadcast address.
+    // When running UTs, we will still return the IP address whose broadcast address is invalid.
+    boolean isTestMode = Boolean.parseBoolean(System.getProperty("test.mode", "false"));
     Enumeration<NetworkInterface> nif = NetworkInterface.getNetworkInterfaces();
     String siteLocalAddress = null;
     while (nif.hasMoreElements()) {
@@ -133,7 +137,7 @@ public class RssUtils {
       for (InterfaceAddress ifa : ni.getInterfaceAddresses()) {
         InetAddress ia = ifa.getAddress();
         InetAddress brd = ifa.getBroadcast();
-        if (brd == null || brd.isAnyLocalAddress()) {
+        if ((brd == null || brd.isAnyLocalAddress()) && !isTestMode) {
           LOGGER.info(
               "ip {} was filtered, because it don't have effective broadcast address",
               ia.getHostAddress());
