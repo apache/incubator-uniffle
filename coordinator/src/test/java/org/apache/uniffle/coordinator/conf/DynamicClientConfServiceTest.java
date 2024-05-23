@@ -63,10 +63,15 @@ public class DynamicClientConfServiceTest {
 
     // file load checking at startup
     Exception expectedException = null;
-    try (DynamicClientConfService dynamicClientConfService =
-        new DynamicClientConfService(conf, new Configuration())) {
+    DynamicClientConfService dynamicClientConfService = null;
+    try {
+      dynamicClientConfService = new DynamicClientConfService(conf, new Configuration());
     } catch (RuntimeException e) {
       expectedException = e;
+    } finally {
+      if (dynamicClientConfService != null) {
+        dynamicClientConfService.close();
+      }
     }
     assertNotNull(expectedException);
     assertTrue(expectedException.getMessage().endsWith("is not a file."));

@@ -66,7 +66,7 @@ public class AccessCandidatesCheckerTest {
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, tempDir.toURI().toString());
     String checkerClassName = AccessCandidatesChecker.class.getName();
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(), checkerClassName);
-    try (final ApplicationManager applicationManager = new ApplicationManager(conf)) {
+    try (ApplicationManager applicationManager = new ApplicationManager(conf)) {
       // file load checking at startup
       Exception expectedException = null;
       try {

@@ -95,7 +95,7 @@ public class QuotaManagerTest {
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH, quotaFile);
     conf.setInteger(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM, 5);
-    try (final ApplicationManager applicationManager = new ApplicationManager(conf)) {
+    try (ApplicationManager applicationManager = new ApplicationManager(conf)) {
       final AtomicInteger uuid = new AtomicInteger();
       Map<String, Long> uuidAndTime = JavaUtils.newConcurrentMap();
       uuidAndTime.put(String.valueOf(uuid.incrementAndGet()), System.currentTimeMillis());
@@ -134,7 +134,7 @@ public class QuotaManagerTest {
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH, quotaFile);
     conf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 1500);
     conf.setInteger(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM, 2);
-    try (final ApplicationManager applicationManager = new ApplicationManager(conf)) {
+    try (ApplicationManager applicationManager = new ApplicationManager(conf)) {
       final AtomicInteger uuid = new AtomicInteger();
       final int i1 = uuid.incrementAndGet();
       final int i2 = uuid.incrementAndGet();
@@ -178,7 +178,7 @@ public class QuotaManagerTest {
   public void testCheckQuotaWithDefault() {
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_PATH, quotaFile);
-    try (final ApplicationManager applicationManager = new ApplicationManager(conf)) {
+    try (ApplicationManager applicationManager = new ApplicationManager(conf)) {
       Awaitility.await()
           .timeout(5, TimeUnit.SECONDS)
           .until(() -> applicationManager.getDefaultUserApps().size() > 2);
