@@ -948,19 +948,17 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     heartBeatExecutorService.shutdownNow();
     coordinatorClients.forEach(CoordinatorClient::close);
     dataTransferPool.shutdownNow();
-    // wait for all services graceful termination
-    awaitExecutorServiceTermination(5000, heartBeatExecutorService, dataTransferPool, unregisterExecutorService);
-  }
 
-  private void awaitExecutorServiceTermination(long timeoutMs, ExecutorService... services) {
-    for (ExecutorService service : services) {
+    // wait for graceful termination of unregister executor service
+    // we are waiting only for the latest unregister call
+    if (unregisterExecutorService != null) {
       try {
-        if (service == null) continue;
-        if (!service.awaitTermination(timeoutMs, TimeUnit.MILLISECONDS)) {
-          LOG.warn("Executor service did not terminate within timeout: {}", service);
+        if (!unregisterExecutorService.awaitTermination(
+            unregisterRequestTimeSec, TimeUnit.SECONDS)) {
+          LOG.warn("Executor service for unregister request did not terminate within timeout");
         }
       } catch (InterruptedException e) {
-        LOG.warn("Got interrupted while waiting for executor service to terminate", e);
+        LOG.warn("Got interrupted while waiting for unregister executor service to terminate", e);
       }
     }
   }
@@ -979,7 +977,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
 
     try {
-      unregisterExecutorService = null;
       unregisterExecutorService =
           ThreadUtils.getDaemonFixedThreadPool(
               Math.min(unregisterThreadPoolSize, shuffleServerInfos.size()), "unregister-shuffle");
