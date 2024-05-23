@@ -958,7 +958,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   @Override
   public void unregisterShuffle(String appId, int shuffleId) {
     int unregisterTimeMs = unregisterRequestTimeSec * 1000;
-    RssUnregisterShuffleRequest request = new RssUnregisterShuffleRequest(appId, shuffleId);
+    RssUnregisterShuffleRequest request = new RssUnregisterShuffleRequest(appId, shuffleId, unregisterRequestTimeSec);
 
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
     if (appServerMap == null) {
@@ -971,9 +971,15 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
     ExecutorService executorService = null;
     try {
+      // we send unregister request with this concurrency (this many concurrent threads)
+      int concurrency = Math.min(unregisterThreadPoolSize, shuffleServerInfos.size());
+      // therefore we have at most this many requests in a sequence for one thread
+      int sequentiality = (int)Math.ceil((float)shuffleServerInfos.size() / unregisterThreadPoolSize);
+      // therefore we should wait this many seconds for all requests to finish
+      int unregisterTaskTimeoutSec = unregisterRequestTimeSec * sequentiality;
+
       executorService =
-          ThreadUtils.getDaemonFixedThreadPool(
-              Math.min(unregisterThreadPoolSize, shuffleServerInfos.size()), "unregister-shuffle");
+          ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
 
       ThreadUtils.executeTasks(
           executorService,
@@ -1006,7 +1012,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   @Override
   public void unregisterShuffle(String appId) {
     int unregisterTimeMs = unregisterRequestTimeSec * 1000;
-    RssUnregisterShuffleByAppIdRequest request = new RssUnregisterShuffleByAppIdRequest(appId);
+    RssUnregisterShuffleByAppIdRequest request = new RssUnregisterShuffleByAppIdRequest(appId, unregisterRequestTimeSec);
 
     if (appId == null) {
       return;
@@ -1019,9 +1025,15 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
     ExecutorService executorService = null;
     try {
+      // we send unregister request with this concurrency (this many concurrent threads)
+      int concurrency = Math.min(unregisterThreadPoolSize, shuffleServerInfos.size());
+      // therefore we have at most this many requests in a sequence for one thread
+      int sequentiality = (int)Math.ceil((float)shuffleServerInfos.size() / unregisterThreadPoolSize);
+      // therefore we should wait this many seconds for all requests to finish
+      int unregisterTaskTimeoutSec = unregisterRequestTimeSec * sequentiality;
+
       executorService =
-          ThreadUtils.getDaemonFixedThreadPool(
-              Math.min(unregisterThreadPoolSize, shuffleServerInfos.size()), "unregister-shuffle");
+          ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
 
       ThreadUtils.executeTasks(
           executorService,

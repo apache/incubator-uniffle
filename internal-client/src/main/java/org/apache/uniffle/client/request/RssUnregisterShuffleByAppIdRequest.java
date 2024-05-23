@@ -19,12 +19,18 @@ package org.apache.uniffle.client.request;
 
 public class RssUnregisterShuffleByAppIdRequest {
   private String appId;
+  private int timeoutSec;
 
-  public RssUnregisterShuffleByAppIdRequest(String appId) {
+  public RssUnregisterShuffleByAppIdRequest(String appId, int timeoutSec) {
     this.appId = appId;
+    this.timeoutSec = timeoutSec;
   }
 
   public String getAppId() {
     return appId;
+  }
+
+  public int getTimeoutSec() {
+    return this.timeoutSec;
   }
 }
