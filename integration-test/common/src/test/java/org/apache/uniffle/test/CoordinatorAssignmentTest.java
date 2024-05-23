@@ -109,6 +109,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
             .dataTransferPoolSize(1)
             .dataCommitPoolSize(1)
             .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(60)
             .unregisterRequestTimeSec(10)
             .build();
     shuffleWriteClient.registerCoordinators(QUORUM);
@@ -150,6 +151,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
             .dataTransferPoolSize(1)
             .dataCommitPoolSize(1)
             .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(60)
             .unregisterRequestTimeSec(10)
             .build();
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
@@ -199,6 +201,7 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
             .dataTransferPoolSize(1)
             .dataCommitPoolSize(1)
             .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(60)
             .unregisterRequestTimeSec(10)
             .build();
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);

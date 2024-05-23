@@ -342,6 +342,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
                 .dataTransferPoolSize(1)
                 .dataCommitPoolSize(1)
                 .unregisterThreadPoolSize(10)
+                .unregisterTimeSec(60)
                 .unregisterRequestTimeSec(10));
 
     List<ShuffleServerInfo> allServers =

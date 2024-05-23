@@ -115,6 +115,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private int dataCommitPoolSize = -1;
   private final ExecutorService dataTransferPool;
   private final int unregisterThreadPoolSize;
+  private final int unregisterTimeSec;
   private final int unregisterRequestTimeSec;
   private Set<ShuffleServerInfo> defectiveServers;
   private RssConf rssConf;
@@ -127,6 +128,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
     if (builder.getUnregisterThreadPoolSize() == 0) {
       builder.unregisterThreadPoolSize(10);
+    }
+    if (builder.getUnregisterTimeSec() == 0) {
+      builder.unregisterTimeSec(60);
     }
     if (builder.getUnregisterRequestTimeSec() == 0) {
       builder.unregisterRequestTimeSec(10);
@@ -146,6 +150,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             builder.getDataTransferPoolSize(), "client-data-transfer");
     this.dataCommitPoolSize = builder.getDataCommitPoolSize();
     this.unregisterThreadPoolSize = builder.getUnregisterThreadPoolSize();
+    this.unregisterTimeSec = builder.getUnregisterTimeSec();
     this.unregisterRequestTimeSec = builder.getUnregisterRequestTimeSec();
     if (replica > 1) {
       defectiveServers = Sets.newConcurrentHashSet();
@@ -983,8 +988,20 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int concurrency = Math.min(unregisterThreadPoolSize, shuffleServerInfos.size());
       // therefore, we have at most this many requests in a sequence for one thread
       int sequentiality = sequentiality(shuffleServerInfos.size(), concurrency);
-      // therefore, we should wait this many seconds for all requests to finish
-      int unregisterTaskTimeoutSec = unregisterRequestTimeSec * sequentiality;
+      // if we wait less than this time we may interrupt ongoing requests
+      int requiredUnregisterTimeoutSec = unregisterRequestTimeSec * sequentiality;
+      if (unregisterTimeSec < requiredUnregisterTimeoutSec) {
+        // NOTE: currently, this can only be set for Spark clients
+        LOG.warn(
+            "Unregistering from {} shuffle servers with concurrency of {} and individual timeout of {}s may take {}s, "
+                + "which is longer than overall timeout of {}s. Consider increasing the unregister thread pool size or "
+                + "the overall unregister timeout",
+            shuffleServerInfos.size(),
+            concurrency,
+            unregisterRequestTimeSec,
+            requiredUnregisterTimeoutSec,
+            unregisterTimeSec);
+      }
 
       executorService = ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
 
@@ -1039,8 +1056,21 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int concurrency = Math.min(unregisterThreadPoolSize, shuffleServerInfos.size());
       // therefore, we have at most this many requests in a sequence for one thread
       int sequentiality = sequentiality(shuffleServerInfos.size(), concurrency);
-      // therefore, we should wait this many seconds for all requests to finish
-      int unregisterTaskTimeoutSec = unregisterRequestTimeSec * sequentiality;
+      // if we wait less than this time we may interrupt ongoing requests
+      int requiredUnregisterTimeoutSec = unregisterRequestTimeSec * sequentiality;
+      if (unregisterTimeSec < requiredUnregisterTimeoutSec) {
+        // NOTE: currently, this can only be set for Spark clients
+        LOG.warn(
+            "Unregistering from {} shuffle servers with concurrency of {} and individual timeout of {}s may take {}s, "
+                + "which is longer than overall timeout of {}s. Consider increasing the unregister thread pool size "
+                + "(spark.rss.client.unregister.thread.pool.size) or the overall unregister timeout "
+                + "(spark.rss.client.unregister.timeout.sec), which both is only supported by Spark clients.",
+            shuffleServerInfos.size(),
+            concurrency,
+            unregisterRequestTimeSec,
+            requiredUnregisterTimeoutSec,
+            unregisterTimeSec);
+      }
 
       executorService = ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
 

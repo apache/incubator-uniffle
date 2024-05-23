@@ -191,6 +191,10 @@ public class RssSparkConfig {
       createIntegerBuilder(new ConfigBuilder("spark.rss.client.unregister.thread.pool.size"))
           .createWithDefault(10);
 
+  public static final ConfigEntry<Integer> RSS_CLIENT_UNREGISTER_TIMEOUT_SEC =
+      createIntegerBuilder(new ConfigBuilder("spark.rss.client.unregister.timeout.sec"))
+          .createWithDefault(60);
+
   public static final ConfigEntry<Integer> RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC =
       createIntegerBuilder(new ConfigBuilder("spark.rss.client.unregister.request.timeout.sec"))
           .createWithDefault(10);

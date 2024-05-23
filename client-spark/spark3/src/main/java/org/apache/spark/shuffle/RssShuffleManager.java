@@ -269,6 +269,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     }
     int unregisterThreadPoolSize =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
+    int unregisterTimeoutSec = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_TIMEOUT_SEC);
     int unregisterRequestTimeoutSec =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC);
     long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
@@ -290,6 +291,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     .dataTransferPoolSize(dataTransferPoolSize)
                     .dataCommitPoolSize(dataCommitPoolSize)
                     .unregisterThreadPoolSize(unregisterThreadPoolSize)
+                    .unregisterTimeSec(unregisterTimeoutSec)
                     .unregisterRequestTimeSec(unregisterRequestTimeoutSec)
                     .rssConf(rssConf));
     registerCoordinator();
@@ -373,6 +375,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.dataCommitPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE);
     int unregisterThreadPoolSize =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
+    int unregisterTimeoutSec = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_TIMEOUT_SEC);
     int unregisterRequestTimeoutSec =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC);
     shuffleWriteClient =
@@ -391,6 +394,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     .dataTransferPoolSize(dataTransferPoolSize)
                     .dataCommitPoolSize(dataCommitPoolSize)
                     .unregisterThreadPoolSize(unregisterThreadPoolSize)
+                    .unregisterTimeSec(unregisterTimeoutSec)
                     .unregisterRequestTimeSec(unregisterRequestTimeoutSec)
                     .rssConf(rssConf));
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;

@@ -176,6 +176,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
                     .dataTransferPoolSize(1)
                     .dataCommitPoolSize(1)
                     .unregisterThreadPoolSize(10)
+                    .unregisterTimeSec(60)
                     .unregisterRequestTimeSec(10));
     shuffleWriteClient.registerCoordinators("127.0.0.1:" + COORDINATOR_PORT_1);
     shuffleWriteClient.registerShuffle(
