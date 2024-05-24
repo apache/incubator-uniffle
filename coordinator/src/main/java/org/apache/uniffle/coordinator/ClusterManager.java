@@ -21,9 +21,7 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.uniffle.common.config.Reconfigurable;
-
-public interface ClusterManager extends Closeable, Reconfigurable {
+public interface ClusterManager extends Closeable {
 
   /**
    * Add a server to the cluster.

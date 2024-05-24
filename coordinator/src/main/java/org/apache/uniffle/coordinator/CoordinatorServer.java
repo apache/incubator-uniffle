@@ -26,8 +26,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
-import org.apache.uniffle.common.config.ReconfigurableBase;
-import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.ReconfigurableConfManager;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
@@ -55,7 +54,7 @@ import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_K
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KRB5_CONF_FILE;
 
 /** The main entrance of coordinator service */
-public class CoordinatorServer extends ReconfigurableBase {
+public class CoordinatorServer {
 
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorServer.class);
 
@@ -72,7 +71,6 @@ public class CoordinatorServer extends ReconfigurableBase {
   private String id;
 
   public CoordinatorServer(CoordinatorConf coordinatorConf) throws Exception {
-    super(coordinatorConf);
     this.coordinatorConf = coordinatorConf;
     try {
       initialization();
@@ -91,8 +89,7 @@ public class CoordinatorServer extends ReconfigurableBase {
 
     // Load configuration from config files
     final CoordinatorConf coordinatorConf = new CoordinatorConf(configFile);
-
-    coordinatorConf.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, configFile);
+    ReconfigurableConfManager.init(coordinatorConf, configFile);
 
     // Start the coordinator service
     final CoordinatorServer coordinatorServer = new CoordinatorServer(coordinatorConf);
@@ -102,7 +99,6 @@ public class CoordinatorServer extends ReconfigurableBase {
   }
 
   public void start() throws Exception {
-    startReconfigureThread();
     jettyServer.start();
     server.start();
     if (metricReporter != null) {
@@ -145,7 +141,6 @@ public class CoordinatorServer extends ReconfigurableBase {
       metricReporter.stop();
       LOG.info("Metric Reporter Stopped!");
     }
-    stopReconfigureThread();
     SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
   }
@@ -271,28 +266,5 @@ public class CoordinatorServer extends ReconfigurableBase {
   /** Await termination on the main thread since the grpc library uses daemon threads. */
   protected void blockUntilShutdown() throws InterruptedException {
     server.blockUntilShutdown();
-  }
-
-  @Override
-  public void reconfigure(RssConf conf) {
-    clusterManager.reconfigure(conf);
-    accessManager.reconfigure(conf);
-  }
-
-  @Override
-  public boolean isPropertyReconfigurable(String property) {
-    if (clusterManager.isPropertyReconfigurable(property)) {
-      return true;
-    }
-    if (accessManager.isPropertyReconfigurable(property)) {
-      return true;
-    }
-    return false;
-  }
-
-  @Override
-  public RssConf reloadConfiguration() {
-    return new CoordinatorConf(
-        coordinatorConf.getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, ""));
   }
 }
