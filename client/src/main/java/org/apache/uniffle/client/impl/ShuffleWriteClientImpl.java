@@ -1026,7 +1026,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                 LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
               }
             } catch (Exception e) {
-              LOG.warn("Error happened when unregistering from " + shuffleServerInfo, e);
+              LOG.warn("Error happened when unregistering from {}", shuffleServerInfo, e);
             }
             return null;
           },
@@ -1102,7 +1102,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                 LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
               }
             } catch (Exception e) {
-              LOG.warn("Error happened when unregistering from " + shuffleServerInfo, e);
+              LOG.warn("Error happened when unregistering from {}", shuffleServerInfo, e);
             }
             return null;
           },
