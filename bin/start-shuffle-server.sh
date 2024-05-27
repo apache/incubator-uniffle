@@ -102,24 +102,31 @@ JVM_ARGS=" -server \
           -XX:InitiatingHeapOccupancyPercent=20 \
           -XX:G1HeapRegionSize=32m \
           -XX:+UnlockExperimentalVMOptions \
-          -XX:G1NewSizePercent=10"
+          -XX:G1NewSizePercent=10 \
+          -XX:+CrashOnOutOfMemoryError \
+          -XX:+ExitOnOutOfMemoryError \
+          -XX:+PrintCommandLineFlags"
 
-JAVA8_GC_ARGS=" -XX:+PrintGC \
+GC_LOG_ARGS_LEGACY=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
-          -XX:+CrashOnOutOfMemoryError \
-          -XX:+ExitOnOutOfMemoryError \
           -XX:+PrintTenuringDistribution \
           -XX:+PrintPromotionFailure \
           -XX:+PrintGCApplicationStoppedTime \
-          -XX:+PrintCommandLineFlags \
           -XX:+PrintGCCause \
           -XX:+PrintGCDetails \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
-JAVA11_GC_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
-          -Xlog:gc*,gc+ergo*=trace:${RSS_LOG_DIR}/gc-%t.log:tags,time,uptime,level"
+GC_LOG_ARGS_NEW=" -XX:+IgnoreUnrecognizedVMOptions \
+          -Xlog:gc* \
+          -Xlog:gc+age=trace \
+          -Xlog:gc+heap=debug \
+          -Xlog:gc+promotion=trace \
+          -Xlog:gc+phases=debug \
+          -Xlog:gc+ref=debug \
+          -Xlog:gc+start=debug \
+          -Xlog:gc*:file=${RSS_LOG_DIR}/gc-%t.log:tags,uptime,time,level"
 
 ARGS=""
 
@@ -130,14 +137,11 @@ else
   exit 1
 fi
 
-version=$($RUNNER -version 2>&1 | awk -F '"' '/version/ {print $2}')
-if [[ $version == "1.8"* ]]; then
-  GC_ARGS=$JAVA8_GC_ARGS
-elif [[ $version == "11"* ]]; then
-  GC_ARGS=$JAVA11_GC_ARGS
+version=$($RUNNER -version 2>&1 | awk -F[\".] '/version/ {print $2}')
+if [[ "$version" -lt "9" ]]; then
+  GC_ARGS=$GC_LOG_ARGS_LEGACY
 else
-  echo "Exit with error: unknown java version ${version} ."
-  exit 1
+  GC_ARGS=$GC_LOG_ARGS_NEW
 fi
 
 $RUNNER $ARGS $JVM_ARGS $GC_ARGS $JAVA_LIB_PATH -cp $CLASSPATH $MAIN_CLASS --conf "$SHUFFLE_SERVER_CONF_FILE" $@ &

@@ -62,24 +62,23 @@ function uniffle_cmd_case
           -XX:+UnlockExperimentalVMOptions \
           -XX:G1NewSizePercent=10"
 
-      JAVA8_GC_ARGS=" -XX:+PrintGC \
+      GC_LOG_ARGS_LEGACY=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
           -XX:+PrintGCDetails \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
-      JAVA11_GC_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
-          -Xlog:gc*,gc+ergo*=trace:${RSS_LOG_DIR}/gc-%t.log:tags,time,uptime,level"
+      GC_LOG_ARGS_NEW=" -XX:+IgnoreUnrecognizedVMOptions \
+          -Xlog:gc* \
+          -Xlog:gc+heap=debug \
+          -Xlog:gc:file=${RSS_LOG_DIR}/gc-%t.log:tags,uptime,time,level"
 
-      version=$(${JAVA} -version 2>&1 | awk -F '"' '/version/ {print $2}')
-      if [[ $version == "1.8"* ]]; then
-          GC_ARGS=$JAVA8_GC_ARGS
-      elif [[ $version == "11"* ]]; then
-          GC_ARGS=$JAVA11_GC_ARGS
+      version=$(${JAVA} -version 2>&1 | awk -F[\".] '/version/ {print $2}')
+      if [[ "$version" -lt "9" ]]; then
+        GC_ARGS=$GC_LOG_ARGS_LEGACY
       else
-        echo "Exit with error: unknown java version ${version} ."
-        exit 1
+        GC_ARGS=$GC_LOG_ARGS_NEW
       fi
 
       UNIFFLE_OPTS="$UNIFFLE_OPTS $JVM_ARGS $JAVA11_EXTRA_ARGS"
@@ -99,24 +98,23 @@ function uniffle_cmd_case
           -XX:ConcGCThreads=5 \
           -XX:InitiatingHeapOccupancyPercent=45”
 
-      JAVA8_GC_ARGS=" -XX:+PrintGC \
+      GC_LOG_ARGS_LEGACY=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
           -XX:+PrintGCDetails \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
-      JAVA11_GC_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
-          -Xlog:gc*,gc+ergo*=trace:${RSS_LOG_DIR}/gc-%t.log:tags,time,uptime,level"
+      GC_LOG_ARGS_NEW=" -XX:+IgnoreUnrecognizedVMOptions \
+          -Xlog:gc* \
+          -Xlog:gc+heap=debug \
+          -Xlog:gc:file=${RSS_LOG_DIR}/gc-%t.log:tags,uptime,time,level"
 
-      version=$(${JAVA} -version 2>&1 | awk -F '"' '/version/ {print $2}')
-      if [[ $version == "1.8"* ]]; then
-          GC_ARGS=$JAVA8_GC_ARGS
-      elif [[ $version == "11"* ]]; then
-          GC_ARGS=$JAVA11_GC_ARGS
+      version=$(${JAVA} -version 2>&1 | awk -F[\".] '/version/ {print $2}')
+      if [[ "$version" -lt "9" ]]; then
+        GC_ARGS=$GC_LOG_ARGS_LEGACY
       else
-        echo "Exit with error: unknown java version ${version} ."
-        exit 1
+        GC_ARGS=$GC_LOG_ARGS_NEW
       fi
 
       UNIFFLE_OPTS="$UNIFFLE_OPTS $JVM_ARGS $GC_ARGS"
