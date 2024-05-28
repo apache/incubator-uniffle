@@ -100,38 +100,44 @@ public class LocalStorageChecker extends Checker {
     Map<StorageInfo, CompletableFuture<Void>> futureMap = new HashMap<>();
     for (StorageInfo storageInfo : storageInfos) {
       CompletableFuture<Void> storageCheckFuture =
-          CompletableFuture.supplyAsync(
-              () -> {
-                if (!storageInfo.checkStorageReadAndWrite()) {
-                  storageInfo.markCorrupted();
-                  corruptedDirs.incrementAndGet();
-                  return null;
-                }
+          CompletableFuture.runAsync(
+                  () -> {
+                    if (!storageInfo.checkStorageReadAndWrite()) {
+                      storageInfo.markCorrupted();
+                      corruptedDirs.incrementAndGet();
+                      return;
+                    }
 
-                long total = getTotalSpace(storageInfo.storageDir);
-                long availableBytes = getFreeSpace(storageInfo.storageDir);
+                    long total = getTotalSpace(storageInfo.storageDir);
+                    long availableBytes = getFreeSpace(storageInfo.storageDir);
 
-                totalSpace.addAndGet(total);
-                wholeDiskUsedSpace.addAndGet(total - availableBytes);
-                long usedBytes = getServiceUsedSpace(storageInfo.storageDir);
-                serviceUsedSpace.addAndGet(usedBytes);
-                storageInfo.updateServiceUsedBytes(usedBytes);
-                storageInfo.updateStorageFreeSpace(availableBytes);
+                    totalSpace.addAndGet(total);
+                    wholeDiskUsedSpace.addAndGet(total - availableBytes);
+                    long usedBytes = getServiceUsedSpace(storageInfo.storageDir);
+                    serviceUsedSpace.addAndGet(usedBytes);
+                    storageInfo.updateServiceUsedBytes(usedBytes);
+                    storageInfo.updateStorageFreeSpace(availableBytes);
 
-                boolean isWritable = storageInfo.canWrite();
-                ShuffleServerMetrics.gaugeLocalStorageIsWritable
-                    .labels(storageInfo.storage.getBasePath())
-                    .set(isWritable ? 0 : 1);
-                ShuffleServerMetrics.gaugeLocalStorageIsTimeout
-                    .labels(storageInfo.storage.getBasePath())
-                    .set(0);
+                    boolean isWritable = storageInfo.canWrite();
+                    ShuffleServerMetrics.gaugeLocalStorageIsWritable
+                        .labels(storageInfo.storage.getBasePath())
+                        .set(isWritable ? 0 : 1);
+                    ShuffleServerMetrics.gaugeLocalStorageIsTimeout
+                        .labels(storageInfo.storage.getBasePath())
+                        .set(0);
 
-                if (storageInfo.checkIsSpaceEnough(total, availableBytes)) {
-                  num.incrementAndGet();
-                }
-                return null;
-              },
-              workers);
+                    if (storageInfo.checkIsSpaceEnough(total, availableBytes)) {
+                      num.incrementAndGet();
+                    }
+                  },
+                  workers)
+              .exceptionally(
+                  ex -> {
+                    LOG.error(
+                        "Unexpected exceptions occurred while checking the health status of the disk",
+                        ex);
+                    return null;
+                  });
 
       futureMap.put(
           storageInfo,
