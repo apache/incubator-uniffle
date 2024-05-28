@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
-import org.apache.uniffle.common.config.ReconfigurableBase;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.dashboard.web.config.DashboardConf;
@@ -70,7 +69,6 @@ public class JettyServerFront {
 
     // Load configuration from config files
     final DashboardConf coodConf = new DashboardConf(configFile);
-    coodConf.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, configFile);
     JettyServerFront jettyServerFront = new JettyServerFront(coodConf);
     jettyServerFront.start();
   }
