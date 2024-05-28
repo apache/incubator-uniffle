@@ -920,7 +920,7 @@
             </systemProperties>
             <redirectTestOutputToFile>${test.redirectToFile}</redirectTestOutputToFile>
             <useFile>${test.redirectToFile}</useFile>
-            <argLine>${argLine} -ea -Xmx3g</argLine>
+            <argLine>${argLine} -ea -Xmx5g -Xss4m -XX:MaxMetaspaceSize=2g -XX:ReservedCodeCacheSize=1g</argLine>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>${trimStackTrace}</trimStackTrace>
             <skipTests>${skipUTs}</skipTests>
