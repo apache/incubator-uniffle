@@ -70,90 +70,91 @@ public class AccessCandidatesCheckerHadoopTest extends HadoopTestBase {
     conf.setString(
         CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(),
         "org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker");
-    ApplicationManager applicationManager = new ApplicationManager(conf);
-    // file load checking at startup
-    Exception expectedException = null;
-    try {
-      new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
-    } catch (RuntimeException e) {
-      expectedException = e;
+    try (ApplicationManager applicationManager = new ApplicationManager(conf)) {
+      // file load checking at startup
+      Exception expectedException = null;
+      try {
+        new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
+      } catch (RuntimeException e) {
+        expectedException = e;
+      }
+      assertNotNull(expectedException);
+      assertTrue(
+          expectedException
+              .getMessage()
+              .contains(
+                  "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
+      conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, candidatesFile);
+      expectedException = null;
+      try {
+        new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
+      } catch (RuntimeException e) {
+        expectedException = e;
+      }
+      assertNotNull(expectedException);
+      assertTrue(
+          expectedException
+              .getMessage()
+              .contains(
+                  "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
+
+      Path path = new Path(candidatesFile);
+      FSDataOutputStream out = fs.create(path);
+
+      PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(out));
+      printWriter.println("9527");
+      printWriter.println(" 135 ");
+      printWriter.println("2 ");
+      printWriter.flush();
+      printWriter.close();
+      AccessManager accessManager =
+          new AccessManager(conf, null, applicationManager.getQuotaManager(), hadoopConf);
+      AccessCandidatesChecker checker =
+          (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
+      // load the config at the beginning
+      sleep(1200);
+      assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
+      assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
+      assertTrue(checker.check(new AccessInfo("135")).isSuccess());
+      assertFalse(checker.check(new AccessInfo("1")).isSuccess());
+      assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
+
+      // ignore empty or wrong content
+      printWriter.println("");
+      printWriter.flush();
+      printWriter.close();
+      sleep(1300);
+      assertTrue(fs.exists(path));
+      assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
+      assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
+      assertTrue(checker.check(new AccessInfo("135")).isSuccess());
+      assertFalse(checker.check(new AccessInfo("1")).isSuccess());
+      assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
+
+      // the config will not be changed when the conf file is deleted
+      fs.delete(path, true);
+      assertFalse(fs.exists(path));
+      sleep(1200);
+      assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
+      assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
+      assertTrue(checker.check(new AccessInfo("135")).isSuccess());
+      assertFalse(checker.check(new AccessInfo("1")).isSuccess());
+      assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
+
+      // the normal update config process, move the new conf file to the old one
+      Path tmpPath = new Path(candidatesFile + ".tmp");
+      out = fs.create(tmpPath);
+      printWriter = new PrintWriter(new OutputStreamWriter(out));
+      printWriter.println("9527");
+      printWriter.println(" 1357 ");
+      printWriter.flush();
+      printWriter.close();
+      fs.rename(tmpPath, path);
+      sleep(1200);
+      assertEquals(Sets.newHashSet("1357", "9527"), checker.getCandidates().get());
+      assertTrue(checker.check(new AccessInfo("1357")).isSuccess());
+      assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
+      checker.close();
     }
-    assertNotNull(expectedException);
-    assertTrue(
-        expectedException
-            .getMessage()
-            .contains(
-                "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
-    conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, candidatesFile);
-    expectedException = null;
-    try {
-      new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
-    } catch (RuntimeException e) {
-      expectedException = e;
-    }
-    assertNotNull(expectedException);
-    assertTrue(
-        expectedException
-            .getMessage()
-            .contains(
-                "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
-
-    Path path = new Path(candidatesFile);
-    FSDataOutputStream out = fs.create(path);
-
-    PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(out));
-    printWriter.println("9527");
-    printWriter.println(" 135 ");
-    printWriter.println("2 ");
-    printWriter.flush();
-    printWriter.close();
-    AccessManager accessManager =
-        new AccessManager(conf, null, applicationManager.getQuotaManager(), hadoopConf);
-    AccessCandidatesChecker checker =
-        (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
-    // load the config at the beginning
-    sleep(1200);
-    assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
-    assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
-    assertTrue(checker.check(new AccessInfo("135")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
-
-    // ignore empty or wrong content
-    printWriter.println("");
-    printWriter.flush();
-    printWriter.close();
-    sleep(1300);
-    assertTrue(fs.exists(path));
-    assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
-    assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
-    assertTrue(checker.check(new AccessInfo("135")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
-
-    // the config will not be changed when the conf file is deleted
-    fs.delete(path, true);
-    assertFalse(fs.exists(path));
-    sleep(1200);
-    assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
-    assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
-    assertTrue(checker.check(new AccessInfo("135")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
-
-    // the normal update config process, move the new conf file to the old one
-    Path tmpPath = new Path(candidatesFile + ".tmp");
-    out = fs.create(tmpPath);
-    printWriter = new PrintWriter(new OutputStreamWriter(out));
-    printWriter.println("9527");
-    printWriter.println(" 1357 ");
-    printWriter.flush();
-    printWriter.close();
-    fs.rename(tmpPath, path);
-    sleep(1200);
-    assertEquals(Sets.newHashSet("1357", "9527"), checker.getCandidates().get());
-    assertTrue(checker.check(new AccessInfo("1357")).isSuccess());
-    assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
-    checker.close();
   }
 }

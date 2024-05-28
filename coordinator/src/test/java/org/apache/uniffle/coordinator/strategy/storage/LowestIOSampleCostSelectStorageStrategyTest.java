@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 
 import com.google.common.collect.Sets;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,6 +71,11 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
         (LowestIOSampleCostSelectStorageStrategy) applicationManager.getSelectStorageStrategy();
     // to ensure that the reading and writing of hdfs can be controlled
     applicationManager.closeDetectStorageScheduler();
+  }
+
+  @AfterEach
+  public void tearDown() {
+    applicationManager.close();
   }
 
   @Test
