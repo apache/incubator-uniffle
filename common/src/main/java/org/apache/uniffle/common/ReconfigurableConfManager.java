@@ -82,16 +82,21 @@ public class ReconfigurableConfManager<T> {
   private Supplier<RssConf> getConfFromFile(String rssConfFilePath, Class confCls) {
     return () -> {
       File confFile = new File(rssConfFilePath);
-      if (confFile.exists() && confFile.isFile()) {
-        long lastModified = confFile.lastModified();
-        if (lastModified > latestModificationTimestamp) {
-          latestModificationTimestamp = lastModified;
-          RssBaseConf conf = new RssBaseConf();
-          conf.loadConfFromFile(rssConfFilePath, ConfigUtils.getAllConfigOptions(confCls));
-          return conf;
-        }
+      if (!confFile.exists()) {
+        LOGGER.warn("Rss conf file: {} don't exist. Ignore updating", rssConfFilePath);
+        return null;
       }
-      LOGGER.info("Rss conf file:{} is invalid. Ignore updating.", rssConfFilePath);
+      if (!confFile.isFile()) {
+        LOGGER.warn("Rss conf file: {} is not file. Ignore updating", rssConfFilePath);
+        return null;
+      }
+      long lastModified = confFile.lastModified();
+      if (lastModified > latestModificationTimestamp) {
+        latestModificationTimestamp = lastModified;
+        RssBaseConf conf = new RssBaseConf();
+        conf.loadConfFromFile(rssConfFilePath, ConfigUtils.getAllConfigOptions(confCls));
+        return conf;
+      }
       return null;
     };
   }
@@ -106,8 +111,8 @@ public class ReconfigurableConfManager<T> {
         LOGGER.info(
             "Update the config option: {} from {} -> {}",
             configOption.key(),
-            val,
-            rssConf.get(configOption));
+            rssConf.get(configOption),
+            val);
         rssConf.set(configOption, val);
       }
     }
