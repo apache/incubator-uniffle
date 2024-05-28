@@ -231,8 +231,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleWriteClient,
         rssHandle,
         taskFailureCallback,
-        null,
-        context);
+        context,
+        null);
   }
 
   public RssShuffleWriter(
