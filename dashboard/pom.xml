@@ -95,7 +95,6 @@
                 </executions>
                 <configuration>
                     <workingDirectory>src/main/webapp</workingDirectory>
-                    <npmRegistryURL>http://jfrog.cloud.qiyi.domain:80/api/npm/npm/</npmRegistryURL>
                 </configuration>
             </plugin>
         </plugins>
