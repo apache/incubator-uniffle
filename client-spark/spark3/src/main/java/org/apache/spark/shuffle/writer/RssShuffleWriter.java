@@ -110,7 +110,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final ShuffleWriteClient shuffleWriteClient;
   private final Set<ShuffleServerInfo> shuffleServersForData;
   private final long[] partitionLengths;
-  private final boolean isMemoryShuffleEnabled;
+  // gluten need to use this variable
+  protected final boolean isMemoryShuffleEnabled;
   private final Function<String, Boolean> taskFailureCallback;
   private final Set<Long> blockIds = Sets.newConcurrentHashSet();
   private TaskContext taskContext;
@@ -189,7 +190,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.bitmapSplitNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM);
     this.serverToPartitionToBlockIds = Maps.newHashMap();
     this.shuffleWriteClient = shuffleWriteClient;
-    this.shuffleServersForData = shuffleHandleInfo.getShuffleServersForData();
+    // shuffleHandleInfo will be null if we use gluten
+    this.shuffleServersForData = shuffleHandleInfo == null ?
+        rssHandle.getShuffleServersForData() : shuffleHandleInfo.getShuffleServersForData();
     this.partitionLengths = new long[partitioner.numPartitions()];
     Arrays.fill(partitionLengths, 0);
     this.isMemoryShuffleEnabled =
@@ -202,6 +205,34 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             RssSparkConfig.SPARK_RSS_CONFIG_PREFIX
                 + RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.key(),
             RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.defaultValue());
+  }
+
+  // gluten need this constructor
+  protected RssShuffleWriter(
+      String appId,
+      int shuffleId,
+      String taskId,
+      long taskAttemptId,
+      ShuffleWriteMetrics shuffleWriteMetrics,
+      RssShuffleManager shuffleManager,
+      SparkConf sparkConf,
+      ShuffleWriteClient shuffleWriteClient,
+      RssShuffleHandle<K, V, C> rssHandle,
+      Function<String, Boolean> taskFailureCallback,
+      TaskContext context) {
+    this(
+        appId,
+        shuffleId,
+        taskId,
+        taskAttemptId,
+        shuffleWriteMetrics,
+        shuffleManager,
+        sparkConf,
+        shuffleWriteClient,
+        rssHandle,
+        taskFailureCallback,
+        null,
+        context);
   }
 
   public RssShuffleWriter(
@@ -231,6 +262,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleHandleInfo,
         context);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
+    // shuffleHandleInfo will be null if we use gluten
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers = shuffleHandleInfo == null ?
+        rssHandle.getPartitionToServers() : shuffleHandleInfo.getPartitionToServers();
     final WriteBufferManager bufferManager =
         new WriteBufferManager(
             shuffleId,
@@ -238,7 +272,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             taskAttemptId,
             bufferOptions,
             rssHandle.getDependency().serializer(),
-            shuffleHandleInfo.getPartitionToServers(),
+            partitionToServers,
             context.taskMemoryManager(),
             shuffleWriteMetrics,
             RssSparkConfig.toRssConf(sparkConf),
@@ -253,7 +287,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   @Override
   public void write(Iterator<Product2<K, V>> records) {
     try {
-      writeImpl(records);
+      writeRecords(records);
     } catch (Exception e) {
       taskFailureCallback.apply(taskId);
       if (shuffleManager.isRssResubmitStage()) {
@@ -264,7 +298,12 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
   }
 
-  private void writeImpl(Iterator<Product2<K, V>> records) {
+  // gluten need this method and IOException must be throws here
+  protected void writeImpl(Iterator<Product2<K, V>> records) throws IOException {
+    writeRecords(records);
+  }
+
+  protected void writeRecords(Iterator<Product2<K, V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos;
     boolean isCombine = shuffleDependency.mapSideCombine();
     Function1<V, C> createCombiner = null;
@@ -320,6 +359,11 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             + (System.currentTimeMillis() - commitStartTs)
             + "], "
             + bufferManager.getManagerCostInfo());
+  }
+
+  // gluten need this method
+  protected void internalCheckBlockSendResult() {
+    this.checkBlockSendResult(this.blockIds);
   }
 
   private void checkSentRecordCount(long recordCount) {
