@@ -513,7 +513,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     } else {
       writeMetrics = context.taskMetrics().shuffleWriteMetrics();
     }
-    ShuffleHandleInfo shuffleHandleInfo = getRemoteShuffleHandleInfo(rssHandle);
+    ShuffleHandleInfo shuffleHandleInfo = getShuffleHandleInfo(rssHandle);
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
     return new RssShuffleWriter<>(
@@ -647,7 +647,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     RssShuffleHandle<K, ?, C> rssShuffleHandle = (RssShuffleHandle<K, ?, C>) handle;
     final int partitionNum = rssShuffleHandle.getDependency().partitioner().numPartitions();
     int shuffleId = rssShuffleHandle.getShuffleId();
-    ShuffleHandleInfo shuffleHandleInfo = getRemoteShuffleHandleInfo(rssShuffleHandle);
+    ShuffleHandleInfo shuffleHandleInfo = getShuffleHandleInfo(rssShuffleHandle);
     Map<Integer, List<ShuffleServerInfo>> allPartitionToServers =
         shuffleHandleInfo.getPartitionToServers();
     Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers =
@@ -1083,15 +1083,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   }
 
   // gluten need this method
-  protected ShuffleHandleInfo getRemoteShuffleHandleInfo(RssShuffleHandle<?, ?, ?> rssHandle) {
+  protected ShuffleHandleInfo getRemoteShuffleHandleInfo(RssShuffleHandle<?,?,?> rssHandle) {
     if (shuffleManagerRpcServiceEnabled) {
       // Get the ShuffleServer list from the Driver based on the shuffleId
-      return getRemoteShuffleHandleInfo(rssHandle.getShuffleId());
+      return getShuffleHandleInfo(rssHandle.getShuffleId());
     } else {
       return new ShuffleHandleInfo(
-          rssHandle.getShuffleId(),
-          rssHandle.getPartitionToServers(),
-          rssHandle.getRemoteStorage());
+          rssHandle.getShuffleId(), rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
     }
   }
 
@@ -1101,7 +1099,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * @param shuffleId shuffleId
    * @return ShuffleHandleInfo
    */
-  private synchronized ShuffleHandleInfo getRemoteShuffleHandleInfo(int shuffleId) {
+  private synchronized ShuffleHandleInfo getShuffleHandleInfo(int shuffleId) {
     ShuffleHandleInfo shuffleHandleInfo;
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     String driver = rssConf.getString("driver.host", "");
