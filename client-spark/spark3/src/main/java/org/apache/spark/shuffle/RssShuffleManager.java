@@ -1086,7 +1086,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   protected ShuffleHandleInfo getRemoteShuffleHandleInfo(RssShuffleHandle<?,?,?> rssHandle) {
     if (shuffleManagerRpcServiceEnabled) {
       // Get the ShuffleServer list from the Driver based on the shuffleId
-      return getShuffleHandleInfo(rssHandle.getShuffleId());
+      return getRemoteShuffleHandleInfo(rssHandle.getShuffleId());
     } else {
       return new ShuffleHandleInfo(
           rssHandle.getShuffleId(), rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
@@ -1099,7 +1099,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
    * @param shuffleId shuffleId
    * @return ShuffleHandleInfo
    */
-  private synchronized ShuffleHandleInfo getShuffleHandleInfo(int shuffleId) {
+  private synchronized ShuffleHandleInfo getRemoteShuffleHandleInfo(int shuffleId) {
     ShuffleHandleInfo shuffleHandleInfo;
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     String driver = rssConf.getString("driver.host", "");
