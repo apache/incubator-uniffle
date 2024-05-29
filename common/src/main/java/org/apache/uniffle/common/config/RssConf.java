@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 
+import org.apache.uniffle.common.ReconfigurableConfManager;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.UnitConverter;
 
@@ -425,6 +426,11 @@ public class RssConf implements Cloneable {
    */
   public long getSizeAsBytes(ConfigOption<Long> configOption) {
     return getOptional(configOption).orElseGet(configOption::defaultValue);
+  }
+
+  public <T> ReconfigurableConfManager.Reconfigurable<T> getReconfigurableConf(
+      ConfigOption<T> configOption) {
+    return ReconfigurableConfManager.register(this, configOption);
   }
 
   /**

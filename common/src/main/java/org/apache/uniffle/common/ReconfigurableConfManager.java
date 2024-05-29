@@ -138,6 +138,10 @@ public class ReconfigurableConfManager<T> {
     reconfigurableConfManager = manager;
   }
 
+  /**
+   * This should not be invoked directly when getting the reconfigurable conf. Please using the
+   * `rssConf.getReconfigurableConf(configOption)`
+   */
   public static <T> Reconfigurable<T> register(RssConf conf, ConfigOption<T> configOption) {
     if (reconfigurableConfManager == null) {
       LOGGER.warn(

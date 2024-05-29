@@ -99,8 +99,7 @@ public class CoordinatorReconfigureNodeMaxTest extends CoordinatorTestBase {
   public void testReconfigureNodeMax() throws Exception {
     // case1: check the initial node max val = 10
     ReconfigurableConfManager.Reconfigurable<Integer> nodeMax =
-        ReconfigurableConfManager.register(
-            new RssConf(), CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
+        new RssConf().getReconfigurableConf(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
     assertEquals(DEFAULT_SHUFFLE_NODES_MAX, nodeMax.get());
 
     ShuffleWriteClientImpl shuffleWriteClient =

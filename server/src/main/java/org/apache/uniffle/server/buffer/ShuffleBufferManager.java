@@ -128,7 +128,7 @@ public class ShuffleBufferManager {
     this.shuffleFlushThreshold =
         conf.getSizeAsBytes(ShuffleServerConf.SERVER_SHUFFLE_FLUSH_THRESHOLD);
     this.hugePartitionSizeThresholdRef =
-        ReconfigurableConfManager.register(conf, ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD);
+        conf.getReconfigurableConf(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD);
     this.hugePartitionMemoryLimitSize =
         Math.round(
             capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO));
