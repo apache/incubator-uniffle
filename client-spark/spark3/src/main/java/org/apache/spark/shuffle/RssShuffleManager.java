@@ -1083,13 +1083,15 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   }
 
   // gluten need this method
-  protected ShuffleHandleInfo getRemoteShuffleHandleInfo(RssShuffleHandle<?,?,?> rssHandle) {
+  protected ShuffleHandleInfo getRemoteShuffleHandleInfo(RssShuffleHandle<?, ?, ?> rssHandle) {
     if (shuffleManagerRpcServiceEnabled) {
       // Get the ShuffleServer list from the Driver based on the shuffleId
       return getRemoteShuffleHandleInfo(rssHandle.getShuffleId());
     } else {
       return new ShuffleHandleInfo(
-          rssHandle.getShuffleId(), rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
+          rssHandle.getShuffleId(),
+          rssHandle.getPartitionToServers(),
+          rssHandle.getRemoteStorage());
     }
   }
 
