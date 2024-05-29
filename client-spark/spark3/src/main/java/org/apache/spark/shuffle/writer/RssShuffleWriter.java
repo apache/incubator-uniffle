@@ -291,23 +291,19 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   @Override
   public void write(Iterator<Product2<K, V>> records) {
     try {
-      writeRecords(records);
+      writeImpl(records);
     } catch (Exception e) {
       taskFailureCallback.apply(taskId);
       if (shuffleManager.isRssResubmitStage()) {
         throwFetchFailedIfNecessary(e);
       } else {
-        throw e;
+        throw new RssException(e);
       }
     }
   }
 
   // gluten need this method and IOException must be throws here
   protected void writeImpl(Iterator<Product2<K, V>> records) throws IOException {
-    writeRecords(records);
-  }
-
-  protected void writeRecords(Iterator<Product2<K, V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos;
     boolean isCombine = shuffleDependency.mapSideCombine();
     Function1<V, C> createCombiner = null;
