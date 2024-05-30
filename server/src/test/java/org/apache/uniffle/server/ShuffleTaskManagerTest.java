@@ -55,6 +55,7 @@ import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
@@ -769,44 +770,38 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     ShuffleServerConf conf = new ShuffleServerConf();
     ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, null, null, null);
 
-    Roaring64NavigableMap expectedBlockIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet expectedBlockIds = BlockIdSet.empty();
     int expectedPartitionId = 5;
-    Roaring64NavigableMap bitmapBlockIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet bitmapBlockIds = BlockIdSet.empty();
     for (int taskId = 1; taskId < 10; taskId++) {
       for (int partitionId = 1; partitionId < 10; partitionId++) {
         for (int i = 0; i < 2; i++) {
           long blockId = layout.getBlockId(i, partitionId, taskId);
-          bitmapBlockIds.addLong(blockId);
+          bitmapBlockIds.add(blockId);
           if (partitionId == expectedPartitionId) {
-            expectedBlockIds.addLong(blockId);
+            expectedBlockIds.add(blockId);
           }
         }
       }
     }
-    Roaring64NavigableMap resultBlockIds =
+    BlockIdSet resultBlockIds =
         shuffleTaskManager.getBlockIdsByPartitionId(
-            Sets.newHashSet(expectedPartitionId),
-            bitmapBlockIds,
-            Roaring64NavigableMap.bitmapOf(),
-            layout);
+            Sets.newHashSet(expectedPartitionId), bitmapBlockIds, BlockIdSet.empty(), layout);
     assertEquals(expectedBlockIds, resultBlockIds);
 
-    bitmapBlockIds.addLong(layout.getBlockId(0, 0, 0));
+    bitmapBlockIds.add(layout.getBlockId(0, 0, 0));
     resultBlockIds =
         shuffleTaskManager.getBlockIdsByPartitionId(
-            Sets.newHashSet(0), bitmapBlockIds, Roaring64NavigableMap.bitmapOf(), layout);
-    assertEquals(Roaring64NavigableMap.bitmapOf(0L), resultBlockIds);
+            Sets.newHashSet(0), bitmapBlockIds, BlockIdSet.empty(), layout);
+    assertEquals(BlockIdSet.of(0L), resultBlockIds);
 
     long expectedBlockId =
         layout.getBlockId(layout.maxSequenceNo, layout.maxPartitionId, layout.maxTaskAttemptId);
-    bitmapBlockIds.addLong(expectedBlockId);
+    bitmapBlockIds.add(expectedBlockId);
     resultBlockIds =
         shuffleTaskManager.getBlockIdsByPartitionId(
-            Sets.newHashSet(layout.maxPartitionId),
-            bitmapBlockIds,
-            Roaring64NavigableMap.bitmapOf(),
-            layout);
-    assertEquals(Roaring64NavigableMap.bitmapOf(expectedBlockId), resultBlockIds);
+            Sets.newHashSet(layout.maxPartitionId), bitmapBlockIds, BlockIdSet.empty(), layout);
+    assertEquals(BlockIdSet.of(expectedBlockId), resultBlockIds);
   }
 
   @Test
@@ -815,17 +810,17 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     ShuffleServerConf conf = new ShuffleServerConf();
     ShuffleTaskManager shuffleTaskManager = new ShuffleTaskManager(conf, null, null, null);
 
-    Roaring64NavigableMap expectedBlockIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet expectedBlockIds = BlockIdSet.empty();
     int startPartition = 3;
     int endPartition = 5;
-    Roaring64NavigableMap bitmapBlockIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet bitmapBlockIds = BlockIdSet.empty();
     for (int taskId = 1; taskId < 10; taskId++) {
       for (int partitionId = 1; partitionId < 10; partitionId++) {
         for (int i = 0; i < 2; i++) {
           long blockId = layout.getBlockId(i, partitionId, taskId);
-          bitmapBlockIds.addLong(blockId);
+          bitmapBlockIds.add(blockId);
           if (partitionId >= startPartition && partitionId <= endPartition) {
-            expectedBlockIds.addLong(blockId);
+            expectedBlockIds.add(blockId);
           }
         }
       }
@@ -839,14 +834,14 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
       }
     }
 
-    Roaring64NavigableMap resultBlockIds =
+    BlockIdSet resultBlockIds =
         shuffleTaskManager.getBlockIdsByPartitionId(
-            requestPartitions, bitmapBlockIds, Roaring64NavigableMap.bitmapOf(), layout);
+            requestPartitions, bitmapBlockIds, BlockIdSet.empty(), layout);
     assertEquals(expectedBlockIds, resultBlockIds);
     assertEquals(
         bitmapBlockIds,
         shuffleTaskManager.getBlockIdsByPartitionId(
-            allPartitions, bitmapBlockIds, Roaring64NavigableMap.bitmapOf(), layout));
+            allPartitions, bitmapBlockIds, BlockIdSet.empty(), layout));
   }
 
   @Test
@@ -1101,11 +1096,11 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
       int partitionId,
       List<ShufflePartitionedBlock> blocks,
       String basePath) {
-    Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
-    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet expectBlockIds = BlockIdSet.empty();
+    BlockIdSet processBlockIds = BlockIdSet.empty();
     Set<Long> remainIds = Sets.newHashSet();
     for (ShufflePartitionedBlock spb : blocks) {
-      expectBlockIds.addLong(spb.getBlockId());
+      expectBlockIds.add(spb.getBlockId());
       remainIds.add(spb.getBlockId());
     }
     HadoopClientReadHandler handler =

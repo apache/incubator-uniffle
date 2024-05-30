@@ -55,6 +55,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.BlockIdSet;
 
 import static org.apache.uniffle.common.util.Constants.DRIVER_HOST;
 
@@ -73,7 +74,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private String taskId;
   private String basePath;
   private int partitionNum;
-  private Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks;
+  private Map<Integer, BlockIdSet> partitionToExpectBlocks;
   private Roaring64NavigableMap taskIdBitmap;
   private Configuration hadoopConf;
   private int mapStartIndex;
@@ -92,7 +93,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       String basePath,
       Configuration hadoopConf,
       int partitionNum,
-      Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks,
+      Map<Integer, BlockIdSet> partitionToExpectBlocks,
       Roaring64NavigableMap taskIdBitmap,
       ShuffleReadMetrics readMetrics,
       RssConf rssConf,

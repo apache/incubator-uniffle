@@ -48,6 +48,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -137,7 +138,7 @@ public class ShuffleServerWithHadoopTest extends ShuffleReadWriteBase {
             appId, 0, Lists.newArrayList(new PartitionRange(2, 3)), dataBasePath);
     shuffleServerClient.registerShuffle(rrsr);
 
-    Roaring64NavigableMap[] bitmaps = new Roaring64NavigableMap[4];
+    BlockIdSet[] bitmaps = new BlockIdSet[4];
     Map<Long, byte[]> expectedData = Maps.newHashMap();
     Map<Integer, List<ShuffleBlockInfo>> dataBlocks = createTestData(bitmaps, expectedData);
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
@@ -248,15 +249,13 @@ public class ShuffleServerWithHadoopTest extends ShuffleReadWriteBase {
   }
 
   protected void validateResult(
-      ShuffleReadClientImpl readClient,
-      Map<Long, byte[]> expectedData,
-      Roaring64NavigableMap blockIdBitmap) {
+      ShuffleReadClientImpl readClient, Map<Long, byte[]> expectedData, BlockIdSet blockIdBitmap) {
     CompressedShuffleBlock csb = readClient.readShuffleBlockData();
-    Roaring64NavigableMap matched = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet matched = BlockIdSet.empty();
     while (csb != null && csb.getByteBuffer() != null) {
       for (Entry<Long, byte[]> entry : expectedData.entrySet()) {
         if (compareByte(entry.getValue(), csb.getByteBuffer())) {
-          matched.addLong(entry.getKey());
+          matched.add(entry.getKey());
           break;
         }
       }

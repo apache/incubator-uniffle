@@ -32,6 +32,7 @@ import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
+import org.apache.uniffle.common.util.BlockIdSet;
 
 public class LocalFileClientReadHandler extends DataSkippableReadHandler {
   private static final Logger LOG = LoggerFactory.getLogger(LocalFileClientReadHandler.class);
@@ -49,8 +50,8 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
       int partitionNumPerRange,
       int partitionNum,
       int readBufferSize,
-      Roaring64NavigableMap expectBlockIds,
-      Roaring64NavigableMap processBlockIds,
+      BlockIdSet expectBlockIds,
+      BlockIdSet processBlockIds,
       ShuffleServerClient shuffleServerClient,
       ShuffleDataDistributionType distributionType,
       Roaring64NavigableMap expectTaskIds,
@@ -81,8 +82,8 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
       int partitionNumPerRange,
       int partitionNum,
       int readBufferSize,
-      Roaring64NavigableMap expectBlockIds,
-      Roaring64NavigableMap processBlockIds,
+      BlockIdSet expectBlockIds,
+      BlockIdSet processBlockIds,
       ShuffleServerClient shuffleServerClient) {
     this(
         appId,

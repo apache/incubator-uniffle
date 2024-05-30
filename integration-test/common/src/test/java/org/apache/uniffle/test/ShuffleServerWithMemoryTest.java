@@ -47,6 +47,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServer;
@@ -143,10 +144,10 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
         new RssRegisterShuffleRequest(
             testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), "");
     shuffleServerClient.registerShuffle(rrsr);
-    Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet expectBlockIds = BlockIdSet.empty();
     Map<Long, byte[]> dataMap = Maps.newHashMap();
-    Roaring64NavigableMap[] bitmaps = new Roaring64NavigableMap[1];
-    bitmaps[0] = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet[] bitmaps = new BlockIdSet[1];
+    bitmaps[0] = BlockIdSet.empty();
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(shuffleId, partitionId, 0, 3, 25, expectBlockIds, dataMap, mockSSI);
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
@@ -201,7 +202,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
         new MemoryClientReadHandler(
             testAppId, shuffleId, partitionId, 50, shuffleServerClient, exceptTaskIds);
 
-    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet processBlockIds = BlockIdSet.empty();
     LocalFileClientReadHandler localFileQuorumClientReadHandler =
         new LocalFileClientReadHandler(
             testAppId,
@@ -235,8 +236,8 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     validateResult(expectedData, sdr);
 
     // send data to shuffle server, flush should happen
-    processBlockIds.addLong(blocks.get(0).getBlockId());
-    processBlockIds.addLong(blocks.get(1).getBlockId());
+    processBlockIds.add(blocks.get(0).getBlockId());
+    processBlockIds.add(blocks.get(1).getBlockId());
 
     List<ShuffleBlockInfo> blocks2 =
         createShuffleBlockList(shuffleId, partitionId, 0, 3, 50, expectBlockIds, dataMap, mockSSI);
@@ -269,20 +270,20 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     expectedData.put(blocks.get(2).getBlockId(), ByteBufUtils.readBytes(blocks.get(2).getData()));
     expectedData.put(blocks2.get(0).getBlockId(), ByteBufUtils.readBytes(blocks2.get(0).getData()));
     validateResult(expectedData, sdr);
-    processBlockIds.addLong(blocks.get(2).getBlockId());
-    processBlockIds.addLong(blocks2.get(0).getBlockId());
+    processBlockIds.add(blocks.get(2).getBlockId());
+    processBlockIds.add(blocks2.get(0).getBlockId());
 
     sdr = composedClientReadHandler.readShuffleData();
     expectedData.clear();
     expectedData.put(blocks2.get(1).getBlockId(), ByteBufUtils.readBytes(blocks2.get(1).getData()));
     validateResult(expectedData, sdr);
-    processBlockIds.addLong(blocks2.get(1).getBlockId());
+    processBlockIds.add(blocks2.get(1).getBlockId());
 
     sdr = composedClientReadHandler.readShuffleData();
     expectedData.clear();
     expectedData.put(blocks2.get(2).getBlockId(), ByteBufUtils.readBytes(blocks2.get(2).getData()));
     validateResult(expectedData, sdr);
-    processBlockIds.addLong(blocks2.get(2).getBlockId());
+    processBlockIds.add(blocks2.get(2).getBlockId());
 
     sdr = composedClientReadHandler.readShuffleData();
     assertNull(sdr);
@@ -304,10 +305,10 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
         new RssRegisterShuffleRequest(
             testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), "");
     shuffleServerClient.registerShuffle(rrsr);
-    Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet expectBlockIds = BlockIdSet.empty();
     Map<Long, byte[]> dataMap = Maps.newHashMap();
-    Roaring64NavigableMap[] bitmaps = new Roaring64NavigableMap[1];
-    bitmaps[0] = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet[] bitmaps = new BlockIdSet[1];
+    bitmaps[0] = BlockIdSet.empty();
     // create blocks which belong to different tasks
     List<ShuffleBlockInfo> blocks = Lists.newArrayList();
     for (int i = 0; i < 3; i++) {
@@ -389,10 +390,10 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
         new RssRegisterShuffleRequest(
             testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), "");
     shuffleServerClient.registerShuffle(rrsr);
-    Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet expectBlockIds = BlockIdSet.empty();
     Map<Long, byte[]> dataMap = Maps.newHashMap();
-    Roaring64NavigableMap[] bitmaps = new Roaring64NavigableMap[1];
-    bitmaps[0] = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet[] bitmaps = new BlockIdSet[1];
+    bitmaps[0] = BlockIdSet.empty();
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(shuffleId, partitionId, 0, 3, 25, expectBlockIds, dataMap, mockSSI);
     Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
@@ -407,7 +408,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     assertSame(StatusCode.SUCCESS, response.getStatusCode());
 
     // read the 1-th segment from memory
-    Roaring64NavigableMap processBlockIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet processBlockIds = BlockIdSet.empty();
     Roaring64NavigableMap exceptTaskIds = Roaring64NavigableMap.bitmapOf(0);
     MemoryClientReadHandler memoryClientReadHandler =
         new MemoryClientReadHandler(
@@ -444,9 +445,9 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     expectedData.put(blocks.get(2).getBlockId(), ByteBufUtils.readBytes(blocks.get(2).getData()));
     ShuffleDataResult sdr = composedClientReadHandler.readShuffleData();
     validateResult(expectedData, sdr);
-    processBlockIds.addLong(blocks.get(0).getBlockId());
-    processBlockIds.addLong(blocks.get(1).getBlockId());
-    processBlockIds.addLong(blocks.get(2).getBlockId());
+    processBlockIds.add(blocks.get(0).getBlockId());
+    processBlockIds.add(blocks.get(1).getBlockId());
+    processBlockIds.add(blocks.get(2).getBlockId());
 
     // send data to shuffle server, and wait until flush finish
     List<ShuffleBlockInfo> blocks2 =
@@ -480,15 +481,15 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
     expectedData.put(blocks2.get(0).getBlockId(), ByteBufUtils.readBytes(blocks2.get(0).getData()));
     expectedData.put(blocks2.get(1).getBlockId(), ByteBufUtils.readBytes(blocks2.get(1).getData()));
     validateResult(expectedData, sdr);
-    processBlockIds.addLong(blocks2.get(0).getBlockId());
-    processBlockIds.addLong(blocks2.get(1).getBlockId());
+    processBlockIds.add(blocks2.get(0).getBlockId());
+    processBlockIds.add(blocks2.get(1).getBlockId());
 
     // read the 3-th segment from localFile
     sdr = composedClientReadHandler.readShuffleData();
     expectedData.clear();
     expectedData.put(blocks2.get(2).getBlockId(), ByteBufUtils.readBytes(blocks2.get(2).getData()));
     validateResult(expectedData, sdr);
-    processBlockIds.addLong(blocks2.get(2).getBlockId());
+    processBlockIds.add(blocks2.get(2).getBlockId());
 
     // all segments are processed
     sdr = composedClientReadHandler.readShuffleData();

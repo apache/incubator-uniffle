@@ -237,23 +237,23 @@ public class RssUtilsTest {
   @ParameterizedTest
   @MethodSource("testBlockIdLayouts")
   public void testShuffleBitmapToPartitionBitmap(BlockIdLayout layout) {
-    Roaring64NavigableMap partition1Bitmap =
-        Roaring64NavigableMap.bitmapOf(
+    BlockIdSet partition1Bitmap =
+        BlockIdSet.of(
             layout.getBlockId(0, 0, 0),
             layout.getBlockId(1, 0, 0),
             layout.getBlockId(0, 0, 1),
             layout.getBlockId(1, 0, 1));
-    Roaring64NavigableMap partition2Bitmap =
-        Roaring64NavigableMap.bitmapOf(
+    BlockIdSet partition2Bitmap =
+        BlockIdSet.of(
             layout.getBlockId(0, 1, 0),
             layout.getBlockId(1, 1, 0),
             layout.getBlockId(0, 1, 1),
             layout.getBlockId(1, 1, 1));
-    Roaring64NavigableMap shuffleBitmap = Roaring64NavigableMap.bitmapOf();
-    shuffleBitmap.or(partition1Bitmap);
-    shuffleBitmap.or(partition2Bitmap);
+    BlockIdSet shuffleBitmap = BlockIdSet.empty();
+    shuffleBitmap.addAll(partition1Bitmap);
+    shuffleBitmap.addAll(partition2Bitmap);
     assertEquals(8, shuffleBitmap.getLongCardinality());
-    Map<Integer, Roaring64NavigableMap> toPartitionBitmap =
+    Map<Integer, BlockIdSet> toPartitionBitmap =
         RssUtils.generatePartitionToBitmap(shuffleBitmap, 0, 2, layout);
     assertEquals(2, toPartitionBitmap.size());
     assertEquals(partition1Bitmap, toPartitionBitmap.get(0));

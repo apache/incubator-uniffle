@@ -27,13 +27,13 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.flush.EventDiscardException;
@@ -58,8 +58,7 @@ public class ShuffleFlushManager {
   private final ShuffleServerConf shuffleServerConf;
   private Configuration hadoopConf;
   // appId -> shuffleId -> committed shuffle blockIds
-  private Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds =
-      JavaUtils.newConcurrentMap();
+  private Map<String, Map<Integer, BlockIdSet>> committedBlockIds = JavaUtils.newConcurrentMap();
   private final int retryMax;
 
   private final StorageManager storageManager;
@@ -209,23 +208,19 @@ public class ShuffleFlushManager {
       return;
     }
     committedBlockIds.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());
-    Map<Integer, Roaring64NavigableMap> shuffleToBlockIds = committedBlockIds.get(appId);
-    shuffleToBlockIds.computeIfAbsent(shuffleId, key -> Roaring64NavigableMap.bitmapOf());
-    Roaring64NavigableMap bitmap = shuffleToBlockIds.get(shuffleId);
-    synchronized (bitmap) {
-      for (ShufflePartitionedBlock spb : blocks) {
-        bitmap.addLong(spb.getBlockId());
-      }
-    }
+    Map<Integer, BlockIdSet> shuffleToBlockIds = committedBlockIds.get(appId);
+    shuffleToBlockIds.computeIfAbsent(shuffleId, key -> BlockIdSet.empty());
+    BlockIdSet blockIds = shuffleToBlockIds.get(shuffleId);
+    blockIds.addAll(blocks.stream().mapToLong(ShufflePartitionedBlock::getBlockId));
   }
 
-  public Roaring64NavigableMap getCommittedBlockIds(String appId, Integer shuffleId) {
-    Map<Integer, Roaring64NavigableMap> shuffleIdToBlockIds = committedBlockIds.get(appId);
+  public BlockIdSet getCommittedBlockIds(String appId, Integer shuffleId) {
+    Map<Integer, BlockIdSet> shuffleIdToBlockIds = committedBlockIds.get(appId);
     if (shuffleIdToBlockIds == null) {
       LOG.warn("Unexpected value when getCommittedBlockIds for appId[" + appId + "]");
-      return Roaring64NavigableMap.bitmapOf();
+      return BlockIdSet.empty();
     }
-    Roaring64NavigableMap blockIds = shuffleIdToBlockIds.get(shuffleId);
+    BlockIdSet blockIds = shuffleIdToBlockIds.get(shuffleId);
     if (blockIds == null) {
       LOG.warn(
           "Unexpected value when getCommittedBlockIds for appId["
@@ -233,7 +228,7 @@ public class ShuffleFlushManager {
               + "], shuffleId["
               + shuffleId
               + "]");
-      return Roaring64NavigableMap.bitmapOf();
+      return BlockIdSet.empty();
     }
     return blockIds;
   }

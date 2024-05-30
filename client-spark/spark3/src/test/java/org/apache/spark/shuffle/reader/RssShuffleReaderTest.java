@@ -40,6 +40,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.storage.handler.impl.HadoopShuffleWriteHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -61,10 +62,10 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     final HadoopShuffleWriteHandler writeHandler1 =
         new HadoopShuffleWriteHandler("appId", 0, 1, 1, basePath, ssi.getId(), conf);
 
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
+    BlockIdSet blockIdBitmap = BlockIdSet.empty();
     final Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
     Map<String, String> expectedData = Maps.newHashMap();
-    final Roaring64NavigableMap blockIdBitmap1 = Roaring64NavigableMap.bitmapOf();
+    final BlockIdSet blockIdBitmap1 = BlockIdSet.empty();
     writeTestData(writeHandler, 2, 5, expectedData, blockIdBitmap, "key", KRYO_SERIALIZER, 0);
 
     RssShuffleHandle<String, String, String> handleMock = mock(RssShuffleHandle.class);
@@ -87,7 +88,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     when(dependencyMock.keyOrdering()).thenReturn(Option.empty());
     when(dependencyMock.mapSideCombine()).thenReturn(false);
 
-    Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks = Maps.newHashMap();
+    Map<Integer, BlockIdSet> partitionToExpectBlocks = Maps.newHashMap();
     partitionToExpectBlocks.put(0, blockIdBitmap);
     RssConf rssConf = new RssConf();
     rssConf.set(RssClientConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());

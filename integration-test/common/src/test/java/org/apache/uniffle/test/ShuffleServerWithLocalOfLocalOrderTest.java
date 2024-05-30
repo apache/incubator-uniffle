@@ -56,6 +56,7 @@ import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.segment.LocalOrderSegmentSplitter;
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.common.util.BlockIdSet;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -127,9 +128,9 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
   }
 
   public static Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> createTestDataWithMultiMapIdx(
-      Roaring64NavigableMap[] bitmaps, Map<Long, byte[]> expectedData) {
+      BlockIdSet[] bitmaps, Map<Long, byte[]> expectedData) {
     for (int i = 0; i < 4; i++) {
-      bitmaps[i] = Roaring64NavigableMap.bitmapOf();
+      bitmaps[i] = BlockIdSet.empty();
     }
 
     // key: mapIdx
@@ -192,7 +193,7 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
 
     /** Write the data to shuffle-servers */
     Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap[] bitMaps = new Roaring64NavigableMap[4];
+    BlockIdSet[] bitMaps = new BlockIdSet[4];
 
     // Create the shuffle block with the mapIdx
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> partitionToBlocksWithMapIdx =

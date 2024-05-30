@@ -340,16 +340,13 @@ public class RssUtils {
     return hostName.replaceAll("[\\.-]", "_");
   }
 
-  public static Map<Integer, Roaring64NavigableMap> generatePartitionToBitmap(
-      Roaring64NavigableMap shuffleBitmap,
-      int startPartition,
-      int endPartition,
-      BlockIdLayout layout) {
-    Map<Integer, Roaring64NavigableMap> result = Maps.newHashMap();
+  public static Map<Integer, BlockIdSet> generatePartitionToBitmap(
+      BlockIdSet shuffleBitmap, int startPartition, int endPartition, BlockIdLayout layout) {
+    Map<Integer, BlockIdSet> result = Maps.newHashMap();
     for (int partitionId = startPartition; partitionId < endPartition; partitionId++) {
-      result.computeIfAbsent(partitionId, key -> Roaring64NavigableMap.bitmapOf());
+      result.computeIfAbsent(partitionId, key -> BlockIdSet.empty());
     }
-    Iterator<Long> it = shuffleBitmap.iterator();
+    Iterator<Long> it = shuffleBitmap.stream().iterator();
     while (it.hasNext()) {
       Long blockId = it.next();
       int partitionId = layout.getPartitionId(blockId);
@@ -377,33 +374,23 @@ public class RssUtils {
   }
 
   public static void checkProcessedBlockIds(
-      Roaring64NavigableMap blockIdBitmap, Roaring64NavigableMap processedBlockIds) {
+      BlockIdSet blockIdBitmap, BlockIdSet processedBlockIds) {
     // processedBlockIds can be a superset of blockIdBitmap,
-    // here we check that processedBlockIds has all bits of blockIdBitmap set
-    // first a quick check:
-    //   we only need to do the bitwise AND when blockIdBitmap is not equal to processedBlockIds
-    if (!blockIdBitmap.equals(processedBlockIds)) {
-      Roaring64NavigableMap cloneBitmap;
-      cloneBitmap = RssUtils.cloneBitMap(blockIdBitmap);
-      cloneBitmap.and(processedBlockIds);
-      if (!blockIdBitmap.equals(cloneBitmap)) {
-        throw new RssException(
-            "Blocks read inconsistent: expected "
-                + blockIdBitmap.getLongCardinality()
-                + " blocks, actual "
-                + cloneBitmap.getLongCardinality()
-                + " blocks");
-      }
+    // here we check that processedBlockIds contains all of blockIdBitmap
+    if (!processedBlockIds.containsAll(blockIdBitmap)) {
+      throw new RssException(
+          "Blocks read inconsistent: expected "
+              + blockIdBitmap.getLongCardinality()
+              + " blocks, actual "
+              + processedBlockIds.copy().retainAll(blockIdBitmap).getLongCardinality()
+              + " blocks");
     }
   }
 
   public static Roaring64NavigableMap generateTaskIdBitMap(
-      Roaring64NavigableMap blockIdBitmap, IdHelper idHelper) {
-    Iterator<Long> iterator = blockIdBitmap.iterator();
+      BlockIdSet blockIdBitmap, IdHelper idHelper) {
     Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf();
-    while (iterator.hasNext()) {
-      taskIdBitmap.addLong(idHelper.getTaskAttemptId(iterator.next()));
-    }
+    blockIdBitmap.forEach(blockId -> taskIdBitmap.addLong(idHelper.getTaskAttemptId(blockId)));
     return taskIdBitmap;
   }
 
