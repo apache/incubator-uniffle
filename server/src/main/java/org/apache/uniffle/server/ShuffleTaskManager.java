@@ -420,13 +420,17 @@ public class ShuffleTaskManager {
     }
     for (Map.Entry<Integer, long[]> entry : partitionToBlockIds.entrySet()) {
       Integer partitionId = entry.getKey();
-      taskInfo.incrBlockNumber(shuffleId, partitionId, entry.getValue().length);
       Roaring64NavigableMap bitmap = blockIds[partitionId % bitmapNum];
+      int updated = 0;
       synchronized (bitmap) {
         for (long blockId : entry.getValue()) {
-          bitmap.addLong(blockId);
+          if (!bitmap.contains(blockId)) {
+            bitmap.addLong(blockId);
+            updated++;
+          }
         }
       }
+      taskInfo.incrBlockNumber(shuffleId, partitionId, updated);
     }
   }
 
