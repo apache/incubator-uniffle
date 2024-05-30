@@ -64,6 +64,8 @@ public class ShuffleTaskInfo {
 
   private final AtomicReference<ShuffleSpecification> specification;
 
+  private final Map<Integer, Map<Integer, AtomicLong>> partitionBlockCounters;
+
   public ShuffleTaskInfo(String appId) {
     this.appId = appId;
     this.currentTimes = System.currentTimeMillis();
@@ -75,6 +77,7 @@ public class ShuffleTaskInfo {
     this.hugePartitionTags = JavaUtils.newConcurrentMap();
     this.existHugePartition = new AtomicBoolean(false);
     this.specification = new AtomicReference<>();
+    this.partitionBlockCounters = JavaUtils.newConcurrentMap();
   }
 
   public Long getCurrentTimes() {
@@ -196,6 +199,25 @@ public class ShuffleTaskInfo {
 
   public Set<Integer> getShuffleIds() {
     return partitionDataSizes.keySet();
+  }
+
+  public void incrBlockNumber(int shuffleId, int partitionId) {
+    this.partitionBlockCounters
+        .computeIfAbsent(shuffleId, x -> JavaUtils.newConcurrentMap())
+        .computeIfAbsent(partitionId, x -> new AtomicLong())
+        .incrementAndGet();
+  }
+
+  public long getBlockNumber(int shuffleId, int partitionId) {
+    Map<Integer, AtomicLong> partitionBlockCounters = this.partitionBlockCounters.get(shuffleId);
+    if (partitionBlockCounters == null) {
+      return 0L;
+    }
+    AtomicLong counter = partitionBlockCounters.get(partitionId);
+    if (counter == null) {
+      return 0L;
+    }
+    return counter.get();
   }
 
   @Override

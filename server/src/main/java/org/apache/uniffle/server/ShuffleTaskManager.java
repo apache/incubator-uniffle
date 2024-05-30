@@ -413,8 +413,14 @@ public class ShuffleTaskManager {
               + " bitmaps!");
     }
 
+    ShuffleTaskInfo taskInfo = getShuffleTaskInfo(appId);
+    if (taskInfo == null) {
+      throw new InvalidRequestException(
+          "ShuffleTaskInfo is not found that should not happen for appId: " + appId);
+    }
     for (Map.Entry<Integer, long[]> entry : partitionToBlockIds.entrySet()) {
       Integer partitionId = entry.getKey();
+      taskInfo.incrBlockNumber(shuffleId, partitionId);
       Roaring64NavigableMap bitmap = blockIds[partitionId % bitmapNum];
       synchronized (bitmap) {
         for (long blockId : entry.getValue()) {
@@ -553,13 +559,18 @@ public class ShuffleTaskManager {
     }
     Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
     if (shuffleIdToPartitions == null) {
+      LOG.warn("Empty blockIds for app: {}. This should not happen", appId);
       return null;
     }
 
     Roaring64NavigableMap[] blockIds = shuffleIdToPartitions.get(shuffleId);
     if (blockIds == null) {
+      LOG.warn("Empty blockIds for app: {}, shuffleId: {}", appId, shuffleId);
       return new byte[] {};
     }
+
+    ShuffleTaskInfo taskInfo = getShuffleTaskInfo(appId);
+    long expectedBlockNumber = 0;
     Map<Integer, Set<Integer>> bitmapIndexToPartitions = Maps.newHashMap();
     for (int partitionId : partitions) {
       int bitmapIndex = partitionId % blockIds.length;
@@ -569,6 +580,7 @@ public class ShuffleTaskManager {
         HashSet<Integer> newHashSet = Sets.newHashSet(partitionId);
         bitmapIndexToPartitions.put(bitmapIndex, newHashSet);
       }
+      expectedBlockNumber += taskInfo.getBlockNumber(shuffleId, partitionId);
     }
 
     Roaring64NavigableMap res = Roaring64NavigableMap.bitmapOf();
@@ -577,6 +589,17 @@ public class ShuffleTaskManager {
       Roaring64NavigableMap bitmap = blockIds[entry.getKey()];
       getBlockIdsByPartitionId(requestPartitions, bitmap, res, blockIdLayout);
     }
+
+    if (res.getLongCardinality() != expectedBlockNumber) {
+      throw new RssException(
+          "Inconsistent block number for partitions: "
+              + partitions
+              + ". Excepted: "
+              + expectedBlockNumber
+              + ", actual: "
+              + res.getLongCardinality());
+    }
+
     return RssUtils.serializeBitMap(res);
   }
 
