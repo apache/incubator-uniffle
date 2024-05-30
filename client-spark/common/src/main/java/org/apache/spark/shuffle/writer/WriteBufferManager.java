@@ -333,13 +333,11 @@ public class WriteBufferManager extends MemoryConsumer {
     long targetSpillSize = Long.MAX_VALUE;
     bufferSpillRatio = Math.max(0.1, Math.min(1.0, bufferSpillRatio));
     List<Integer> partitionList = new ArrayList(buffers.keySet());
-    if (bufferSpillRatio != 1.0) {
-      if (Double.compare(bufferSpillRatio, 1.0) < 0) {
-        partitionList.sort(
-            Comparator.comparingInt(
-                    o -> buffers.get(o) == null ? 0 : buffers.get(o).getMemoryUsed())
-                .reversed());
-      }
+    if (Double.compare(bufferSpillRatio, 1.0) < 0) {
+      partitionList.sort(
+          Comparator.comparingInt(
+                  o -> buffers.get(o) == null ? 0 : buffers.get(o).getMemoryUsed())
+              .reversed());
       targetSpillSize = (long) ((getUsedBytes() - getInSendListBytes()) * bufferSpillRatio);
     }
 
