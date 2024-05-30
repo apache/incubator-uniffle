@@ -513,7 +513,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     } else {
       writeMetrics = context.taskMetrics().shuffleWriteMetrics();
     }
-    ShuffleHandleInfo shuffleHandleInfo = getShuffleHandleInfo(rssHandle);
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
     LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
     return new RssShuffleWriter<>(
@@ -527,8 +526,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         shuffleWriteClient,
         rssHandle,
         this::markFailedTask,
-        context,
-        shuffleHandleInfo);
+        context);
   }
 
   @Override
@@ -1083,7 +1081,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   }
 
   // gluten need this method
-  protected ShuffleHandleInfo getRemoteShuffleHandleInfo(RssShuffleHandle<?,?,?> rssHandle) {
+  protected ShuffleHandleInfo getShuffleHandleInfo(RssShuffleHandle<?,?,?> rssHandle) {
     if (shuffleManagerRpcServiceEnabled) {
       // Get the ShuffleServer list from the Driver based on the shuffleId
       return getRemoteShuffleHandleInfo(rssHandle.getShuffleId());
