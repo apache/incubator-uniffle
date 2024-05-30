@@ -393,6 +393,18 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(128 * 1024 * 1024L)
           .withDescription("The threshold of single shuffle buffer flush");
 
+  public static final ConfigOption<Integer> SINGLE_BUFFER_FLUSH_BLOCKS_NUM_THRESHOLD =
+      ConfigOptions.key("rss.server.single.buffer.flush.blocksNumberThreshold")
+          .intType()
+          .defaultValue(4000)
+          .withDescription(
+              "The blocks number threshold for triggering a flush for a single shuffle buffer. "
+                  + "This threshold is mainly used to control jobs with an excessive number of small blocks, "
+                  + "allowing these small blocks to be flushed as much as possible, "
+                  + "rather than being maintained in the heap and unable to be garbage collected. "
+                  + "This can cause severe garbage collection issues on the server side, and may even lead to out-of-heap-memory errors. "
+                  + "If the threshold is set too high, it becomes meaningless.");
+
   public static final ConfigOption<Long> SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL =
       ConfigOptions.key("rss.server.leak.shuffledata.check.interval")
           .longType()
