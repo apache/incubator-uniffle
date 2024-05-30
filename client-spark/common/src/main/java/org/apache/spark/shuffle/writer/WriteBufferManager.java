@@ -340,7 +340,7 @@ public class WriteBufferManager extends MemoryConsumer {
                     o -> buffers.get(o) == null ? 0 : buffers.get(o).getMemoryUsed())
                 .reversed());
       }
-      targetSpillSize = (long) ((usedBytes.get() - inSendListBytes.get()) * bufferSpillRatio);
+      targetSpillSize = (long) ((getUsedBytes() - getInSendListBytes()) * bufferSpillRatio);
     }
 
     for (int partitionId : partitionList) {

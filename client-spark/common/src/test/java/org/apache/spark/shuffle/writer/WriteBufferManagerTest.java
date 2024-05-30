@@ -434,6 +434,27 @@ public class WriteBufferManagerTest {
   }
 
   @Test
+  public void testClearWithSpillRatio() {
+    SparkConf conf = getConf();
+    conf.set("spark.rss.client.send.size.limit", String.valueOf(Integer.MAX_VALUE));
+    WriteBufferManager wbm = createManager(conf);
+    assertEquals(0, wbm.getUsedBytes());
+
+    String testKey = "Key";
+    String testValue = "Value";
+    wbm.addRecord(0, testKey, testValue);
+    wbm.addRecord(1, testKey, testValue);
+
+    assertEquals(64, wbm.getUsedBytes());
+    assertEquals(0, wbm.getInSendListBytes());
+    // Although the usedBytes-inSendListBytes don't meet requirements of buffer spill ratio,
+    // But for the case of 1.0 ratio, it will ignore all.
+    when(wbm.getUsedBytes()).thenReturn(0L);
+    List<ShuffleBlockInfo> blocks = wbm.clear(1.0);
+    assertEquals(2, blocks.size());
+  }
+
+  @Test
   public void spillPartial() {
     SparkConf conf = getConf();
     conf.set("spark.rss.client.send.size.limit", "1000");
