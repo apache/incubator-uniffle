@@ -85,38 +85,43 @@ public class DataPusher implements Closeable {
       throw new RssException("RssAppId should be set.");
     }
     return CompletableFuture.supplyAsync(
-        () -> {
-          String taskId = event.getTaskId();
-          List<ShuffleBlockInfo> shuffleBlockInfoList = event.getShuffleDataInfoList();
-          SendShuffleDataResult result = null;
-          try {
-            result =
-                shuffleWriteClient.sendShuffleData(
-                    rssAppId, shuffleBlockInfoList, () -> !isValidTask(taskId));
-            putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
-            putFailedBlockSendTracker(
-                taskToFailedBlockSendTracker, taskId, result.getFailedBlockSendTracker());
-          } finally {
-            Set<Long> succeedBlockIds =
-                result.getSuccessBlockIds() == null
-                    ? Collections.emptySet()
-                    : result.getSuccessBlockIds();
-            for (ShuffleBlockInfo block : shuffleBlockInfoList) {
-              block.executeCompletionCallback(succeedBlockIds.contains(block.getBlockId()));
-            }
+            () -> {
+              String taskId = event.getTaskId();
+              List<ShuffleBlockInfo> shuffleBlockInfoList = event.getShuffleDataInfoList();
+              SendShuffleDataResult result = null;
+              try {
+                result =
+                    shuffleWriteClient.sendShuffleData(
+                        rssAppId, shuffleBlockInfoList, () -> !isValidTask(taskId));
+                putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
+                putFailedBlockSendTracker(
+                    taskToFailedBlockSendTracker, taskId, result.getFailedBlockSendTracker());
+              } finally {
+                Set<Long> succeedBlockIds =
+                    result.getSuccessBlockIds() == null
+                        ? Collections.emptySet()
+                        : result.getSuccessBlockIds();
+                for (ShuffleBlockInfo block : shuffleBlockInfoList) {
+                  block.executeCompletionCallback(succeedBlockIds.contains(block.getBlockId()));
+                }
 
-            List<Runnable> callbackChain =
-                Optional.of(event.getProcessedCallbackChain()).orElse(Collections.EMPTY_LIST);
-            for (Runnable runnable : callbackChain) {
-              runnable.run();
-            }
-          }
-          return shuffleBlockInfoList.stream()
-              .map(x -> x.getFreeMemory())
-              .reduce((a, b) -> a + b)
-              .get();
-        },
-        executorService);
+                List<Runnable> callbackChain =
+                    Optional.of(event.getProcessedCallbackChain()).orElse(Collections.EMPTY_LIST);
+                for (Runnable runnable : callbackChain) {
+                  runnable.run();
+                }
+              }
+              return shuffleBlockInfoList.stream()
+                  .map(x -> x.getFreeMemory())
+                  .reduce((a, b) -> a + b)
+                  .get();
+            },
+            executorService)
+        .exceptionally(
+            ex -> {
+              LOGGER.error("Unexpected exceptions occurred while sending shuffle data", ex);
+              return null;
+            });
   }
 
   private synchronized void putBlockId(
