@@ -201,11 +201,11 @@ public class ShuffleTaskInfo {
     return partitionDataSizes.keySet();
   }
 
-  public void incrBlockNumber(int shuffleId, int partitionId) {
+  public void incrBlockNumber(int shuffleId, int partitionId, int delta) {
     this.partitionBlockCounters
         .computeIfAbsent(shuffleId, x -> JavaUtils.newConcurrentMap())
         .computeIfAbsent(partitionId, x -> new AtomicLong())
-        .incrementAndGet();
+        .addAndGet(delta);
   }
 
   public long getBlockNumber(int shuffleId, int partitionId) {
