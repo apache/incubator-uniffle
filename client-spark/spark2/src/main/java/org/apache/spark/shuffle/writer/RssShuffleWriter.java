@@ -268,6 +268,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     processShuffleBlockInfos(shuffleBlockInfos);
     @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     long s = System.currentTimeMillis();
+    checkAllBufferSpilled();
     checkSentRecordCount(recordCount);
     checkSentBlockCount();
     checkBlockSendResult(blockIds);
@@ -295,6 +296,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             + commitDuration
             + "], "
             + bufferManager.getManagerCostInfo());
+  }
+
+  private void checkAllBufferSpilled() {
+    if (bufferManager.getBuffers().size() > 0) {
+      throw new RssSendFailedException(
+          "Potential data loss due to existing remaining data buffers that are not flushed. This should not happen.");
+    }
   }
 
   private void checkSentRecordCount(long recordCount) {

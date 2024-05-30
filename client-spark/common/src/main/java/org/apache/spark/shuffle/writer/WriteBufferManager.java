@@ -329,14 +329,17 @@ public class WriteBufferManager extends MemoryConsumer {
     List<ShuffleBlockInfo> result = Lists.newArrayList();
     long dataSize = 0;
     long memoryUsed = 0;
+
+    long targetSpillSize = Long.MAX_VALUE;
     bufferSpillRatio = Math.max(0.1, Math.min(1.0, bufferSpillRatio));
     List<Integer> partitionList = new ArrayList(buffers.keySet());
     if (Double.compare(bufferSpillRatio, 1.0) < 0) {
       partitionList.sort(
           Comparator.comparingInt(o -> buffers.get(o) == null ? 0 : buffers.get(o).getMemoryUsed())
               .reversed());
+      targetSpillSize = (long) ((getUsedBytes() - getInSendListBytes()) * bufferSpillRatio);
     }
-    long targetSpillSize = (long) ((usedBytes.get() - inSendListBytes.get()) * bufferSpillRatio);
+
     for (int partitionId : partitionList) {
       WriterBuffer wb = buffers.get(partitionId);
       if (wb == null) {
