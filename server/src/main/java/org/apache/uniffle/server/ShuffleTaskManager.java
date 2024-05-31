@@ -427,23 +427,23 @@ public class ShuffleTaskManager {
       throw new InvalidRequestException(
           "ShuffleTaskInfo is not found that should not happen for appId: " + appId);
     }
-    int totalUpdated = 0;
+    int totalUpdatedBlockCount = 0;
     for (Map.Entry<Integer, long[]> entry : partitionToBlockIds.entrySet()) {
       Integer partitionId = entry.getKey();
       Roaring64NavigableMap bitmap = blockIds[partitionId % bitmapNum];
-      int updated = 0;
+      int updatedBlockCount = 0;
       synchronized (bitmap) {
         for (long blockId : entry.getValue()) {
           if (!bitmap.contains(blockId)) {
             bitmap.addLong(blockId);
-            updated++;
-            totalUpdated++;
+            updatedBlockCount++;
+            totalUpdatedBlockCount++;
           }
         }
       }
-      taskInfo.incBlockNumber(shuffleId, partitionId, updated);
+      taskInfo.incBlockNumber(shuffleId, partitionId, updatedBlockCount);
     }
-    return totalUpdated;
+    return totalUpdatedBlockCount;
   }
 
   public int updateAndGetCommitCount(String appId, int shuffleId) {
