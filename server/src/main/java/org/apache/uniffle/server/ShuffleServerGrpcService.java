@@ -511,9 +511,17 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               + partitionToBlockIds.size()
               + " blocks as shuffle result for the task of "
               + requestInfo);
-      shuffleServer
-          .getShuffleTaskManager()
-          .addFinishedBlockIds(appId, shuffleId, partitionToBlockIds, bitmapNum);
+      int duplicatedBlockIdNum =
+          shuffleServer
+              .getShuffleTaskManager()
+              .addFinishedBlockIds(appId, shuffleId, partitionToBlockIds, bitmapNum);
+      if (duplicatedBlockIdNum > 0) {
+        LOG.warn(
+            "Existing {} duplicated blockIds on blockId report for appId: {}, shuffleId: {}",
+            duplicatedBlockIdNum,
+            appId,
+            shuffleId);
+      }
     } catch (Exception e) {
       status = StatusCode.INTERNAL_ERROR;
       msg = "error happened when report shuffle result, check shuffle server for detail";
