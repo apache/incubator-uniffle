@@ -394,7 +394,7 @@ public class ShuffleTaskManager {
    * @param shuffleId
    * @param partitionToBlockIds
    * @param bitmapNum
-   * @return the number of duplicated blockIds
+   * @return the number of added blockIds
    */
   public int addFinishedBlockIds(
       String appId, Integer shuffleId, Map<Integer, long[]> partitionToBlockIds, int bitmapNum) {
@@ -427,7 +427,7 @@ public class ShuffleTaskManager {
       throw new InvalidRequestException(
           "ShuffleTaskInfo is not found that should not happen for appId: " + appId);
     }
-    int duplicated = 0;
+    int totalUpdated = 0;
     for (Map.Entry<Integer, long[]> entry : partitionToBlockIds.entrySet()) {
       Integer partitionId = entry.getKey();
       Roaring64NavigableMap bitmap = blockIds[partitionId % bitmapNum];
@@ -437,14 +437,13 @@ public class ShuffleTaskManager {
           if (!bitmap.contains(blockId)) {
             bitmap.addLong(blockId);
             updated++;
-          } else {
-            duplicated++;
+            totalUpdated++;
           }
         }
       }
       taskInfo.incBlockNumber(shuffleId, partitionId, updated);
     }
-    return duplicated;
+    return totalUpdated;
   }
 
   public int updateAndGetCommitCount(String appId, int shuffleId) {

@@ -506,19 +506,21 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         "appId[" + appId + "], shuffleId[" + shuffleId + "], taskAttemptId[" + taskAttemptId + "]";
 
     try {
+      int expected =
+          partitionToBlockIds.values().stream().map(x -> x.length).reduce(0, (a, b) -> a + b);
       LOG.info(
-          "Report "
-              + partitionToBlockIds.size()
-              + " blocks as shuffle result for the task of "
-              + requestInfo);
-      int duplicatedBlockIdNum =
+          "Accepted {} blockIds report of {} partitions as shuffle result for the task of {}",
+          expected,
+          partitionToBlockIds.size(),
+          request);
+      int updated =
           shuffleServer
               .getShuffleTaskManager()
               .addFinishedBlockIds(appId, shuffleId, partitionToBlockIds, bitmapNum);
-      if (duplicatedBlockIdNum > 0) {
+      if (expected != updated) {
         LOG.warn(
             "Existing {} duplicated blockIds on blockId report for appId: {}, shuffleId: {}",
-            duplicatedBlockIdNum,
+            expected - updated,
             appId,
             shuffleId);
       }
