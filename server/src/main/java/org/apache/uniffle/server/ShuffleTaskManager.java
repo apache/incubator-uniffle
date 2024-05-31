@@ -430,7 +430,7 @@ public class ShuffleTaskManager {
           }
         }
       }
-      taskInfo.incrBlockNumber(shuffleId, partitionId, updated);
+      taskInfo.incBlockNumber(shuffleId, partitionId, updated);
     }
   }
 
