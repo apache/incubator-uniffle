@@ -506,10 +506,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         "appId[" + appId + "], shuffleId[" + shuffleId + "], taskAttemptId[" + taskAttemptId + "]";
 
     try {
-      int expected =
-          partitionToBlockIds.values().stream().map(x -> x.length).reduce(0, (a, b) -> a + b);
+      int expected = partitionToBlockIds.values().stream().mapToInt(x -> x.length).sum();
       LOG.info(
-          "Accepted {} blockIds report of {} partitions as shuffle result for the task of {}",
+          "Accepted blockIds report for {} blocks across {} partitions as shuffle result for task {}",
           expected,
           partitionToBlockIds.size(),
           request);
