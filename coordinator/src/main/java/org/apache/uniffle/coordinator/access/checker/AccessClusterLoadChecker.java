@@ -61,7 +61,7 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker {
     this.availableServerNumThreshold =
         conf.getInteger(CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_SERVER_NUM_THRESHOLD, -1);
     this.defaultRequiredShuffleServerNumber =
-        ReconfigurableConfManager.register(conf, CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
+        conf.getReconfigurableConf(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
   }
 
   @Override

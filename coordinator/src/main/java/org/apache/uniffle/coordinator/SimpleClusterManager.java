@@ -87,7 +87,7 @@ public class SimpleClusterManager implements ClusterManager {
 
   public SimpleClusterManager(CoordinatorConf conf, Configuration hadoopConf) throws Exception {
     this.shuffleNodesMax =
-        ReconfigurableConfManager.register(conf, CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
+        conf.getReconfigurableConf(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
     this.heartbeatTimeout = conf.getLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT);
     // the thread for checking if shuffle server report heartbeat in time
     scheduledExecutorService =

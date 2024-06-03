@@ -41,6 +41,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ReconfigurableConfManager;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.future.CompletableFutureExtension;
 import org.apache.uniffle.common.util.RssUtils;
@@ -60,7 +61,7 @@ public class LocalStorageChecker extends Checker {
   protected List<StorageInfo> storageInfos = Lists.newArrayList();
   private boolean isHealthy = true;
   private ExecutorService workers;
-  private final long diskCheckerExecutionTimeoutMs;
+  private ReconfigurableConfManager.Reconfigurable<Long> diskCheckerExecutionTimeoutMs;
 
   public LocalStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages) {
     super(conf);
@@ -85,7 +86,7 @@ public class LocalStorageChecker extends Checker {
         conf.getDouble(ShuffleServerConf.HEALTH_MIN_STORAGE_PERCENTAGE);
 
     this.diskCheckerExecutionTimeoutMs =
-        conf.getLong(ShuffleServerConf.HEALTH_CHECKER_LOCAL_STORAGE_EXECUTE_TIMEOUT);
+        conf.getReconfigurableConf(ShuffleServerConf.HEALTH_CHECKER_LOCAL_STORAGE_EXECUTE_TIMEOUT);
     this.workers = Executors.newFixedThreadPool(basePaths.size());
   }
 
@@ -136,7 +137,7 @@ public class LocalStorageChecker extends Checker {
       futureMap.put(
           storageInfo,
           CompletableFutureExtension.orTimeout(
-              storageCheckFuture, diskCheckerExecutionTimeoutMs, TimeUnit.MILLISECONDS));
+              storageCheckFuture, diskCheckerExecutionTimeoutMs.get(), TimeUnit.MILLISECONDS));
     }
 
     for (Map.Entry<StorageInfo, CompletableFuture<Void>> entry : futureMap.entrySet()) {
