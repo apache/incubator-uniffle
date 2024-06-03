@@ -43,7 +43,7 @@ const memFormatter = (row, column, cellValue) => {
  * @returns {string}
  */
 const dateFormatter = (row, column, cellValue) => {
-    return moment(cellValue).format("YYYY-MM-DD hh:mm:ss");
+    return moment(cellValue).format("YYYY-MM-DD HH:mm:ss");
 }
 
 export {memFormatter, dateFormatter}
