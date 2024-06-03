@@ -531,8 +531,10 @@ message CancelDecommissionResponse {
 // per application.
 service ShuffleManager {
   rpc reportShuffleFetchFailure (ReportShuffleFetchFailureRequest) returns (ReportShuffleFetchFailureResponse);
-  // Gets the mapping between partitions and ShuffleServer from the ShuffleManager server
-  rpc getPartitionToShufflerServer(PartitionToShuffleServerRequest) returns (PartitionToShuffleServerResponse);
+  // Gets the mapping between partitions and ShuffleServer from the ShuffleManager server on Stage Retry.
+  rpc getPartitionToShufflerServerWithStageRetry(PartitionToShuffleServerRequest) returns (PartitionToShuffleServerWithStageRetryResponse);
+  // Gets the mapping between partitions and ShuffleServer from the ShuffleManager server on Block Retry.
+  rpc getPartitionToShufflerServerWithBlockRetry(PartitionToShuffleServerRequest) returns (RssReassignOnBlockSendFailureResponse);
   // Report write failures to ShuffleManager
   rpc reportShuffleWriteFailure (ReportShuffleWriteFailureRequest) returns (ReportShuffleWriteFailureResponse);
   // Reassign the RPC interface of the ShuffleServer list
@@ -566,7 +568,7 @@ message PartitionToShuffleServerRequest {
   int32 shuffleId = 2;
 }
 
-message PartitionToShuffleServerResponse {
+message PartitionToShuffleServerWithStageRetryResponse {
   StatusCode status = 1;
   string msg = 2;
   StageAttemptShuffleHandleInfo shuffleHandleInfo = 3;

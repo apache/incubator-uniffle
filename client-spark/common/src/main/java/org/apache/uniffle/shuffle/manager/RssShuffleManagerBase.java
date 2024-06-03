@@ -65,7 +65,8 @@ import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
 import org.apache.uniffle.client.request.RssFetchClientConfRequest;
 import org.apache.uniffle.client.request.RssPartitionToShuffleServerRequest;
 import org.apache.uniffle.client.response.RssFetchClientConfResponse;
-import org.apache.uniffle.client.response.RssPartitionToShuffleServerResponse;
+import org.apache.uniffle.client.response.RssPartitionToShuffleServerWithStageRetryResponse;
+import org.apache.uniffle.client.response.RssReassignOnBlockSendFailureResponse;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
@@ -575,20 +576,39 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   }
 
   /**
-   * Get the ShuffleServer list from the Driver based on the shuffleId
+   * In Stage Retry mode, obtain the Shuffle Server list from the Driver based on shuffleId.
    *
    * @param shuffleId shuffleId
    * @return ShuffleHandleInfo
    */
-  protected synchronized StageAttemptShuffleHandleInfo getRemoteShuffleHandleInfo(int shuffleId) {
+  protected synchronized StageAttemptShuffleHandleInfo getRemoteShuffleHandleInfoWithStageRetry(
+      int shuffleId) {
     RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
         new RssPartitionToShuffleServerRequest(shuffleId);
-    RssPartitionToShuffleServerResponse rpcPartitionToShufflerServer =
+    RssPartitionToShuffleServerWithStageRetryResponse rpcPartitionToShufflerServer =
         getOrCreateShuffleManagerClient()
-            .getPartitionToShufflerServer(rssPartitionToShuffleServerRequest);
+            .getPartitionToShufflerServerWithStageRetry(rssPartitionToShuffleServerRequest);
     StageAttemptShuffleHandleInfo shuffleHandleInfo =
         StageAttemptShuffleHandleInfo.fromProto(
             rpcPartitionToShufflerServer.getShuffleHandleInfoProto());
+    return shuffleHandleInfo;
+  }
+
+  /**
+   * In Block Retry mode, obtain the Shuffle Server list from the Driver based on shuffleId.
+   *
+   * @param shuffleId shuffleId
+   * @return ShuffleHandleInfo
+   */
+  protected synchronized MutableShuffleHandleInfo getRemoteShuffleHandleInfoWithBlockRetry(
+      int shuffleId) {
+    RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
+        new RssPartitionToShuffleServerRequest(shuffleId);
+    RssReassignOnBlockSendFailureResponse rpcPartitionToShufflerServer =
+        getOrCreateShuffleManagerClient()
+            .getPartitionToShufflerServerWithBlockRetry(rssPartitionToShuffleServerRequest);
+    MutableShuffleHandleInfo shuffleHandleInfo =
+        MutableShuffleHandleInfo.fromProto(rpcPartitionToShufflerServer.getHandle());
     return shuffleHandleInfo;
   }
 

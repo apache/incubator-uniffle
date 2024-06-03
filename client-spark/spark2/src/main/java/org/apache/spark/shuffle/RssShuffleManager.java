@@ -333,12 +333,16 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
     shuffleIdToPartitionNum.putIfAbsent(shuffleId, dependency.partitioner().numPartitions());
     shuffleIdToNumMapTasks.putIfAbsent(shuffleId, dependency.rdd().partitions().length);
-    if (shuffleManagerRpcServiceEnabled) {
+    if (shuffleManagerRpcServiceEnabled && rssResubmitStage) {
       ShuffleHandleInfo handleInfo =
           new MutableShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
       StageAttemptShuffleHandleInfo stageAttemptShuffleHandleInfo =
           new StageAttemptShuffleHandleInfo(handleInfo);
       shuffleHandleInfoManager.register(shuffleId, stageAttemptShuffleHandleInfo);
+    } else if (shuffleManagerRpcServiceEnabled && taskBlockSendFailureRetryEnabled) {
+      ShuffleHandleInfo shuffleHandleInfo =
+          new MutableShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
+      shuffleHandleInfoManager.register(shuffleId, shuffleHandleInfo);
     }
     Broadcast<SimpleShuffleHandleInfo> hdlInfoBd =
         RssSparkShuffleUtils.broadcastShuffleHdlInfo(
@@ -401,9 +405,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       int shuffleId = rssHandle.getShuffleId();
       String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
       ShuffleHandleInfo shuffleHandleInfo;
-      if (shuffleManagerRpcServiceEnabled) {
-        // Get the ShuffleServer list from the Driver based on the shuffleId
-        shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);
+      if (shuffleManagerRpcServiceEnabled && rssResubmitStage) {
+        // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId
+        shuffleHandleInfo = getRemoteShuffleHandleInfoWithStageRetry(shuffleId);
+      } else if (shuffleManagerRpcServiceEnabled && taskBlockSendFailureRetryEnabled) {
+        // In Block Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId
+        shuffleHandleInfo = getRemoteShuffleHandleInfoWithBlockRetry(shuffleId);
       } else {
         shuffleHandleInfo =
             new SimpleShuffleHandleInfo(
@@ -471,9 +478,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               + "]");
       start = System.currentTimeMillis();
       ShuffleHandleInfo shuffleHandleInfo;
-      if (shuffleManagerRpcServiceEnabled) {
-        // Get the ShuffleServer list from the Driver based on the shuffleId
-        shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);
+      if (shuffleManagerRpcServiceEnabled && rssResubmitStage) {
+        // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
+        shuffleHandleInfo = getRemoteShuffleHandleInfoWithStageRetry(shuffleId);
+      } else if (shuffleManagerRpcServiceEnabled && taskBlockSendFailureRetryEnabled) {
+        // In Block Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId
+        shuffleHandleInfo = getRemoteShuffleHandleInfoWithBlockRetry(shuffleId);
       } else {
         shuffleHandleInfo =
             new SimpleShuffleHandleInfo(
