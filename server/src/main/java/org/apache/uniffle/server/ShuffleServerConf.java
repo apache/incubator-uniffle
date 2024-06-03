@@ -387,7 +387,7 @@ public class ShuffleServerConf extends RssBaseConf {
           .withDescription(
               "Whether single buffer flush when size exceeded rss.server.single.buffer.flush.threshold");
 
-  public static final ConfigOption<Long> SINGLE_BUFFER_FLUSH_THRESHOLD =
+  public static final ConfigOption<Long> SINGLE_BUFFER_FLUSH_SIZE_THRESHOLD =
       ConfigOptions.key("rss.server.single.buffer.flush.threshold")
           .longType()
           .defaultValue(128 * 1024 * 1024L)
