@@ -387,7 +387,16 @@ public class ShuffleTaskManager {
     return StatusCode.SUCCESS;
   }
 
-  public void addFinishedBlockIds(
+  /**
+   * Add finished blockIds from client
+   *
+   * @param appId
+   * @param shuffleId
+   * @param partitionToBlockIds
+   * @param bitmapNum
+   * @return the number of added blockIds
+   */
+  public int addFinishedBlockIds(
       String appId, Integer shuffleId, Map<Integer, long[]> partitionToBlockIds, int bitmapNum) {
     refreshAppId(appId);
     Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
@@ -413,15 +422,28 @@ public class ShuffleTaskManager {
               + " bitmaps!");
     }
 
+    ShuffleTaskInfo taskInfo = getShuffleTaskInfo(appId);
+    if (taskInfo == null) {
+      throw new InvalidRequestException(
+          "ShuffleTaskInfo is not found that should not happen for appId: " + appId);
+    }
+    int totalUpdatedBlockCount = 0;
     for (Map.Entry<Integer, long[]> entry : partitionToBlockIds.entrySet()) {
       Integer partitionId = entry.getKey();
       Roaring64NavigableMap bitmap = blockIds[partitionId % bitmapNum];
+      int updatedBlockCount = 0;
       synchronized (bitmap) {
         for (long blockId : entry.getValue()) {
-          bitmap.addLong(blockId);
+          if (!bitmap.contains(blockId)) {
+            bitmap.addLong(blockId);
+            updatedBlockCount++;
+            totalUpdatedBlockCount++;
+          }
         }
       }
+      taskInfo.incBlockNumber(shuffleId, partitionId, updatedBlockCount);
     }
+    return totalUpdatedBlockCount;
   }
 
   public int updateAndGetCommitCount(String appId, int shuffleId) {
@@ -553,13 +575,18 @@ public class ShuffleTaskManager {
     }
     Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
     if (shuffleIdToPartitions == null) {
+      LOG.warn("Empty blockIds for app: {}. This should not happen", appId);
       return null;
     }
 
     Roaring64NavigableMap[] blockIds = shuffleIdToPartitions.get(shuffleId);
     if (blockIds == null) {
+      LOG.warn("Empty blockIds for app: {}, shuffleId: {}", appId, shuffleId);
       return new byte[] {};
     }
+
+    ShuffleTaskInfo taskInfo = getShuffleTaskInfo(appId);
+    long expectedBlockNumber = 0;
     Map<Integer, Set<Integer>> bitmapIndexToPartitions = Maps.newHashMap();
     for (int partitionId : partitions) {
       int bitmapIndex = partitionId % blockIds.length;
@@ -569,6 +596,7 @@ public class ShuffleTaskManager {
         HashSet<Integer> newHashSet = Sets.newHashSet(partitionId);
         bitmapIndexToPartitions.put(bitmapIndex, newHashSet);
       }
+      expectedBlockNumber += taskInfo.getBlockNumber(shuffleId, partitionId);
     }
 
     Roaring64NavigableMap res = Roaring64NavigableMap.bitmapOf();
@@ -577,6 +605,17 @@ public class ShuffleTaskManager {
       Roaring64NavigableMap bitmap = blockIds[entry.getKey()];
       getBlockIdsByPartitionId(requestPartitions, bitmap, res, blockIdLayout);
     }
+
+    if (res.getLongCardinality() != expectedBlockNumber) {
+      throw new RssException(
+          "Inconsistent block number for partitions: "
+              + partitions
+              + ". Excepted: "
+              + expectedBlockNumber
+              + ", actual: "
+              + res.getLongCardinality());
+    }
+
     return RssUtils.serializeBitMap(res);
   }
 
