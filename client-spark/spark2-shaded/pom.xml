@@ -68,6 +68,7 @@
                   <include>com.fasterxml.jackson.core:jackson-annotations</include>
                   <include>org.roaringbitmap:RoaringBitmap</include>
                   <include>org.roaringbitmap:shims</include>
+                  <include>org.apache.commons:commons-collections4</include>
                 </includes>
               </artifactSet>
               <finalName>${project.artifactId}-${project.version}</finalName>
