@@ -38,12 +38,6 @@ public interface RssShuffleManagerInterface {
   String getAppId();
 
   /**
-   * @return the maximum number of fetch failures per shuffle partition before that shuffle stage
-   *     should be re-submitted
-   */
-  int getMaxFetchFailures();
-
-  /**
    * @param shuffleId the shuffle id to query
    * @return the num of partitions(a.k.a reduce tasks) for shuffle with shuffle id.
    */
@@ -63,6 +57,8 @@ public interface RssShuffleManagerInterface {
    */
   void unregisterAllMapOutput(int shuffleId) throws SparkException;
 
+  BlockIdManager getBlockIdManager();
+
   /**
    * Get ShuffleHandleInfo with ShuffleId
    *
@@ -72,17 +68,20 @@ public interface RssShuffleManagerInterface {
   ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId);
 
   /**
+   * @return the maximum number of fetch failures per shuffle partition before that shuffle stage
+   *     should be re-submitted
+   */
+  int getMaxFetchFailures();
+
+  /**
    * Add the shuffleServer that failed to write to the failure list
    *
    * @param shuffleServerId
    */
   void addFailuresShuffleServerInfos(String shuffleServerId);
 
-  boolean reassignAllShuffleServersForWholeStage(
-      int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
+  boolean reassignOnStageResubmit(int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
 
   MutableShuffleHandleInfo reassignOnBlockSendFailure(
       int shuffleId, Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers);
-
-  BlockIdManager getBlockIdManager();
 }

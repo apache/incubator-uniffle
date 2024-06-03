@@ -542,6 +542,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         RssReportShuffleWriteFailureResponse response =
             shuffleManagerClient.reportShuffleWriteFailure(req);
         if (response.getReSubmitWholeStage()) {
+          // The shuffle server is reassigned.
           RssReassignServersRequest rssReassignServersRequest =
               new RssReassignServersRequest(
                   taskContext.stageId(),

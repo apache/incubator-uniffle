@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.stub.StreamObserver;
 import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.StageAttemptShuffleHandleInfo;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -194,14 +195,14 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     RssProtos.PartitionToShuffleServerResponse reply;
     RssProtos.StatusCode code;
     int shuffleId = request.getShuffleId();
-    MutableShuffleHandleInfo shuffleHandle =
-        (MutableShuffleHandleInfo) shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
+    StageAttemptShuffleHandleInfo shuffleHandle =
+        (StageAttemptShuffleHandleInfo) shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
     if (shuffleHandle != null) {
       code = RssProtos.StatusCode.SUCCESS;
       reply =
           RssProtos.PartitionToShuffleServerResponse.newBuilder()
               .setStatus(code)
-              .setShuffleHandleInfo(MutableShuffleHandleInfo.toProto(shuffleHandle))
+              .setShuffleHandleInfo(StageAttemptShuffleHandleInfo.toProto(shuffleHandle))
               .build();
     } else {
       code = RssProtos.StatusCode.INVALID_REQUEST;
@@ -220,7 +221,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     int shuffleId = request.getShuffleId();
     int numPartitions = request.getNumPartitions();
     boolean needReassign =
-        shuffleManager.reassignAllShuffleServersForWholeStage(
+        shuffleManager.reassignOnStageResubmit(
             stageId, stageAttemptNumber, shuffleId, numPartitions);
     RssProtos.StatusCode code = RssProtos.StatusCode.SUCCESS;
     RssProtos.ReassignServersReponse reply =

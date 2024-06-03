@@ -23,12 +23,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
-import org.apache.spark.shuffle.handle.ShuffleHandleInfoBase;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 
 import org.apache.uniffle.common.ReceivingFailureServer;
 import org.apache.uniffle.shuffle.BlockIdManager;
-
-import static org.mockito.Mockito.mock;
 
 public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   public Set<Integer> unregisteredShuffleIds = new LinkedHashSet<>();
@@ -36,11 +34,6 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   @Override
   public String getAppId() {
     return "testAppId";
-  }
-
-  @Override
-  public int getMaxFetchFailures() {
-    return 2;
   }
 
   @Override
@@ -59,15 +52,25 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   }
 
   @Override
-  public ShuffleHandleInfoBase getShuffleHandleInfoByShuffleId(int shuffleId) {
+  public BlockIdManager getBlockIdManager() {
     return null;
+  }
+
+  @Override
+  public ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId) {
+    return null;
+  }
+
+  @Override
+  public int getMaxFetchFailures() {
+    return 0;
   }
 
   @Override
   public void addFailuresShuffleServerInfos(String shuffleServerId) {}
 
   @Override
-  public boolean reassignAllShuffleServersForWholeStage(
+  public boolean reassignOnStageResubmit(
       int stageId, int stageAttemptNumber, int shuffleId, int numMaps) {
     return false;
   }
@@ -75,11 +78,6 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   @Override
   public MutableShuffleHandleInfo reassignOnBlockSendFailure(
       int shuffleId, Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
-    return mock(MutableShuffleHandleInfo.class);
-  }
-
-  @Override
-  public BlockIdManager getBlockIdManager() {
     return null;
   }
 }
