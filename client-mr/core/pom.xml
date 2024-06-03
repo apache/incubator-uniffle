@@ -159,6 +159,7 @@
                                     <include>org.roaringbitmap:RoaringBitmap</include>
                                     <include>org.roaringbitmap:shims</include>
                                     <include>net.jpountz.lz4:lz4</include>
+                                    <include>org.apache.commons:commons-collections4</include>
                                 </includes>
                             </artifactSet>
                             <finalName>${project.artifactId}-${project.version}</finalName>
