@@ -192,13 +192,19 @@ public class RssSparkConfig {
           .createWithDefault(10);
 
   public static final ConfigEntry<Integer> RSS_CLIENT_UNREGISTER_TIMEOUT_SEC =
-      createIntegerBuilder(new ConfigBuilder("spark.rss.client.unregister.timeout.sec")
-          .doc("Unregister requests are executed concurrently where all requests together have to complete within this timeout."))
+      createIntegerBuilder(
+              new ConfigBuilder("spark.rss.client.unregister.timeout.sec")
+                  .doc(
+                      "Unregister requests are executed concurrently and all requests together "
+                          + "have to complete within this timeout."))
           .createWithDefault(60);
 
   public static final ConfigEntry<Integer> RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC =
-      createIntegerBuilder(new ConfigBuilder("spark.rss.client.unregister.request.timeout.sec")
-          .doc("Unregister requests are executed concurrently where individual requests have to complete within this timeout."))
+      createIntegerBuilder(
+              new ConfigBuilder("spark.rss.client.unregister.request.timeout.sec")
+                  .doc(
+                      "Unregister requests are executed concurrently and individual requests "
+                          + "have to complete within this timeout."))
           .createWithDefault(10);
 
   // When the size of read buffer reaches the half of JVM region (i.e., 32m),
