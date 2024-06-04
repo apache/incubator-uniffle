@@ -1010,6 +1010,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
 
       executorService = ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
+      int unregisterTimeMs = unregisterTimeSec * 1000;
 
       ThreadUtils.executeTasks(
           executorService,
@@ -1085,6 +1086,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       }
 
       executorService = ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
+      int unregisterTimeMs = unregisterTimeSec * 1000;
 
       ThreadUtils.executeTasks(
           executorService,
