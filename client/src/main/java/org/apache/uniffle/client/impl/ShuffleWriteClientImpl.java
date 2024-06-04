@@ -960,13 +960,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     dataTransferPool.shutdownNow();
   }
 
-  @VisibleForTesting
-  // Given some number of tasks and the concurrency (number of threads),
-  // computes how many tasks may be executed sequentially
-  protected static int sequentiality(int tasks, int concurrency) {
-    return (int) Math.ceil((float) tasks / concurrency);
-  }
-
   @Override
   public void unregisterShuffle(String appId, int shuffleId) {
     int unregisterTimeMs = unregisterTimeSec * 1000;

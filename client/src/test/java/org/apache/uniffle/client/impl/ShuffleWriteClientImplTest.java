@@ -147,20 +147,6 @@ public class ShuffleWriteClientImplTest {
   }
 
   @Test
-  public void testSequentiality() {
-    assertEquals(0, ShuffleWriteClientImpl.sequentiality(0, 1));
-    assertEquals(1, ShuffleWriteClientImpl.sequentiality(1, 1));
-    assertEquals(2, ShuffleWriteClientImpl.sequentiality(2, 1));
-    assertEquals(1, ShuffleWriteClientImpl.sequentiality(2, 2));
-    assertEquals(1, ShuffleWriteClientImpl.sequentiality(2, 3));
-    assertEquals(1, ShuffleWriteClientImpl.sequentiality(3, 3));
-    assertEquals(2, ShuffleWriteClientImpl.sequentiality(4, 3));
-    assertEquals(2, ShuffleWriteClientImpl.sequentiality(5, 3));
-    assertEquals(2, ShuffleWriteClientImpl.sequentiality(6, 3));
-    assertEquals(3, ShuffleWriteClientImpl.sequentiality(7, 3));
-  }
-
-  @Test
   public void testRegisterAndUnRegisterShuffleServer() {
     ShuffleWriteClientImpl shuffleWriteClient =
         ShuffleClientFactory.newWriteBuilder()
