@@ -990,26 +990,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
     ExecutorService executorService = null;
     try {
-      // we send unregister request with this concurrency (this many concurrent threads)
       int concurrency = Math.min(unregisterThreadPoolSize, shuffleServerInfos.size());
-      // therefore, we have at most this many requests in a sequence (if all timeout) for one thread
-      int sequentiality = sequentiality(shuffleServerInfos.size(), concurrency);
-      // if we wait less than this time we may interrupt ongoing requests
-      int requiredUnregisterTimeoutSec = unregisterRequestTimeSec * sequentiality;
-      if (unregisterTimeSec < requiredUnregisterTimeoutSec) {
-        // NOTE: currently, this can only be set for Spark clients
-        LOG.warn(
-            "Unregistering from {} shuffle servers with concurrency of {} and individual timeout of {}s may take {}s, "
-                + "which is longer than overall timeout of {}s. Consider increasing the unregister thread pool size "
-                + "(spark.rss.client.unregister.thread.pool.size) or the overall unregister timeout "
-                + "(spark.rss.client.unregister.timeout.sec), which both is only supported by Spark clients.",
-            shuffleServerInfos.size(),
-            concurrency,
-            unregisterRequestTimeSec,
-            requiredUnregisterTimeoutSec,
-            unregisterTimeSec);
-      }
-
       executorService = ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
       int unregisterTimeMs = unregisterTimeSec * 1000;
 
@@ -1028,7 +1009,20 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                 LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
               }
             } catch (Exception e) {
-              LOG.warn("Error happened when unregistering from {}", shuffleServerInfo, e);
+              if (e.getCause() != null && e.getCause() instanceof InterruptedException) {
+                // InterruptedException indicates timeout, give some advice
+                LOG.warn(
+                    "Timeout occurred while unregistering from {}, please consider "
+                        + "increasing the thread pool size ({}) or the overall timeout ({}s) "
+                        + "if you think still the request timeout ({}s) is sensible.",
+                    shuffleServerInfo,
+                    unregisterThreadPoolSize,
+                    unregisterTimeSec,
+                    unregisterRequestTimeSec,
+                    e);
+              } else {
+                LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
+              }
             }
             return null;
           },
@@ -1066,26 +1060,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
     ExecutorService executorService = null;
     try {
-      // we send unregister request with this concurrency (this many concurrent threads)
       int concurrency = Math.min(unregisterThreadPoolSize, shuffleServerInfos.size());
-      // therefore, we have at most this many requests in a sequence for one thread
-      int sequentiality = sequentiality(shuffleServerInfos.size(), concurrency);
-      // if we wait less than this time we may interrupt ongoing requests
-      int requiredUnregisterTimeoutSec = unregisterRequestTimeSec * sequentiality;
-      if (unregisterTimeSec < requiredUnregisterTimeoutSec) {
-        // NOTE: currently, this can only be set for Spark clients
-        LOG.warn(
-            "Unregistering from {} shuffle servers with concurrency of {} and individual timeout of {}s may take {}s, "
-                + "which is longer than overall timeout of {}s. Consider increasing the unregister thread pool size "
-                + "(spark.rss.client.unregister.thread.pool.size) or the overall unregister timeout "
-                + "(spark.rss.client.unregister.timeout.sec), which both is only supported by Spark clients.",
-            shuffleServerInfos.size(),
-            concurrency,
-            unregisterRequestTimeSec,
-            requiredUnregisterTimeoutSec,
-            unregisterTimeSec);
-      }
-
       executorService = ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
       int unregisterTimeMs = unregisterTimeSec * 1000;
 
@@ -1105,7 +1080,20 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                 LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
               }
             } catch (Exception e) {
-              LOG.warn("Error happened when unregistering from {}", shuffleServerInfo, e);
+              if (e.getCause() != null && e.getCause() instanceof InterruptedException) {
+                // InterruptedException indicates timeout, give some advice
+                LOG.warn(
+                    "Timeout occurred while unregistering from {}, please consider "
+                        + "increasing the thread pool size ({}) or the overall timeout ({}s) "
+                        + "if you think still the request timeout ({}s) is sensible.",
+                    shuffleServerInfo,
+                    unregisterThreadPoolSize,
+                    unregisterTimeSec,
+                    unregisterRequestTimeSec,
+                    e);
+              } else {
+                LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
+              }
             }
             return null;
           },
