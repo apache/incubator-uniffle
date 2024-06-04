@@ -1011,14 +1011,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               if (e.getCause() != null && e.getCause() instanceof InterruptedException) {
                 // InterruptedException indicates timeout, give some advice
                 LOG.warn(
-                    "Timeout occurred while unregistering from {}, please consider "
+                    "Timeout occurred while unregistering from {}. Please consider "
                         + "increasing the thread pool size ({}) or the overall timeout ({}s) "
-                        + "if you think still the request timeout ({}s) is sensible.",
+                        + "if you still think the request timeout ({}s) is sensible.",
                     shuffleServerInfo,
                     unregisterThreadPoolSize,
                     unregisterTimeSec,
-                    unregisterRequestTimeSec,
-                    e);
+                    unregisterRequestTimeSec);
               } else {
                 LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
               }
@@ -1081,14 +1080,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               if (e.getCause() != null && e.getCause() instanceof InterruptedException) {
                 // InterruptedException indicates timeout, give some advice
                 LOG.warn(
-                    "Timeout occurred while unregistering from {}, please consider "
+                    "Timeout occurred while unregistering from {}. Please consider "
                         + "increasing the thread pool size ({}) or the overall timeout ({}s) "
-                        + "if you think still the request timeout ({}s) is sensible.",
+                        + "if you still think the request timeout ({}s) is sensible.",
                     shuffleServerInfo,
                     unregisterThreadPoolSize,
                     unregisterTimeSec,
-                    unregisterRequestTimeSec,
-                    e);
+                    unregisterRequestTimeSec);
               } else {
                 LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
               }
