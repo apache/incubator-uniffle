@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import com.google.common.collect.Lists;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
@@ -127,7 +128,8 @@ public class ShuffleBufferWithoutIndex extends ShuffleBuffer {
       List<ShufflePartitionedBlock> resultBlocks,
       Roaring64NavigableMap expectedTaskIds) {
     long nextBlockId = lastBlockId;
-    List<Long> sortedEventId = sortFlushingEventId(inFlushBlockMap);
+    List<Long> eventIdList = Lists.newArrayList(inFlushBlockMap.keySet());
+    List<Long> sortedEventId = sortFlushingEventId(eventIdList);
     int offset = 0;
     boolean hasLastBlockId = false;
     // read from inFlushBlockMap first to make sure the order of

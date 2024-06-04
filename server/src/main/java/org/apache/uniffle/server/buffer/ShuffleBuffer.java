@@ -160,8 +160,7 @@ public abstract class ShuffleBuffer {
     }
   }
 
-  protected List<Long> sortFlushingEventId(Map<Long, ?> inFlushBlockMap) {
-    List<Long> eventIdList = Lists.newArrayList(inFlushBlockMap.keySet());
+  protected List<Long> sortFlushingEventId(List<Long> eventIdList) {
     eventIdList.sort(
         (id1, id2) -> {
           if (id1 > id2) {
