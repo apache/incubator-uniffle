@@ -992,7 +992,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     try {
       // we send unregister request with this concurrency (this many concurrent threads)
       int concurrency = Math.min(unregisterThreadPoolSize, shuffleServerInfos.size());
-      // therefore, we have at most this many requests in a sequence for one thread
+      // therefore, we have at most this many requests in a sequence (if all timeout) for one thread
       int sequentiality = sequentiality(shuffleServerInfos.size(), concurrency);
       // if we wait less than this time we may interrupt ongoing requests
       int requiredUnregisterTimeoutSec = unregisterRequestTimeSec * sequentiality;
@@ -1000,8 +1000,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         // NOTE: currently, this can only be set for Spark clients
         LOG.warn(
             "Unregistering from {} shuffle servers with concurrency of {} and individual timeout of {}s may take {}s, "
-                + "which is longer than overall timeout of {}s. Consider increasing the unregister thread pool size or "
-                + "the overall unregister timeout",
+                + "which is longer than overall timeout of {}s. Consider increasing the unregister thread pool size "
+                + "(spark.rss.client.unregister.thread.pool.size) or the overall unregister timeout "
+                + "(spark.rss.client.unregister.timeout.sec), which both is only supported by Spark clients.",
             shuffleServerInfos.size(),
             concurrency,
             unregisterRequestTimeSec,
