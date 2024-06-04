@@ -950,6 +950,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public void unregisterShuffle(String appId, int shuffleId) {
+    int unregisterTimeMs = unregisterRequestTimeSec * 1000;
     RssUnregisterShuffleRequest request = new RssUnregisterShuffleRequest(appId, shuffleId);
 
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
@@ -984,7 +985,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             }
             return null;
           },
-          unregisterRequestTimeSec,
+          unregisterTimeMs,
           "unregister shuffle server");
 
     } finally {
@@ -997,6 +998,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public void unregisterShuffle(String appId) {
+    int unregisterTimeMs = unregisterRequestTimeSec * 1000;
     RssUnregisterShuffleByAppIdRequest request = new RssUnregisterShuffleByAppIdRequest(appId);
 
     if (appId == null) {
@@ -1032,7 +1034,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             }
             return null;
           },
-          unregisterRequestTimeSec,
+          unregisterTimeMs,
           "unregister shuffle server");
 
     } finally {
