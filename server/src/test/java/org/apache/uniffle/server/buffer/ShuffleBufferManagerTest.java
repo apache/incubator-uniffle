@@ -630,16 +630,6 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   private void waitForFlush(
       ShuffleFlushManager shuffleFlushManager, String appId, int shuffleId, int expectedBlockNum)
       throws Exception {
-    waitForFlush(shuffleFlushManager, appId, shuffleId, expectedBlockNum, 0);
-  }
-
-  private void waitForFlush(
-      ShuffleFlushManager shuffleFlushManager,
-      String appId,
-      int shuffleId,
-      int expectedBlockNum,
-      long expectedUsedMemory)
-      throws Exception {
     int retry = 0;
     long committedCount = 0;
     do {
@@ -659,7 +649,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     // `shuffleBufferManager.getUsedMemory()` and `shuffleBufferManager.getInFlushSize()`.
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
-        .until(() -> shuffleBufferManager.getUsedMemory() == expectedUsedMemory);
+        .until(() -> shuffleBufferManager.getUsedMemory() == 0);
   }
 
   @Test
