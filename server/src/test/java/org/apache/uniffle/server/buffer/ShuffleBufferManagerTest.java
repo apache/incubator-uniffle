@@ -264,7 +264,6 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.cacheShuffleData(appId1, 2, false, spd2);
     shuffleBufferManager.cacheShuffleData(appId2, 1, false, spd4);
     shuffleBufferManager.removeBuffer(appId1);
-
     assertNull(shuffleSizeMap.get(appId1));
     assertEquals(100, shuffleSizeMap.get(appId2).get(1).get());
   }
@@ -452,8 +451,6 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     assertEquals(0, shuffleBufferManager.getUsedMemory());
     assertEquals(0, shuffleBufferManager.getInFlushSize());
 
-    shuffleBufferManager.removeBuffer(appId);
-    shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     shuffleBufferManager.registerBuffer("bufferSizeTest1", shuffleId, 0, 1);
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 32));
     assertEquals(64, shuffleBufferManager.getUsedMemory());

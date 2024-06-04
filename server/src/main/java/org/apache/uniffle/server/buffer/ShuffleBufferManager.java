@@ -508,7 +508,7 @@ public class ShuffleBufferManager {
                   range.lowerEndpoint(),
                   range.upperEndpoint(),
                   isHugePartition(appId, shuffleId, range.lowerEndpoint()));
-              expectedFlushSize += shuffleBuffer.getSize();
+              pickedFlushSize += shuffleBuffer.getSize();
               if (pickedFlushSize > expectedFlushSize) {
                 LOG.info("Finally flush {} bytes", pickedFlushSize);
                 return;
