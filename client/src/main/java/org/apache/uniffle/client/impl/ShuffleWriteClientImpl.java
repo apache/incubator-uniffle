@@ -969,7 +969,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public void unregisterShuffle(String appId, int shuffleId) {
-    int unregisterTimeMs = unregisterRequestTimeSec * 1000;
+    int unregisterTimeMs = unregisterTimeSec * 1000;
     RssUnregisterShuffleRequest request =
         new RssUnregisterShuffleRequest(appId, shuffleId, unregisterRequestTimeSec);
 
@@ -992,7 +992,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     try {
       int concurrency = Math.min(unregisterThreadPoolSize, shuffleServerInfos.size());
       executorService = ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
-      int unregisterTimeMs = unregisterTimeSec * 1000;
 
       ThreadUtils.executeTasks(
           executorService,
@@ -1039,7 +1038,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public void unregisterShuffle(String appId) {
-    int unregisterTimeMs = unregisterRequestTimeSec * 1000;
+    int unregisterTimeMs = unregisterTimeSec * 1000;
     RssUnregisterShuffleByAppIdRequest request =
         new RssUnregisterShuffleByAppIdRequest(appId, unregisterRequestTimeSec);
 
@@ -1062,7 +1061,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     try {
       int concurrency = Math.min(unregisterThreadPoolSize, shuffleServerInfos.size());
       executorService = ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
-      int unregisterTimeMs = unregisterTimeSec * 1000;
 
       ThreadUtils.executeTasks(
           executorService,
