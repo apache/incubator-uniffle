@@ -18,6 +18,7 @@
 package org.apache.uniffle.server.buffer;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShuffleBufferWithoutIndexTest extends BufferTestBase {
+
+  private static AtomicInteger atomSequenceNo = new AtomicInteger(0);
 
   @Test
   public void appendTest() {
@@ -595,5 +598,10 @@ public class ShuffleBufferWithoutIndexTest extends BufferTestBase {
       offset += spb.getLength();
       segmentIndex++;
     }
+  }
+
+  @Override
+  protected AtomicInteger getAtomSequenceNo() {
+    return atomSequenceNo;
   }
 }

@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.server.buffer;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
@@ -34,6 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShuffleBufferWithSkipListTest extends BufferTestBase {
+  private static AtomicInteger atomSequenceNo = new AtomicInteger(0);
+
   @Test
   public void appendTest() {
     ShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList(100);
@@ -195,5 +199,10 @@ public class ShuffleBufferWithSkipListTest extends BufferTestBase {
     lastBlockId = result.getBufferSegments().get(1).getBlockId();
     result = shuffleBuffer.getShuffleData(lastBlockId, 60, expectedTasks);
     assertEquals(3, result.getBufferSegments().size());
+  }
+
+  @Override
+  protected AtomicInteger getAtomSequenceNo() {
+    return atomSequenceNo;
   }
 }

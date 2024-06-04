@@ -56,12 +56,16 @@ public abstract class BufferTestBase {
     new Random().nextBytes(buf);
     long blockId =
         BlockIdLayout.DEFAULT.getBlockId(
-            atomSequenceNo.incrementAndGet(), partitionId, taskAttemptId);
+            getAtomSequenceNo().incrementAndGet(), partitionId, taskAttemptId);
     ShufflePartitionedBlock block =
         new ShufflePartitionedBlock(
             len, len, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf);
     ShufflePartitionedData data =
         new ShufflePartitionedData(partitionId, new ShufflePartitionedBlock[] {block});
     return data;
+  }
+
+  protected AtomicInteger getAtomSequenceNo() {
+    return atomSequenceNo;
   }
 }
