@@ -19,5 +19,5 @@ package org.apache.uniffle.server.buffer;
 
 public enum ShuffleBufferType {
   SKIP_LIST,
-  NONE
+  LINKED_LIST
 }

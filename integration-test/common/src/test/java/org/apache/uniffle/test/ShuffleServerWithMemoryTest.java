@@ -51,7 +51,7 @@ import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.server.buffer.ShuffleBuffer;
+import org.apache.uniffle.server.buffer.AbstractShuffleBuffer;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.ComposedClientReadHandler;
 import org.apache.uniffle.storage.handler.impl.LocalFileClientReadHandler;
@@ -254,7 +254,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
       if (retry > 5) {
         fail(String.format("Timeout for flush data, isNettyMode=%s", isNettyMode));
       }
-      ShuffleBuffer shuffleBuffer =
+      AbstractShuffleBuffer shuffleBuffer =
           shuffleServers.get(0).getShuffleBufferManager().getShuffleBuffer(testAppId, shuffleId, 0);
       if (shuffleBuffer.getBlocks().size() == 0 && shuffleBuffer.getInFlushBlockMap().size() == 0) {
         break;
@@ -464,7 +464,7 @@ public class ShuffleServerWithMemoryTest extends ShuffleReadWriteBase {
       if (retry > 5) {
         fail(String.format("Timeout for flush data, isNettyMode=%s", isNettyMode));
       }
-      ShuffleBuffer shuffleBuffer =
+      AbstractShuffleBuffer shuffleBuffer =
           shuffleServers.get(0).getShuffleBufferManager().getShuffleBuffer(testAppId, shuffleId, 0);
       if (shuffleBuffer.getBlocks().size() == 0 && shuffleBuffer.getInFlushBlockMap().size() == 0) {
         break;

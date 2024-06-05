@@ -38,14 +38,14 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 
-public abstract class ShuffleBuffer {
+public abstract class AbstractShuffleBuffer {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ShuffleBuffer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractShuffleBuffer.class);
 
   private final long capacity;
   protected long size;
 
-  public ShuffleBuffer(long capacity) {
+  public AbstractShuffleBuffer(long capacity) {
     this.capacity = capacity;
     this.size = 0;
   }

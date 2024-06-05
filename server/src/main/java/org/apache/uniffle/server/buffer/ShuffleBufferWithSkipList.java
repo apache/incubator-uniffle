@@ -39,7 +39,7 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleFlushManager;
 
-public class ShuffleBufferWithSkipList extends ShuffleBuffer {
+public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   private ConcurrentSkipListMap<Long, ShufflePartitionedBlock> blocksMap;
   private final Map<Long, ConcurrentSkipListMap<Long, ShufflePartitionedBlock>> inFlushBlockMap;
 

@@ -426,8 +426,11 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<ShuffleBufferType> SERVER_SHUFFLE_BUFFER_TYPE =
       ConfigOptions.key("rss.server.shuffleBuffer.type")
           .enumType(ShuffleBufferType.class)
-          .defaultValue(ShuffleBufferType.NONE)
-          .withDescription("The type for shuffle buffers.");
+          .defaultValue(ShuffleBufferType.LINKED_LIST)
+          .withDescription(
+              "The type for shuffle buffers. Setting as LINKED_LIST or SKIP_LIST."
+                  + "The default value is LINKED_LIST. SKIP_LIST will help to improve"
+                  + "the performance, but it don't support the show start feature of MR");
 
   public static final ConfigOption<Long> SERVER_SHUFFLE_FLUSH_THRESHOLD =
       ConfigOptions.key("rss.server.shuffle.flush.threshold")

@@ -80,7 +80,7 @@ public class ShuffleBufferManager {
   protected AtomicLong usedMemory = new AtomicLong(0L);
   private AtomicLong readDataMemory = new AtomicLong(0L);
   // appId -> shuffleId -> partitionId -> ShuffleBuffer to avoid too many appId
-  protected Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool;
+  protected Map<String, Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>>> bufferPool;
   // appId -> shuffleId -> shuffle size in buffer
   protected Map<String, Map<Integer, AtomicLong>> shuffleSizeMap = JavaUtils.newConcurrentMap();
   private final boolean appBlockSizeMetricEnabled;
@@ -145,13 +145,14 @@ public class ShuffleBufferManager {
   public StatusCode registerBuffer(
       String appId, int shuffleId, int startPartition, int endPartition) {
     bufferPool.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());
-    Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);
+    Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>> shuffleIdToBuffers =
+        bufferPool.get(appId);
     shuffleIdToBuffers.computeIfAbsent(shuffleId, key -> TreeRangeMap.create());
-    RangeMap<Integer, ShuffleBuffer> bufferRangeMap = shuffleIdToBuffers.get(shuffleId);
+    RangeMap<Integer, AbstractShuffleBuffer> bufferRangeMap = shuffleIdToBuffers.get(shuffleId);
     if (bufferRangeMap.get(startPartition) == null) {
       ShuffleServerMetrics.counterTotalPartitionNum.inc();
       ShuffleServerMetrics.gaugeTotalPartitionNum.inc();
-      ShuffleBuffer shuffleBuffer;
+      AbstractShuffleBuffer shuffleBuffer;
       if (shuffleBufferType == ShuffleBufferType.SKIP_LIST) {
         shuffleBuffer = new ShuffleBufferWithSkipList(bufferSize);
       } else {
@@ -181,13 +182,13 @@ public class ShuffleBufferManager {
       return StatusCode.NO_BUFFER;
     }
 
-    Entry<Range<Integer>, ShuffleBuffer> entry =
+    Entry<Range<Integer>, AbstractShuffleBuffer> entry =
         getShuffleBufferEntry(appId, shuffleId, spd.getPartitionId());
     if (entry == null) {
       return StatusCode.NO_REGISTER;
     }
 
-    ShuffleBuffer buffer = entry.getValue();
+    AbstractShuffleBuffer buffer = entry.getValue();
     long size = buffer.append(spd);
     if (!isPreAllocated) {
       updateUsedMemory(size);
@@ -221,17 +222,18 @@ public class ShuffleBufferManager {
     shuffleIdToSize.get(shuffleId).addAndGet(size);
   }
 
-  public Entry<Range<Integer>, ShuffleBuffer> getShuffleBufferEntry(
+  public Entry<Range<Integer>, AbstractShuffleBuffer> getShuffleBufferEntry(
       String appId, int shuffleId, int partitionId) {
-    Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);
+    Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>> shuffleIdToBuffers =
+        bufferPool.get(appId);
     if (shuffleIdToBuffers == null) {
       return null;
     }
-    RangeMap<Integer, ShuffleBuffer> rangeToBuffers = shuffleIdToBuffers.get(shuffleId);
+    RangeMap<Integer, AbstractShuffleBuffer> rangeToBuffers = shuffleIdToBuffers.get(shuffleId);
     if (rangeToBuffers == null) {
       return null;
     }
-    Entry<Range<Integer>, ShuffleBuffer> entry = rangeToBuffers.getEntry(partitionId);
+    Entry<Range<Integer>, AbstractShuffleBuffer> entry = rangeToBuffers.getEntry(partitionId);
     if (entry == null) {
       return null;
     }
@@ -250,13 +252,13 @@ public class ShuffleBufferManager {
       long blockId,
       int readBufferSize,
       Roaring64NavigableMap expectedTaskIds) {
-    Map.Entry<Range<Integer>, ShuffleBuffer> entry =
+    Map.Entry<Range<Integer>, AbstractShuffleBuffer> entry =
         getShuffleBufferEntry(appId, shuffleId, partitionId);
     if (entry == null) {
       return null;
     }
 
-    ShuffleBuffer buffer = entry.getValue();
+    AbstractShuffleBuffer buffer = entry.getValue();
     if (buffer == null) {
       return null;
     }
@@ -264,7 +266,7 @@ public class ShuffleBufferManager {
   }
 
   void flushSingleBufferIfNecessary(
-      ShuffleBuffer buffer,
+      AbstractShuffleBuffer buffer,
       String appId,
       int shuffleId,
       int partitionId,
@@ -295,9 +297,10 @@ public class ShuffleBufferManager {
   }
 
   public synchronized void commitShuffleTask(String appId, int shuffleId) {
-    RangeMap<Integer, ShuffleBuffer> buffers = bufferPool.get(appId).get(shuffleId);
-    for (Map.Entry<Range<Integer>, ShuffleBuffer> entry : buffers.asMapOfRanges().entrySet()) {
-      ShuffleBuffer buffer = entry.getValue();
+    RangeMap<Integer, AbstractShuffleBuffer> buffers = bufferPool.get(appId).get(shuffleId);
+    for (Map.Entry<Range<Integer>, AbstractShuffleBuffer> entry :
+        buffers.asMapOfRanges().entrySet()) {
+      AbstractShuffleBuffer buffer = entry.getValue();
       Range<Integer> range = entry.getKey();
       flushBuffer(
           buffer,
@@ -310,7 +313,7 @@ public class ShuffleBufferManager {
   }
 
   protected void flushBuffer(
-      ShuffleBuffer buffer,
+      AbstractShuffleBuffer buffer,
       String appId,
       int shuffleId,
       int startPartition,
@@ -350,7 +353,8 @@ public class ShuffleBufferManager {
   }
 
   public void removeBuffer(String appId) {
-    Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);
+    Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>> shuffleIdToBuffers =
+        bufferPool.get(appId);
     if (shuffleIdToBuffers == null) {
       return;
     }
@@ -496,16 +500,16 @@ public class ShuffleBufferManager {
 
   // flush the buffer with required map which is <appId -> shuffleId>
   public synchronized void flush(Map<String, Set<Integer>> requiredFlush) {
-    for (Map.Entry<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> appIdToBuffers :
+    for (Map.Entry<String, Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>>> appIdToBuffers :
         bufferPool.entrySet()) {
       String appId = appIdToBuffers.getKey();
       if (requiredFlush.containsKey(appId)) {
-        for (Map.Entry<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers :
+        for (Map.Entry<Integer, RangeMap<Integer, AbstractShuffleBuffer>> shuffleIdToBuffers :
             appIdToBuffers.getValue().entrySet()) {
           int shuffleId = shuffleIdToBuffers.getKey();
           Set<Integer> requiredShuffleId = requiredFlush.get(appId);
           if (requiredShuffleId != null && requiredShuffleId.contains(shuffleId)) {
-            for (Map.Entry<Range<Integer>, ShuffleBuffer> rangeEntry :
+            for (Map.Entry<Range<Integer>, AbstractShuffleBuffer> rangeEntry :
                 shuffleIdToBuffers.getValue().asMapOfRanges().entrySet()) {
               Range<Integer> range = rangeEntry.getKey();
               flushBuffer(
@@ -553,12 +557,12 @@ public class ShuffleBufferManager {
   }
 
   @VisibleForTesting
-  public Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> getBufferPool() {
+  public Map<String, Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>>> getBufferPool() {
     return bufferPool;
   }
 
   @VisibleForTesting
-  public ShuffleBuffer getShuffleBuffer(String appId, int shuffleId, int partitionId) {
+  public AbstractShuffleBuffer getShuffleBuffer(String appId, int shuffleId, int partitionId) {
     return getShuffleBufferEntry(appId, shuffleId, partitionId).getValue();
   }
 
@@ -680,7 +684,8 @@ public class ShuffleBufferManager {
   }
 
   public void removeBufferByShuffleId(String appId, Collection<Integer> shuffleIds) {
-    Map<Integer, RangeMap<Integer, ShuffleBuffer>> shuffleIdToBuffers = bufferPool.get(appId);
+    Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>> shuffleIdToBuffers =
+        bufferPool.get(appId);
     if (shuffleIdToBuffers == null) {
       return;
     }
@@ -689,13 +694,14 @@ public class ShuffleBufferManager {
     for (int shuffleId : shuffleIds) {
       long size = 0;
 
-      RangeMap<Integer, ShuffleBuffer> bufferRangeMap = shuffleIdToBuffers.remove(shuffleId);
+      RangeMap<Integer, AbstractShuffleBuffer> bufferRangeMap =
+          shuffleIdToBuffers.remove(shuffleId);
       if (bufferRangeMap == null) {
         continue;
       }
-      Collection<ShuffleBuffer> buffers = bufferRangeMap.asMapOfRanges().values();
+      Collection<AbstractShuffleBuffer> buffers = bufferRangeMap.asMapOfRanges().values();
       if (buffers != null) {
-        for (ShuffleBuffer buffer : buffers) {
+        for (AbstractShuffleBuffer buffer : buffers) {
           buffer.release();
           ShuffleServerMetrics.gaugeTotalPartitionNum.dec();
           size += buffer.getSize();

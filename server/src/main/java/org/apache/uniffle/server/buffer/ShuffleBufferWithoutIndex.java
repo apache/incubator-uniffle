@@ -35,7 +35,7 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleFlushManager;
 
-public class ShuffleBufferWithoutIndex extends ShuffleBuffer {
+public class ShuffleBufferWithoutIndex extends AbstractShuffleBuffer {
   // blocks will be added to inFlushBlockMap as <eventId, blocks> pair
   // it will be removed after flush to storage
   // the strategy ensure that shuffle is in memory or storage

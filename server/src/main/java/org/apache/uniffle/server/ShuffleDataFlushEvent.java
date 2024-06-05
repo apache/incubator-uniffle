@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
-import org.apache.uniffle.server.buffer.ShuffleBuffer;
+import org.apache.uniffle.server.buffer.AbstractShuffleBuffer;
 import org.apache.uniffle.storage.common.Storage;
 
 public class ShuffleDataFlushEvent {
@@ -40,7 +40,7 @@ public class ShuffleDataFlushEvent {
   private final long size;
   private final List<ShufflePartitionedBlock> shuffleBlocks;
   private final Supplier<Boolean> valid;
-  private final ShuffleBuffer shuffleBuffer;
+  private final AbstractShuffleBuffer shuffleBuffer;
   private final AtomicInteger retryTimes = new AtomicInteger();
 
   private boolean isPended = false;
@@ -59,7 +59,7 @@ public class ShuffleDataFlushEvent {
       long size,
       List<ShufflePartitionedBlock> shuffleBlocks,
       Supplier<Boolean> valid,
-      ShuffleBuffer shuffleBuffer) {
+      AbstractShuffleBuffer shuffleBuffer) {
     this.eventId = eventId;
     this.appId = appId;
     this.shuffleId = shuffleId;
@@ -100,7 +100,7 @@ public class ShuffleDataFlushEvent {
     return endPartition;
   }
 
-  public ShuffleBuffer getShuffleBuffer() {
+  public AbstractShuffleBuffer getShuffleBuffer() {
     return shuffleBuffer;
   }
 

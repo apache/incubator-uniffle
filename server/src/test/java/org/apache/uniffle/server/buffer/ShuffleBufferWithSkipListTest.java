@@ -40,7 +40,7 @@ public class ShuffleBufferWithSkipListTest extends BufferTestBase {
 
   @Test
   public void appendTest() {
-    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList(100);
+    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList(100);
     shuffleBuffer.append(createData(10));
     // ShufflePartitionedBlock has constant 32 bytes overhead
     assertEquals(42, shuffleBuffer.getSize());
@@ -57,7 +57,7 @@ public class ShuffleBufferWithSkipListTest extends BufferTestBase {
 
   @Test
   public void appendMultiBlocksTest() {
-    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList(100);
+    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList(100);
     ShufflePartitionedData data1 = createData(10);
     ShufflePartitionedData data2 = createData(10);
     ShufflePartitionedBlock[] dataCombine = new ShufflePartitionedBlock[2];
@@ -83,7 +83,7 @@ public class ShuffleBufferWithSkipListTest extends BufferTestBase {
   @Test
   public void getShuffleDataWithExpectedTaskIdsFilterTest() {
     /** case1: all blocks in cached(or in flushed map) and size < readBufferSize */
-    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList(100);
+    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList(100);
     ShufflePartitionedData spd1 = createData(1, 1, 15);
     ShufflePartitionedData spd2 = createData(1, 0, 15);
     ShufflePartitionedData spd3 = createData(1, 2, 55);

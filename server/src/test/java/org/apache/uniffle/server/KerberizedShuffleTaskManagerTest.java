@@ -37,7 +37,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.server.buffer.ShuffleBuffer;
+import org.apache.uniffle.server.buffer.AbstractShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
@@ -143,7 +143,7 @@ public class KerberizedShuffleTaskManagerTest extends KerberizedHadoopBase {
     assertEquals(1, shuffleTaskManager.getAppIds().size());
 
     ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
-    RangeMap<Integer, ShuffleBuffer> rangeMap =
+    RangeMap<Integer, AbstractShuffleBuffer> rangeMap =
         shuffleBufferManager.getBufferPool().get(appId).get(0);
     assertFalse(rangeMap.asMapOfRanges().isEmpty());
     shuffleTaskManager.commitShuffle(appId, 0);
