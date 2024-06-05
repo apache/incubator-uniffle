@@ -197,7 +197,7 @@ public class RssSparkConfig {
                   .doc(
                       "Unregister requests are executed concurrently and all requests together "
                           + "have to complete within this timeout."))
-          .createWithDefault(60);
+          .createWithDefault(10);
 
   public static final ConfigEntry<Integer> RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC =
       createIntegerBuilder(

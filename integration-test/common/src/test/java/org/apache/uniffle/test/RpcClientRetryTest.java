@@ -248,7 +248,7 @@ public class RpcClientRetryTest extends ShuffleReadWriteBase {
                 .dataTransferPoolSize(1)
                 .dataCommitPoolSize(1)
                 .unregisterThreadPoolSize(10)
-                .unregisterTimeSec(60)
+                .unregisterTimeSec(10)
                 .unregisterRequestTimeSec(10));
 
     List<ShuffleServerInfo> allServers =

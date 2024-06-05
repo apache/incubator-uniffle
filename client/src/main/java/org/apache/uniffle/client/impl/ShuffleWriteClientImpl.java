@@ -130,7 +130,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       builder.unregisterThreadPoolSize(10);
     }
     if (builder.getUnregisterTimeSec() == 0) {
-      builder.unregisterTimeSec(60);
+      builder.unregisterTimeSec(10);
     }
     if (builder.getUnregisterRequestTimeSec() == 0) {
       builder.unregisterRequestTimeSec(10);
