@@ -50,7 +50,8 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   }
 
   private ConcurrentSkipListMap<Long, ShufflePartitionedBlock> newConcurrentSkipListMap() {
-    // Sort by taskAttemptId.
+    // We just need to ensure the order of taskAttemptId here for we need sort blocks when flush.
+    // taskAttemptId is in the lowest bits of blockId, so we should reverse it when making comparisons.
     return new ConcurrentSkipListMap<>(Comparator.comparingLong(Long::reverse));
   }
 
