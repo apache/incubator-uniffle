@@ -37,6 +37,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -1000,9 +1002,20 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               } else {
                 LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
               }
+            } catch (StatusRuntimeException e) {
+              // this request observed the unregisterRequestTimeSec timeout
+              if (e.getStatus().getCode() == Status.DEADLINE_EXCEEDED.getCode()) {
+                LOG.warn(
+                    "Timeout occurred while unregistering from {}. The request timeout is {}s: {}",
+                    shuffleServerInfo,
+                    unregisterRequestTimeSec,
+                    e.getStatus().getDescription());
+              } else {
+                LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
+              }
             } catch (Exception e) {
               if (e.getCause() != null && e.getCause() instanceof InterruptedException) {
-                // InterruptedException indicates timeout, give some advice
+                // this request got cancelled by the unregisterTimeMs timeout, give some advice
                 LOG.warn(
                     "Timeout occurred while unregistering from {}. Please consider "
                         + "increasing the thread pool size ({}) or the overall timeout ({}s) "
@@ -1069,9 +1082,20 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               } else {
                 LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
               }
+            } catch (StatusRuntimeException e) {
+              // this request observed the unregisterRequestTimeSec timeout
+              if (e.getStatus().getCode() == Status.DEADLINE_EXCEEDED.getCode()) {
+                LOG.warn(
+                    "Timeout occurred while unregistering from {}. The request timeout is {}s: {}",
+                    shuffleServerInfo,
+                    unregisterRequestTimeSec,
+                    e.getStatus().getDescription());
+              } else {
+                LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
+              }
             } catch (Exception e) {
               if (e.getCause() != null && e.getCause() instanceof InterruptedException) {
-                // InterruptedException indicates timeout, give some advice
+                // this request got cancelled by the unregisterTimeMs timeout, give some advice
                 LOG.warn(
                     "Timeout occurred while unregistering from {}. Please consider "
                         + "increasing the thread pool size ({}) or the overall timeout ({}s) "
