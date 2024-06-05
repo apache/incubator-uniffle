@@ -104,7 +104,6 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   @Override
   public void release() {
     blocksMap.values().forEach(spb -> spb.getData().release());
-    ;
   }
 
   @Override
