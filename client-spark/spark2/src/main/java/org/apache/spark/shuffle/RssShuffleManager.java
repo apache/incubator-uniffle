@@ -641,7 +641,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         }
       }
     } catch (Exception e) {
-      LOG.warn("Errors on unregister to remote shuffle-servers", e);
+      LOG.warn("Errors on unregistering from remote shuffle-servers", e);
     }
     return true;
   }

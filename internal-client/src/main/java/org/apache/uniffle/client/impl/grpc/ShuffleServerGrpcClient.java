@@ -384,7 +384,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       default:
         String msg =
             String.format(
-                "Errors on unregister app to %s:%s for appId[%s] and timeout[%ss], error: %s",
+                "Errors on unregistering app from %s:%s for appId[%s] and timeout[%ss], error: %s",
                 host, port, request.getAppId(), request.getTimeoutSec(), rpcResponse.getRetMsg());
         LOG.error(msg);
         throw new RssException(msg);
@@ -418,7 +418,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       default:
         String msg =
             String.format(
-                "Errors on unregister shuffle to %s:%s for appId[%s].shuffleId[%s] and timeout[%ss], error: %s",
+                "Errors on unregistering shuffle from %s:%s for appId[%s].shuffleId[%s] and timeout[%ss], error: %s",
                 host,
                 port,
                 request.getAppId(),
