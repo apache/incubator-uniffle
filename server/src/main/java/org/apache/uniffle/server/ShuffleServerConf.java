@@ -430,9 +430,9 @@ public class ShuffleServerConf extends RssBaseConf {
           .withDescription(
               "The type for shuffle buffers. Setting as LINKED_LIST or SKIP_LIST."
                   + "The default value is LINKED_LIST. SKIP_LIST will help to improve"
-                  + " the performance especially when allocating a large amount of memory"
-                  + " to the shuffle server. The cpu usage of the shuffle server will be"
-                  + " reduced. But SKIP_LIST doesn't support the slow-start feature of MR");
+                  + " the performance when there are a large number of blocks in memory."
+                  + " The cpu usage of the shuffle server will be reduced."
+                  + "But SKIP_LIST doesn't support the slow-start feature of MR.");
 
   public static final ConfigOption<Long> SERVER_SHUFFLE_FLUSH_THRESHOLD =
       ConfigOptions.key("rss.server.shuffle.flush.threshold")
