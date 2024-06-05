@@ -432,7 +432,7 @@ public class ShuffleServerConf extends RssBaseConf {
                   + "The default value is LINKED_LIST. SKIP_LIST will help to improve"
                   + " the performance especially when allocating a large amount of memory"
                   + " to the shuffle server. The cpu usage of the shuffle server will be"
-                  + " reduced. But SKIP_LIST doesn't support the show-start feature of MR");
+                  + " reduced. But SKIP_LIST doesn't support the slow-start feature of MR");
 
   public static final ConfigOption<Long> SERVER_SHUFFLE_FLUSH_THRESHOLD =
       ConfigOptions.key("rss.server.shuffle.flush.threshold")
