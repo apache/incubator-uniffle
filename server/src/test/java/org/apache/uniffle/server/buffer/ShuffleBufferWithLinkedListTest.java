@@ -39,13 +39,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ShuffleBufferWithoutIndexTest extends BufferTestBase {
+public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
 
   private static AtomicInteger atomSequenceNo = new AtomicInteger(0);
 
   @Test
   public void appendTest() {
-    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithoutIndex(100);
+    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(100);
     shuffleBuffer.append(createData(10));
     // ShufflePartitionedBlock has constant 32 bytes overhead
     assertEquals(42, shuffleBuffer.getSize());
@@ -62,7 +62,7 @@ public class ShuffleBufferWithoutIndexTest extends BufferTestBase {
 
   @Test
   public void appendMultiBlocksTest() {
-    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithoutIndex(100);
+    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(100);
     ShufflePartitionedData data1 = createData(10);
     ShufflePartitionedData data2 = createData(10);
     ShufflePartitionedBlock[] dataCombine = new ShufflePartitionedBlock[2];
@@ -74,7 +74,7 @@ public class ShuffleBufferWithoutIndexTest extends BufferTestBase {
 
   @Test
   public void toFlushEventTest() {
-    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithoutIndex(100);
+    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(100);
     ShuffleDataFlushEvent event = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
     assertNull(event);
     shuffleBuffer.append(createData(10));
@@ -88,7 +88,7 @@ public class ShuffleBufferWithoutIndexTest extends BufferTestBase {
   @Test
   public void getShuffleDataWithExpectedTaskIdsFilterTest() {
     /** case1: all blocks in cached(or in flushed map) and size < readBufferSize */
-    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithoutIndex(100);
+    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(100);
     ShufflePartitionedData spd1 = createData(1, 1, 15);
     ShufflePartitionedData spd2 = createData(1, 0, 15);
     ShufflePartitionedData spd3 = createData(1, 2, 55);
@@ -200,7 +200,7 @@ public class ShuffleBufferWithoutIndexTest extends BufferTestBase {
 
   @Test
   public void getShuffleDataWithLocalOrderTest() {
-    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithoutIndex(200);
+    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(200);
     ShufflePartitionedData spd1 = createData(1, 1, 15);
     ShufflePartitionedData spd2 = createData(1, 0, 15);
     ShufflePartitionedData spd3 = createData(1, 2, 15);
@@ -238,7 +238,7 @@ public class ShuffleBufferWithoutIndexTest extends BufferTestBase {
 
   @Test
   public void getShuffleDataTest() {
-    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithoutIndex(200);
+    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(200);
     // case1: cached data only, blockId = -1, readBufferSize > buffer size
     ShufflePartitionedData spd1 = createData(10);
     ShufflePartitionedData spd2 = createData(20);
@@ -250,7 +250,7 @@ public class ShuffleBufferWithoutIndexTest extends BufferTestBase {
     assertArrayEquals(expectedData, sdr.getData());
 
     // case2: cached data only, blockId = -1, readBufferSize = buffer size
-    shuffleBuffer = new ShuffleBufferWithoutIndex(200);
+    shuffleBuffer = new ShuffleBufferWithLinkedList(200);
     spd1 = createData(20);
     spd2 = createData(20);
     shuffleBuffer.append(spd1);
@@ -261,7 +261,7 @@ public class ShuffleBufferWithoutIndexTest extends BufferTestBase {
     assertArrayEquals(expectedData, sdr.getData());
 
     // case3-1: cached data only, blockId = -1, readBufferSize < buffer size
-    shuffleBuffer = new ShuffleBufferWithoutIndex(200);
+    shuffleBuffer = new ShuffleBufferWithLinkedList(200);
     spd1 = createData(20);
     spd2 = createData(21);
     shuffleBuffer.append(spd1);
@@ -272,7 +272,7 @@ public class ShuffleBufferWithoutIndexTest extends BufferTestBase {
     assertArrayEquals(expectedData, sdr.getData());
 
     // case3-2: cached data only, blockId = -1, readBufferSize < buffer size
-    shuffleBuffer = new ShuffleBufferWithoutIndex(200);
+    shuffleBuffer = new ShuffleBufferWithLinkedList(200);
     spd1 = createData(15);
     spd2 = createData(15);
     ShufflePartitionedData spd3 = createData(15);
@@ -292,7 +292,7 @@ public class ShuffleBufferWithoutIndexTest extends BufferTestBase {
     assertArrayEquals(expectedData, sdr.getData());
 
     // case5: flush data only, blockId = -1, readBufferSize < buffer size
-    shuffleBuffer = new ShuffleBufferWithoutIndex(200);
+    shuffleBuffer = new ShuffleBufferWithLinkedList(200);
     spd1 = createData(15);
     spd2 = createData(15);
     shuffleBuffer.append(spd1);
@@ -310,13 +310,13 @@ public class ShuffleBufferWithoutIndexTest extends BufferTestBase {
     assertEquals(0, sdr.getBufferSegments().size());
 
     // case6: no data in buffer & flush buffer
-    shuffleBuffer = new ShuffleBufferWithoutIndex(200);
+    shuffleBuffer = new ShuffleBufferWithLinkedList(200);
     sdr = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 10);
     assertEquals(0, sdr.getBufferSegments().size());
     assertEquals(0, sdr.getDataLength());
 
     // case7: get data with multiple flush buffer and cached buffer
-    shuffleBuffer = new ShuffleBufferWithoutIndex(200);
+    shuffleBuffer = new ShuffleBufferWithLinkedList(200);
     spd1 = createData(15);
     spd2 = createData(15);
     spd3 = createData(15);

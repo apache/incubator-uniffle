@@ -35,14 +35,14 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleFlushManager;
 
-public class ShuffleBufferWithoutIndex extends AbstractShuffleBuffer {
+public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
   // blocks will be added to inFlushBlockMap as <eventId, blocks> pair
   // it will be removed after flush to storage
   // the strategy ensure that shuffle is in memory or storage
   private List<ShufflePartitionedBlock> blocks;
   private Map<Long, List<ShufflePartitionedBlock>> inFlushBlockMap;
 
-  public ShuffleBufferWithoutIndex(long capacity) {
+  public ShuffleBufferWithLinkedList(long capacity) {
     super(capacity);
     this.blocks = new LinkedList<>();
     this.inFlushBlockMap = JavaUtils.newConcurrentMap();

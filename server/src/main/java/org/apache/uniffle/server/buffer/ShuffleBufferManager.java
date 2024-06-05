@@ -156,7 +156,7 @@ public class ShuffleBufferManager {
       if (shuffleBufferType == ShuffleBufferType.SKIP_LIST) {
         shuffleBuffer = new ShuffleBufferWithSkipList(bufferSize);
       } else {
-        shuffleBuffer = new ShuffleBufferWithoutIndex(bufferSize);
+        shuffleBuffer = new ShuffleBufferWithLinkedList(bufferSize);
       }
       bufferRangeMap.put(Range.closed(startPartition, endPartition), shuffleBuffer);
     } else {
