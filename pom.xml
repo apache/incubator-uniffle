@@ -2060,6 +2060,13 @@
     </profile>
 
     <profile>
+      <id>scala2.13</id>
+      <properties>
+        <scala.binary.version>2.13</scala.binary.version>
+      </properties>
+    </profile>
+
+    <profile>
       <id>tez</id>
       <modules>
         <module>client-tez</module>

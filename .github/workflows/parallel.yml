@@ -60,6 +60,7 @@ jobs:
           - spark3.3
           - spark3.4
           - spark3.5
+          - spark3.5-scala2.13
           - mr-hadoop2.8
           - mr-hadoop3.2
           - tez
