@@ -27,7 +27,7 @@
       <el-table-column prop="availableMemory" label="AvailableMem" min-width="80" :formatter="memFormatter"/>
       <el-table-column prop="eventNumInFlush" label="FlushNum" min-width="80"/>
       <el-table-column prop="status" label="Status" min-width="80"/>
-      <el-table-column prop="timestamp" label="ResigerTime" min-width="80" :formatter="dateFormatter"/>
+      <el-table-column prop="timestamp" label="RegistrationTime" min-width="80" :formatter="dateFormatter"/>
       <el-table-column prop="tags" label="Tags" min-width="80"/>
     </el-table>
   </div>
@@ -36,6 +36,7 @@
 import {onMounted, reactive} from 'vue'
 import { getShuffleLostList } from "@/api/api";
 import {memFormatter, dateFormatter} from "@/utils/common";
+import {useCurrentServerStore} from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
@@ -57,14 +58,24 @@ export default {
       ]
     })
 
-    async function getShuffleLostListPage() {
-      const res = await getShuffleLostList();
+    async function getShuffleLostListPage(headers) {
+      const res = await getShuffleLostList({},headers);
       pageData.tableData = res.data.data
     }
 
-    onMounted(() => {
-      getShuffleLostListPage();
+    // The system obtains data from global variables and requests the interface to obtain new data after data changes.
+    const currentServerStore= useCurrentServerStore()
+    currentServerStore.$subscribe((mutable,state)=>{
+      const headrs={"targetAddress":state.currentServer}
+      getShuffleLostListPage(headrs);
     })
+
+    onMounted(() => {
+      const headrs = {"targetAddress": currentServerStore.currentServer}
+      getShuffleLostListPage(headrs);
+    })
+
+
 
     return {pageData, memFormatter, dateFormatter}
   }

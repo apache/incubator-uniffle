@@ -15,16 +15,9 @@
  * limitations under the License.
  */
 
-import {createApp} from 'vue';
-import {createPinia} from 'pinia'
-import App from './App.vue'
-import ElementPlus from 'element-plus'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import 'element-plus/dist/index.css'
-import router from "@/router";
-const app = createApp(App)
-const pinia = createPinia()
-Object.keys(ElementPlusIconsVue).forEach(key => {
-    app.component(key, ElementPlusIconsVue[key])
+import {defineStore} from 'pinia'
+import {ref} from 'vue'
+export const useCurrentServerStore = defineStore('overall', () => {
+    const currentServer = ref('')
+    return { currentServer }
 })
-app.use(router).use(pinia).use(ElementPlus).mount('#app')

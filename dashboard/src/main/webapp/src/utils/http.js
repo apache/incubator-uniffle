@@ -16,24 +16,21 @@
  */
 
 import request from "@/utils/request";
+
 const http = {
-    get(url, params, headers) {
-        const config = {
-            method: 'GET',
-            url: url,
-            params: params,
-            headers: headers
+    get(url, params, headers, fontBackFlag) {
+        if (fontBackFlag == 0) {
+            return request.getBackEndAxiosInstance().get(url,{params,headers});
+        } else {
+            return request.getFrontEndAxiosInstance().get(url,{params,headers});
         }
-        return request(config);
     },
-    post(url, data, headers) {
-        const config = {
-            method: 'POST',
-            url: url,
-            data: data,
-            headers: headers
+    post(url, data, headers, fontBackFlag) {
+        if (fontBackFlag == 0) {
+            return request.getBackEndAxiosInstance().post(url,data,headers);
+        } else {
+            return request.getFrontEndAxiosInstance().post(url,data,headers);
         }
-        return request(config);
     }
 }
 export default http

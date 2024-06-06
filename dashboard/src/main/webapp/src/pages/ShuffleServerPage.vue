@@ -102,7 +102,8 @@
 
 <script>
 import {onMounted, reactive} from 'vue'
-import {getShufflegetStatusTotal} from "@/api/api";
+import {getShufflegetStatusTotal} from "@/api/api"
+import {useCurrentServerStore} from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
@@ -116,14 +117,21 @@ export default {
         UNHEALTHY: 0
       }
     })
-
-    async function getShufflegetStatusTotalPage() {
-      const res = await getShufflegetStatusTotal();
+    async function getShufflegetStatusTotalPage(headers) {
+      const res = await getShufflegetStatusTotal({},headers);
       dataList.allshuffleServerSize = res.data.data
     }
 
+    // The system obtains data from global variables and requests the interface to obtain new data after data changes.
+    const currentServerStore= useCurrentServerStore()
+    currentServerStore.$subscribe((mutable,state)=>{
+      const headrs={"targetAddress":state.currentServer}
+      getShufflegetStatusTotalPage(headrs);
+    })
+
     onMounted(() => {
-      getShufflegetStatusTotalPage();
+      const headrs={"targetAddress":currentServerStore.currentServer}
+      getShufflegetStatusTotalPage(headrs);
     })
     return {dataList}
   }

@@ -56,6 +56,7 @@ import {
   getTotalForUser
 } from "@/api/api";
 import {onMounted, reactive} from "vue";
+import {useCurrentServerStore} from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
@@ -65,25 +66,35 @@ export default {
       appInfoData: [{appId: "", userName: "", updateTime: ""}]
     })
 
-    async function getApplicationInfoListPage() {
-      const res = await getApplicationInfoList();
+    async function getApplicationInfoListPage(headers) {
+      const res = await getApplicationInfoList({}, headers);
       pageData.appInfoData = res.data.data
     }
 
-    async function getTotalForUserPage() {
-      const res = await getTotalForUser();
+    async function getTotalForUserPage(headers) {
+      const res = await getTotalForUser({}, headers);
       pageData.userAppCount = res.data.data
     }
 
-    async function getAppTotalPage() {
-      const res = await getAppTotal();
+    async function getAppTotalPage(headers) {
+      const res = await getAppTotal({}, headers);
       pageData.apptotal = res.data.data
     }
 
+    // The system obtains data from global variables and requests the interface to obtain new data after data changes.
+    const currentServerStore = useCurrentServerStore()
+    currentServerStore.$subscribe((mutable, state) => {
+      const headrs = {"targetAddress": state.currentServer}
+      getApplicationInfoListPage(headrs);
+      getTotalForUserPage(headrs);
+      getAppTotalPage(headrs);
+    })
+
     onMounted(() => {
-      getApplicationInfoListPage();
-      getTotalForUserPage();
-      getAppTotalPage();
+      const headrs = {"targetAddress": currentServerStore.currentServer}
+      getApplicationInfoListPage(headrs);
+      getTotalForUserPage(headrs);
+      getAppTotalPage(headrs);
     })
     return {pageData}
   }

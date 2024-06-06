@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-import {createApp} from 'vue';
-import {createPinia} from 'pinia'
-import App from './App.vue'
-import ElementPlus from 'element-plus'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import 'element-plus/dist/index.css'
-import router from "@/router";
-const app = createApp(App)
-const pinia = createPinia()
-Object.keys(ElementPlusIconsVue).forEach(key => {
-    app.component(key, ElementPlusIconsVue[key])
-})
-app.use(router).use(pinia).use(ElementPlus).mount('#app')
+package org.apache.uniffle.dashboard.web.resource;
+
+import java.util.concurrent.Callable;
+
+public abstract class BaseResource {
+  protected <T> Response<T> execute(Callable<T> callable) {
+    try {
+      return Response.success(callable.call());
+    } catch (Throwable e) {
+      return Response.fail(e.getMessage());
+    }
+  }
+}
