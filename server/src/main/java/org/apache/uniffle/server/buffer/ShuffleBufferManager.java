@@ -504,7 +504,7 @@ public class ShuffleBufferManager {
   private synchronized void flush(Map<String, Set<Integer>> requiredFlush) {
     long pickedFlushSize = 0L;
     long expectedFlushSize = highWaterMark - lowWaterMark;
-    for (Map.Entry<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> appIdToBuffers :
+    for (Map.Entry<String, Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>>> appIdToBuffers :
         bufferPool.entrySet()) {
       String appId = appIdToBuffers.getKey();
       if (requiredFlush.containsKey(appId)) {
@@ -516,7 +516,7 @@ public class ShuffleBufferManager {
             for (Map.Entry<Range<Integer>, AbstractShuffleBuffer> rangeEntry :
                 shuffleIdToBuffers.getValue().asMapOfRanges().entrySet()) {
               Range<Integer> range = rangeEntry.getKey();
-              ShuffleBuffer shuffleBuffer = rangeEntry.getValue();
+              AbstractShuffleBuffer shuffleBuffer = rangeEntry.getValue();
               pickedFlushSize += shuffleBuffer.getSize();
               flushBuffer(
                   shuffleBuffer,
