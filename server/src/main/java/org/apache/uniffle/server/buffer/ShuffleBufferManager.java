@@ -486,8 +486,12 @@ public class ShuffleBufferManager {
     }
   }
 
-  // flush the buffer with required map which is <appId -> shuffleId>
-  public synchronized void flush(Map<String, Set<Integer>> requiredFlush) {
+  // Flush the buffer with required map which is <appId -> shuffleId>.
+  // If the total size of the shuffles picked is bigger than the expected flush size,
+  // it will just flush a part of partitions.
+  private synchronized void flush(Map<String, Set<Integer>> requiredFlush) {
+    long pickedFlushSize = 0L;
+    long expectedFlushSize = highWaterMark - lowWaterMark;
     for (Map.Entry<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> appIdToBuffers :
         bufferPool.entrySet()) {
       String appId = appIdToBuffers.getKey();
@@ -500,13 +504,19 @@ public class ShuffleBufferManager {
             for (Map.Entry<Range<Integer>, ShuffleBuffer> rangeEntry :
                 shuffleIdToBuffers.getValue().asMapOfRanges().entrySet()) {
               Range<Integer> range = rangeEntry.getKey();
+              ShuffleBuffer shuffleBuffer = rangeEntry.getValue();
+              pickedFlushSize += shuffleBuffer.getSize();
               flushBuffer(
-                  rangeEntry.getValue(),
+                  shuffleBuffer,
                   appId,
                   shuffleId,
                   range.lowerEndpoint(),
                   range.upperEndpoint(),
                   isHugePartition(appId, shuffleId, range.lowerEndpoint()));
+              if (pickedFlushSize > expectedFlushSize) {
+                LOG.info("Already picked enough buffers to flush {} bytes", pickedFlushSize);
+                return;
+              }
             }
           }
         }
