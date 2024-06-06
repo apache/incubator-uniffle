@@ -1002,19 +1002,19 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               } else {
                 LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
               }
-            } catch (StatusRuntimeException e) {
+            } catch (Exception e) {
               // this request observed the unregisterRequestTimeSec timeout
-              if (e.getStatus().getCode() == Status.DEADLINE_EXCEEDED.getCode()) {
+              if (e instanceof StatusRuntimeException
+                  && ((StatusRuntimeException) e).getStatus().getCode()
+                      == Status.DEADLINE_EXCEEDED.getCode()) {
                 LOG.warn(
                     "Timeout occurred while unregistering from {}. The request timeout is {}s: {}",
                     shuffleServerInfo,
                     unregisterRequestTimeSec,
-                    e.getStatus().getDescription());
+                    ((StatusRuntimeException) e).getStatus().getDescription());
               } else {
                 LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
               }
-            } catch (Exception e) {
-              LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
             }
             return null;
           },
@@ -1074,19 +1074,19 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               } else {
                 LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
               }
-            } catch (StatusRuntimeException e) {
+            } catch (Exception e) {
               // this request observed the unregisterRequestTimeSec timeout
-              if (e.getStatus().getCode() == Status.DEADLINE_EXCEEDED.getCode()) {
+              if (e instanceof StatusRuntimeException
+                  && ((StatusRuntimeException) e).getStatus().getCode()
+                      == Status.DEADLINE_EXCEEDED.getCode()) {
                 LOG.warn(
                     "Timeout occurred while unregistering from {}. The request timeout is {}s: {}",
                     shuffleServerInfo,
                     unregisterRequestTimeSec,
-                    e.getStatus().getDescription());
+                    ((StatusRuntimeException) e).getStatus().getDescription());
               } else {
                 LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
               }
-            } catch (Exception e) {
-              LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
             }
             return null;
           },
