@@ -1014,24 +1014,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                 LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
               }
             } catch (Exception e) {
-              if (e.getCause() != null && e.getCause() instanceof InterruptedException) {
-                // this request got cancelled by the unregisterTimeMs timeout, give some advice
-                LOG.warn(
-                    "Timeout occurred while unregistering from {}. Please consider "
-                        + "increasing the thread pool size ({}) or the overall timeout ({}s) "
-                        + "if you still think the request timeout ({}s) is sensible.",
-                    shuffleServerInfo,
-                    unregisterThreadPoolSize,
-                    unregisterTimeSec,
-                    unregisterRequestTimeSec);
-              } else {
-                LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
-              }
+              LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
             }
             return null;
           },
           unregisterTimeMs,
-          "unregister shuffle server");
+          "unregister shuffle server",
+          String.format(
+              "Please consider increasing the thread pool size (%s) or the overall timeout (%ss) "
+                  + "if you still think the request timeout (%ss) is sensible.",
+              unregisterThreadPoolSize, unregisterTimeSec, unregisterRequestTimeSec));
 
     } finally {
       if (executorService != null) {
@@ -1094,24 +1086,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                 LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
               }
             } catch (Exception e) {
-              if (e.getCause() != null && e.getCause() instanceof InterruptedException) {
-                // this request got cancelled by the unregisterTimeMs timeout, give some advice
-                LOG.warn(
-                    "Timeout occurred while unregistering from {}. Please consider "
-                        + "increasing the thread pool size ({}) or the overall timeout ({}s) "
-                        + "if you still think the request timeout ({}s) is sensible.",
-                    shuffleServerInfo,
-                    unregisterThreadPoolSize,
-                    unregisterTimeSec,
-                    unregisterRequestTimeSec);
-              } else {
-                LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
-              }
+              LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
             }
             return null;
           },
           unregisterTimeMs,
-          "unregister shuffle server");
+          "unregister shuffle server",
+          String.format(
+              "Please consider increasing the thread pool size (%s) or the overall timeout (%ss) "
+                  + "if you still think the request timeout (%ss) is sensible.",
+              unregisterThreadPoolSize, unregisterTimeSec, unregisterRequestTimeSec));
 
     } finally {
       if (executorService != null) {
