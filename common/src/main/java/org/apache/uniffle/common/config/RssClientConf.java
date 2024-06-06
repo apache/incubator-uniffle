@@ -132,12 +132,19 @@ public class RssClientConf {
           .defaultValue(0)
           .withDescription("Number of threads used in the client thread pool.");
 
-  public static final ConfigOption<Boolean> NETWORK_CLIENT_PREFER_DIRECT_BUFS =
+  public static final ConfigOption<Boolean> NETTY_CLIENT_PREFER_DIRECT_BUFS =
       ConfigOptions.key("rss.client.netty.client.prefer.direct.bufs")
           .booleanType()
           .defaultValue(true)
           .withDescription(
               "If true, we will prefer allocating off-heap byte buffers within Netty.");
+
+  public static final ConfigOption<Boolean> NETTY_CLIENT_POOLED_ALLOCATOR_ENABLED =
+      ConfigOptions.key("rss.client.netty.client.pooled.allocator.enabled")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription(
+              "If true, we will use PooledByteBufAllocator to allocate byte buffers within Netty, otherwise we'll use UnpooledByteBufAllocator.");
 
   public static final ConfigOption<Integer> NETTY_CLIENT_NUM_CONNECTIONS_PER_PEER =
       ConfigOptions.key("rss.client.netty.client.connections.per.peer")
