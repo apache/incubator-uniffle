@@ -447,10 +447,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(6, 64));
     assertEquals(384, shuffleBufferManager.getUsedMemory());
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(8, 64));
-    waitForFlush(shuffleFlushManager, appId, shuffleId, 5);
-    assertEquals(0, shuffleBufferManager.getUsedMemory());
+    waitForFlush(shuffleFlushManager, appId, shuffleId, 4, 96);
     assertEquals(0, shuffleBufferManager.getInFlushSize());
 
+    shuffleBufferManager.removeBuffer(appId);
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     shuffleBufferManager.registerBuffer("bufferSizeTest1", shuffleId, 0, 1);
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 32));
     assertEquals(64, shuffleBufferManager.getUsedMemory());
@@ -630,6 +631,16 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   private void waitForFlush(
       ShuffleFlushManager shuffleFlushManager, String appId, int shuffleId, int expectedBlockNum)
       throws Exception {
+    waitForFlush(shuffleFlushManager, appId, shuffleId, expectedBlockNum, 0);
+  }
+
+  private void waitForFlush(
+      ShuffleFlushManager shuffleFlushManager,
+      String appId,
+      int shuffleId,
+      int expectedBlockNum,
+      long expectedUsedMemory)
+      throws Exception {
     int retry = 0;
     long committedCount = 0;
     do {
@@ -649,7 +660,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     // `shuffleBufferManager.getUsedMemory()` and `shuffleBufferManager.getInFlushSize()`.
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
-        .until(() -> shuffleBufferManager.getUsedMemory() == 0);
+        .until(() -> shuffleBufferManager.getUsedMemory() == expectedUsedMemory);
   }
 
   @Test
