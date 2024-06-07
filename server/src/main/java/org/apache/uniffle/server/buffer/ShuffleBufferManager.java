@@ -65,6 +65,7 @@ public class ShuffleBufferManager {
   private long lowWaterMark;
   private boolean bufferFlushEnabled;
   private long bufferFlushThreshold;
+  private long bufferFlushBlocksNumThreshold;
   // when shuffle buffer manager flushes data, shuffles with data size < shuffleFlushThreshold is
   // kept in memory to
   // reduce small I/Os to persistent storage, especially for local HDDs.
@@ -124,7 +125,9 @@ public class ShuffleBufferManager {
                 * conf.get(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE));
     this.bufferFlushEnabled = conf.getBoolean(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED);
     this.bufferFlushThreshold =
-        conf.getSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD);
+        conf.getSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_SIZE_THRESHOLD);
+    this.bufferFlushBlocksNumThreshold =
+        conf.getInteger(ShuffleServerConf.SINGLE_BUFFER_FLUSH_BLOCKS_NUM_THRESHOLD);
     this.shuffleFlushThreshold =
         conf.getSizeAsBytes(ShuffleServerConf.SERVER_SHUFFLE_FLUSH_THRESHOLD);
     this.hugePartitionSizeThresholdRef =
@@ -266,7 +269,18 @@ public class ShuffleBufferManager {
     // When we use multi storage and trigger single buffer flush, the buffer size should be bigger
     // than rss.server.flush.cold.storage.threshold.size, otherwise cold storage will be useless.
     if ((isHugePartition || this.bufferFlushEnabled)
-        && buffer.getSize() > this.bufferFlushThreshold) {
+        && (buffer.getSize() > this.bufferFlushThreshold
+            || buffer.getBlocks().size() > bufferFlushBlocksNumThreshold)) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+            "Start to flush single buffer. Details - shuffleId:{}, startPartition:{}, endPartition:{}, isHugePartition:{}, bufferSize:{}, blocksNum:{}",
+            shuffleId,
+            startPartition,
+            endPartition,
+            isHugePartition,
+            buffer.getSize(),
+            buffer.getBlocks().size());
+      }
       flushBuffer(buffer, appId, shuffleId, startPartition, endPartition, isHugePartition);
       return;
     }
