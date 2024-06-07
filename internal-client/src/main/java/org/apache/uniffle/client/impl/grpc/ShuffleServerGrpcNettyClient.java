@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.grpc.netty.shaded.io.netty.buffer.AbstractByteBufAllocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,7 @@ import org.apache.uniffle.common.netty.protocol.GetMemoryShuffleDataResponse;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.netty.protocol.SendShuffleDataRequest;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.GrpcNettyUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 
 public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
@@ -77,7 +79,16 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
             : rssConf.getInteger(RssClientConf.RPC_MAX_ATTEMPTS),
         rssConf == null
             ? RssClientConf.RPC_TIMEOUT_MS.defaultValue()
-            : rssConf.getLong(RssClientConf.RPC_TIMEOUT_MS));
+            : rssConf.getLong(RssClientConf.RPC_TIMEOUT_MS),
+        rssConf == null
+            ? RssClientConf.RPC_NETTY_PAGE_SIZE.defaultValue()
+            : rssConf.getInteger(RssClientConf.RPC_NETTY_PAGE_SIZE),
+        rssConf == null
+            ? RssClientConf.RPC_NETTY_MAX_ORDER.defaultValue()
+            : rssConf.getInteger(RssClientConf.RPC_NETTY_MAX_ORDER),
+        rssConf == null
+            ? RssClientConf.RPC_NETTY_SMALL_CACHE_SIZE.defaultValue()
+            : rssConf.getInteger(RssClientConf.RPC_NETTY_SMALL_CACHE_SIZE));
   }
 
   public ShuffleServerGrpcNettyClient(
@@ -86,11 +97,31 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
       int grpcPort,
       int nettyPort,
       int maxRetryAttempts,
-      long rpcTimeoutMs) {
-    super(host, grpcPort, maxRetryAttempts, rpcTimeoutMs);
+      long rpcTimeoutMs,
+      int pageSize,
+      int maxOrder,
+      int smallCacheSize) {
+    super(host, grpcPort, maxRetryAttempts, rpcTimeoutMs, pageSize, maxOrder, smallCacheSize);
     this.nettyPort = nettyPort;
     TransportContext transportContext = new TransportContext(new TransportConf(rssConf));
     this.clientFactory = new TransportClientFactory(transportContext);
+  }
+
+  @Override
+  protected AbstractByteBufAllocator createByteBufAllocator(
+      int pageSize, int maxOrder, int smallCacheSize) {
+    LOG.info(
+        "ShuffleServerGrpcNettyClient is initialized - host:{}, gRPC port:{}, netty port:{}, maxRetryAttempts:{}, usePlaintext:{}, pageSize:{}, maxOrder:{}, smallCacheSize={}",
+        host,
+        port,
+        nettyPort,
+        maxRetryAttempts,
+        usePlaintext,
+        pageSize,
+        maxOrder,
+        smallCacheSize);
+    return GrpcNettyUtils.createPooledByteBufAllocatorWithSmallCacheOnly(
+        true, 0, pageSize, maxOrder, smallCacheSize);
   }
 
   @Override
