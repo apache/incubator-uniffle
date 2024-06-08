@@ -58,8 +58,8 @@ export default {
       ]
     })
 
-    async function getShuffleLostListPage(headers) {
-      const res = await getShuffleLostList({},headers);
+    async function getShuffleLostListPage(parames) {
+      const res = await getShuffleLostList(parames,{});
       pageData.tableData = res.data.data
     }
 
@@ -71,8 +71,11 @@ export default {
     })
 
     onMounted(() => {
-      const headrs = {"targetAddress": currentServerStore.currentServer}
-      getShuffleLostListPage(headrs);
+      // If the coordinator address to request is not found in the global variable, the request is not initiated.
+      if (currentServerStore.currentServer) {
+        const parames = {"targetAddress": currentServerStore.currentServer}
+        getShuffleLostListPage(parames);
+      }
     })
 
 

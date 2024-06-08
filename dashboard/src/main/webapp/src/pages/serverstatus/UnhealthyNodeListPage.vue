@@ -58,21 +58,24 @@ export default {
       ]
     })
 
-    async function getShuffleUnhealthyListPage(headers) {
-      const res = await getShuffleUnhealthyList({},headers);
+    async function getShuffleUnhealthyListPage(parames) {
+      const res = await getShuffleUnhealthyList(parames,{});
       pageData.tableData = res.data.data
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
     const currentServerStore= useCurrentServerStore()
     currentServerStore.$subscribe((mutable,state)=>{
-      const headrs={"targetAddress":state.currentServer}
-      getShuffleUnhealthyListPage(headrs);
+      const parames={"targetAddress":state.currentServer}
+      getShuffleUnhealthyListPage(parames);
     })
 
     onMounted(() => {
-      const headrs = {"targetAddress": currentServerStore.currentServer}
-      getShuffleUnhealthyListPage(headrs);
+      // If the coordinator address to request is not found in the global variable, the request is not initiated.
+      if (currentServerStore.currentServer) {
+        const parames = {"targetAddress": currentServerStore.currentServer}
+        getShuffleUnhealthyListPage(parames);
+      }
     })
 
 

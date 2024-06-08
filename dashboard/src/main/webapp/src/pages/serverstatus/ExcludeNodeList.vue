@@ -36,21 +36,24 @@ export default {
         }
       ]
     })
-    async function getShuffleExcludeNodesPage(headers) {
-      const res = await getShuffleExcludeNodes({},headers);
+    async function getShuffleExcludeNodesPage(parames) {
+      const res = await getShuffleExcludeNodes(parames,{});
       pageData.tableData = res.data.data
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
     const currentServerStore= useCurrentServerStore()
     currentServerStore.$subscribe((mutable,state)=>{
-      const headrs={"targetAddress":state.currentServer}
-      getShuffleExcludeNodesPage(headrs);
+      const parames={"targetAddress":state.currentServer}
+      getShuffleExcludeNodesPage(parames);
     })
 
     onMounted(() => {
-      const headrs = {"targetAddress": currentServerStore.currentServer}
-      getShuffleExcludeNodesPage(headrs);
+      // If the coordinator address to request is not found in the global variable, the request is not initiated.
+      if (currentServerStore.currentServer) {
+        const parames = {"targetAddress": currentServerStore.currentServer}
+        getShuffleExcludeNodesPage(parames);
+      }
     })
 
     return {pageData}

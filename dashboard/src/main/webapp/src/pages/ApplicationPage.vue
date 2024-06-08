@@ -66,35 +66,38 @@ export default {
       appInfoData: [{appId: "", userName: "", updateTime: ""}]
     })
 
-    async function getApplicationInfoListPage(headers) {
-      const res = await getApplicationInfoList({}, headers);
+    async function getApplicationInfoListPage(parames) {
+      const res = await getApplicationInfoList(parames,{});
       pageData.appInfoData = res.data.data
     }
 
-    async function getTotalForUserPage(headers) {
-      const res = await getTotalForUser({}, headers);
+    async function getTotalForUserPage(parames) {
+      const res = await getTotalForUser(parames,{});
       pageData.userAppCount = res.data.data
     }
 
-    async function getAppTotalPage(headers) {
-      const res = await getAppTotal({}, headers);
+    async function getAppTotalPage(parames) {
+      const res = await getAppTotal(parames,{});
       pageData.apptotal = res.data.data
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
     const currentServerStore = useCurrentServerStore()
     currentServerStore.$subscribe((mutable, state) => {
-      const headrs = {"targetAddress": state.currentServer}
-      getApplicationInfoListPage(headrs);
-      getTotalForUserPage(headrs);
-      getAppTotalPage(headrs);
+      const parames = {"targetAddress": state.currentServer}
+      getApplicationInfoListPage(parames);
+      getTotalForUserPage(parames);
+      getAppTotalPage(parames);
     })
 
     onMounted(() => {
-      const headrs = {"targetAddress": currentServerStore.currentServer}
-      getApplicationInfoListPage(headrs);
-      getTotalForUserPage(headrs);
-      getAppTotalPage(headrs);
+      // If the coordinator address to request is not found in the global variable, the request is not initiated.
+      if (currentServerStore.currentServer) {
+        const headrs = {"targetAddress": currentServerStore.currentServer}
+        getApplicationInfoListPage(headrs);
+        getTotalForUserPage(headrs);
+        getAppTotalPage(headrs);
+      }
     })
     return {pageData}
   }

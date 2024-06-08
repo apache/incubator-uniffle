@@ -58,21 +58,24 @@ export default {
       ]
     })
 
-    async function getShuffleDecommissionedListPage(headers) {
-      const res = await getShuffleDecommissionedList({},headers);
+    async function getShuffleDecommissionedListPage(parames) {
+      const res = await getShuffleDecommissionedList(parames,{});
       pageData.tableData = res.data.data
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
     const currentServerStore= useCurrentServerStore()
     currentServerStore.$subscribe((mutable,state)=>{
-      const headrs={"targetAddress":state.currentServer}
-      getShuffleDecommissionedListPage(headrs);
+      const parames={"targetAddress":state.currentServer}
+      getShuffleDecommissionedListPage(parames);
     })
 
     onMounted(() => {
-      const headrs = {"targetAddress": currentServerStore.currentServer}
-      getShuffleDecommissionedListPage(headrs);
+      // If the coordinator address to request is not found in the global variable, the request is not initiated.
+      if (currentServerStore.currentServer) {
+        const parames = {"targetAddress": currentServerStore.currentServer}
+        getShuffleDecommissionedListPage(parames);
+      }
     })
 
     return {pageData, memFormatter, dateFormatter}

@@ -17,6 +17,11 @@
 
 import {defineStore} from 'pinia'
 import {ref} from 'vue'
+
+/**
+ * Create a global shared repository that allows you to share state across components/pages.
+ * @type {StoreDefinition<"overall", _ExtractStateFromSetupStore<{currentServer: Ref<UnwrapRef<string>>}>, _ExtractGettersFromSetupStore<{currentServer: Ref<UnwrapRef<string>>}>, _ExtractActionsFromSetupStore<{currentServer: Ref<UnwrapRef<string>>}>>}
+ */
 export const useCurrentServerStore = defineStore('overall', () => {
     const currentServer = ref('')
     return { currentServer }

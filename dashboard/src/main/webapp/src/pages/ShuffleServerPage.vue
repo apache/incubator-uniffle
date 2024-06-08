@@ -117,21 +117,24 @@ export default {
         UNHEALTHY: 0
       }
     })
-    async function getShufflegetStatusTotalPage(headers) {
-      const res = await getShufflegetStatusTotal({},headers);
+    async function getShufflegetStatusTotalPage(params) {
+      const res = await getShufflegetStatusTotal(params,{});
       dataList.allshuffleServerSize = res.data.data
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
     const currentServerStore= useCurrentServerStore()
     currentServerStore.$subscribe((mutable,state)=>{
-      const headrs={"targetAddress":state.currentServer}
-      getShufflegetStatusTotalPage(headrs);
+      const parames={"targetAddress":state.currentServer}
+      getShufflegetStatusTotalPage(parames);
     })
 
     onMounted(() => {
-      const headrs={"targetAddress":currentServerStore.currentServer}
-      getShufflegetStatusTotalPage(headrs);
+      // If the coordinator address to request is not found in the global variable, the request is not initiated.
+      if (currentServerStore.currentServer) {
+        const parames={"targetAddress":currentServerStore.currentServer}
+        getShufflegetStatusTotalPage(parames);
+      }
     })
     return {dataList}
   }
