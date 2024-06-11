@@ -27,17 +27,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DashboardUtils {
-  private static final Logger log = LoggerFactory.getLogger(DashboardUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DashboardUtils.class);
 
-  public static Map<String, String> convertToMap(String coordinatorStr) {
+  public static Map<String, String> convertAddressesStrToMap(String coordinatorAddressesStr) {
     HashMap<String, String> coordinatorAddressMap = Maps.newHashMap();
-    String[] coordinators = coordinatorStr.split(",");
+    String[] coordinators = coordinatorAddressesStr.split(",");
     for (String coordinator : coordinators) {
       try {
         URL coordinatorURL = new URL(coordinator);
         coordinatorAddressMap.put(coordinatorURL.getHost(), coordinator);
       } catch (MalformedURLException e) {
-        log.error("The coordinator address is abnormal.", e);
+        LOG.error("The coordinator address is abnormal.", e);
       }
     }
     return coordinatorAddressMap;

@@ -19,11 +19,17 @@ package org.apache.uniffle.dashboard.web.resource;
 
 import java.util.concurrent.Callable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class BaseResource {
+  private static final Logger LOG = LoggerFactory.getLogger(BaseResource.class);
+
   protected <T> Response<T> execute(Callable<T> callable) {
     try {
       return Response.success(callable.call());
     } catch (Throwable e) {
+      LOG.error("Call failure:", e);
       return Response.fail(e.getMessage());
     }
   }

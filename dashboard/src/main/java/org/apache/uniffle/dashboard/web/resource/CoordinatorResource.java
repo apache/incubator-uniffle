@@ -32,7 +32,7 @@ public class CoordinatorResource extends BaseResource {
   @Context protected ServletContext servletContext;
 
   @GET
-  @Path("/coordinatorList")
+  @Path("/coordinators")
   public Response<Map<String, String>> getCoordinatorServers() {
     return execute(
         () -> {

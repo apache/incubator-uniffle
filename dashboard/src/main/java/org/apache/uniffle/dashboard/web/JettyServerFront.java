@@ -92,7 +92,8 @@ public class JettyServerFront {
     HandlerList handlers = new HandlerList();
     ResourceHandler resourceHandler = addResourceHandler();
     String coordinatorWebAddress = conf.getString(DashboardConf.COORDINATOR_WEB_ADDRESS);
-    Map<String, String> stringStringMap = DashboardUtils.convertToMap(coordinatorWebAddress);
+    Map<String, String> stringStringMap =
+        DashboardUtils.convertAddressesStrToMap(coordinatorWebAddress);
 
     ServletContextHandler servletContextHandler = addProxyHandler(stringStringMap);
     handlers.setHandlers(new Handler[] {resourceHandler, servletContextHandler});
