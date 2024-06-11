@@ -270,8 +270,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     long s = System.currentTimeMillis();
     checkAllBufferSpilled();
     checkSentRecordCount(recordCount);
+    checkBlockSendResult(new HashSet<>(blockIds));
     checkSentBlockCount();
-    checkBlockSendResult(blockIds);
     final long checkDuration = System.currentTimeMillis() - s;
     long commitDuration = 0;
     if (!isMemoryShuffleEnabled) {
@@ -316,17 +316,26 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   }
 
   private void checkSentBlockCount() {
-    long tracked = 0;
-    if (serverToPartitionToBlockIds != null) {
-      Set<Long> blockIds = new HashSet<>();
-      for (Map<Integer, Set<Long>> partitionBlockIds : serverToPartitionToBlockIds.values()) {
-        partitionBlockIds.values().forEach(x -> blockIds.addAll(x));
-      }
-      tracked = blockIds.size();
+    long expected = blockIds.size();
+    long bufferManagerTracked = bufferManager.getBlockCount();
+
+    assert serverToPartitionToBlockIds != null;
+    // to filter the multiple replica's duplicate blockIds
+    Set<Long> blockIds = new HashSet<>();
+    for (Map<Integer, Set<Long>> partitionBlockIds : serverToPartitionToBlockIds.values()) {
+      partitionBlockIds.values().forEach(x -> blockIds.addAll(x));
     }
-    if (tracked != bufferManager.getBlockCount()) {
+    long serverTracked = blockIds.size();
+    if (expected != serverTracked || expected != bufferManagerTracked) {
       throw new RssSendFailedException(
-          "Potential block loss may occur when preparing to send blocks for task[" + taskId + "]");
+          "Potential block loss may occur for task["
+              + taskId
+              + "]. BlockId number expected: "
+              + expected
+              + ", serverTracked: "
+              + serverTracked
+              + ", bufferManagerTracked: "
+              + bufferManagerTracked);
     }
   }
 
