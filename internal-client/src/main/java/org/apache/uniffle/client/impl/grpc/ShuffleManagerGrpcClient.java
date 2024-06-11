@@ -34,7 +34,7 @@ import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
 import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssPartitionToShuffleServerResponse;
 import org.apache.uniffle.client.response.RssReassignOnBlockSendFailureResponse;
-import org.apache.uniffle.client.response.RssReassignServersReponse;
+import org.apache.uniffle.client.response.RssReassignServersResponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
@@ -116,11 +116,11 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
   }
 
   @Override
-  public RssReassignServersReponse reassignShuffleServers(RssReassignServersRequest req) {
+  public RssReassignServersResponse reassignShuffleServers(RssReassignServersRequest req) {
     RssProtos.ReassignServersRequest reassignServersRequest = req.toProto();
-    RssProtos.ReassignServersReponse reassignServersReponse =
+    RssProtos.ReassignServersResponse reassignServersResponse =
         getBlockingStub().reassignShuffleServers(reassignServersRequest);
-    return RssReassignServersReponse.fromProto(reassignServersReponse);
+    return RssReassignServersResponse.fromProto(reassignServersResponse);
   }
 
   @Override

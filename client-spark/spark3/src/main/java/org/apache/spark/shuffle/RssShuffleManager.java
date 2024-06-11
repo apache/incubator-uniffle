@@ -1380,10 +1380,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     assignmentShuffleServerNumber,
                     estimateTaskConcurrency,
                     faultyServerIds);
-            LOG.info("Finished reassign");
+            LOG.info("Finished the shuffle assignment request to coordinator.");
             if (reassignmentHandler != null) {
               response = reassignmentHandler.apply(response);
             }
+            LOG.info(
+                "Register the partition->servers assignment. {}",
+                response.getServerToPartitionRanges());
             registerShuffleServers(
                 id.get(), shuffleId, response.getServerToPartitionRanges(), getRemoteStorageInfo());
             return response.getPartitionToServers();
@@ -1391,7 +1394,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           retryInterval,
           retryTimes);
     } catch (Throwable throwable) {
-      throw new RssException("registerShuffle failed!", throwable);
+      throw new RssException("Errors on requesting shuffle assignment!", throwable);
     }
   }
 

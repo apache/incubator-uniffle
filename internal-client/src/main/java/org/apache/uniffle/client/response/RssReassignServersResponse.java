@@ -20,11 +20,11 @@ package org.apache.uniffle.client.response;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.proto.RssProtos;
 
-public class RssReassignServersReponse extends ClientResponse {
+public class RssReassignServersResponse extends ClientResponse {
 
   private boolean needReassign;
 
-  public RssReassignServersReponse(StatusCode statusCode, String message, boolean needReassign) {
+  public RssReassignServersResponse(StatusCode statusCode, String message, boolean needReassign) {
     super(statusCode, message);
     this.needReassign = needReassign;
   }
@@ -33,8 +33,8 @@ public class RssReassignServersReponse extends ClientResponse {
     return needReassign;
   }
 
-  public static RssReassignServersReponse fromProto(RssProtos.ReassignServersReponse response) {
-    return new RssReassignServersReponse(
+  public static RssReassignServersResponse fromProto(RssProtos.ReassignServersResponse response) {
+    return new RssReassignServersResponse(
         // todo: [issue#780] add fromProto for StatusCode issue
         StatusCode.valueOf(response.getStatus().name()),
         response.getMsg(),
