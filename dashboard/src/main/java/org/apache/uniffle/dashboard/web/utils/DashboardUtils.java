@@ -30,16 +30,16 @@ public class DashboardUtils {
   private static final Logger log = LoggerFactory.getLogger(DashboardUtils.class);
 
   public static Map<String, String> convertToMap(String coordinatorStr) {
-    HashMap<String, String> stringMap = Maps.newHashMap();
+    HashMap<String, String> coordinatorAddressMap = Maps.newHashMap();
     String[] coordinators = coordinatorStr.split(",");
     for (String coordinator : coordinators) {
       try {
         URL coordinatorURL = new URL(coordinator);
-        stringMap.put(coordinatorURL.getHost(), coordinator);
+        coordinatorAddressMap.put(coordinatorURL.getHost(), coordinator);
       } catch (MalformedURLException e) {
         log.error("The coordinator address is abnormal.", e);
       }
     }
-    return stringMap;
+    return coordinatorAddressMap;
   }
 }

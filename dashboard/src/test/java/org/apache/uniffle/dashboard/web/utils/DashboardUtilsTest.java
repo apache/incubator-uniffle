@@ -28,7 +28,7 @@ public class DashboardUtilsTest {
   public void testConvertToMap() {
     String coordinatorStr =
         "http://coordinator.hostname00:19998/,http://coordinator.hostname01:19998/,http://coordinator.hostname02:19998/,http://coordinator.hostname03:19998/";
-    Map<String, String> stringStringMap = DashboardUtils.convertToMap(coordinatorStr);
-    assertEquals(stringStringMap.size(), 4);
+    Map<String, String> coordinatorAddressMap = DashboardUtils.convertToMap(coordinatorStr);
+    assertEquals(coordinatorAddressMap.size(), 4);
   }
 }

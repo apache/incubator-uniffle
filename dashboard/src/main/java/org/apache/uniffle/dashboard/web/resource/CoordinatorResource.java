@@ -27,7 +27,7 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
 @Produces({MediaType.APPLICATION_JSON})
-public class CoordinatorsResource extends BaseResource {
+public class CoordinatorResource extends BaseResource {
 
   @Context protected ServletContext servletContext;
 

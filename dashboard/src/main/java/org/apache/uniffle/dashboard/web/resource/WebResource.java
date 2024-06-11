@@ -25,7 +25,7 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 @Produces({MediaType.APPLICATION_JSON})
 public class WebResource {
   @Path("coordinator")
-  public Class<CoordinatorsResource> getGainCoordinatorsResource() {
-    return CoordinatorsResource.class;
+  public Class<CoordinatorResource> getGainCoordinatorsResource() {
+    return CoordinatorResource.class;
   }
 }
