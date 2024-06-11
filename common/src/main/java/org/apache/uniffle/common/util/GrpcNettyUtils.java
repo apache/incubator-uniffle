@@ -27,12 +27,6 @@ public class GrpcNettyUtils {
         preferDirect, true, numCores, pageSize, maxOrder, smallCacheSize, 0);
   }
 
-  public static PooledByteBufAllocator createPooledByteBufAllocatorWithSmallCacheOnly(
-      boolean preferDirect, int numCores, int pageSize, int maxOrder, int smallCacheSize) {
-    return createPooledByteBufAllocator(
-        preferDirect, true, numCores, pageSize, maxOrder, smallCacheSize, -1);
-  }
-
   private static PooledByteBufAllocator createPooledByteBufAllocator(
       boolean preferDirect,
       boolean allowCache,
@@ -65,5 +59,11 @@ public class GrpcNettyUtils {
         allowCache && smallCacheSize != -1 ? smallCacheSize : 0,
         allowCache && normalCacheSize != -1 ? normalCacheSize : 0,
         allowCache && PooledByteBufAllocator.defaultUseCacheForAllThreads());
+  }
+
+  public static PooledByteBufAllocator createPooledByteBufAllocatorWithSmallCacheOnly(
+      boolean preferDirect, int numCores, int pageSize, int maxOrder, int smallCacheSize) {
+    return createPooledByteBufAllocator(
+        preferDirect, true, numCores, pageSize, maxOrder, smallCacheSize, -1);
   }
 }
