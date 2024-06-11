@@ -30,7 +30,7 @@ import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
 import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssPartitionToShuffleServerResponse;
 import org.apache.uniffle.client.response.RssReassignOnBlockSendFailureResponse;
-import org.apache.uniffle.client.response.RssReassignServersReponse;
+import org.apache.uniffle.client.response.RssReassignServersResponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
@@ -51,7 +51,7 @@ public interface ShuffleManagerClient extends Closeable {
   RssReportShuffleWriteFailureResponse reportShuffleWriteFailure(
       RssReportShuffleWriteFailureRequest req);
 
-  RssReassignServersReponse reassignShuffleServers(RssReassignServersRequest req);
+  RssReassignServersResponse reassignShuffleServers(RssReassignServersRequest req);
 
   RssReassignOnBlockSendFailureResponse reassignOnBlockSendFailure(
       RssReassignOnBlockSendFailureRequest request);

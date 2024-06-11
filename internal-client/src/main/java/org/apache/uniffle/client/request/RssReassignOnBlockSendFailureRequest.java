@@ -27,11 +27,24 @@ import org.apache.uniffle.proto.RssProtos;
 public class RssReassignOnBlockSendFailureRequest {
   private int shuffleId;
   private Map<Integer, List<ReceivingFailureServer>> failurePartitionToServers;
+  private String executorId;
+  private long taskAttemptId;
+  private int stageId;
+  private int stageAttemptNumber;
 
   public RssReassignOnBlockSendFailureRequest(
-      int shuffleId, Map<Integer, List<ReceivingFailureServer>> failurePartitionToServers) {
+      int shuffleId,
+      Map<Integer, List<ReceivingFailureServer>> failurePartitionToServers,
+      String executorId,
+      long taskAttemptId,
+      int stageId,
+      int stageAttemptNum) {
     this.shuffleId = shuffleId;
     this.failurePartitionToServers = failurePartitionToServers;
+    this.executorId = executorId;
+    this.taskAttemptId = taskAttemptId;
+    this.stageId = stageId;
+    this.stageAttemptNumber = stageAttemptNum;
   }
 
   public static RssProtos.RssReassignOnBlockSendFailureRequest toProto(
@@ -43,6 +56,10 @@ public class RssReassignOnBlockSendFailureRequest {
                 .collect(
                     Collectors.toMap(
                         Map.Entry::getKey, x -> ReceivingFailureServer.toProto(x.getValue()))))
+        .setExecutorId(request.executorId)
+        .setStageId(request.stageId)
+        .setStageAttemptNumber(request.stageAttemptNumber)
+        .setTaskAttemptId(request.taskAttemptId)
         .build();
   }
 }

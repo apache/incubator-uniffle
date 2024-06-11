@@ -214,7 +214,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
   @Override
   public void reassignShuffleServers(
       RssProtos.ReassignServersRequest request,
-      StreamObserver<RssProtos.ReassignServersReponse> responseObserver) {
+      StreamObserver<RssProtos.ReassignServersResponse> responseObserver) {
     int stageId = request.getStageId();
     int stageAttemptNumber = request.getStageAttemptNumber();
     int shuffleId = request.getShuffleId();
@@ -223,8 +223,8 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
         shuffleManager.reassignAllShuffleServersForWholeStage(
             stageId, stageAttemptNumber, shuffleId, numPartitions);
     RssProtos.StatusCode code = RssProtos.StatusCode.SUCCESS;
-    RssProtos.ReassignServersReponse reply =
-        RssProtos.ReassignServersReponse.newBuilder()
+    RssProtos.ReassignServersResponse reply =
+        RssProtos.ReassignServersResponse.newBuilder()
             .setStatus(code)
             .setNeedReassign(needReassign)
             .build();
@@ -241,6 +241,13 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     RssProtos.StatusCode code = RssProtos.StatusCode.INTERNAL_ERROR;
     RssProtos.RssReassignOnBlockSendFailureResponse reply;
     try {
+      LOG.info(
+          "Accepted reassign request on block sent failure for shuffleId: {}, stageId: {}, stageAttemptNumber: {} from taskAttemptId: {} on executorId: {}",
+          request.getShuffleId(),
+          request.getStageId(),
+          request.getStageAttemptNumber(),
+          request.getTaskAttemptId(),
+          request.getExecutorId());
       MutableShuffleHandleInfo handle =
           shuffleManager.reassignOnBlockSendFailure(
               request.getShuffleId(),
