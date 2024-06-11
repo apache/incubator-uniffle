@@ -20,24 +20,24 @@ package org.apache.uniffle.client.response;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.proto.RssProtos;
 
-public class RssPartitionToShuffleServerResponse extends ClientResponse {
-  private RssProtos.MutableShuffleHandleInfo shuffleHandleInfoProto;
+public class RssPartitionToShuffleServerWithStageRetryResponse extends ClientResponse {
+  private RssProtos.StageAttemptShuffleHandleInfo shuffleHandleInfoProto;
 
-  public RssPartitionToShuffleServerResponse(
+  public RssPartitionToShuffleServerWithStageRetryResponse(
       StatusCode statusCode,
       String message,
-      RssProtos.MutableShuffleHandleInfo shuffleHandleInfoProto) {
+      RssProtos.StageAttemptShuffleHandleInfo shuffleHandleInfoProto) {
     super(statusCode, message);
     this.shuffleHandleInfoProto = shuffleHandleInfoProto;
   }
 
-  public RssProtos.MutableShuffleHandleInfo getShuffleHandleInfoProto() {
+  public RssProtos.StageAttemptShuffleHandleInfo getShuffleHandleInfoProto() {
     return shuffleHandleInfoProto;
   }
 
-  public static RssPartitionToShuffleServerResponse fromProto(
-      RssProtos.PartitionToShuffleServerResponse response) {
-    return new RssPartitionToShuffleServerResponse(
+  public static RssPartitionToShuffleServerWithStageRetryResponse fromProto(
+      RssProtos.PartitionToShuffleServerWithStageRetryResponse response) {
+    return new RssPartitionToShuffleServerWithStageRetryResponse(
         StatusCode.valueOf(response.getStatus().name()),
         response.getMsg(),
         response.getShuffleHandleInfo());

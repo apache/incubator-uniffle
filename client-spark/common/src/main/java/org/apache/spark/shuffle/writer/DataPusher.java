@@ -92,7 +92,10 @@ public class DataPusher implements Closeable {
               try {
                 result =
                     shuffleWriteClient.sendShuffleData(
-                        rssAppId, shuffleBlockInfoList, () -> !isValidTask(taskId));
+                        rssAppId,
+                        event.getStageAttemptNumber(),
+                        shuffleBlockInfoList,
+                        () -> !isValidTask(taskId));
                 putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
                 putFailedBlockSendTracker(
                     taskToFailedBlockSendTracker, taskId, result.getFailedBlockSendTracker());

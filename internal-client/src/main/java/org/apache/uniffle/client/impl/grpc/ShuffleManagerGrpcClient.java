@@ -32,7 +32,7 @@ import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
 import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
-import org.apache.uniffle.client.response.RssPartitionToShuffleServerResponse;
+import org.apache.uniffle.client.response.RssPartitionToShuffleServerWithStageRetryResponse;
 import org.apache.uniffle.client.response.RssReassignOnBlockSendFailureResponse;
 import org.apache.uniffle.client.response.RssReassignServersReponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
@@ -90,14 +90,26 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
   }
 
   @Override
-  public RssPartitionToShuffleServerResponse getPartitionToShufflerServer(
+  public RssPartitionToShuffleServerWithStageRetryResponse
+      getPartitionToShufflerServerWithStageRetry(RssPartitionToShuffleServerRequest req) {
+    RssProtos.PartitionToShuffleServerRequest protoRequest = req.toProto();
+    RssProtos.PartitionToShuffleServerWithStageRetryResponse partitionToShufflerServer =
+        getBlockingStub().getPartitionToShufflerServerWithStageRetry(protoRequest);
+    RssPartitionToShuffleServerWithStageRetryResponse
+        rssPartitionToShuffleServerWithStageRetryResponse =
+            RssPartitionToShuffleServerWithStageRetryResponse.fromProto(partitionToShufflerServer);
+    return rssPartitionToShuffleServerWithStageRetryResponse;
+  }
+
+  @Override
+  public RssReassignOnBlockSendFailureResponse getPartitionToShufflerServerWithBlockRetry(
       RssPartitionToShuffleServerRequest req) {
     RssProtos.PartitionToShuffleServerRequest protoRequest = req.toProto();
-    RssProtos.PartitionToShuffleServerResponse partitionToShufflerServer =
-        getBlockingStub().getPartitionToShufflerServer(protoRequest);
-    RssPartitionToShuffleServerResponse rssPartitionToShuffleServerResponse =
-        RssPartitionToShuffleServerResponse.fromProto(partitionToShufflerServer);
-    return rssPartitionToShuffleServerResponse;
+    RssProtos.RssReassignOnBlockSendFailureResponse partitionToShufflerServer =
+        getBlockingStub().getPartitionToShufflerServerWithBlockRetry(protoRequest);
+    RssReassignOnBlockSendFailureResponse rssReassignOnBlockSendFailureResponse =
+        RssReassignOnBlockSendFailureResponse.fromProto(partitionToShufflerServer);
+    return rssReassignOnBlockSendFailureResponse;
   }
 
   @Override
