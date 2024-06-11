@@ -35,6 +35,9 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
+import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
+import io.grpc.netty.shaded.io.netty.buffer.PooledByteBufAllocator;
+import io.grpc.netty.shaded.io.netty.channel.ChannelOption;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +46,7 @@ import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExitUtils;
+import org.apache.uniffle.common.util.GrpcNettyUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
@@ -93,10 +97,21 @@ public class GrpcServer implements ServerInterface {
   private Server buildGrpcServer(int serverPort) {
     boolean isMetricsEnabled = rssConf.getBoolean(RssBaseConf.RPC_METRICS_ENABLED);
     long maxInboundMessageSize = rssConf.getLong(RssBaseConf.RPC_MESSAGE_MAX_SIZE);
+    ServerType serverType = rssConf.get(RssBaseConf.RPC_SERVER_TYPE);
+    int pageSize = rssConf.getInteger(RssBaseConf.RPC_NETTY_PAGE_SIZE);
+    int maxOrder = rssConf.getInteger(RssBaseConf.RPC_NETTY_MAX_ORDER);
+    int smallCacheSize = rssConf.getInteger(RssBaseConf.RPC_NETTY_SMALL_CACHE_SIZE);
+    PooledByteBufAllocator pooledByteBufAllocator =
+        serverType == ServerType.GRPC
+            ? GrpcNettyUtils.createPooledByteBufAllocator(true, 0, 0, 0, 0)
+            : GrpcNettyUtils.createPooledByteBufAllocatorWithSmallCacheOnly(
+                true, 0, pageSize, maxOrder, smallCacheSize);
     ServerBuilder<?> builder =
-        ServerBuilder.forPort(serverPort)
+        NettyServerBuilder.forPort(serverPort)
             .executor(pool)
-            .maxInboundMessageSize((int) maxInboundMessageSize);
+            .maxInboundMessageSize((int) maxInboundMessageSize)
+            .withOption(ChannelOption.ALLOCATOR, pooledByteBufAllocator)
+            .withChildOption(ChannelOption.ALLOCATOR, pooledByteBufAllocator);
     if (isMetricsEnabled) {
       builder.addTransportFilter(new MonitoringServerTransportFilter(grpcMetrics));
     }
