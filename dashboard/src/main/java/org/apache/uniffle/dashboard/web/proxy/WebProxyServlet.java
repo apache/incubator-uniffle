@@ -43,7 +43,7 @@ public class WebProxyServlet extends ProxyServlet {
       return null;
     }
     String targetAddress =
-        coordinatorServerAddressesMap.get(clientRequest.getParameter("targetAddress"));
+        coordinatorServerAddressesMap.get(clientRequest.getHeader("targetAddress"));
     StringBuilder target = new StringBuilder();
     if (targetAddress.endsWith("/")) {
       targetAddress = targetAddress.substring(0, targetAddress.length() - 1);
