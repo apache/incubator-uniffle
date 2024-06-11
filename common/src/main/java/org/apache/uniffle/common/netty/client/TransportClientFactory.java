@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.AbstractByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -73,7 +73,7 @@ public class TransportClientFactory implements Closeable {
 
   private final Class<? extends Channel> socketChannelClass;
   private EventLoopGroup workerGroup;
-  private PooledByteBufAllocator pooledAllocator;
+  private AbstractByteBufAllocator byteBufAllocator;
 
   public TransportClientFactory(TransportContext context) {
     this.context = Objects.requireNonNull(context);
@@ -85,9 +85,11 @@ public class TransportClientFactory implements Closeable {
     IOMode ioMode = conf.ioMode();
     this.socketChannelClass = NettyUtils.getClientChannelClass(ioMode);
     this.workerGroup = NettyUtils.createEventLoop(ioMode, conf.clientThreads(), "netty-rpc-client");
-    this.pooledAllocator =
-        NettyUtils.createPooledByteBufAllocator(
-            conf.preferDirectBufs(), false, conf.clientThreads());
+    this.byteBufAllocator =
+        conf.isPooledAllocatorEnabled()
+            ? NettyUtils.createPooledByteBufAllocator(
+                conf.preferDirectBufs(), false, conf.clientThreads())
+            : NettyUtils.createUnpooledByteBufAllocator(conf.preferDirectBufs());
   }
 
   public TransportClient createClient(String remoteHost, int remotePort, int partitionId)
@@ -179,7 +181,7 @@ public class TransportClientFactory implements Closeable {
         .option(ChannelOption.TCP_NODELAY, true)
         .option(ChannelOption.SO_KEEPALIVE, true)
         .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, conf.connectTimeoutMs())
-        .option(ChannelOption.ALLOCATOR, pooledAllocator);
+        .option(ChannelOption.ALLOCATOR, byteBufAllocator);
 
     if (conf.receiveBuf() > 0) {
       bootstrap.option(ChannelOption.SO_RCVBUF, conf.receiveBuf());
