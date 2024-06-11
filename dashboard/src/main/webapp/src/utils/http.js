@@ -16,10 +16,20 @@
  */
 
 import request from "@/utils/request";
+import {useCurrentServerStore} from '@/store/useCurrentServerStore'
+
 
 const http = {
     get(url, params, headers, fontBackFlag) {
         if (fontBackFlag == 0) {
+            // The system obtains the address of the Coordinator to be accessed from global variables.
+            const currentServerStore= useCurrentServerStore()
+            if (typeof params !== 'undefined') {
+                params['targetAddress'] = currentServerStore.currentServer;
+            } else {
+                params = {}
+                params['targetAddress'] = currentServerStore.currentServer;
+            }
             return request.getBackEndAxiosInstance().get(url,{params,headers});
         } else {
             return request.getFrontEndAxiosInstance().get(url,{params,headers});
@@ -27,6 +37,14 @@ const http = {
     },
     post(url, data, headers, fontBackFlag) {
         if (fontBackFlag == 0) {
+            // The system obtains the address of the Coordinator to be accessed from global variables.
+            const currentServerStore= useCurrentServerStore()
+            if (typeof data !== 'undefined') {
+                data['targetAddress'] = currentServerStore.currentServer;
+            } else {
+                data = {}
+                data['targetAddress'] = currentServerStore.currentServer;
+            }
             return request.getBackEndAxiosInstance().post(url,data,headers);
         } else {
             return request.getFrontEndAxiosInstance().post(url,data,headers);

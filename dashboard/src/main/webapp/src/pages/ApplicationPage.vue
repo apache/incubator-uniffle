@@ -65,38 +65,38 @@ export default {
       userAppCount: [{}],
       appInfoData: [{appId: "", userName: "", updateTime: ""}]
     })
+    const currentServerStore = useCurrentServerStore()
 
-    async function getApplicationInfoListPage(parames) {
-      const res = await getApplicationInfoList(parames,{});
+    async function getApplicationInfoListPage() {
+      const res = await getApplicationInfoList();
       pageData.appInfoData = res.data.data
     }
 
-    async function getTotalForUserPage(parames) {
-      const res = await getTotalForUser(parames,{});
+    async function getTotalForUserPage() {
+      const res = await getTotalForUser();
       pageData.userAppCount = res.data.data
     }
 
-    async function getAppTotalPage(parames) {
-      const res = await getAppTotal(parames,{});
+    async function getAppTotalPage() {
+      const res = await getAppTotal();
       pageData.apptotal = res.data.data
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
-    const currentServerStore = useCurrentServerStore()
     currentServerStore.$subscribe((mutable, state) => {
-      const parames = {"targetAddress": state.currentServer}
-      getApplicationInfoListPage(parames);
-      getTotalForUserPage(parames);
-      getAppTotalPage(parames);
+      if (state.currentServer) {
+        getApplicationInfoListPage();
+        getTotalForUserPage();
+        getAppTotalPage();
+      }
     })
 
     onMounted(() => {
       // If the coordinator address to request is not found in the global variable, the request is not initiated.
       if (currentServerStore.currentServer) {
-        const headrs = {"targetAddress": currentServerStore.currentServer}
-        getApplicationInfoListPage(headrs);
-        getTotalForUserPage(headrs);
-        getAppTotalPage(headrs);
+        getApplicationInfoListPage();
+        getTotalForUserPage();
+        getAppTotalPage();
       }
     })
     return {pageData}

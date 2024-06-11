@@ -58,23 +58,24 @@ export default {
       ]
     })
 
-    async function getShuffleLostListPage(parames) {
-      const res = await getShuffleLostList(parames,{});
+    const currentServerStore= useCurrentServerStore()
+
+    async function getShuffleLostListPage() {
+      const res = await getShuffleLostList();
       pageData.tableData = res.data.data
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
-    const currentServerStore= useCurrentServerStore()
     currentServerStore.$subscribe((mutable,state)=>{
-      const headrs={"targetAddress":state.currentServer}
-      getShuffleLostListPage(headrs);
+      if (state.currentServer) {
+        getShuffleLostListPage();
+      }
     })
 
     onMounted(() => {
       // If the coordinator address to request is not found in the global variable, the request is not initiated.
       if (currentServerStore.currentServer) {
-        const parames = {"targetAddress": currentServerStore.currentServer}
-        getShuffleLostListPage(parames);
+        getShuffleLostListPage();
       }
     })
 

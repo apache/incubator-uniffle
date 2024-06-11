@@ -57,24 +57,24 @@ export default {
         }
       ]
     })
+    const currentServerStore= useCurrentServerStore()
 
-    async function getShuffleUnhealthyListPage(parames) {
-      const res = await getShuffleUnhealthyList(parames,{});
+    async function getShuffleUnhealthyListPage() {
+      const res = await getShuffleUnhealthyList();
       pageData.tableData = res.data.data
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
-    const currentServerStore= useCurrentServerStore()
     currentServerStore.$subscribe((mutable,state)=>{
-      const parames={"targetAddress":state.currentServer}
-      getShuffleUnhealthyListPage(parames);
+      if (state.currentServer) {
+        getShuffleUnhealthyListPage();
+      }
     })
 
     onMounted(() => {
       // If the coordinator address to request is not found in the global variable, the request is not initiated.
       if (currentServerStore.currentServer) {
-        const parames = {"targetAddress": currentServerStore.currentServer}
-        getShuffleUnhealthyListPage(parames);
+        getShuffleUnhealthyListPage();
       }
     })
 

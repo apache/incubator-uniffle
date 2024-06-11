@@ -57,24 +57,24 @@ export default {
         }
       ]
     })
+    const currentServerStore= useCurrentServerStore()
 
-    async function getShuffleActiveNodesPage(parames) {
-      const res = await getShuffleActiveNodes(parames,{});
+    async function getShuffleActiveNodesPage() {
+      const res = await getShuffleActiveNodes();
       pageData.tableData = res.data.data
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
-    const currentServerStore= useCurrentServerStore()
     currentServerStore.$subscribe((mutable,state)=>{
-      const parames={"targetAddress":state.currentServer}
-      getShuffleActiveNodesPage(parames)
+      if (state.currentServer) {
+        getShuffleActiveNodesPage()
+      }
     })
 
     onMounted(() => {
       // If the coordinator address to request is not found in the global variable, the request is not initiated.
       if (currentServerStore.currentServer) {
-        const parames = {"targetAddress": currentServerStore.currentServer}
-        getShuffleActiveNodesPage(parames);
+        getShuffleActiveNodesPage();
       }
     })
 

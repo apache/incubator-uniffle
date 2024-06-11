@@ -95,29 +95,30 @@ export default {
           serverInfo: {}
         }
     );
-    async function getCoordinatorServerConfPage(parames) {
-      const res = await getCoordinatorConf(parames,{})
+    const currentServerStore= useCurrentServerStore()
+
+    async function getCoordinatorServerConfPage() {
+      const res = await getCoordinatorConf()
       pageData.tableData = res.data.data
     }
-    async function getCoorServerInfo(parames) {
-      const res = await getCoordinatorServerInfo(parames,{})
+    async function getCoorServerInfo() {
+      const res = await getCoordinatorServerInfo()
       pageData.serverInfo = res.data.data
     }
 
     //The system obtains data from global variables and requests the interface to obtain new data after data changes.
-    const currentServerStore= useCurrentServerStore()
     currentServerStore.$subscribe((mutable,state)=>{
-      const parames={"targetAddress":state.currentServer}
-      getCoordinatorServerConfPage(parames);
-      getCoorServerInfo(parames);
+      if (state.currentServer) {
+        getCoordinatorServerConfPage();
+        getCoorServerInfo();
+      }
     })
 
     onMounted(() => {
       // If the coordinator address to request is not found in the global variable, the request is not initiated.
       if (currentServerStore.currentServer) {
-        const parames={"targetAddress":currentServerStore.currentServer}
-        getCoordinatorServerConfPage(parames);
-        getCoorServerInfo(parames);
+        getCoordinatorServerConfPage();
+        getCoorServerInfo();
       }
     })
     

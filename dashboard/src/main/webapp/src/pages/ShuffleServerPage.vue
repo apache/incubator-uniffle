@@ -117,23 +117,24 @@ export default {
         UNHEALTHY: 0
       }
     })
-    async function getShufflegetStatusTotalPage(params) {
-      const res = await getShufflegetStatusTotal(params,{});
+    const currentServerStore= useCurrentServerStore()
+
+    async function getShufflegetStatusTotalPage() {
+      const res = await getShufflegetStatusTotal();
       dataList.allshuffleServerSize = res.data.data
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
-    const currentServerStore= useCurrentServerStore()
     currentServerStore.$subscribe((mutable,state)=>{
-      const parames={"targetAddress":state.currentServer}
-      getShufflegetStatusTotalPage(parames);
+      if (state.currentServer) {
+        getShufflegetStatusTotalPage();
+      }
     })
 
     onMounted(() => {
       // If the coordinator address to request is not found in the global variable, the request is not initiated.
       if (currentServerStore.currentServer) {
-        const parames={"targetAddress":currentServerStore.currentServer}
-        getShufflegetStatusTotalPage(parames);
+        getShufflegetStatusTotalPage();
       }
     })
     return {dataList}
@@ -152,6 +153,7 @@ export default {
   font-weight: bolder;
   font-size: 30px;
   color: green;
+  text-decoration: none;
 }
 
 .decommissioningnode {
@@ -160,6 +162,7 @@ export default {
   font-weight: bolder;
   font-size: 30px;
   color: #00c4ff;
+  text-decoration: none;
 }
 
 .decommissionednode {
@@ -168,6 +171,7 @@ export default {
   font-weight: bolder;
   font-size: 30px;
   color: blue;
+  text-decoration: none;
 }
 
 .lostnode {
@@ -176,6 +180,7 @@ export default {
   font-weight: bolder;
   font-size: 30px;
   color: red;
+  text-decoration: none;
 }
 
 .unhealthynode {
@@ -184,6 +189,7 @@ export default {
   font-weight: bolder;
   font-size: 30px;
   color: #ff8800;
+  text-decoration: none;
 }
 
 .excludesnode {
@@ -191,5 +197,6 @@ export default {
   font-style: normal;
   font-weight: bolder;
   font-size: 30px;
+  text-decoration: none;
 }
 </style>
