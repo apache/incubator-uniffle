@@ -99,7 +99,7 @@ JVM_ARGS=" -server \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
           -XX:ConcGCThreads=5 \
-          -XX:InitiatingHeapOccupancyPercent=20 \
+          -XX:InitiatingHeapOccupancyPercent=60 \
           -XX:G1HeapRegionSize=32m \
           -XX:+UnlockExperimentalVMOptions \
           -XX:G1NewSizePercent=10 \
