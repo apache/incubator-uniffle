@@ -78,5 +78,5 @@ export function getTotalForUser(params,headers) {
 
 // Obtain the configured coordinator server list
 export function getAllCoordinatorAddrees(params,headers) {
-    return http.get('/coordinator/coordinators', params, headers, 1)
+    return http.get('/coordinator/coordinatorServers', params, headers, 1)
 }
