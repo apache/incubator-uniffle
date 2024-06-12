@@ -191,9 +191,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.bitmapSplitNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM);
     this.serverToPartitionToBlockIds = Maps.newHashMap();
     this.shuffleWriteClient = shuffleWriteClient;
-    // shuffleHandleInfo will be null if we use gluten
-    this.shuffleServersForData = shuffleHandleInfo == null ?
-        rssHandle.getShuffleServersForData() : shuffleHandleInfo.getShuffleServersForData();
+    this.shuffleServersForData = shuffleHandleInfo.getShuffleServersForData();
     this.partitionLengths = new long[partitioner.numPartitions()];
     Arrays.fill(partitionLengths, 0);
     this.isMemoryShuffleEnabled =
@@ -236,9 +234,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleManager.getShuffleHandleInfo(rssHandle),
         context);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
-    // shuffleHandleInfo will be null if we use gluten
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = shuffleHandleInfo == null ?
-        rssHandle.getPartitionToServers() : shuffleHandleInfo.getPartitionToServers();
     final WriteBufferManager bufferManager =
         new WriteBufferManager(
             shuffleId,
@@ -267,7 +262,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       if (shuffleManager.isRssResubmitStage()) {
         throwFetchFailedIfNecessary(e);
       } else {
-          throw new RssException(e);
+        throw new RssException(e);
       }
     }
   }
