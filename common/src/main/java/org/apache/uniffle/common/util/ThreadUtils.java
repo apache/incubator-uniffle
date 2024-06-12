@@ -28,6 +28,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -104,6 +105,7 @@ public class ThreadUtils {
       Function<T, R> task,
       long timeoutMs,
       String taskMsg,
+      String timeoutMsg,
       Function<Future<R>, R> futureHandler) {
     List<Callable<R>> callableList =
         items.stream()
@@ -112,7 +114,40 @@ public class ThreadUtils {
     try {
       List<Future<R>> futures =
           executorService.invokeAll(callableList, timeoutMs, TimeUnit.MILLISECONDS);
-      return futures.stream().map(futureHandler).collect(Collectors.toList());
+      AtomicInteger cancelled = new AtomicInteger();
+      List<R> result =
+          futures.stream()
+              .map(
+                  future -> {
+                    // api doc says all futures are done, but better be safe here
+                    if (!future.isDone()) {
+                      future.cancel(true);
+                    }
+                    // detect cancelled tasks (timeout)
+                    if (future.isCancelled()) {
+                      cancelled.incrementAndGet();
+                    }
+                    // do not replace this map with peek as peek is for debug purposes and may be
+                    // optimized away
+                    return future;
+                  })
+              .map(futureHandler)
+              .collect(Collectors.toList());
+      if (cancelled.get() > 0) {
+        if (timeoutMsg != null) {
+          timeoutMsg = " " + timeoutMsg;
+        } else {
+          timeoutMsg = "";
+        }
+        LOGGER.warn(
+            "Executing {} observed timeout of {}ms, {} out of {} tasks cancelled.{}",
+            taskMsg,
+            timeoutMs,
+            cancelled.get(),
+            items.size(),
+            timeoutMsg);
+      }
+      return result;
     } catch (InterruptedException ie) {
       LOGGER.warn("Execute " + taskMsg + " is interrupted", ie);
       return Collections.emptyList();
@@ -124,18 +159,28 @@ public class ThreadUtils {
       Collection<T> items,
       Function<T, R> task,
       long timeoutMs,
-      String taskMsg) {
+      String taskMsg,
+      Function<Future<R>, R> futureHandler) {
+    return executeTasks(executorService, items, task, timeoutMs, taskMsg, null, futureHandler);
+  }
+
+  public static <T, R> List<R> executeTasks(
+      ExecutorService executorService,
+      Collection<T> items,
+      Function<T, R> task,
+      long timeoutMs,
+      String taskMsg,
+      String timeoutMsg) {
     return executeTasks(
-        executorService,
-        items,
-        task,
-        timeoutMs,
-        taskMsg,
-        future -> {
-          if (!future.isDone()) {
-            future.cancel(true);
-          }
-          return null;
-        });
+        executorService, items, task, timeoutMs, taskMsg, timeoutMsg, future -> null);
+  }
+
+  public static <T, R> List<R> executeTasks(
+      ExecutorService executorService,
+      Collection<T> items,
+      Function<T, R> task,
+      long timeoutMs,
+      String taskMsg) {
+    return executeTasks(executorService, items, task, timeoutMs, taskMsg, future -> null);
   }
 }

@@ -103,7 +103,7 @@ public class ShuffleServerInternalGrpcTest extends IntegrationTestBase {
     assertEquals(ServerStatus.ACTIVE, shuffleServer.getServerStatus());
 
     // Clean all apps, shuffle server will be shutdown right now.
-    shuffleServerClient.unregisterShuffle(new RssUnregisterShuffleRequest(appId, shuffleId));
+    shuffleServerClient.unregisterShuffle(new RssUnregisterShuffleRequest(appId, shuffleId, 1));
     response = shuffleServerInternalClient.decommission(new RssDecommissionRequest());
     assertEquals(StatusCode.SUCCESS, response.getStatusCode());
     assertEquals(ServerStatus.DECOMMISSIONING, shuffleServer.getServerStatus());

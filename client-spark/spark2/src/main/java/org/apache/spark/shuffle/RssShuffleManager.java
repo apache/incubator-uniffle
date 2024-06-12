@@ -199,6 +199,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.dataCommitPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE);
     int unregisterThreadPoolSize =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
+    int unregisterTimeoutSec = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_TIMEOUT_SEC);
     int unregisterRequestTimeoutSec =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC);
     // External shuffle service is not supported when using remote shuffle service
@@ -259,6 +260,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                       .dataTransferPoolSize(dataTransferPoolSize)
                       .dataCommitPoolSize(dataCommitPoolSize)
                       .unregisterThreadPoolSize(unregisterThreadPoolSize)
+                      .unregisterTimeSec(unregisterTimeoutSec)
                       .unregisterRequestTimeSec(unregisterRequestTimeoutSec)
                       .rssConf(rssConf));
       registerCoordinator();
@@ -639,7 +641,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         }
       }
     } catch (Exception e) {
-      LOG.warn("Errors on unregister to remote shuffle-servers", e);
+      LOG.warn("Errors on unregistering from remote shuffle-servers", e);
     }
     return true;
   }

@@ -511,6 +511,7 @@ public class RssDAGAppMasterTest {
               .dataTransferPoolSize(1)
               .dataCommitPoolSize(1)
               .unregisterThreadPoolSize(1)
+              .unregisterTimeSec(1)
               .unregisterRequestTimeSec(1));
       this.mode = mode;
     }
