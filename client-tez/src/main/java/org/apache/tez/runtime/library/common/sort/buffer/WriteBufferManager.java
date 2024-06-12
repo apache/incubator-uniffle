@@ -98,7 +98,6 @@ public class WriteBufferManager<K, V> {
   private final long taskAttemptId;
   private final BlockIdLayout blockIdLayout;
   private TezTaskAttemptID tezTaskAttemptID;
-  private final RssConf rssConf;
   private final int shuffleId;
   private final boolean isNeedSorted;
   private final TezCounter mapOutputByteCounter;
@@ -156,7 +155,6 @@ public class WriteBufferManager<K, V> {
     this.sendCheckInterval = sendCheckInterval;
     this.sendCheckTimeout = sendCheckTimeout;
     this.bitmapSplitNum = bitmapSplitNum;
-    this.rssConf = rssConf;
     this.shuffleId = shuffleId;
     this.isNeedSorted = isNeedSorted;
     this.mapOutputByteCounter = mapOutputByteCounter;

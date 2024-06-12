@@ -40,9 +40,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
 
-import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
-import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
-
 public class UmbilicalUtils {
   private static final Logger LOG = LoggerFactory.getLogger(UmbilicalUtils.class);
 
@@ -65,8 +62,8 @@ public class UmbilicalUtils {
       TezTaskAttemptID taskAttemptId,
       int shuffleId)
       throws IOException, InterruptedException, TezException {
-    String host = conf.get(RSS_AM_SHUFFLE_MANAGER_ADDRESS);
-    int port = conf.getInt(RSS_AM_SHUFFLE_MANAGER_PORT, -1);
+    String host = conf.get(TezClientConf.RSS_AM_SHUFFLE_MANAGER_ADDRESS.key());
+    int port = conf.getInt(TezClientConf.RSS_AM_SHUFFLE_MANAGER_PORT.key(), -1);
     final InetSocketAddress address = NetUtils.createSocketAddrForHost(host, port);
 
     UserGroupInformation taskOwner =

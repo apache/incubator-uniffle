@@ -36,6 +36,7 @@ import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.RssTezUtils;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.TezUtils;
 import org.apache.tez.common.TezUtilsInternal;
@@ -65,9 +66,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.exception.RssException;
-
-import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_ID;
-import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 
 /**
  * {@link RssUnorderedKVInput} provides unordered key value input by bringing together (shuffling) a
@@ -128,8 +126,14 @@ public class RssUnorderedKVInput extends AbstractLogicalInput {
             RssTezUtils.uniqueIdentifierToAttemptId(getContext().getUniqueIdentifier()));
     TezVertexID tezVertexID = taskAttemptId.getTaskID().getVertexID();
     TezDAGID tezDAGID = tezVertexID.getDAGId();
-    int sourceVertexId = this.conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1);
-    int destinationVertexId = this.conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1);
+    int sourceVertexId =
+        this.conf.getInt(
+            TezClientConf.RSS_SHUFFLE_SOURCE_VERTEX_ID.key(),
+            TezClientConf.RSS_SHUFFLE_SOURCE_VERTEX_ID.defaultValue());
+    int destinationVertexId =
+        this.conf.getInt(
+            TezClientConf.RSS_SHUFFLE_DESTINATION_VERTEX_ID.key(),
+            TezClientConf.RSS_SHUFFLE_DESTINATION_VERTEX_ID.defaultValue());
     assert sourceVertexId != -1;
     assert destinationVertexId != -1;
     this.shuffleId =

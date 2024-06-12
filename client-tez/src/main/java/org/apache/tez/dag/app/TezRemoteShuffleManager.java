@@ -40,10 +40,10 @@ import org.apache.hadoop.security.authorize.PolicyProvider;
 import org.apache.hadoop.security.token.Token;
 import org.apache.tez.common.GetShuffleServerRequest;
 import org.apache.tez.common.GetShuffleServerResponse;
-import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.ServicePluginLifecycle;
 import org.apache.tez.common.ShuffleAssignmentsInfoWritable;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezRemoteShuffleUmbilicalProtocol;
 import org.apache.tez.common.security.JobTokenIdentifier;
 import org.apache.tez.common.security.JobTokenSecretManager;
@@ -61,12 +61,11 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
-
-import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
 
 public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   private static final Logger LOG = LoggerFactory.getLogger(TezRemoteShuffleManager.class);
@@ -76,7 +75,7 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   protected volatile Server server;
   private String tokenIdentifier;
   private Token<JobTokenIdentifier> sessionToken;
-  private Configuration conf;
+  private TezClientConf conf;
   private TezRemoteShuffleUmbilicalProtocolImpl tezRemoteShuffleUmbilical;
   private ShuffleWriteClient rssClient;
   private String appId;
@@ -86,7 +85,7 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
   public TezRemoteShuffleManager(
       String tokenIdentifier,
       Token<JobTokenIdentifier> sessionToken,
-      Configuration conf,
+      TezClientConf conf,
       String appId,
       ShuffleWriteClient rssClient,
       RemoteStorageInfo remoteStorage)
@@ -226,18 +225,12 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
         RssTezUtils.getRequiredShuffleServerNumber(conf, 200, partitionNum);
     // retryInterval must bigger than `rss.server.heartbeat.timeout`, or maybe it will return the
     // same result
-    long retryInterval =
-        conf.getLong(
-            RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL,
-            RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL_DEFAULT_VALUE);
-    int retryTimes =
-        conf.getInt(
-            RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES,
-            RssTezConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES_DEFAULT_VALUE);
+    long retryInterval = conf.get(TezClientConf.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
+    int retryTimes = conf.get(TezClientConf.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
 
     // Get the configured server assignment tags and it will also add default shuffle version tag.
     Set<String> assignmentTags = new HashSet<>();
-    String rawTags = conf.get(RssTezConfig.RSS_CLIENT_ASSIGNMENT_TAGS, "");
+    String rawTags = conf.get(TezClientConf.RSS_CLIENT_ASSIGNMENT_TAGS);
     if (StringUtils.isNotEmpty(rawTags)) {
       rawTags = rawTags.trim();
       assignmentTags.addAll(Arrays.asList(rawTags.split(",")));
@@ -286,8 +279,9 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
                                           entry.getValue(),
                                           remoteStorage,
                                           ShuffleDataDistributionType.NORMAL,
-                                          RssTezConfig.toRssConf(conf)
-                                              .get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE)));
+                                          conf.get(
+                                              RssClientConf
+                                                  .MAX_CONCURRENCY_PER_PARTITION_TO_WRITE)));
                           LOG.info(
                               "Finish register shuffle with "
                                   + (System.currentTimeMillis() - start)
@@ -309,9 +303,9 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
     try {
       String rssAmRpcBindAddress;
       Integer rssAmRpcBindPort;
-      if (conf.getBoolean(RssTezConfig.RSS_AM_SHUFFLE_MANAGER_DEBUG, false)) {
-        rssAmRpcBindAddress = conf.get(RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS, "0.0.0.0");
-        rssAmRpcBindPort = conf.getInt(RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT, 0);
+      if (conf.get(TezClientConf.RSS_AM_SHUFFLE_MANAGER_DEBUG)) {
+        rssAmRpcBindAddress = conf.get(TezClientConf.RSS_AM_SHUFFLE_MANAGER_ADDRESS);
+        rssAmRpcBindPort = conf.get(TezClientConf.RSS_AM_SHUFFLE_MANAGER_PORT);
       } else {
         rssAmRpcBindAddress = "0.0.0.0";
         rssAmRpcBindPort = 0;
@@ -320,13 +314,13 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
       JobTokenSecretManager jobTokenSecretManager = new JobTokenSecretManager();
       jobTokenSecretManager.addTokenForJob(tokenIdentifier, sessionToken);
       server =
-          new RPC.Builder(conf)
+          new RPC.Builder(conf.getHadoopConfig())
               .setProtocol(TezRemoteShuffleUmbilicalProtocol.class)
               .setBindAddress(rssAmRpcBindAddress)
               .setPort(rssAmRpcBindPort)
               .setInstance(tezRemoteShuffleUmbilical)
               .setNumHandlers(
-                  conf.getInt(
+                  conf.getInteger(
                       TezConfiguration.TEZ_AM_TASK_LISTENER_THREAD_COUNT,
                       TezConfiguration.TEZ_AM_TASK_LISTENER_THREAD_COUNT_DEFAULT))
               .setPortRangeConfig(TezConfiguration.TEZ_AM_TASK_AM_PORT_RANGE)
@@ -335,7 +329,7 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
 
       // Enable service authorization?
       if (conf.getBoolean(CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHORIZATION, false)) {
-        refreshServiceAcls(conf, new RssTezAMPolicyProvider());
+        refreshServiceAcls(conf.getHadoopConfig(), new RssTezAMPolicyProvider());
       }
 
       server.start();

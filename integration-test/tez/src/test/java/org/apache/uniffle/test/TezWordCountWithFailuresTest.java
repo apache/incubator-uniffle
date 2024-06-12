@@ -36,7 +36,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tez.client.CallerContext;
 import org.apache.tez.client.TezClient;
 import org.apache.tez.client.TezClientUtils;
-import org.apache.tez.common.RssTezConfig;
+import org.apache.tez.common.TezClientConf;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.dag.api.DAG;
 import org.apache.tez.dag.api.TezConfiguration;
@@ -65,7 +65,6 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.apache.tez.common.RssTezConfig.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK;
 import static org.apache.tez.dag.api.TezConfiguration.TEZ_AM_MAX_TASK_FAILURES_PER_NODE;
 import static org.apache.tez.dag.api.TezConfiguration.TEZ_AM_NODE_BLACKLISTING_ENABLED;
 import static org.apache.tez.dag.api.TezConfiguration.TEZ_AM_NODE_BLACKLISTING_IGNORE_THRESHOLD;
@@ -100,7 +99,7 @@ public class TezWordCountWithFailuresTest extends IntegrationTestBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = new HashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
-    dynamicConf.put(RssTezConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    dynamicConf.put(TezClientConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
@@ -276,8 +275,8 @@ public class TezWordCountWithFailuresTest extends IntegrationTestBase {
     appConf.setBoolean(TEZ_AM_NODE_BLACKLISTING_ENABLED, true);
     appConf.setInt(TEZ_AM_NODE_BLACKLISTING_IGNORE_THRESHOLD, 99);
     appConf.setInt(TEZ_AM_MAX_TASK_FAILURES_PER_NODE, maxFailures);
-    appConf.set(RssTezConfig.RSS_COORDINATOR_QUORUM, COORDINATOR_QUORUM);
-    appConf.set(RssTezConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
+    appConf.set(TezClientConf.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
+    appConf.set(TezClientConf.RSS_CLIENT_TYPE.key(), ClientType.GRPC.name());
     appConf.set(
         TezConfiguration.TEZ_AM_LAUNCH_CMD_OPTS,
         TezConfiguration.TEZ_AM_LAUNCH_CMD_OPTS_DEFAULT
@@ -285,7 +284,7 @@ public class TezWordCountWithFailuresTest extends IntegrationTestBase {
             + RssDAGAppMasterForWordCountWithFailures.class.getName()
             + " --testMode"
             + testMode);
-    appConf.setBoolean(RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK, avoidRecompute);
+    appConf.setBoolean(TezClientConf.RSS_AVOID_RECOMPUTE_SUCCEEDED_TASK.key(), avoidRecompute);
     appConf.setBoolean(TEZ_AM_NODE_UNHEALTHY_RESCHEDULE_TASKS, rescheduleWhenUnhealthy);
   }
 

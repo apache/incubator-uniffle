@@ -37,7 +37,6 @@ import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.apache.tez.common.RssTezConfig.RSS_STORAGE_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -110,39 +109,39 @@ public class RssTezUtilsTest {
 
   @Test
   public void testEstimateTaskConcurrency() {
-    Configuration jobConf = new Configuration();
+    TezClientConf conf = new TezClientConf(new Configuration(false));
     int mapNum = 500;
     int reduceNum = 20;
-    assertEquals(495, RssTezUtils.estimateTaskConcurrency(jobConf, mapNum, reduceNum));
+    assertEquals(495, RssTezUtils.estimateTaskConcurrency(conf, mapNum, reduceNum));
 
-    jobConf.setDouble(Constants.MR_SLOW_START, 1.0);
-    assertEquals(500, RssTezUtils.estimateTaskConcurrency(jobConf, mapNum, reduceNum));
-    jobConf.setInt(Constants.MR_MAP_LIMIT, 200);
-    jobConf.setInt(Constants.MR_REDUCE_LIMIT, 200);
-    assertEquals(200, RssTezUtils.estimateTaskConcurrency(jobConf, mapNum, reduceNum));
+    conf.setDouble(Constants.MR_SLOW_START, 1.0);
+    assertEquals(500, RssTezUtils.estimateTaskConcurrency(conf, mapNum, reduceNum));
+    conf.setInteger(Constants.MR_MAP_LIMIT, 200);
+    conf.setInteger(Constants.MR_REDUCE_LIMIT, 200);
+    assertEquals(200, RssTezUtils.estimateTaskConcurrency(conf, mapNum, reduceNum));
 
-    jobConf.setDouble("mapreduce.rss.estimate.task.concurrency.dynamic.factor", 0.5);
-    assertEquals(200, RssTezUtils.estimateTaskConcurrency(jobConf, mapNum, reduceNum));
+    conf.setDouble("mapreduce.rss.estimate.task.concurrency.dynamic.factor", 0.5);
+    assertEquals(200, RssTezUtils.estimateTaskConcurrency(conf, mapNum, reduceNum));
   }
 
   @Test
   public void testGetRequiredShuffleServerNumber() {
-    Configuration jobConf = new Configuration();
+    TezClientConf conf = new TezClientConf(new Configuration(false));
     int mapNum = 500;
     int reduceNum = 20;
-    jobConf.setInt(RssTezConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, 10);
-    assertEquals(10, RssTezUtils.getRequiredShuffleServerNumber(jobConf, mapNum, reduceNum));
-    jobConf.setBoolean(RssTezConfig.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED, true);
-    assertEquals(10, RssTezUtils.getRequiredShuffleServerNumber(jobConf, mapNum, reduceNum));
-    jobConf.unset(RssTezConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER);
-    assertEquals(7, RssTezUtils.getRequiredShuffleServerNumber(jobConf, mapNum, reduceNum));
-    jobConf.setDouble(Constants.MR_SLOW_START, 1.0);
-    assertEquals(7, RssTezUtils.getRequiredShuffleServerNumber(jobConf, mapNum, reduceNum));
-    jobConf.setInt(Constants.MR_MAP_LIMIT, 200);
-    jobConf.setInt(Constants.MR_REDUCE_LIMIT, 200);
-    assertEquals(3, RssTezUtils.getRequiredShuffleServerNumber(jobConf, mapNum, reduceNum));
-    jobConf.setDouble("mapreduce.rss.estimate.task.concurrency.dynamic.factor", 0.5);
-    assertEquals(3, RssTezUtils.getRequiredShuffleServerNumber(jobConf, mapNum, reduceNum));
+    conf.set(TezClientConf.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, 10);
+    assertEquals(10, RssTezUtils.getRequiredShuffleServerNumber(conf, mapNum, reduceNum));
+    conf.setBoolean(TezClientConf.RSS_ESTIMATE_SERVER_ASSIGNMENT_ENABLED, true);
+    assertEquals(10, RssTezUtils.getRequiredShuffleServerNumber(conf, mapNum, reduceNum));
+    conf.remove(TezClientConf.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER.key());
+    assertEquals(7, RssTezUtils.getRequiredShuffleServerNumber(conf, mapNum, reduceNum));
+    conf.setDouble(Constants.MR_SLOW_START, 1.0);
+    assertEquals(7, RssTezUtils.getRequiredShuffleServerNumber(conf, mapNum, reduceNum));
+    conf.setInteger(Constants.MR_MAP_LIMIT, 200);
+    conf.setInteger(Constants.MR_REDUCE_LIMIT, 200);
+    assertEquals(3, RssTezUtils.getRequiredShuffleServerNumber(conf, mapNum, reduceNum));
+    conf.setDouble("mapreduce.rss.estimate.task.concurrency.dynamic.factor", 0.5);
+    assertEquals(3, RssTezUtils.getRequiredShuffleServerNumber(conf, mapNum, reduceNum));
   }
 
   @Test
@@ -203,14 +202,14 @@ public class RssTezUtilsTest {
   public void testApplyDynamicClientConf() {
     Configuration conf = new Configuration(false);
     conf.set("tez.config1", "value1");
-    conf.set(RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
+    conf.set(TezClientConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     Map<String, String> dynamic = new HashMap<>();
-    dynamic.put(RSS_STORAGE_TYPE, StorageType.LOCALFILE.name());
+    dynamic.put(TezClientConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     dynamic.put("config2", "value2");
     RssTezUtils.applyDynamicClientConf(conf, dynamic);
     assertEquals("value1", conf.get("tez.config1"));
     assertEquals("value2", conf.get("tez.config2"));
-    assertEquals(StorageType.LOCALFILE.name(), conf.get(RSS_STORAGE_TYPE));
+    assertEquals(StorageType.LOCALFILE.name(), conf.get(TezClientConf.RSS_STORAGE_TYPE.key()));
   }
 
   @Test
