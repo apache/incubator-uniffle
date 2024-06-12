@@ -16,15 +16,15 @@
   -->
 
 <template>
-  <LayoutPage />
+  <LoginPage />
 </template>
 
 <script>
-import LayoutPage from "@/components/LayoutPage";
+import LoginPage from "@/components/LoginPage";
 export default {
-  name: 'App',
+  name: 'app',
   components: {
-    LayoutPage
+    LoginPage
   }
 }
 </script>
