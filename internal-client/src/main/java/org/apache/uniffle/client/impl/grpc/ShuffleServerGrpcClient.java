@@ -137,7 +137,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         host,
         port,
         RssClientConf.RPC_MAX_ATTEMPTS.defaultValue(),
-        RssClientConf.RPC_TIMEOUT_MS.defaultValue());
+        RssClientConf.RPC_TIMEOUT_MS.defaultValue(),
+        RssClientConf.RPC_NETTY_PAGE_SIZE.defaultValue(),
+        RssClientConf.RPC_NETTY_MAX_ORDER.defaultValue(),
+        RssClientConf.RPC_NETTY_SMALL_CACHE_SIZE.defaultValue());
   }
 
   public ShuffleServerGrpcClient(RssConf rssConf, String host, int port) {
@@ -149,16 +152,39 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             : rssConf.getInteger(RssClientConf.RPC_MAX_ATTEMPTS),
         rssConf == null
             ? RssClientConf.RPC_TIMEOUT_MS.defaultValue()
-            : rssConf.getLong(RssClientConf.RPC_TIMEOUT_MS));
-  }
-
-  public ShuffleServerGrpcClient(String host, int port, int maxRetryAttempts, long rpcTimeoutMs) {
-    this(host, port, maxRetryAttempts, rpcTimeoutMs, true);
+            : rssConf.getLong(RssClientConf.RPC_TIMEOUT_MS),
+        rssConf == null
+            ? RssClientConf.RPC_NETTY_PAGE_SIZE.defaultValue()
+            : rssConf.getInteger(RssClientConf.RPC_NETTY_PAGE_SIZE),
+        rssConf == null
+            ? RssClientConf.RPC_NETTY_MAX_ORDER.defaultValue()
+            : rssConf.getInteger(RssClientConf.RPC_NETTY_MAX_ORDER),
+        rssConf == null
+            ? RssClientConf.RPC_NETTY_SMALL_CACHE_SIZE.defaultValue()
+            : rssConf.getInteger(RssClientConf.RPC_NETTY_SMALL_CACHE_SIZE));
   }
 
   public ShuffleServerGrpcClient(
-      String host, int port, int maxRetryAttempts, long rpcTimeoutMs, boolean usePlaintext) {
-    super(host, port, maxRetryAttempts, usePlaintext);
+      String host,
+      int port,
+      int maxRetryAttempts,
+      long rpcTimeoutMs,
+      int pageSize,
+      int maxOrder,
+      int smallCacheSize) {
+    this(host, port, maxRetryAttempts, rpcTimeoutMs, true, pageSize, maxOrder, smallCacheSize);
+  }
+
+  public ShuffleServerGrpcClient(
+      String host,
+      int port,
+      int maxRetryAttempts,
+      long rpcTimeoutMs,
+      boolean usePlaintext,
+      int pageSize,
+      int maxOrder,
+      int smallCacheSize) {
+    super(host, port, maxRetryAttempts, usePlaintext, pageSize, maxOrder, smallCacheSize);
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
     rpcTimeout = rpcTimeoutMs;
   }

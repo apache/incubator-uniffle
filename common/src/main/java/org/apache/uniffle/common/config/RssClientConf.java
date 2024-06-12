@@ -108,6 +108,30 @@ public class RssClientConf {
           .defaultValue(3)
           .withDescription("When we fail to send RPC calls, we will retry for maxAttempts times.");
 
+  public static final ConfigOption<Integer> RPC_NETTY_PAGE_SIZE =
+      ConfigOptions.key("rss.client.rpc.netty.pageSize")
+          .intType()
+          .defaultValue(4096)
+          .withDescription(
+              "The value of pageSize for PooledByteBufAllocator when using gRPC internal Netty on the client-side. "
+                  + "This configuration will only take effect when rss.client.type is set to GRPC_NETTY.");
+
+  public static final ConfigOption<Integer> RPC_NETTY_MAX_ORDER =
+      ConfigOptions.key("rss.client.rpc.netty.maxOrder")
+          .intType()
+          .defaultValue(3)
+          .withDescription(
+              "The value of maxOrder for PooledByteBufAllocator when using gRPC internal Netty on the client-side. "
+                  + "This configuration will only take effect when rss.client.type is set to GRPC_NETTY.");
+
+  public static final ConfigOption<Integer> RPC_NETTY_SMALL_CACHE_SIZE =
+      ConfigOptions.key("rss.client.rpc.netty.smallCacheSize")
+          .intType()
+          .defaultValue(1024)
+          .withDescription(
+              "The value of smallCacheSize for PooledByteBufAllocator when using gRPC internal Netty on the client-side. "
+                  + "This configuration will only take effect when rss.client.type is set to GRPC_NETTY.");
+
   public static final ConfigOption<Integer> NETTY_IO_CONNECT_TIMEOUT_MS =
       ConfigOptions.key("rss.client.netty.io.connect.timeout.ms")
           .intType()
