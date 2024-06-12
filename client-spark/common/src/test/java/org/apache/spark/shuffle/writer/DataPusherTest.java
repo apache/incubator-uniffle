@@ -69,6 +69,15 @@ public class DataPusherTest {
         String appId,
         List<ShuffleBlockInfo> shuffleBlockInfoList,
         Supplier<Boolean> needCancelRequest) {
+      return sendShuffleData(appId, 0, shuffleBlockInfoList, needCancelRequest);
+    }
+
+    @Override
+    public SendShuffleDataResult sendShuffleData(
+        String appId,
+        int stageAttemptNumber,
+        List<ShuffleBlockInfo> shuffleBlockInfoList,
+        Supplier<Boolean> needCancelRequest) {
       return fakedShuffleDataResult;
     }
 

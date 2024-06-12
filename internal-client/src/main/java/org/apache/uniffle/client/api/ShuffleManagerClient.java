@@ -28,8 +28,8 @@ import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
 import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
-import org.apache.uniffle.client.response.RssPartitionToShuffleServerResponse;
 import org.apache.uniffle.client.response.RssReassignOnBlockSendFailureResponse;
+import org.apache.uniffle.client.response.RssReassignOnStageRetryResponse;
 import org.apache.uniffle.client.response.RssReassignServersResponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
@@ -40,12 +40,23 @@ public interface ShuffleManagerClient extends Closeable {
       RssReportShuffleFetchFailureRequest request);
 
   /**
-   * Gets the mapping between partitions and ShuffleServer from the ShuffleManager server
+   * In Stage Retry mode,Gets the mapping between partitions and ShuffleServer from the
+   * ShuffleManager server.
    *
    * @param req request
    * @return RssPartitionToShuffleServerResponse
    */
-  RssPartitionToShuffleServerResponse getPartitionToShufflerServer(
+  RssReassignOnStageRetryResponse getPartitionToShufflerServerWithStageRetry(
+      RssPartitionToShuffleServerRequest req);
+
+  /**
+   * In Block Retry mode,Gets the mapping between partitions and ShuffleServer from the
+   * ShuffleManager server.
+   *
+   * @param req request
+   * @return RssPartitionToShuffleServerResponse
+   */
+  RssReassignOnBlockSendFailureResponse getPartitionToShufflerServerWithBlockRetry(
       RssPartitionToShuffleServerRequest req);
 
   RssReportShuffleWriteFailureResponse reportShuffleWriteFailure(

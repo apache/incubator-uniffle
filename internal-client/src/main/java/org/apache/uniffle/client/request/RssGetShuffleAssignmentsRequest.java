@@ -64,6 +64,30 @@ public class RssGetShuffleAssignmentsRequest {
       int assignmentShuffleServerNumber,
       int estimateTaskConcurrency,
       Set<String> faultyServerIds) {
+    this(
+        appId,
+        shuffleId,
+        partitionNum,
+        partitionNumPerRange,
+        dataReplica,
+        requiredTags,
+        assignmentShuffleServerNumber,
+        estimateTaskConcurrency,
+        faultyServerIds,
+        0);
+  }
+
+  public RssGetShuffleAssignmentsRequest(
+      String appId,
+      int shuffleId,
+      int partitionNum,
+      int partitionNumPerRange,
+      int dataReplica,
+      Set<String> requiredTags,
+      int assignmentShuffleServerNumber,
+      int estimateTaskConcurrency,
+      Set<String> faultyServerIds,
+      int stageAttemptNumber) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionNum = partitionNum;

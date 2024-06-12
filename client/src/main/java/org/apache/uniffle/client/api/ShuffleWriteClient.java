@@ -35,6 +35,16 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 
 public interface ShuffleWriteClient {
 
+  default SendShuffleDataResult sendShuffleData(
+      String appId,
+      int stageAttemptNumber,
+      List<ShuffleBlockInfo> shuffleBlockInfoList,
+      Supplier<Boolean> needCancelRequest) {
+    throw new UnsupportedOperationException(
+        this.getClass().getName()
+            + " doesn't implement getShuffleAssignments with faultyServerIds");
+  }
+
   SendShuffleDataResult sendShuffleData(
       String appId,
       List<ShuffleBlockInfo> shuffleBlockInfoList,
@@ -44,6 +54,25 @@ public interface ShuffleWriteClient {
 
   void registerApplicationInfo(String appId, long timeoutMs, String user);
 
+  default void registerShuffle(
+      ShuffleServerInfo shuffleServerInfo,
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorage,
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite) {
+    registerShuffle(
+        shuffleServerInfo,
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorage,
+        dataDistributionType,
+        maxConcurrencyPerPartitionToWrite,
+        0);
+  }
+
   void registerShuffle(
       ShuffleServerInfo shuffleServerInfo,
       String appId,
@@ -51,7 +80,8 @@ public interface ShuffleWriteClient {
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage,
       ShuffleDataDistributionType dataDistributionType,
-      int maxConcurrencyPerPartitionToWrite);
+      int maxConcurrencyPerPartitionToWrite,
+      int stageAttemptNumber);
 
   boolean sendCommit(
       Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);

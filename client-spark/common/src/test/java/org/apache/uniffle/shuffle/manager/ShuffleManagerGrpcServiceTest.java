@@ -35,7 +35,7 @@ import static org.mockito.Mockito.mock;
 
 public class ShuffleManagerGrpcServiceTest {
   // create mock of RssShuffleManagerInterface.
-  private static RssShuffleManagerInterface mockShuffleManager;
+  private static RssShuffleManagerBase mockShuffleManager;
   private static final String appId = "app-123";
   private static final int maxFetchFailures = 2;
   private static final int shuffleId = 0;
@@ -65,7 +65,7 @@ public class ShuffleManagerGrpcServiceTest {
 
   @BeforeAll
   public static void setup() {
-    mockShuffleManager = mock(RssShuffleManagerInterface.class);
+    mockShuffleManager = mock(RssShuffleManagerBase.class);
     Mockito.when(mockShuffleManager.getAppId()).thenReturn(appId);
     Mockito.when(mockShuffleManager.getNumMaps(shuffleId)).thenReturn(numMaps);
     Mockito.when(mockShuffleManager.getPartitionNum(shuffleId)).thenReturn(numReduces);
