@@ -796,13 +796,15 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         .createShuffleManagerClient(ClientType.GRPC, host, port);
   }
 
-  public ShuffleHandleInfo getShuffleHandleInfo(RssShuffleHandle<?,?,?> rssHandle) {
+  public ShuffleHandleInfo getShuffleHandleInfo(RssShuffleHandle<?, ?, ?> rssHandle) {
     if (shuffleManagerRpcServiceEnabled) {
       // Get the ShuffleServer list from the Driver based on the shuffleId
       return getRemoteShuffleHandleInfo(rssHandle.getShuffleId());
     } else {
       return new ShuffleHandleInfo(
-          rssHandle.getShuffleId(), rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
+          rssHandle.getShuffleId(),
+          rssHandle.getPartitionToServers(),
+          rssHandle.getRemoteStorage());
     }
   }
 
