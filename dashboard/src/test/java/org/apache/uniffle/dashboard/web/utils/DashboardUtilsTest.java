@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-import {createApp} from 'vue';
-import {createPinia} from 'pinia'
-import App from './App.vue'
-import ElementPlus from 'element-plus'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import 'element-plus/dist/index.css'
-import router from "@/router";
-const app = createApp(App)
-const pinia = createPinia()
-Object.keys(ElementPlusIconsVue).forEach(key => {
-    app.component(key, ElementPlusIconsVue[key])
-})
-app.use(router).use(pinia).use(ElementPlus).mount('#app')
+package org.apache.uniffle.dashboard.web.utils;
+
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class DashboardUtilsTest {
+  @Test
+  public void testConvertToMap() {
+    String coordinatorStr =
+        "http://coordinator.hostname00:19998/,http://coordinator.hostname01:19998/,http://coordinator.hostname02:19998/,http://coordinator.hostname03:19998/";
+    Map<String, String> coordinatorAddressMap =
+        DashboardUtils.convertAddressesStrToMap(coordinatorStr);
+    assertEquals(coordinatorAddressMap.size(), 4);
+  }
+}

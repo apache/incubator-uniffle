@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-import {createApp} from 'vue';
-import {createPinia} from 'pinia'
-import App from './App.vue'
-import ElementPlus from 'element-plus'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import 'element-plus/dist/index.css'
-import router from "@/router";
-const app = createApp(App)
-const pinia = createPinia()
-Object.keys(ElementPlusIconsVue).forEach(key => {
-    app.component(key, ElementPlusIconsVue[key])
-})
-app.use(router).use(pinia).use(ElementPlus).mount('#app')
+package org.apache.uniffle.dashboard.web.resource;
+
+import org.apache.hbase.thirdparty.javax.ws.rs.Path;
+import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
+import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
+
+@Path("web")
+@Produces({MediaType.APPLICATION_JSON})
+public class WebResource {
+  @Path("coordinator")
+  public Class<CoordinatorResource> getGainCoordinatorsResource() {
+    return CoordinatorResource.class;
+  }
+}

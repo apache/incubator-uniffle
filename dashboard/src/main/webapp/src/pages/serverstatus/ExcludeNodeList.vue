@@ -25,6 +25,7 @@
 <script>
 import {onMounted, reactive} from 'vue'
 import { getShuffleExcludeNodes } from "@/api/api";
+import {useCurrentServerStore} from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
@@ -35,14 +36,27 @@ export default {
         }
       ]
     })
+    const currentServerStore= useCurrentServerStore()
+
     async function getShuffleExcludeNodesPage() {
       const res = await getShuffleExcludeNodes();
       pageData.tableData = res.data.data
     }
 
-    onMounted(() => {
-      getShuffleExcludeNodesPage();
+    // The system obtains data from global variables and requests the interface to obtain new data after data changes.
+    currentServerStore.$subscribe((mutable,state)=>{
+      if (state.currentServer) {
+        getShuffleExcludeNodesPage();
+      }
     })
+
+    onMounted(() => {
+      // If the coordinator address to request is not found in the global variable, the request is not initiated.
+      if (currentServerStore.currentServer) {
+        getShuffleExcludeNodesPage();
+      }
+    })
+
     return {pageData}
   }
 }

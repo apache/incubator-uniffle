@@ -20,22 +20,23 @@
     <el-table :data="pageData.tableData" height="550" style="width: 100%">
       <el-table-column prop="id" label="Id" min-width="140"/>
       <el-table-column prop="ip" label="IP" min-width="80"/>
-      <el-table-column prop="grpcPort" label="Port" min-width="80"/>
+      <el-table-column prop="grpcPort" label="GrpcPort" min-width="80"/>
       <el-table-column prop="nettyPort" label="NettyPort" min-width="80"/>
       <el-table-column prop="usedMemory" label="UsedMem" min-width="80" :formatter="memFormatter"/>
       <el-table-column prop="preAllocatedMemory" label="PreAllocatedMem" min-width="80" :formatter="memFormatter"/>
       <el-table-column prop="availableMemory" label="AvailableMem" min-width="80" :formatter="memFormatter"/>
       <el-table-column prop="eventNumInFlush" label="FlushNum" min-width="80"/>
       <el-table-column prop="status" label="Status" min-width="80"/>
-      <el-table-column prop="timestamp" label="ResigerTime" min-width="80" :formatter="dateFormatter"/>
+      <el-table-column prop="timestamp" label="RegistrationTime" min-width="80" :formatter="dateFormatter"/>
       <el-table-column prop="tags" label="Tags" min-width="80"/>
     </el-table>
   </div>
 </template>
 <script>
 import {onMounted, reactive} from 'vue'
-import { getShuffleUnhealthyList } from "@/api/api";
+import { getShuffleActiveNodes} from "@/api/api";
 import {memFormatter, dateFormatter} from "@/utils/common";
+import {useCurrentServerStore} from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
@@ -56,14 +57,25 @@ export default {
         }
       ]
     })
+    const currentServerStore= useCurrentServerStore()
 
-    async function getShuffleUnhealthyListPage() {
-      const res = await getShuffleUnhealthyList();
+    async function getShuffleActiveNodesPage() {
+      const res = await getShuffleActiveNodes();
       pageData.tableData = res.data.data
     }
 
+    // The system obtains data from global variables and requests the interface to obtain new data after data changes.
+    currentServerStore.$subscribe((mutable,state)=>{
+      if (state.currentServer) {
+        getShuffleActiveNodesPage()
+      }
+    })
+
     onMounted(() => {
-      getShuffleUnhealthyListPage();
+      // If the coordinator address to request is not found in the global variable, the request is not initiated.
+      if (currentServerStore.currentServer) {
+        getShuffleActiveNodesPage();
+      }
     })
 
     return {pageData, memFormatter, dateFormatter}

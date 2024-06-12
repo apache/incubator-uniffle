@@ -85,6 +85,7 @@
 <script>
 import {ref, reactive, computed, onMounted} from 'vue'
 import {getCoordinatorConf, getCoordinatorServerInfo} from "@/api/api";
+import {useCurrentServerStore} from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
@@ -94,17 +95,31 @@ export default {
           serverInfo: {}
         }
     );
+    const currentServerStore= useCurrentServerStore()
+
     async function getCoordinatorServerConfPage() {
-      const res = await getCoordinatorConf();
+      const res = await getCoordinatorConf()
       pageData.tableData = res.data.data
     }
     async function getCoorServerInfo() {
-      const res = await getCoordinatorServerInfo();
+      const res = await getCoordinatorServerInfo()
       pageData.serverInfo = res.data.data
     }
+
+    //The system obtains data from global variables and requests the interface to obtain new data after data changes.
+    currentServerStore.$subscribe((mutable,state)=>{
+      if (state.currentServer) {
+        getCoordinatorServerConfPage();
+        getCoorServerInfo();
+      }
+    })
+
     onMounted(() => {
-      getCoordinatorServerConfPage();
-      getCoorServerInfo();
+      // If the coordinator address to request is not found in the global variable, the request is not initiated.
+      if (currentServerStore.currentServer) {
+        getCoordinatorServerConfPage();
+        getCoorServerInfo();
+      }
     })
     
     const size = ref('')
@@ -128,6 +143,7 @@ export default {
         marginTop: marginMap[size.value] || marginMap.default,
       }
     })
+
     return {
       pageData,
       iconStyle,

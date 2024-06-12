@@ -27,15 +27,16 @@
       <el-table-column prop="availableMemory" label="AvailableMem" min-width="80" :formatter="memFormatter"/>
       <el-table-column prop="eventNumInFlush" label="FlushNum" min-width="80"/>
       <el-table-column prop="status" label="Status" min-width="80"/>
-      <el-table-column prop="timestamp" label="ResigerTime" min-width="80" :formatter="dateFormatter"/>
+      <el-table-column prop="timestamp" label="RegistrationTime" min-width="80" :formatter="dateFormatter"/>
       <el-table-column prop="tags" label="Tags" min-width="80"/>
     </el-table>
   </div>
 </template>
 <script>
 import {onMounted, reactive} from 'vue'
-import { getShuffleDecommissionedList } from "@/api/api";
+import { getShuffleUnhealthyList } from "@/api/api";
 import {memFormatter, dateFormatter} from "@/utils/common";
+import {useCurrentServerStore} from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
@@ -56,15 +57,27 @@ export default {
         }
       ]
     })
+    const currentServerStore= useCurrentServerStore()
 
-    async function getShuffleDecommissionedListPage() {
-      const res = await getShuffleDecommissionedList();
+    async function getShuffleUnhealthyListPage() {
+      const res = await getShuffleUnhealthyList();
       pageData.tableData = res.data.data
     }
 
-    onMounted(() => {
-      getShuffleDecommissionedListPage();
+    // The system obtains data from global variables and requests the interface to obtain new data after data changes.
+    currentServerStore.$subscribe((mutable,state)=>{
+      if (state.currentServer) {
+        getShuffleUnhealthyListPage();
+      }
     })
+
+    onMounted(() => {
+      // If the coordinator address to request is not found in the global variable, the request is not initiated.
+      if (currentServerStore.currentServer) {
+        getShuffleUnhealthyListPage();
+      }
+    })
+
 
     return {pageData, memFormatter, dateFormatter}
   }
