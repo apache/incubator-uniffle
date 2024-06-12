@@ -46,7 +46,7 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.GenericTestUtils;
 import org.apache.uniffle.coordinator.web.request.ApplicationRequest;
 
-import static org.apache.uniffle.coordinator.web.Response.fail;
+import static org.apache.uniffle.common.web.resource.Response.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

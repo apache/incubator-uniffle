@@ -15,56 +15,62 @@
  * limitations under the License.
  */
 
-import axios from 'axios'
+import axios from "axios";
 
 /**
  * The root directory, starting with web, is handled by the dashboard server's servlet
  * @type {axios.AxiosInstance}
  */
 const frontEndAxiosInstance = axios.create({
-    baseURL: '/web',
-    timeout: 10000
-})
+  baseURL: "/web",
+  timeout: 10000,
+});
 /**
  * The root directory starts with API. The dashboard server reverse proxy requests Coordinator apis
  * @type {axios.AxiosInstance}
  */
-const backEndAxiosInstance=axios.create({
-    baseURL: '/api',
-    timeout: 10000
-})
+const backEndAxiosInstance = axios.create({
+  baseURL: "/api",
+  timeout: 10000,
+});
 
 const axiosInstance = {
-    getFrontEndAxiosInstance(){
-        return frontEndAxiosInstance
-    },
-    getBackEndAxiosInstance(){
-        return backEndAxiosInstance
-    }
-}
+  getFrontEndAxiosInstance() {
+    return frontEndAxiosInstance;
+  },
+  getBackEndAxiosInstance() {
+    return backEndAxiosInstance;
+  },
+};
 
-frontEndAxiosInstance.interceptors.request.use(config => {
-    config.headers['Content-type'] = 'application/json';
-    config.headers['Accept'] = 'application/json';
-    return config;
-})
+frontEndAxiosInstance.interceptors.request.use((config) => {
+  config.headers["Content-type"] = "application/json";
+  config.headers.Accept = "application/json";
+  return config;
+});
 
-backEndAxiosInstance.interceptors.request.use(config => {
-    config.headers['Content-type'] = 'application/json';
-    config.headers['Accept'] = 'application/json';
-    return config;
-})
+backEndAxiosInstance.interceptors.request.use((config) => {
+  config.headers["Content-type"] = "application/json";
+  config.headers.Accept = "application/json";
+  return config;
+});
 
-frontEndAxiosInstance.interceptors.response.use(response => {
+frontEndAxiosInstance.interceptors.response.use(
+  (response) => {
     return response;
-}, error => {
+  },
+  (error) => {
     return error;
-})
+  },
+);
 
-backEndAxiosInstance.interceptors.response.use(response => {
+backEndAxiosInstance.interceptors.response.use(
+  (response) => {
     return response;
-}, error => {
+  },
+  (error) => {
     return error;
-})
+  },
+);
 
 export default axiosInstance;

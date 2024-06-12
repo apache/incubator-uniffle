@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-const fileUtil = require('./fileutils')
+const fileUtil = require("./fileutils");
 
 // Destination folder
-const staticDirectory = '../resources/static'
+const staticDirectory = "../resources/static";
 // Delete
-fileUtil.deleteFolder(staticDirectory)
+fileUtil.deleteFolder(staticDirectory);
 // Copy
-fileUtil.copyFolder('./dist', staticDirectory)
-console.log('File copy successful!')
+fileUtil.copyFolder("./dist", staticDirectory);
+console.log("File copy successful!");

@@ -26,6 +26,9 @@ import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
+import org.apache.uniffle.common.web.resource.BaseResource;
+import org.apache.uniffle.common.web.resource.Response;
+
 @Produces({MediaType.APPLICATION_JSON})
 public class CoordinatorResource extends BaseResource {
 

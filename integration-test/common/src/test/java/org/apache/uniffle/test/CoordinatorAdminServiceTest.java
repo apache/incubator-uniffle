@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.apache.uniffle.api.AdminRestApi;
 import org.apache.uniffle.client.UniffleRestClient;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.coordinator.web.Response;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

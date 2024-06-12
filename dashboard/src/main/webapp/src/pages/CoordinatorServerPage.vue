@@ -106,7 +106,9 @@ export default {
       pageData.serverInfo = res.data.data
     }
 
-    //The system obtains data from global variables and requests the interface to obtain new data after data changes.
+    /**
+     * The system obtains data from global variables and requests the interface to obtain new data after data changes.
+     */
     currentServerStore.$subscribe((mutable,state)=>{
       if (state.currentServer) {
         getCoordinatorServerConfPage();
