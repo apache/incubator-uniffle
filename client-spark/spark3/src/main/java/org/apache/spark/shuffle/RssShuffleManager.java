@@ -955,16 +955,16 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         serverToPartitionRanges.entrySet();
     entries.stream()
         .forEach(
-            entry -> {
-              shuffleWriteClient.registerShuffle(
-                  entry.getKey(),
-                  appId,
-                  shuffleId,
-                  entry.getValue(),
-                  remoteStorage,
-                  dataDistributionType,
-                  maxConcurrencyPerPartitionToWrite);
-            });
+            entry ->
+                shuffleWriteClient.registerShuffle(
+                    entry.getKey(),
+                    appId,
+                    shuffleId,
+                    entry.getValue(),
+                    remoteStorage,
+                    dataDistributionType,
+                    maxConcurrencyPerPartitionToWrite,
+                    taskBlockSendFailureRetryEnabled));
     LOG.info(
         "Finish register shuffleId["
             + shuffleId

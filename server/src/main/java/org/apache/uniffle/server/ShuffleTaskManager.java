@@ -255,7 +255,8 @@ public class ShuffleTaskManager {
         remoteStorageInfo,
         user,
         ShuffleDataDistributionType.NORMAL,
-        -1);
+        -1,
+        false);
   }
 
   public StatusCode registerShuffle(
@@ -265,7 +266,8 @@ public class ShuffleTaskManager {
       RemoteStorageInfo remoteStorageInfo,
       String user,
       ShuffleDataDistributionType dataDistType,
-      int maxConcurrencyPerPartitionToWrite) {
+      int maxConcurrencyPerPartitionToWrite,
+      boolean blockFailureReassignEnabled) {
     ReentrantReadWriteLock.WriteLock lock = getAppWriteLock(appId);
     lock.lock();
     try {
@@ -278,6 +280,7 @@ public class ShuffleTaskManager {
               .maxConcurrencyPerPartitionToWrite(
                   getMaxConcurrencyWriting(maxConcurrencyPerPartitionToWrite, conf))
               .dataDistributionType(dataDistType)
+              .blockFailureReassignEnabled(blockFailureReassignEnabled)
               .build());
 
       partitionsToBlockIds.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());

@@ -23,6 +23,12 @@ public class ShuffleSpecification {
   private int maxConcurrencyPerPartitionToWrite;
   private ShuffleDataDistributionType distributionType;
 
+  private boolean blockFailureReassignEnabled;
+
+  public boolean isBlockFailureReassignEnabled() {
+    return blockFailureReassignEnabled;
+  }
+
   public int getMaxConcurrencyPerPartitionToWrite() {
     return maxConcurrencyPerPartitionToWrite;
   }
@@ -49,6 +55,11 @@ public class ShuffleSpecification {
 
     public Builder dataDistributionType(ShuffleDataDistributionType distributionType) {
       this.specification.distributionType = distributionType;
+      return this;
+    }
+
+    public Builder blockFailureReassignEnabled(boolean blockFailureReassignEnabled) {
+      this.specification.blockFailureReassignEnabled = blockFailureReassignEnabled;
       return this;
     }
 

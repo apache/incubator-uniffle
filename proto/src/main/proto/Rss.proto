@@ -184,6 +184,7 @@ message ShuffleRegisterRequest {
   string user = 5;
   DataDistribution shuffleDataDistribution = 6;
   int32 maxConcurrencyPerPartitionToWrite = 7;
+  google.protobuf.BoolValue blockFailureReassignEnabled = 8;
 }
 
 enum DataDistribution {
