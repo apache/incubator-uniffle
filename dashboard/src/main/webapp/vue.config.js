@@ -18,14 +18,14 @@
 module.exports = {
   // Proxies can be set up by configuring the vue.config.js file to proxy requests to the backend server.
   devServer: {
-    host: "localhost",
+    host: 'localhost',
     port: 8080,
     proxy: {
-      "/": {
+      '/': {
         ws: false,
-        target: "http://localhost:19997",
-        changeOrigin: true,
-      },
-    },
-  },
-};
+        target: 'http://localhost:19997',
+        changeOrigin: true
+      }
+    }
+  }
+}

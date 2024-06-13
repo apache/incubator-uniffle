@@ -29,84 +29,80 @@
         </el-card>
       </el-col>
     </el-row>
-    <el-divider/>
+    <el-divider />
     <el-tag>User App ranking</el-tag>
     <div>
       <el-table :data="pageData.userAppCount" height="250" style="width: 100%">
-        <el-table-column prop="userName" label="UserName" min-width="180"/>
-        <el-table-column prop="appNum" label="Totality" min-width="180"/>
+        <el-table-column prop="userName" label="UserName" min-width="180" />
+        <el-table-column prop="appNum" label="Totality" min-width="180" />
       </el-table>
     </div>
-    <el-divider/>
+    <el-divider />
     <el-tag>Apps</el-tag>
     <div>
       <el-table :data="pageData.appInfoData" height="250" style="width: 100%">
-        <el-table-column prop="appId" label="AppId" min-width="180"/>
-        <el-table-column prop="userName" label="UserName" min-width="180"/>
-        <el-table-column prop="updateTime" label="Update Time" min-width="180"/>
+        <el-table-column prop="appId" label="AppId" min-width="180" />
+        <el-table-column prop="userName" label="UserName" min-width="180" />
+        <el-table-column prop="updateTime" label="Update Time" min-width="180" />
       </el-table>
     </div>
   </div>
 </template>
 
 <script>
-import {
-  getApplicationInfoList,
-  getAppTotal,
-  getTotalForUser
-} from "@/api/api";
-import {onMounted, reactive} from "vue";
-import {useCurrentServerStore} from '@/store/useCurrentServerStore'
+import { getApplicationInfoList, getAppTotal, getTotalForUser } from '@/api/api'
+import { onMounted, reactive } from 'vue'
+import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
     const pageData = reactive({
       apptotal: {},
       userAppCount: [{}],
-      appInfoData: [{appId: "", userName: "", updateTime: ""}]
+      appInfoData: [{ appId: '', userName: '', updateTime: '' }]
     })
     const currentServerStore = useCurrentServerStore()
 
     async function getApplicationInfoListPage() {
-      const res = await getApplicationInfoList();
+      const res = await getApplicationInfoList()
       pageData.appInfoData = res.data.data
     }
 
     async function getTotalForUserPage() {
-      const res = await getTotalForUser();
+      const res = await getTotalForUser()
       pageData.userAppCount = res.data.data
     }
 
     async function getAppTotalPage() {
-      const res = await getAppTotal();
+      const res = await getAppTotal()
       pageData.apptotal = res.data.data
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
     currentServerStore.$subscribe((mutable, state) => {
       if (state.currentServer) {
-        getApplicationInfoListPage();
-        getTotalForUserPage();
-        getAppTotalPage();
+        getApplicationInfoListPage()
+        getTotalForUserPage()
+        getAppTotalPage()
       }
     })
 
     onMounted(() => {
       // If the coordinator address to request is not found in the global variable, the request is not initiated.
       if (currentServerStore.currentServer) {
-        getApplicationInfoListPage();
-        getTotalForUserPage();
-        getAppTotalPage();
+        getApplicationInfoListPage()
+        getTotalForUserPage()
+        getAppTotalPage()
       }
     })
-    return {pageData}
+    return { pageData }
   }
 }
 </script>
 
 <style>
 .appcnt {
-  font-family: "Lantinghei SC";
+  font-family: 'Lantinghei SC';
   font-style: normal;
   font-weight: bolder;
   font-size: 30px;

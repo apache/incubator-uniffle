@@ -20,16 +20,12 @@
     <el-collapse v-model="pageData.activeNames" accordion:false>
       <el-collapse-item title="Coordinator Server" name="1">
         <div>
-          <el-descriptions
-              class="margin-top"
-              :column="3"
-              :size="size"
-              border>
+          <el-descriptions class="margin-top" :column="3" :size="size" border>
             <el-descriptions-item>
               <template #label>
                 <div class="cell-item">
                   <el-icon :style="iconStyle">
-                    <Platform/>
+                    <Platform />
                   </el-icon>
                   Coordinatro ID
                 </div>
@@ -40,7 +36,7 @@
               <template #label>
                 <div class="cell-item">
                   <el-icon :style="iconStyle">
-                    <Link/>
+                    <Link />
                   </el-icon>
                   IP Address
                 </div>
@@ -51,7 +47,7 @@
               <template #label>
                 <div class="cell-item">
                   <el-icon :style="iconStyle">
-                    <Wallet/>
+                    <Wallet />
                   </el-icon>
                   Coordinator Server Port
                 </div>
@@ -62,7 +58,7 @@
               <template #label>
                 <div class="cell-item">
                   <el-icon :style="iconStyle">
-                    <Wallet/>
+                    <Wallet />
                   </el-icon>
                   Coordinator Web Port
                 </div>
@@ -74,8 +70,8 @@
       </el-collapse-item>
       <el-collapse-item title="Coordinator Properties" name="2">
         <el-table :data="pageData.tableData" stripe style="width: 100%">
-          <el-table-column prop="argumentKey" label="Name" min-width="380"/>
-          <el-table-column prop="argumentValue" label="Value" min-width="380"/>
+          <el-table-column prop="argumentKey" label="Name" min-width="380" />
+          <el-table-column prop="argumentValue" label="Value" min-width="380" />
         </el-table>
       </el-collapse-item>
     </el-collapse>
@@ -83,19 +79,18 @@
 </template>
 
 <script>
-import {ref, reactive, computed, onMounted} from 'vue'
-import {getCoordinatorConf, getCoordinatorServerInfo} from "@/api/api";
-import {useCurrentServerStore} from '@/store/useCurrentServerStore'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { getCoordinatorConf, getCoordinatorServerInfo } from '@/api/api'
+import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
     const pageData = reactive({
-          activeNames: ['1', '2'],
-          tableData: [],
-          serverInfo: {}
-        }
-    );
-    const currentServerStore= useCurrentServerStore()
+      activeNames: ['1', '2'],
+      tableData: [],
+      serverInfo: {}
+    })
+    const currentServerStore = useCurrentServerStore()
 
     async function getCoordinatorServerConfPage() {
       const res = await getCoordinatorConf()
@@ -109,40 +104,40 @@ export default {
     /**
      * The system obtains data from global variables and requests the interface to obtain new data after data changes.
      */
-    currentServerStore.$subscribe((mutable,state)=>{
+    currentServerStore.$subscribe((mutable, state) => {
       if (state.currentServer) {
-        getCoordinatorServerConfPage();
-        getCoorServerInfo();
+        getCoordinatorServerConfPage()
+        getCoorServerInfo()
       }
     })
 
     onMounted(() => {
       // If the coordinator address to request is not found in the global variable, the request is not initiated.
       if (currentServerStore.currentServer) {
-        getCoordinatorServerConfPage();
-        getCoorServerInfo();
+        getCoordinatorServerConfPage()
+        getCoorServerInfo()
       }
     })
-    
+
     const size = ref('')
     const iconStyle = computed(() => {
       const marginMap = {
         large: '8px',
         default: '6px',
-        small: '4px',
+        small: '4px'
       }
       return {
-        marginRight: marginMap[size.value] || marginMap.default,
+        marginRight: marginMap[size.value] || marginMap.default
       }
     })
     const blockMargin = computed(() => {
       const marginMap = {
         large: '32px',
         default: '28px',
-        small: '24px',
+        small: '24px'
       }
       return {
-        marginTop: marginMap[size.value] || marginMap.default,
+        marginTop: marginMap[size.value] || marginMap.default
       }
     })
 

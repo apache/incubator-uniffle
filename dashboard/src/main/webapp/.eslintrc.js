@@ -20,12 +20,14 @@ module.exports = {
     browser: true,
     commonjs: true,
     es2021: true,
-    node: true,
+    node: true
   },
-  extends: ["plugin:vue/essential", "standard", "@vue/prettier"],
+  extends: ['plugin:vue/essential', 'standard', '@vue/prettier'],
   parserOptions: {
-    ecmaVersion: 12,
+    ecmaVersion: 13
   },
-  plugins: ["vue"],
-  rules: {},
-};
+  plugins: ['vue'],
+  rules: {
+    quotes: [2, 'single']
+  }
+}
