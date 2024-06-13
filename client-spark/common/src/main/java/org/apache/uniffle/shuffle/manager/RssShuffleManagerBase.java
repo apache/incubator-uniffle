@@ -117,7 +117,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
 
   protected boolean blockIdSelfManagedEnabled;
 
-  protected boolean taskReassignEnabled;
+  protected boolean partitionReassignEnabled;
 
   protected boolean shuffleManagerRpcServiceEnabled;
 
