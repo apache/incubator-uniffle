@@ -44,6 +44,7 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
   private long mockedTimeout = -1L;
 
   private boolean mockSendDataFailed = false;
+  private int mockSendDataFailedStageNumber = -1;
 
   private boolean mockRequireBufferFailedWithNoBuffer = false;
   private boolean isMockRequireBufferFailedWithNoBufferForHugePartition = false;
@@ -128,6 +129,12 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
       StreamObserver<RssProtos.SendShuffleDataResponse> responseObserver) {
     if (mockSendDataFailed) {
       LOG.info("Add a mocked sendData failed on sendShuffleData");
+      throw new RuntimeException("This write request is failed as mocked failure！");
+    }
+    if (mockSendDataFailedStageNumber == request.getStageAttemptNumber()) {
+      LOG.info(
+          "Add a mocked sendData failed on sendShuffleData with the stage number={}",
+          mockSendDataFailedStageNumber);
       throw new RuntimeException("This write request is failed as mocked failure！");
     }
     if (mockedTimeout > 0) {
@@ -285,5 +292,13 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
       }
     }
     super.getLocalShuffleIndex(request, responseObserver);
+  }
+
+  public int getMockSendDataFailedStageNumber() {
+    return mockSendDataFailedStageNumber;
+  }
+
+  public void setMockSendDataFailedStageNumber(int mockSendDataFailedStageNumber) {
+    this.mockSendDataFailedStageNumber = mockSendDataFailedStageNumber;
   }
 }
