@@ -157,6 +157,48 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int shuffleId = req.getShuffleId();
     String remoteStoragePath = req.getRemoteStorage().getPath();
     String user = req.getUser();
+    int stageAttemptNumber = req.getStageAttemptNumber();
+    // If the Stage is registered for the first time, you do not need to consider the Stage retry
+    // and delete the Block data that has been sent.
+    if (stageAttemptNumber > 0) {
+      ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
+      // Prevents AttemptNumber of multiple stages from modifying the latest AttemptNumber.
+      synchronized (taskInfo) {
+        int attemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
+        if (stageAttemptNumber > attemptNumber) {
+          taskInfo.refreshLatestStageAttemptNumber(shuffleId, stageAttemptNumber);
+          try {
+            long start = System.currentTimeMillis();
+            shuffleServer.getShuffleTaskManager().removeShuffleDataSync(appId, shuffleId);
+            LOG.info(
+                "Deleted the previous stage attempt data due to stage recomputing for app: {}, "
+                    + "shuffleId: {}. It costs {} ms",
+                appId,
+                shuffleId,
+                System.currentTimeMillis() - start);
+          } catch (Exception e) {
+            LOG.error(
+                "Errors on clearing previous stage attempt data for app: {}, shuffleId: {}",
+                appId,
+                shuffleId,
+                e);
+            StatusCode code = StatusCode.INTERNAL_ERROR;
+            reply = ShuffleRegisterResponse.newBuilder().setStatus(code.toProto()).build();
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+            return;
+          }
+        } else if (stageAttemptNumber < attemptNumber) {
+          // When a Stage retry occurs, the first or last registration of a Stage may need to be
+          // ignored and the ignored status quickly returned.
+          StatusCode code = StatusCode.STAGE_RETRY_IGNORE;
+          reply = ShuffleRegisterResponse.newBuilder().setStatus(code.toProto()).build();
+          responseObserver.onNext(reply);
+          responseObserver.onCompleted();
+          return;
+        }
+      }
+    }
 
     ShuffleDataDistributionType shuffleDataDistributionType =
         ShuffleDataDistributionType.valueOf(
@@ -210,6 +252,22 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int shuffleId = req.getShuffleId();
     long requireBufferId = req.getRequireBufferId();
     long timestamp = req.getTimestamp();
+    int stageAttemptNumber = req.getStageAttemptNumber();
+    ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
+    Integer latestStageAttemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
+    // The Stage retry occurred, and the task before StageNumber was simply ignored and not
+    // processed if the task was being sent.
+    if (stageAttemptNumber < latestStageAttemptNumber) {
+      String responseMessage = "A retry has occurred at the Stage, sending data is invalid.";
+      reply =
+          SendShuffleDataResponse.newBuilder()
+              .setStatus(StatusCode.STAGE_RETRY_IGNORE.toProto())
+              .setRetMsg(responseMessage)
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+      return;
+    }
     if (timestamp > 0) {
       /*
        * Here we record the transport time, but we don't consider the impact of data size on transport time.

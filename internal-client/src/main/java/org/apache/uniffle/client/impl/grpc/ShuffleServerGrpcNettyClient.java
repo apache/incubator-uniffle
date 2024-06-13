@@ -139,6 +139,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
   public RssSendShuffleDataResponse sendShuffleData(RssSendShuffleDataRequest request) {
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks =
         request.getShuffleIdToBlocks();
+    int stageAttemptNumber = request.getStageAttemptNumber();
     boolean isSuccessful = true;
     AtomicReference<StatusCode> failedStatusCode = new AtomicReference<>(StatusCode.INTERNAL_ERROR);
 
@@ -159,6 +160,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
               requestId(),
               request.getAppId(),
               shuffleId,
+              stageAttemptNumber,
               0L,
               stb.getValue(),
               System.currentTimeMillis());

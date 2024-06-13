@@ -200,7 +200,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       RemoteStorageInfo remoteStorageInfo,
       String user,
       ShuffleDataDistributionType dataDistributionType,
-      int maxConcurrencyPerPartitionToWrite) {
+      int maxConcurrencyPerPartitionToWrite,
+      int stageAttemptNumber) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
@@ -208,7 +209,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setUser(user)
         .setShuffleDataDistribution(RssProtos.DataDistribution.valueOf(dataDistributionType.name()))
         .setMaxConcurrencyPerPartitionToWrite(maxConcurrencyPerPartitionToWrite)
-        .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges));
+        .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges))
+        .setStageAttemptNumber(stageAttemptNumber);
     RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
     rsBuilder.setPath(remoteStorageInfo.getPath());
     Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
@@ -468,7 +470,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             request.getRemoteStorageInfo(),
             request.getUser(),
             request.getDataDistributionType(),
-            request.getMaxConcurrencyPerPartitionToWrite());
+            request.getMaxConcurrencyPerPartitionToWrite(),
+            request.getStageAttemptNumber());
 
     RssRegisterShuffleResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
@@ -499,6 +502,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     String appId = request.getAppId();
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks =
         request.getShuffleIdToBlocks();
+    int stageAttemptNumber = request.getStageAttemptNumber();
 
     boolean isSuccessful = true;
     AtomicReference<StatusCode> failedStatusCode = new AtomicReference<>(StatusCode.INTERNAL_ERROR);
@@ -563,6 +567,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                       .setRequireBufferId(requireId)
                       .addAllShuffleData(shuffleData)
                       .setTimestamp(start)
+                      .setStageAttemptNumber(stageAttemptNumber)
                       .build();
               SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
               if (LOG.isDebugEnabled()) {

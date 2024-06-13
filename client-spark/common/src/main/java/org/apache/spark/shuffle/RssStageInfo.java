@@ -15,27 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.response;
+package org.apache.spark.shuffle;
 
-import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.proto.RssProtos;
+public class RssStageInfo {
+  private String stageAttemptIdAndNumber;
+  private boolean isReassigned;
 
-public class RssReassignOnBlockSendFailureResponse extends ClientResponse {
-  private RssProtos.MutableShuffleHandleInfo handle;
-
-  public RssReassignOnBlockSendFailureResponse(
-      StatusCode statusCode, String message, RssProtos.MutableShuffleHandleInfo handle) {
-    super(statusCode, message);
-    this.handle = handle;
+  public RssStageInfo(String stageAttemptIdAndNumber, boolean isReassigned) {
+    this.stageAttemptIdAndNumber = stageAttemptIdAndNumber;
+    this.isReassigned = isReassigned;
   }
 
-  public RssProtos.MutableShuffleHandleInfo getHandle() {
-    return handle;
+  public String getStageAttemptIdAndNumber() {
+    return stageAttemptIdAndNumber;
   }
 
-  public static RssReassignOnBlockSendFailureResponse fromProto(
-      RssProtos.ReassignOnBlockSendFailureResponse response) {
-    return new RssReassignOnBlockSendFailureResponse(
-        StatusCode.valueOf(response.getStatus().name()), response.getMsg(), response.getHandle());
+  public void setStageAttemptIdAndNumber(String stageAttemptIdAndNumber) {
+    this.stageAttemptIdAndNumber = stageAttemptIdAndNumber;
+  }
+
+  public boolean isReassigned() {
+    return isReassigned;
+  }
+
+  public void setReassigned(boolean reassigned) {
+    isReassigned = reassigned;
   }
 }

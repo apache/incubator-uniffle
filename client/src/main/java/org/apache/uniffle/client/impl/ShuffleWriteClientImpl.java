@@ -163,6 +163,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   private boolean sendShuffleDataAsync(
       String appId,
+      int stageAttemptNumber,
       Map<ShuffleServerInfo, Map<Integer, Map<Integer, List<ShuffleBlockInfo>>>> serverToBlocks,
       Map<ShuffleServerInfo, List<Long>> serverToBlockIds,
       Map<Long, AtomicInteger> blockIdsSendSuccessTracker,
@@ -192,7 +193,11 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                       // todo: compact unnecessary blocks that reach replicaWrite
                       RssSendShuffleDataRequest request =
                           new RssSendShuffleDataRequest(
-                              appId, retryMax, retryIntervalMax, shuffleIdToBlocks);
+                              appId,
+                              stageAttemptNumber,
+                              retryMax,
+                              retryIntervalMax,
+                              shuffleIdToBlocks);
                       long s = System.currentTimeMillis();
                       RssSendShuffleDataResponse response =
                           getShuffleServerClient(ssi).sendShuffleData(request);
@@ -314,10 +319,19 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         });
   }
 
+  @Override
+  public SendShuffleDataResult sendShuffleData(
+      String appId,
+      List<ShuffleBlockInfo> shuffleBlockInfoList,
+      Supplier<Boolean> needCancelRequest) {
+    return sendShuffleData(appId, 0, shuffleBlockInfoList, needCancelRequest);
+  }
+
   /** The batch of sending belongs to the same task */
   @Override
   public SendShuffleDataResult sendShuffleData(
       String appId,
+      int stageAttemptNumber,
       List<ShuffleBlockInfo> shuffleBlockInfoList,
       Supplier<Boolean> needCancelRequest) {
 
@@ -400,6 +414,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     boolean isAllSuccess =
         sendShuffleDataAsync(
             appId,
+            stageAttemptNumber,
             primaryServerToBlocks,
             primaryServerToBlockIds,
             blockIdsSendSuccessTracker,
@@ -416,6 +431,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       LOG.info("The sending of primary round is failed partially, so start the secondary round");
       sendShuffleDataAsync(
           appId,
+          stageAttemptNumber,
           secondaryServerToBlocks,
           secondaryServerToBlockIds,
           blockIdsSendSuccessTracker,
@@ -545,7 +561,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage,
       ShuffleDataDistributionType dataDistributionType,
-      int maxConcurrencyPerPartitionToWrite) {
+      int maxConcurrencyPerPartitionToWrite,
+      int stageAttemptNumber) {
     String user = null;
     try {
       user = UserGroupInformation.getCurrentUser().getShortUserName();
@@ -561,7 +578,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             remoteStorage,
             user,
             dataDistributionType,
-            maxConcurrencyPerPartitionToWrite);
+            maxConcurrencyPerPartitionToWrite,
+            stageAttemptNumber);
     RssRegisterShuffleResponse response =
         getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 

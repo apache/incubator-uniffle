@@ -910,7 +910,7 @@ public class ShuffleTaskManager {
   }
 
   @VisibleForTesting
-  void removeShuffleDataSync(String appId, int shuffleId) {
+  public void removeShuffleDataSync(String appId, int shuffleId) {
     removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId));
   }
 

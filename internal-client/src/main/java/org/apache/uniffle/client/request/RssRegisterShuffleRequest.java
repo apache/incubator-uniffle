@@ -35,6 +35,7 @@ public class RssRegisterShuffleRequest {
   private String user;
   private ShuffleDataDistributionType dataDistributionType;
   private int maxConcurrencyPerPartitionToWrite;
+  private int stageAttemptNumber;
 
   public RssRegisterShuffleRequest(
       String appId,
@@ -44,6 +45,26 @@ public class RssRegisterShuffleRequest {
       String user,
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite) {
+    this(
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorageInfo,
+        user,
+        dataDistributionType,
+        maxConcurrencyPerPartitionToWrite,
+        0);
+  }
+
+  public RssRegisterShuffleRequest(
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorageInfo,
+      String user,
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite,
+      int stageAttemptNumber) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionRanges = partitionRanges;
@@ -51,6 +72,7 @@ public class RssRegisterShuffleRequest {
     this.user = user;
     this.dataDistributionType = dataDistributionType;
     this.maxConcurrencyPerPartitionToWrite = maxConcurrencyPerPartitionToWrite;
+    this.stageAttemptNumber = stageAttemptNumber;
   }
 
   public RssRegisterShuffleRequest(
@@ -67,7 +89,8 @@ public class RssRegisterShuffleRequest {
         remoteStorageInfo,
         user,
         dataDistributionType,
-        RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue());
+        RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue(),
+        0);
   }
 
   public RssRegisterShuffleRequest(
@@ -79,7 +102,8 @@ public class RssRegisterShuffleRequest {
         new RemoteStorageInfo(remoteStoragePath),
         StringUtils.EMPTY,
         ShuffleDataDistributionType.NORMAL,
-        RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue());
+        RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue(),
+        0);
   }
 
   public String getAppId() {
@@ -108,5 +132,9 @@ public class RssRegisterShuffleRequest {
 
   public int getMaxConcurrencyPerPartitionToWrite() {
     return maxConcurrencyPerPartitionToWrite;
+  }
+
+  public int getStageAttemptNumber() {
+    return stageAttemptNumber;
   }
 }
