@@ -267,7 +267,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
   }
 
-  // gluten need this method and IOException must be throws here
+  // gluten need this method and IOException must be thrown here.
+  // Implementations of this method can catch any IOException and rethrow a new RssException(e).
   protected void writeImpl(Iterator<Product2<K, V>> records) throws IOException {
     List<ShuffleBlockInfo> shuffleBlockInfos;
     boolean isCombine = shuffleDependency.mapSideCombine();
