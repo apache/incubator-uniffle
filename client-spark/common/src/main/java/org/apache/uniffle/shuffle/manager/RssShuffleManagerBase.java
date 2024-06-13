@@ -728,7 +728,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           (MutableShuffleHandleInfo) ((StageAttemptShuffleHandleInfo) handleInfo).getCurrent();
     }
     if (internalHandle == null) {
-      throw new RssException("Unexpected error of the null of internal handle that should not happen");
+      throw new RssException(
+          "Unexpected error of the null of internal handle that should not happen");
     }
     synchronized (internalHandle) {
       // If the reassignment servers for one partition exceeds the max reassign server num,
