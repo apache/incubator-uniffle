@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
@@ -61,6 +62,10 @@ public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
           delete(fileSystem, path, shuffleServerId);
           isSuccess = true;
         } catch (Exception e) {
+          if (e instanceof FileNotFoundException) {
+            LOG.info("[{}] doesn't exist, maybe it has been deleted.", path);
+            return;
+          }
           times++;
           LOG.warn(
               "Can't delete shuffle data for appId[" + appId + "] with " + times + " times", e);
