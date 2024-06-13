@@ -111,7 +111,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final ShuffleWriteClient shuffleWriteClient;
   private final Set<ShuffleServerInfo> shuffleServersForData;
   private final long[] partitionLengths;
-  // gluten need this variable
+  // Gluten needs this variable
   protected final boolean isMemoryShuffleEnabled;
   private final Function<String, Boolean> taskFailureCallback;
   private final Set<Long> blockIds = Sets.newConcurrentHashSet();
@@ -207,7 +207,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             RssClientConf.RSS_CLIENT_BLOCK_SEND_FAILURE_RETRY_ENABLED.defaultValue());
   }
 
-  // gluten need this constructor
+  // Gluten needs this constructor
   public RssShuffleWriter(
       String appId,
       int shuffleId,
@@ -267,7 +267,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
   }
 
-  // gluten need this method and IOException must be thrown here.
+  // Gluten needs this method and IOException must be thrown here.
   // Implementations of this method can catch any IOException and rethrow a new RssException(e).
   protected void writeImpl(Iterator<Product2<K, V>> records) throws IOException {
     List<ShuffleBlockInfo> shuffleBlockInfos;
@@ -327,7 +327,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             + bufferManager.getManagerCostInfo());
   }
 
-  // gluten need this method
+  // Gluten needs this method
   protected void internalCheckBlockSendResult() {
     this.checkBlockSendResult(this.blockIds);
   }
