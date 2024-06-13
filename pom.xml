@@ -1189,7 +1189,6 @@
             <exclude>licenses-binary/*</exclude>
             <exclude>rust/experimental/server/Cargo.lock</exclude>
             <exclude>rust/experimental/server/src/proto/uniffle.rs</exclude>
-            <exclude>dashboard/src/main/webapp/.eslintignore</exclude>
           </excludes>
         </configuration>
       </plugin>
