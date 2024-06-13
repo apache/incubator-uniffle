@@ -63,7 +63,7 @@ public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
           isSuccess = true;
         } catch (Exception e) {
           if (e instanceof FileNotFoundException) {
-            LOG.info("[{}] doesn't exist, maybe it has been deleted.", path);
+            LOG.info("[{}] doesn't exist, ignore it.", path);
             return;
           }
           times++;
