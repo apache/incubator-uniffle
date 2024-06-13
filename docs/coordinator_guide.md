@@ -181,7 +181,7 @@ AccessQuotaChecker is a checker when the number of concurrent tasks submitted by
 ##### Example cURL
 
 > ```bash
->  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/decommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
+>  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/decommission  -d '{"serverIds": ["127.0.0.1-19999"]}'
 > ```
 </details>
 
@@ -219,7 +219,7 @@ AccessQuotaChecker is a checker when the number of concurrent tasks submitted by
 ##### Example cURL
 
 > ```bash
->  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/cancelDecommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
+>  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/cancelDecommission  -d '{"serverIds": ["127.0.0.1-19999"]}'
 > ```
 </details>
 
