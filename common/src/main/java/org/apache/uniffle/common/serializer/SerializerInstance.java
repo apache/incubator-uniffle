@@ -1,5 +1,6 @@
 package org.apache.uniffle.common.serializer;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -8,7 +9,7 @@ import org.apache.hadoop.io.DataOutputBuffer;
 
 public abstract class SerializerInstance {
 
-  public abstract <T> DataOutputBuffer serialize(T t) throws IOException;
+  public abstract <T> void serialize(T t, DataOutputStream out) throws IOException;
 
   public abstract <T> T deserialize(DataInputBuffer buffer , Class vClass) throws IOException;
 

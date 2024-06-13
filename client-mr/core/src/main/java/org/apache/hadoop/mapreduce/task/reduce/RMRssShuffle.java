@@ -158,7 +158,8 @@ public class RMRssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, Exceptio
     public DataInputBuffer getKey() throws IOException {
       // MapReduce api need to return raw key bytes. But if combine is required, need to real value object.
       // So need to serialized object.
-      DataOutputBuffer buffer = this.keySerializer.serialize(keyValueReader.getCurrentKey());
+      DataOutputBuffer buffer = new DataOutputBuffer();
+      this.keySerializer.serialize(keyValueReader.getCurrentKey(), buffer);
       DataInputBuffer inputBuffer = new DataInputBuffer();
       inputBuffer.reset(buffer.getData(), 0, buffer.getLength());
       return inputBuffer;
@@ -168,7 +169,8 @@ public class RMRssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, Exceptio
     public DataInputBuffer getValue() throws IOException {
       // MapReduce api need to return raw value bytes. But if combine is required, need to real value object.
       // So need to serialized object.
-      DataOutputBuffer buffer = this.valueSerializer.serialize(keyValueReader.getCurrentValue());
+      DataOutputBuffer buffer = new DataOutputBuffer();
+      this.valueSerializer.serialize(keyValueReader.getCurrentValue(), buffer);
       DataInputBuffer inputBuffer = new DataInputBuffer();
       inputBuffer.reset(buffer.getData(), 0, buffer.getLength());
       return inputBuffer;

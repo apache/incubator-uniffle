@@ -17,6 +17,7 @@
 
 package org.apache.hadoop.mapred;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
@@ -28,6 +29,7 @@ import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.hadoop.util.Progress;
+import org.apache.uniffle.common.serializer.SerializerInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,34 +42,51 @@ public class SortWriteBuffer<K, V> extends OutputStream {
   private int dataLength = 0;
   private long sortTime = 0;
   private final RawComparator<K> comparator;
-  private long maxSegmentSize;
-  private int partitionId;
-  private Serializer<K> keySerializer;
-  private Serializer<V> valSerializer;
+  private final long maxSegmentSize;
+  private final int partitionId;
+  private final boolean isRemoteMergeEnable;
+  private final Serializer<K> keySerializer;
+  private final Serializer<V> valSerializer;
+  private final SerializerInstance serializerInstance;
   private int currentOffset = 0;
   private int currentIndex = 0;
+  private DataOutputStream dataOutputStream;
 
   public SortWriteBuffer(
       int partitionId,
       RawComparator<K> comparator,
       long maxSegmentSize,
+      boolean isRemoteMergeEnable,
       Serializer<K> keySerializer,
-      Serializer<V> valueSerializer) {
+      Serializer<V> valueSerializer,
+      SerializerInstance serializerInstance) {
     this.partitionId = partitionId;
     this.comparator = comparator;
     this.maxSegmentSize = maxSegmentSize;
+    this.isRemoteMergeEnable = isRemoteMergeEnable;
     this.keySerializer = keySerializer;
     this.valSerializer = valueSerializer;
+    this.serializerInstance = serializerInstance;
+    if (isRemoteMergeEnable) {
+      this.dataOutputStream = new DataOutputStream(this);
+    }
+
   }
 
   public int addRecord(K key, V value) throws IOException {
-    keySerializer.open(this);
-    valSerializer.open(this);
+    if (!isRemoteMergeEnable) {
+      keySerializer.open(this);
+      valSerializer.open(this);
+    }
     int lastOffSet = currentOffset;
     int lastIndex = currentIndex;
     int lastDataLength = dataLength;
     int keyIndex = lastIndex;
-    keySerializer.serialize(key);
+    if (isRemoteMergeEnable) {
+      serializerInstance.serialize(key, this.dataOutputStream);
+    } else {
+      keySerializer.serialize(key);
+    }
     int keyLength = dataLength - lastDataLength;
     int keyOffset = lastOffSet;
     if (compact(lastIndex, lastOffSet, keyLength)) {
@@ -75,7 +94,11 @@ public class SortWriteBuffer<K, V> extends OutputStream {
       keyIndex = lastIndex;
     }
     lastDataLength = dataLength;
-    valSerializer.serialize(value);
+    if (isRemoteMergeEnable) {
+      serializerInstance.serialize(value, this.dataOutputStream);
+    } else {
+      valSerializer.serialize(value);
+    }
     int valueLength = dataLength - lastDataLength;
     records.add(new Record<K>(keyIndex, keyOffset, keyLength, valueLength));
     return keyLength + valueLength;
@@ -103,21 +126,25 @@ public class SortWriteBuffer<K, V> extends OutputStream {
 
   public synchronized byte[] getData() {
     int extraSize = 0;
-    for (Record<K> record : records) {
-      extraSize += WritableUtils.getVIntSize(record.getKeyLength());
-      extraSize += WritableUtils.getVIntSize(record.getValueLength());
-    }
+    if (!isRemoteMergeEnable) {
+      for (Record<K> record : records) {
+        extraSize += WritableUtils.getVIntSize(record.getKeyLength());
+        extraSize += WritableUtils.getVIntSize(record.getValueLength());
+      }
 
-    extraSize += WritableUtils.getVIntSize(-1);
-    extraSize += WritableUtils.getVIntSize(-1);
+      extraSize += WritableUtils.getVIntSize(-1);
+      extraSize += WritableUtils.getVIntSize(-1);
+    }
     byte[] data = new byte[dataLength + extraSize];
     int offset = 0;
 
     final long startCopy = System.currentTimeMillis();
 
     for (Record<K> record : records) {
-      offset = writeDataInt(data, offset, record.getKeyLength());
-      offset = writeDataInt(data, offset, record.getValueLength());
+      if (!isRemoteMergeEnable) {
+        offset = writeDataInt(data, offset, record.getKeyLength());
+        offset = writeDataInt(data, offset, record.getValueLength());
+      }
       int recordLength = record.getKeyLength() + record.getValueLength();
       int copyOffset = record.getKeyOffSet();
       int copyIndex = record.getKeyIndex();
@@ -135,8 +162,10 @@ public class SortWriteBuffer<K, V> extends OutputStream {
         offset += copyLength;
       }
     }
-    offset = writeDataInt(data, offset, -1);
-    writeDataInt(data, offset, -1);
+    if (!isRemoteMergeEnable) {
+      offset = writeDataInt(data, offset, -1);
+      writeDataInt(data, offset, -1);
+    }
     copyTime += System.currentTimeMillis() - startCopy;
     return data;
   }

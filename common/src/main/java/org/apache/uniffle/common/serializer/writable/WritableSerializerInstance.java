@@ -1,10 +1,9 @@
 package org.apache.uniffle.common.serializer.writable;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
 import org.apache.hadoop.io.DataInputBuffer;
-import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.uniffle.common.config.RssConf;
@@ -18,11 +17,8 @@ public class WritableSerializerInstance extends SerializerInstance {
   public WritableSerializerInstance(RssConf rssConf) {
   }
 
-  @Override
-  public <T> DataOutputBuffer serialize(T t) throws IOException {
-    DataOutputBuffer dataOut = new DataOutputBuffer();
-    ((Writable) t).write(dataOut);
-    return dataOut;
+  public <T> void serialize(T t, DataOutputStream out) throws IOException {
+    ((Writable) t).write(out);
   }
 
   @Override

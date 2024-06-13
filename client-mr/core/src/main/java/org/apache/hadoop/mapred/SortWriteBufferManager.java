@@ -37,8 +37,11 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.hadoop.io.RawComparator;
+import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.hadoop.mapreduce.RssMRUtils;
+import org.apache.uniffle.common.serializer.SerializerFactory;
+import org.apache.uniffle.common.serializer.SerializerInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,8 +76,8 @@ public class SortWriteBufferManager<K, V> {
   private final double sendThreshold;
   private final ReentrantLock memoryLock = new ReentrantLock();
   private final Condition full = memoryLock.newCondition();
-  private final Serializer<K> keySerializer;
-  private final Serializer<V> valSerializer;
+  private Serializer<K> keySerializer;
+  private Serializer<V> valSerializer;
   private final RawComparator<K> comparator;
   private final Set<Long> successBlockIds;
   private final Set<Long> failedBlockIds;
@@ -99,12 +102,16 @@ public class SortWriteBufferManager<K, V> {
   private final Codec codec;
   private final Task.CombinerRunner<K, V> combinerRunner;
 
+  private final boolean isRemoteMergeEnable;
+  private SerializerInstance serializerInstance;
+
   public SortWriteBufferManager(
       long maxMemSize,
       long taskAttemptId,
       int batch,
-      Serializer<K> keySerializer,
-      Serializer<V> valSerializer,
+      Class<K> keyClass,
+      Class<V> valClass,
+      JobConf mrJobConf,
       RawComparator<K> comparator,
       double memoryThreshold,
       String appId,
@@ -124,12 +131,11 @@ public class SortWriteBufferManager<K, V> {
       double sendThreshold,
       long maxBufferSize,
       RssConf rssConf,
-      Task.CombinerRunner<K, V> combinerRunner) {
+      Task.CombinerRunner<K, V> combinerRunner,
+      boolean isRemoteMergeEnable) {
     this.maxMemSize = maxMemSize;
     this.taskAttemptId = taskAttemptId;
     this.batch = batch;
-    this.keySerializer = keySerializer;
-    this.valSerializer = valSerializer;
     this.comparator = comparator;
     this.memoryThreshold = memoryThreshold;
     this.appId = appId;
@@ -151,6 +157,17 @@ public class SortWriteBufferManager<K, V> {
     this.rssConf = rssConf;
     this.codec = Codec.newInstance(rssConf);
     this.combinerRunner = combinerRunner;
+    this.isRemoteMergeEnable = isRemoteMergeEnable;
+    if (isRemoteMergeEnable) {
+      SerializerFactory factory = new SerializerFactory(rssConf);
+      org.apache.uniffle.common.serializer.Serializer serializer = factory.getSerializer(keyClass);
+      this.serializerInstance = serializer.newInstance();
+      assert factory.getSerializer(valClass).getClass().equals(serializer.getClass());
+    } else {
+      SerializationFactory serializationFactory = new SerializationFactory(mrJobConf);
+      this.keySerializer = serializationFactory.getSerializer(keyClass);
+      this.valSerializer = serializationFactory.getSerializer(valClass);
+    }
   }
 
   // todo: Single Buffer should also have its size limit
@@ -175,9 +192,8 @@ public class SortWriteBufferManager<K, V> {
     buffers.computeIfAbsent(
         partitionId,
         k -> {
-          SortWriteBuffer<K, V> sortWriterBuffer =
-              new SortWriteBuffer(
-                  partitionId, comparator, maxSegmentSize, keySerializer, valSerializer);
+          SortWriteBuffer<K, V> sortWriterBuffer = new SortWriteBuffer(partitionId, comparator, maxSegmentSize,
+              isRemoteMergeEnable, keySerializer, valSerializer, serializerInstance);
           waitSendBuffers.add(sortWriterBuffer);
           return sortWriterBuffer;
         });
@@ -238,6 +254,16 @@ public class SortWriteBufferManager<K, V> {
     buffers.remove(buffer.getPartitionId());
     buffer.sort();
     ShuffleBlockInfo block;
+    if (combinerRunner != null) {
+      try {
+        buffer = combineBuffer(buffer);
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Successfully finished combining.");
+        }
+      } catch (Exception e) {
+        LOG.error("Error occurred while combining in Map:", e);
+      }
+    }
     block = createShuffleBlock(buffer);
     buffer.clear();
     shuffleBlocks.add(block);
@@ -261,9 +287,8 @@ public class SortWriteBufferManager<K, V> {
 
     RssCombineOutputCollector<K, V> combineCollector = new RssCombineOutputCollector<>();
 
-    SortWriteBuffer<K, V> newBuffer =
-        new SortWriteBuffer<>(
-            buffer.getPartitionId(), comparator, maxSegmentSize, keySerializer, valSerializer);
+    SortWriteBuffer<K, V> newBuffer = new SortWriteBuffer<>(buffer.getPartitionId(), comparator, maxSegmentSize,
+        isRemoteMergeEnable, keySerializer, valSerializer, serializerInstance);
 
     combineCollector.setWriter(newBuffer);
     combinerRunner.combine(kvIterator, combineCollector);
@@ -373,7 +398,7 @@ public class SortWriteBufferManager<K, V> {
     int partitionId = wb.getPartitionId();
     final int uncompressLength = data.length;
     long start = System.currentTimeMillis();
-    final byte[] compressed = codec.compress(data);
+    final byte[] compressed = isRemoteMergeEnable ? data : codec.compress(data);
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     compressTime += System.currentTimeMillis() - start;
     final long blockId =

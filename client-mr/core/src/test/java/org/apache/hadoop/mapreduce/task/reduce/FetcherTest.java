@@ -351,8 +351,9 @@ public class FetcherTest {
             10240,
             1L,
             10,
-            serializationFactory.getSerializer(Text.class),
-            serializationFactory.getSerializer(Text.class),
+            Text.class,
+            Text.class,
+            jobConf,
             WritableComparator.get(Text.class),
             0.9,
             "test",
@@ -372,7 +373,8 @@ public class FetcherTest {
             0.2f,
             1024000L,
             new RssConf(),
-            null);
+            null,
+            false);
 
     for (String key : keysToValues.keySet()) {
       String value = keysToValues.get(key);

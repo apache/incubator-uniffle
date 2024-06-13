@@ -1,6 +1,8 @@
 package org.apache.uniffle.common.serializer.kryo;
 
 import com.esotericsoftware.kryo.Kryo;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -50,7 +52,7 @@ public class KryoSerializerInstance extends SerializerInstance {
   }
 
   @Override
-  public <T> DataOutputBuffer serialize(T t) {
+  public <T> void serialize(T t, DataOutputStream out) throws IOException {
     throw new RssException("not supportted!");
   }
 

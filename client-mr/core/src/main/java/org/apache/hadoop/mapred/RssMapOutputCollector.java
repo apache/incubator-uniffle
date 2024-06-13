@@ -57,8 +57,6 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
   private Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
   private int partitions;
   private SortWriteBufferManager bufferManager;
-  private boolean isRemoteMergeEnable;
-  private RMSortWriteBufferManager rmBufferManager;
   private ShuffleWriteClient shuffleClient;
   private Task.CombinerRunner<K, V> combinerRunner;
 
@@ -136,7 +134,6 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
 
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = createAssignmentMap(rssJobConf);
 
-    SerializationFactory serializationFactory = new SerializationFactory(mrJobConf);
     long maxSegmentSize =
         RssMRUtils.getLong(
             rssJobConf,
@@ -153,79 +150,39 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
             RssMRConfig.RSS_WRITER_BUFFER_SIZE,
             RssMRConfig.RSS_WRITER_BUFFER_SIZE_DEFAULT_VALUE);
     shuffleClient = RssMRUtils.createShuffleClient(mrJobConf);
-    this.isRemoteMergeEnable = RssMRUtils.getBoolean(
+    boolean isRemoteMergeEnable = RssMRUtils.getBoolean(
         rssJobConf,
         RssMRConfig.RSS_REMOTE_MERGE_ENABLE,
         RssMRConfig.RSS_REMOTE_MERGE_ENABLE_DEFAULT);
-    if (isRemoteMergeEnable) {
-      Class combineClass = mrJobConf.getClass(COMBINE_CLASS_ATTR, null);
-      MRCombiner combiner = null;
-      if (combineClass!= null) {
-        combiner = new MRCombiner(mrJobConf, combineClass);
-      }
-      rmBufferManager =
-          new RMSortWriteBufferManager(
-              (long) (ByteUnit.MiB.toBytes(sortmb) * sortThreshold),
-              taskAttemptId,
-              batch,
-              comparator,
-              combiner,
-              memoryThreshold,
-              appId,
-              shuffleClient,
-              sendCheckInterval,
-              sendCheckTimeout,
-              partitionToServers,
-              successBlockIds,
-              failedBlockIds,
-              reporter.getCounter(TaskCounter.MAP_OUTPUT_BYTES),
-              reporter.getCounter(TaskCounter.MAP_OUTPUT_RECORDS),
-              bitmapSplitNum,
-              numMaps,
-              isMemoryShuffleEnabled(storageType),
-              sendThreadNum,
-              RssMRConfig.toRssConf(rssJobConf),
-              keyClass,
-              valClass,
-              sendThreshold,
-              maxBufferSize,
-              RssMRUtils.getInt(
-                  rssJobConf,
-                  RssMRConfig.RSS_MERGED_WRITE_MAX_RECORDS_PER_BUFFER,
-                  RssMRConfig.RSS_MERGED_WRITE_MAX_RECORDS_PER_BUFFER_DEFAULT),
-              RssMRUtils.getInt(
-                  rssJobConf,
-                  RssMRConfig.RSS_MERGED_WRITE_MAX_RECORDS,
-                  RssMRConfig.RSS_MERGED_WRITE_MAX_RECORDS_DEFAULT));
-    } else {
-      bufferManager =
-          new SortWriteBufferManager(
-              (long) (ByteUnit.MiB.toBytes(sortmb) * sortThreshold),
-              taskAttemptId,
-              batch,
-              serializationFactory.getSerializer(keyClass),
-              serializationFactory.getSerializer(valClass),
-              comparator,
-              memoryThreshold,
-              appId,
-              shuffleClient,
-              sendCheckInterval,
-              sendCheckTimeout,
-              partitionToServers,
-              successBlockIds,
-              failedBlockIds,
-              reporter.getCounter(TaskCounter.MAP_OUTPUT_BYTES),
-              reporter.getCounter(TaskCounter.MAP_OUTPUT_RECORDS),
-              bitmapSplitNum,
-              maxSegmentSize,
-              numMaps,
-              isMemoryShuffleEnabled(storageType),
-              sendThreadNum,
-              sendThreshold,
-              maxBufferSize,
-              RssMRConfig.toRssConf(rssJobConf),
-              combinerRunner);
-    }
+    bufferManager =
+        new SortWriteBufferManager(
+            (long) (ByteUnit.MiB.toBytes(sortmb) * sortThreshold),
+            taskAttemptId,
+            batch,
+            keyClass,
+            valClass,
+            mrJobConf,
+            comparator,
+            memoryThreshold,
+            appId,
+            shuffleClient,
+            sendCheckInterval,
+            sendCheckTimeout,
+            partitionToServers,
+            successBlockIds,
+            failedBlockIds,
+            reporter.getCounter(TaskCounter.MAP_OUTPUT_BYTES),
+            reporter.getCounter(TaskCounter.MAP_OUTPUT_RECORDS),
+            bitmapSplitNum,
+            maxSegmentSize,
+            numMaps,
+            isMemoryShuffleEnabled(storageType),
+            sendThreadNum,
+            sendThreshold,
+            maxBufferSize,
+            RssMRConfig.toRssConf(rssJobConf),
+            combinerRunner,
+            isRemoteMergeEnable);
   }
 
   private Map<Integer, List<ShuffleServerInfo>> createAssignmentMap(Configuration jobConf) {
@@ -264,11 +221,7 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
       throw new IOException("Illegal partition for " + key + " (" + partition + ")");
     }
     checkRssException();
-    if (isRemoteMergeEnable) {
-      rmBufferManager.addRecord(partition, key, value);
-    } else {
-      bufferManager.addRecord(partition, key, value);
-    }
+    bufferManager.addRecord(partition, key, value);
   }
 
   private void checkRssException() {
@@ -280,22 +233,14 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
   @Override
   public void close() throws IOException, InterruptedException {
     reporter.progress();
-    if (isRemoteMergeEnable) {
-      rmBufferManager.freeAllResources();
-    } else {
-      bufferManager.freeAllResources();
-    }
+    bufferManager.freeAllResources();
     shuffleClient.close();
   }
 
   @Override
   public void flush() throws IOException, InterruptedException, ClassNotFoundException {
     reporter.progress();
-    if (isRemoteMergeEnable) {
-      rmBufferManager.waitSendFinished();
-    } else {
-      bufferManager.waitSendFinished();
-    }
+    bufferManager.waitSendFinished();
   }
 
   private boolean isMemoryShuffleEnabled(String storageType) {
