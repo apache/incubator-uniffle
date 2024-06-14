@@ -56,6 +56,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
 import static org.apache.uniffle.common.util.Constants.DRIVER_HOST;
 
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
@@ -189,7 +190,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       resultIter = new InterruptibleIterator<>(context, resultIter);
     }
     // resubmit stage and shuffle manager server port are both set
-    if (rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
+    if (rssConf.getBoolean(RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED)
         && rssConf.getInteger(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT, 0) > 0) {
       String driver = rssConf.getString(DRIVER_HOST, "");
       int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);

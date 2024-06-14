@@ -92,6 +92,7 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES;
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED;
 
 public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
@@ -277,7 +278,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       writeImpl(records);
     } catch (Exception e) {
       taskFailureCallback.apply(taskId);
-      if (shuffleManager.isRssResubmitStage()) {
+      if (RssSparkConfig.toRssConf(sparkConf).get(RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED)) {
         throwFetchFailedIfNecessary(e);
       } else {
         throw e;

@@ -47,7 +47,6 @@ import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -57,6 +56,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.util.Constants;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
 import static org.apache.uniffle.common.util.Constants.DRIVER_HOST;
 
 public class RssSparkShuffleUtils {
@@ -353,7 +353,7 @@ public class RssSparkShuffleUtils {
       int stageAttemptId,
       Set<Integer> failedPartitions) {
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
-    if (rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
+    if (rssConf.getBoolean(RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED)
         && RssSparkShuffleUtils.isStageResubmitSupported()) {
       String driver = rssConf.getString(DRIVER_HOST, "");
       int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);

@@ -18,6 +18,7 @@
 package org.apache.spark.shuffle;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import scala.collection.Seq;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.MapOutputTracker;
 import org.apache.spark.ShuffleDependency;
@@ -64,7 +66,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -84,6 +85,8 @@ import org.apache.uniffle.shuffle.manager.ShuffleManagerServerFactory;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED;
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM;
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED;
 import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;
 import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
 
@@ -179,14 +182,30 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     LOG.info("Disable shuffle data locality in RssShuffleManager.");
     taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
     taskToFailedBlockSendTracker = JavaUtils.newConcurrentMap();
-    this.rssResubmitStage =
-        rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
-            && RssSparkShuffleUtils.isStageResubmitSupported();
-    this.partitionReassignEnabled = rssConf.getBoolean(RssClientConf.RSS_CLIENT_REASSIGN_ENABLED);
+    // stage retry for write/fetch failure
+    rssStageRetryForFetchFailureEnabled =
+        rssConf.get(RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED);
+    rssStageRetryForWriteFailureEnabled =
+        rssConf.get(RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED);
+    if (rssStageRetryForFetchFailureEnabled || rssStageRetryForWriteFailureEnabled) {
+      rssStageRetryEnabled = true;
+      List<String> logTips = new ArrayList<>();
+      if (rssStageRetryForWriteFailureEnabled) {
+        logTips.add("write");
+      }
+      if (rssStageRetryForWriteFailureEnabled) {
+        logTips.add("fetch");
+      }
+      LOG.info(
+          "Activate the stage retry mechanism that will resubmit stage on {} failure",
+          StringUtils.join(logTips, "/"));
+    }
+
+    this.rssStageRetryEnabled = rssConf.getBoolean(RssClientConf.RSS_CLIENT_REASSIGN_ENABLED);
 
     // The feature of partition reassign is exclusive with multiple replicas and stage retry.
     if (partitionReassignEnabled) {
-      if (dataReplica > 1) {
+      if (rssStageRetryEnabled || dataReplica > 1) {
         throw new RssException(
             "The feature of task partition reassign is incompatible with multiple replicas mechanism.");
       }
@@ -194,7 +213,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
     this.blockIdSelfManagedEnabled = rssConf.getBoolean(RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
     this.shuffleManagerRpcServiceEnabled =
-        partitionReassignEnabled || rssResubmitStage || blockIdSelfManagedEnabled;
+        partitionReassignEnabled || rssStageRetryEnabled || blockIdSelfManagedEnabled;
     if (isDriver) {
       heartBeatScheduledExecutorService =
           ThreadUtils.getDaemonSingleThreadScheduledExecutor("rss-heartbeat");
@@ -448,7 +467,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     startHeartbeat();
     shuffleIdToPartitionNum.putIfAbsent(shuffleId, dependency.partitioner().numPartitions());
     shuffleIdToNumMapTasks.putIfAbsent(shuffleId, dependency.rdd().partitions().length);
-    if (shuffleManagerRpcServiceEnabled && rssResubmitStage) {
+    if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
       ShuffleHandleInfo shuffleHandleInfo =
           new MutableShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
       StageAttemptShuffleHandleInfo handleInfo =
@@ -492,7 +511,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       writeMetrics = context.taskMetrics().shuffleWriteMetrics();
     }
     ShuffleHandleInfo shuffleHandleInfo;
-    if (shuffleManagerRpcServiceEnabled && rssResubmitStage) {
+    if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
       // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
       shuffleHandleInfo = getRemoteShuffleHandleInfoWithStageRetry(shuffleId);
     } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
@@ -636,7 +655,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     final int partitionNum = rssShuffleHandle.getDependency().partitioner().numPartitions();
     int shuffleId = rssShuffleHandle.getShuffleId();
     ShuffleHandleInfo shuffleHandleInfo;
-    if (shuffleManagerRpcServiceEnabled && rssResubmitStage) {
+    if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
       // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
       shuffleHandleInfo = getRemoteShuffleHandleInfoWithStageRetry(shuffleId);
     } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
