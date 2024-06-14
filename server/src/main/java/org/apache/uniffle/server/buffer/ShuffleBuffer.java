@@ -52,6 +52,8 @@ public interface ShuffleBuffer {
 
   long getSize();
 
+  boolean isFull();
+
   /** Only for test */
   List<ShufflePartitionedBlock> getBlocks();
 

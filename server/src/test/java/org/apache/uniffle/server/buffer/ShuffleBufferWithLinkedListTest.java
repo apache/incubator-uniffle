@@ -45,7 +45,7 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
 
   @Test
   public void appendTest() {
-    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(100);
+    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(100);
     shuffleBuffer.append(createData(10));
     // ShufflePartitionedBlock has constant 32 bytes overhead
     assertEquals(42, shuffleBuffer.getSize());
@@ -62,7 +62,7 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
 
   @Test
   public void appendMultiBlocksTest() {
-    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(100);
+    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(100);
     ShufflePartitionedData data1 = createData(10);
     ShufflePartitionedData data2 = createData(10);
     ShufflePartitionedBlock[] dataCombine = new ShufflePartitionedBlock[2];
@@ -74,7 +74,7 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
 
   @Test
   public void toFlushEventTest() {
-    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(100);
+    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(100);
     ShuffleDataFlushEvent event = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
     assertNull(event);
     shuffleBuffer.append(createData(10));
@@ -88,7 +88,7 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
   @Test
   public void getShuffleDataWithExpectedTaskIdsFilterTest() {
     /** case1: all blocks in cached(or in flushed map) and size < readBufferSize */
-    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(100);
+    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(100);
     ShufflePartitionedData spd1 = createData(1, 1, 15);
     ShufflePartitionedData spd2 = createData(1, 0, 15);
     ShufflePartitionedData spd3 = createData(1, 2, 55);
@@ -200,7 +200,7 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
 
   @Test
   public void getShuffleDataWithLocalOrderTest() {
-    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(200);
+    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(200);
     ShufflePartitionedData spd1 = createData(1, 1, 15);
     ShufflePartitionedData spd2 = createData(1, 0, 15);
     ShufflePartitionedData spd3 = createData(1, 2, 15);
@@ -238,7 +238,7 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
 
   @Test
   public void getShuffleDataTest() {
-    AbstractShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(200);
+    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList(200);
     // case1: cached data only, blockId = -1, readBufferSize > buffer size
     ShufflePartitionedData spd1 = createData(10);
     ShufflePartitionedData spd2 = createData(20);

@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
-import org.apache.uniffle.server.buffer.AbstractShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.storage.common.Storage;
 
@@ -60,7 +59,7 @@ public class ShuffleDataFlushEvent {
       long size,
       List<ShufflePartitionedBlock> shuffleBlocks,
       Supplier<Boolean> valid,
-      AbstractShuffleBuffer shuffleBuffer) {
+      ShuffleBuffer shuffleBuffer) {
     this.eventId = eventId;
     this.appId = appId;
     this.shuffleId = shuffleId;

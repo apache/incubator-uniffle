@@ -69,6 +69,7 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
     return size;
   }
 
+  @Override
   public boolean isFull() {
     return size > capacity;
   }
