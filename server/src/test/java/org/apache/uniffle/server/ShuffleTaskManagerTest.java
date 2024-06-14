@@ -57,8 +57,8 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.RssUtils;
-import org.apache.uniffle.server.buffer.AbstractShuffleBuffer;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
+import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.storage.LocalStorageManager;
 import org.apache.uniffle.server.storage.StorageManager;
@@ -307,11 +307,11 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
         RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
         StringUtils.EMPTY);
 
-    Map<String, Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>>> bufferPool =
+    Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
         shuffleServer.getShuffleBufferManager().getBufferPool();
 
     assertNotNull(bufferPool.get(appId).get(shuffleId).get(0));
-    AbstractShuffleBuffer buffer = bufferPool.get(appId).get(shuffleId).get(0);
+    ShuffleBuffer buffer = bufferPool.get(appId).get(shuffleId).get(0);
     assertEquals(buffer, bufferPool.get(appId).get(shuffleId).get(1));
     assertNotNull(bufferPool.get(appId).get(shuffleId).get(2));
     assertEquals(
@@ -519,7 +519,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     assertEquals(1, shuffleTaskManager.getAppIds().size());
 
     ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
-    RangeMap<Integer, AbstractShuffleBuffer> rangeMap =
+    RangeMap<Integer, ShuffleBuffer> rangeMap =
         shuffleBufferManager.getBufferPool().get(appId).get(0);
     assertFalse(rangeMap.asMapOfRanges().isEmpty());
     shuffleTaskManager.commitShuffle(appId, 0);

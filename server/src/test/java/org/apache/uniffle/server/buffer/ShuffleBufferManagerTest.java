@@ -102,11 +102,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     sc = shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
     assertEquals(StatusCode.SUCCESS, sc);
 
-    Map<String, Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>>> bufferPool =
+    Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
         shuffleBufferManager.getBufferPool();
 
     assertNotNull(bufferPool.get(appId).get(shuffleId).get(0));
-    AbstractShuffleBuffer buffer = bufferPool.get(appId).get(shuffleId).get(0);
+    ShuffleBuffer buffer = bufferPool.get(appId).get(shuffleId).get(0);
     assertEquals(buffer, bufferPool.get(appId).get(shuffleId).get(1));
     assertNotNull(bufferPool.get(appId).get(shuffleId).get(2));
     assertEquals(
@@ -172,7 +172,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.cacheShuffleData(appId, 2, false, spd3);
     shuffleBufferManager.cacheShuffleData(appId, 3, false, spd4);
     // validate buffer, no flush happened
-    Map<String, Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>>> bufferPool =
+    Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
         shuffleBufferManager.getBufferPool();
     assertEquals(100, bufferPool.get(appId).get(1).get(0).getSize());
     assertEquals(200, bufferPool.get(appId).get(2).get(0).getSize());
@@ -294,9 +294,9 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     sc = shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 16));
     assertEquals(StatusCode.SUCCESS, sc);
 
-    Map<String, Map<Integer, RangeMap<Integer, AbstractShuffleBuffer>>> bufferPool =
+    Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
         shuffleBufferManager.getBufferPool();
-    AbstractShuffleBuffer buffer = bufferPool.get(appId).get(shuffleId).get(0);
+    ShuffleBuffer buffer = bufferPool.get(appId).get(shuffleId).get(0);
     assertEquals(48, buffer.getSize());
     assertEquals(48, shuffleBufferManager.getUsedMemory());
 
@@ -328,9 +328,9 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 200));
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(1, 200));
     shuffleBufferManager.cacheShuffleData(appId, 2, false, createData(0, 32));
-    AbstractShuffleBuffer buffer0 = bufferPool.get(appId).get(shuffleId).get(0);
-    AbstractShuffleBuffer buffer1 = bufferPool.get(appId).get(shuffleId).get(1);
-    AbstractShuffleBuffer buffer2 = bufferPool.get(appId).get(2).get(0);
+    ShuffleBuffer buffer0 = bufferPool.get(appId).get(shuffleId).get(0);
+    ShuffleBuffer buffer1 = bufferPool.get(appId).get(shuffleId).get(1);
+    ShuffleBuffer buffer2 = bufferPool.get(appId).get(2).get(0);
     assertEquals(0, buffer0.getSize());
     assertEquals(0, buffer1.getSize());
     assertEquals(64, buffer2.getSize());

@@ -19,10 +19,8 @@ package org.apache.uniffle.server.buffer;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import io.netty.buffer.CompositeByteBuf;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -33,12 +31,11 @@ import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
-import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 
-public abstract class AbstractShuffleBuffer {
+public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
 
   private static final Logger LOG = LoggerFactory.getLogger(AbstractShuffleBuffer.class);
 
@@ -50,17 +47,8 @@ public abstract class AbstractShuffleBuffer {
     this.size = 0;
   }
 
-  public abstract long append(ShufflePartitionedData data);
-
-  public abstract ShuffleDataFlushEvent toFlushEvent(
-      String appId,
-      int shuffleId,
-      int startPartition,
-      int endPartition,
-      Supplier<Boolean> isValid,
-      ShuffleDataDistributionType dataDistributionType);
-
   /** Only for test */
+  @Override
   public synchronized ShuffleDataFlushEvent toFlushEvent(
       String appId,
       int shuffleId,
@@ -76,10 +64,7 @@ public abstract class AbstractShuffleBuffer {
         ShuffleDataDistributionType.NORMAL);
   }
 
-  public abstract List<ShufflePartitionedBlock> getBlocks();
-
-  public abstract void release();
-
+  @Override
   public long getSize() {
     return size;
   }
@@ -88,11 +73,7 @@ public abstract class AbstractShuffleBuffer {
     return size > capacity;
   }
 
-  public abstract void clearInFlushBuffer(long eventId);
-
-  @VisibleForTesting
-  public abstract Map<Long, List<ShufflePartitionedBlock>> getInFlushBlockMap();
-
+  @Override
   public synchronized ShuffleDataResult getShuffleData(long lastBlockId, int readBufferSize) {
     return getShuffleData(lastBlockId, readBufferSize, null);
   }
@@ -100,6 +81,7 @@ public abstract class AbstractShuffleBuffer {
   // 1. generate buffer segments and other info: if blockId exist, start with which eventId
   // 2. according to info from step 1, generate data
   // todo: if block was flushed, it's possible to get duplicated data
+  @Override
   public synchronized ShuffleDataResult getShuffleData(
       long lastBlockId, int readBufferSize, Roaring64NavigableMap expectedTaskIds) {
     try {

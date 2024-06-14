@@ -67,8 +67,8 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
-import org.apache.uniffle.server.buffer.AbstractShuffleBuffer;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
+import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.event.AppUnregisterPurgeEvent;
@@ -553,7 +553,7 @@ public class ShuffleTaskManager {
       throws IOException {
     refreshAppId(appId);
     for (int partitionId : partitions) {
-      Map.Entry<Range<Integer>, AbstractShuffleBuffer> entry =
+      Map.Entry<Range<Integer>, ShuffleBuffer> entry =
           shuffleBufferManager.getShuffleBufferEntry(appId, shuffleId, partitionId);
       if (entry == null) {
         LOG.error(
