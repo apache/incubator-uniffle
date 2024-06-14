@@ -117,8 +117,9 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     final Set<String> faultyServerIds = new HashSet<>(request.getFaultyServerIdsList());
 
     LOG.info(
-        "Request of getShuffleAssignments for appId[{}], shuffleId[{}], partitionNum[{}], "
-            + " partitionNumPerRange[{}], replica[{}], requiredTags[{}], requiredShuffleServerNumber[{}],faultyServerIds[{}]",
+        "Request of getShuffleAssignments for appId[{}], shuffleId[{}], partitionNum[{}],"
+            + " partitionNumPerRange[{}], replica[{}], requiredTags[{}], requiredShuffleServerNumber[{}],"
+            + " faultyServerIds[{}], stageId[{}], stageAttemptNumber[{}], isReassign[{}]",
         appId,
         shuffleId,
         partitionNum,
@@ -126,7 +127,10 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         replica,
         requiredTags,
         requiredShuffleServerNumber,
-        faultyServerIds.size());
+        faultyServerIds.size(),
+        request.getStageId(),
+        request.getStageAttemptNumber(),
+        request.getReassign());
 
     GetShuffleAssignmentsResponse response;
     try {
