@@ -505,7 +505,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               shuffleId, rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
     }
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
-    LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
     return new RssShuffleWriter<>(
         rssHandle.getAppId(),
         shuffleId,
