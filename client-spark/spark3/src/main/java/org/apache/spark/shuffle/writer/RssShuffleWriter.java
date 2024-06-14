@@ -182,7 +182,11 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       Function<String, Boolean> taskFailureCallback,
       ShuffleHandleInfo shuffleHandleInfo,
       TaskContext context) {
-    LOG.info("RssShuffle start write taskAttemptId[{}] data with RssHandle[appId {}, shuffleId {}].", taskAttemptId, rssHandle.getAppId(), rssHandle.getShuffleId());
+    LOG.info(
+        "RssShuffle start write taskAttemptId[{}] data with RssHandle[appId {}, shuffleId {}].",
+        taskAttemptId,
+        rssHandle.getAppId(),
+        rssHandle.getShuffleId());
     this.shuffleManager = shuffleManager;
     this.appId = appId;
     this.shuffleId = shuffleId;
