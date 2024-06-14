@@ -729,7 +729,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     }
     if (internalHandle == null) {
       throw new RssException(
-          "Unexpected error of the null of internal handle that should not happen");
+          "An unexpected error occurred: internalHandle is null, which should not happen");
     }
     synchronized (internalHandle) {
       // If the reassignment servers for one partition exceeds the max reassign server num,
