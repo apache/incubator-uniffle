@@ -574,7 +574,11 @@ public class SortWriteBufferManagerTest {
         int partitionNumPerRange,
         Set<String> requiredTags,
         int assignmentShuffleServerNumber,
-        int estimateTaskConcurrency) {
+        int estimateTaskConcurrency,
+        Set<String> faultyServerIds,
+        int stageId,
+        int stageAttemptNumber,
+        boolean reassign) {
       return null;
     }
 
