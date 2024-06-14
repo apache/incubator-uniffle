@@ -643,28 +643,11 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int partitionNumPerRange,
       Set<String> requiredTags,
       int assignmentShuffleServerNumber,
-      int estimateTaskConcurrency) {
-    return getShuffleAssignments(
-        appId,
-        shuffleId,
-        partitionNum,
-        partitionNumPerRange,
-        requiredTags,
-        assignmentShuffleServerNumber,
-        estimateTaskConcurrency,
-        Sets.newConcurrentHashSet());
-  }
-
-  @Override
-  public ShuffleAssignmentsInfo getShuffleAssignments(
-      String appId,
-      int shuffleId,
-      int partitionNum,
-      int partitionNumPerRange,
-      Set<String> requiredTags,
-      int assignmentShuffleServerNumber,
       int estimateTaskConcurrency,
-      Set<String> faultyServerIds) {
+      Set<String> faultyServerIds,
+      int stageId,
+      int stageAttemptNumber,
+      boolean reassign) {
     RssGetShuffleAssignmentsRequest request =
         new RssGetShuffleAssignmentsRequest(
             appId,
@@ -675,7 +658,10 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             requiredTags,
             assignmentShuffleServerNumber,
             estimateTaskConcurrency,
-            faultyServerIds);
+            faultyServerIds,
+            stageId,
+            stageAttemptNumber,
+            reassign);
 
     RssGetShuffleAssignmentsResponse response =
         new RssGetShuffleAssignmentsResponse(StatusCode.INTERNAL_ERROR);

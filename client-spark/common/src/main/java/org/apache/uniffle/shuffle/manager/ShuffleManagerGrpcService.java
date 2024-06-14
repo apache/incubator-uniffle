@@ -275,6 +275,8 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
           request.getExecutorId());
       MutableShuffleHandleInfo handle =
           shuffleManager.reassignOnBlockSendFailure(
+              request.getStageId(),
+              request.getStageAttemptNumber(),
               request.getShuffleId(),
               request.getFailurePartitionToServerIdsMap().entrySet().stream()
                   .collect(

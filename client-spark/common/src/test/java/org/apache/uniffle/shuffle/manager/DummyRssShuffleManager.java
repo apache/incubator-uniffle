@@ -77,7 +77,10 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
 
   @Override
   public MutableShuffleHandleInfo reassignOnBlockSendFailure(
-      int shuffleId, Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
+      int stageId,
+      int stageAttemptNumber,
+      int shuffleId,
+      Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
     return null;
   }
 }

@@ -682,7 +682,9 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                 requiredShuffleServerNumber,
                 estimateTaskConcurrency,
                 rssStageResubmitManager.getServerIdBlackList(),
-                stageAttemptNumber);
+                stageId,
+                stageAttemptNumber,
+                false);
         /**
          * we need to clear the metadata of the completed task, otherwise some of the stage's data
          * will be lost
@@ -713,7 +715,10 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   /** this is only valid on driver side that exposed to being invoked by grpc server */
   @Override
   public MutableShuffleHandleInfo reassignOnBlockSendFailure(
-      int shuffleId, Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
+      int stageId,
+      int stageAttemptNumber,
+      int shuffleId,
+      Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
     long startTime = System.currentTimeMillis();
     MutableShuffleHandleInfo handleInfo =
         (MutableShuffleHandleInfo) shuffleHandleInfoManager.get(shuffleId);
@@ -742,7 +747,13 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
             excludedServers.add(serverId);
             replacements =
                 reassignServerForTask(
-                    shuffleId, Sets.newHashSet(partitionId), excludedServers, requiredServerNum);
+                    stageId,
+                    stageAttemptNumber,
+                    shuffleId,
+                    Sets.newHashSet(partitionId),
+                    excludedServers,
+                    requiredServerNum,
+                    true);
           } else {
             serverHasReplaced = true;
           }
@@ -805,10 +816,13 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
 
   /** Request the new shuffle-servers to replace faulty server. */
   private Set<ShuffleServerInfo> reassignServerForTask(
+      int stageId,
+      int stageAttemptNumber,
       int shuffleId,
       Set<Integer> partitionIds,
       Set<String> excludedServers,
-      int requiredServerNum) {
+      int requiredServerNum,
+      boolean reassign) {
     AtomicReference<Set<ShuffleServerInfo>> replacementsRef =
         new AtomicReference<>(new HashSet<>());
     requestShuffleAssignment(
@@ -828,7 +842,10 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                   .collect(Collectors.toSet());
           replacementsRef.set(replacements);
           return createShuffleAssignmentsInfo(replacements, partitionIds);
-        });
+        },
+        stageId,
+        stageAttemptNumber,
+        reassign);
     return replacementsRef.get();
   }
 
@@ -839,7 +856,10 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
       int assignmentShuffleServerNumber,
       int estimateTaskConcurrency,
       Set<String> faultyServerIds,
-      Function<ShuffleAssignmentsInfo, ShuffleAssignmentsInfo> reassignmentHandler) {
+      Function<ShuffleAssignmentsInfo, ShuffleAssignmentsInfo> reassignmentHandler,
+      int stageId,
+      int stageAttemptNumber,
+      boolean reassign) {
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
     ClientUtils.validateClientType(clientType);
     assignmentTags.add(clientType);
@@ -858,7 +878,10 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                     assignmentTags,
                     assignmentShuffleServerNumber,
                     estimateTaskConcurrency,
-                    faultyServerIds);
+                    faultyServerIds,
+                    stageId,
+                    stageAttemptNumber,
+                    reassign);
             LOG.info("Finished reassign");
             if (reassignmentHandler != null) {
               response = reassignmentHandler.apply(response);
@@ -881,7 +904,9 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
       int assignmentShuffleServerNumber,
       int estimateTaskConcurrency,
       Set<String> faultyServerIds,
-      int stageAttemptNumber) {
+      int stageId,
+      int stageAttemptNumber,
+      boolean reassign) {
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
     ClientUtils.validateClientType(clientType);
     assignmentTags.add(clientType);
@@ -901,7 +926,10 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                     assignmentTags,
                     assignmentShuffleServerNumber,
                     estimateTaskConcurrency,
-                    faultyServerIds);
+                    faultyServerIds,
+                    stageId,
+                    stageAttemptNumber,
+                    reassign);
             registerShuffleServers(
                 appId,
                 shuffleId,
@@ -915,6 +943,26 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     } catch (Throwable throwable) {
       throw new RssException("registerShuffle failed!", throwable);
     }
+  }
+
+  protected Map<Integer, List<ShuffleServerInfo>> requestShuffleAssignment(
+      int shuffleId,
+      int partitionNum,
+      int partitionNumPerRange,
+      int assignmentShuffleServerNumber,
+      int estimateTaskConcurrency,
+      Set<String> faultyServerIds,
+      int stageAttemptNumber) {
+    return requestShuffleAssignment(
+        shuffleId,
+        partitionNum,
+        partitionNumPerRange,
+        assignmentShuffleServerNumber,
+        estimateTaskConcurrency,
+        faultyServerIds,
+        -1,
+        stageAttemptNumber,
+        false);
   }
 
   protected void registerShuffleServers(

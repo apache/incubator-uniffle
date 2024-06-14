@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.client.api;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -99,6 +100,19 @@ public interface ShuffleWriteClient {
       long taskAttemptId,
       int bitmapNum);
 
+  ShuffleAssignmentsInfo getShuffleAssignments(
+      String appId,
+      int shuffleId,
+      int partitionNum,
+      int partitionNumPerRange,
+      Set<String> requiredTags,
+      int assignmentShuffleServerNumber,
+      int estimateTaskConcurrency,
+      Set<String> faultyServerIds,
+      int stageId,
+      int stageAttemptNumber,
+      boolean reassign);
+
   default ShuffleAssignmentsInfo getShuffleAssignments(
       String appId,
       int shuffleId,
@@ -108,19 +122,38 @@ public interface ShuffleWriteClient {
       int assignmentShuffleServerNumber,
       int estimateTaskConcurrency,
       Set<String> faultyServerIds) {
-    throw new UnsupportedOperationException(
-        this.getClass().getName()
-            + " doesn't implement getShuffleAssignments with faultyServerIds");
+    return getShuffleAssignments(
+        appId,
+        shuffleId,
+        partitionNum,
+        partitionNumPerRange,
+        requiredTags,
+        assignmentShuffleServerNumber,
+        estimateTaskConcurrency,
+        faultyServerIds,
+        -1,
+        0,
+        false);
   }
 
-  ShuffleAssignmentsInfo getShuffleAssignments(
+  default ShuffleAssignmentsInfo getShuffleAssignments(
       String appId,
       int shuffleId,
       int partitionNum,
       int partitionNumPerRange,
       Set<String> requiredTags,
       int assignmentShuffleServerNumber,
-      int estimateTaskConcurrency);
+      int estimateTaskConcurrency) {
+    return getShuffleAssignments(
+        appId,
+        shuffleId,
+        partitionNum,
+        partitionNumPerRange,
+        requiredTags,
+        assignmentShuffleServerNumber,
+        estimateTaskConcurrency,
+        Collections.emptySet());
+  }
 
   Roaring64NavigableMap getShuffleResult(
       String clientType,
