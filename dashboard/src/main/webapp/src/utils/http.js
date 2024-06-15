@@ -15,40 +15,39 @@
  * limitations under the License.
  */
 
-import request from "@/utils/request";
-import {useCurrentServerStore} from '@/store/useCurrentServerStore'
-
+import request from '@/utils/request'
+import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 const http = {
-    get(url, params, headers, fontBackFlag) {
-        if (fontBackFlag == 0) {
-            // The system obtains the address of the Coordinator to be accessed from global variables.
-            const currentServerStore= useCurrentServerStore()
-            if (typeof headers !== 'undefined') {
-                headers['targetAddress'] = currentServerStore.currentServer;
-            } else {
-                headers = {}
-                headers['targetAddress'] = currentServerStore.currentServer;
-            }
-            return request.getBackEndAxiosInstance().get(url,{params,headers});
-        } else {
-            return request.getFrontEndAxiosInstance().get(url,{params,headers});
-        }
-    },
-    post(url, data, headers, fontBackFlag) {
-        if (fontBackFlag == 0) {
-            // The system obtains the address of the Coordinator to be accessed from global variables.
-            const currentServerStore= useCurrentServerStore()
-            if (typeof headers !== 'undefined') {
-                headers['targetAddress'] = currentServerStore.currentServer;
-            } else {
-                headers = {}
-                headers['targetAddress'] = currentServerStore.currentServer;
-            }
-            return request.getBackEndAxiosInstance().post(url,data,headers);
-        } else {
-            return request.getFrontEndAxiosInstance().post(url,data,headers);
-        }
+  get(url, params, headers, fontBackFlag) {
+    if (fontBackFlag === 0) {
+      // The system obtains the address of the Coordinator to be accessed from global variables.
+      const currentServerStore = useCurrentServerStore()
+      if (typeof headers !== 'undefined') {
+        headers.targetAddress = currentServerStore.currentServer
+      } else {
+        headers = {}
+        headers.targetAddress = currentServerStore.currentServer
+      }
+      return request.getBackEndAxiosInstance().get(url, { params, headers })
+    } else {
+      return request.getFrontEndAxiosInstance().get(url, { params, headers })
     }
+  },
+  post(url, data, headers, fontBackFlag) {
+    if (fontBackFlag === 0) {
+      // The system obtains the address of the Coordinator to be accessed from global variables.
+      const currentServerStore = useCurrentServerStore()
+      if (typeof headers !== 'undefined') {
+        headers.targetAddress = currentServerStore.currentServer
+      } else {
+        headers = {}
+        headers.targetAddress = currentServerStore.currentServer
+      }
+      return request.getBackEndAxiosInstance().post(url, data, headers)
+    } else {
+      return request.getFrontEndAxiosInstance().post(url, data, headers)
+    }
+  }
 }
 export default http

@@ -39,10 +39,11 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
 import org.apache.uniffle.common.Application;
 import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.common.web.resource.BaseResource;
+import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.ClusterManager;
 import org.apache.uniffle.coordinator.ServerNode;
-import org.apache.uniffle.coordinator.web.Response;
 import org.apache.uniffle.coordinator.web.request.ApplicationRequest;
 import org.apache.uniffle.coordinator.web.request.CancelDecommissionRequest;
 import org.apache.uniffle.coordinator.web.request.DecommissionRequest;

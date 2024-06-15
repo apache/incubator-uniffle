@@ -18,46 +18,46 @@
 <template>
   <div>
     <el-table :data="pageData.tableData" height="550" style="width: 100%">
-      <el-table-column prop="id" label="ExcludeNodeId" min-width="180"/>
+      <el-table-column prop="id" label="ExcludeNodeId" min-width="180" />
     </el-table>
   </div>
 </template>
 <script>
-import {onMounted, reactive} from 'vue'
-import { getShuffleExcludeNodes } from "@/api/api";
-import {useCurrentServerStore} from '@/store/useCurrentServerStore'
+import { onMounted, reactive } from 'vue'
+import { getShuffleExcludeNodes } from '@/api/api'
+import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
     const pageData = reactive({
       tableData: [
         {
-          id:""
+          id: ''
         }
       ]
     })
-    const currentServerStore= useCurrentServerStore()
+    const currentServerStore = useCurrentServerStore()
 
     async function getShuffleExcludeNodesPage() {
-      const res = await getShuffleExcludeNodes();
+      const res = await getShuffleExcludeNodes()
       pageData.tableData = res.data.data
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
-    currentServerStore.$subscribe((mutable,state)=>{
+    currentServerStore.$subscribe((mutable, state) => {
       if (state.currentServer) {
-        getShuffleExcludeNodesPage();
+        getShuffleExcludeNodesPage()
       }
     })
 
     onMounted(() => {
       // If the coordinator address to request is not found in the global variable, the request is not initiated.
       if (currentServerStore.currentServer) {
-        getShuffleExcludeNodesPage();
+        getShuffleExcludeNodesPage()
       }
     })
 
-    return {pageData}
+    return { pageData }
   }
 }
 </script>

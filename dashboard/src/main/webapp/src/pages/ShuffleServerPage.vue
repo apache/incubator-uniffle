@@ -38,7 +38,9 @@
                 <span class="cardtile">Decommissioning</span>
               </div>
             </template>
-            <div class="decommissioningnode">{{ dataList.allshuffleServerSize.DECOMMISSIONING ?? 0 }}</div>
+            <div class="decommissioningnode">
+              {{ dataList.allshuffleServerSize.DECOMMISSIONING ?? 0 }}
+            </div>
           </el-card>
         </router-link>
       </el-col>
@@ -50,7 +52,9 @@
                 <span class="cardtile">Decommissioned</span>
               </div>
             </template>
-            <div class="decommissionednode">{{ dataList.allshuffleServerSize.DECOMMISSIONED ?? 0 }}</div>
+            <div class="decommissionednode">
+              {{ dataList.allshuffleServerSize.DECOMMISSIONED ?? 0 }}
+            </div>
           </el-card>
         </router-link>
       </el-col>
@@ -91,7 +95,7 @@
         </router-link>
       </el-col>
     </el-row>
-    <el-divider/>
+    <el-divider />
     <el-row :gutter="24">
       <div style="width: 100%">
         <router-view></router-view>
@@ -101,9 +105,9 @@
 </template>
 
 <script>
-import {onMounted, reactive} from 'vue'
-import {getShufflegetStatusTotal} from "@/api/api"
-import {useCurrentServerStore} from '@/store/useCurrentServerStore'
+import { onMounted, reactive } from 'vue'
+import { getShufflegetStatusTotal } from '@/api/api'
+import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
@@ -117,27 +121,27 @@ export default {
         UNHEALTHY: 0
       }
     })
-    const currentServerStore= useCurrentServerStore()
+    const currentServerStore = useCurrentServerStore()
 
     async function getShufflegetStatusTotalPage() {
-      const res = await getShufflegetStatusTotal();
+      const res = await getShufflegetStatusTotal()
       dataList.allshuffleServerSize = res.data.data
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
-    currentServerStore.$subscribe((mutable,state)=>{
+    currentServerStore.$subscribe((mutable, state) => {
       if (state.currentServer) {
-        getShufflegetStatusTotalPage();
+        getShufflegetStatusTotalPage()
       }
     })
 
     onMounted(() => {
       // If the coordinator address to request is not found in the global variable, the request is not initiated.
       if (currentServerStore.currentServer) {
-        getShufflegetStatusTotalPage();
+        getShufflegetStatusTotalPage()
       }
     })
-    return {dataList}
+    return { dataList }
   }
 }
 </script>
@@ -148,7 +152,7 @@ export default {
 }
 
 .activenode {
-  font-family: "Lantinghei SC";
+  font-family: 'Lantinghei SC';
   font-style: normal;
   font-weight: bolder;
   font-size: 30px;
@@ -157,7 +161,7 @@ export default {
 }
 
 .decommissioningnode {
-  font-family: "Lantinghei SC";
+  font-family: 'Lantinghei SC';
   font-style: normal;
   font-weight: bolder;
   font-size: 30px;
@@ -166,7 +170,7 @@ export default {
 }
 
 .decommissionednode {
-  font-family: "Lantinghei SC";
+  font-family: 'Lantinghei SC';
   font-style: normal;
   font-weight: bolder;
   font-size: 30px;
@@ -175,7 +179,7 @@ export default {
 }
 
 .lostnode {
-  font-family: "Lantinghei SC";
+  font-family: 'Lantinghei SC';
   font-style: normal;
   font-weight: bolder;
   font-size: 30px;
@@ -184,7 +188,7 @@ export default {
 }
 
 .unhealthynode {
-  font-family: "Lantinghei SC";
+  font-family: 'Lantinghei SC';
   font-style: normal;
   font-weight: bolder;
   font-size: 30px;
@@ -193,7 +197,7 @@ export default {
 }
 
 .excludesnode {
-  font-family: "Lantinghei SC";
+  font-family: 'Lantinghei SC';
   font-style: normal;
   font-weight: bolder;
   font-size: 30px;

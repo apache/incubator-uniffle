@@ -22,17 +22,18 @@
         <el-row>
           <el-col :span="24">
             <el-menu
-                :default-active="activeIndex1"
-                router
-                class="el-menu-demo"
-                mode="horizontal"
-                background-color="#20B2AA"
-                box-shadow="0 -2px 8px 0 rgba(0,0,0,0.12)"
-                text-color="#fff"
-                active-text-color="#ffd04b">
+              :default-active="activeIndex1"
+              router
+              class="el-menu-demo"
+              mode="horizontal"
+              background-color="#20B2AA"
+              box-shadow="0 -2px 8px 0 rgba(0,0,0,0.12)"
+              text-color="#fff"
+              active-text-color="#ffd04b"
+            >
               <el-menu-item index="0">
                 <div class="unffilelogo">
-                  <img src="../assets/uniffle-logo.png" alt="unffile">
+                  <img src="../assets/uniffle-logo.png" alt="unffile" />
                 </div>
               </el-menu-item>
               <el-menu-item index="/coordinatorserverpage">
@@ -50,10 +51,11 @@
               <el-sub-menu index="">
                 <template #title>Switching server</template>
                 <el-menu-item
-                    v-for="item in hostNameAndPorts"
-                    :key="item.label"
-                    index="/nullpage"
-                    @click="changeServer(item.label)">
+                  v-for="item in hostNameAndPorts"
+                  :key="item.label"
+                  index="/nullpage"
+                  @click="changeServer(item.label)"
+                >
                   <span>{{ item.label }}</span>
                 </el-menu-item>
               </el-sub-menu>
@@ -75,9 +77,9 @@
 </template>
 
 <script>
-import {ref, reactive, onMounted} from 'vue'
-import {getAllCoordinatorAddrees} from '@/api/api'
-import {useCurrentServerStore} from '@/store/useCurrentServerStore'
+import { ref, reactive, onMounted } from 'vue'
+import { getAllCoordinatorAddrees } from '@/api/api'
+import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
@@ -96,11 +98,11 @@ export default {
 
     async function getSelectCurrentServer() {
       const res = await getAllCoordinatorAddrees()
-      const  selectCurrentServer = res.data.data
+      const selectCurrentServer = res.data.data
       currentServerStore.currentServer = Object.keys(selectCurrentServer)[0]
       hostNameAndPorts.length = 0
       Object.entries(selectCurrentServer).forEach(([key, value]) => {
-        hostNameAndPorts.push({"value": value, "label": key})
+        hostNameAndPorts.push({ value: value, label: key })
       })
     }
 
@@ -112,7 +114,7 @@ export default {
       activeIndex1,
       currentServerStore,
       hostNameAndPorts,
-      changeServer,
+      changeServer
     }
   }
 }
@@ -125,7 +127,7 @@ a {
 }
 
 .unffilelogo {
-  background-color: #20B2AA;
+  background-color: #20b2aa;
   height: 100%;
   position: relative;
 }
@@ -135,7 +137,7 @@ a {
 }
 
 .currentserver {
-  font-family: "Andale Mono";
+  font-family: 'Andale Mono';
   font-size: smaller;
   color: yellow;
 }

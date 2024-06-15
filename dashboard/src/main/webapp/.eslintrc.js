@@ -15,18 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.web.resource;
-
-import java.util.concurrent.Callable;
-
-import org.apache.uniffle.coordinator.web.Response;
-
-public abstract class BaseResource {
-  protected <T> Response<T> execute(Callable<T> callable) {
-    try {
-      return Response.success(callable.call());
-    } catch (Throwable e) {
-      return Response.fail(e.getMessage());
-    }
+module.exports = {
+  env: {
+    browser: true,
+    commonjs: true,
+    es2021: true,
+    node: true
+  },
+  extends: ['plugin:vue/essential', 'standard', '@vue/prettier'],
+  parserOptions: {
+    ecmaVersion: 13
+  },
+  plugins: ['vue'],
+  rules: {
+    quotes: [2, 'single']
   }
 }
