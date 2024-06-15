@@ -251,7 +251,7 @@ func generateStorageBasePath(rss *unifflev1alpha1.RemoteShuffleService) string {
 	}
 
 	for _, vm := range rss.Spec.ShuffleServer.VolumeMounts {
-		paths = append(paths, strings.TrimSuffix(vm.MountPath, "/"+"rssdata"))
+		paths = append(paths, strings.TrimSuffix(vm.MountPath, "/")+"/"+controllerconstants.RssDataDir)
 	}
 
 	sort.Strings(paths)
