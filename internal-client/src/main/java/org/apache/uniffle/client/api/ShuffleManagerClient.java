@@ -62,7 +62,7 @@ public interface ShuffleManagerClient extends Closeable {
   RssReportShuffleWriteFailureResponse reportShuffleWriteFailure(
       RssReportShuffleWriteFailureRequest req);
 
-  RssReassignServersResponse reassignShuffleServers(RssReassignServersRequest req);
+  RssReassignServersResponse reassignOnStageResubmit(RssReassignServersRequest req);
 
   RssReassignOnBlockSendFailureResponse reassignOnBlockSendFailure(
       RssReassignOnBlockSendFailureRequest request);

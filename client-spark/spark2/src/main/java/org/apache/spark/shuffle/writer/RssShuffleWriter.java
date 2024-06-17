@@ -559,7 +559,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                   shuffleId,
                   partitioner.numPartitions());
           RssReassignServersResponse rssReassignServersResponse =
-              shuffleManagerClient.reassignShuffleServers(rssReassignServersRequest);
+              shuffleManagerClient.reassignOnStageResubmit(rssReassignServersRequest);
           LOG.info(
               "Whether the reassignment is successful: {}",
               rssReassignServersResponse.isNeedReassign());

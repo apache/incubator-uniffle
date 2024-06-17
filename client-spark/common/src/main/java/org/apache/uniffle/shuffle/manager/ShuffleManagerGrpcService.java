@@ -237,7 +237,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
   }
 
   @Override
-  public void reassignShuffleServers(
+  public void reassignOnStageResubmit(
       RssProtos.ReassignServersRequest request,
       StreamObserver<RssProtos.ReassignServersResponse> responseObserver) {
     int stageId = request.getStageId();

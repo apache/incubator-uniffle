@@ -127,10 +127,10 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
   }
 
   @Override
-  public RssReassignServersResponse reassignShuffleServers(RssReassignServersRequest req) {
+  public RssReassignServersResponse reassignOnStageResubmit(RssReassignServersRequest req) {
     RssProtos.ReassignServersRequest reassignServersRequest = req.toProto();
     RssProtos.ReassignServersResponse reassignServersResponse =
-        getBlockingStub().reassignShuffleServers(reassignServersRequest);
+        getBlockingStub().reassignOnStageResubmit(reassignServersRequest);
     return RssReassignServersResponse.fromProto(reassignServersResponse);
   }
 
