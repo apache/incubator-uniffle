@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.AbstractByteBufAllocator;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -73,7 +73,7 @@ public class TransportClientFactory implements Closeable {
 
   private final Class<? extends Channel> socketChannelClass;
   private EventLoopGroup workerGroup;
-  private AbstractByteBufAllocator byteBufAllocator;
+  private ByteBufAllocator byteBufAllocator;
 
   public TransportClientFactory(TransportContext context) {
     this.context = Objects.requireNonNull(context);
@@ -85,11 +85,27 @@ public class TransportClientFactory implements Closeable {
     IOMode ioMode = conf.ioMode();
     this.socketChannelClass = NettyUtils.getClientChannelClass(ioMode);
     this.workerGroup = NettyUtils.createEventLoop(ioMode, conf.clientThreads(), "netty-rpc-client");
-    this.byteBufAllocator =
-        conf.isPooledAllocatorEnabled()
-            ? NettyUtils.createPooledByteBufAllocator(
-                conf.preferDirectBufs(), false, conf.clientThreads())
-            : NettyUtils.createUnpooledByteBufAllocator(conf.preferDirectBufs());
+    if (conf.isSharedAllocatorEnabled()) {
+      this.byteBufAllocator =
+          conf.isPooledAllocatorEnabled()
+              ? NettyUtils.getSharedPooledByteBufAllocator(
+                  conf.preferDirectBufs(), false, conf.clientThreads())
+              : NettyUtils.getSharedUnpooledByteBufAllocator(conf.preferDirectBufs());
+    } else {
+      this.byteBufAllocator =
+          conf.isPooledAllocatorEnabled()
+              ? NettyUtils.createPooledByteBufAllocator(
+                  conf.preferDirectBufs(), false, conf.clientThreads())
+              : NettyUtils.createUnpooledByteBufAllocator(conf.preferDirectBufs());
+    }
+    if (logger.isDebugEnabled()) {
+      logger.debug(
+          "isPooledAllocatorEnabled={}, isSharedAllocatorEnabled={}, preferDirectBufs={}, byteBufAllocator={}",
+          conf.isPooledAllocatorEnabled(),
+          conf.isSharedAllocatorEnabled(),
+          conf.preferDirectBufs(),
+          byteBufAllocator);
+    }
   }
 
   public TransportClient createClient(String remoteHost, int remotePort, int partitionId)

@@ -57,6 +57,10 @@ public class TransportConf {
     return rssConf.get(RssClientConf.NETTY_CLIENT_POOLED_ALLOCATOR_ENABLED);
   }
 
+  public boolean isSharedAllocatorEnabled() {
+    return rssConf.get(RssClientConf.NETTY_CLIENT_SHARED_ALLOCATOR_ENABLED);
+  }
+
   public int receiveBuf() {
     return rssConf.get(RssClientConf.NETTY_CLIENT_RECEIVE_BUFFER);
   }

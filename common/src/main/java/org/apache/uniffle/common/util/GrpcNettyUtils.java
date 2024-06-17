@@ -35,9 +35,7 @@ public class GrpcNettyUtils {
       int maxOrder,
       int smallCacheSize,
       int normalCacheSize) {
-    if (numCores == 0) {
-      numCores = Runtime.getRuntime().availableProcessors();
-    }
+    numCores = NettyUtils.defaultNumThreads(numCores);
     if (pageSize == 0) {
       pageSize = PooledByteBufAllocator.defaultPageSize();
     }

@@ -155,9 +155,9 @@ public class StreamServer implements ServerInterface {
             })
         .option(ChannelOption.SO_BACKLOG, backlogSize)
         .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMillis)
-        .option(ChannelOption.ALLOCATOR, NettyUtils.getNettyBufferAllocator())
+        .option(ChannelOption.ALLOCATOR, NettyUtils.getSharedUnpooledByteBufAllocator(true))
         .childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMillis)
-        .childOption(ChannelOption.ALLOCATOR, NettyUtils.getNettyBufferAllocator())
+        .childOption(ChannelOption.ALLOCATOR, NettyUtils.getSharedUnpooledByteBufAllocator(true))
         .childOption(ChannelOption.TCP_NODELAY, true)
         .childOption(ChannelOption.SO_KEEPALIVE, true);
 
