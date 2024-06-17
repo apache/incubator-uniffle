@@ -33,6 +33,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.apache.spark.TaskContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.deploy.SparkHadoopUtil;
 import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
@@ -44,7 +45,9 @@ import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
+import org.apache.uniffle.client.request.RssReassignServersRequest;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
+import org.apache.uniffle.client.response.RssReassignServersResponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ClientType;
@@ -371,6 +374,19 @@ public class RssSparkShuffleUtils {
                   rssFetchFailedException.getMessage());
           RssReportShuffleFetchFailureResponse response = client.reportShuffleFetchFailure(req);
           if (response.getReSubmitWholeStage()) {
+            TaskContext taskContext = TaskContext.get();
+            RssReassignServersRequest rssReassignServersRequest =
+                new RssReassignServersRequest(
+                    taskContext.stageId(),
+                    taskContext.stageAttemptNumber(),
+                    shuffleId,
+                    taskContext.numPartitions());
+            RssReassignServersResponse reassignServersResponse =
+                client.reassignShuffleServers(rssReassignServersRequest);
+            LOG.info(
+                "Reassign servers for stage retry due to the fetch failure, result: {}",
+                reassignServersResponse.isNeedReassign());
+
             // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
             // is provided.
             FetchFailedException ffe =
