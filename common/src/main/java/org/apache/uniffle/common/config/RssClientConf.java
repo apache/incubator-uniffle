@@ -177,7 +177,7 @@ public class RssClientConf {
           .withDescription(
               "A flag indicating whether to share the ByteBuf allocators between the different Netty channels when enabling Netty. "
                   + "If enabled then only three ByteBuf allocators are created: "
-                  + "one PooledByteBufAllocator where caching is allowed, one PooledByteBufAllocator where not and one UnpooledByteBufAllocator "
+                  + "one PooledByteBufAllocator where caching is allowed, one PooledByteBufAllocator where not and one UnpooledByteBufAllocator. "
                   + "When disabled, a new allocator is created for each transport client.");
 
   public static final ConfigOption<Integer> NETTY_CLIENT_NUM_CONNECTIONS_PER_PEER =
