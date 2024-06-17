@@ -57,6 +57,7 @@ public class ShuffleBufferManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleBufferManager.class);
 
+  private final ShuffleBufferType shuffleBufferType;
   private ShuffleTaskManager shuffleTaskManager;
   private final ShuffleFlushManager shuffleFlushManager;
   private long capacity;
@@ -137,6 +138,7 @@ public class ShuffleBufferManager {
             capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO));
     appBlockSizeMetricEnabled =
         conf.getBoolean(ShuffleServerConf.APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_ENABLED);
+    shuffleBufferType = conf.get(ShuffleServerConf.SERVER_SHUFFLE_BUFFER_TYPE);
   }
 
   public void setShuffleTaskManager(ShuffleTaskManager taskManager) {
@@ -152,7 +154,13 @@ public class ShuffleBufferManager {
     if (bufferRangeMap.get(startPartition) == null) {
       ShuffleServerMetrics.counterTotalPartitionNum.inc();
       ShuffleServerMetrics.gaugeTotalPartitionNum.inc();
-      bufferRangeMap.put(Range.closed(startPartition, endPartition), new ShuffleBuffer(bufferSize));
+      ShuffleBuffer shuffleBuffer;
+      if (shuffleBufferType == ShuffleBufferType.SKIP_LIST) {
+        shuffleBuffer = new ShuffleBufferWithSkipList(bufferSize);
+      } else {
+        shuffleBuffer = new ShuffleBufferWithLinkedList(bufferSize);
+      }
+      bufferRangeMap.put(Range.closed(startPartition, endPartition), shuffleBuffer);
     } else {
       LOG.warn(
           "Already register for appId["
@@ -282,7 +290,6 @@ public class ShuffleBufferManager {
             buffer.getBlocks().size());
       }
       flushBuffer(buffer, appId, shuffleId, startPartition, endPartition, isHugePartition);
-      return;
     }
   }
 
@@ -712,7 +719,7 @@ public class ShuffleBufferManager {
       Collection<ShuffleBuffer> buffers = bufferRangeMap.asMapOfRanges().values();
       if (buffers != null) {
         for (ShuffleBuffer buffer : buffers) {
-          buffer.getBlocks().forEach(spb -> spb.getData().release());
+          buffer.release();
           ShuffleServerMetrics.gaugeTotalPartitionNum.dec();
           size += buffer.getSize();
         }

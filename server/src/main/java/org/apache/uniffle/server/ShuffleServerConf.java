@@ -25,6 +25,7 @@ import org.apache.uniffle.common.config.ConfigOption;
 import org.apache.uniffle.common.config.ConfigOptions;
 import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.server.buffer.ShuffleBufferType;
 
 public class ShuffleServerConf extends RssBaseConf {
 
@@ -433,6 +434,18 @@ public class ShuffleServerConf extends RssBaseConf {
           .withDescription(
               "The interval of trigger shuffle buffer manager to flush data to persistent storage. If <= 0"
                   + ", then this flush check would be disabled.");
+
+  public static final ConfigOption<ShuffleBufferType> SERVER_SHUFFLE_BUFFER_TYPE =
+      ConfigOptions.key("rss.server.shuffleBuffer.type")
+          .enumType(ShuffleBufferType.class)
+          .defaultValue(ShuffleBufferType.LINKED_LIST)
+          .withDescription(
+              "The type for shuffle buffers. Setting as LINKED_LIST or SKIP_LIST."
+                  + " The default value is LINKED_LIST. SKIP_LIST will help to improve"
+                  + " the performance when there are a large number of blocks in memory"
+                  + " or when the memory occupied by the blocks is very large."
+                  + " The cpu usage of the shuffle server will be reduced."
+                  + " But SKIP_LIST doesn't support the slow-start feature of MR.");
 
   public static final ConfigOption<Long> SERVER_SHUFFLE_FLUSH_THRESHOLD =
       ConfigOptions.key("rss.server.shuffle.flush.threshold")
