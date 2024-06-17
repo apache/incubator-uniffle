@@ -262,13 +262,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       if (shuffleManager.isRssResubmitStage()) {
         throwFetchFailedIfNecessary(e);
       } else {
-        throw new RssException(e);
+        throw e;
       }
     }
   }
 
-  // Gluten needs this method and IOException must be thrown here.
-  protected void writeImpl(Iterator<Product2<K, V>> records) throws IOException {
+  // Gluten needs this method.
+  protected void writeImpl(Iterator<Product2<K, V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos;
     boolean isCombine = shuffleDependency.mapSideCombine();
     Function1<V, C> createCombiner = null;
