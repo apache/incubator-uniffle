@@ -283,7 +283,8 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     switch (rpcResponse.getStatusCode()) {
       case SUCCESS:
         LOG.info(
-            "GetInMemoryShuffleData from {}:{} for {} cost {} ms",
+            "GetInMemoryShuffleData size:{}(bytes) from {}:{} for {} cost:{}(ms)",
+            getMemoryShuffleDataResponse.body().size(),
             host,
             nettyPort,
             requestInfo,
@@ -341,7 +342,8 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     switch (rpcResponse.getStatusCode()) {
       case SUCCESS:
         LOG.info(
-            "GetShuffleIndex from {}:{} for {} cost {} ms",
+            "GetShuffleIndex size:{}(bytes) from {}:{} for {} cost:{}(ms)",
+            getLocalShuffleIndexResponse.body().size(),
             host,
             nettyPort,
             requestInfo,
@@ -403,7 +405,8 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     switch (rpcResponse.getStatusCode()) {
       case SUCCESS:
         LOG.info(
-            "GetShuffleData from {}:{} for {} cost {} ms",
+            "GetShuffleData size:{}(bytes) from {}:{} for {} cost:{}(ms)",
+            getLocalShuffleDataResponse.body().size(),
             host,
             nettyPort,
             requestInfo,
