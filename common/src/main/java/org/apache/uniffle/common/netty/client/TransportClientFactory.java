@@ -38,6 +38,7 @@ import io.netty.channel.socket.SocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.IOMode;
 import org.apache.uniffle.common.netty.TransportFrameDecoder;
 import org.apache.uniffle.common.netty.handle.TransportChannelHandler;
@@ -217,7 +218,9 @@ public class TransportClientFactory implements Closeable {
     }
 
     TransportClient client = clientRef.get();
-    assert client != null : "Channel future completed successfully with null client";
+    if (client == null) {
+      throw new RssException("Channel future completed unsuccessfully with null client");
+    }
 
     if (logger.isDebugEnabled()) {
       logger.debug("Connection to {} successful", address);

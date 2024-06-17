@@ -804,7 +804,9 @@ class RssShuffleScheduler extends ShuffleScheduler {
           pipelinedShuffleInfoEventsMap.put(inputIdentifier, eventInfo);
         }
 
-        assert (eventInfo != null);
+        if (eventInfo == null) {
+          throw new RssException("eventInfo should not be null");
+        }
         eventInfo.spillProcessed(srcAttemptIdentifier.getSpillEventId());
         numFetchedSpills++;
 

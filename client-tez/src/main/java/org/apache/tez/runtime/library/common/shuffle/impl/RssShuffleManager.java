@@ -99,6 +99,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.JavaUtils;
 
 // This only knows how to deal with a single srcIndex for a given targetIndex.
@@ -1109,7 +1110,9 @@ public class RssShuffleManager extends ShuffleManager {
       shuffleInfoEventsMap.put(inputIdentifier, eventInfo);
     }
 
-    assert (eventInfo != null);
+    if (eventInfo == null) {
+      throw new RssException("eventInfo should not be null");
+    }
     eventInfo.spillProcessed(srcAttemptIdentifier.getSpillEventId());
     numFetchedSpills.getAndIncrement();
 

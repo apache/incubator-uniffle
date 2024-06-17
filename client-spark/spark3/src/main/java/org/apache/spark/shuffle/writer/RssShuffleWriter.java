@@ -49,6 +49,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.spark.Partitioner;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
@@ -367,7 +368,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     long expected = blockIds.size();
     long bufferManagerTracked = bufferManager.getBlockCount();
 
-    assert serverToPartitionToBlockIds != null;
+    if (MapUtils.isEmpty(serverToPartitionToBlockIds)) {
+      throw new RssException("serverToPartitionToBlockIds should not be empty");
+    }
     // to filter the multiple replica's duplicate blockIds
     Set<Long> blockIds = new HashSet<>();
     for (Map<Integer, Set<Long>> partitionBlockIds : serverToPartitionToBlockIds.values()) {

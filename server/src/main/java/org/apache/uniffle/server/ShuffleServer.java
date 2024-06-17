@@ -284,7 +284,10 @@ public class ShuffleServer {
     nettyServerEnabled =
         shuffleServerConf.get(ShuffleServerConf.RPC_SERVER_TYPE) == ServerType.GRPC_NETTY;
     if (nettyServerEnabled) {
-      assert nettyPort >= 0;
+      if (nettyPort < 0) {
+        throw new RssException(
+            "rss.server.netty.port must be set during startup when using GRPC_NETTY");
+      }
       streamServer = new StreamServer(this);
     }
 
