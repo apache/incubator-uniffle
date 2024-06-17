@@ -18,6 +18,7 @@
 package org.apache.uniffle.common.util;
 
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -45,9 +46,9 @@ public class NettyUtils {
   /** Specifies an upper bound on the number of Netty threads that Uniffle requires by default. */
   private static int MAX_DEFAULT_NETTY_THREADS = 8;
 
-  private static final PooledByteBufAllocator[] SHARED_POOLED_BYTE_BUF_ALLOCATOR =
-      new PooledByteBufAllocator[2];
-  private static UnpooledByteBufAllocator sharedUnpooledByteBufAllocator;
+  private static final AtomicReferenceArray<PooledByteBufAllocator>
+      SHARED_POOLED_BYTE_BUF_ALLOCATOR = new AtomicReferenceArray<>(2);
+  private static volatile UnpooledByteBufAllocator sharedUnpooledByteBufAllocator;
 
   /** Creates a Netty EventLoopGroup based on the IOMode. */
   public static EventLoopGroup createEventLoop(IOMode mode, int numThreads, String threadPrefix) {
@@ -96,15 +97,17 @@ public class NettyUtils {
   public static PooledByteBufAllocator getSharedPooledByteBufAllocator(
       boolean allowDirectBufs, boolean allowCache, int numCores) {
     final int index = allowCache ? 0 : 1;
-    if (SHARED_POOLED_BYTE_BUF_ALLOCATOR[index] == null) {
+    PooledByteBufAllocator allocator = SHARED_POOLED_BYTE_BUF_ALLOCATOR.get(index);
+    if (allocator == null) {
       synchronized (NettyUtils.class) {
-        if (SHARED_POOLED_BYTE_BUF_ALLOCATOR[index] == null) {
-          SHARED_POOLED_BYTE_BUF_ALLOCATOR[index] =
-              createPooledByteBufAllocator(allowDirectBufs, allowCache, numCores);
+        allocator = SHARED_POOLED_BYTE_BUF_ALLOCATOR.get(index);
+        if (allocator == null) {
+          allocator = createPooledByteBufAllocator(allowDirectBufs, allowCache, numCores);
+          SHARED_POOLED_BYTE_BUF_ALLOCATOR.set(index, allocator);
         }
       }
     }
-    return SHARED_POOLED_BYTE_BUF_ALLOCATOR[index];
+    return allocator;
   }
 
   /**
