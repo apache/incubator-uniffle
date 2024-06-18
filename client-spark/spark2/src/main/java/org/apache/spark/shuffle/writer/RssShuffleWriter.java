@@ -319,7 +319,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     long expected = blockIds.size();
     long bufferManagerTracked = bufferManager.getBlockCount();
 
-    assert serverToPartitionToBlockIds != null;
+    if (serverToPartitionToBlockIds == null) {
+      throw new RssException("serverToPartitionToBlockIds should not be null");
+    }
+
     // to filter the multiple replica's duplicate blockIds
     Set<Long> blockIds = new HashSet<>();
     for (Map<Integer, Set<Long>> partitionBlockIds : serverToPartitionToBlockIds.values()) {
