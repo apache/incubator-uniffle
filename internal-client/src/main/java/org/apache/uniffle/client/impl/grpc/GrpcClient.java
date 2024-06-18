@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.grpc.ManagedChannel;
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
-import io.grpc.netty.shaded.io.netty.buffer.AbstractByteBufAllocator;
+import io.grpc.netty.shaded.io.netty.buffer.ByteBufAllocator;
 import io.grpc.netty.shaded.io.netty.channel.ChannelOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +76,7 @@ public abstract class GrpcClient {
     this.channel = channel;
   }
 
-  protected AbstractByteBufAllocator createByteBufAllocator(
+  protected ByteBufAllocator createByteBufAllocator(
       int pageSize, int maxOrder, int smallCacheSize) {
     return GrpcNettyUtils.createPooledByteBufAllocator(true, 0, 0, 0, 0);
   }

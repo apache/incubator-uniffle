@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.grpc.netty.shaded.io.netty.buffer.AbstractByteBufAllocator;
+import io.grpc.netty.shaded.io.netty.buffer.ByteBufAllocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +108,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
   }
 
   @Override
-  protected AbstractByteBufAllocator createByteBufAllocator(
+  protected ByteBufAllocator createByteBufAllocator(
       int pageSize, int maxOrder, int smallCacheSize) {
     LOG.info(
         "ShuffleServerGrpcNettyClient is initialized - host:{}, gRPC port:{}, netty port:{}, maxRetryAttempts:{}, usePlaintext:{}, pageSize:{}, maxOrder:{}, smallCacheSize={}",

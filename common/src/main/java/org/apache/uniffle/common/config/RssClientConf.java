@@ -170,6 +170,16 @@ public class RssClientConf {
           .withDescription(
               "If true, we will use PooledByteBufAllocator to allocate byte buffers within Netty, otherwise we'll use UnpooledByteBufAllocator.");
 
+  public static final ConfigOption<Boolean> NETTY_CLIENT_SHARED_ALLOCATOR_ENABLED =
+      ConfigOptions.key("rss.client.netty.client.shared.allocator.enabled")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription(
+              "A flag indicating whether to share the ByteBuf allocators between the different Netty channels when enabling Netty. "
+                  + "If enabled then only three ByteBuf allocators are created: "
+                  + "one PooledByteBufAllocator where caching is allowed, one PooledByteBufAllocator where not and one UnpooledByteBufAllocator. "
+                  + "When disabled, a new allocator is created for each transport client.");
+
   public static final ConfigOption<Integer> NETTY_CLIENT_NUM_CONNECTIONS_PER_PEER =
       ConfigOptions.key("rss.client.netty.client.connections.per.peer")
           .intType()

@@ -47,7 +47,7 @@ public class Decoders {
     long crc = byteBuf.readLong();
     long taskAttemptId = byteBuf.readLong();
     int dataLength = byteBuf.readInt();
-    ByteBuf data = NettyUtils.getNettyBufferAllocator().directBuffer(dataLength);
+    ByteBuf data = NettyUtils.getSharedUnpooledByteBufAllocator(true).directBuffer(dataLength);
     data.writeBytes(byteBuf, dataLength);
     int lengthOfShuffleServers = byteBuf.readInt();
     List<ShuffleServerInfo> serverInfos = Lists.newArrayList();

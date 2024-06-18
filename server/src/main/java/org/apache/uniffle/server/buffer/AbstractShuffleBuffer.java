@@ -93,7 +93,7 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
       if (!bufferSegments.isEmpty()) {
         CompositeByteBuf byteBuf =
             new CompositeByteBuf(
-                NettyUtils.getNettyBufferAllocator(),
+                NettyUtils.getSharedUnpooledByteBufAllocator(true),
                 true,
                 Constants.COMPOSITE_BYTE_BUF_MAX_COMPONENTS);
         // copy result data
