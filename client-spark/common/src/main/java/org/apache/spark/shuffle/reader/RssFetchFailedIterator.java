@@ -18,13 +18,16 @@
 package org.apache.spark.shuffle.reader;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Objects;
 
 import scala.Product2;
 import scala.collection.AbstractIterator;
 import scala.collection.Iterator;
 
+import org.apache.spark.SparkEnv;
 import org.apache.spark.TaskContext;
+import org.apache.spark.TaskContext$;
 import org.apache.spark.shuffle.FetchFailedException;
 import org.apache.spark.shuffle.RssSparkShuffleUtils;
 import org.slf4j.Logger;
@@ -32,9 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
-import org.apache.uniffle.client.request.RssReassignServersRequest;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
-import org.apache.uniffle.client.response.RssReassignServersResponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.exception.RssException;
@@ -114,28 +115,21 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     int port = builder.reportServerPort;
     // todo: reuse this manager client if this is a bottleneck.
     try (ShuffleManagerClient client = createShuffleManagerClient(driver, port)) {
+      TaskContext taskContext = TaskContext$.MODULE$.get();
       RssReportShuffleFetchFailureRequest req =
           new RssReportShuffleFetchFailureRequest(
               builder.appId,
               builder.shuffleId,
               builder.stageAttemptId,
               builder.partitionId,
-              e.getMessage());
+              e.getMessage(),
+              Collections.emptyList(),
+              taskContext.stageId(),
+              taskContext.taskAttemptId(),
+              taskContext.attemptNumber(),
+              SparkEnv.get().executorId());
       RssReportShuffleFetchFailureResponse response = client.reportShuffleFetchFailure(req);
       if (response.getReSubmitWholeStage()) {
-        TaskContext taskContext = TaskContext.get();
-        RssReassignServersRequest rssReassignServersRequest =
-            new RssReassignServersRequest(
-                taskContext.stageId(),
-                taskContext.stageAttemptNumber(),
-                builder.shuffleId,
-                taskContext.numPartitions());
-        RssReassignServersResponse reassignServersResponse =
-            client.reassignShuffleServers(rssReassignServersRequest);
-        LOG.info(
-            "Reassign servers for stage retry due to the fetch failure, result: {}",
-            reassignServersResponse.isNeedReassign());
-
         // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1 is
         // provided.
         FetchFailedException ffe =

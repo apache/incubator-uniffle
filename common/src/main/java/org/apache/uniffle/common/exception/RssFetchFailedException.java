@@ -17,13 +17,26 @@
 
 package org.apache.uniffle.common.exception;
 
+import org.apache.uniffle.common.ShuffleServerInfo;
+
 /** Dedicated exception for rss client's shuffle failed related exception. */
 public class RssFetchFailedException extends RssException {
+  private ShuffleServerInfo fetchFailureServerId;
+
+  public RssFetchFailedException(String message, ShuffleServerInfo fetchFailureServerId) {
+    super(message);
+    this.fetchFailureServerId = fetchFailureServerId;
+  }
+
   public RssFetchFailedException(String message) {
     super(message);
   }
 
   public RssFetchFailedException(String message, Throwable e) {
     super(message, e);
+  }
+
+  public ShuffleServerInfo getFetchFailureServerId() {
+    return fetchFailureServerId;
   }
 }

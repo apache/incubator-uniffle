@@ -66,6 +66,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.NotRetryException;
@@ -827,10 +828,14 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                 + ", errorMsg:"
                 + rpcResponse.getRetMsg();
         LOG.error(msg);
-        throw new RssFetchFailedException(msg);
+        throw new RssFetchFailedException(msg, getShuffleServerInfo());
     }
 
     return response;
+  }
+
+  private ShuffleServerInfo getShuffleServerInfo() {
+    return new ShuffleServerInfo(host, port);
   }
 
   @Override
@@ -876,7 +881,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                 + ", errorMsg:"
                 + rpcResponse.getRetMsg();
         LOG.error(msg);
-        throw new RssFetchFailedException(msg);
+        throw new RssFetchFailedException(msg, getShuffleServerInfo());
     }
 
     return response;
@@ -939,7 +944,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                 + ", errorMsg:"
                 + rpcResponse.getRetMsg();
         LOG.error(msg);
-        throw new RssFetchFailedException(msg);
+        throw new RssFetchFailedException(msg, getShuffleServerInfo());
     }
     return response;
   }
@@ -1002,7 +1007,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                 + ", errorMsg:"
                 + rpcResponse.getRetMsg();
         LOG.error(msg);
-        throw new RssFetchFailedException(msg);
+        throw new RssFetchFailedException(msg, getShuffleServerInfo());
     }
     return response;
   }
@@ -1078,7 +1083,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                 + ", errorMsg:"
                 + rpcResponse.getRetMsg();
         LOG.error(msg);
-        throw new RssFetchFailedException(msg);
+        throw new RssFetchFailedException(msg, getShuffleServerInfo());
     }
     return response;
   }
@@ -1101,7 +1106,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               request.getRetryMax(),
               System.currentTimeMillis() - start);
       LOG.error(msg);
-      throw new RssFetchFailedException(msg);
+      throw new RssFetchFailedException(msg, getShuffleServerInfo());
     }
     try {
       long backoffTime =

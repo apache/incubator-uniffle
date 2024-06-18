@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.apache.spark.SparkEnv;
 import org.apache.spark.TaskContext;
+import org.apache.spark.TaskContext$;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.deploy.SparkHadoopUtil;
 import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
@@ -45,9 +48,7 @@ import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
-import org.apache.uniffle.client.request.RssReassignServersRequest;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
-import org.apache.uniffle.client.response.RssReassignServersResponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ClientType;
@@ -363,6 +364,7 @@ public class RssSparkShuffleUtils {
       try (ShuffleManagerClient client =
           ShuffleManagerClientFactory.getInstance()
               .createShuffleManagerClient(ClientType.GRPC, driver, port)) {
+        TaskContext taskContext = TaskContext$.MODULE$.get();
         // todo: Create a new rpc interface to report failures in batch.
         for (int partitionId : failedPartitions) {
           RssReportShuffleFetchFailureRequest req =
@@ -371,22 +373,14 @@ public class RssSparkShuffleUtils {
                   shuffleId,
                   stageAttemptId,
                   partitionId,
-                  rssFetchFailedException.getMessage());
+                  rssFetchFailedException.getMessage(),
+                  Collections.emptyList(),
+                  taskContext.stageId(),
+                  taskContext.taskAttemptId(),
+                  taskContext.attemptNumber(),
+                  SparkEnv.get().executorId());
           RssReportShuffleFetchFailureResponse response = client.reportShuffleFetchFailure(req);
           if (response.getReSubmitWholeStage()) {
-            TaskContext taskContext = TaskContext.get();
-            RssReassignServersRequest rssReassignServersRequest =
-                new RssReassignServersRequest(
-                    taskContext.stageId(),
-                    taskContext.stageAttemptNumber(),
-                    shuffleId,
-                    taskContext.numPartitions());
-            RssReassignServersResponse reassignServersResponse =
-                client.reassignShuffleServers(rssReassignServersRequest);
-            LOG.info(
-                "Reassign servers for stage retry due to the fetch failure, result: {}",
-                reassignServersResponse.isNeedReassign());
-
             // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
             // is provided.
             FetchFailedException ffe =
