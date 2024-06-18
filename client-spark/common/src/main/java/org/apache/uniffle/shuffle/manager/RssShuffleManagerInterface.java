@@ -83,5 +83,8 @@ public interface RssShuffleManagerInterface {
   boolean reassignOnStageResubmit(int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
 
   MutableShuffleHandleInfo reassignOnBlockSendFailure(
-      int shuffleId, Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers);
+      int stageId,
+      int stageAttemptNumber,
+      int shuffleId,
+      Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers);
 }
