@@ -537,8 +537,8 @@ service ShuffleManager {
   rpc getPartitionToShufflerServerWithBlockRetry(PartitionToShuffleServerRequest) returns (ReassignOnBlockSendFailureResponse);
   // Report write failures to ShuffleManager
   rpc reportShuffleWriteFailure (ReportShuffleWriteFailureRequest) returns (ReportShuffleWriteFailureResponse);
-  // Reassign the RPC interface of the ShuffleServer list
-  rpc reassignShuffleServers(ReassignServersRequest) returns (ReassignServersResponse);
+  // Reassign on stage resubmit
+  rpc reassignOnStageResubmit(ReassignServersRequest) returns (ReassignServersResponse);
   // Reassign on block send failure that occurs in writer
   rpc reassignOnBlockSendFailure(RssReassignOnBlockSendFailureRequest) returns (ReassignOnBlockSendFailureResponse);
   rpc reportShuffleResult (ReportShuffleResultRequest) returns (ReportShuffleResultResponse);
