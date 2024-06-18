@@ -475,15 +475,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
       int shuffleId = rssHandle.getShuffleId();
       String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
-      ShuffleHandleInfo shuffleHandleInfo;
-      if (shuffleManagerRpcServiceEnabled) {
-        // Get the ShuffleServer list from the Driver based on the shuffleId
-        shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);
-      } else {
-        shuffleHandleInfo =
-            new ShuffleHandleInfo(
-                shuffleId, rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
-      }
       ShuffleWriteMetrics writeMetrics = context.taskMetrics().shuffleWriteMetrics();
       return new RssShuffleWriter<>(
           rssHandle.getAppId(),
@@ -496,8 +487,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           shuffleWriteClient,
           rssHandle,
           this::markFailedTask,
-          context,
-          shuffleHandleInfo);
+          context);
     } else {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
@@ -804,6 +794,18 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     // constructed.
     return ShuffleManagerClientFactory.getInstance()
         .createShuffleManagerClient(ClientType.GRPC, host, port);
+  }
+
+  public ShuffleHandleInfo getShuffleHandleInfo(RssShuffleHandle<?, ?, ?> rssHandle) {
+    if (shuffleManagerRpcServiceEnabled) {
+      // Get the ShuffleServer list from the Driver based on the shuffleId
+      return getRemoteShuffleHandleInfo(rssHandle.getShuffleId());
+    } else {
+      return new ShuffleHandleInfo(
+          rssHandle.getShuffleId(),
+          rssHandle.getPartitionToServers(),
+          rssHandle.getRemoteStorage());
+    }
   }
 
   /**
