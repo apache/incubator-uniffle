@@ -733,8 +733,8 @@ public class ShuffleBufferManager {
 
   boolean isHugePartition(String appId, int shuffleId, int partitionId) {
     return shuffleTaskManager != null
-        && shuffleTaskManager.getPartitionDataSize(appId, shuffleId, partitionId)
-            > hugePartitionSizeThresholdRef.getSizeAsBytes();
+        && shuffleTaskManager.getShuffleTaskInfo(appId) != null
+        && shuffleTaskManager.getShuffleTaskInfo(appId).isHugePartition(shuffleId, partitionId);
   }
 
   public boolean isHugePartition(long usedPartitionDataSize) {

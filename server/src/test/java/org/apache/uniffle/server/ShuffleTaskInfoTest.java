@@ -120,6 +120,18 @@ public class ShuffleTaskInfoTest {
   }
 
   @Test
+  public void isHugePartitionTest() {
+    ShuffleTaskInfo shuffleTaskInfo = new ShuffleTaskInfo("hugePartition_appId");
+    // case1
+    assertFalse(shuffleTaskInfo.hasHugePartition());
+    assertFalse(shuffleTaskInfo.isHugePartition(1, 1));
+    // case2
+    shuffleTaskInfo.markHugePartition(1, 1);
+    assertTrue(shuffleTaskInfo.isHugePartition(1, 1));
+    assertFalse(shuffleTaskInfo.isHugePartition(1, 2));
+  }
+
+  @Test
   public void partitionSizeSummaryTest() {
     ShuffleTaskInfo shuffleTaskInfo = new ShuffleTaskInfo("partitionSizeSummaryTest_appId");
     // case1

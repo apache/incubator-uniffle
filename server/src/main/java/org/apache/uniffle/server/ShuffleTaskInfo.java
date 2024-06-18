@@ -200,6 +200,12 @@ public class ShuffleTaskInfo {
     }
   }
 
+  public boolean isHugePartition(int shuffleId, int partitionId) {
+    return existHugePartition.get()
+        && hugePartitionTags.containsKey(shuffleId)
+        && hugePartitionTags.get(shuffleId).contains(partitionId);
+  }
+
   public Set<Integer> getShuffleIds() {
     return partitionDataSizes.keySet();
   }
