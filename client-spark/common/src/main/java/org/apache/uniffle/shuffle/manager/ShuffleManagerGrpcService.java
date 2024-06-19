@@ -140,7 +140,6 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
       StreamObserver<RssProtos.ReportShuffleFetchFailureResponse> responseObserver) {
     String appId = request.getAppId();
     int stageAttempt = request.getStageAttemptId();
-    int partitionId = request.getPartitionId();
     int shuffleId = request.getShuffleId();
     int stageId = request.getStageId();
     long taskAttemptId = request.getTaskAttemptId();
