@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.spark.shuffle.RssStageResubmitManager;
 import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 
@@ -81,6 +82,11 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
       int stageAttemptNumber,
       int shuffleId,
       Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
+    return null;
+  }
+
+  @Override
+  public RssStageResubmitManager getStageResubmitManager() {
     return null;
   }
 }

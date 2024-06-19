@@ -19,16 +19,68 @@ package org.apache.spark.shuffle;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.Sets;
+import org.apache.spark.SparkConf;
+import org.apache.spark.shuffle.stage.RssShuffleStatus;
+import org.apache.spark.shuffle.stage.RssShuffleStatusForReader;
+import org.apache.spark.shuffle.stage.RssShuffleStatusForWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.util.JavaUtils;
 
 public class RssStageResubmitManager {
-
   private static final Logger LOG = LoggerFactory.getLogger(RssStageResubmitManager.class);
+
+  private final SparkConf sparkConf = new SparkConf();
+  private final Map<Integer, RssShuffleStatusForReader> shuffleStatusForReader =
+      new ConcurrentHashMap<>();
+  private final Map<Integer, RssShuffleStatusForWriter> shuffleStatusForWriter =
+      new ConcurrentHashMap<>();
+
+  public void clear(int shuffleId) {
+    shuffleStatusForReader.remove(shuffleId);
+    shuffleStatusForWriter.remove(shuffleId);
+  }
+
+  public RssShuffleStatus getShuffleStatusForReader(int shuffleId, int stageId, int stageAttempt) {
+    RssShuffleStatus shuffleStatus =
+        shuffleStatusForReader.computeIfAbsent(
+            shuffleId, x -> new RssShuffleStatusForReader(stageId, shuffleId));
+    if (shuffleStatus.updateStageAttemptIfNecessary(stageAttempt)) {
+      return shuffleStatus;
+    }
+    return null;
+  }
+
+  public RssShuffleStatus getShuffleStatusForWriter(int shuffleId, int stageId, int stageAttempt) {
+    RssShuffleStatus shuffleStatus =
+        shuffleStatusForWriter.computeIfAbsent(
+            shuffleId, x -> new RssShuffleStatusForWriter(stageId, shuffleId));
+    if (shuffleStatus.updateStageAttemptIfNecessary(stageAttempt)) {
+      return shuffleStatus;
+    }
+    return null;
+  }
+
+  public boolean triggerStageRetry(RssShuffleStatus shuffleStatus) {
+    final String TASK_MAX_FAILURE = "spark.task.maxFailures";
+    int sparkTaskMaxFailures = sparkConf.getInt(TASK_MAX_FAILURE, 4);
+    if (shuffleStatus instanceof RssShuffleStatusForReader) {
+      if (shuffleStatus.getStageRetriedNumber() > 1) {
+        LOG.warn("The shuffleId:{}, stageId:{} has been retried. Ignore it.");
+        return false;
+      }
+      if (shuffleStatus.getTaskFailureAttemptCount() >= sparkTaskMaxFailures) {
+        shuffleStatus.markStageAttemptRetried();
+        return true;
+      }
+    }
+    return false;
+  }
+
   /** Blacklist of the Shuffle Server when the write fails. */
   private Set<String> serverIdBlackList;
   /**

@@ -18,7 +18,6 @@
 package org.apache.uniffle.shuffle.manager;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +28,10 @@ import java.util.stream.Collectors;
 
 import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.stub.StreamObserver;
+import org.apache.spark.shuffle.RssStageResubmitManager;
 import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.StageAttemptShuffleHandleInfo;
+import org.apache.spark.shuffle.stage.RssShuffleStatus;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,6 @@ import org.apache.uniffle.shuffle.BlockIdManager;
 
 public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleManagerGrpcService.class);
-  private final Map<Integer, RssShuffleStatus> shuffleStatus = JavaUtils.newConcurrentMap();
   // The shuffleId mapping records the number of ShuffleServer write failures
   private final Map<Integer, ShuffleServerFailureRecord> shuffleWrtieStatus =
       JavaUtils.newConcurrentMap();
@@ -133,6 +133,13 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     String appId = request.getAppId();
     int stageAttempt = request.getStageAttemptId();
     int partitionId = request.getPartitionId();
+    int shuffleId = request.getShuffleId();
+    int stageId = request.getStageId();
+    long taskAttemptId = request.getTaskAttemptId();
+    int taskAttemptNumber = request.getTaskAttemptNumber();
+    String executorId = request.getExecutorId();
+
+    RssStageResubmitManager stageResubmitManager = shuffleManager.getStageResubmitManager();
     RssProtos.StatusCode code;
     boolean reSubmitWholeStage;
     String msg;
@@ -145,35 +152,36 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
       code = RssProtos.StatusCode.INVALID_REQUEST;
       reSubmitWholeStage = false;
     } else {
-      RssShuffleStatus status =
-          shuffleStatus.computeIfAbsent(
-              request.getShuffleId(),
-              key -> {
-                int partitionNum = shuffleManager.getPartitionNum(key);
-                return new RssShuffleStatus(partitionNum, stageAttempt);
-              });
-      int c = status.resetStageAttemptIfNecessary(stageAttempt);
-      if (c < 0) {
+      RssShuffleStatus rssShuffleStatus =
+          stageResubmitManager.getShuffleStatusForReader(shuffleId, stageId, stageAttempt);
+      if (rssShuffleStatus == null) {
         msg =
             String.format(
-                "got an old stage(%d vs %d) shuffle fetch failure report, which should be impossible.",
-                status.getStageAttempt(), stageAttempt);
+                "got an old stage(%d:%d) shuffle fetch failure report from executor(%s), task(%d:%d) which should be impossible.",
+                stageId, stageAttempt, executorId, taskAttemptId, taskAttemptNumber);
         LOG.warn(msg);
         code = RssProtos.StatusCode.INVALID_REQUEST;
         reSubmitWholeStage = false;
-      } else { // update the stage partition fetch failure count
+      } else {
         code = RssProtos.StatusCode.SUCCESS;
-        status.incPartitionFetchFailure(stageAttempt, partitionId);
-        int fetchFailureNum = status.getPartitionFetchFailureNum(stageAttempt, partitionId);
-        if (fetchFailureNum >= shuffleManager.getMaxFetchFailures()) {
+        rssShuffleStatus.incTaskFailure(taskAttemptNumber);
+        if (stageResubmitManager.triggerStageRetry(rssShuffleStatus)) {
           reSubmitWholeStage = true;
           msg =
               String.format(
-                  "report shuffle fetch failure as maximum number(%d) of shuffle fetch is occurred",
-                  shuffleManager.getMaxFetchFailures());
+                  "Activate stage retry on stage(%d:%d), taskFailuresCount:(%d)",
+                  stageId, stageAttempt, rssShuffleStatus.getTaskFailureAttemptCount());
+          if (shuffleManager.reassignOnStageResubmit(stageId, stageAttempt, shuffleId, -1)) {
+            LOG.info(
+                "{} from executorId({}), task({}:{})",
+                msg,
+                executorId,
+                taskAttemptId,
+                taskAttemptNumber);
+          }
         } else {
           reSubmitWholeStage = false;
-          msg = "don't report shuffle fetch failure";
+          msg = "Accepted task fetch failure report";
         }
       }
     }
@@ -307,7 +315,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
    * @param shuffleId the shuffle id to unregister.
    */
   public void unregisterShuffle(int shuffleId) {
-    shuffleStatus.remove(shuffleId);
+    shuffleManager.getStageResubmitManager().clear(shuffleId);
   }
 
   private static class ShuffleServerFailureRecord {
@@ -390,88 +398,6 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
               }
             }
             return false;
-          });
-    }
-  }
-
-  private static class RssShuffleStatus {
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
-    private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
-    private final int[] partitions;
-    private int stageAttempt;
-
-    private RssShuffleStatus(int partitionNum, int stageAttempt) {
-      this.stageAttempt = stageAttempt;
-      this.partitions = new int[partitionNum];
-    }
-
-    private <T> T withReadLock(Supplier<T> fn) {
-      readLock.lock();
-      try {
-        return fn.get();
-      } finally {
-        readLock.unlock();
-      }
-    }
-
-    private <T> T withWriteLock(Supplier<T> fn) {
-      writeLock.lock();
-      try {
-        return fn.get();
-      } finally {
-        writeLock.unlock();
-      }
-    }
-
-    // todo: maybe it's more performant to just use synchronized method here.
-    public int getStageAttempt() {
-      return withReadLock(() -> this.stageAttempt);
-    }
-
-    /**
-     * Check whether the input stage attempt is a new stage or not. If a new stage attempt is
-     * requested, reset partitions.
-     *
-     * @param stageAttempt the incoming stage attempt number
-     * @return 0 if stageAttempt == this.stageAttempt 1 if stageAttempt > this.stageAttempt -1 if
-     *     stateAttempt < this.stageAttempt which means nothing happens
-     */
-    public int resetStageAttemptIfNecessary(int stageAttempt) {
-      return withWriteLock(
-          () -> {
-            if (this.stageAttempt < stageAttempt) {
-              // a new stage attempt is issued. the partitions array should be clear and reset.
-              Arrays.fill(this.partitions, 0);
-              this.stageAttempt = stageAttempt;
-              return 1;
-            } else if (this.stageAttempt > stageAttempt) {
-              return -1;
-            }
-            return 0;
-          });
-    }
-
-    public void incPartitionFetchFailure(int stageAttempt, int partition) {
-      withWriteLock(
-          () -> {
-            if (this.stageAttempt != stageAttempt) {
-              // do nothing here
-            } else {
-              this.partitions[partition] = this.partitions[partition] + 1;
-            }
-            return null;
-          });
-    }
-
-    public int getPartitionFetchFailureNum(int stageAttempt, int partition) {
-      return withReadLock(
-          () -> {
-            if (this.stageAttempt != stageAttempt) {
-              return 0;
-            } else {
-              return this.partitions[partition];
-            }
           });
     }
   }

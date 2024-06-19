@@ -557,6 +557,7 @@ message ReportShuffleFetchFailureRequest {
   int32 stageAttemptId = 3;
   int32 partitionId = 4;
   string exception = 5;
+  // todo: support adding the fetchFailureServerIds into the blacklist to avoid reassign the same servers
   repeated ShuffleServerId fetchFailureServerId = 6;
   int32 stageId = 7;
   int64 taskAttemptId = 8;

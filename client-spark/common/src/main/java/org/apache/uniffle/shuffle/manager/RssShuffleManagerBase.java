@@ -1058,4 +1058,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   public boolean isRssStageRetryForFetchFailureEnabled() {
     return rssStageRetryForFetchFailureEnabled;
   }
+
+  public RssStageResubmitManager getStageResubmitManager() {
+    return rssStageResubmitManager;
+  }
 }
