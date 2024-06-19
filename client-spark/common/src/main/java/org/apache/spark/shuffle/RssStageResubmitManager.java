@@ -97,14 +97,12 @@ public class RssStageResubmitManager {
   public boolean activateStageRetry(RssShuffleStatus shuffleStatus) {
     final String TASK_MAX_FAILURE = "spark.task.maxFailures";
     int sparkTaskMaxFailures = sparkConf.getInt(TASK_MAX_FAILURE, 4);
-    if (shuffleStatus instanceof RssShuffleStatusForReader) {
-      if (shuffleStatus.getStageRetriedCount() > 1) {
-        LOG.warn("The shuffleId:{}, stageId:{} has been retried. Ignore it.");
-        return false;
-      }
-      if (shuffleStatus.getTaskFailureAttemptCount() >= sparkTaskMaxFailures) {
-        return true;
-      }
+    if (shuffleStatus.getStageRetriedCount() > 1) {
+      LOG.warn("The shuffleId:{}, stageId:{} has been retried. Ignore it.");
+      return false;
+    }
+    if (shuffleStatus.getTaskFailureAttemptCount() >= sparkTaskMaxFailures) {
+      return true;
     }
     return false;
   }
