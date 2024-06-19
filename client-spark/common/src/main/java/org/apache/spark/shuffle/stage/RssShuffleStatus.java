@@ -64,7 +64,11 @@ public class RssShuffleStatus {
     }
   }
 
-  public int getStageRetriedNumber() {
+  public boolean isStageAttemptRetried(int stageAttempt) {
+    return withReadLock(() -> stageAttemptRetriedRecords.contains(stageAttempt));
+  }
+
+  public int getStageRetriedCount() {
     return withReadLock(() -> this.stageAttemptRetriedRecords.size());
   }
 

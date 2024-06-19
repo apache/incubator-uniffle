@@ -284,7 +284,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.partitionReassignMaxServerNum =
         rssConf.get(RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM);
     this.shuffleHandleInfoManager = new ShuffleHandleInfoManager();
-    this.rssStageResubmitManager = new RssStageResubmitManager();
+    this.rssStageResubmitManager = new RssStageResubmitManager(sparkConf);
   }
 
   public CompletableFuture<Long> sendData(AddBlockEvent event) {
@@ -378,7 +378,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.partitionReassignMaxServerNum =
         rssConf.get(RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM);
     this.shuffleHandleInfoManager = new ShuffleHandleInfoManager();
-    this.rssStageResubmitManager = new RssStageResubmitManager();
+    this.rssStageResubmitManager = new RssStageResubmitManager(sparkConf);
   }
 
   // This method is called in Spark driver side,
@@ -464,7 +464,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             1,
             requiredShuffleServerNumber,
             estimateTaskConcurrency,
-            rssStageResubmitManager.getServerIdBlackList(),
+            rssStageResubmitManager.getBlackListedServerIds(),
             0);
     startHeartbeat();
     shuffleIdToPartitionNum.putIfAbsent(shuffleId, dependency.partitioner().numPartitions());

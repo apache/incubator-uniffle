@@ -45,7 +45,7 @@ public class RssShuffleStatusTest {
 
     // case3
     shuffleStatus.markStageAttemptRetried();
-    assertEquals(1, shuffleStatus.getStageRetriedNumber());
+    assertEquals(1, shuffleStatus.getStageRetriedCount());
 
     // case4: illegal stage attempt
     assertFalse(shuffleStatus.updateStageAttemptIfNecessary(0));

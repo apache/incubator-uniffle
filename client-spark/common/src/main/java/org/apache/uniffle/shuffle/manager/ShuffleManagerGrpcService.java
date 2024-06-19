@@ -165,7 +165,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
       } else {
         code = RssProtos.StatusCode.SUCCESS;
         rssShuffleStatus.incTaskFailure(taskAttemptNumber);
-        if (stageResubmitManager.triggerStageRetry(rssShuffleStatus)) {
+        if (stageResubmitManager.activateStageRetry(rssShuffleStatus)) {
           reSubmitWholeStage = true;
           msg =
               String.format(
@@ -397,8 +397,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
               Map.Entry<String, AtomicInteger> shuffleServerInfoIntegerEntry = list.get(0);
               if (shuffleServerInfoIntegerEntry.getValue().get()
                   > shuffleManager.getMaxFetchFailures()) {
-                shuffleManager.addFailuresShuffleServerInfos(
-                    shuffleServerInfoIntegerEntry.getKey());
+                shuffleManager.addFaultShuffleServer(shuffleServerInfoIntegerEntry.getKey());
                 return true;
               }
             }

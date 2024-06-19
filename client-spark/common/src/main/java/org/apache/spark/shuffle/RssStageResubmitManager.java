@@ -20,29 +20,58 @@ package org.apache.spark.shuffle;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
-import com.google.common.collect.Sets;
 import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.stage.RssShuffleStatus;
 import org.apache.spark.shuffle.stage.RssShuffleStatusForReader;
 import org.apache.spark.shuffle.stage.RssShuffleStatusForWriter;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.util.JavaUtils;
-
+/** This class is to manage shuffle status for stage retry */
 public class RssStageResubmitManager {
   private static final Logger LOG = LoggerFactory.getLogger(RssStageResubmitManager.class);
 
-  private final SparkConf sparkConf = new SparkConf();
+  private final SparkConf sparkConf;
   private final Map<Integer, RssShuffleStatusForReader> shuffleStatusForReader =
       new ConcurrentHashMap<>();
   private final Map<Integer, RssShuffleStatusForWriter> shuffleStatusForWriter =
       new ConcurrentHashMap<>();
+  private final Map<Integer, Object> shuffleLock = new ConcurrentHashMap<>();
+
+  private final Set<String> blackListedServerIds = new ConcurrentHashSet<>();
+
+  public RssStageResubmitManager(SparkConf sparkConf) {
+    this.sparkConf = sparkConf;
+  }
+
+  public Object getOrCreateShuffleLock(int shuffleId) {
+    return shuffleLock.computeIfAbsent(shuffleId, x -> new Object());
+  }
 
   public void clear(int shuffleId) {
     shuffleStatusForReader.remove(shuffleId);
     shuffleStatusForWriter.remove(shuffleId);
+    shuffleLock.remove(shuffleId);
+  }
+
+  public boolean isStageAttemptRetried(int shuffleId, int stageId, int stageAttemptNumber) {
+    RssShuffleStatus readerShuffleStatus = shuffleStatusForReader.get(shuffleId);
+    RssShuffleStatus writerShuffleStatus = shuffleStatusForWriter.get(shuffleId);
+    if (readerShuffleStatus == null && writerShuffleStatus == null) {
+      return false;
+    }
+    if (readerShuffleStatus != null
+        && readerShuffleStatus.isStageAttemptRetried(stageAttemptNumber)) {
+      return true;
+    }
+    if (writerShuffleStatus != null
+        && writerShuffleStatus.isStageAttemptRetried(stageAttemptNumber)) {
+      return true;
+    }
+    return false;
   }
 
   public RssShuffleStatus getShuffleStatusForReader(int shuffleId, int stageId, int stageAttempt) {
@@ -65,11 +94,11 @@ public class RssStageResubmitManager {
     return null;
   }
 
-  public boolean triggerStageRetry(RssShuffleStatus shuffleStatus) {
+  public boolean activateStageRetry(RssShuffleStatus shuffleStatus) {
     final String TASK_MAX_FAILURE = "spark.task.maxFailures";
     int sparkTaskMaxFailures = sparkConf.getInt(TASK_MAX_FAILURE, 4);
     if (shuffleStatus instanceof RssShuffleStatusForReader) {
-      if (shuffleStatus.getStageRetriedNumber() > 1) {
+      if (shuffleStatus.getStageRetriedCount() > 1) {
         LOG.warn("The shuffleId:{}, stageId:{} has been retried. Ignore it.");
         return false;
       }
@@ -81,41 +110,11 @@ public class RssStageResubmitManager {
     return false;
   }
 
-  /** Blacklist of the Shuffle Server when the write fails. */
-  private Set<String> serverIdBlackList;
-  /**
-   * Prevent multiple tasks from reporting FetchFailed, resulting in multiple ShuffleServer
-   * assignments, stageID, Attemptnumber Whether to reassign the combination flag;
-   */
-  private Map<Integer, RssStageInfo> serverAssignedInfos;
-
-  public RssStageResubmitManager() {
-    this.serverIdBlackList = Sets.newConcurrentHashSet();
-    this.serverAssignedInfos = JavaUtils.newConcurrentMap();
+  public Set<String> getBlackListedServerIds() {
+    return blackListedServerIds.stream().collect(Collectors.toSet());
   }
 
-  public Set<String> getServerIdBlackList() {
-    return serverIdBlackList;
-  }
-
-  public void resetServerIdBlackList(Set<String> failuresShuffleServerIds) {
-    this.serverIdBlackList = failuresShuffleServerIds;
-  }
-
-  public void recordFailuresShuffleServer(String shuffleServerId) {
-    serverIdBlackList.add(shuffleServerId);
-  }
-
-  public RssStageInfo recordAndGetServerAssignedInfo(int shuffleId, String stageIdAndAttempt) {
-
-    return serverAssignedInfos.computeIfAbsent(
-        shuffleId, id -> new RssStageInfo(stageIdAndAttempt, false));
-  }
-
-  public void recordAndGetServerAssignedInfo(
-      int shuffleId, String stageIdAndAttempt, boolean isRetried) {
-    serverAssignedInfos
-        .computeIfAbsent(shuffleId, id -> new RssStageInfo(stageIdAndAttempt, false))
-        .setReassigned(isRetried);
+  public void addBlackListedServer(String shuffleServerId) {
+    blackListedServerIds.add(shuffleServerId);
   }
 }

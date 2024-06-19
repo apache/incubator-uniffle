@@ -46,7 +46,6 @@ import org.apache.spark.SparkEnv;
 import org.apache.spark.SparkException;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.RssSparkShuffleUtils;
-import org.apache.spark.shuffle.RssStageInfo;
 import org.apache.spark.shuffle.RssStageResubmitManager;
 import org.apache.spark.shuffle.ShuffleHandleInfoManager;
 import org.apache.spark.shuffle.ShuffleManager;
@@ -648,8 +647,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
    * @param shuffleServerId
    */
   @Override
-  public void addFailuresShuffleServerInfos(String shuffleServerId) {
-    rssStageResubmitManager.recordFailuresShuffleServer(shuffleServerId);
+  public void addFaultShuffleServer(String shuffleServerId) {
+    rssStageResubmitManager.addBlackListedServer(shuffleServerId);
   }
 
   /**
@@ -661,12 +660,9 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   @Override
   public boolean reassignOnStageResubmit(
       int stageId, int stageAttemptNumber, int shuffleId, int numPartitions) {
-    String stageIdAndAttempt = stageId + "_" + stageAttemptNumber;
-    RssStageInfo rssStageInfo =
-        rssStageResubmitManager.recordAndGetServerAssignedInfo(shuffleId, stageIdAndAttempt);
-    synchronized (rssStageInfo) {
-      Boolean needReassign = rssStageInfo.isReassigned();
-      if (!needReassign) {
+    Object shuffleLock = rssStageResubmitManager.getOrCreateShuffleLock(shuffleId);
+    synchronized (shuffleLock) {
+      if (!rssStageResubmitManager.isStageAttemptRetried(shuffleId, stageId, stageAttemptNumber)) {
         int requiredShuffleServerNumber =
             RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
         int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
@@ -682,7 +678,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                 1,
                 requiredShuffleServerNumber,
                 estimateTaskConcurrency,
-                rssStageResubmitManager.getServerIdBlackList(),
+                rssStageResubmitManager.getBlackListedServerIds(),
                 stageId,
                 stageAttemptNumber,
                 false);
@@ -701,7 +697,6 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
         StageAttemptShuffleHandleInfo stageAttemptShuffleHandleInfo =
             (StageAttemptShuffleHandleInfo) shuffleHandleInfoManager.get(shuffleId);
         stageAttemptShuffleHandleInfo.replaceCurrentShuffleHandleInfo(shuffleHandleInfo);
-        rssStageResubmitManager.recordAndGetServerAssignedInfo(shuffleId, stageIdAndAttempt, true);
         LOG.info(
             "The stage retry has been triggered successfully for the stageId: {}, attemptNumber: {}",
             stageId,
@@ -880,7 +875,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     assignmentTags.add(clientType);
     long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
     int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
-    faultyServerIds.addAll(rssStageResubmitManager.getServerIdBlackList());
+    faultyServerIds.addAll(rssStageResubmitManager.getBlackListedServerIds());
     try {
       return RetryUtils.retry(
           () -> {
@@ -928,7 +923,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
 
     long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
     int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
-    faultyServerIds.addAll(rssStageResubmitManager.getServerIdBlackList());
+    faultyServerIds.addAll(rssStageResubmitManager.getBlackListedServerIds());
     try {
       return RetryUtils.retry(
           () -> {
