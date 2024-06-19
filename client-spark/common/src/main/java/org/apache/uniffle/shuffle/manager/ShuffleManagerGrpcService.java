@@ -172,17 +172,20 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
                   "Activate stage retry on stage(%d:%d), taskFailuresCount:(%d)",
                   stageId, stageAttempt, rssShuffleStatus.getTaskFailureAttemptCount());
           int partitionNum = shuffleManager.getPartitionNum(shuffleId);
-          if (shuffleManager.reassignOnStageResubmit(
-              stageId, stageAttempt, shuffleId, partitionNum)) {
-            LOG.info(
-                "{} from executorId({}), task({}:{}) on stageId({}:{}), shuffleId({})",
-                msg,
-                executorId,
-                taskAttemptId,
-                taskAttemptNumber,
-                stageId,
-                stageAttempt,
-                shuffleId);
+          synchronized (rssShuffleStatus) {
+            if (shuffleManager.reassignOnStageResubmit(
+                stageId, stageAttempt, shuffleId, partitionNum)) {
+              LOG.info(
+                  "{} from executorId({}), task({}:{}) on stageId({}:{}), shuffleId({})",
+                  msg,
+                  executorId,
+                  taskAttemptId,
+                  taskAttemptNumber,
+                  stageId,
+                  stageAttempt,
+                  shuffleId);
+            }
+            rssShuffleStatus.markStageAttemptRetried();
           }
         } else {
           reSubmitWholeStage = false;

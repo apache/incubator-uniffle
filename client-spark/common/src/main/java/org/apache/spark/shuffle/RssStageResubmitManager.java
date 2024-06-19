@@ -103,7 +103,6 @@ public class RssStageResubmitManager {
         return false;
       }
       if (shuffleStatus.getTaskFailureAttemptCount() >= sparkTaskMaxFailures) {
-        shuffleStatus.markStageAttemptRetried();
         return true;
       }
     }
