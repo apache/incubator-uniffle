@@ -27,6 +27,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/pointer"
 
@@ -138,6 +140,26 @@ var (
 			Name: "default-secret",
 		},
 	}
+
+	standard                 = "standard"
+	testVolumeClaimTemplates = []corev1.PersistentVolumeClaim{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "testVolumeClaimTemplate",
+			},
+			Spec: corev1.PersistentVolumeClaimSpec{
+				AccessModes: []corev1.PersistentVolumeAccessMode{
+					"ReadWriteOnce",
+				},
+				Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						"storage": *resource.NewQuantity(5*1000*1000*1000, resource.DecimalSI),
+					},
+				},
+				StorageClassName: &standard,
+			},
+		},
+	}
 )
 
 func buildRssWithLabels() *uniffleapi.RemoteShuffleService {
@@ -196,6 +218,18 @@ func withCustomAffinity(affinity *corev1.Affinity) *uniffleapi.RemoteShuffleServ
 func withCustomImagePullSecrets(imagePullSecrets []corev1.LocalObjectReference) *uniffleapi.RemoteShuffleService {
 	rss := utils.BuildRSSWithDefaultValue()
 	rss.Spec.ImagePullSecrets = imagePullSecrets
+	return rss
+}
+
+func withCustomVolumeClaimTemplates(volumeClaimTemplates []corev1.PersistentVolumeClaim) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ShuffleServer.VolumeClaimTemplates = make([]uniffleapi.ShuffleServerPersistentVolumeClaimTemplate, 0, len(volumeClaimTemplates))
+	for _, pvcTemplate := range volumeClaimTemplates {
+		rss.Spec.ShuffleServer.VolumeClaimTemplates = append(rss.Spec.ShuffleServer.VolumeClaimTemplates, uniffleapi.ShuffleServerPersistentVolumeClaimTemplate{
+			VolumeNameTemplate: &pvcTemplate.ObjectMeta.Name,
+			Spec:               pvcTemplate.Spec,
+		})
+	}
 	return rss
 }
 
@@ -484,6 +518,21 @@ func TestGenerateSts(t *testing.T) {
 					}
 				}
 				return false, fmt.Errorf("generated sts should include imagePullSecrets: %v", testImagePullSecrets)
+			},
+		},
+		{
+			name: "set volume claim templates",
+			rss:  withCustomVolumeClaimTemplates(testVolumeClaimTemplates),
+			IsValidSts: func(deploy *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (bool, error) {
+				if deploy.Spec.VolumeClaimTemplates != nil {
+					for _, volumeClaimTemplate := range deploy.Spec.VolumeClaimTemplates {
+						equal := reflect.DeepEqual(volumeClaimTemplate, testVolumeClaimTemplates[0])
+						if equal {
+							return true, nil
+						}
+					}
+				}
+				return false, fmt.Errorf("generated sts should include volumeClaimTemplates: %v", testImagePullSecrets)
 			},
 		},
 	} {
