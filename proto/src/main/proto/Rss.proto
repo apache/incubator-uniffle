@@ -610,6 +610,10 @@ message ReportShuffleWriteFailureRequest {
   int32 stageAttemptNumber = 3;
   repeated ShuffleServerId shuffleServerIds= 5;
   string exception = 6;
+  int32 stageId = 7;
+  int64 taskAttemptId = 8;
+  int32 taskAttemptNumber = 9;
+  string executorId = 10;
 }
 
 message ReportShuffleWriteFailureResponse {
