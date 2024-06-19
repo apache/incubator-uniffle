@@ -31,6 +31,7 @@ import org.apache.uniffle.shuffle.BlockIdManager;
 
 public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   public Set<Integer> unregisteredShuffleIds = new LinkedHashSet<>();
+  private RssStageResubmitManager stageResubmitManager = new RssStageResubmitManager();
 
   @Override
   public String getAppId() {
@@ -87,6 +88,6 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
 
   @Override
   public RssStageResubmitManager getStageResubmitManager() {
-    return null;
+    return stageResubmitManager;
   }
 }
