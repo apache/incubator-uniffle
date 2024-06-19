@@ -117,7 +117,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
 
   protected boolean blockIdSelfManagedEnabled;
 
-  protected boolean taskBlockSendFailureRetryEnabled;
+  protected boolean partitionReassignEnabled;
 
   protected boolean shuffleManagerRpcServiceEnabled;
 
@@ -638,7 +638,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   @Override
   public int getMaxFetchFailures() {
     final String TASK_MAX_FAILURE = "spark.task.maxFailures";
-    return Math.max(1, sparkConf.getInt(TASK_MAX_FAILURE, 4) - 1);
+    return Math.max(0, sparkConf.getInt(TASK_MAX_FAILURE, 4) - 1);
   }
 
   /**
@@ -701,6 +701,10 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
             (StageAttemptShuffleHandleInfo) shuffleHandleInfoManager.get(shuffleId);
         stageAttemptShuffleHandleInfo.replaceCurrentShuffleHandleInfo(shuffleHandleInfo);
         rssStageResubmitManager.recordAndGetServerAssignedInfo(shuffleId, stageIdAndAttempt, true);
+        LOG.info(
+            "The stage retry has been triggered successfully for the stageId: {}, attemptNumber: {}",
+            stageId,
+            stageAttemptNumber);
         return true;
       } else {
         LOG.info(
@@ -720,12 +724,22 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
       int shuffleId,
       Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
     long startTime = System.currentTimeMillis();
-    MutableShuffleHandleInfo handleInfo =
-        (MutableShuffleHandleInfo) shuffleHandleInfoManager.get(shuffleId);
-    synchronized (handleInfo) {
+    ShuffleHandleInfo handleInfo = shuffleHandleInfoManager.get(shuffleId);
+    MutableShuffleHandleInfo internalHandle = null;
+    if (handleInfo instanceof MutableShuffleHandleInfo) {
+      internalHandle = (MutableShuffleHandleInfo) handleInfo;
+    } else if (handleInfo instanceof StageAttemptShuffleHandleInfo) {
+      internalHandle =
+          (MutableShuffleHandleInfo) ((StageAttemptShuffleHandleInfo) handleInfo).getCurrent();
+    }
+    if (internalHandle == null) {
+      throw new RssException(
+          "An unexpected error occurred: internalHandle is null, which should not happen");
+    }
+    synchronized (internalHandle) {
       // If the reassignment servers for one partition exceeds the max reassign server num,
       // it should fast fail.
-      handleInfo.checkPartitionReassignServerNum(
+      internalHandle.checkPartitionReassignServerNum(
           partitionToFailureServers.keySet(), partitionReassignMaxServerNum);
 
       Map<ShuffleServerInfo, List<PartitionRange>> newServerToPartitions = new HashMap<>();
@@ -740,10 +754,10 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           String serverId = receivingFailureServer.getServerId();
 
           boolean serverHasReplaced = false;
-          Set<ShuffleServerInfo> replacements = handleInfo.getReplacements(serverId);
+          Set<ShuffleServerInfo> replacements = internalHandle.getReplacements(serverId);
           if (CollectionUtils.isEmpty(replacements)) {
             final int requiredServerNum = 1;
-            Set<String> excludedServers = new HashSet<>(handleInfo.listExcludedServers());
+            Set<String> excludedServers = new HashSet<>(internalHandle.listExcludedServers());
             excludedServers.add(serverId);
             replacements =
                 reassignServerForTask(
@@ -759,7 +773,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           }
 
           Set<ShuffleServerInfo> updatedReassignServers =
-              handleInfo.updateAssignment(partitionId, serverId, replacements);
+              internalHandle.updateAssignment(partitionId, serverId, replacements);
 
           reassignResult
               .computeIfAbsent(serverId, x -> new HashMap<>())
@@ -788,7 +802,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           System.currentTimeMillis() - startTime,
           reassignResult);
 
-      return handleInfo;
+      return internalHandle;
     }
   }
 

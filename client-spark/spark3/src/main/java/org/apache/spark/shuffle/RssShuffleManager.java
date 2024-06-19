@@ -182,20 +182,19 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.rssResubmitStage =
         rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
             && RssSparkShuffleUtils.isStageResubmitSupported();
-    this.taskBlockSendFailureRetryEnabled =
-        rssConf.getBoolean(RssClientConf.RSS_CLIENT_REASSIGN_ENABLED);
+    this.partitionReassignEnabled = rssConf.getBoolean(RssClientConf.RSS_CLIENT_REASSIGN_ENABLED);
 
     // The feature of partition reassign is exclusive with multiple replicas and stage retry.
-    if (taskBlockSendFailureRetryEnabled) {
-      if (rssResubmitStage || dataReplica > 1) {
+    if (partitionReassignEnabled) {
+      if (dataReplica > 1) {
         throw new RssException(
-            "The feature of partition reassign is incompatible with multiple replicas and stage retry.");
+            "The feature of task partition reassign is incompatible with multiple replicas mechanism.");
       }
     }
 
     this.blockIdSelfManagedEnabled = rssConf.getBoolean(RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
     this.shuffleManagerRpcServiceEnabled =
-        taskBlockSendFailureRetryEnabled || rssResubmitStage || blockIdSelfManagedEnabled;
+        partitionReassignEnabled || rssResubmitStage || blockIdSelfManagedEnabled;
     if (isDriver) {
       heartBeatScheduledExecutorService =
           ThreadUtils.getDaemonSingleThreadScheduledExecutor("rss-heartbeat");
@@ -455,7 +454,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       StageAttemptShuffleHandleInfo handleInfo =
           new StageAttemptShuffleHandleInfo(shuffleId, remoteStorage, shuffleHandleInfo);
       shuffleHandleInfoManager.register(shuffleId, handleInfo);
-    } else if (shuffleManagerRpcServiceEnabled && taskBlockSendFailureRetryEnabled) {
+    } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
       ShuffleHandleInfo shuffleHandleInfo =
           new MutableShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
       shuffleHandleInfoManager.register(shuffleId, shuffleHandleInfo);
@@ -496,7 +495,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     if (shuffleManagerRpcServiceEnabled && rssResubmitStage) {
       // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
       shuffleHandleInfo = getRemoteShuffleHandleInfoWithStageRetry(shuffleId);
-    } else if (shuffleManagerRpcServiceEnabled && taskBlockSendFailureRetryEnabled) {
+    } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
       // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
       shuffleHandleInfo = getRemoteShuffleHandleInfoWithBlockRetry(shuffleId);
     } else {
@@ -640,7 +639,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     if (shuffleManagerRpcServiceEnabled && rssResubmitStage) {
       // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
       shuffleHandleInfo = getRemoteShuffleHandleInfoWithStageRetry(shuffleId);
-    } else if (shuffleManagerRpcServiceEnabled && taskBlockSendFailureRetryEnabled) {
+    } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
       // In Block Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
       shuffleHandleInfo = getRemoteShuffleHandleInfoWithBlockRetry(shuffleId);
     } else {
