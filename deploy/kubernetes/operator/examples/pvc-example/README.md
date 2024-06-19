@@ -22,5 +22,5 @@ If we want to use PVC for shuffle servers, we need to edit the rss object as fol
 + update `.spec.shuffleServer.volumeMounts` with the mount points of PVC.
 + update  `.spec.shuffleServer.volumeClaimTemplates` with the correct volume claim templates.
 
-We can refer to the [example](rss-pvc-all-restart.yaml).
+We can refer to the [example](rss-pvc-on-gce.yaml). You can should apply [storage class](gce-storage-class.yml) first.
 

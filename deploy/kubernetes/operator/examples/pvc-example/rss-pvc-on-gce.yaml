@@ -55,6 +55,7 @@ spec:
     securityContext:
       runAsUser: 1000
       fsGroup: 1000
+    # volumeMount.name is mapping to volumeClaimTemplate.volumeNameTemplate
     volumeMounts:
       - name: volume
         mountPath: /data1
@@ -65,4 +66,4 @@ spec:
           storageClassName: fast
           resources:
             requests:
-              storage: 30Gi
+              storage: "${storage-size}"
