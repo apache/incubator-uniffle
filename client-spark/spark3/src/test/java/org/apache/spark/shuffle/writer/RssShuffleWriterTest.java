@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 import scala.Product2;
 import scala.Tuple2;
-import scala.collection.mutable.MutableList;
+import scala.collection.immutable.Nil;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -77,15 +77,13 @@ import static org.mockito.Mockito.when;
 
 public class RssShuffleWriterTest {
 
-  private MutableList<Product2<String, String>> createMockRecords() {
-    MutableList<Product2<String, String>> data = new MutableList<>();
-    data.appendElem(new Tuple2<>("testKey2", "testValue2"));
-    data.appendElem(new Tuple2<>("testKey3", "testValue3"));
-    data.appendElem(new Tuple2<>("testKey4", "testValue4"));
-    data.appendElem(new Tuple2<>("testKey6", "testValue6"));
-    data.appendElem(new Tuple2<>("testKey1", "testValue1"));
-    data.appendElem(new Tuple2<>("testKey5", "testValue5"));
-    return data;
+  private scala.collection.immutable.List<Product2<String, String>> createMockRecords() {
+    return Nil.$colon$colon(new Tuple2<>("testKey2", "testValue2"))
+        .$colon$colon(new Tuple2<>("testKey3", "testValue3"))
+        .$colon$colon(new Tuple2<>("testKey4", "testValue4"))
+        .$colon$colon(new Tuple2<>("testKey6", "testValue6"))
+        .$colon$colon(new Tuple2<>("testKey1", "testValue1"))
+        .$colon$colon(new Tuple2<>("testKey5", "testValue5"));
   }
 
   private MutableShuffleHandleInfo createMutableShuffleHandle() {
@@ -275,7 +273,7 @@ public class RssShuffleWriterTest {
 
     // case1: the reassignment will refresh the following plan. So the failure will only occur one
     // time.
-    MutableList<Product2<String, String>> mockedData = createMockRecords();
+    scala.collection.immutable.List<Product2<String, String>> mockedData = createMockRecords();
     writer.write(mockedData.iterator());
 
     Awaitility.await()
@@ -330,7 +328,7 @@ public class RssShuffleWriterTest {
 
     // case1: the reassignment will refresh the following plan. So the failure will only occur one
     // time.
-    MutableList<Product2<String, String>> mockedData = createMockRecords();
+    scala.collection.immutable.List<Product2<String, String>> mockedData = createMockRecords();
     writer.write(mockedData.iterator());
 
     Awaitility.await()
@@ -469,7 +467,7 @@ public class RssShuffleWriterTest {
     doNothing().when(rssShuffleWriterSpy).sendCommit();
 
     // case 1. failed blocks will be resent
-    MutableList<Product2<String, String>> data = createMockRecords();
+    scala.collection.immutable.List<Product2<String, String>> data = createMockRecords();
     rssShuffleWriterSpy.write(data.iterator());
 
     Awaitility.await()
@@ -520,7 +518,7 @@ public class RssShuffleWriterTest {
             });
     manager.setDataPusher(alwaysFailedDataPusher);
 
-    MutableList<Product2<String, String>> mockedData = createMockRecords();
+    scala.collection.immutable.List<Product2<String, String>> mockedData = createMockRecords();
 
     try {
       rssShuffleWriter.write(mockedData.iterator());
@@ -741,12 +739,13 @@ public class RssShuffleWriterTest {
             contextMock);
     rssShuffleWriter.getBufferManager().setSpillFunc(rssShuffleWriter::processShuffleBlockInfos);
 
-    MutableList<Product2<String, String>> data = new MutableList<>();
-    // One record is 26 bytes
-    data.appendElem(new Tuple2<>("Key", "Value11111111111111"));
-    data.appendElem(new Tuple2<>("Key", "Value11111111111111"));
-    data.appendElem(new Tuple2<>("Key", "Value11111111111111"));
-    data.appendElem(new Tuple2<>("Key", "Value11111111111111"));
+    scala.collection.immutable.List<Product2<String, String>> data =
+        Nil
+            // One record is 26 bytes
+            .$colon$colon(new Tuple2<>("Key", "Value11111111111111"))
+            .$colon$colon(new Tuple2<>("Key", "Value11111111111111"))
+            .$colon$colon(new Tuple2<>("Key", "Value11111111111111"))
+            .$colon$colon(new Tuple2<>("Key", "Value11111111111111"));
 
     // case1: all blocks are sent and pass the blocks check when spill is triggered
     rssShuffleWriter.write(data.iterator());
@@ -867,13 +866,13 @@ public class RssShuffleWriterTest {
     doNothing().when(rssShuffleWriterSpy).sendCommit();
 
     // case 1
-    MutableList<Product2<String, String>> data = new MutableList<>();
-    data.appendElem(new Tuple2<>("testKey2", "testValue2"));
-    data.appendElem(new Tuple2<>("testKey3", "testValue3"));
-    data.appendElem(new Tuple2<>("testKey4", "testValue4"));
-    data.appendElem(new Tuple2<>("testKey6", "testValue6"));
-    data.appendElem(new Tuple2<>("testKey1", "testValue1"));
-    data.appendElem(new Tuple2<>("testKey5", "testValue5"));
+    scala.collection.immutable.List<Product2<String, String>> data =
+        Nil.$colon$colon(new Tuple2<>("testKey2", "testValue2"))
+            .$colon$colon(new Tuple2<>("testKey3", "testValue3"))
+            .$colon$colon(new Tuple2<>("testKey4", "testValue4"))
+            .$colon$colon(new Tuple2<>("testKey6", "testValue6"))
+            .$colon$colon(new Tuple2<>("testKey1", "testValue1"))
+            .$colon$colon(new Tuple2<>("testKey5", "testValue5"));
     rssShuffleWriterSpy.write(data.iterator());
 
     assertTrue(shuffleWriteMetrics.writeTime() > 0);
