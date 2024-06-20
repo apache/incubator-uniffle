@@ -286,7 +286,9 @@ public class ShuffleServer {
     if (nettyServerEnabled) {
       if (nettyPort < 0) {
         throw new RssException(
-            "rss.server.netty.port must be set during startup when using GRPC_NETTY");
+            String.format(
+                "%s must be set during startup when using GRPC_NETTY",
+                ShuffleServerConf.NETTY_SERVER_PORT.key()));
       }
       streamServer = new StreamServer(this);
     }
