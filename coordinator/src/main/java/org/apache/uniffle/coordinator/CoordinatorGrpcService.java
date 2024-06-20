@@ -127,7 +127,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         replica,
         requiredTags,
         requiredShuffleServerNumber,
-        faultyServerIds.size(),
+        faultyServerIds,
         request.getStageId(),
         request.getStageAttemptNumber(),
         request.getReassign());

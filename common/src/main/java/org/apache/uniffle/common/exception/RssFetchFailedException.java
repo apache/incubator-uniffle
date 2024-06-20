@@ -17,15 +17,19 @@
 
 package org.apache.uniffle.common.exception;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 /** Dedicated exception for rss client's shuffle failed related exception. */
 public class RssFetchFailedException extends RssException {
-  private ShuffleServerInfo fetchFailureServerId;
+  private Set<ShuffleServerInfo> fetchFailureServerIds = new HashSet<>();
 
-  public RssFetchFailedException(String message, ShuffleServerInfo fetchFailureServerId) {
+  public RssFetchFailedException(String message, ShuffleServerInfo... fetchFailureServerIds) {
     super(message);
-    this.fetchFailureServerId = fetchFailureServerId;
+    Arrays.stream(fetchFailureServerIds).forEach(x -> this.fetchFailureServerIds.add(x));
   }
 
   public RssFetchFailedException(String message) {
@@ -36,7 +40,13 @@ public class RssFetchFailedException extends RssException {
     super(message, e);
   }
 
-  public ShuffleServerInfo getFetchFailureServerId() {
-    return fetchFailureServerId;
+  public RssFetchFailedException(
+      String message, Throwable e, ShuffleServerInfo... fetchFailureServerIds) {
+    super(message, e);
+    Arrays.stream(fetchFailureServerIds).forEach(x -> this.fetchFailureServerIds.add(x));
+  }
+
+  public Set<ShuffleServerInfo> getFetchFailureServerIds() {
+    return fetchFailureServerIds;
   }
 }

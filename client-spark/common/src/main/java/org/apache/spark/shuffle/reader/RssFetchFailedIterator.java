@@ -18,7 +18,7 @@
 package org.apache.spark.shuffle.reader;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Objects;
 
 import scala.Product2;
@@ -123,7 +123,7 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
               builder.stageAttemptId,
               builder.partitionId,
               e.getMessage(),
-              Collections.emptyList(),
+              new ArrayList<>(e.getFetchFailureServerIds()),
               taskContext.stageId(),
               taskContext.taskAttemptId(),
               taskContext.attemptNumber(),

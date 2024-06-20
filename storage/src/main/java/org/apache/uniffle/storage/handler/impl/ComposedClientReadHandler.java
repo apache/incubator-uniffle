@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,7 +119,12 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
               + currentTier.name()
               + "handler, error: "
               + e.getMessage();
-      throw new RssFetchFailedException(message, cause);
+      if (CollectionUtils.isEmpty(e.getFetchFailureServerIds())) {
+        throw new RssFetchFailedException(message, cause);
+      } else {
+        throw new RssFetchFailedException(
+            message, cause, e.getFetchFailureServerIds().toArray(new ShuffleServerInfo[0]));
+      }
     } catch (Exception e) {
       throw new RssFetchFailedException(
           "Failed to read shuffle data from " + currentTier.name() + " handler", e);

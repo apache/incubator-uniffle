@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.stub.StreamObserver;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.spark.shuffle.RssStageResubmitManager;
 import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.StageAttemptShuffleHandleInfo;
@@ -145,6 +146,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     long taskAttemptId = request.getTaskAttemptId();
     int taskAttemptNumber = request.getTaskAttemptNumber();
     String executorId = request.getExecutorId();
+    List<RssProtos.ShuffleServerId> serverIds = request.getFetchFailureServerIdList();
 
     RssStageResubmitManager stageResubmitManager = shuffleManager.getStageResubmitManager();
     RssProtos.StatusCode code;
@@ -172,6 +174,11 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
       } else {
         code = RssProtos.StatusCode.SUCCESS;
         rssShuffleStatus.incTaskFailure(taskAttemptNumber);
+        if (CollectionUtils.isNotEmpty(serverIds)) {
+          ShuffleServerInfo.fromProto(serverIds).stream()
+              .map(x -> x.getId())
+              .forEach(x -> stageResubmitManager.addBlackListedServer(x));
+        }
         if (stageResubmitManager.activateStageRetry(rssShuffleStatus)) {
           reSubmitWholeStage = true;
           msg =
