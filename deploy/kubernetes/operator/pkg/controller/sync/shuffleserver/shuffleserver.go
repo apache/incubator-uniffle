@@ -198,6 +198,17 @@ func GenerateSts(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShu
 		sts.Spec.Template.Spec.RuntimeClassName = rss.Spec.ShuffleServer.RuntimeClassName
 	}
 
+	// add VolumeClaimTemplates, support cloud storage
+	sts.Spec.VolumeClaimTemplates = make([]corev1.PersistentVolumeClaim, 0, len(rss.Spec.ShuffleServer.VolumeClaimTemplates))
+	for _, pvcTemplate := range rss.Spec.ShuffleServer.VolumeClaimTemplates {
+		sts.Spec.VolumeClaimTemplates = append(sts.Spec.VolumeClaimTemplates, corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: *pvcTemplate.VolumeNameTemplate,
+			},
+			Spec: pvcTemplate.Spec,
+		})
+	}
+
 	// add init containers, the main container and other containers.
 	sts.Spec.Template.Spec.InitContainers = util.GenerateInitContainers(rss.Spec.ShuffleServer.RSSPodSpec)
 	containers := []corev1.Container{*generateMainContainer(rss)}
@@ -238,6 +249,11 @@ func generateStorageBasePath(rss *unifflev1alpha1.RemoteShuffleService) string {
 		}
 		paths = append(paths, strings.TrimSuffix(v, "/")+"/"+controllerconstants.RssDataDir)
 	}
+
+	for _, vm := range rss.Spec.ShuffleServer.VolumeMounts {
+		paths = append(paths, strings.TrimSuffix(vm.MountPath, "/")+"/"+controllerconstants.RssDataDir)
+	}
+
 	sort.Strings(paths)
 	return strings.Join(paths, ",")
 }
