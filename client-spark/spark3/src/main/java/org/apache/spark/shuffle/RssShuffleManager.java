@@ -182,6 +182,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     LOG.info("Disable shuffle data locality in RssShuffleManager.");
     taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
     taskToFailedBlockSendTracker = JavaUtils.newConcurrentMap();
+
+    this.rssStageRetryEnabled = rssConf.get(RssClientConf.RSS_CLIENT_REASSIGN_ENABLED);
+    this.partitionReassignEnabled = rssConf.get(RssClientConf.RSS_CLIENT_REASSIGN_ENABLED);
+
     // stage retry for write/fetch failure
     rssStageRetryForFetchFailureEnabled =
         rssConf.get(RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED);
@@ -201,11 +205,9 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           StringUtils.join(logTips, "/"));
     }
 
-    this.rssStageRetryEnabled = rssConf.getBoolean(RssClientConf.RSS_CLIENT_REASSIGN_ENABLED);
-
     // The feature of partition reassign is exclusive with multiple replicas and stage retry.
     if (partitionReassignEnabled) {
-      if (rssStageRetryEnabled || dataReplica > 1) {
+      if (dataReplica > 1) {
         throw new RssException(
             "The feature of task partition reassign is incompatible with multiple replicas mechanism.");
       }
