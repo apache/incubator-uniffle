@@ -237,7 +237,7 @@ func GenerateDeploy(rss *unifflev1alpha1.RemoteShuffleService, index int) *appsv
 
 	// add custom annotations
 	annotations := map[string]string{}
-	for key, value := range rss.Spec.ShuffleServer.Annotations {
+	for key, value := range rss.Spec.Coordinator.Annotations {
 		annotations[key] = value
 	}
 	deploy.Spec.Template.Annotations = annotations

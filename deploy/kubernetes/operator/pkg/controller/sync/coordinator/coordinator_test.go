@@ -133,6 +133,11 @@ var (
 			Name: "default-secret",
 		},
 	}
+
+	testAnotations = map[string]string{
+		"key1": "value1",
+		"key2": "value2",
+	}
 )
 
 func buildRssWithLabels() *uniffleapi.RemoteShuffleService {
@@ -174,6 +179,12 @@ func withCustomAffinity(affinity *corev1.Affinity) *uniffleapi.RemoteShuffleServ
 func withCustomImagePullSecrets(imagePullSecrets []corev1.LocalObjectReference) *uniffleapi.RemoteShuffleService {
 	rss := utils.BuildRSSWithDefaultValue()
 	rss.Spec.ImagePullSecrets = imagePullSecrets
+	return rss
+}
+
+func withCustomAnnotations(annotations map[string]string) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.Coordinator.Annotations = annotations
 	return rss
 }
 
@@ -459,6 +470,19 @@ func TestGenerateDeploy(t *testing.T) {
 					}
 				}
 				return false, fmt.Errorf("generated deploy should include imagePullSecrets: %v", testImagePullSecrets)
+			},
+		},
+		{
+			name: "set custom annotations",
+			rss:  withCustomAnnotations(testAnotations),
+			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (bool, error) {
+				if deploy.Spec.Template.Annotations != nil {
+					equal := reflect.DeepEqual(deploy.Spec.Template.Annotations, testAnotations)
+					if equal {
+						return true, nil
+					}
+				}
+				return false, fmt.Errorf("generated deploy should include annotations: %v", testAnotations)
 			},
 		},
 	} {
