@@ -23,10 +23,11 @@ import (
 	"fmt"
 	"net/http"
 
-	unifflev1alpha1 "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/generated/clientset/versioned/typed/uniffle/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
+
+	unifflev1alpha1 "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/generated/clientset/versioned/typed/uniffle/v1alpha1"
 )
 
 type Interface interface {

@@ -217,7 +217,7 @@ func GenerateSts(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShu
 	}
 
 	for key, value := range rss.Spec.ShuffleServer.Annotations {
-		if _, exist = reservedAnnotations[key]; exist {
+		if _, exist := reservedAnnotations[key]; !exist {
 			annotations[key] = value
 		}
 	}
