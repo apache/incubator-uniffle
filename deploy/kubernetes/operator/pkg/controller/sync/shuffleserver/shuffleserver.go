@@ -212,7 +212,7 @@ func GenerateSts(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShu
 	}
 
 	annotations := map[string]string{}
-	for key, value := reservedAnnotations {
+	for key, value := range reservedAnnotations {
 		annotations[key] = value
 	}
 

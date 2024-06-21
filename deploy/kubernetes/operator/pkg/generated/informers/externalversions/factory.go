@@ -24,14 +24,13 @@ import (
 	sync "sync"
 	time "time"
 
+	versioned "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/generated/clientset/versioned"
+	internalinterfaces "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/generated/informers/externalversions/internalinterfaces"
+	uniffle "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/generated/informers/externalversions/uniffle"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
-
-	versioned "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/generated/clientset/versioned"
-	internalinterfaces "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/generated/informers/externalversions/internalinterfaces"
-	uniffle "github.com/apache/incubator-uniffle/deploy/kubernetes/operator/pkg/generated/informers/externalversions/uniffle"
 )
 
 // SharedInformerOption defines the functional option type for SharedInformerFactory.
