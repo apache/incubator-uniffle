@@ -134,7 +134,7 @@ var (
 		},
 	}
 
-	testAnotations = map[string]string{
+	testAnnotations = map[string]string{
 		"key1": "value1",
 		"key2": "value2",
 	}
@@ -472,15 +472,15 @@ func TestGenerateDeploy(t *testing.T) {
 		},
 		{
 			name: "set custom annotations",
-			rss:  withCustomAnnotations(testAnotations),
+			rss:  withCustomAnnotations(testAnnotations),
 			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (bool, error) {
 				if deploy.Spec.Template.Annotations != nil {
-					equal := reflect.DeepEqual(deploy.Spec.Template.Annotations, testAnotations)
+					equal := reflect.DeepEqual(deploy.Spec.Template.Annotations, testAnnotations)
 					if equal {
 						return true, nil
 					}
 				}
-				return false, fmt.Errorf("generated deploy should include annotations: %v", testAnotations)
+				return false, fmt.Errorf("generated deploy should include annotations: %v", testAnnotations)
 			},
 		},
 	} {
