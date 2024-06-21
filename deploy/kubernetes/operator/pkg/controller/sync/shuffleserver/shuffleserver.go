@@ -202,7 +202,7 @@ func GenerateSts(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShu
 	}
 
 	// add custom annotation, and default annotation used by rss
-	annotations := map[string]string{
+	reservedAnnotations := map[string]string{
 		constants.AnnotationRssName: rss.Name,
 		constants.AnnotationRssUID:  string(rss.UID),
 		constants.AnnotationMetricsServerPort: fmt.Sprintf("%v",
@@ -211,8 +211,13 @@ func GenerateSts(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShu
 			*rss.Spec.ShuffleServer.RPCPort),
 	}
 
+	annotations := map[string]string{}
+	for key, value := reservedAnnotations {
+		annotations[key] = value
+	}
+
 	for key, value := range rss.Spec.ShuffleServer.Annotations {
-		if key != constants.AnnotationRssName && key != constants.AnnotationRssUID && key != constants.AnnotationMetricsServerPort && key != constants.AnnotationShuffleServerPort {
+		if _, exist = reservedAnnotations[key]; exist {
 			annotations[key] = value
 		}
 	}
