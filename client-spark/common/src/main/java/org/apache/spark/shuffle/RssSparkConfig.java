@@ -37,6 +37,29 @@ import org.apache.uniffle.common.config.RssConf;
 
 public class RssSparkConfig {
 
+  public static final ConfigOption<Boolean> RSS_RESUBMIT_STAGE_ENABLED =
+      ConfigOptions.key("rss.stageRetry.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDeprecatedKeys(RssClientConfig.RSS_RESUBMIT_STAGE)
+          .withDescription("Whether to enable the resubmit stage for fetch/write failure");
+
+  public static final ConfigOption<Boolean> RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED =
+      ConfigOptions.key("rss.stageRetry.fetchFailureEnabled")
+          .booleanType()
+          .defaultValue(false)
+          .withFallbackKeys(RSS_RESUBMIT_STAGE_ENABLED.key(), RssClientConfig.RSS_RESUBMIT_STAGE)
+          .withDescription(
+              "If set to true, the stage retry mechanism will be enabled when a fetch failure occurs.");
+
+  public static final ConfigOption<Boolean> RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED =
+      ConfigOptions.key("rss.stageRetry.writeFailureEnabled")
+          .booleanType()
+          .defaultValue(false)
+          .withFallbackKeys(RSS_RESUBMIT_STAGE_ENABLED.key(), RssClientConfig.RSS_RESUBMIT_STAGE)
+          .withDescription(
+              "If set to true, the stage retry mechanism will be enabled when a write failure occurs.");
+
   public static final ConfigOption<Boolean> RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED =
       ConfigOptions.key("rss.blockId.selfManagementEnabled")
           .booleanType()
@@ -403,13 +426,6 @@ public class RssSparkConfig {
                   .internal()
                   .doc(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT.description()))
           .createWithDefault(-1);
-
-  public static final ConfigEntry<Boolean> RSS_RESUBMIT_STAGE =
-      createBooleanBuilder(
-              new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_RESUBMIT_STAGE)
-                  .internal()
-                  .doc("Whether to enable the resubmit stage."))
-          .createWithDefault(false);
 
   public static final ConfigEntry<Integer> RSS_MAX_PARTITIONS =
       createIntegerBuilder(

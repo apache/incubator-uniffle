@@ -86,7 +86,7 @@ public class ConfigOption<T> {
    * @return A new config option, with given description.
    */
   public ConfigOption<T> withDescription(final String description) {
-    return new ConfigOption<>(key, clazz, description, defaultValue, converter);
+    return new ConfigOption<>(key, clazz, description, defaultValue, converter, fallbackKeys);
   }
 
   /**

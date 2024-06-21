@@ -80,6 +80,8 @@ import org.apache.uniffle.common.exception.RssSendFailedException;
 import org.apache.uniffle.common.exception.RssWaitFailedException;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED;
+
 public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleWriter.class);
@@ -238,7 +240,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       writeImpl(records);
     } catch (Exception e) {
       taskFailureCallback.apply(taskId);
-      if (shuffleManager.isRssResubmitStage()) {
+      if (RssSparkConfig.toRssConf(sparkConf).get(RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED)) {
         throwFetchFailedIfNecessary(e);
       } else {
         throw e;

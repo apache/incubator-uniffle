@@ -103,8 +103,9 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
 
   protected SparkConf sparkConf;
   protected ShuffleManagerClient shuffleManagerClient;
-  /** Whether to enable the dynamic shuffleServer function rewrite and reread functions */
-  protected boolean rssResubmitStage;
+  protected boolean rssStageRetryEnabled;
+  protected boolean rssStageRetryForWriteFailureEnabled;
+  protected boolean rssStageRetryForFetchFailureEnabled;
   /**
    * Mapping between ShuffleId and ShuffleServer list. ShuffleServer list is dynamically allocated.
    * ShuffleServer is not obtained from RssShuffleHandle, but from this mapping.
@@ -1046,7 +1047,15 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
         appId, defaultRemoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
   }
 
-  public boolean isRssResubmitStage() {
-    return rssResubmitStage;
+  public boolean isRssStageRetryEnabled() {
+    return rssStageRetryEnabled;
+  }
+
+  public boolean isRssStageRetryForWriteFailureEnabled() {
+    return rssStageRetryForWriteFailureEnabled;
+  }
+
+  public boolean isRssStageRetryForFetchFailureEnabled() {
+    return rssStageRetryForFetchFailureEnabled;
   }
 }
