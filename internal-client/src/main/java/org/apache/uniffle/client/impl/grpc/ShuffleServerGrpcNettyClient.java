@@ -325,7 +325,8 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
             + "], shuffleId["
             + request.getShuffleId()
             + "], partitionId["
-            + request.getPartitionId();
+            + request.getPartitionId()
+            + "]";
     long start = System.currentTimeMillis();
     int retry = 0;
     RpcResponse rpcResponse;
