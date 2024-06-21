@@ -309,6 +309,11 @@ type RSSPodSpec struct {
 	// Affinity is a group of affinity scheduling rules.
 	// +optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// Annotations is an unstructured key value map stored with a resource that may be
+	// set by external tools to store and retrieve arbitrary metadata.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 // MainContainer stores information of the main container of coordinators or shuffle servers,

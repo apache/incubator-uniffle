@@ -173,14 +173,6 @@ func GenerateSts(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShu
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: make(map[string]string),
-					Annotations: map[string]string{
-						constants.AnnotationRssName: rss.Name,
-						constants.AnnotationRssUID:  string(rss.UID),
-						constants.AnnotationMetricsServerPort: fmt.Sprintf("%v",
-							*rss.Spec.ShuffleServer.HTTPPort),
-						constants.AnnotationShuffleServerPort: fmt.Sprintf("%v",
-							*rss.Spec.ShuffleServer.RPCPort),
-					},
 				},
 				Spec: podSpec,
 			},
@@ -208,6 +200,23 @@ func GenerateSts(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShu
 			Spec: pvcTemplate.Spec,
 		})
 	}
+
+	// add custom annotation, and default annotation used by rss
+	annotations := map[string]string{
+		constants.AnnotationRssName: rss.Name,
+		constants.AnnotationRssUID:  string(rss.UID),
+		constants.AnnotationMetricsServerPort: fmt.Sprintf("%v",
+			*rss.Spec.ShuffleServer.HTTPPort),
+		constants.AnnotationShuffleServerPort: fmt.Sprintf("%v",
+			*rss.Spec.ShuffleServer.RPCPort),
+	}
+
+	for key, value := range rss.Spec.ShuffleServer.Annotations {
+		if key != constants.AnnotationRssName && key != constants.AnnotationRssUID && key != constants.AnnotationMetricsServerPort && key != constants.AnnotationShuffleServerPort {
+			annotations[key] = value
+		}
+	}
+	sts.Spec.Template.Annotations = annotations
 
 	// add init containers, the main container and other containers.
 	sts.Spec.Template.Spec.InitContainers = util.GenerateInitContainers(rss.Spec.ShuffleServer.RSSPodSpec)
