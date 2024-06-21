@@ -508,7 +508,6 @@ func TestGenerateSts(t *testing.T) {
 			rss:  withCustomAffinity(testAffinity),
 			IsValidSts: func(sts *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (valid bool, err error) {
 				if sts.Spec.Template.Spec.Affinity != nil {
-					sts.Spec.Template.Spec.Affinity = rss.Spec.ShuffleServer.Affinity
 					equal := reflect.DeepEqual(sts.Spec.Template.Spec.Affinity, testAffinity)
 					if equal {
 						return true, nil
@@ -522,7 +521,6 @@ func TestGenerateSts(t *testing.T) {
 			rss:  withCustomImagePullSecrets(testImagePullSecrets),
 			IsValidSts: func(deploy *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (bool, error) {
 				if deploy.Spec.Template.Spec.ImagePullSecrets != nil {
-					deploy.Spec.Template.Spec.ImagePullSecrets = rss.Spec.ImagePullSecrets
 					equal := reflect.DeepEqual(deploy.Spec.Template.Spec.ImagePullSecrets, testImagePullSecrets)
 					if equal {
 						return true, nil
