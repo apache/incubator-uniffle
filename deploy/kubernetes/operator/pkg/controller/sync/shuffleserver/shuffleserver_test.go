@@ -557,10 +557,10 @@ func TestGenerateSts(t *testing.T) {
 							return false, fmt.Errorf("generated deploy should include annotations: %v", testAnotations)
 						}
 					}
-					return true, nil
 				} else {
 					return false, fmt.Errorf("generated deploy should include annotations: %v", testAnotations)
 				}
+				return true, nil
 			},
 		},
 	} {
