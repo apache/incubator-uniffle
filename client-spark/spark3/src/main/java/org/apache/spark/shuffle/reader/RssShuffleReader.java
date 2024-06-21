@@ -284,9 +284,18 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>> completionIterator =
             CompletionIterator$.MODULE$.apply(
                 iterator,
-                () -> {
-                  context.taskMetrics().mergeShuffleReadMetrics();
-                  return iterator.cleanup();
+                new Function0<BoxedUnit>() {
+                  private boolean cleanupCalled = false;
+
+                  @Override
+                  public BoxedUnit apply() {
+                    if (!cleanupCalled) {
+                      cleanupCalled = true;
+                      context.taskMetrics().mergeShuffleReadMetrics();
+                      iterator.cleanup();
+                    }
+                    return BoxedUnit.UNIT;
+                  }
                 });
         iterators.add(completionIterator);
       }
