@@ -160,6 +160,11 @@ var (
 			},
 		},
 	}
+
+	testAnotations = map[string]string{
+		"key1": "value1",
+		"key2": "value2",
+	}
 )
 
 func buildRssWithLabels() *uniffleapi.RemoteShuffleService {
@@ -212,6 +217,12 @@ func withCustomTolerations(tolerations []corev1.Toleration) *uniffleapi.RemoteSh
 func withCustomAffinity(affinity *corev1.Affinity) *uniffleapi.RemoteShuffleService {
 	rss := utils.BuildRSSWithDefaultValue()
 	rss.Spec.ShuffleServer.Affinity = affinity
+	return rss
+}
+
+func withCustomAnnotations(annotations map[string]string) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ShuffleServer.Annotations = annotations
 	return rss
 }
 
@@ -533,6 +544,23 @@ func TestGenerateSts(t *testing.T) {
 					}
 				}
 				return false, fmt.Errorf("generated sts should include volumeClaimTemplates: %v", testImagePullSecrets)
+			},
+		},
+		{
+			name: "set custom annotations",
+			rss:  withCustomAnnotations(testAnotations),
+			IsValidSts: func(deploy *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (bool, error) {
+				if deploy.Spec.Template.Annotations != nil {
+					for key, value := range testAnotations {
+						equal := reflect.DeepEqual(deploy.Spec.Template.Annotations[key], value)
+						if !equal {
+							return false, fmt.Errorf("generated deploy should include annotations: %v", testAnotations)
+						}
+					}
+					return true, nil
+				} else {
+					return false, fmt.Errorf("generated deploy should include annotations: %v", testAnotations)
+				}
 			},
 		},
 	} {
