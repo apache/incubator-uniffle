@@ -49,6 +49,7 @@ import com.google.common.collect.Sets;
 import com.google.common.net.InetAddresses;
 import io.netty.channel.unix.Errors;
 import io.netty.util.internal.PlatformDependent;
+import org.eclipse.jetty.util.MultiException;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,6 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.exception.RssMultiException;
 import org.apache.uniffle.common.rpc.ServerInterface;
 
 public class RssUtils {
@@ -216,8 +216,8 @@ public class RssUtils {
         return true;
       }
       return isServerPortBindCollision(e.getCause());
-    } else if (e instanceof RssMultiException) {
-      return !((RssMultiException) e)
+    } else if (e instanceof MultiException) {
+      return !((MultiException) e)
           .getThrowables().stream()
               .noneMatch((Throwable throwable) -> isServerPortBindCollision(throwable));
     } else if (e instanceof Errors.NativeIoException) {
