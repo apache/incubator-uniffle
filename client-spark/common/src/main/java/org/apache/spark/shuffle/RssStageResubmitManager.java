@@ -97,12 +97,28 @@ public class RssStageResubmitManager {
   public boolean activateStageRetry(RssShuffleStatus shuffleStatus) {
     final String TASK_MAX_FAILURE = "spark.task.maxFailures";
     int sparkTaskMaxFailures = sparkConf.getInt(TASK_MAX_FAILURE, 4);
+    // todo: use the extra config to control max stage retried count
     if (shuffleStatus.getStageRetriedCount() > 1) {
       LOG.warn("The shuffleId:{}, stageId:{} has been retried. Ignore it.");
       return false;
     }
     if (shuffleStatus.getTaskFailureAttemptCount() >= sparkTaskMaxFailures) {
       return true;
+    }
+    // for the sort merge join, the same stageId could trigger stage retry
+    if (shuffleStatus instanceof RssShuffleStatusForReader) {
+      int stageId = shuffleStatus.getStageId();
+      long taskFailureCnt =
+          shuffleStatusForReader.values().stream()
+              .filter(x -> x.getStageId() == stageId)
+              .map(x -> x.getTaskFailureAttemptCount())
+              .count();
+      if (taskFailureCnt >= sparkTaskMaxFailures) {
+        LOG.info(
+            "Multiple same stageIds reader shuffle status's task failure count is greater than the threshold: {}",
+            sparkTaskMaxFailures);
+        return true;
+      }
     }
     return false;
   }

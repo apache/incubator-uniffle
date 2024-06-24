@@ -110,4 +110,12 @@ public class RssShuffleStatus {
   public int getTaskFailureAttemptCount() {
     return withReadLock(() -> taskAttemptFailureRecords.size());
   }
+
+  public int getStageId() {
+    return stageId;
+  }
+
+  public int getShuffleId() {
+    return shuffleId;
+  }
 }
