@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -38,5 +39,14 @@ public class ShuffleDataResultTest {
     assertTrue(new ShuffleDataResult(new byte[1], null).isEmpty());
     assertTrue(new ShuffleDataResult(new byte[1], Collections.emptyList()).isEmpty());
     assertFalse(new ShuffleDataResult(new byte[1], segments).isEmpty());
+  }
+
+  @Test
+  public void testRelease() {
+    ShuffleDataResult shuffleDataResult = new ShuffleDataResult("test".getBytes(), null);
+    shuffleDataResult.release();
+    // Expect no exception when executing release again
+    assertDoesNotThrow(shuffleDataResult::release);
+    assertTrue(shuffleDataResult.isEmpty());
   }
 }
