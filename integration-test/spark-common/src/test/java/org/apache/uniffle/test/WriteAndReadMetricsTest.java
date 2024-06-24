@@ -25,8 +25,9 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
-import org.apache.uniffle.test.listener.WriteAndReadMetricsSparkListener;
 import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.test.listener.WriteAndReadMetricsSparkListener;
 
 public class WriteAndReadMetricsTest extends SimpleTestBase {
 

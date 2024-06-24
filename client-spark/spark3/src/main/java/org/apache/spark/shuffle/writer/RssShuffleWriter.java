@@ -298,7 +298,10 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         iterator = shuffleDependency.aggregator().get().combineValuesByKey(records, taskContext);
       } else {
         Function1<V, C> combiner = shuffleDependency.aggregator().get().createCombiner();
-        iterator = records.map((Function1<Product2<K, V>, Product2<K, C>>) x -> new Tuple2<>(x._1(), combiner.apply(x._2())));
+        iterator =
+            records.map(
+                (Function1<Product2<K, V>, Product2<K, C>>)
+                    x -> new Tuple2<>(x._1(), combiner.apply(x._2())));
       }
     }
     long recordCount = 0;

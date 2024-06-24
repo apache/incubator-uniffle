@@ -114,10 +114,10 @@ public class RssSparkConfig {
           .withDescription("The block retry max times when partition reassign is enabled.");
 
   public static final ConfigOption<Boolean> RSS_CLIENT_MAP_SIDE_COMBINE_ENABLED =
-          ConfigOptions.key("rss.client.mapSideCombine.enabled")
-                  .booleanType()
-                  .defaultValue(false)
-                  .withDescription("Whether to enable map side combine of shuffle writer.");
+      ConfigOptions.key("rss.client.mapSideCombine.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Whether to enable map side combine of shuffle writer.");
 
   public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
 

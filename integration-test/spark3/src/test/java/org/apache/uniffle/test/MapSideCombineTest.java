@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.uniffle.test.listener.WriteAndReadMetricsSparkListener;
 import scala.Tuple2;
 
 import com.google.common.collect.Maps;
@@ -37,6 +36,7 @@ import org.apache.uniffle.common.StorageType;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.test.listener.WriteAndReadMetricsSparkListener;
 
 public class MapSideCombineTest extends SparkIntegrationTestBase {
 
