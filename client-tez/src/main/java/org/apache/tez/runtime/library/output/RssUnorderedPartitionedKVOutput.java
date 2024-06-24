@@ -68,6 +68,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
 
 import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_ADDRESS;
 import static org.apache.tez.common.RssTezConfig.RSS_AM_SHUFFLE_MANAGER_PORT;
@@ -164,8 +165,12 @@ public class RssUnorderedPartitionedKVOutput extends AbstractLogicalOutput {
     TezDAGID tezDAGID = tezVertexID.getDAGId();
     int sourceVertexId = this.conf.getInt(RSS_SHUFFLE_SOURCE_VERTEX_ID, -1);
     int destinationVertexId = this.conf.getInt(RSS_SHUFFLE_DESTINATION_VERTEX_ID, -1);
-    assert sourceVertexId != -1;
-    assert destinationVertexId != -1;
+    if (sourceVertexId == -1) {
+      throw new RssException("sourceVertexId should not be -1");
+    }
+    if (destinationVertexId == -1) {
+      throw new RssException("destinationVertexId should not be -1");
+    }
     this.shuffleId =
         RssTezUtils.computeShuffleId(tezDAGID.getId(), sourceVertexId, destinationVertexId);
     this.applicationAttemptId =

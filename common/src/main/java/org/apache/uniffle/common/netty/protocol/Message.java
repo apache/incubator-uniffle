@@ -19,6 +19,7 @@ package org.apache.uniffle.common.netty.protocol;
 
 import io.netty.buffer.ByteBuf;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 
 public abstract class Message implements Encodable {
@@ -66,7 +67,9 @@ public abstract class Message implements Encodable {
     private final byte id;
 
     Type(int id) {
-      assert id < 128 : "Cannot have more than 128 message types";
+      if (id >= 128) {
+        throw new RssException("Cannot have more than 128 message types");
+      }
       this.id = (byte) id;
     }
 

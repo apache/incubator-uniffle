@@ -26,6 +26,7 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.protocol.Message;
 import org.apache.uniffle.common.netty.protocol.MessageWithHeader;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
@@ -84,7 +85,9 @@ public final class MessageEncoder extends MessageToMessageEncoder<Message> {
     msgType.encode(header);
     header.writeInt(bodyLength);
     in.encode(header);
-    assert header.writableBytes() == 0;
+    if (header.writableBytes() != 0) {
+      throw new RssException("header's writable bytes should be 0");
+    }
 
     if (body != null) {
       // We transfer ownership of the reference on in.body() to MessageWithHeader.
