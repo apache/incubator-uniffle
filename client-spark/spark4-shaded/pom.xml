@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.apache.uniffle</groupId>
+    <artifactId>uniffle-parent</artifactId>
+    <version>0.10.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>rss-client-spark4-shaded</artifactId>
+  <packaging>jar</packaging>
+  <name>Apache Uniffle Shaded Client (Spark 4)</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.uniffle</groupId>
+      <artifactId>rss-client-spark4</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>rss-client-spark4-shaded-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <artifactSet>
+                <includes>
+                  <include>org.apache.uniffle:*</include>
+                  <include>com.google.protobuf:*</include>
+                  <include>com.google.code.gson:gson</include>
+                  <include>io.grpc:*</include>
+                  <include>com.google.android:annotations</include>
+                  <include>io.perfmark:perfmark-api</include>
+                  <include>io.netty:*</include>
+                  <include>com.google.api.grpc:proto-google-common-protos</include>
+                  <include>org.codehaus.mojo:animal-sniffer-annotations</include>
+                  <include>com.google.guava:*</include>
+                  <include>com.fasterxml.jackson.core:jackson-databind</include>
+                  <include>com.fasterxml.jackson.core:jackson-core</include>
+                  <include>com.fasterxml.jackson.core:jackson-annotations</include>
+                  <include>org.roaringbitmap:RoaringBitmap</include>
+                  <include>org.roaringbitmap:shims</include>
+                </includes>
+              </artifactSet>
+              <finalName>${project.artifactId}-${project.version}</finalName>
+              <transformers>
+                <transformer
+                    implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer
+                    implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
+                <transformer
+                    implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>LICENSE</exclude>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <relocations>
+                <relocation>
+                  <pattern>com.google.protobuf</pattern>
+                  <shadedPattern>${rss.shade.packageName}.com.google.protobuf</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.google.common</pattern>
+                  <shadedPattern>${rss.shade.packageName}.com.google.common</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>google.protobuf</pattern>
+                  <shadedPattern>${rss.shade.packageName}.google.protobuf</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.fasterxml.jackson.core</pattern>
+                  <shadedPattern>${rss.shade.packageName}.jackson.core</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.fasterxml.jackson.databind</pattern>
+                  <shadedPattern>${rss.shade.packageName}.jackson.databind</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.fasterxml.jackson.annotation</pattern>
+                  <shadedPattern>${rss.shade.packageName}.jackson.annotation</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>io.netty</pattern>
+                  <shadedPattern>${rss.shade.packageName}.io.netty</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.roaringbitmap</pattern>
+                  <shadedPattern>${rss.shade.packageName}.org.roaringbitmap</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- shade the native netty libs as well -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>regex-property</id>
+            <goals>
+              <goal>regex-property</goal>
+            </goals>
+            <configuration>
+              <name>rss.shade.native.packageName</name>
+              <value>${rss.shade.packageName}</value>
+              <regex>\.</regex>
+              <replacement>_</replacement>
+              <failIfNoMatch>true</failIfNoMatch>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack</id>
+            <phase>package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <echo message="Shade netty native libraries to ${rss.shade.native.packageName}"/>
+                <unzip src="${project.build.directory}/${project.artifactId}-${project.version}.jar"
+                       dest="${project.build.directory}/unpacked/"/>
+                <echo message="renaming native epoll library"></echo>
+                <move includeemptydirs="false"
+                      todir="${project.build.directory}/unpacked/META-INF/native">
+                  <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                  <mapper from="libnetty_transport_native_epoll_x86_64.so"
+                          to="lib${rss.shade.native.packageName}_netty_transport_native_epoll_x86_64.so"
+                          type="glob"></mapper>
+                </move>
+                <move includeemptydirs="false"
+                      todir="${project.build.directory}/unpacked/META-INF/native">
+                  <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                  <mapper from="libnetty_transport_native_epoll_aarch_64.so"
+                          to="lib${rss.shade.native.packageName}_netty_transport_native_epoll_aarch_64.so"
+                          type="glob"></mapper>
+                </move>
+                <move includeemptydirs="false"
+                      todir="${project.build.directory}/unpacked/META-INF/native">
+                  <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                  <mapper from="libnetty_transport_native_epoll_riscv64.so"
+                          to="lib${rss.shade.native.packageName}_netty_transport_native_epoll_riscv64.so"
+                          type="glob"></mapper>
+                </move>
+                <move includeemptydirs="false"
+                      todir="${project.build.directory}/unpacked/META-INF/native">
+                  <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                  <mapper from="libnetty_transport_native_kqueue_x86_64.jnilib"
+                          to="lib${rss.shade.native.packageName}_netty_transport_native_kqueue_x86_64.jnilib"
+                          type="glob"></mapper>
+                </move>
+                <move includeemptydirs="false"
+                      todir="${project.build.directory}/unpacked/META-INF/native">
+                  <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                  <mapper from="libnetty_resolver_dns_native_macos_aarch_64.jnilib"
+                          to="lib${rss.shade.native.packageName}_netty_resolver_dns_native_macos_aarch_64.jnilib"
+                          type="glob"></mapper>
+                </move>
+                <move includeemptydirs="false"
+                      todir="${project.build.directory}/unpacked/META-INF/native">
+                  <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                  <mapper from="libnetty_resolver_dns_native_macos_x86_64.jnilib"
+                          to="lib${rss.shade.native.packageName}_netty_resolver_dns_native_macos_x86_64.jnilib"
+                          type="glob"></mapper>
+                </move>
+                <move includeemptydirs="false"
+                      todir="${project.build.directory}/unpacked/META-INF/native">
+                  <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                  <mapper from="libnetty_transport_native_kqueue_aarch_64.jnilib"
+                          to="lib${rss.shade.native.packageName}_netty_transport_native_kqueue_aarch_64.jnilib"
+                          type="glob"></mapper>
+                </move>
+                <echo message="repackaging netty jar"></echo>
+                <jar destfile="${project.build.directory}/${project.artifactId}-${project.version}.jar"
+                     basedir="${project.build.directory}/unpacked"/>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
