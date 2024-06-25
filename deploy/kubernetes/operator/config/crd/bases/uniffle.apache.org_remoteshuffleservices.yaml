@@ -937,6 +937,13 @@ spec:
                             type: array
                         type: object
                     type: object
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    description: Annotations is an unstructured key value map stored
+                      with a resource that may be set by external tools to store and
+                      retrieve arbitrary metadata.
+                    type: object
                   args:
                     description: Args represents args used by coordinators or shuffle
                       servers.
@@ -5898,6 +5905,13 @@ spec:
                               type: object
                             type: array
                         type: object
+                    type: object
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    description: Annotations is an unstructured key value map stored
+                      with a resource that may be set by external tools to store and
+                      retrieve arbitrary metadata.
                     type: object
                   args:
                     description: Args represents args used by coordinators or shuffle

@@ -160,6 +160,12 @@ var (
 			},
 		},
 	}
+
+	testAnnotations = map[string]string{
+		"key1":                      "value1",
+		"key2":                      "value2",
+		constants.AnnotationRssName: "override",
+	}
 )
 
 func buildRssWithLabels() *uniffleapi.RemoteShuffleService {
@@ -212,6 +218,12 @@ func withCustomTolerations(tolerations []corev1.Toleration) *uniffleapi.RemoteSh
 func withCustomAffinity(affinity *corev1.Affinity) *uniffleapi.RemoteShuffleService {
 	rss := utils.BuildRSSWithDefaultValue()
 	rss.Spec.ShuffleServer.Affinity = affinity
+	return rss
+}
+
+func withCustomAnnotations(annotations map[string]string) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ShuffleServer.Annotations = annotations
 	return rss
 }
 
@@ -497,7 +509,6 @@ func TestGenerateSts(t *testing.T) {
 			rss:  withCustomAffinity(testAffinity),
 			IsValidSts: func(sts *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (valid bool, err error) {
 				if sts.Spec.Template.Spec.Affinity != nil {
-					sts.Spec.Template.Spec.Affinity = rss.Spec.ShuffleServer.Affinity
 					equal := reflect.DeepEqual(sts.Spec.Template.Spec.Affinity, testAffinity)
 					if equal {
 						return true, nil
@@ -511,7 +522,6 @@ func TestGenerateSts(t *testing.T) {
 			rss:  withCustomImagePullSecrets(testImagePullSecrets),
 			IsValidSts: func(deploy *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (bool, error) {
 				if deploy.Spec.Template.Spec.ImagePullSecrets != nil {
-					deploy.Spec.Template.Spec.ImagePullSecrets = rss.Spec.ImagePullSecrets
 					equal := reflect.DeepEqual(deploy.Spec.Template.Spec.ImagePullSecrets, testImagePullSecrets)
 					if equal {
 						return true, nil
@@ -533,6 +543,26 @@ func TestGenerateSts(t *testing.T) {
 					}
 				}
 				return false, fmt.Errorf("generated sts should include volumeClaimTemplates: %v", testImagePullSecrets)
+			},
+		},
+		{
+			name: "set custom annotations",
+			rss:  withCustomAnnotations(testAnnotations),
+			IsValidSts: func(deploy *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (bool, error) {
+				if deploy.Spec.Template.Annotations != nil {
+					for key, value := range testAnnotations {
+						equal := reflect.DeepEqual(deploy.Spec.Template.Annotations[key], value)
+						if key == constants.AnnotationRssName && equal {
+							return false, fmt.Errorf("generated deploy shouldn't override reserved annotations: %v", key)
+						}
+						if key != constants.AnnotationRssName && !equal {
+							return false, fmt.Errorf("generated deploy should include annotations: %v", key)
+						}
+					}
+				} else {
+					return false, fmt.Errorf("generated deploy should include annotations: %v", testAnnotations)
+				}
+				return true, nil
 			},
 		},
 	} {
