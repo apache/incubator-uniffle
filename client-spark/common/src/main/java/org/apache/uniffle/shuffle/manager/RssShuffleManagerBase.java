@@ -680,7 +680,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
               estimateTaskConcurrency,
               rssStageResubmitManager.getBlackListedServerIds(),
               stageId,
-              stageAttemptNumber,
+              stageAttemptNumber + 1,
               false);
       /**
        * we need to clear the metadata of the completed task, otherwise some of the stage's data
