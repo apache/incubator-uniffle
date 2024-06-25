@@ -215,6 +215,7 @@ func GenerateSts(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShu
 	for key, value := range rss.Spec.ShuffleServer.Annotations {
 		annotations[key] = value
 	}
+	// reserved annotations have higher preference.
 	for key, value := range reservedAnnotations {
 		annotations[key] = value
 	}
