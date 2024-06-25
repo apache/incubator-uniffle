@@ -38,6 +38,8 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.test.listener.WriteAndReadMetricsSparkListener;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class MapSideCombineTest extends SparkIntegrationTestBase {
 
   @BeforeAll
@@ -85,7 +87,8 @@ public class MapSideCombineTest extends SparkIntegrationTestBase {
       result.put(stageId + "-read-records", readRecords);
     }
 
-    System.out.println(result);
+    // check map side combine
+    assertEquals(100L, result.get("0-write-records"));
 
     return result;
   }
