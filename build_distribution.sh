@@ -81,28 +81,22 @@ while (( "$#" )); do
       ;;
     --without-mr)
       WITH_MR="false"
-      shift
       ;;
     --without-tez)
       WITH_TEZ="false"
-      shift
       ;;
     --without-spark)
       WITH_SPARK2="false"
       WITH_SPARK3="false"
-      shift
       ;;
     --without-spark2)
       WITH_SPARK2="false"
-      shift
       ;;
     --without-spark3)
       WITH_SPARK3="false"
-      shift
       ;;
     --without-dashboard)
       WITH_DASHBOARD="false"
-      shift
       ;;
     --name)
       NAME="$2"
