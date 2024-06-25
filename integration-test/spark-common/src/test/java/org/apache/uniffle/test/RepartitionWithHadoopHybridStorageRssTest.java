@@ -19,6 +19,7 @@ package org.apache.uniffle.test;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -59,14 +60,16 @@ public class RepartitionWithHadoopHybridStorageRssTest extends RepartitionTest {
     // local storage config
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
-    String grpcBasePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
+    List<String> grpcBasePath =
+        Arrays.asList(dataDir1.getAbsolutePath(), dataDir2.getAbsolutePath());
     ShuffleServerConf grpcShuffleServerConf = buildShuffleServerConf(ServerType.GRPC, grpcBasePath);
     createShuffleServer(grpcShuffleServerConf);
 
     // local storage config
     File dataDir3 = new File(tmpDir, "data3");
     File dataDir4 = new File(tmpDir, "data4");
-    String nettyBasePath = dataDir3.getAbsolutePath() + "," + dataDir4.getAbsolutePath();
+    List<String> nettyBasePath =
+        Arrays.asList(dataDir3.getAbsolutePath(), dataDir4.getAbsolutePath());
     ShuffleServerConf nettyShuffleServerConf =
         buildShuffleServerConf(ServerType.GRPC_NETTY, nettyBasePath);
     createShuffleServer(nettyShuffleServerConf);
@@ -74,10 +77,10 @@ public class RepartitionWithHadoopHybridStorageRssTest extends RepartitionTest {
     startServers();
   }
 
-  private static ShuffleServerConf buildShuffleServerConf(ServerType serverType, String basePath)
-      throws Exception {
+  private static ShuffleServerConf buildShuffleServerConf(
+      ServerType serverType, List<String> basePath) throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType);
-    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
+    shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, basePath);
     shuffleServerConf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE_HDFS.name());
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 1024L * 1024L);
