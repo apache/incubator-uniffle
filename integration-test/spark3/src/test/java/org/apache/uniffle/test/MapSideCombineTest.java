@@ -19,6 +19,7 @@ package org.apache.uniffle.test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +27,7 @@ import scala.Tuple2;
 
 import com.google.common.collect.Maps;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.SparkSession;
@@ -67,29 +69,82 @@ public class MapSideCombineTest extends SparkIntegrationTestBase {
 
   @Override
   Map runTest(SparkSession spark, String fileName) throws Exception {
+    Thread.sleep(4000);
+
     WriteAndReadMetricsSparkListener listener = new WriteAndReadMetricsSparkListener();
     spark.sparkContext().addSparkListener(listener);
 
-    Thread.sleep(4000);
     Map<String, Object> result = Maps.newHashMap();
     JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
-    List<Integer> data = Stream.iterate(1, n -> n + 1).limit(1000).collect(Collectors.toList());
-    sc.parallelize(data, 10).mapToPair(x -> new Tuple2<>(x % 10, 1)).reduceByKey((x, y) -> x + y)
-        .collect().stream()
-        .forEach(x -> result.put(x._1 + "-result-value", x._2));
+    List<Integer> data = Stream.iterate(1, n -> n + 1).limit(10000).collect(Collectors.toList());
+    JavaPairRDD<Integer, Integer> dataSourceRdd =
+        sc.parallelize(data, 10).mapToPair(x -> new Tuple2<>(x % 10, 1));
+    int jobId = -1;
+
+    // reduceByKey
+    checkMapSideCombine(
+        spark,
+        listener,
+        "reduceByKey",
+        dataSourceRdd.reduceByKey(Integer::sum).collectAsMap(),
+        result,
+        ++jobId);
+
+    // combineByKey
+    checkMapSideCombine(
+        spark,
+        listener,
+        "combineByKey",
+        dataSourceRdd.combineByKey(x -> 1, Integer::sum, Integer::sum).collectAsMap(),
+        result,
+        ++jobId);
+
+    // aggregateByKey
+    checkMapSideCombine(
+        spark,
+        listener,
+        "aggregateByKey",
+        dataSourceRdd.aggregateByKey(10, Integer::sum, Integer::sum).collectAsMap(),
+        result,
+        ++jobId);
+
+    // foldByKey
+    checkMapSideCombine(
+        spark,
+        listener,
+        "foldByKey",
+        dataSourceRdd.foldByKey(10, Integer::sum).collectAsMap(),
+        result,
+        ++jobId);
+
+    // countByKey
+    checkMapSideCombine(spark, listener, "countByKey", dataSourceRdd.countByKey(), result, ++jobId);
+
+    return result;
+  }
+
+  private <K, V> void checkMapSideCombine(
+      SparkSession spark,
+      WriteAndReadMetricsSparkListener listener,
+      String method,
+      Map<K, V> rddResult,
+      Map<String, Object> result,
+      int jobId)
+      throws TimeoutException {
+    rddResult.forEach((key, value) -> result.put(method + "-result-value-" + key, value));
 
     spark.sparkContext().listenerBus().waitUntilEmpty();
 
-    for (int stageId : spark.sparkContext().statusTracker().getJobInfo(0).get().stageIds()) {
+    for (int stageId : spark.sparkContext().statusTracker().getJobInfo(jobId).get().stageIds()) {
       long writeRecords = listener.getWriteRecords(stageId);
       long readRecords = listener.getReadRecords(stageId);
       result.put(stageId + "-write-records", writeRecords);
       result.put(stageId + "-read-records", readRecords);
     }
 
+    // each job has two stages, so each job start stageId = jobId * 2
+    int shuffleStageId = jobId * 2;
     // check map side combine
-    assertEquals(100L, result.get("0-write-records"));
-
-    return result;
+    assertEquals(100L, result.get(shuffleStageId + "-write-records"));
   }
 }
