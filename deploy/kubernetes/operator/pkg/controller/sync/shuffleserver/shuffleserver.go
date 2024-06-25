@@ -212,15 +212,13 @@ func GenerateSts(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShu
 	}
 
 	annotations := map[string]string{}
+	for key, value := range rss.Spec.ShuffleServer.Annotations {
+		annotations[key] = value
+	}
 	for key, value := range reservedAnnotations {
 		annotations[key] = value
 	}
 
-	for key, value := range rss.Spec.ShuffleServer.Annotations {
-		if _, exist := reservedAnnotations[key]; !exist {
-			annotations[key] = value
-		}
-	}
 	sts.Spec.Template.Annotations = annotations
 
 	// add init containers, the main container and other containers.

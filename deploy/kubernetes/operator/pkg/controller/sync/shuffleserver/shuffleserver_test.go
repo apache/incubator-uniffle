@@ -162,8 +162,9 @@ var (
 	}
 
 	testAnnotations = map[string]string{
-		"key1": "value1",
-		"key2": "value2",
+		"key1":                      "value1",
+		"key2":                      "value2",
+		constants.AnnotationRssName: "override",
 	}
 )
 
@@ -551,7 +552,7 @@ func TestGenerateSts(t *testing.T) {
 				if deploy.Spec.Template.Annotations != nil {
 					for key, value := range testAnnotations {
 						equal := reflect.DeepEqual(deploy.Spec.Template.Annotations[key], value)
-						if !equal {
+						if (key == constants.AnnotationRssName && equal) || (key != constants.AnnotationRssName && !equal) {
 							return false, fmt.Errorf("generated deploy should include annotations: %v", testAnnotations)
 						}
 					}
