@@ -552,8 +552,11 @@ func TestGenerateSts(t *testing.T) {
 				if deploy.Spec.Template.Annotations != nil {
 					for key, value := range testAnnotations {
 						equal := reflect.DeepEqual(deploy.Spec.Template.Annotations[key], value)
-						if (key == constants.AnnotationRssName && equal) || (key != constants.AnnotationRssName && !equal) {
-							return false, fmt.Errorf("generated deploy should include annotations: %v", testAnnotations)
+						if key == constants.AnnotationRssName && equal {
+							return false, fmt.Errorf("generated deploy shouldn't override reserved annotations: %v", key)
+						}
+						if key != constants.AnnotationRssName && !equal {
+							return false, fmt.Errorf("generated deploy should include annotations: %v", key)
 						}
 					}
 				} else {
