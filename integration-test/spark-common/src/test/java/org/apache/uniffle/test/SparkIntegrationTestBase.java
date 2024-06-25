@@ -105,7 +105,10 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
   }
 
   protected SparkConf createSparkConf() {
-    return new SparkConf().setAppName(this.getClass().getSimpleName()).setMaster("local[4]");
+    return new SparkConf()
+        .setAppName(this.getClass().getSimpleName())
+        .setMaster("local[4]")
+        .set("spark.ui.enabled", "false");
   }
 
   public void updateSparkConfWithRssGrpc(SparkConf sparkConf) {
