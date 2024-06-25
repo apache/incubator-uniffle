@@ -663,6 +663,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     Object shuffleLock = rssStageResubmitManager.getOrCreateShuffleLock(shuffleId);
     synchronized (shuffleLock) {
       if (!rssStageResubmitManager.isStageAttemptRetried(shuffleId, stageId, stageAttemptNumber)) {
+        long start = System.currentTimeMillis();
         int requiredShuffleServerNumber =
             RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
         int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
@@ -698,9 +699,10 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
             (StageAttemptShuffleHandleInfo) shuffleHandleInfoManager.get(shuffleId);
         stageAttemptShuffleHandleInfo.replaceCurrentShuffleHandleInfo(shuffleHandleInfo);
         LOG.info(
-            "The stage retry has been triggered successfully for the stageId: {}, attemptNumber: {}",
+            "The stage retry has been triggered successfully for the stageId: {}, attemptNumber: {}. It costs {}(ms)",
             stageId,
-            stageAttemptNumber);
+            stageAttemptNumber,
+            System.currentTimeMillis() - start);
         return true;
       } else {
         LOG.info(

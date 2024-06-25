@@ -797,6 +797,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     boolean isSuccessful = false;
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     int successCnt = 0;
+    Set<ShuffleServerInfo> failureServers = new HashSet<>();
     for (ShuffleServerInfo ssi : shuffleServerInfoSet) {
       try {
         RssGetShuffleResultResponse response =
@@ -812,6 +813,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           }
         }
       } catch (Exception e) {
+        failureServers.add(ssi);
         LOG.warn(
             "Get shuffle result is failed from "
                 + ssi
@@ -824,7 +826,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
     if (!isSuccessful) {
       throw new RssFetchFailedException(
-          "Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]");
+          "Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]",
+          failureServers.toArray(new ShuffleServerInfo[0]));
     }
     return blockIdBitmap;
   }
@@ -839,6 +842,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       PartitionDataReplicaRequirementTracking replicaRequirementTracking) {
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Set<Integer> allRequestedPartitionIds = new HashSet<>();
+    Set<ShuffleServerInfo> failureServers = new HashSet<>();
     for (Map.Entry<ShuffleServerInfo, Set<Integer>> entry : serverToPartitions.entrySet()) {
       ShuffleServerInfo shuffleServerInfo = entry.getKey();
       Set<Integer> requestPartitions = Sets.newHashSet();
@@ -864,6 +868,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           }
         }
       } catch (Exception e) {
+        failureServers.add(shuffleServerInfo);
         failedPartitions.addAll(requestPartitions);
         LOG.warn(
             "Get shuffle result is failed from "
@@ -883,7 +888,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (!isSuccessful) {
       LOG.error("Failed to meet replica requirement: {}", replicaRequirementTracking);
       throw new RssFetchFailedException(
-          "Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]");
+          "Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]",
+          failureServers.toArray(new ShuffleServerInfo[0]));
     }
     return blockIdBitmap;
   }
