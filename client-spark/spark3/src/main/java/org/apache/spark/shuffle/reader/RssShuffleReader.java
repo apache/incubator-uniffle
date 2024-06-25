@@ -38,6 +38,7 @@ import org.apache.spark.ShuffleDependency;
 import org.apache.spark.TaskContext;
 import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.serializer.Serializer;
+import org.apache.spark.shuffle.FunctionUtils;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.ShuffleReader;
 import org.apache.spark.util.CompletionIterator;
@@ -279,10 +280,11 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
         CompletionIterator<Product2<K, C>, RssShuffleDataIterator<K, C>> completionIterator =
             CompletionIterator$.MODULE$.apply(
                 iterator,
-                () -> {
-                  context.taskMetrics().mergeShuffleReadMetrics();
-                  return iterator.cleanup();
-                });
+                FunctionUtils.once(
+                    () -> {
+                      context.taskMetrics().mergeShuffleReadMetrics();
+                      return iterator.cleanup();
+                    }));
         iterators.add(completionIterator);
       }
       iterator = iterators.iterator();
