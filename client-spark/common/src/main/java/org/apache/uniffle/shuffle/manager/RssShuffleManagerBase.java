@@ -660,57 +660,55 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   @Override
   public boolean reassignOnStageResubmit(
       int stageId, int stageAttemptNumber, int shuffleId, int numPartitions) {
-    Object shuffleLock = rssStageResubmitManager.getOrCreateShuffleLock(shuffleId);
-    synchronized (shuffleLock) {
-      if (!rssStageResubmitManager.isStageAttemptRetried(shuffleId, stageId, stageAttemptNumber)) {
-        long start = System.currentTimeMillis();
-        int requiredShuffleServerNumber =
-            RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
-        int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
+    if (!rssStageResubmitManager.isStageAttemptRetried(shuffleId, stageId, stageAttemptNumber)) {
+      LOG.info("Doing reassign on stage retry for stage:{}, stageAttempt: {}", stageId, stageAttemptNumber);
+      long start = System.currentTimeMillis();
+      int requiredShuffleServerNumber =
+          RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
+      int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
 
-        /**
-         * this will clear up the previous stage attempt all data when registering the same
-         * shuffleId at the second time
-         */
-        Map<Integer, List<ShuffleServerInfo>> partitionToServers =
-            requestShuffleAssignment(
-                shuffleId,
-                numPartitions,
-                1,
-                requiredShuffleServerNumber,
-                estimateTaskConcurrency,
-                rssStageResubmitManager.getBlackListedServerIds(),
-                stageId,
-                stageAttemptNumber,
-                false);
-        /**
-         * we need to clear the metadata of the completed task, otherwise some of the stage's data
-         * will be lost
-         */
-        try {
-          unregisterAllMapOutput(shuffleId);
-        } catch (SparkException e) {
-          LOG.error("Clear MapoutTracker Meta failed!");
-          throw new RssException("Clear MapoutTracker Meta failed!", e);
-        }
-        MutableShuffleHandleInfo shuffleHandleInfo =
-            new MutableShuffleHandleInfo(shuffleId, partitionToServers, getRemoteStorageInfo());
-        StageAttemptShuffleHandleInfo stageAttemptShuffleHandleInfo =
-            (StageAttemptShuffleHandleInfo) shuffleHandleInfoManager.get(shuffleId);
-        stageAttemptShuffleHandleInfo.replaceCurrentShuffleHandleInfo(shuffleHandleInfo);
-        LOG.info(
-            "The stage retry has been triggered successfully for the stageId: {}, attemptNumber: {}. It costs {}(ms)",
-            stageId,
-            stageAttemptNumber,
-            System.currentTimeMillis() - start);
-        return true;
-      } else {
-        LOG.info(
-            "Do nothing that the stage: {} has been reassigned for attempt{}",
-            stageId,
-            stageAttemptNumber);
-        return false;
+      /**
+       * this will clear up the previous stage attempt all data when registering the same
+       * shuffleId at the second time
+       */
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers =
+          requestShuffleAssignment(
+              shuffleId,
+              numPartitions,
+              1,
+              requiredShuffleServerNumber,
+              estimateTaskConcurrency,
+              rssStageResubmitManager.getBlackListedServerIds(),
+              stageId,
+              stageAttemptNumber,
+              false);
+      /**
+       * we need to clear the metadata of the completed task, otherwise some of the stage's data
+       * will be lost
+       */
+      try {
+        unregisterAllMapOutput(shuffleId);
+      } catch (SparkException e) {
+        LOG.error("Clear MapoutTracker Meta failed!");
+        throw new RssException("Clear MapoutTracker Meta failed!", e);
       }
+      MutableShuffleHandleInfo shuffleHandleInfo =
+          new MutableShuffleHandleInfo(shuffleId, partitionToServers, getRemoteStorageInfo());
+      StageAttemptShuffleHandleInfo stageAttemptShuffleHandleInfo =
+          (StageAttemptShuffleHandleInfo) shuffleHandleInfoManager.get(shuffleId);
+      stageAttemptShuffleHandleInfo.replaceCurrentShuffleHandleInfo(shuffleHandleInfo);
+      LOG.info(
+          "The stage retry has been triggered successfully for the stageId: {}, attemptNumber: {}. It costs {}(ms)",
+          stageId,
+          stageAttemptNumber,
+          System.currentTimeMillis() - start);
+      return true;
+    } else {
+      LOG.info(
+          "Do nothing that the stage: {} has been reassigned for attempt{}",
+          stageId,
+          stageAttemptNumber);
+      return false;
     }
   }
 
