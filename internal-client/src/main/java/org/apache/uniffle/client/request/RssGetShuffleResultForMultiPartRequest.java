@@ -28,12 +28,20 @@ public class RssGetShuffleResultForMultiPartRequest {
   private Set<Integer> partitions;
   private BlockIdLayout blockIdLayout;
 
+  private int stageAttemptNumber;
+
   public RssGetShuffleResultForMultiPartRequest(
-      String appId, int shuffleId, Set<Integer> partitions, BlockIdLayout blockIdLayout) {
+      String appId, int shuffleId, Set<Integer> partitions, BlockIdLayout blockIdLayout, int stageAttemptNumbers) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitions = partitions;
     this.blockIdLayout = blockIdLayout;
+    this.stageAttemptNumber = stageAttemptNumbers;
+  }
+
+  public RssGetShuffleResultForMultiPartRequest(
+      String appId, int shuffleId, Set<Integer> partitions, BlockIdLayout blockIdLayout) {
+    this(appId, shuffleId, partitions, blockIdLayout, 0);
   }
 
   public String getAppId() {
@@ -52,6 +60,10 @@ public class RssGetShuffleResultForMultiPartRequest {
     return blockIdLayout;
   }
 
+  public int getStageAttemptNumber() {
+    return stageAttemptNumber;
+  }
+
   public RssProtos.GetShuffleResultForMultiPartRequest toProto() {
     RssGetShuffleResultForMultiPartRequest request = this;
     RssProtos.GetShuffleResultForMultiPartRequest rpcRequest =
@@ -65,6 +77,7 @@ public class RssGetShuffleResultForMultiPartRequest {
                     .setPartitionIdBits(request.getBlockIdLayout().partitionIdBits)
                     .setTaskAttemptIdBits(request.getBlockIdLayout().taskAttemptIdBits)
                     .build())
+            .setStageAttemptNumber(request.getStageAttemptNumber())
             .build();
     return rpcRequest;
   }

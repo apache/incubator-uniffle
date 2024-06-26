@@ -839,7 +839,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       String appId,
       int shuffleId,
       Set<Integer> failedPartitions,
-      PartitionDataReplicaRequirementTracking replicaRequirementTracking) {
+      PartitionDataReplicaRequirementTracking replicaRequirementTracking,
+      int stageAttemptNumber) {
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Set<Integer> allRequestedPartitionIds = new HashSet<>();
     Set<ShuffleServerInfo> failureServers = new HashSet<>();
@@ -854,7 +855,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       allRequestedPartitionIds.addAll(requestPartitions);
       RssGetShuffleResultForMultiPartRequest request =
           new RssGetShuffleResultForMultiPartRequest(
-              appId, shuffleId, requestPartitions, blockIdLayout);
+              appId, shuffleId, requestPartitions, blockIdLayout, stageAttemptNumber);
       try {
         RssGetShuffleResultResponse response =
             getShuffleServerClient(shuffleServerInfo).getShuffleResultForMultiPart(request);

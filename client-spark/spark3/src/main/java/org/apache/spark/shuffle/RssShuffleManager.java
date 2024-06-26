@@ -1053,7 +1053,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           appId,
           shuffleId,
           failedPartitions,
-          replicaRequirementTracking);
+          replicaRequirementTracking,
+          stageAttemptId);
     } catch (RssFetchFailedException e) {
       throw RssSparkShuffleUtils.reportRssFetchFailedException(
           e, sparkConf, appId, shuffleId, stageAttemptId, failedPartitions);

@@ -656,6 +656,31 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetShuffleResultForMultiPartResponse reply;
+
+    try {
+      ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
+      if (taskInfo != null) {
+        synchronized (taskInfo) {
+          int latestAttemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
+          if (request.getStageAttemptNumber() != latestAttemptNumber) {
+            LOG.error("Abort this request with the old stageAttemptNumber:{}. latest: {}", request.getStageAttemptNumber(), latestAttemptNumber);
+            reply =
+                GetShuffleResultForMultiPartResponse.newBuilder()
+                    .setStatus(StatusCode.INTERNAL_ERROR.toProto())
+                    .setRetMsg("Stage retry. Abort this request.")
+                    .build();
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+            return;
+          }
+        }
+      } else {
+        LOG.warn("TaskInfo is null. This should not happen");
+      }
+    } catch (Exception e) {
+      LOG.info("Errors on getting shuffle result with multi-parts.", e);
+    }
+
     byte[] serializedBlockIds = null;
     String requestInfo =
         "appId[" + appId + "], shuffleId[" + shuffleId + "], partitions" + partitionsList;

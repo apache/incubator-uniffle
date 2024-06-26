@@ -163,6 +163,7 @@ message GetShuffleResultForMultiPartRequest {
   int32 shuffleId = 2;
   repeated int32 partitions = 3;
   BlockIdLayout blockIdLayout = 4;
+  int32 stageAttemptNumber = 5;
 }
 
 message GetShuffleResultForMultiPartResponse {
