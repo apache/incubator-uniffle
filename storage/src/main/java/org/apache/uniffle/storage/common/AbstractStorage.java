@@ -91,21 +91,21 @@ public abstract class AbstractStorage implements Storage {
   @Override
   public void removeHandlers(String appId, Set<Integer> shuffleIds) {
     long start = System.currentTimeMillis();
-    for (int shuffleId : shuffleIds) {
-      String shuffleKeyPrefix = RssUtils.generateShuffleKeyWithSplitKey(appId, shuffleId);
-      Map<String, ShuffleWriteHandler> writeHandlers = writerHandlers.get(appId);
-      if (writeHandlers != null) {
-        writeHandlers.keySet().stream().filter(x -> x.startsWith(shuffleKeyPrefix)).forEach(x -> writeHandlers.remove(x));
-      }
-      Map<String, ServerReadHandler> readHandlers = readerHandlers.get(appId);
-      if (readHandlers != null) {
-        readHandlers.keySet().stream().filter(x -> x.startsWith(shuffleKeyPrefix)).forEach(x -> writeHandlers.remove(x));
-      }
-      Map<String, CreateShuffleWriteHandlerRequest> requests = this.requests.get(appId);
-      if (requests != null) {
-        requests.keySet().stream().filter(x -> x.startsWith(shuffleKeyPrefix)).forEach(x -> writeHandlers.remove(x));
-      }
-    }
+//    for (int shuffleId : shuffleIds) {
+//      String shuffleKeyPrefix = RssUtils.generateShuffleKeyWithSplitKey(appId, shuffleId);
+//      Map<String, ShuffleWriteHandler> writeHandlers = writerHandlers.get(appId);
+//      if (writeHandlers != null) {
+//        writeHandlers.keySet().stream().filter(x -> x.startsWith(shuffleKeyPrefix)).forEach(x -> writeHandlers.remove(x));
+//      }
+//      Map<String, ServerReadHandler> readHandlers = readerHandlers.get(appId);
+//      if (readHandlers != null) {
+//        readHandlers.keySet().stream().filter(x -> x.startsWith(shuffleKeyPrefix)).forEach(x -> readHandlers.remove(x));
+//      }
+//      Map<String, CreateShuffleWriteHandlerRequest> requests = this.requests.get(appId);
+//      if (requests != null) {
+//        requests.keySet().stream().filter(x -> x.startsWith(shuffleKeyPrefix)).forEach(x -> requests.remove(x));
+//      }
+//    }
     LOGGER.info("Removed the handlers for appId:{}, shuffleId:{} costs {} ms", appId, shuffleIds, System.currentTimeMillis() - start);
   }
 
