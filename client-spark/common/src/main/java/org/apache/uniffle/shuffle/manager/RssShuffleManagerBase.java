@@ -53,6 +53,7 @@ import org.apache.spark.shuffle.SparkVersionUtils;
 import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.StageAttemptShuffleHandleInfo;
+import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -652,7 +653,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   }
 
   /**
-   * Reassign the ShuffleServer list for ShuffleId
+   * Reassign the ShuffleServer list for ShuffleId.
+   * This is not thread safe which should be ensured by the invoking side.
    *
    * @param shuffleId
    * @param numPartitions
@@ -667,6 +669,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
       int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
 
+      // avoid heartbeat
+      ((ShuffleWriteClientImpl) shuffleWriteClient).removeShuffleServer(appId, shuffleId);
       /**
        * this will clear up the previous stage attempt all data when registering the same
        * shuffleId at the second time

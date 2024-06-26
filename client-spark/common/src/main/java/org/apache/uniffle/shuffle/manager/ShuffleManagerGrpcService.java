@@ -148,6 +148,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     String executorId = request.getExecutorId();
     List<RssProtos.ShuffleServerId> serverIds = request.getFetchFailureServerIdList();
 
+    LOG.info("Accepted reportShuffleFetchFailure. stageId: {}, stageAttemptNumber: {}, taskId: {}, taskAttemptNumber: {}", stageId, stageAttempt, taskAttemptId, taskAttemptNumber);
     RssStageResubmitManager stageResubmitManager = shuffleManager.getStageResubmitManager();
     RssProtos.StatusCode code;
     boolean reSubmitWholeStage;
@@ -179,19 +180,20 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
               .map(x -> x.getId())
               .forEach(x -> stageResubmitManager.addBlackListedServer(x));
         }
-        if (stageResubmitManager.activateStageRetry(rssShuffleStatus)) {
-          reSubmitWholeStage = true;
-          msg =
-              String.format(
-                  "Activate stage retry for reader on stage(%d:%d), taskFailuresCount:(%d)",
-                  stageId, stageAttempt, rssShuffleStatus.getTaskFailureAttemptCount());
-          int partitionNum = shuffleManager.getPartitionNum(shuffleId);
-          Object shuffleLock = stageResubmitManager.getOrCreateShuffleLock(shuffleId);
-          synchronized (shuffleLock) {
+        Object shuffleLock = stageResubmitManager.getOrCreateShuffleLock(shuffleId);
+        synchronized (shuffleLock) {
+          if (stageResubmitManager.activateStageRetry(rssShuffleStatus)) {
+            reSubmitWholeStage = true;
+            msg =
+                String.format(
+                    "Make stage retry for reader on stage(%d:%d), taskFailuresCount:(%d)",
+                    stageId, stageAttempt, rssShuffleStatus.getTaskFailureAttemptCount());
+            LOG.info(msg);
+            int partitionNum = shuffleManager.getPartitionNum(shuffleId);
             if (shuffleManager.reassignOnStageResubmit(
                 stageId, stageAttempt, shuffleId, partitionNum)) {
               LOG.info(
-                  "{} from executorId({}), task({}:{}) on stageId({}:{}), shuffleId({})",
+                  "Finished reassign on stage retry from executorId({}), task({}-{}) on stageId({}-{}), shuffleId({})",
                   msg,
                   executorId,
                   taskAttemptId,
@@ -201,10 +203,13 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
                   shuffleId);
             }
             rssShuffleStatus.markStageAttemptRetried();
+          } else {
+            reSubmitWholeStage = false;
+            msg = "Current task failure attempt records: "
+                + rssShuffleStatus.getTaskAttemptFailureRecords()
+                + ". And attempts count haven't reached the spark max task failure threshold";
+            LOG.info(msg);
           }
-        } else {
-          reSubmitWholeStage = false;
-          msg = "Accepted task fetch failure report";
         }
       }
     }

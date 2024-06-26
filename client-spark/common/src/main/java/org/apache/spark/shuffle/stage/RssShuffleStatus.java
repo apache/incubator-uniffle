@@ -17,6 +17,7 @@
 
 package org.apache.spark.shuffle.stage;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -109,6 +110,14 @@ public class RssShuffleStatus {
 
   public int getTaskFailureAttemptCount() {
     return withReadLock(() -> taskAttemptFailureRecords.size());
+  }
+
+  public int getMaxFailureAttemptNumber() {
+    return withReadLock(() -> taskAttemptFailureRecords.stream().max(Comparator.comparing(Integer::intValue)).orElse(0));
+  }
+
+  public Set<Integer> getTaskAttemptFailureRecords() {
+    return withReadLock(() -> new HashSet<>(taskAttemptFailureRecords));
   }
 
   public int getStageId() {

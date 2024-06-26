@@ -1158,7 +1158,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @VisibleForTesting
-  void removeShuffleServer(String appId, int shuffleId) {
+  public void removeShuffleServer(String appId, int shuffleId) {
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
     if (appServerMap != null) {
       appServerMap.remove(shuffleId);

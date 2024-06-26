@@ -755,6 +755,7 @@ public class ShuffleTaskManager {
           taskInfo.getCachedBlockIds().remove(shuffleId);
           taskInfo.getCommitCounts().remove(shuffleId);
           taskInfo.getCommitLocks().remove(shuffleId);
+          taskInfo.clearBlockNumber(shuffleId);
         }
       }
       Optional.ofNullable(partitionsToBlockIds.get(appId))
@@ -794,7 +795,7 @@ public class ShuffleTaskManager {
     Lock lock = getAppWriteLock(appId);
     lock.lock();
     try {
-      LOG.info("Start remove resource for appId[" + appId + "]");
+      LOG.info("Start remove resource for appId[" + appId + "]" );
       if (checkAppExpired && !isAppExpired(appId)) {
         LOG.info(
             "It seems that this appId[{}] has registered a new shuffle, just ignore this AppPurgeEvent event.",

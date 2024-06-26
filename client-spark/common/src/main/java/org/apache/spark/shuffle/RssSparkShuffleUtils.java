@@ -381,12 +381,15 @@ public class RssSparkShuffleUtils {
                   SparkEnv.get().executorId());
           RssReportShuffleFetchFailureResponse response = client.reportShuffleFetchFailure(req);
           if (response.getReSubmitWholeStage()) {
+            LOG.error("Task:{}-{} is throwing the spark's fetchFailure exception to trigger stage retry as [{}]", taskContext.taskAttemptId(), taskContext.attemptNumber(), response.getMessage());
             // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
             // is provided.
             FetchFailedException ffe =
                 RssSparkShuffleUtils.createFetchFailedException(
                     shuffleId, -1, partitionId, rssFetchFailedException);
             return new RssException(ffe);
+          } else {
+            LOG.warn("Task:{}-{} haven't receive the shuffle manager's retry signal as [{}]", taskContext.taskAttemptId(), taskContext.attemptNumber(), response.getMessage());
           }
         }
       } catch (IOException ioe) {

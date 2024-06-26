@@ -102,24 +102,16 @@ public class RssStageResubmitManager {
       LOG.warn("The shuffleId:{}, stageId:{} has been retried. Ignore it.");
       return false;
     }
-    if (shuffleStatus.getTaskFailureAttemptCount() >= sparkTaskMaxFailures) {
+    int maxTaskFailureAttempt = shuffleStatus.getMaxFailureAttemptNumber();
+    if (maxTaskFailureAttempt >= sparkTaskMaxFailures - 1) {
+      LOG.warn("Task failure attempt:{} is the final task attempt: {}", maxTaskFailureAttempt, sparkTaskMaxFailures - 1);
       return true;
     }
-    // for the sort merge join, the same stageId could trigger stage retry
-    if (shuffleStatus instanceof RssShuffleStatusForReader) {
-      int stageId = shuffleStatus.getStageId();
-      long taskFailureCnt =
-          shuffleStatusForReader.values().stream()
-              .filter(x -> x.getStageId() == stageId)
-              .map(x -> x.getTaskFailureAttemptCount())
-              .count();
-      if (taskFailureCnt >= sparkTaskMaxFailures) {
-        LOG.info(
-            "Multiple same stageIds reader shuffle status's task failure count is greater than the threshold: {}",
-            sparkTaskMaxFailures);
-        return true;
-      }
-    }
+//    int taskFailureAttemptCnt = shuffleStatus.getTaskFailureAttemptCount();
+//    if (taskFailureAttemptCnt >= sparkTaskMaxFailures) {
+//      LOG.warn("Task failure attempt count:{} reaches the spark's max task failure threshold: {}", taskFailureAttemptCnt, sparkTaskMaxFailures);
+//      return true;
+//    }
     return false;
   }
 

@@ -69,6 +69,7 @@
                   <include>org.roaringbitmap:RoaringBitmap</include>
                   <include>org.roaringbitmap:shims</include>
                   <include>org.apache.commons:commons-collections4</include>
+                  <include>org.eclipse.jetty:jetty-util</include>
                 </includes>
               </artifactSet>
               <finalName>${project.artifactId}-${project.version}</finalName>
@@ -123,6 +124,10 @@
                 <relocation>
                   <pattern>org.roaringbitmap</pattern>
                   <shadedPattern>${rss.shade.packageName}.org.roaringbitmap</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.eclipse.jetty</pattern>
+                  <shadedPattern>${rss.shade.packageName}.org.eclipse.jetty</shadedPattern>
                 </relocation>
               </relocations>
             </configuration>
