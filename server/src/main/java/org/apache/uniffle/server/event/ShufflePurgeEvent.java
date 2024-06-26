@@ -20,8 +20,24 @@ package org.apache.uniffle.server.event;
 import java.util.List;
 
 public class ShufflePurgeEvent extends PurgeEvent {
+  private boolean lazyDeletion = false;
+  private int stageAttemptNumber = 0;
 
   public ShufflePurgeEvent(String appId, String user, List<Integer> shuffleIds) {
     super(appId, user, shuffleIds);
+  }
+
+  public ShufflePurgeEvent(String appId, String user, List<Integer> shuffleIds, boolean isLazyDelete, int stageAttemptNumber) {
+    super(appId, user, shuffleIds);
+    this.lazyDeletion = isLazyDelete;
+    this.stageAttemptNumber = stageAttemptNumber;
+  }
+
+  public boolean isLazyDeletion() {
+    return lazyDeletion;
+  }
+
+  public int getStageAttemptNumber() {
+    return stageAttemptNumber;
   }
 }

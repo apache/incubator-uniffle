@@ -99,7 +99,7 @@ public class RssStageResubmitManager {
     int sparkTaskMaxFailures = sparkConf.getInt(TASK_MAX_FAILURE, 4);
     // todo: use the extra config to control max stage retried count
     if (shuffleStatus.getStageRetriedCount() > 1) {
-      LOG.warn("The shuffleId:{}, stageId:{} has been retried. Ignore it.");
+      LOG.warn("The shuffleId:{}, stageId:{} has been retried. Ignore it.", shuffleStatus.getShuffleId(), shuffleStatus.getStageId());
       return false;
     }
     int maxTaskFailureAttempt = shuffleStatus.getMaxFailureAttemptNumber();

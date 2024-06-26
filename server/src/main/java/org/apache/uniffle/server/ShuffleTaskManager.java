@@ -733,13 +733,17 @@ public class ShuffleTaskManager {
         > appExpiredWithoutHB;
   }
 
+  public void removeResourcesByShuffleIds(String appId, List<Integer> shuffleIds) {
+    removeResourcesByShuffleIds(appId, shuffleIds, false, 0);
+  }
+
   /**
    * Clear up the partial resources of shuffleIds of App.
    *
    * @param appId
    * @param shuffleIds
    */
-  public void removeResourcesByShuffleIds(String appId, List<Integer> shuffleIds) {
+  public void removeResourcesByShuffleIds(String appId, List<Integer> shuffleIds, boolean isLazyDeletion, int stageAttemptNumber) {
     Lock writeLock = getAppWriteLock(appId);
     writeLock.lock();
     try {
@@ -768,7 +772,7 @@ public class ShuffleTaskManager {
       shuffleBufferManager.removeBufferByShuffleId(appId, shuffleIds);
       shuffleFlushManager.removeResourcesOfShuffleId(appId, shuffleIds);
       storageManager.removeResources(
-          new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds));
+          new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds, isLazyDeletion, stageAttemptNumber));
       LOG.info(
           "Finish remove resource for appId[{}], shuffleIds[{}], cost[{}]",
           appId,
@@ -795,7 +799,7 @@ public class ShuffleTaskManager {
     Lock lock = getAppWriteLock(appId);
     lock.lock();
     try {
-      LOG.info("Start remove resource for appId[" + appId + "]" );
+      LOG.info("Start remove resource for appId[" + appId + "]");
       if (checkAppExpired && !isAppExpired(appId)) {
         LOG.info(
             "It seems that this appId[{}] has registered a new shuffle, just ignore this AppPurgeEvent event.",
@@ -913,6 +917,10 @@ public class ShuffleTaskManager {
   @VisibleForTesting
   public void removeShuffleDataSync(String appId, int shuffleId) {
     removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId));
+  }
+
+  public void removeShuffleForStageRetry(String appId, int shuffleId, int stageAttemptNumber) {
+    removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId), true, stageAttemptNumber);
   }
 
   public ShuffleDataDistributionType getDataDistributionType(String appId) {

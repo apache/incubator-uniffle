@@ -41,6 +41,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.uniffle.common.exception.StageRetryAbortException;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -869,7 +870,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           }
         }
       } catch (Exception e) {
-        failureServers.add(shuffleServerInfo);
+        if (!(e instanceof StageRetryAbortException)) {
+          failureServers.add(shuffleServerInfo);
+        }
         failedPartitions.addAll(requestPartitions);
         LOG.warn(
             "Get shuffle result is failed from "

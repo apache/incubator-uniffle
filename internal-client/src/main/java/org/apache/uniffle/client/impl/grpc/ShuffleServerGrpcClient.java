@@ -31,6 +31,7 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import io.netty.buffer.Unpooled;
+import org.apache.uniffle.common.exception.StageRetryAbortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -852,6 +853,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                     .setPartitionIdBits(request.getBlockIdLayout().partitionIdBits)
                     .setTaskAttemptIdBits(request.getBlockIdLayout().taskAttemptIdBits)
                     .build())
+            .setStageAttemptNumber(request.getStageAttemptNumber())
             .build();
     GetShuffleResultForMultiPartResponse rpcResponse =
         getBlockingStub().getShuffleResultForMultiPart(rpcRequest);
@@ -868,6 +870,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           throw new RssException(e);
         }
         break;
+      case STAGE_RETRY_IGNORE:
+        throw new StageRetryAbortException(rpcResponse.getRetMsg());
       default:
         String msg =
             "Can't get shuffle result from "

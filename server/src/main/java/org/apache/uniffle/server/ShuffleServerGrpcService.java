@@ -167,9 +167,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         int attemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
         if (stageAttemptNumber > attemptNumber) {
           taskInfo.refreshLatestStageAttemptNumber(shuffleId, stageAttemptNumber);
+          LOG.info("Refreshed the stage attempt number from {} to {}", attemptNumber, stageAttemptNumber);
           try {
             long start = System.currentTimeMillis();
-            shuffleServer.getShuffleTaskManager().removeShuffleDataSync(appId, shuffleId);
+            shuffleServer.getShuffleTaskManager().removeShuffleForStageRetry(appId, shuffleId, attemptNumber);
             LOG.info(
                 "Deleted the previous stage attempt data due to stage recomputing for app: {}, "
                     + "shuffleId: {}. It costs {} ms",
@@ -666,7 +667,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             LOG.error("Abort this request with the old stageAttemptNumber:{}. latest: {}", request.getStageAttemptNumber(), latestAttemptNumber);
             reply =
                 GetShuffleResultForMultiPartResponse.newBuilder()
-                    .setStatus(StatusCode.INTERNAL_ERROR.toProto())
+                    .setStatus(StatusCode.STAGE_RETRY_IGNORE.toProto())
                     .setRetMsg("Stage retry. Abort this request.")
                     .build();
             responseObserver.onNext(reply);

@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server.storage;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -279,14 +280,8 @@ public class LocalStorageManager extends SingleStorageManager {
         storage.removeResources(RssUtils.generateShuffleKey(appId, shuffleId));
       }
     }
-    // delete shuffle data for application
-    ShuffleDeleteHandler deleteHandler =
-        ShuffleHandlerFactory.getInstance()
-            .createShuffleDeleteHandler(
-                new CreateShuffleDeleteHandlerRequest(
-                    StorageType.LOCALFILE.name(), new Configuration()));
 
-    List<String> deletePaths =
+    List<String> dataPaths =
         storageBasePaths.stream()
             .flatMap(
                 path -> {
@@ -305,7 +300,27 @@ public class LocalStorageManager extends SingleStorageManager {
                 })
             .collect(Collectors.toList());
 
-    deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user);
+    if (event instanceof ShufflePurgeEvent) {
+      if (((ShufflePurgeEvent) event).isLazyDeletion()) {
+        for (String path : dataPaths) {
+          File file = new File(path);
+          if (file.exists()) {
+            // todo: use the RenameHandler to do this.
+            file.renameTo(new File(file.getAbsolutePath() + "-" + ((ShufflePurgeEvent) event).getStageAttemptNumber()));
+          }
+        }
+        return;
+      }
+    }
+
+    // delete shuffle data for application
+    ShuffleDeleteHandler deleteHandler =
+        ShuffleHandlerFactory.getInstance()
+            .createShuffleDeleteHandler(
+                new CreateShuffleDeleteHandlerRequest(
+                    StorageType.LOCALFILE.name(), new Configuration()));
+
+    deleteHandler.delete(dataPaths.toArray(new String[dataPaths.size()]), appId, user);
   }
 
   private void cleanupStorageSelectionCache(PurgeEvent event) {
