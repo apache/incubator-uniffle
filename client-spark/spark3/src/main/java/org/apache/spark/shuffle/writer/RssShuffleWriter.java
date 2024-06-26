@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 import scala.Function1;
 import scala.Option;
 import scala.Product2;
+import scala.Tuple2;
 import scala.collection.Iterator;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -91,6 +92,7 @@ import org.apache.uniffle.common.exception.RssWaitFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_CLIENT_MAP_SIDE_COMBINE_ENABLED;
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES;
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED;
 
@@ -289,25 +291,27 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private void writeImpl(Iterator<Product2<K, V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos;
     boolean isCombine = shuffleDependency.mapSideCombine();
-    Function1<V, C> createCombiner = null;
+
+    Iterator<? extends Product2<K, ?>> iterator = records;
     if (isCombine) {
-      createCombiner = shuffleDependency.aggregator().get().createCombiner();
+      if (RssSparkConfig.toRssConf(sparkConf).get(RSS_CLIENT_MAP_SIDE_COMBINE_ENABLED)) {
+        iterator = shuffleDependency.aggregator().get().combineValuesByKey(records, taskContext);
+      } else {
+        Function1<V, C> combiner = shuffleDependency.aggregator().get().createCombiner();
+        iterator =
+            records.map(
+                (Function1<Product2<K, V>, Product2<K, C>>)
+                    x -> new Tuple2<>(x._1(), combiner.apply(x._2())));
+      }
     }
     long recordCount = 0;
-    while (records.hasNext()) {
+    while (iterator.hasNext()) {
       recordCount++;
-
       checkDataIfAnyFailure();
-
-      Product2<K, V> record = records.next();
+      Product2<K, ?> record = iterator.next();
       K key = record._1();
       int partition = getPartition(key);
-      if (isCombine) {
-        Object c = createCombiner.apply(record._2());
-        shuffleBlockInfos = bufferManager.addRecord(partition, record._1(), c);
-      } else {
-        shuffleBlockInfos = bufferManager.addRecord(partition, record._1(), record._2());
-      }
+      shuffleBlockInfos = bufferManager.addRecord(partition, record._1(), record._2());
       if (shuffleBlockInfos != null && !shuffleBlockInfos.isEmpty()) {
         processShuffleBlockInfos(shuffleBlockInfos);
       }

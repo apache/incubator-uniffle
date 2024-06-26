@@ -166,3 +166,15 @@ spark.rss.client.reassign.maxReassignServerNum     10
 # The block retry max times when partition reassign is enabled. 
 spark.rss.client.reassign.blockRetryMaxTimes       1
 ```
+
+### Map side combine
+
+Map side combine is a feature for rdd aggregation operators that combines the shuffle data on map side before sending it to the shuffle server, which can reduce the amount of data transmitted and the pressure on the shuffle server.
+
+We can enable this feature by using the following configuration:
+
+| Property Name                           | Default | Description                                           |
+|-----------------------------------------|---------|-------------------------------------------------------|
+| spark.rss.client.mapSideCombine.enabled | false   | Whether to enable map side combine of shuffle writer. |
+
+**Note**: Map side combine will handle entire map side shuffle write data, which may cause data spills and delay shuffle writes.
