@@ -272,6 +272,9 @@ public class LocalStorageManager extends SingleStorageManager {
       if (event instanceof AppPurgeEvent) {
         storage.removeHandlers(appId);
       }
+      if (event instanceof ShufflePurgeEvent) {
+        storage.removeHandlers(appId, new HashSet<>(shuffleSet));
+      }
       for (Integer shuffleId : shuffleSet) {
         storage.removeResources(RssUtils.generateShuffleKey(appId, shuffleId));
       }

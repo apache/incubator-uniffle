@@ -21,6 +21,7 @@ import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import java.util.Set;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
@@ -82,6 +83,25 @@ public abstract class AbstractStorage implements Storage {
     writerHandlers.remove(appId);
     readerHandlers.remove(appId);
     requests.remove(appId);
+  }
+
+  @Override
+  public void removeHandlers(String appId, Set<Integer> shuffleIds) {
+    for (int shuffleId : shuffleIds) {
+      String shuffleKeyPrefix = RssUtils.generateShuffleKeyWithSplitKey(appId, shuffleId);
+      Map<String, ShuffleWriteHandler> writeHandlers = writerHandlers.get(appId);
+      if (writeHandlers != null) {
+        writeHandlers.keySet().stream().filter(x -> x.startsWith(shuffleKeyPrefix)).forEach(x -> writeHandlers.remove(x));
+      }
+      Map<String, ServerReadHandler> readHandlers = readerHandlers.get(appId);
+      if (readHandlers != null) {
+        readHandlers.keySet().stream().filter(x -> x.startsWith(shuffleKeyPrefix)).forEach(x -> writeHandlers.remove(x));
+      }
+      Map<String, CreateShuffleWriteHandlerRequest> requests = this.requests.get(appId);
+      if (requests != null) {
+        requests.keySet().stream().filter(x -> x.startsWith(shuffleKeyPrefix)).forEach(x -> writeHandlers.remove(x));
+      }
+    }
   }
 
   @VisibleForTesting
