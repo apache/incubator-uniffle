@@ -29,8 +29,11 @@ import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractStorage implements Storage {
+  private static final Logger LOGGER = LoggerFactory.getLogger(AbstractStorage.class);
 
   private Map<String, Map<String, ShuffleWriteHandler>> writerHandlers =
       JavaUtils.newConcurrentMap();
@@ -87,6 +90,7 @@ public abstract class AbstractStorage implements Storage {
 
   @Override
   public void removeHandlers(String appId, Set<Integer> shuffleIds) {
+    long start = System.currentTimeMillis();
     for (int shuffleId : shuffleIds) {
       String shuffleKeyPrefix = RssUtils.generateShuffleKeyWithSplitKey(appId, shuffleId);
       Map<String, ShuffleWriteHandler> writeHandlers = writerHandlers.get(appId);
@@ -102,6 +106,7 @@ public abstract class AbstractStorage implements Storage {
         requests.keySet().stream().filter(x -> x.startsWith(shuffleKeyPrefix)).forEach(x -> writeHandlers.remove(x));
       }
     }
+    LOGGER.info("Removed the handlers for appId:{}, shuffleId:{} costs {} ms", appId, shuffleIds, System.currentTimeMillis() - start);
   }
 
   @VisibleForTesting
