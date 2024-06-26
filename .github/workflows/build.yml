@@ -83,6 +83,8 @@ jobs:
     uses: ./.github/workflows/parallel.yml
     with:
       maven-args: package -Dtest=!org.apache.uniffle.test.**
+      tests-name: 'unit-tests'
+      reports-name: 'unit-reports'
       reports-path: |
         **/target/surefire-reports/*.txt
         **/target/surefire-reports/*.xml
@@ -91,6 +93,8 @@ jobs:
     uses: ./.github/workflows/parallel.yml
     with:
       maven-args: package -Dtest=org.apache.uniffle.test.**
+      tests-name: 'integration-tests'
+      reports-name: 'integration-reports'
       reports-path: |
         **/target/surefire-reports/*.txt
         **/target/surefire-reports/*.xml
