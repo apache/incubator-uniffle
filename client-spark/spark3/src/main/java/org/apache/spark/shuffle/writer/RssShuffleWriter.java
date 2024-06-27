@@ -601,7 +601,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     LOG.info(
         "Initiate reassignOnBlockSendFailure. failure partition servers: {}",
         failurePartitionToServers);
-    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
 
     String executorId = SparkEnv.get().executorId();
     long taskAttemptId = taskContext.taskAttemptId();

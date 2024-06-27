@@ -545,9 +545,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               taskContext.stageAttemptNumber(),
               shuffleServerInfos,
               e.getMessage());
-      RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
-      String driver = rssConf.getString("driver.host", "");
-      int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
       RssReportShuffleWriteFailureResponse response =
           shuffleManagerClient.reportShuffleWriteFailure(req);
       if (response.getReSubmitWholeStage()) {

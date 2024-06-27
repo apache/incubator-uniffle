@@ -239,8 +239,6 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     // stage re-compute and shuffle manager server port are both set
     if (rssConf.getBoolean(RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED)
         && rssConf.getInteger(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT, 0) > 0) {
-      String driver = rssConf.getString("driver.host", "");
-      int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
       resultIter =
           RssFetchFailedIterator.newBuilder()
               .appId(appId)
