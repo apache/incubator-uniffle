@@ -664,6 +664,13 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     String stageIdAndAttempt = stageId + "_" + stageAttemptNumber;
     RssStageInfo rssStageInfo =
         rssStageResubmitManager.recordAndGetServerAssignedInfo(shuffleId, stageIdAndAttempt);
+    if (rssStageInfo.isReassigned()) {
+      LOG.info(
+          "Do nothing that the stage: {} has been reassigned for attempt{}",
+          stageId,
+          stageAttemptNumber);
+      return false;
+    }
     synchronized (rssStageInfo) {
       Boolean needReassign = rssStageInfo.isReassigned();
       if (!needReassign) {
