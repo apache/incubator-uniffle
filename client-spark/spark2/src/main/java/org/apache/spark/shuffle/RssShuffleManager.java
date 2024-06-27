@@ -446,6 +446,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           this,
           sparkConf,
           shuffleWriteClient,
+          shuffleManagerClient,
           rssHandle,
           this::markFailedTask,
           context,
@@ -550,7 +551,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           blockIdBitmap,
           taskIdBitmap,
           RssSparkConfig.toRssConf(sparkConf),
-          partitionToServers);
+          partitionToServers,
+          shuffleManagerClient);
     } else {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }

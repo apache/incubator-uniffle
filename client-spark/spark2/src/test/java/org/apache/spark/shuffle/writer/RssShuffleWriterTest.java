@@ -48,6 +48,7 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -88,6 +89,7 @@ public class RssShuffleWriterTest {
 
     Serializer kryoSerializer = new KryoSerializer(conf);
     ShuffleWriteClient mockShuffleWriteClient = mock(ShuffleWriteClient.class);
+    ShuffleManagerClient mockShuffleManagerClient = mock(ShuffleManagerClient.class);
     Partitioner mockPartitioner = mock(Partitioner.class);
     ShuffleDependency<String, String, String> mockDependency = mock(ShuffleDependency.class);
     RssShuffleHandle<String, String, String> mockHandle = mock(RssShuffleHandle.class);
@@ -124,6 +126,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
+            mockShuffleManagerClient,
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -234,6 +237,7 @@ public class RssShuffleWriterTest {
     Partitioner mockPartitioner = mock(Partitioner.class);
     ShuffleDependency<String, String, String> mockDependency = mock(ShuffleDependency.class);
     final ShuffleWriteClient mockShuffleWriteClient = mock(ShuffleWriteClient.class);
+    final ShuffleManagerClient mockShuffleManagerClient = mock(ShuffleManagerClient.class);
     RssShuffleHandle<String, String, String> mockHandle = mock(RssShuffleHandle.class);
     when(mockHandle.getDependency()).thenReturn(mockDependency);
     Serializer kryoSerializer = new KryoSerializer(conf);
@@ -299,6 +303,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
+            mockShuffleManagerClient,
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -348,6 +353,7 @@ public class RssShuffleWriterTest {
   @Test
   public void postBlockEventTest() throws Exception {
     final ShuffleWriteMetrics mockMetrics = mock(ShuffleWriteMetrics.class);
+    final ShuffleManagerClient mockShuffleManagerClient = mock(ShuffleManagerClient.class);
     ShuffleDependency<String, String, String> mockDependency = mock(ShuffleDependency.class);
     Partitioner mockPartitioner = mock(Partitioner.class);
     when(mockDependency.partitioner()).thenReturn(mockPartitioner);
@@ -411,6 +417,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockWriteClient,
+            mockShuffleManagerClient,
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);

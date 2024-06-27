@@ -202,7 +202,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
               .shuffleId(shuffleId)
               .partitionId(startPartition)
               .stageAttemptId(context.stageAttemptNumber())
-              .doReportFun(shuffleManagerClient::reportShuffleFetchFailure)
+              .shuffleManagerClient(shuffleManagerClient)
               .build(resultIter);
     }
     return resultIter;

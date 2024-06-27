@@ -47,6 +47,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.util.RssClientConfig;
@@ -77,6 +78,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
   private RssConf rssConf;
+  private ShuffleManagerClient shuffleManagerClient;
 
   public RssShuffleReader(
       int startPartition,
@@ -90,7 +92,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       Roaring64NavigableMap blockIdBitmap,
       Roaring64NavigableMap taskIdBitmap,
       RssConf rssConf,
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers) {
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      ShuffleManagerClient shuffleManagerClient) {
     this.appId = rssShuffleHandle.getAppId();
     this.startPartition = startPartition;
     this.endPartition = endPartition;
@@ -107,6 +110,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.hadoopConf = hadoopConf;
     this.shuffleServerInfoList = (List<ShuffleServerInfo>) (partitionToServers.get(startPartition));
     this.rssConf = rssConf;
+    this.shuffleManagerClient = shuffleManagerClient;
     expectedTaskIdsBitmapFilterEnable = shuffleServerInfoList.size() > 1;
   }
 
@@ -243,8 +247,6 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
               .shuffleId(shuffleId)
               .partitionId(startPartition)
               .stageAttemptId(context.stageAttemptNumber())
-              .reportServerHost(driver)
-              .port(port)
               .build(resultIter);
     }
     return resultIter;

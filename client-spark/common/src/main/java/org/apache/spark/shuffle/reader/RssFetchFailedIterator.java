@@ -18,7 +18,6 @@
 package org.apache.spark.shuffle.reader;
 
 import java.util.Objects;
-import java.util.function.Function;
 
 import scala.Product2;
 import scala.collection.AbstractIterator;
@@ -29,6 +28,7 @@ import org.apache.spark.shuffle.RssSparkShuffleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.common.exception.RssException;
@@ -49,8 +49,7 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     private int shuffleId;
     private int partitionId;
     private int stageAttemptId;
-    private Function<RssReportShuffleFetchFailureRequest, RssReportShuffleFetchFailureResponse>
-        sendReportFunc;
+    private ShuffleManagerClient shuffleManagerClient;
 
     private Builder() {}
 
@@ -74,10 +73,8 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
       return this;
     }
 
-    Builder doReportFun(
-        Function<RssReportShuffleFetchFailureRequest, RssReportShuffleFetchFailureResponse>
-            doReportFun) {
-      this.sendReportFunc = doReportFun;
+    Builder shuffleManagerClient(ShuffleManagerClient shuffleManagerClient) {
+      this.shuffleManagerClient = shuffleManagerClient;
       return this;
     }
 
@@ -91,10 +88,7 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     return new Builder();
   }
 
-  private RssException generateFetchFailedIfNecessary(
-      RssFetchFailedException e,
-      Function<RssReportShuffleFetchFailureRequest, RssReportShuffleFetchFailureResponse>
-          doReportFun) {
+  private RssException generateFetchFailedIfNecessary(RssFetchFailedException e) {
     RssReportShuffleFetchFailureRequest req =
         new RssReportShuffleFetchFailureRequest(
             builder.appId,
@@ -102,7 +96,8 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
             builder.stageAttemptId,
             builder.partitionId,
             e.getMessage());
-    RssReportShuffleFetchFailureResponse response = doReportFun.apply(req);
+    RssReportShuffleFetchFailureResponse response =
+        builder.shuffleManagerClient.reportShuffleFetchFailure(req);
     if (response.getReSubmitWholeStage()) {
       // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1 is
       // provided.
@@ -119,7 +114,7 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     try {
       return this.iter.hasNext();
     } catch (RssFetchFailedException e) {
-      throw generateFetchFailedIfNecessary(e, builder.sendReportFunc);
+      throw generateFetchFailedIfNecessary(e);
     }
   }
 
@@ -128,7 +123,7 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     try {
       return this.iter.next();
     } catch (RssFetchFailedException e) {
-      throw generateFetchFailedIfNecessary(e, builder.sendReportFunc);
+      throw generateFetchFailedIfNecessary(e);
     }
   }
 }

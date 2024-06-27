@@ -35,6 +35,7 @@ import org.apache.spark.shuffle.RssShuffleHandle;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
@@ -85,6 +86,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
     rssConf.set(RssClientConf.RSS_STORAGE_TYPE, StorageType.HDFS.name());
     rssConf.set(RssClientConf.RSS_INDEX_READ_LIMIT, 1000);
     rssConf.set(RssClientConf.RSS_CLIENT_READ_BUFFER_SIZE, "1000");
+    final ShuffleManagerClient mockShuffleManagerClient = mock(ShuffleManagerClient.class);
     RssShuffleReader<String, String> rssShuffleReaderSpy =
         spy(
             new RssShuffleReader<>(
@@ -99,7 +101,8 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 blockIdBitmap,
                 taskIdBitmap,
                 rssConf,
-                partitionToServers));
+                partitionToServers,
+                mockShuffleManagerClient));
 
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
   }
