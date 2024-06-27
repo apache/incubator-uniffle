@@ -22,34 +22,49 @@
         <el-row>
           <el-col :span="24">
             <el-menu
-                :default-active="activeIndex1"
-                class="el-menu-demo"
-                mode="horizontal"
-                background-color="#20B2AA"
-                box-shadow="0 -2px 8px 0 rgba(0,0,0,0.12)"
-                text-color="#fff"
-                active-text-color="#ffd04b"
-                @select="handleSelect">
+              :default-active="activeIndex1"
+              router
+              class="el-menu-demo"
+              mode="horizontal"
+              background-color="#20B2AA"
+              box-shadow="0 -2px 8px 0 rgba(0,0,0,0.12)"
+              text-color="#fff"
+              active-text-color="#ffd04b"
+            >
               <el-menu-item index="0">
                 <div class="unffilelogo">
-                  <img src="../assets/uniffle-logo.png" alt="unffile">
+                  <img src="../assets/uniffle-logo.png" alt="unffile" />
                 </div>
               </el-menu-item>
-              <router-link to="/coordinatorserverpage">
-                <el-menu-item index="1">
-                  Coordinator
+              <el-menu-item index="/coordinatorserverpage">
+                <el-icon><House /></el-icon>
+                <span>Coordinator</span>
+              </el-menu-item>
+              <el-menu-item index="/shuffleserverpage">
+                <el-icon><Monitor /></el-icon>
+                <span>Shuffle Server</span>
+              </el-menu-item>
+              <el-menu-item index="/applicationpage">
+                <el-icon><Coin /></el-icon>
+                <span>Application</span>
+              </el-menu-item>
+              <el-sub-menu index="">
+                <template #title>Switching server</template>
+                <el-menu-item
+                  v-for="item in hostNameAndPorts"
+                  :key="item.label"
+                  index="/nullpage"
+                  @click="changeServer(item.label)"
+                >
+                  <span>{{ item.label }}</span>
                 </el-menu-item>
-              </router-link>
-              <router-link to="/shuffleserverpage">
-                <el-menu-item index="2">
-                  Shuffle Server
-                </el-menu-item>
-              </router-link>
-              <router-link to="/applicationpage">
-                <el-menu-item index="3">
-                  Application
-                </el-menu-item>
-              </router-link>
+              </el-sub-menu>
+              <el-menu-item index="">
+                <el-icon><SwitchFilled /></el-icon>
+                <label class="currentserver">
+                  current:{{ currentServerStore.currentServer }}
+                </label>
+              </el-menu-item>
             </el-menu>
           </el-col>
         </el-row>
@@ -62,37 +77,68 @@
 </template>
 
 <script>
-import {ref, onMounted} from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { getAllCoordinatorAddrees } from '@/api/api'
+import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
     const activeIndex1 = ref('1')
+    const currentServerStore = useCurrentServerStore()
+    const hostNameAndPorts = reactive([
+      {
+        value: '',
+        label: ''
+      }
+    ])
 
-    function handleSelect() {
-      localStorage.setItem("menuId", JSON.stringify(activeIndex1))
+    function changeServer(key) {
+      currentServerStore.currentServer = key
+    }
+
+    async function getSelectCurrentServer() {
+      const res = await getAllCoordinatorAddrees()
+      const selectCurrentServer = res.data.data
+      currentServerStore.currentServer = Object.keys(selectCurrentServer)[0]
+      hostNameAndPorts.length = 0
+      Object.entries(selectCurrentServer).forEach(([key, value]) => {
+        hostNameAndPorts.push({ value: value, label: key })
+      })
     }
 
     onMounted(() => {
-
+      getSelectCurrentServer()
     })
-    return {activeIndex1, handleSelect}
+
+    return {
+      activeIndex1,
+      currentServerStore,
+      hostNameAndPorts,
+      changeServer
+    }
   }
 }
 </script>
 
-<style>
+<style scoped>
 a {
   text-decoration: none;
   color: white;
 }
 
 .unffilelogo {
-  background-color: #20B2AA;
+  background-color: #20b2aa;
   height: 100%;
   position: relative;
 }
 
 .unffilelogo > img {
   height: 55px;
+}
+
+.currentserver {
+  font-family: 'Andale Mono';
+  font-size: smaller;
+  color: yellow;
 }
 </style>

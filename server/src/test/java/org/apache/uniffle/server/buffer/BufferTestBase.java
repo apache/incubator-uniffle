@@ -18,13 +18,14 @@
 package org.apache.uniffle.server.buffer;
 
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.server.ShuffleServerMetrics;
 
@@ -40,7 +41,7 @@ public abstract class BufferTestBase {
     ShuffleServerMetrics.clear();
   }
 
-  private static AtomicLong atomBlockId = new AtomicLong(0);
+  private static AtomicInteger atomSequenceNo = new AtomicInteger(0);
 
   protected ShufflePartitionedData createData(int len) {
     return createData(1, len);
@@ -53,16 +54,18 @@ public abstract class BufferTestBase {
   protected ShufflePartitionedData createData(int partitionId, int taskAttemptId, int len) {
     byte[] buf = new byte[len];
     new Random().nextBytes(buf);
+    long blockId =
+        BlockIdLayout.DEFAULT.getBlockId(
+            getAtomSequenceNo().incrementAndGet(), partitionId, taskAttemptId);
     ShufflePartitionedBlock block =
         new ShufflePartitionedBlock(
-            len,
-            len,
-            ChecksumUtils.getCrc32(buf),
-            atomBlockId.incrementAndGet(),
-            taskAttemptId,
-            buf);
+            len, len, ChecksumUtils.getCrc32(buf), blockId, taskAttemptId, buf);
     ShufflePartitionedData data =
         new ShufflePartitionedData(partitionId, new ShufflePartitionedBlock[] {block});
     return data;
+  }
+
+  protected AtomicInteger getAtomSequenceNo() {
+    return atomSequenceNo;
   }
 }

@@ -35,12 +35,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ReconfigurableConfManager;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.future.CompletableFutureExtension;
 import org.apache.uniffle.common.util.RssUtils;
@@ -60,7 +61,7 @@ public class LocalStorageChecker extends Checker {
   protected List<StorageInfo> storageInfos = Lists.newArrayList();
   private boolean isHealthy = true;
   private ExecutorService workers;
-  private final long diskCheckerExecutionTimeoutMs;
+  private ReconfigurableConfManager.Reconfigurable<Long> diskCheckerExecutionTimeoutMs;
 
   public LocalStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages) {
     super(conf);
@@ -85,7 +86,7 @@ public class LocalStorageChecker extends Checker {
         conf.getDouble(ShuffleServerConf.HEALTH_MIN_STORAGE_PERCENTAGE);
 
     this.diskCheckerExecutionTimeoutMs =
-        conf.getLong(ShuffleServerConf.HEALTH_CHECKER_LOCAL_STORAGE_EXECUTE_TIMEOUT);
+        conf.getReconfigurableConf(ShuffleServerConf.HEALTH_CHECKER_LOCAL_STORAGE_EXECUTE_TIMEOUT);
     this.workers = Executors.newFixedThreadPool(basePaths.size());
   }
 
@@ -109,14 +110,24 @@ public class LocalStorageChecker extends Checker {
                 }
 
                 long total = getTotalSpace(storageInfo.storageDir);
-                long free = getFreeSpace(storageInfo.storageDir);
+                long availableBytes = getFreeSpace(storageInfo.storageDir);
 
                 totalSpace.addAndGet(total);
-                wholeDiskUsedSpace.addAndGet(total - free);
-                serviceUsedSpace.addAndGet(getServiceUsedSpace(storageInfo.storageDir));
+                wholeDiskUsedSpace.addAndGet(total - availableBytes);
+                long usedBytes = getServiceUsedSpace(storageInfo.storageDir);
+                serviceUsedSpace.addAndGet(usedBytes);
+                storageInfo.updateServiceUsedBytes(usedBytes);
+                storageInfo.updateStorageFreeSpace(availableBytes);
 
-                storageInfo.updateStorageFreeSpace(free);
-                if (storageInfo.checkIsSpaceEnough(total, free)) {
+                boolean isWritable = storageInfo.canWrite();
+                ShuffleServerMetrics.gaugeLocalStorageIsWritable
+                    .labels(storageInfo.storage.getBasePath())
+                    .set(isWritable ? 0 : 1);
+                ShuffleServerMetrics.gaugeLocalStorageIsTimeout
+                    .labels(storageInfo.storage.getBasePath())
+                    .set(0);
+
+                if (storageInfo.checkIsSpaceEnough(total, availableBytes)) {
                   num.incrementAndGet();
                 }
                 return null;
@@ -126,7 +137,7 @@ public class LocalStorageChecker extends Checker {
       futureMap.put(
           storageInfo,
           CompletableFutureExtension.orTimeout(
-              storageCheckFuture, diskCheckerExecutionTimeoutMs, TimeUnit.MILLISECONDS));
+              storageCheckFuture, diskCheckerExecutionTimeoutMs.get(), TimeUnit.MILLISECONDS));
     }
 
     for (Map.Entry<StorageInfo, CompletableFuture<Void>> entry : futureMap.entrySet()) {
@@ -138,10 +149,12 @@ public class LocalStorageChecker extends Checker {
       } catch (Exception e) {
         if (e instanceof ExecutionException) {
           if (e.getCause() instanceof TimeoutException) {
-            storageInfo.markCorrupted();
-            LOG.error(
-                "Timeout of checking local storage: {}. This should not happen and mark this disk corrupted.",
+            LOG.warn(
+                "Timeout of checking local storage: {}. The current disk's IO load may be very high.",
                 storageInfo.storage.getBasePath());
+            ShuffleServerMetrics.gaugeLocalStorageIsTimeout
+                .labels(storageInfo.storage.getBasePath())
+                .set(1);
             continue;
           }
         }
@@ -231,16 +244,20 @@ public class LocalStorageChecker extends Checker {
       this.storage = storage;
     }
 
-    void updateStorageFreeSpace(long free) {
-      storage.updateDiskFree(free);
+    void updateStorageFreeSpace(long availableBytes) {
+      storage.updateDiskAvailableBytes(availableBytes);
     }
 
-    boolean checkIsSpaceEnough(long total, long free) {
+    void updateServiceUsedBytes(long usedBytes) {
+      storage.updateServiceUsedBytes(usedBytes);
+    }
+
+    boolean checkIsSpaceEnough(long total, long availableBytes) {
       if (Double.compare(0.0, total) == 0) {
         this.isHealthy = false;
         return false;
       }
-      double usagePercent = (total - free) * 100.0 / total;
+      double usagePercent = (total - availableBytes) * 100.0 / total;
       if (isHealthy) {
         if (Double.compare(usagePercent, diskMaxUsagePercentage) >= 0) {
           isHealthy = false;
@@ -253,6 +270,10 @@ public class LocalStorageChecker extends Checker {
         }
       }
       return isHealthy;
+    }
+
+    boolean canWrite() {
+      return storage.canWrite();
     }
 
     boolean checkStorageReadAndWrite() {

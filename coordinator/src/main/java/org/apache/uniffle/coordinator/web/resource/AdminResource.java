@@ -28,10 +28,11 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.web.resource.BaseResource;
+import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.access.checker.AccessChecker;
-import org.apache.uniffle.coordinator.web.Response;
 
 @Produces({MediaType.APPLICATION_JSON})
 public class AdminResource extends BaseResource {

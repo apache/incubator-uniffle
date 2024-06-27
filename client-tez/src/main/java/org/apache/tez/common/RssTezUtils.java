@@ -371,7 +371,10 @@ public class RssTezUtils {
           new ShuffleServerInfo(info[0].split(":")[0], Integer.parseInt(info[0].split(":")[1]));
 
       String[] partitions = info[1].split("_");
-      assert (partitions.length > 0);
+
+      if (partitions.length <= 0) {
+        throw new RssException("The length of partitions should not be less than 0");
+      }
       for (String partitionId : partitions) {
         rssWorker.computeIfAbsent(Integer.parseInt(partitionId), k -> new HashSet<>());
         rssWorker.get(Integer.parseInt(partitionId)).add(serverInfo);

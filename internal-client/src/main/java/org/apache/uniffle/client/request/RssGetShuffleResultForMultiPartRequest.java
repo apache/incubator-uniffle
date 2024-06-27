@@ -20,6 +20,7 @@ package org.apache.uniffle.client.request;
 import java.util.Set;
 
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.proto.RssProtos;
 
 public class RssGetShuffleResultForMultiPartRequest {
   private String appId;
@@ -49,5 +50,22 @@ public class RssGetShuffleResultForMultiPartRequest {
 
   public BlockIdLayout getBlockIdLayout() {
     return blockIdLayout;
+  }
+
+  public RssProtos.GetShuffleResultForMultiPartRequest toProto() {
+    RssGetShuffleResultForMultiPartRequest request = this;
+    RssProtos.GetShuffleResultForMultiPartRequest rpcRequest =
+        RssProtos.GetShuffleResultForMultiPartRequest.newBuilder()
+            .setAppId(request.getAppId())
+            .setShuffleId(request.getShuffleId())
+            .addAllPartitions(request.getPartitions())
+            .setBlockIdLayout(
+                RssProtos.BlockIdLayout.newBuilder()
+                    .setSequenceNoBits(request.getBlockIdLayout().sequenceNoBits)
+                    .setPartitionIdBits(request.getBlockIdLayout().partitionIdBits)
+                    .setTaskAttemptIdBits(request.getBlockIdLayout().taskAttemptIdBits)
+                    .build())
+            .build();
+    return rpcRequest;
   }
 }

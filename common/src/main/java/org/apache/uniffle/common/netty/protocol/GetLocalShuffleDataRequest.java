@@ -131,4 +131,9 @@ public class GetLocalShuffleDataRequest extends RequestMessage {
   public long getTimestamp() {
     return timestamp;
   }
+
+  @Override
+  public String getOperationType() {
+    return "getLocalShuffleData";
+  }
 }

@@ -25,8 +25,10 @@ import (
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/pointer"
 
@@ -138,6 +140,32 @@ var (
 			Name: "default-secret",
 		},
 	}
+
+	standard                 = "standard"
+	testVolumeClaimTemplates = []corev1.PersistentVolumeClaim{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "testVolumeClaimTemplate",
+			},
+			Spec: corev1.PersistentVolumeClaimSpec{
+				AccessModes: []corev1.PersistentVolumeAccessMode{
+					"ReadWriteOnce",
+				},
+				Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						"storage": *resource.NewQuantity(5*1000*1000*1000, resource.DecimalSI),
+					},
+				},
+				StorageClassName: &standard,
+			},
+		},
+	}
+
+	testAnnotations = map[string]string{
+		"key1":                      "value1",
+		"key2":                      "value2",
+		constants.AnnotationRssName: "override",
+	}
 )
 
 func buildRssWithLabels() *uniffleapi.RemoteShuffleService {
@@ -193,9 +221,27 @@ func withCustomAffinity(affinity *corev1.Affinity) *uniffleapi.RemoteShuffleServ
 	return rss
 }
 
+func withCustomAnnotations(annotations map[string]string) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ShuffleServer.Annotations = annotations
+	return rss
+}
+
 func withCustomImagePullSecrets(imagePullSecrets []corev1.LocalObjectReference) *uniffleapi.RemoteShuffleService {
 	rss := utils.BuildRSSWithDefaultValue()
 	rss.Spec.ImagePullSecrets = imagePullSecrets
+	return rss
+}
+
+func withCustomVolumeClaimTemplates(volumeClaimTemplates []corev1.PersistentVolumeClaim) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.ShuffleServer.VolumeClaimTemplates = make([]uniffleapi.ShuffleServerPersistentVolumeClaimTemplate, 0, len(volumeClaimTemplates))
+	for _, pvcTemplate := range volumeClaimTemplates {
+		rss.Spec.ShuffleServer.VolumeClaimTemplates = append(rss.Spec.ShuffleServer.VolumeClaimTemplates, uniffleapi.ShuffleServerPersistentVolumeClaimTemplate{
+			VolumeNameTemplate: &pvcTemplate.ObjectMeta.Name,
+			Spec:               pvcTemplate.Spec,
+		})
+	}
 	return rss
 }
 
@@ -463,7 +509,6 @@ func TestGenerateSts(t *testing.T) {
 			rss:  withCustomAffinity(testAffinity),
 			IsValidSts: func(sts *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (valid bool, err error) {
 				if sts.Spec.Template.Spec.Affinity != nil {
-					sts.Spec.Template.Spec.Affinity = rss.Spec.ShuffleServer.Affinity
 					equal := reflect.DeepEqual(sts.Spec.Template.Spec.Affinity, testAffinity)
 					if equal {
 						return true, nil
@@ -477,13 +522,47 @@ func TestGenerateSts(t *testing.T) {
 			rss:  withCustomImagePullSecrets(testImagePullSecrets),
 			IsValidSts: func(deploy *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (bool, error) {
 				if deploy.Spec.Template.Spec.ImagePullSecrets != nil {
-					deploy.Spec.Template.Spec.ImagePullSecrets = rss.Spec.ImagePullSecrets
 					equal := reflect.DeepEqual(deploy.Spec.Template.Spec.ImagePullSecrets, testImagePullSecrets)
 					if equal {
 						return true, nil
 					}
 				}
 				return false, fmt.Errorf("generated sts should include imagePullSecrets: %v", testImagePullSecrets)
+			},
+		},
+		{
+			name: "set volume claim templates",
+			rss:  withCustomVolumeClaimTemplates(testVolumeClaimTemplates),
+			IsValidSts: func(deploy *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (bool, error) {
+				if deploy.Spec.VolumeClaimTemplates != nil {
+					for _, volumeClaimTemplate := range deploy.Spec.VolumeClaimTemplates {
+						equal := reflect.DeepEqual(volumeClaimTemplate, testVolumeClaimTemplates[0])
+						if equal {
+							return true, nil
+						}
+					}
+				}
+				return false, fmt.Errorf("generated sts should include volumeClaimTemplates: %v", testImagePullSecrets)
+			},
+		},
+		{
+			name: "set custom annotations",
+			rss:  withCustomAnnotations(testAnnotations),
+			IsValidSts: func(deploy *appsv1.StatefulSet, rss *uniffleapi.RemoteShuffleService) (bool, error) {
+				if deploy.Spec.Template.Annotations != nil {
+					for key, value := range testAnnotations {
+						equal := reflect.DeepEqual(deploy.Spec.Template.Annotations[key], value)
+						if key == constants.AnnotationRssName && equal {
+							return false, fmt.Errorf("generated deploy shouldn't override reserved annotations: %v", key)
+						}
+						if key != constants.AnnotationRssName && !equal {
+							return false, fmt.Errorf("generated deploy should include annotations: %v", key)
+						}
+					}
+				} else {
+					return false, fmt.Errorf("generated deploy should include annotations: %v", testAnnotations)
+				}
+				return true, nil
 			},
 		},
 	} {

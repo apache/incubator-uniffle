@@ -160,12 +160,12 @@ fi
 
 echo "RSS version is $VERSION"
 
-export MAVEN_OPTS="${MAVEN_OPTS:--Xmx2g -XX:ReservedCodeCacheSize=1g}"
+export MAVEN_OPTS="${MAVEN_OPTS:--Xss128m -Xmx5g -XX:ReservedCodeCacheSize=1g}"
 
 # Store the command as an array because $MVN variable might have spaces in it.
 # Normal quoting tricks don't work.
 # See: http://mywiki.wooledge.org/BashFAQ/050
-BUILD_COMMAND=("$MVN" clean package -DskipTests $@)
+BUILD_COMMAND=("$MVN" clean package -DskipTests -P$HADOOP_PROFILE_ID $@)
 
 # Actually build the jar
 echo -e "\nBuilding with..."
@@ -209,7 +209,7 @@ mkdir -p $CLIENT_JAR_DIR
 
 # Actually build the jar
 if [ "$WITH_SPARK2" == "true" ]; then
-  BUILD_COMMAND_SPARK2=("$MVN" clean package -P$SPARK2_PROFILE_ID -pl client-spark/spark2-shaded -DskipTests -am $@ $SPARK2_MVN_OPTS)
+  BUILD_COMMAND_SPARK2=("$MVN" clean package -P$SPARK2_PROFILE_ID,$HADOOP_PROFILE_ID -pl client-spark/spark2-shaded -DskipTests -am $@ $SPARK2_MVN_OPTS)
 
   echo -e "\nBuilding with..."
   echo -e "\$ ${BUILD_COMMAND_SPARK2[@]}\n"
@@ -223,7 +223,7 @@ if [ "$WITH_SPARK2" == "true" ]; then
 fi
 
 if [ "$WITH_SPARK3" == "true" ]; then
-  BUILD_COMMAND_SPARK3=("$MVN" clean package -P$SPARK3_PROFILE_ID -pl client-spark/spark3-shaded -DskipTests -am $@ $SPARK3_MVN_OPTS)
+  BUILD_COMMAND_SPARK3=("$MVN" clean package -P$SPARK3_PROFILE_ID,$HADOOP_PROFILE_ID -pl client-spark/spark3-shaded -DskipTests -am $@ $SPARK3_MVN_OPTS)
 
   echo -e "\nBuilding with..."
   echo -e "\$ ${BUILD_COMMAND_SPARK3[@]}\n"

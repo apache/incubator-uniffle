@@ -22,13 +22,13 @@
     <parent>
         <artifactId>uniffle-parent</artifactId>
         <groupId>org.apache.uniffle</groupId>
-        <version>0.9.0-SNAPSHOT</version>
+        <version>0.10.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <groupId>org.apache.uniffle</groupId>
     <artifactId>rss-client-mr</artifactId>
-    <version>0.9.0-SNAPSHOT</version>
+    <version>0.10.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Apache Uniffle Client (MapReduce)</name>
 
@@ -95,7 +95,6 @@
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty-shaded</artifactId>
-            <version>${grpc.version}</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
@@ -159,6 +158,7 @@
                                     <include>org.roaringbitmap:RoaringBitmap</include>
                                     <include>org.roaringbitmap:shims</include>
                                     <include>net.jpountz.lz4:lz4</include>
+                                    <include>org.apache.commons:commons-collections4</include>
                                 </includes>
                             </artifactSet>
                             <finalName>${project.artifactId}-${project.version}</finalName>

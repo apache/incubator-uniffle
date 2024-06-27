@@ -45,7 +45,7 @@ import org.apache.spark.serializer.Serializer;
 import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
-import org.apache.spark.shuffle.ShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
@@ -97,7 +97,7 @@ public class RssShuffleWriterTest {
     when(mockHandle.getPartitionToServers()).thenReturn(Maps.newHashMap());
     TaskMemoryManager mockTaskMemoryManager = mock(TaskMemoryManager.class);
     TaskContext contextMock = mock(TaskContext.class);
-    ShuffleHandleInfo mockShuffleHandleInfo = mock(ShuffleHandleInfo.class);
+    SimpleShuffleHandleInfo mockShuffleHandleInfo = mock(SimpleShuffleHandleInfo.class);
 
     BufferManagerOptions bufferOptions = new BufferManagerOptions(conf);
     WriteBufferManager bufferManager =
@@ -133,7 +133,7 @@ public class RssShuffleWriterTest {
     rssShuffleWriter.checkBlockSendResult(Sets.newHashSet(1L, 2L, 3L));
     manager.clearTaskMeta(taskId);
 
-    // case 2: partial blocks aren't sent before spark.rss.writer.send.check.timeout,
+    // case 2: partial blocks aren't sent before spark.rss.client.send.check.timeout.ms,
     // Runtime exception will be thrown
     manager.addSuccessBlockIds(taskId, Sets.newHashSet(1L, 2L));
     Throwable e2 =
@@ -286,7 +286,7 @@ public class RssShuffleWriterTest {
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
     doReturn(1000000L).when(bufferManagerSpy).acquireMemory(anyLong());
     TaskContext contextMock = mock(TaskContext.class);
-    ShuffleHandleInfo mockShuffleHandleInfo = mock(ShuffleHandleInfo.class);
+    SimpleShuffleHandleInfo mockShuffleHandleInfo = mock(SimpleShuffleHandleInfo.class);
 
     RssShuffleWriter<String, String, String> rssShuffleWriter =
         new RssShuffleWriter<>(
@@ -398,7 +398,7 @@ public class RssShuffleWriterTest {
     when(mockHandle.getDependency()).thenReturn(mockDependency);
     ShuffleWriteClient mockWriteClient = mock(ShuffleWriteClient.class);
     TaskContext contextMock = mock(TaskContext.class);
-    ShuffleHandleInfo mockShuffleHandleInfo = mock(ShuffleHandleInfo.class);
+    SimpleShuffleHandleInfo mockShuffleHandleInfo = mock(SimpleShuffleHandleInfo.class);
 
     RssShuffleWriter<String, String, String> writer =
         new RssShuffleWriter<>(

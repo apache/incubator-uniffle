@@ -62,15 +62,12 @@ import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
-import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
-import org.apache.uniffle.common.config.RssClientConf;
-import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.metrics.TestUtils;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -149,11 +146,8 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     grpcShuffleServerClient =
         new ShuffleServerGrpcClient(
             LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
-    RssConf rssConf = new RssConf();
-    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
     nettyShuffleServerClient =
         new ShuffleServerGrpcNettyClient(
-            rssConf,
             LOCALHOST,
             nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
             nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
@@ -182,6 +176,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
                     .dataTransferPoolSize(1)
                     .dataCommitPoolSize(1)
                     .unregisterThreadPoolSize(10)
+                    .unregisterTimeSec(10)
                     .unregisterRequestTimeSec(10));
     shuffleWriteClient.registerCoordinators("127.0.0.1:" + COORDINATOR_PORT_1);
     shuffleWriteClient.registerShuffle(
@@ -677,10 +672,10 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
   @ParameterizedTest
   @MethodSource("testBlockIdLayouts")
   public void multipleShuffleResultTest(BlockIdLayout layout) throws Exception {
+    String appId = "multipleShuffleResultTest_" + layout.sequenceNoBits;
     Set<Long> expectedBlockIds = Sets.newConcurrentHashSet();
     RssRegisterShuffleRequest rrsr =
-        new RssRegisterShuffleRequest(
-            "multipleShuffleResultTest", 100, Lists.newArrayList(new PartitionRange(0, 1)), "");
+        new RssRegisterShuffleRequest(appId, 100, Lists.newArrayList(new PartitionRange(0, 1)), "");
     grpcShuffleServerClient.registerShuffle(rrsr);
 
     Runnable r1 =
@@ -693,7 +688,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
             blockIds.add(blockId);
             ptbs.put(1, blockIds);
             RssReportShuffleResultRequest req1 =
-                new RssReportShuffleResultRequest("multipleShuffleResultTest", 1, 0, ptbs, 1);
+                new RssReportShuffleResultRequest(appId, 1, 0, ptbs, 1);
             grpcShuffleServerClient.reportShuffleResult(req1);
           }
         };
@@ -707,7 +702,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
             blockIds.add(blockId);
             ptbs.put(1, blockIds);
             RssReportShuffleResultRequest req1 =
-                new RssReportShuffleResultRequest("multipleShuffleResultTest", 1, 1, ptbs, 1);
+                new RssReportShuffleResultRequest(appId, 1, 1, ptbs, 1);
             grpcShuffleServerClient.reportShuffleResult(req1);
           }
         };
@@ -721,7 +716,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
             blockIds.add(blockId);
             ptbs.put(1, blockIds);
             RssReportShuffleResultRequest req1 =
-                new RssReportShuffleResultRequest("multipleShuffleResultTest", 1, 2, ptbs, 1);
+                new RssReportShuffleResultRequest(appId, 1, 2, ptbs, 1);
             grpcShuffleServerClient.reportShuffleResult(req1);
           }
         };
@@ -740,8 +735,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
       blockIdBitmap.addLong(blockId);
     }
 
-    RssGetShuffleResultRequest req =
-        new RssGetShuffleResultRequest("multipleShuffleResultTest", 1, 1, layout);
+    RssGetShuffleResultRequest req = new RssGetShuffleResultRequest(appId, 1, 1, layout);
     RssGetShuffleResultResponse result = grpcShuffleServerClient.getShuffleResult(req);
     Roaring64NavigableMap actualBlockIdBitmap = result.getBlockIdBitmap();
     assertEquals(blockIdBitmap, actualBlockIdBitmap);

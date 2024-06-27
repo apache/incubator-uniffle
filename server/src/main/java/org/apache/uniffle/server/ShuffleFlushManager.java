@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -111,7 +111,7 @@ public class ShuffleFlushManager {
       }
 
       if (reachRetryMax(event)) {
-        LOG.warn("The event:{] has been reached to max retry times, it will be dropped.", event);
+        LOG.error("The event:{} has been reached to max retry times, it will be dropped.", event);
         throw new EventDiscardException();
       }
 

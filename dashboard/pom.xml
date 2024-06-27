@@ -21,7 +21,7 @@
     <parent>
         <artifactId>uniffle-parent</artifactId>
         <groupId>org.apache.uniffle</groupId>
-        <version>0.9.0-SNAPSHOT</version>
+        <version>0.10.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>dashboard</artifactId>
@@ -53,8 +53,8 @@
                         </goals>
                         <phase>generate-resources</phase>
                         <configuration>
-                            <nodeVersion>v14.21.3</nodeVersion>
-                            <npmVersion>6.14.18</npmVersion>
+                            <nodeVersion>v16.20.2</nodeVersion>
+                            <npmVersion>8.19.4</npmVersion>
                             <nodeDownloadRoot>${nodeRepositoryUrl}</nodeDownloadRoot>
                             <npmDownloadRoot>${npmRepositoryUrl}</npmDownloadRoot>
                         </configuration>

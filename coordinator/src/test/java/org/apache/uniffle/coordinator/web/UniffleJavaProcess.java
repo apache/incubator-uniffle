@@ -20,6 +20,9 @@ package org.apache.uniffle.coordinator.web;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import com.google.common.util.concurrent.Uninterruptibles;
 
 /**
  * Simulate Java process execution for testing purposes. This method can truly simulate the
@@ -63,6 +66,8 @@ public class UniffleJavaProcess {
       process.destroy();
       process.waitFor();
       process.exitValue();
+      // Wait for a while to ensure the port is released
+      Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
     }
   }
 }

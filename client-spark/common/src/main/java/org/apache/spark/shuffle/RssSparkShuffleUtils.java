@@ -35,6 +35,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.deploy.SparkHadoopUtil;
+import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
 import org.apache.spark.storage.BlockManagerId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +47,6 @@ import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -56,14 +56,15 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.util.Constants;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
 import static org.apache.uniffle.common.util.Constants.DRIVER_HOST;
 
 public class RssSparkShuffleUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssSparkShuffleUtils.class);
 
-  public static final ClassTag<ShuffleHandleInfo> SHUFFLE_HANDLER_INFO_CLASS_TAG =
-      scala.reflect.ClassTag$.MODULE$.apply(ShuffleHandleInfo.class);
+  public static final ClassTag<SimpleShuffleHandleInfo> DEFAULT_SHUFFLE_HANDLER_INFO_CLASS_TAG =
+      scala.reflect.ClassTag$.MODULE$.apply(SimpleShuffleHandleInfo.class);
   public static final ClassTag<byte[]> BYTE_ARRAY_CLASS_TAG =
       scala.reflect.ClassTag$.MODULE$.apply(byte[].class);
 
@@ -256,7 +257,7 @@ public class RssSparkShuffleUtils {
   }
 
   /**
-   * create broadcast variable of {@link ShuffleHandleInfo}
+   * create broadcast variable of {@link SimpleShuffleHandleInfo}
    *
    * @param sc expose for easy unit-test
    * @param shuffleId
@@ -264,14 +265,14 @@ public class RssSparkShuffleUtils {
    * @param storageInfo
    * @return Broadcast variable registered for auto cleanup
    */
-  public static Broadcast<ShuffleHandleInfo> broadcastShuffleHdlInfo(
+  public static Broadcast<SimpleShuffleHandleInfo> broadcastShuffleHdlInfo(
       SparkContext sc,
       int shuffleId,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
       RemoteStorageInfo storageInfo) {
-    ShuffleHandleInfo handleInfo =
-        new ShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
-    return sc.broadcast(handleInfo, SHUFFLE_HANDLER_INFO_CLASS_TAG);
+    SimpleShuffleHandleInfo handleInfo =
+        new SimpleShuffleHandleInfo(shuffleId, partitionToServers, storageInfo);
+    return sc.broadcast(handleInfo, DEFAULT_SHUFFLE_HANDLER_INFO_CLASS_TAG);
   }
 
   private static <T> T instantiateFetchFailedException(
@@ -352,7 +353,7 @@ public class RssSparkShuffleUtils {
       int stageAttemptId,
       Set<Integer> failedPartitions) {
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
-    if (rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
+    if (rssConf.getBoolean(RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED)
         && RssSparkShuffleUtils.isStageResubmitSupported()) {
       String driver = rssConf.getString(DRIVER_HOST, "");
       int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);

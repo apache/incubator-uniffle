@@ -47,14 +47,25 @@ public class RepartitionWithLocalFileRssTest extends RepartitionTest {
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+
+    ShuffleServerConf grpcShuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
-    String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
-    shuffleServerConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
-    shuffleServerConf.setString("rss.storage.basePath", basePath);
-    createShuffleServer(shuffleServerConf);
+    String grpcBasePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
+    grpcShuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
+    grpcShuffleServerConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
+    grpcShuffleServerConf.setString("rss.storage.basePath", grpcBasePath);
+    createShuffleServer(grpcShuffleServerConf);
+
+    ShuffleServerConf nettyShuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
+    File dataDir3 = new File(tmpDir, "data3");
+    File dataDir4 = new File(tmpDir, "data4");
+    String nettyBasePath = dataDir3.getAbsolutePath() + "," + dataDir4.getAbsolutePath();
+    nettyShuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
+    nettyShuffleServerConf.setBoolean(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
+    nettyShuffleServerConf.setString("rss.storage.basePath", nettyBasePath);
+    createShuffleServer(nettyShuffleServerConf);
+
     startServers();
   }
 
@@ -76,8 +87,14 @@ public class RepartitionWithLocalFileRssTest extends RepartitionTest {
     Map resultWithoutRss = runSparkApp(sparkConf, fileName);
     results.add(resultWithoutRss);
 
-    updateSparkConfWithRss(sparkConf);
+    updateSparkConfWithRssGrpc(sparkConf);
     updateSparkConfCustomer(sparkConf);
+    for (Codec.Type type : new Codec.Type[] {Codec.Type.NOOP, Codec.Type.ZSTD, Codec.Type.LZ4}) {
+      sparkConf.set("spark." + COMPRESSION_TYPE.key().toLowerCase(), type.name());
+      Map resultWithRss = runSparkApp(sparkConf, fileName);
+      results.add(resultWithRss);
+    }
+    updateSparkConfWithRssNetty(sparkConf);
     for (Codec.Type type : new Codec.Type[] {Codec.Type.NOOP, Codec.Type.ZSTD, Codec.Type.LZ4}) {
       sparkConf.set("spark." + COMPRESSION_TYPE.key().toLowerCase(), type.name());
       Map resultWithRss = runSparkApp(sparkConf, fileName);

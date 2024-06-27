@@ -46,6 +46,7 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -87,7 +88,7 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
     shuffleServerConf.setInteger(
         ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, MAX_CONCURRENCY);
     shuffleServerConf.setBoolean(shuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, true);
-    shuffleServerConf.setLong(shuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 1024 * 1024L);
+    shuffleServerConf.setLong(shuffleServerConf.SINGLE_BUFFER_FLUSH_SIZE_THRESHOLD, 1024 * 1024L);
     return shuffleServerConf;
   }
 
@@ -177,6 +178,7 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
             });
     ShuffleReadClientImpl readClient =
         ShuffleClientFactory.newReadBuilder()
+            .clientType(isNettyMode ? ClientType.GRPC_NETTY : ClientType.GRPC)
             .storageType(StorageType.HDFS.name())
             .appId(appId)
             .shuffleId(0)

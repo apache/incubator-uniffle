@@ -39,6 +39,8 @@ public class CreateShuffleReadHandlerRequest {
   private int partitionNumPerRange;
   private int partitionNum;
   private int readBufferSize;
+  private int retryMax;
+  private long retryIntervalMax;
   private String storageBasePath;
   private RssBaseConf rssBaseConf;
   private Configuration hadoopConf;
@@ -127,6 +129,22 @@ public class CreateShuffleReadHandlerRequest {
 
   public void setReadBufferSize(int readBufferSize) {
     this.readBufferSize = readBufferSize;
+  }
+
+  public int getRetryMax() {
+    return retryMax;
+  }
+
+  public void setRetryMax(int retryMax) {
+    this.retryMax = retryMax;
+  }
+
+  public long getRetryIntervalMax() {
+    return retryIntervalMax;
+  }
+
+  public void setRetryIntervalMax(long retryIntervalMax) {
+    this.retryIntervalMax = retryIntervalMax;
   }
 
   public String getStorageBasePath() {

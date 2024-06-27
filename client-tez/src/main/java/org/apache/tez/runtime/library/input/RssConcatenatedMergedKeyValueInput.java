@@ -60,7 +60,7 @@ public class RssConcatenatedMergedKeyValueInput extends MergedLogicalInput {
           Reader reader = getInputs().get(currentReaderIndex).getReader();
           if (!(reader instanceof KeyValueReader)) {
             throw new TezUncheckedException(
-                "Expected KeyValueReader. " + "Got: " + reader.getClass().getName());
+                "Expected KeyValueReader. Got: " + reader.getClass().getName());
           }
           currentReader = (KeyValueReader) reader;
           currentReaderIndex++;

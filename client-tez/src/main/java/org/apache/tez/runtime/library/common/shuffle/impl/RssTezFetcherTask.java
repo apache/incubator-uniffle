@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
@@ -44,6 +45,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.UnitConverter;
 
 public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
@@ -91,7 +93,9 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
       int numPhysicalInputs,
       int partitionNum,
       int maxAttemptNo) {
-    assert (inputs != null && inputs.size() > 0);
+    if (CollectionUtils.isEmpty(inputs)) {
+      throw new RssException("inputs should not be empty");
+    }
     this.fetcherCallback = fetcherCallback;
     this.inputContext = inputContext;
     this.conf = conf;

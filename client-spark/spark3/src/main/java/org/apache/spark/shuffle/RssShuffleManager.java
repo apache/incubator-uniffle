@@ -18,6 +18,7 @@
 package org.apache.spark.shuffle;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -35,20 +36,22 @@ import scala.collection.Iterator;
 import scala.collection.Seq;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.MapOutputTracker;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
-import org.apache.spark.SparkException;
 import org.apache.spark.TaskContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.executor.ShuffleReadMetrics;
 import org.apache.spark.executor.ShuffleWriteMetrics;
+import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.StageAttemptShuffleHandleInfo;
 import org.apache.spark.shuffle.reader.RssShuffleReader;
 import org.apache.spark.shuffle.writer.AddBlockEvent;
 import org.apache.spark.shuffle.writer.DataPusher;
@@ -60,19 +63,10 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.client.api.ShuffleManagerClient;
-import org.apache.uniffle.client.api.ShuffleWriteClient;
-import org.apache.uniffle.client.factory.ShuffleClientFactory;
-import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
-import org.apache.uniffle.client.request.RssPartitionToShuffleServerRequest;
-import org.apache.uniffle.client.response.RssPartitionToShuffleServerResponse;
 import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.client.util.RssClientConfig;
-import org.apache.uniffle.common.ClientType;
-import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
-import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
@@ -82,22 +76,24 @@ import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.JavaUtils;
-import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.shuffle.RssShuffleClientFactory;
 import org.apache.uniffle.shuffle.manager.RssShuffleManagerBase;
 import org.apache.uniffle.shuffle.manager.ShuffleManagerGrpcService;
 import org.apache.uniffle.shuffle.manager.ShuffleManagerServerFactory;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED;
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM;
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED;
 import static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;
 import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
 
 public class RssShuffleManager extends RssShuffleManagerBase {
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleManager.class);
-  private final String clientType;
   private final long heartbeatInterval;
   private final long heartbeatTimeout;
-  private AtomicReference<String> id = new AtomicReference<>();
   private final int dataReplica;
   private final int dataReplicaWrite;
   private final int dataReplicaRead;
@@ -108,10 +104,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker;
   private ScheduledExecutorService heartBeatScheduledExecutorService;
   private boolean heartbeatStarted = false;
-  private boolean dynamicConfEnabled;
-  private final ShuffleDataDistributionType dataDistributionType;
   private final BlockIdLayout blockIdLayout;
-  private final int maxConcurrencyPerPartitionToWrite;
   private final int maxFailures;
   private final boolean speculation;
   private String user;
@@ -123,29 +116,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final Map<Integer, Integer> shuffleIdToNumMapTasks = JavaUtils.newConcurrentMap();
   private ShuffleManagerGrpcService service;
   private GrpcServer shuffleManagerServer;
-
-  /** used by columnar rss shuffle writer implementation */
-  protected SparkConf sparkConf;
-
-  protected ShuffleWriteClient shuffleWriteClient;
-
-  private ShuffleManagerClient shuffleManagerClient;
-  /**
-   * Mapping between ShuffleId and ShuffleServer list. ShuffleServer list is dynamically allocated.
-   * ShuffleServer is not obtained from RssShuffleHandle, but from this mapping.
-   */
-  private Map<Integer, ShuffleHandleInfo> shuffleIdToShuffleHandleInfo;
-  /** Whether to enable the dynamic shuffleServer function rewrite and reread functions */
-  private boolean rssResubmitStage;
-  /** A list of shuffleServer for Write failures */
-  private Set<String> failuresShuffleServerIds;
-  /**
-   * Prevent multiple tasks from reporting FetchFailed, resulting in multiple ShuffleServer
-   * assignments, stageID, Attemptnumber Whether to reassign the combination flag;
-   */
-  private Map<String, Boolean> serverAssignedInfos;
-
-  private Map<String, ShuffleServerInfo> reassignedFaultyServers;
 
   public RssShuffleManager(SparkConf conf, boolean isDriver) {
     this.sparkConf = conf;
@@ -198,32 +168,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     // configureBlockIdLayout requires maxFailures and speculation to be initialized
     configureBlockIdLayout(sparkConf, rssConf);
     this.blockIdLayout = BlockIdLayout.from(rssConf);
-    long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
-    int heartBeatThreadNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
     this.dataTransferPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_TRANSFER_POOL_SIZE);
     this.dataCommitPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE);
-    int unregisterThreadPoolSize =
-        sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
-    int unregisterRequestTimeoutSec =
-        sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC);
-    shuffleWriteClient =
-        ShuffleClientFactory.getInstance()
-            .createShuffleWriteClient(
-                ShuffleClientFactory.newWriteBuilder()
-                    .clientType(clientType)
-                    .retryMax(retryMax)
-                    .retryIntervalMax(retryIntervalMax)
-                    .heartBeatThreadNum(heartBeatThreadNum)
-                    .replica(dataReplica)
-                    .replicaWrite(dataReplicaWrite)
-                    .replicaRead(dataReplicaRead)
-                    .replicaSkipEnabled(dataReplicaSkipEnabled)
-                    .dataTransferPoolSize(dataTransferPoolSize)
-                    .dataCommitPoolSize(dataCommitPoolSize)
-                    .unregisterThreadPoolSize(unregisterThreadPoolSize)
-                    .unregisterRequestTimeSec(unregisterRequestTimeoutSec)
-                    .rssConf(rssConf));
-    registerCoordinator();
     // External shuffle service is not supported when using remote shuffle service
     sparkConf.set("spark.shuffle.service.enabled", "false");
     sparkConf.set("spark.dynamicAllocation.shuffleTracking.enabled", "false");
@@ -236,13 +182,44 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     LOG.info("Disable shuffle data locality in RssShuffleManager.");
     taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
     taskToFailedBlockSendTracker = JavaUtils.newConcurrentMap();
-    this.rssResubmitStage =
-        rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
-            && RssSparkShuffleUtils.isStageResubmitSupported();
+
+    this.rssStageRetryEnabled = rssConf.get(RssClientConf.RSS_CLIENT_REASSIGN_ENABLED);
+    this.partitionReassignEnabled = rssConf.get(RssClientConf.RSS_CLIENT_REASSIGN_ENABLED);
+
+    // stage retry for write/fetch failure
+    rssStageRetryForFetchFailureEnabled =
+        rssConf.get(RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED);
+    rssStageRetryForWriteFailureEnabled =
+        rssConf.get(RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED);
+    if (rssStageRetryForFetchFailureEnabled || rssStageRetryForWriteFailureEnabled) {
+      rssStageRetryEnabled = true;
+      List<String> logTips = new ArrayList<>();
+      if (rssStageRetryForWriteFailureEnabled) {
+        logTips.add("write");
+      }
+      if (rssStageRetryForWriteFailureEnabled) {
+        logTips.add("fetch");
+      }
+      LOG.info(
+          "Activate the stage retry mechanism that will resubmit stage on {} failure",
+          StringUtils.join(logTips, "/"));
+    }
+
+    // The feature of partition reassign is exclusive with multiple replicas and stage retry.
+    if (partitionReassignEnabled) {
+      if (dataReplica > 1) {
+        throw new RssException(
+            "The feature of task partition reassign is incompatible with multiple replicas mechanism.");
+      }
+    }
+
+    this.blockIdSelfManagedEnabled = rssConf.getBoolean(RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
+    this.shuffleManagerRpcServiceEnabled =
+        partitionReassignEnabled || rssStageRetryEnabled || blockIdSelfManagedEnabled;
     if (isDriver) {
       heartBeatScheduledExecutorService =
           ThreadUtils.getDaemonSingleThreadScheduledExecutor("rss-heartbeat");
-      if (rssResubmitStage) {
+      if (shuffleManagerRpcServiceEnabled) {
         LOG.info("stage resubmit is supported and enabled");
         // start shuffle manager server
         rssConf.set(RPC_SERVER_PORT, 0);
@@ -261,6 +238,38 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         }
       }
     }
+    if (shuffleManagerRpcServiceEnabled) {
+      this.shuffleManagerClient = getOrCreateShuffleManagerClient();
+    }
+    int unregisterThreadPoolSize =
+        sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
+    int unregisterTimeoutSec = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_TIMEOUT_SEC);
+    int unregisterRequestTimeoutSec =
+        sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC);
+    long retryIntervalMax = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
+    int heartBeatThreadNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
+    shuffleWriteClient =
+        RssShuffleClientFactory.getInstance()
+            .createShuffleWriteClient(
+                RssShuffleClientFactory.newWriteBuilder()
+                    .blockIdSelfManagedEnabled(blockIdSelfManagedEnabled)
+                    .shuffleManagerClient(shuffleManagerClient)
+                    .clientType(clientType)
+                    .retryMax(retryMax)
+                    .retryIntervalMax(retryIntervalMax)
+                    .heartBeatThreadNum(heartBeatThreadNum)
+                    .replica(dataReplica)
+                    .replicaWrite(dataReplicaWrite)
+                    .replicaRead(dataReplicaRead)
+                    .replicaSkipEnabled(dataReplicaSkipEnabled)
+                    .dataTransferPoolSize(dataTransferPoolSize)
+                    .dataCommitPoolSize(dataCommitPoolSize)
+                    .unregisterThreadPoolSize(unregisterThreadPoolSize)
+                    .unregisterTimeSec(unregisterTimeoutSec)
+                    .unregisterRequestTimeSec(unregisterRequestTimeoutSec)
+                    .rssConf(rssConf));
+    registerCoordinator();
+
     LOG.info("Rss data pusher is starting...");
     int poolSize = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_SIZE);
     int keepAliveTime = sparkConf.get(RssSparkConfig.RSS_CLIENT_SEND_THREAD_POOL_KEEPALIVE);
@@ -272,10 +281,10 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             failedTaskIds,
             poolSize,
             keepAliveTime);
-    this.shuffleIdToShuffleHandleInfo = JavaUtils.newConcurrentMap();
-    this.failuresShuffleServerIds = Sets.newHashSet();
-    this.serverAssignedInfos = JavaUtils.newConcurrentMap();
-    this.reassignedFaultyServers = JavaUtils.newConcurrentMap();
+    this.partitionReassignMaxServerNum =
+        rssConf.get(RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM);
+    this.shuffleHandleInfoManager = new ShuffleHandleInfoManager();
+    this.rssStageResubmitManager = new RssStageResubmitManager();
   }
 
   public CompletableFuture<Long> sendData(AddBlockEvent event) {
@@ -340,12 +349,14 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.dataCommitPoolSize = sparkConf.get(RssSparkConfig.RSS_DATA_COMMIT_POOL_SIZE);
     int unregisterThreadPoolSize =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
+    int unregisterTimeoutSec = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_TIMEOUT_SEC);
     int unregisterRequestTimeoutSec =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC);
     shuffleWriteClient =
-        ShuffleClientFactory.getInstance()
+        RssShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
-                ShuffleClientFactory.newWriteBuilder()
+                RssShuffleClientFactory.getInstance()
+                    .newWriteBuilder()
                     .clientType(clientType)
                     .retryMax(retryMax)
                     .retryIntervalMax(retryIntervalMax)
@@ -357,12 +368,17 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                     .dataTransferPoolSize(dataTransferPoolSize)
                     .dataCommitPoolSize(dataCommitPoolSize)
                     .unregisterThreadPoolSize(unregisterThreadPoolSize)
+                    .unregisterTimeSec(unregisterTimeoutSec)
                     .unregisterRequestTimeSec(unregisterRequestTimeoutSec)
                     .rssConf(rssConf));
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
     this.heartBeatScheduledExecutorService = null;
     this.taskToFailedBlockSendTracker = taskToFailedBlockSendTracker;
     this.dataPusher = dataPusher;
+    this.partitionReassignMaxServerNum =
+        rssConf.get(RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM);
+    this.shuffleHandleInfoManager = new ShuffleHandleInfoManager();
+    this.rssStageResubmitManager = new RssStageResubmitManager();
   }
 
   // This method is called in Spark driver side,
@@ -404,6 +420,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
     if (id.get() == null) {
       id.compareAndSet(null, SparkEnv.get().conf().getAppId() + "_" + uuid);
+      appId = id.get();
       dataPusher.setRssAppId(id.get());
     }
     LOG.info("Generate application id used in rss: " + id.get());
@@ -416,7 +433,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               + shuffleId
               + "], partitionNum is 0, "
               + "return the empty RssShuffleHandle directly");
-      Broadcast<ShuffleHandleInfo> hdlInfoBd =
+      Broadcast<SimpleShuffleHandleInfo> hdlInfoBd =
           RssSparkShuffleUtils.broadcastShuffleHdlInfo(
               RssSparkShuffleUtils.getActiveSparkContext(),
               shuffleId,
@@ -438,45 +455,32 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
     int requiredShuffleServerNumber =
         RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
-
-    // retryInterval must bigger than `rss.server.heartbeat.interval`, or maybe it will return the
-    // same result
-    long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
-    int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
     int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers;
-    try {
-      partitionToServers =
-          RetryUtils.retry(
-              () -> {
-                ShuffleAssignmentsInfo response =
-                    shuffleWriteClient.getShuffleAssignments(
-                        id.get(),
-                        shuffleId,
-                        dependency.partitioner().numPartitions(),
-                        1,
-                        assignmentTags,
-                        requiredShuffleServerNumber,
-                        estimateTaskConcurrency);
-                registerShuffleServers(
-                    id.get(), shuffleId, response.getServerToPartitionRanges(), remoteStorage);
-                return response.getPartitionToServers();
-              },
-              retryInterval,
-              retryTimes);
-    } catch (Throwable throwable) {
-      throw new RssException("registerShuffle failed!", throwable);
-    }
-    startHeartbeat();
 
+    Map<Integer, List<ShuffleServerInfo>> partitionToServers =
+        requestShuffleAssignment(
+            shuffleId,
+            dependency.partitioner().numPartitions(),
+            1,
+            requiredShuffleServerNumber,
+            estimateTaskConcurrency,
+            rssStageResubmitManager.getServerIdBlackList(),
+            0);
+    startHeartbeat();
     shuffleIdToPartitionNum.putIfAbsent(shuffleId, dependency.partitioner().numPartitions());
     shuffleIdToNumMapTasks.putIfAbsent(shuffleId, dependency.rdd().partitions().length);
-    if (rssResubmitStage) {
-      ShuffleHandleInfo handleInfo =
-          new ShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
-      shuffleIdToShuffleHandleInfo.put(shuffleId, handleInfo);
+    if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
+      ShuffleHandleInfo shuffleHandleInfo =
+          new MutableShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
+      StageAttemptShuffleHandleInfo handleInfo =
+          new StageAttemptShuffleHandleInfo(shuffleId, remoteStorage, shuffleHandleInfo);
+      shuffleHandleInfoManager.register(shuffleId, handleInfo);
+    } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
+      ShuffleHandleInfo shuffleHandleInfo =
+          new MutableShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
+      shuffleHandleInfoManager.register(shuffleId, shuffleHandleInfo);
     }
-    Broadcast<ShuffleHandleInfo> hdlInfoBd =
+    Broadcast<SimpleShuffleHandleInfo> hdlInfoBd =
         RssSparkShuffleUtils.broadcastShuffleHdlInfo(
             RssSparkShuffleUtils.getActiveSparkContext(),
             shuffleId,
@@ -509,16 +513,18 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       writeMetrics = context.taskMetrics().shuffleWriteMetrics();
     }
     ShuffleHandleInfo shuffleHandleInfo;
-    if (rssResubmitStage) {
-      // Get the ShuffleServer list from the Driver based on the shuffleId
-      shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);
+    if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
+      // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
+      shuffleHandleInfo = getRemoteShuffleHandleInfoWithStageRetry(shuffleId);
+    } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
+      // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
+      shuffleHandleInfo = getRemoteShuffleHandleInfoWithBlockRetry(shuffleId);
     } else {
       shuffleHandleInfo =
-          new ShuffleHandleInfo(
+          new SimpleShuffleHandleInfo(
               shuffleId, rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
     }
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
-    LOG.info("RssHandle appId {} shuffleId {} ", rssHandle.getAppId(), rssHandle.getShuffleId());
     return new RssShuffleWriter<>(
         rssHandle.getAppId(),
         shuffleId,
@@ -651,24 +657,21 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     final int partitionNum = rssShuffleHandle.getDependency().partitioner().numPartitions();
     int shuffleId = rssShuffleHandle.getShuffleId();
     ShuffleHandleInfo shuffleHandleInfo;
-    if (rssResubmitStage) {
-      // Get the ShuffleServer list from the Driver based on the shuffleId
-      shuffleHandleInfo = getRemoteShuffleHandleInfo(shuffleId);
+    if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
+      // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
+      shuffleHandleInfo = getRemoteShuffleHandleInfoWithStageRetry(shuffleId);
+    } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
+      // In Block Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
+      shuffleHandleInfo = getRemoteShuffleHandleInfoWithBlockRetry(shuffleId);
     } else {
       shuffleHandleInfo =
-          new ShuffleHandleInfo(
+          new SimpleShuffleHandleInfo(
               shuffleId,
               rssShuffleHandle.getPartitionToServers(),
               rssShuffleHandle.getRemoteStorage());
     }
-    Map<Integer, List<ShuffleServerInfo>> allPartitionToServers =
-        shuffleHandleInfo.getPartitionToServers();
-    Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers =
-        allPartitionToServers.entrySet().stream()
-            .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition)
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     Map<ShuffleServerInfo, Set<Integer>> serverToPartitions =
-        RssUtils.generateServerToPartitions(requirePartitionToServers);
+        getPartitionDataServers(shuffleHandleInfo, startPartition, endPartition);
     long start = System.currentTimeMillis();
     Roaring64NavigableMap blockIdBitmap =
         getShuffleResultForMultiPart(
@@ -676,7 +679,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             serverToPartitions,
             rssShuffleHandle.getAppId(),
             shuffleId,
-            context.stageAttemptNumber());
+            context.stageAttemptNumber(),
+            shuffleHandleInfo.createPartitionReplicaTracking());
     LOG.info(
         "Get shuffle blockId cost "
             + (System.currentTimeMillis() - start)
@@ -719,7 +723,20 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         readMetrics,
         RssSparkConfig.toRssConf(sparkConf),
         dataDistributionType,
-        allPartitionToServers);
+        shuffleHandleInfo.getAllPartitionServersForReader());
+  }
+
+  private Map<ShuffleServerInfo, Set<Integer>> getPartitionDataServers(
+      ShuffleHandleInfo shuffleHandleInfo, int startPartition, int endPartition) {
+    Map<Integer, List<ShuffleServerInfo>> allPartitionToServers =
+        shuffleHandleInfo.getAllPartitionServersForReader();
+    Map<Integer, List<ShuffleServerInfo>> requirePartitionToServers =
+        allPartitionToServers.entrySet().stream()
+            .filter(x -> x.getKey() >= startPartition && x.getKey() < endPartition)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    Map<ShuffleServerInfo, Set<Integer>> serverToPartitions =
+        RssUtils.generateServerToPartitions(requirePartitionToServers);
+    return serverToPartitions;
   }
 
   @SuppressFBWarnings("REC_CATCH_EXCEPTION")
@@ -839,6 +856,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   @Override
   public boolean unregisterShuffle(int shuffleId) {
     try {
+      super.unregisterShuffle(shuffleId);
       if (SparkEnv.get().executorId().equals("driver")) {
         shuffleWriteClient.unregisterShuffle(id.get(), shuffleId);
         shuffleIdToPartitionNum.remove(shuffleId);
@@ -848,7 +866,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         }
       }
     } catch (Exception e) {
-      LOG.warn("Errors on unregister to remote shuffle-servers", e);
+      LOG.warn("Errors on unregistering from remote shuffle-servers", e);
     }
     return true;
   }
@@ -889,39 +907,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   public void clearTaskMeta(String taskId) {
     taskToSuccessBlockIds.remove(taskId);
     taskToFailedBlockSendTracker.remove(taskId);
-  }
-
-  @VisibleForTesting
-  protected void registerShuffleServers(
-      String appId,
-      int shuffleId,
-      Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges,
-      RemoteStorageInfo remoteStorage) {
-    if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
-      return;
-    }
-    LOG.info("Start to register shuffleId[" + shuffleId + "]");
-    long start = System.currentTimeMillis();
-    Set<Map.Entry<ShuffleServerInfo, List<PartitionRange>>> entries =
-        serverToPartitionRanges.entrySet();
-    entries.stream()
-        .forEach(
-            entry -> {
-              shuffleWriteClient.registerShuffle(
-                  entry.getKey(),
-                  appId,
-                  shuffleId,
-                  entry.getValue(),
-                  remoteStorage,
-                  dataDistributionType,
-                  maxConcurrencyPerPartitionToWrite);
-            });
-    LOG.info(
-        "Finish register shuffleId["
-            + shuffleId
-            + "] with "
-            + (System.currentTimeMillis() - start)
-            + " ms");
   }
 
   @VisibleForTesting
@@ -976,16 +961,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   @Override
   public String getAppId() {
     return id.get();
-  }
-
-  /**
-   * @return the maximum number of fetch failures per shuffle partition before that shuffle stage
-   *     should be recomputed
-   */
-  @Override
-  public int getMaxFetchFailures() {
-    final String TASK_MAX_FAILURE = "spark.task.maxFailures";
-    return Math.max(1, sparkConf.getInt(TASK_MAX_FAILURE, 4) - 1);
   }
 
   @Override
@@ -1068,11 +1043,17 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
       String appId,
       int shuffleId,
-      int stageAttemptId) {
+      int stageAttemptId,
+      PartitionDataReplicaRequirementTracking replicaRequirementTracking) {
     Set<Integer> failedPartitions = Sets.newHashSet();
     try {
       return shuffleWriteClient.getShuffleResultForMultiPart(
-          clientType, serverToPartitions, appId, shuffleId, failedPartitions);
+          clientType,
+          serverToPartitions,
+          appId,
+          shuffleId,
+          failedPartitions,
+          replicaRequirementTracking);
     } catch (RssFetchFailedException e) {
       throw RssSparkShuffleUtils.reportRssFetchFailedException(
           e, sparkConf, appId, shuffleId, stageAttemptId, failedPartitions);
@@ -1083,195 +1064,18 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     return taskToFailedBlockSendTracker.get(taskId);
   }
 
-  @Override
-  public ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId) {
-    return shuffleIdToShuffleHandleInfo.get(shuffleId);
+  @VisibleForTesting
+  public void setDataPusher(DataPusher dataPusher) {
+    this.dataPusher = dataPusher;
   }
 
-  private ShuffleManagerClient createShuffleManagerClient(String host, int port) {
-    // Host can be inferred from `spark.driver.bindAddress`, which would be set when SparkContext is
-    // constructed.
-    return ShuffleManagerClientFactory.getInstance()
-        .createShuffleManagerClient(ClientType.GRPC, host, port);
+  @VisibleForTesting
+  public Map<String, Set<Long>> getTaskToSuccessBlockIds() {
+    return taskToSuccessBlockIds;
   }
 
-  /**
-   * Get the ShuffleServer list from the Driver based on the shuffleId
-   *
-   * @param shuffleId shuffleId
-   * @return ShuffleHandleInfo
-   */
-  private synchronized ShuffleHandleInfo getRemoteShuffleHandleInfo(int shuffleId) {
-    ShuffleHandleInfo shuffleHandleInfo;
-    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
-    String driver = rssConf.getString("driver.host", "");
-    int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
-    if (shuffleManagerClient == null) {
-      shuffleManagerClient = createShuffleManagerClient(driver, port);
-    }
-    RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
-        new RssPartitionToShuffleServerRequest(shuffleId);
-    RssPartitionToShuffleServerResponse rpcPartitionToShufflerServer =
-        shuffleManagerClient.getPartitionToShufflerServer(rssPartitionToShuffleServerRequest);
-    shuffleHandleInfo =
-        new ShuffleHandleInfo(
-            shuffleId,
-            rpcPartitionToShufflerServer.getPartitionToServers(),
-            rpcPartitionToShufflerServer.getRemoteStorageInfo());
-    return shuffleHandleInfo;
-  }
-
-  /**
-   * Add the shuffleServer that failed to write to the failure list
-   *
-   * @param shuffleServerId
-   */
-  @Override
-  public void addFailuresShuffleServerInfos(String shuffleServerId) {
-    failuresShuffleServerIds.add(shuffleServerId);
-  }
-
-  /**
-   * Reassign the ShuffleServer list for ShuffleId
-   *
-   * @param shuffleId
-   * @param numPartitions
-   */
-  @Override
-  public synchronized boolean reassignAllShuffleServersForWholeStage(
-      int stageId, int stageAttemptNumber, int shuffleId, int numPartitions) {
-    String stageIdAndAttempt = stageId + "_" + stageAttemptNumber;
-    Boolean needReassign = serverAssignedInfos.computeIfAbsent(stageIdAndAttempt, id -> false);
-    if (!needReassign) {
-      int requiredShuffleServerNumber =
-          RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
-      int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
-      /** Before reassigning ShuffleServer, clear the ShuffleServer list in ShuffleWriteClient. */
-      shuffleWriteClient.unregisterShuffle(id.get(), shuffleId);
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers =
-          requestShuffleAssignment(
-              shuffleId,
-              numPartitions,
-              1,
-              requiredShuffleServerNumber,
-              estimateTaskConcurrency,
-              failuresShuffleServerIds);
-      /**
-       * we need to clear the metadata of the completed task, otherwise some of the stage's data
-       * will be lost
-       */
-      try {
-        unregisterAllMapOutput(shuffleId);
-      } catch (SparkException e) {
-        LOG.error("Clear MapoutTracker Meta failed!");
-        throw new RssException("Clear MapoutTracker Meta failed!", e);
-      }
-      ShuffleHandleInfo handleInfo =
-          new ShuffleHandleInfo(shuffleId, partitionToServers, getRemoteStorageInfo());
-      shuffleIdToShuffleHandleInfo.put(shuffleId, handleInfo);
-      serverAssignedInfos.put(stageIdAndAttempt, true);
-      return true;
-    } else {
-      LOG.info(
-          "The Stage:{} has been reassigned in an Attempt{},Return without performing any operation",
-          stageId,
-          stageAttemptNumber);
-      return false;
-    }
-  }
-
-  @Override
-  public ShuffleServerInfo reassignFaultyShuffleServerForTasks(
-      int shuffleId, Set<String> partitionIds, String faultyShuffleServerId) {
-    ShuffleServerInfo newShuffleServerInfo =
-        reassignedFaultyServers.computeIfAbsent(
-            faultyShuffleServerId,
-            id -> {
-              ShuffleServerInfo newAssignedServer = assignShuffleServer(shuffleId, id);
-              ShuffleHandleInfo shuffleHandleInfo = shuffleIdToShuffleHandleInfo.get(shuffleId);
-              for (String partitionId : partitionIds) {
-                Integer partitionIdInteger = Integer.valueOf(partitionId);
-                List<ShuffleServerInfo> shuffleServerInfoList =
-                    shuffleHandleInfo.getPartitionToServers().get(partitionIdInteger);
-                for (int i = 0; i < shuffleServerInfoList.size(); i++) {
-                  if (shuffleServerInfoList.get(i).getId().equals(faultyShuffleServerId)) {
-                    shuffleHandleInfo
-                        .getFailoverPartitionServers()
-                        .computeIfAbsent(partitionIdInteger, k -> Maps.newHashMap());
-                    shuffleHandleInfo
-                        .getFailoverPartitionServers()
-                        .get(partitionIdInteger)
-                        .computeIfAbsent(i, j -> Lists.newArrayList())
-                        .add(newAssignedServer);
-                  }
-                }
-              }
-              return newAssignedServer;
-            });
-    return newShuffleServerInfo;
-  }
-
-  public Map<String, ShuffleServerInfo> getReassignedFaultyServers() {
-    return reassignedFaultyServers;
-  }
-
-  private ShuffleServerInfo assignShuffleServer(int shuffleId, String faultyShuffleServerId) {
-    Set<String> faultyServerIds = Sets.newHashSet(faultyShuffleServerId);
-    faultyServerIds.addAll(failuresShuffleServerIds);
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers =
-        requestShuffleAssignment(shuffleId, 1, 1, 1, 1, faultyServerIds);
-    if (partitionToServers.get(0) != null && partitionToServers.get(0).size() == 1) {
-      return partitionToServers.get(0).get(0);
-    }
-    return null;
-  }
-
-  private Map<Integer, List<ShuffleServerInfo>> requestShuffleAssignment(
-      int shuffleId,
-      int partitionNum,
-      int partitionNumPerRange,
-      int assignmentShuffleServerNumber,
-      int estimateTaskConcurrency,
-      Set<String> faultyServerIds) {
-    Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
-    ClientUtils.validateClientType(clientType);
-    assignmentTags.add(clientType);
-    long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_INTERVAL);
-    int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
-    faultyServerIds.addAll(failuresShuffleServerIds);
-    try {
-      return RetryUtils.retry(
-          () -> {
-            ShuffleAssignmentsInfo response =
-                shuffleWriteClient.getShuffleAssignments(
-                    id.get(),
-                    shuffleId,
-                    partitionNum,
-                    partitionNumPerRange,
-                    assignmentTags,
-                    assignmentShuffleServerNumber,
-                    estimateTaskConcurrency,
-                    faultyServerIds);
-            registerShuffleServers(
-                id.get(), shuffleId, response.getServerToPartitionRanges(), getRemoteStorageInfo());
-            return response.getPartitionToServers();
-          },
-          retryInterval,
-          retryTimes);
-    } catch (Throwable throwable) {
-      throw new RssException("registerShuffle failed!", throwable);
-    }
-  }
-
-  private RemoteStorageInfo getRemoteStorageInfo() {
-    String storageType = sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key());
-    RemoteStorageInfo defaultRemoteStorage =
-        new RemoteStorageInfo(sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""));
-    return ClientUtils.fetchRemoteStorage(
-        id.get(), defaultRemoteStorage, dynamicConfEnabled, storageType, shuffleWriteClient);
-  }
-
-  public boolean isRssResubmitStage() {
-    return rssResubmitStage;
+  @VisibleForTesting
+  public Map<String, FailedBlockSendTracker> getTaskToFailedBlockSendTracker() {
+    return taskToFailedBlockSendTracker;
   }
 }

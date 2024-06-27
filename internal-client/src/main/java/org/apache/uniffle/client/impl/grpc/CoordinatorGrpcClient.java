@@ -178,7 +178,10 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       Set<String> requiredTags,
       int assignmentShuffleServerNumber,
       int estimateTaskConcurrency,
-      Set<String> faultyServerIds) {
+      Set<String> faultyServerIds,
+      int stageId,
+      int stageAttemptNumber,
+      boolean reassign) {
     RssProtos.GetShuffleServerRequest getServerRequest =
         RssProtos.GetShuffleServerRequest.newBuilder()
             .setApplicationId(appId)
@@ -190,6 +193,9 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             .setAssignmentShuffleServerNumber(assignmentShuffleServerNumber)
             .setEstimateTaskConcurrency(estimateTaskConcurrency)
             .addAllFaultyServerIds(faultyServerIds)
+            .setStageId(stageId)
+            .setStageAttemptNumber(stageAttemptNumber)
+            .setReassign(reassign)
             .build();
 
     return blockingStub.getShuffleAssignments(getServerRequest);
@@ -283,7 +289,10 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             request.getRequiredTags(),
             request.getAssignmentShuffleServerNumber(),
             request.getEstimateTaskConcurrency(),
-            request.getFaultyServerIds());
+            request.getFaultyServerIds(),
+            request.getStageId(),
+            request.getStageAttemptNumber(),
+            request.isReassign());
 
     RssGetShuffleAssignmentsResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
@@ -351,7 +360,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       rpcResponse =
           blockingStub
               .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS)
-              .fetchClientConf(Empty.getDefaultInstance());
+              .fetchClientConfV2(request.toProto());
       Map<String, String> clientConf =
           rpcResponse.getClientConfList().stream()
               .collect(Collectors.toMap(ClientConfItem::getKey, ClientConfItem::getValue));

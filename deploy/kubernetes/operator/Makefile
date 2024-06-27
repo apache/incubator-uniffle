@@ -105,7 +105,7 @@ docker-push: docker-build
 CONTROLLER_GEN = $(LOCAL_DIR)/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0)
+	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.12.1)
 	./hack/update-codegen.sh
 
 KUSTOMIZE = $(LOCAL_DIR)/kustomize

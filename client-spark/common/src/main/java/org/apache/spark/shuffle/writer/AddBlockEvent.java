@@ -25,21 +25,20 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 public class AddBlockEvent {
 
   private String taskId;
+  private int stageAttemptNumber;
   private List<ShuffleBlockInfo> shuffleDataInfoList;
   private List<Runnable> processedCallbackChain;
 
   public AddBlockEvent(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
-    this.taskId = taskId;
-    this.shuffleDataInfoList = shuffleDataInfoList;
-    this.processedCallbackChain = new ArrayList<>();
+    this(taskId, 0, shuffleDataInfoList);
   }
 
   public AddBlockEvent(
-      String taskId, List<ShuffleBlockInfo> shuffleBlockInfoList, Runnable callback) {
+      String taskId, int stageAttemptNumber, List<ShuffleBlockInfo> shuffleDataInfoList) {
     this.taskId = taskId;
-    this.shuffleDataInfoList = shuffleBlockInfoList;
+    this.stageAttemptNumber = stageAttemptNumber;
+    this.shuffleDataInfoList = shuffleDataInfoList;
     this.processedCallbackChain = new ArrayList<>();
-    addCallback(callback);
   }
 
   /** @param callback, should not throw any exception and execute fast. */
@@ -49,6 +48,10 @@ public class AddBlockEvent {
 
   public String getTaskId() {
     return taskId;
+  }
+
+  public int getStageAttemptNumber() {
+    return stageAttemptNumber;
   }
 
   public List<ShuffleBlockInfo> getShuffleDataInfoList() {

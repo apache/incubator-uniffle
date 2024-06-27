@@ -28,13 +28,14 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.prometheus.client.CollectorRegistry;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
+import org.apache.uniffle.common.ReconfigurableConfManager;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.InvalidRequestException;
@@ -122,6 +123,8 @@ public class ShuffleServer {
     LOG.info("Start to init shuffle server using config {}", configFile);
 
     ShuffleServerConf shuffleServerConf = new ShuffleServerConf(configFile);
+    ReconfigurableConfManager.init(shuffleServerConf, configFile);
+
     final ShuffleServer shuffleServer = new ShuffleServer(shuffleServerConf);
     shuffleServer.start();
 
@@ -281,7 +284,12 @@ public class ShuffleServer {
     nettyServerEnabled =
         shuffleServerConf.get(ShuffleServerConf.RPC_SERVER_TYPE) == ServerType.GRPC_NETTY;
     if (nettyServerEnabled) {
-      assert nettyPort >= 0;
+      if (nettyPort < 0) {
+        throw new RssException(
+            String.format(
+                "%s must be set during startup when using GRPC_NETTY",
+                ShuffleServerConf.NETTY_SERVER_PORT.key()));
+      }
       streamServer = new StreamServer(this);
     }
 
@@ -316,7 +324,7 @@ public class ShuffleServer {
     LOG.info("Register metrics");
     CollectorRegistry shuffleServerCollectorRegistry = new CollectorRegistry(true);
     String rawTags = getEncodedTags();
-    ShuffleServerMetrics.register(shuffleServerCollectorRegistry, rawTags);
+    ShuffleServerMetrics.register(shuffleServerCollectorRegistry, rawTags, shuffleServerConf);
     grpcMetrics = new ShuffleServerGrpcMetrics(this.shuffleServerConf, rawTags);
     grpcMetrics.register(new CollectorRegistry(true));
     nettyMetrics = new ShuffleServerNettyMetrics(shuffleServerConf, rawTags);
@@ -526,5 +534,22 @@ public class ShuffleServer {
 
   public String getEncodedTags() {
     return StringUtils.join(tags, ",");
+  }
+
+  @VisibleForTesting
+  public void sendHeartbeat() {
+    ShuffleServer shuffleServer = this;
+    registerHeartBeat.sendHeartBeat(
+        shuffleServer.getId(),
+        shuffleServer.getIp(),
+        shuffleServer.getGrpcPort(),
+        shuffleServer.getUsedMemory(),
+        shuffleServer.getPreAllocatedMemory(),
+        shuffleServer.getAvailableMemory(),
+        shuffleServer.getEventNumInFlush(),
+        shuffleServer.getTags(),
+        shuffleServer.getServerStatus(),
+        shuffleServer.getStorageManager().getStorageInfo(),
+        shuffleServer.getNettyPort());
   }
 }

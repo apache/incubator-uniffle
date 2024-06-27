@@ -61,12 +61,22 @@ public class DataPusherTest {
               .dataTransferPoolSize(1)
               .dataCommitPoolSize(1)
               .unregisterThreadPoolSize(1)
+              .unregisterTimeSec(1)
               .unregisterRequestTimeSec(1));
     }
 
     @Override
     public SendShuffleDataResult sendShuffleData(
         String appId,
+        List<ShuffleBlockInfo> shuffleBlockInfoList,
+        Supplier<Boolean> needCancelRequest) {
+      return sendShuffleData(appId, 0, shuffleBlockInfoList, needCancelRequest);
+    }
+
+    @Override
+    public SendShuffleDataResult sendShuffleData(
+        String appId,
+        int stageAttemptNumber,
         List<ShuffleBlockInfo> shuffleBlockInfoList,
         Supplier<Boolean> needCancelRequest) {
       return fakedShuffleDataResult;

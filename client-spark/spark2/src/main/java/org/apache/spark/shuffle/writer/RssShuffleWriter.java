@@ -55,8 +55,9 @@ import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssShuffleManager;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.RssSparkShuffleUtils;
-import org.apache.spark.shuffle.ShuffleHandleInfo;
 import org.apache.spark.shuffle.ShuffleWriter;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
 import org.apache.spark.storage.BlockManagerId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +68,7 @@ import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.request.RssReassignServersRequest;
 import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
-import org.apache.uniffle.client.response.RssReassignServersReponse;
+import org.apache.uniffle.client.response.RssReassignServersResponse;
 import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -78,6 +79,8 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssSendFailedException;
 import org.apache.uniffle.common.exception.RssWaitFailedException;
 import org.apache.uniffle.storage.util.StorageType;
+
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED;
 
 public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
@@ -122,7 +125,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
       RssShuffleHandle<K, V, C> rssHandle,
-      ShuffleHandleInfo shuffleHandleInfo,
+      SimpleShuffleHandleInfo shuffleHandleInfo,
       TaskContext context) {
     this(
         appId,
@@ -168,8 +171,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.bitmapSplitNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM);
     this.serverToPartitionToBlockIds = Maps.newHashMap();
     this.shuffleWriteClient = shuffleWriteClient;
-    this.shuffleServersForData = shuffleHandleInfo.getShuffleServersForData();
-    this.partitionToServers = shuffleHandleInfo.getPartitionToServers();
+    this.shuffleServersForData = shuffleHandleInfo.getServers();
+    this.partitionToServers = shuffleHandleInfo.getAvailablePartitionServersForWriter();
     this.isMemoryShuffleEnabled =
         isMemoryShuffleEnabled(sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
     this.taskFailureCallback = taskFailureCallback;
@@ -211,7 +214,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             taskAttemptId,
             bufferOptions,
             rssHandle.getDependency().serializer(),
-            shuffleHandleInfo.getPartitionToServers(),
+            shuffleHandleInfo.getAvailablePartitionServersForWriter(),
             context.taskMemoryManager(),
             shuffleWriteMetrics,
             RssSparkConfig.toRssConf(sparkConf),
@@ -237,7 +240,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       writeImpl(records);
     } catch (Exception e) {
       taskFailureCallback.apply(taskId);
-      if (shuffleManager.isRssResubmitStage()) {
+      if (RssSparkConfig.toRssConf(sparkConf).get(RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED)) {
         throwFetchFailedIfNecessary(e);
       } else {
         throw e;
@@ -263,11 +266,14 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
 
     final long start = System.currentTimeMillis();
-    shuffleBlockInfos = bufferManager.clear();
+    shuffleBlockInfos = bufferManager.clear(1.0);
     processShuffleBlockInfos(shuffleBlockInfos);
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     long s = System.currentTimeMillis();
+    checkAllBufferSpilled();
     checkSentRecordCount(recordCount);
-    checkBlockSendResult(blockIds);
+    checkBlockSendResult(new HashSet<>(blockIds));
+    checkSentBlockCount();
     final long checkDuration = System.currentTimeMillis() - s;
     long commitDuration = 0;
     if (!isMemoryShuffleEnabled) {
@@ -294,6 +300,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             + bufferManager.getManagerCostInfo());
   }
 
+  private void checkAllBufferSpilled() {
+    if (bufferManager.getBuffers().size() > 0) {
+      throw new RssSendFailedException(
+          "Potential data loss due to existing remaining data buffers that are not flushed. This should not happen.");
+    }
+  }
+
   private void checkSentRecordCount(long recordCount) {
     if (recordCount != bufferManager.getRecordCount()) {
       String errorMsg =
@@ -301,6 +314,33 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               + taskId
               + "]";
       throw new RssSendFailedException(errorMsg);
+    }
+  }
+
+  private void checkSentBlockCount() {
+    long expected = blockIds.size();
+    long bufferManagerTracked = bufferManager.getBlockCount();
+
+    if (serverToPartitionToBlockIds == null) {
+      throw new RssException("serverToPartitionToBlockIds should not be null");
+    }
+
+    // to filter the multiple replica's duplicate blockIds
+    Set<Long> blockIds = new HashSet<>();
+    for (Map<Integer, Set<Long>> partitionBlockIds : serverToPartitionToBlockIds.values()) {
+      partitionBlockIds.values().forEach(x -> blockIds.addAll(x));
+    }
+    long serverTracked = blockIds.size();
+    if (expected != serverTracked || expected != bufferManagerTracked) {
+      throw new RssSendFailedException(
+          "Potential block loss may occur for task["
+              + taskId
+              + "]. BlockId number expected: "
+              + expected
+              + ", serverTracked: "
+              + serverTracked
+              + ", bufferManagerTracked: "
+              + bufferManagerTracked);
     }
   }
 
@@ -516,17 +556,18 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         RssReportShuffleWriteFailureResponse response =
             shuffleManagerClient.reportShuffleWriteFailure(req);
         if (response.getReSubmitWholeStage()) {
+          // The shuffle server is reassigned.
           RssReassignServersRequest rssReassignServersRequest =
               new RssReassignServersRequest(
                   taskContext.stageId(),
                   taskContext.stageAttemptNumber(),
                   shuffleId,
                   partitioner.numPartitions());
-          RssReassignServersReponse rssReassignServersReponse =
-              shuffleManagerClient.reassignShuffleServers(rssReassignServersRequest);
+          RssReassignServersResponse rssReassignServersResponse =
+              shuffleManagerClient.reassignOnStageResubmit(rssReassignServersRequest);
           LOG.info(
               "Whether the reassignment is successful: {}",
-              rssReassignServersReponse.isNeedReassign());
+              rssReassignServersResponse.isNeedReassign());
           // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1 is
           // provided.
           FetchFailedException ffe =

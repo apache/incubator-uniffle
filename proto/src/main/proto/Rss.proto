@@ -184,6 +184,7 @@ message ShuffleRegisterRequest {
   string user = 5;
   DataDistribution shuffleDataDistribution = 6;
   int32 maxConcurrencyPerPartitionToWrite = 7;
+  int32 stageAttemptNumber = 8;
 }
 
 enum DataDistribution {
@@ -221,6 +222,7 @@ message SendShuffleDataRequest {
   int64 requireBufferId = 3;
   repeated ShuffleData shuffleData = 4;
   int64 timestamp = 5;
+  int32 stageAttemptNumber = 6;
 }
 
 message SendShuffleDataResponse {
@@ -305,6 +307,7 @@ enum StatusCode {
   ACCESS_DENIED = 8;
   INVALID_REQUEST = 9;
   NO_BUFFER_FOR_HUGE_PARTITION = 10;
+  STAGE_RETRY_IGNORE = 11;
   // add more status
 }
 
@@ -367,6 +370,7 @@ service CoordinatorServer {
 
   // Get basic client conf from coordinator
   rpc fetchClientConf(google.protobuf.Empty) returns (FetchClientConfResponse);
+  rpc fetchClientConfV2(FetchClientConfRequest) returns (FetchClientConfResponse);
 
   // Get remote storage from coordinator
   rpc fetchRemoteStorage(FetchRemoteStorageRequest) returns (FetchRemoteStorageResponse);
@@ -412,6 +416,9 @@ message GetShuffleServerRequest {
   int32 assignmentShuffleServerNumber = 10;
   int32 estimateTaskConcurrency = 11;
   repeated string faultyServerIds = 12;
+  int32 stageId = 13;
+  int32 stageAttemptNumber = 14;
+  bool reassign = 15;
 }
 
 message PartitionRangeAssignment {
@@ -461,6 +468,16 @@ message AccessClusterResponse {
   StatusCode status = 1;
   string retMsg = 2;
   string uuid = 3;
+}
+
+message FetchClientConfRequest {
+  string user = 1;
+  /**
+   For the potential extension for customize delegation shuffle manager.
+   You could put more internal properties in customize delegation shuffle manager,
+   and then it could be as metadata in your own customize ClientConfApplyStrategy.
+   */
+  map<string, string> properties = 2;
 }
 
 message FetchClientConfResponse {
@@ -517,14 +534,19 @@ message CancelDecommissionResponse {
 // per application.
 service ShuffleManager {
   rpc reportShuffleFetchFailure (ReportShuffleFetchFailureRequest) returns (ReportShuffleFetchFailureResponse);
-  // Gets the mapping between partitions and ShuffleServer from the ShuffleManager server
-  rpc getPartitionToShufflerServer(PartitionToShuffleServerRequest) returns (PartitionToShuffleServerResponse);
+  // Gets the mapping between partitions and ShuffleServer from the ShuffleManager server on Stage Retry.
+  rpc getPartitionToShufflerServerWithStageRetry(PartitionToShuffleServerRequest) returns (ReassignOnStageRetryResponse);
+  // Gets the mapping between partitions and ShuffleServer from the ShuffleManager server on Block Retry.
+  rpc getPartitionToShufflerServerWithBlockRetry(PartitionToShuffleServerRequest) returns (ReassignOnBlockSendFailureResponse);
   // Report write failures to ShuffleManager
   rpc reportShuffleWriteFailure (ReportShuffleWriteFailureRequest) returns (ReportShuffleWriteFailureResponse);
-  // Reassign the RPC interface of the ShuffleServer list
-  rpc reassignShuffleServers(ReassignServersRequest) returns (ReassignServersReponse);
-  // Reassign a new server instead a faulty server the RPC interface
-  rpc reassignFaultyShuffleServer(RssReassignFaultyShuffleServerRequest) returns (RssReassignFaultyShuffleServerResponse);
+  // Reassign on stage resubmit
+  rpc reassignOnStageResubmit(ReassignServersRequest) returns (ReassignServersResponse);
+  // Reassign on block send failure that occurs in writer
+  rpc reassignOnBlockSendFailure(RssReassignOnBlockSendFailureRequest) returns (ReassignOnBlockSendFailureResponse);
+  rpc reportShuffleResult (ReportShuffleResultRequest) returns (ReportShuffleResultResponse);
+  rpc getShuffleResult (GetShuffleResultRequest) returns (GetShuffleResultResponse);
+  rpc getShuffleResultForMultiPart (GetShuffleResultForMultiPartRequest) returns (GetShuffleResultForMultiPartResponse);
 }
 
 message ReportShuffleFetchFailureRequest {
@@ -549,11 +571,29 @@ message PartitionToShuffleServerRequest {
   int32 shuffleId = 2;
 }
 
-message PartitionToShuffleServerResponse {
+message ReassignOnStageRetryResponse {
   StatusCode status = 1;
-  map<int32,GetShuffleServerListResponse> partitionToShuffleServer = 2;
-  RemoteStorageInfo remote_storage_info = 3;
-  string msg = 4;
+  string msg = 2;
+  StageAttemptShuffleHandleInfo shuffleHandleInfo = 3;
+}
+
+message StageAttemptShuffleHandleInfo {
+  repeated MutableShuffleHandleInfo historyMutableShuffleHandleInfo= 1;
+  MutableShuffleHandleInfo currentMutableShuffleHandleInfo = 2;
+}
+
+message MutableShuffleHandleInfo {
+  int32 shuffleId = 1;
+  map<int32, PartitionReplicaServers> partitionToServers = 2;
+  RemoteStorageInfo remoteStorageInfo = 3;
+}
+
+message PartitionReplicaServers {
+  map<int32, ReplicaServersItem> replicaServers = 1;
+}
+
+message ReplicaServersItem {
+  repeated ShuffleServerId serverId = 1;
 }
 
 message RemoteStorageInfo{
@@ -582,22 +622,34 @@ message ReassignServersRequest{
   int32 numPartitions = 4;
 }
 
-message ReassignServersReponse{
+message ReassignServersResponse {
   StatusCode status = 1;
   bool needReassign = 2;
   string msg = 3;
 }
 
-message RssReassignFaultyShuffleServerRequest{
+message RssReassignOnBlockSendFailureRequest {
   int32 shuffleId  = 1;
-  repeated string partitionIds = 2;
-  string faultyShuffleServerId = 3;
+  map<int32, ReceivingFailureServers> failurePartitionToServerIds = 2;
+  int64 taskAttemptId = 3;
+  int32 stageId = 4;
+  int32 stageAttemptNumber = 5;
+  string executorId = 6;
 }
 
-message RssReassignFaultyShuffleServerResponse{
+message ReceivingFailureServers {
+  repeated ReceivingFailureServer server = 1;
+}
+
+message ReceivingFailureServer {
+  string serverId = 1;
+  StatusCode statusCode = 2;
+}
+
+message ReassignOnBlockSendFailureResponse {
   StatusCode status = 1;
-  ShuffleServerId server = 2;
-  string msg = 3;
+  string msg = 2;
+  MutableShuffleHandleInfo handle = 3;
 }
 
 

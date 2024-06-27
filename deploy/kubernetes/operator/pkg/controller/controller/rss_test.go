@@ -164,7 +164,7 @@ var _ = Describe("RssController", func() {
 
 			By("Check hpa of shuffle server")
 			hpaName := shuffleserver.GenerateName(testRSS)
-			_, err = testKubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(corev1.NamespaceDefault).
+			_, err = testKubeClient.AutoscalingV2().HorizontalPodAutoscalers(corev1.NamespaceDefault).
 				Get(context.TODO(), hpaName, metav1.GetOptions{})
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -245,7 +245,7 @@ var _ = Describe("RssController", func() {
 			Expect(*sts.Spec.Replicas).To(Equal(int32(3)))
 
 			hpaName := shuffleserver.GenerateName(testRSS)
-			_, err = testKubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(corev1.NamespaceDefault).
+			_, err = testKubeClient.AutoscalingV2().HorizontalPodAutoscalers(corev1.NamespaceDefault).
 				Get(context.TODO(), hpaName, metav1.GetOptions{})
 			Expect(err).ToNot(BeNil())
 			Expect(errors.IsNotFound(err)).To(Equal(true))

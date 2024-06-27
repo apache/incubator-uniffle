@@ -18,13 +18,15 @@
 package org.apache.uniffle.shuffle.manager;
 
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import org.apache.spark.shuffle.ShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 
-import org.apache.uniffle.common.ShuffleServerInfo;
-
-import static org.mockito.Mockito.mock;
+import org.apache.uniffle.common.ReceivingFailureServer;
+import org.apache.uniffle.shuffle.BlockIdManager;
 
 public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   public Set<Integer> unregisteredShuffleIds = new LinkedHashSet<>();
@@ -32,11 +34,6 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   @Override
   public String getAppId() {
     return "testAppId";
-  }
-
-  @Override
-  public int getMaxFetchFailures() {
-    return 2;
   }
 
   @Override
@@ -55,22 +52,35 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   }
 
   @Override
+  public BlockIdManager getBlockIdManager() {
+    return null;
+  }
+
+  @Override
   public ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId) {
     return null;
+  }
+
+  @Override
+  public int getMaxFetchFailures() {
+    return 0;
   }
 
   @Override
   public void addFailuresShuffleServerInfos(String shuffleServerId) {}
 
   @Override
-  public boolean reassignAllShuffleServersForWholeStage(
+  public boolean reassignOnStageResubmit(
       int stageId, int stageAttemptNumber, int shuffleId, int numMaps) {
     return false;
   }
 
   @Override
-  public ShuffleServerInfo reassignFaultyShuffleServerForTasks(
-      int shuffleId, Set<String> partitionIds, String faultyShuffleServerId) {
-    return mock(ShuffleServerInfo.class);
+  public MutableShuffleHandleInfo reassignOnBlockSendFailure(
+      int stageId,
+      int stageAttemptNumber,
+      int shuffleId,
+      Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
+    return null;
   }
 }

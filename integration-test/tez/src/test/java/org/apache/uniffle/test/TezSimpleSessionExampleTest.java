@@ -103,7 +103,7 @@ public class TezSimpleSessionExampleTest extends TezIntegrationTestBase {
   @Override
   public String[] getTestArgs(String uniqueOutputName) {
     return new String[] {
-      inputPath + ".0" + "," + inputPath + ".1" + "," + inputPath + ".2",
+      inputPath + ".0," + inputPath + ".1," + inputPath + ".2",
       outputPath
           + "/"
           + uniqueOutputName

@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
@@ -134,7 +134,9 @@ public class ShuffleHandlerFactory {
             request.getPartitionId(),
             request.getReadBufferSize(),
             shuffleServerClient,
-            expectTaskIds);
+            expectTaskIds,
+            request.getRetryMax(),
+            request.getRetryIntervalMax());
     return memoryClientReadHandler;
   }
 
@@ -155,7 +157,9 @@ public class ShuffleHandlerFactory {
         request.getProcessBlockIds(),
         shuffleServerClient,
         request.getDistributionType(),
-        request.getExpectTaskIds());
+        request.getExpectTaskIds(),
+        request.getRetryMax(),
+        request.getRetryIntervalMax());
   }
 
   private ClientReadHandler getHadoopClientReadHandler(
@@ -181,7 +185,7 @@ public class ShuffleHandlerFactory {
   public ShuffleDeleteHandler createShuffleDeleteHandler(
       CreateShuffleDeleteHandlerRequest request) {
     if (StorageType.HDFS.name().equals(request.getStorageType())) {
-      return new HadoopShuffleDeleteHandler(request.getConf());
+      return new HadoopShuffleDeleteHandler(request.getConf(), request.getShuffleServerId());
     } else if (StorageType.LOCALFILE.name().equals(request.getStorageType())) {
       return new LocalFileDeleteHandler();
     } else {

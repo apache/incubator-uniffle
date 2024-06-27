@@ -148,4 +148,9 @@ public class GetMemoryShuffleDataRequest extends RequestMessage {
   public Roaring64NavigableMap getExpectedTaskIdsBitmap() {
     return expectedTaskIdsBitmap;
   }
+
+  @Override
+  public String getOperationType() {
+    return "getMemoryShuffleData";
+  }
 }

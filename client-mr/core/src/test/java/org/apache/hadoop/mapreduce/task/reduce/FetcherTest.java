@@ -59,6 +59,7 @@ import org.apache.hadoop.util.Progress;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
@@ -504,7 +505,8 @@ public class FetcherTest {
         List<PartitionRange> partitionRanges,
         RemoteStorageInfo storageType,
         ShuffleDataDistributionType distributionType,
-        int maxConcurrencyPerPartitionToWrite) {}
+        int maxConcurrencyPerPartitionToWrite,
+        int stageAttemptNumber) {}
 
     @Override
     public boolean sendCommit(
@@ -541,7 +543,11 @@ public class FetcherTest {
         int partitionNumPerRange,
         Set<String> requiredTags,
         int assignmentShuffleServerNumber,
-        int estimateTaskConcurrency) {
+        int estimateTaskConcurrency,
+        Set<String> faultyServerIds,
+        int stageId,
+        int stageAttemptNumber,
+        boolean reassign) {
       return null;
     }
 
@@ -561,7 +567,8 @@ public class FetcherTest {
         Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
         String appId,
         int shuffleId,
-        Set<Integer> failedPartitions) {
+        Set<Integer> failedPartitions,
+        PartitionDataReplicaRequirementTracking tracking) {
       return null;
     }
 

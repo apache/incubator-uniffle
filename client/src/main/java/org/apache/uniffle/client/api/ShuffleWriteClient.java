@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.client.api;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +25,7 @@ import java.util.function.Supplier;
 
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -34,6 +36,16 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 
 public interface ShuffleWriteClient {
 
+  default SendShuffleDataResult sendShuffleData(
+      String appId,
+      int stageAttemptNumber,
+      List<ShuffleBlockInfo> shuffleBlockInfoList,
+      Supplier<Boolean> needCancelRequest) {
+    throw new UnsupportedOperationException(
+        this.getClass().getName()
+            + " doesn't implement getShuffleAssignments with faultyServerIds");
+  }
+
   SendShuffleDataResult sendShuffleData(
       String appId,
       List<ShuffleBlockInfo> shuffleBlockInfoList,
@@ -43,6 +55,25 @@ public interface ShuffleWriteClient {
 
   void registerApplicationInfo(String appId, long timeoutMs, String user);
 
+  default void registerShuffle(
+      ShuffleServerInfo shuffleServerInfo,
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorage,
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite) {
+    registerShuffle(
+        shuffleServerInfo,
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorage,
+        dataDistributionType,
+        maxConcurrencyPerPartitionToWrite,
+        0);
+  }
+
   void registerShuffle(
       ShuffleServerInfo shuffleServerInfo,
       String appId,
@@ -50,7 +81,8 @@ public interface ShuffleWriteClient {
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorage,
       ShuffleDataDistributionType dataDistributionType,
-      int maxConcurrencyPerPartitionToWrite);
+      int maxConcurrencyPerPartitionToWrite,
+      int stageAttemptNumber);
 
   boolean sendCommit(
       Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);
@@ -68,6 +100,19 @@ public interface ShuffleWriteClient {
       long taskAttemptId,
       int bitmapNum);
 
+  ShuffleAssignmentsInfo getShuffleAssignments(
+      String appId,
+      int shuffleId,
+      int partitionNum,
+      int partitionNumPerRange,
+      Set<String> requiredTags,
+      int assignmentShuffleServerNumber,
+      int estimateTaskConcurrency,
+      Set<String> faultyServerIds,
+      int stageId,
+      int stageAttemptNumber,
+      boolean reassign);
+
   default ShuffleAssignmentsInfo getShuffleAssignments(
       String appId,
       int shuffleId,
@@ -77,19 +122,38 @@ public interface ShuffleWriteClient {
       int assignmentShuffleServerNumber,
       int estimateTaskConcurrency,
       Set<String> faultyServerIds) {
-    throw new UnsupportedOperationException(
-        this.getClass().getName()
-            + " doesn't implement getShuffleAssignments with faultyServerIds");
+    return getShuffleAssignments(
+        appId,
+        shuffleId,
+        partitionNum,
+        partitionNumPerRange,
+        requiredTags,
+        assignmentShuffleServerNumber,
+        estimateTaskConcurrency,
+        faultyServerIds,
+        -1,
+        0,
+        false);
   }
 
-  ShuffleAssignmentsInfo getShuffleAssignments(
+  default ShuffleAssignmentsInfo getShuffleAssignments(
       String appId,
       int shuffleId,
       int partitionNum,
       int partitionNumPerRange,
       Set<String> requiredTags,
       int assignmentShuffleServerNumber,
-      int estimateTaskConcurrency);
+      int estimateTaskConcurrency) {
+    return getShuffleAssignments(
+        appId,
+        shuffleId,
+        partitionNum,
+        partitionNumPerRange,
+        requiredTags,
+        assignmentShuffleServerNumber,
+        estimateTaskConcurrency,
+        Collections.emptySet());
+  }
 
   Roaring64NavigableMap getShuffleResult(
       String clientType,
@@ -103,7 +167,8 @@ public interface ShuffleWriteClient {
       Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
       String appId,
       int shuffleId,
-      Set<Integer> failedPartitions);
+      Set<Integer> failedPartitions,
+      PartitionDataReplicaRequirementTracking replicaRequirementTracking);
 
   void close();
 

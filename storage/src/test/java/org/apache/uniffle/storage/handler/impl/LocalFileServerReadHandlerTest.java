@@ -34,7 +34,6 @@ import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
 import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleIndexResponse;
-import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
@@ -135,9 +134,7 @@ public class LocalFileServerReadHandlerTest {
             readBufferSize,
             expectBlockIds,
             processBlockIds,
-            mockShuffleServerClient,
-            ShuffleDataDistributionType.NORMAL,
-            Roaring64NavigableMap.bitmapOf());
+            mockShuffleServerClient);
     int totalSegment = ((blockSize * actualWriteDataBlock) / bytesPerSegment) + 1;
     int readBlocks = 0;
     for (int i = 0; i < totalSegment; i++) {

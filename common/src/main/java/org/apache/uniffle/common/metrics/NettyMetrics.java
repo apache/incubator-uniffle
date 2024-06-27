@@ -26,9 +26,15 @@ public abstract class NettyMetrics extends RPCMetrics {
 
   private static final String NETTY_ACTIVE_CONNECTION = "netty_active_connection";
   private static final String NETTY_HANDLE_EXCEPTION = "netty_handle_exception";
+  private static final String NETTY_PENDING_TASKS_NUM_FOR_BOSS_GROUP =
+      "netty_pending_tasks_num_for_boss_group";
+  private static final String NETTY_PENDING_TASKS_NUM_FOR_WORKER_GROUP =
+      "netty_pending_tasks_num_for_worker_group";
 
   protected Gauge.Child gaugeNettyActiveConn;
   protected Counter.Child counterNettyException;
+  protected Gauge.Child gaugeNettyPendingTasksNumForBossGroup;
+  protected Gauge.Child gaugeNettyPendingTasksNumForWorkerGroup;
 
   public NettyMetrics(RssConf rssConf, String tags) {
     super(rssConf, tags);
@@ -38,6 +44,10 @@ public abstract class NettyMetrics extends RPCMetrics {
   public void registerGeneralMetrics() {
     gaugeNettyActiveConn = metricsManager.addLabeledGauge(NETTY_ACTIVE_CONNECTION);
     counterNettyException = metricsManager.addLabeledCounter(NETTY_HANDLE_EXCEPTION);
+    gaugeNettyPendingTasksNumForBossGroup =
+        metricsManager.addLabeledGauge(NETTY_PENDING_TASKS_NUM_FOR_BOSS_GROUP);
+    gaugeNettyPendingTasksNumForWorkerGroup =
+        metricsManager.addLabeledGauge(NETTY_PENDING_TASKS_NUM_FOR_WORKER_GROUP);
   }
 
   public Counter.Child getCounterNettyException() {
@@ -46,5 +56,13 @@ public abstract class NettyMetrics extends RPCMetrics {
 
   public Gauge.Child getGaugeNettyActiveConn() {
     return gaugeNettyActiveConn;
+  }
+
+  public Gauge.Child getGaugeNettyPendingTasksNumForBossGroup() {
+    return gaugeNettyPendingTasksNumForBossGroup;
+  }
+
+  public Gauge.Child getGaugeNettyPendingTasksNumForWorkerGroup() {
+    return gaugeNettyPendingTasksNumForWorkerGroup;
   }
 }

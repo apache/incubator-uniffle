@@ -39,6 +39,7 @@ import org.apache.hadoop.io.serializer.Serializer;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
@@ -372,8 +373,7 @@ public class SortWriteBufferManagerTest {
             jobConf, new TaskAttemptID(), combineInputCounter, reporter, null);
 
     SortWriteBuffer<Text, IntWritable> buffer =
-        new SortWriteBuffer<Text, IntWritable>(
-            1, comparator, 10000, keySerializer, valueSerializer);
+        new SortWriteBuffer<Text, IntWritable>(1, comparator, 3072, keySerializer, valueSerializer);
 
     List<String> wordTable =
         Lists.newArrayList(
@@ -382,7 +382,7 @@ public class SortWriteBufferManagerTest {
     for (int i = 0; i < 8; i++) {
       buffer.addRecord(new Text(wordTable.get(i)), new IntWritable(1));
     }
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 10000; i++) {
       int index = random.nextInt(wordTable.size());
       buffer.addRecord(new Text(wordTable.get(index)), new IntWritable(1));
     }
@@ -428,7 +428,7 @@ public class SortWriteBufferManagerTest {
     while (kvIterator2.next()) {
       count2++;
     }
-    assertEquals(108, count1);
+    assertEquals(10008, count1);
     assertEquals(8, count2);
   }
 
@@ -517,7 +517,8 @@ public class SortWriteBufferManagerTest {
         List<PartitionRange> partitionRanges,
         RemoteStorageInfo remoteStorage,
         ShuffleDataDistributionType distributionType,
-        int maxConcurrencyPerPartitionToWrite) {}
+        int maxConcurrencyPerPartitionToWrite,
+        int stageAttemptNumber) {}
 
     @Override
     public boolean sendCommit(
@@ -573,7 +574,11 @@ public class SortWriteBufferManagerTest {
         int partitionNumPerRange,
         Set<String> requiredTags,
         int assignmentShuffleServerNumber,
-        int estimateTaskConcurrency) {
+        int estimateTaskConcurrency,
+        Set<String> faultyServerIds,
+        int stageId,
+        int stageAttemptNumber,
+        boolean reassign) {
       return null;
     }
 
@@ -593,7 +598,8 @@ public class SortWriteBufferManagerTest {
         Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
         String appId,
         int shuffleId,
-        Set<Integer> failedPartitions) {
+        Set<Integer> failedPartitions,
+        PartitionDataReplicaRequirementTracking tracking) {
       return null;
     }
 

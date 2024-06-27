@@ -18,8 +18,8 @@
 package org.apache.uniffle.common.util;
 
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import io.netty.buffer.AbstractByteBufAllocator;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -42,6 +42,13 @@ public class NettyUtils {
   private static final Logger logger = LoggerFactory.getLogger(NettyUtils.class);
 
   private static final long MAX_DIRECT_MEMORY_IN_BYTES = PlatformDependent.maxDirectMemory();
+
+  /** Specifies an upper bound on the number of Netty threads that Uniffle requires by default. */
+  private static int MAX_DEFAULT_NETTY_THREADS = 8;
+
+  private static final AtomicReferenceArray<PooledByteBufAllocator>
+      SHARED_POOLED_BYTE_BUF_ALLOCATOR = new AtomicReferenceArray<>(2);
+  private static volatile UnpooledByteBufAllocator sharedUnpooledByteBufAllocator;
 
   /** Creates a Netty EventLoopGroup based on the IOMode. */
   public static EventLoopGroup createEventLoop(IOMode mode, int numThreads, String threadPrefix) {
@@ -69,11 +76,59 @@ public class NettyUtils {
     }
   }
 
+  /**
+   * Returns the default number of threads for both the Netty client and server thread pools. If
+   * numUsableCores is 0, we will use Runtime get an approximate number of available cores.
+   */
+  public static int defaultNumThreads(int numUsableCores) {
+    final int availableCores;
+    if (numUsableCores > 0) {
+      availableCores = numUsableCores;
+    } else {
+      availableCores = Runtime.getRuntime().availableProcessors();
+    }
+    return Math.min(availableCores, MAX_DEFAULT_NETTY_THREADS);
+  }
+
+  /**
+   * Returns the lazily created shared pooled ByteBuf allocator for the specified allowCache
+   * parameter value.
+   */
+  public static PooledByteBufAllocator getSharedPooledByteBufAllocator(
+      boolean allowDirectBufs, boolean allowCache, int numCores) {
+    final int index = allowCache ? 0 : 1;
+    PooledByteBufAllocator allocator = SHARED_POOLED_BYTE_BUF_ALLOCATOR.get(index);
+    if (allocator == null) {
+      synchronized (NettyUtils.class) {
+        allocator = SHARED_POOLED_BYTE_BUF_ALLOCATOR.get(index);
+        if (allocator == null) {
+          allocator = createPooledByteBufAllocator(allowDirectBufs, allowCache, numCores);
+          SHARED_POOLED_BYTE_BUF_ALLOCATOR.set(index, allocator);
+        }
+      }
+    }
+    return allocator;
+  }
+
+  /**
+   * Returns the lazily created shared un-pooled ByteBuf allocator for the specified allowCache
+   * parameter value.
+   */
+  public static synchronized UnpooledByteBufAllocator getSharedUnpooledByteBufAllocator(
+      boolean allowDirectBufs) {
+    if (sharedUnpooledByteBufAllocator == null) {
+      synchronized (NettyUtils.class) {
+        if (sharedUnpooledByteBufAllocator == null) {
+          sharedUnpooledByteBufAllocator = createUnpooledByteBufAllocator(allowDirectBufs);
+        }
+      }
+    }
+    return sharedUnpooledByteBufAllocator;
+  }
+
   public static PooledByteBufAllocator createPooledByteBufAllocator(
       boolean allowDirectBufs, boolean allowCache, int numCores) {
-    if (numCores == 0) {
-      numCores = Runtime.getRuntime().availableProcessors();
-    }
+    numCores = defaultNumThreads(numCores);
     return new PooledByteBufAllocator(
         allowDirectBufs && PlatformDependent.directBufferPreferred(),
         Math.min(PooledByteBufAllocator.defaultNumHeapArena(), numCores),
@@ -115,14 +170,6 @@ public class NettyUtils {
 
   public static String getServerConnectionInfo(Channel channel) {
     return String.format("[%s -> %s]", channel.localAddress(), channel.remoteAddress());
-  }
-
-  private static class AllocatorHolder {
-    private static final AbstractByteBufAllocator INSTANCE = createUnpooledByteBufAllocator(true);
-  }
-
-  public static AbstractByteBufAllocator getNettyBufferAllocator() {
-    return AllocatorHolder.INSTANCE;
   }
 
   public static UnpooledByteBufAllocator createUnpooledByteBufAllocator(boolean preferDirect) {

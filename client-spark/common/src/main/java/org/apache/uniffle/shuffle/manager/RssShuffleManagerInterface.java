@@ -17,12 +17,15 @@
 
 package org.apache.uniffle.shuffle.manager;
 
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.spark.SparkException;
-import org.apache.spark.shuffle.ShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 
-import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.ReceivingFailureServer;
+import org.apache.uniffle.shuffle.BlockIdManager;
 
 /**
  * This is a proxy interface that mainly delegates the un-registration of shuffles to the
@@ -33,12 +36,6 @@ public interface RssShuffleManagerInterface {
 
   /** @return the unique spark id for rss shuffle */
   String getAppId();
-
-  /**
-   * @return the maximum number of fetch failures per shuffle partition before that shuffle stage
-   *     should be re-submitted
-   */
-  int getMaxFetchFailures();
 
   /**
    * @param shuffleId the shuffle id to query
@@ -60,6 +57,8 @@ public interface RssShuffleManagerInterface {
    */
   void unregisterAllMapOutput(int shuffleId) throws SparkException;
 
+  BlockIdManager getBlockIdManager();
+
   /**
    * Get ShuffleHandleInfo with ShuffleId
    *
@@ -69,15 +68,23 @@ public interface RssShuffleManagerInterface {
   ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId);
 
   /**
+   * @return the maximum number of fetch failures per shuffle partition before that shuffle stage
+   *     should be re-submitted
+   */
+  int getMaxFetchFailures();
+
+  /**
    * Add the shuffleServer that failed to write to the failure list
    *
    * @param shuffleServerId
    */
   void addFailuresShuffleServerInfos(String shuffleServerId);
 
-  boolean reassignAllShuffleServersForWholeStage(
-      int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
+  boolean reassignOnStageResubmit(int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
 
-  ShuffleServerInfo reassignFaultyShuffleServerForTasks(
-      int shuffleId, Set<String> partitionIds, String faultyShuffleServerId);
+  MutableShuffleHandleInfo reassignOnBlockSendFailure(
+      int stageId,
+      int stageAttemptNumber,
+      int shuffleId,
+      Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers);
 }

@@ -28,6 +28,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.protocol.Message;
 
 /**
@@ -160,7 +161,9 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
       remaining -= next.readableBytes();
       frame.addComponent(next).writerIndex(frame.writerIndex() + next.readableBytes());
     }
-    assert remaining == 0;
+    if (remaining != 0) {
+      throw new RssException("The remaining should be 0");
+    }
     return frame;
   }
 

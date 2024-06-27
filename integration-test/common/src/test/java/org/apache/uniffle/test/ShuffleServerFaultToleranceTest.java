@@ -47,12 +47,9 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.config.RssClientConf;
-import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.server.MockedShuffleServer;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -88,8 +85,6 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     startServers();
     grpcShuffleServerClients = new ArrayList<>();
     nettyShuffleServerClients = new ArrayList<>();
-    RssConf rssConf = new RssConf();
-    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
     for (ShuffleServer shuffleServer : grpcShuffleServers) {
       grpcShuffleServerClients.add(
           new ShuffleServerGrpcClient(shuffleServer.getIp(), shuffleServer.getGrpcPort()));
@@ -97,7 +92,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     for (ShuffleServer shuffleServer : nettyShuffleServers) {
       nettyShuffleServerClients.add(
           new ShuffleServerGrpcNettyClient(
-              rssConf, LOCALHOST, shuffleServer.getGrpcPort(), shuffleServer.getNettyPort()));
+              LOCALHOST, shuffleServer.getGrpcPort(), shuffleServer.getNettyPort()));
     }
   }
 
@@ -111,7 +106,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
         (client) -> {
           client.close();
         });
-    cleanCluster();
+    shutdownServers();
   }
 
   private static Stream<Arguments> testReadFaultToleranceProvider() {
@@ -333,20 +328,5 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
       Thread.sleep(1000);
       retry++;
     }
-  }
-
-  public static void cleanCluster() throws Exception {
-    for (CoordinatorServer coordinator : coordinators) {
-      coordinator.stopServer();
-    }
-    for (ShuffleServer shuffleServer : grpcShuffleServers) {
-      shuffleServer.stopServer();
-    }
-    for (ShuffleServer shuffleServer : nettyShuffleServers) {
-      shuffleServer.stopServer();
-    }
-    grpcShuffleServers = Lists.newArrayList();
-    nettyShuffleServers = Lists.newArrayList();
-    coordinators = Lists.newArrayList();
   }
 }

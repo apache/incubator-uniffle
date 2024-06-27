@@ -18,11 +18,13 @@
 package org.apache.uniffle.dashboard.web;
 
 import java.net.BindException;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.proxy.ProxyServlet;
+import org.apache.hbase.thirdparty.org.glassfish.jersey.server.ServerProperties;
+import org.apache.hbase.thirdparty.org.glassfish.jersey.servlet.ServletContainer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -40,11 +42,11 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
-import org.apache.uniffle.common.config.ReconfigurableBase;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.dashboard.web.config.DashboardConf;
 import org.apache.uniffle.dashboard.web.proxy.WebProxyServlet;
+import org.apache.uniffle.dashboard.web.utils.DashboardUtils;
 
 public class JettyServerFront {
 
@@ -70,7 +72,6 @@ public class JettyServerFront {
 
     // Load configuration from config files
     final DashboardConf coodConf = new DashboardConf(configFile);
-    coodConf.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, configFile);
     JettyServerFront jettyServerFront = new JettyServerFront(coodConf);
     jettyServerFront.start();
   }
@@ -91,7 +92,10 @@ public class JettyServerFront {
     HandlerList handlers = new HandlerList();
     ResourceHandler resourceHandler = addResourceHandler();
     String coordinatorWebAddress = conf.getString(DashboardConf.COORDINATOR_WEB_ADDRESS);
-    ServletContextHandler servletContextHandler = addProxyHandler(coordinatorWebAddress);
+    Map<String, String> stringStringMap =
+        DashboardUtils.convertAddressesStrToMap(coordinatorWebAddress);
+
+    ServletContextHandler servletContextHandler = addProxyHandler(stringStringMap);
     handlers.setHandlers(new Handler[] {resourceHandler, servletContextHandler});
     server.setHandler(handlers);
   }
@@ -105,11 +109,14 @@ public class JettyServerFront {
     return resourceHandler;
   }
 
-  private static ServletContextHandler addProxyHandler(String coordinatorWebAddress) {
-    ProxyServlet proxyServlet = new WebProxyServlet(coordinatorWebAddress);
-    ServletHolder holder = new ServletHolder(proxyServlet);
+  private ServletContextHandler addProxyHandler(Map<String, String> coordinatorServerAddresses) {
     ServletContextHandler contextHandler = new ServletContextHandler();
+    ServletHolder holder = new ServletHolder(new WebProxyServlet(coordinatorServerAddresses));
     contextHandler.addServlet(holder, "/api/*");
+    ServletHolder servletHolder = contextHandler.addServlet(ServletContainer.class, "/*");
+    servletHolder.setInitParameter(
+        ServerProperties.PROVIDER_PACKAGES, "org.apache.uniffle.dashboard.web.resource");
+    contextHandler.setAttribute("coordinatorServerAddresses", coordinatorServerAddresses);
     return contextHandler;
   }
 

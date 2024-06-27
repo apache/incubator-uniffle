@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.dashboard.web.proxy;
 
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -28,12 +29,12 @@ import org.slf4j.LoggerFactory;
 
 public class WebProxyServlet extends ProxyServlet {
 
-  private String targetAddress;
-
   private static final Logger LOG = LoggerFactory.getLogger(WebProxyServlet.class);
 
-  public WebProxyServlet(String targetAddress) {
-    this.targetAddress = targetAddress;
+  private Map<String, String> coordinatorServerAddressesMap;
+
+  public WebProxyServlet(Map<String, String> coordinatorServerAddressesMap) {
+    this.coordinatorServerAddressesMap = coordinatorServerAddressesMap;
   }
 
   @Override
@@ -41,8 +42,9 @@ public class WebProxyServlet extends ProxyServlet {
     if (!validateDestination(clientRequest.getServerName(), clientRequest.getServerPort())) {
       return null;
     }
+    String targetAddress =
+        coordinatorServerAddressesMap.get(clientRequest.getHeader("targetAddress"));
     StringBuilder target = new StringBuilder();
-
     if (targetAddress.endsWith("/")) {
       targetAddress = targetAddress.substring(0, targetAddress.length() - 1);
     }

@@ -316,7 +316,7 @@ public class RssSimpleFetchedInputAllocator extends SimpleFetchedInputAllocator 
   private synchronized void unreserve(long size) {
     this.usedMemory -= size;
     if (LOG.isDebugEnabled()) {
-      LOG.debug(srcNameTrimmed + ": " + "Used memory after freeing " + size + " : " + usedMemory);
+      LOG.debug("{}: Used memory after freeing {}: {}", srcNameTrimmed, size, usedMemory);
     }
   }
 

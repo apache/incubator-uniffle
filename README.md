@@ -179,7 +179,7 @@ If you have packaged tgz with hadoop jars, the env of `HADOOP_HOME` is needn't s
     rss.coordinator.remote.storage.path hdfs://cluster1/path,hdfs://cluster2/path
     rss.writer.require.memory.retryMax 1200
     rss.client.retry.max 50
-    rss.writer.send.check.timeout 600000
+    rss.client.send.check.timeout.ms 600000
     rss.client.read.buffer.size 14m
    ```
 5. start Coordinator
@@ -346,7 +346,7 @@ The following security configurations are introduced.
   please see [Proxy user - Superusers Acting On Behalf Of Other Users](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/Superusers.html)
 
 ## Benchmark
-We provide some benchmark tests for Uniffle. For details, you can see [Uniffle Benchmark](docs/benchmark.md)
+We provide some benchmark tests for Uniffle. For details, you can see [Uniffle 0.2.0 Benchmark](docs/benchmark.md), [Uniffle 0.9.0 Benchmark](docs/benchmark_netty_case_report.md).
 
 ## LICENSE
 

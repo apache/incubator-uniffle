@@ -108,6 +108,30 @@ public class RssClientConf {
           .defaultValue(3)
           .withDescription("When we fail to send RPC calls, we will retry for maxAttempts times.");
 
+  public static final ConfigOption<Integer> RPC_NETTY_PAGE_SIZE =
+      ConfigOptions.key("rss.client.rpc.netty.pageSize")
+          .intType()
+          .defaultValue(4096)
+          .withDescription(
+              "The value of pageSize for PooledByteBufAllocator when using gRPC internal Netty on the client-side. "
+                  + "This configuration will only take effect when rss.client.type is set to GRPC_NETTY.");
+
+  public static final ConfigOption<Integer> RPC_NETTY_MAX_ORDER =
+      ConfigOptions.key("rss.client.rpc.netty.maxOrder")
+          .intType()
+          .defaultValue(3)
+          .withDescription(
+              "The value of maxOrder for PooledByteBufAllocator when using gRPC internal Netty on the client-side. "
+                  + "This configuration will only take effect when rss.client.type is set to GRPC_NETTY.");
+
+  public static final ConfigOption<Integer> RPC_NETTY_SMALL_CACHE_SIZE =
+      ConfigOptions.key("rss.client.rpc.netty.smallCacheSize")
+          .intType()
+          .defaultValue(1024)
+          .withDescription(
+              "The value of smallCacheSize for PooledByteBufAllocator when using gRPC internal Netty on the client-side. "
+                  + "This configuration will only take effect when rss.client.type is set to GRPC_NETTY.");
+
   public static final ConfigOption<Integer> NETTY_IO_CONNECT_TIMEOUT_MS =
       ConfigOptions.key("rss.client.netty.io.connect.timeout.ms")
           .intType()
@@ -132,12 +156,29 @@ public class RssClientConf {
           .defaultValue(0)
           .withDescription("Number of threads used in the client thread pool.");
 
-  public static final ConfigOption<Boolean> NETWORK_CLIENT_PREFER_DIRECT_BUFS =
+  public static final ConfigOption<Boolean> NETTY_CLIENT_PREFER_DIRECT_BUFS =
       ConfigOptions.key("rss.client.netty.client.prefer.direct.bufs")
           .booleanType()
           .defaultValue(true)
           .withDescription(
               "If true, we will prefer allocating off-heap byte buffers within Netty.");
+
+  public static final ConfigOption<Boolean> NETTY_CLIENT_POOLED_ALLOCATOR_ENABLED =
+      ConfigOptions.key("rss.client.netty.client.pooled.allocator.enabled")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription(
+              "If true, we will use PooledByteBufAllocator to allocate byte buffers within Netty, otherwise we'll use UnpooledByteBufAllocator.");
+
+  public static final ConfigOption<Boolean> NETTY_CLIENT_SHARED_ALLOCATOR_ENABLED =
+      ConfigOptions.key("rss.client.netty.client.shared.allocator.enabled")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription(
+              "A flag indicating whether to share the ByteBuf allocators between the different Netty channels when enabling Netty. "
+                  + "If enabled then only three ByteBuf allocators are created: "
+                  + "one PooledByteBufAllocator where caching is allowed, one PooledByteBufAllocator where not and one UnpooledByteBufAllocator. "
+                  + "When disabled, a new allocator is created for each transport client.");
 
   public static final ConfigOption<Integer> NETTY_CLIENT_NUM_CONNECTIONS_PER_PEER =
       ConfigOptions.key("rss.client.netty.client.connections.per.peer")
@@ -193,7 +234,8 @@ public class RssClientConf {
       ConfigOptions.key("rss.client.type")
           .enumType(ClientType.class)
           .defaultValue(ClientType.GRPC)
-          .withDescription("Supports GRPC, GRPC_NETTY");
+          .withDescription(
+              "Supports GRPC_NETTY, GRPC. The default value is GRPC. But we recommend using GRPC_NETTY to enable Netty on the client side for better stability and performance.");
 
   public static final ConfigOption<Boolean> RSS_CLIENT_REMOTE_STORAGE_USE_LOCAL_CONF_ENABLED =
       ConfigOptions.key("rss.client.remote.storage.useLocalConfAsDefault")
@@ -203,10 +245,10 @@ public class RssClientConf {
               "This option is only valid when the remote storage path is specified. If ture, "
                   + "the remote storage conf will use the client side hadoop configuration loaded from the classpath.");
 
-  public static final ConfigOption<Boolean> RSS_TASK_FAILED_RETRY_ENABLED =
-      ConfigOptions.key("rss.task.failed.retry.enabled")
+  public static final ConfigOption<Boolean> RSS_CLIENT_REASSIGN_ENABLED =
+      ConfigOptions.key("rss.client.reassign.enabled")
           .booleanType()
           .defaultValue(false)
           .withDescription(
-              "Whether to support task write failed retry internal, default value is false.");
+              "Whether to support rss client block send failure retry, default value is false.");
 }

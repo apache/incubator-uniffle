@@ -24,9 +24,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ReconfigurableConfManager;
 import org.apache.uniffle.common.ServerStatus;
-import org.apache.uniffle.common.config.Reconfigurable;
-import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.ClusterManager;
@@ -42,7 +41,7 @@ import static org.apache.uniffle.common.util.Constants.ACCESS_INFO_REQUIRED_SHUF
  * AccessClusterLoadChecker use the cluster load metrics including memory and healthy to filter and
  * count available nodes numbers and reject if the number do not reach the threshold.
  */
-public class AccessClusterLoadChecker extends AbstractAccessChecker implements Reconfigurable {
+public class AccessClusterLoadChecker extends AbstractAccessChecker {
 
   private static final Logger LOG = LoggerFactory.getLogger(AccessClusterLoadChecker.class);
 
@@ -50,7 +49,8 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker implements R
   private final double memoryPercentThreshold;
   // The hard constraint number of available shuffle servers
   private final int availableServerNumThreshold;
-  private volatile int defaultRequiredShuffleServerNumber;
+  private volatile ReconfigurableConfManager.Reconfigurable<Integer>
+      defaultRequiredShuffleServerNumber;
 
   public AccessClusterLoadChecker(AccessManager accessManager) throws Exception {
     super(accessManager);
@@ -61,7 +61,7 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker implements R
     this.availableServerNumThreshold =
         conf.getInteger(CoordinatorConf.COORDINATOR_ACCESS_LOADCHECKER_SERVER_NUM_THRESHOLD, -1);
     this.defaultRequiredShuffleServerNumber =
-        conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
+        conf.getReconfigurableConf(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
   }
 
   @Override
@@ -85,7 +85,7 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker implements R
     if (availableServerNumThreshold == -1) {
       String requiredNodesNumRaw =
           accessInfo.getExtraProperties().get(ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM);
-      int requiredNodesNum = defaultRequiredShuffleServerNumber;
+      int requiredNodesNum = defaultRequiredShuffleServerNumber.get();
       if (StringUtils.isNotEmpty(requiredNodesNumRaw)
           && Integer.parseInt(requiredNodesNumRaw) > 0) {
         requiredNodesNum = Integer.parseInt(requiredNodesNumRaw);
@@ -126,18 +126,4 @@ public class AccessClusterLoadChecker extends AbstractAccessChecker implements R
   }
 
   public void close() {}
-
-  @Override
-  public void reconfigure(RssConf conf) {
-    int nodeMax = conf.get(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
-    if (nodeMax != defaultRequiredShuffleServerNumber) {
-      LOG.warn("Coordinator update new defaultRequiredShuffleServerNumber {}.", nodeMax);
-      defaultRequiredShuffleServerNumber = nodeMax;
-    }
-  }
-
-  @Override
-  public boolean isPropertyReconfigurable(String property) {
-    return CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key().equals(property);
-  }
 }

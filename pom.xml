@@ -23,7 +23,7 @@
 
   <groupId>org.apache.uniffle</groupId>
   <artifactId>uniffle-parent</artifactId>
-  <version>0.9.0-SNAPSHOT</version>
+  <version>0.10.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Apache Uniffle</name>
   <description>A high performance, general purpose Remote Shuffle Service.</description>
@@ -56,7 +56,7 @@
     <version.checksum-maven-plugin>1.11</version.checksum-maven-plugin>
     <awaitility.version>4.2.0</awaitility.version>
     <checkstyle.version>9.3</checkstyle.version>
-    <commons-collections.version>3.2.2</commons-collections.version>
+    <commons-collections4.version>4.4</commons-collections4.version>
     <commons-logging.version>1.2</commons-logging.version>
     <commons-lang3.version>3.10</commons-lang3.version>
     <commons-codec.version>1.9</commons-codec.version>
@@ -64,7 +64,7 @@
     <error_prone_annotations.version>2.23.0</error_prone_annotations.version>
     <execution.root>${user.dir}</execution.root>
     <fasterxml.jackson.version>2.10.0</fasterxml.jackson.version>
-    <grpc.version>1.61.1</grpc.version>
+    <grpc.version>1.64.0</grpc.version>
     <gson.version>2.10.1</gson.version>
     <guava.version>32.1.3-jre</guava.version>
     <hadoop.scope>provided</hadoop.scope>
@@ -85,7 +85,7 @@
     <spotless-maven-plugin.version>2.30.0</spotless-maven-plugin.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>3.12.4</mockito.version>
-    <netty.version>4.1.106.Final</netty.version>
+    <netty.version>4.1.109.Final</netty.version>
     <picocli.version>4.5.2</picocli.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <prometheus.simpleclient.version>0.9.0</prometheus.simpleclient.version>
@@ -321,6 +321,11 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
         <version>${commons-lang3.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-collections4</artifactId>
+        <version>${commons-collections4.version}</version>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
@@ -916,10 +921,11 @@
               <java.io.tmpdir>${project.build.directory}/tmp</java.io.tmpdir>
               <project.version>${project.version}</project.version>
               <jacoco-agent.destfile>target/jacoco.exec</jacoco-agent.destfile>
+              <test.mode>true</test.mode>
             </systemProperties>
             <redirectTestOutputToFile>${test.redirectToFile}</redirectTestOutputToFile>
             <useFile>${test.redirectToFile}</useFile>
-            <argLine>${argLine} -ea -Xmx3g</argLine>
+            <argLine>${argLine} -ea -Xmx5g -Xss4m -XX:MaxMetaspaceSize=2g -XX:ReservedCodeCacheSize=1g</argLine>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>${trimStackTrace}</trimStackTrace>
             <skipTests>${skipUTs}</skipTests>
@@ -2051,6 +2057,13 @@
           </dependency>
         </dependencies>
       </dependencyManagement>
+    </profile>
+
+    <profile>
+      <id>scala2.13</id>
+      <properties>
+        <scala.binary.version>2.13</scala.binary.version>
+      </properties>
     </profile>
 
     <profile>

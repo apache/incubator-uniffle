@@ -21,7 +21,7 @@ import (
 	"context"
 	"encoding/json"
 
-	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -42,7 +42,7 @@ func SyncHPA(kubeClient kubernetes.Interface, hpa *autoscalingv2.HorizontalPodAu
 
 // EnsureHPA ensures the hpa object with expected data.
 func EnsureHPA(kubeClient kubernetes.Interface, hpa *autoscalingv2.HorizontalPodAutoscaler) error {
-	oldHPA, err := kubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(hpa.Namespace).
+	oldHPA, err := kubeClient.AutoscalingV2().HorizontalPodAutoscalers(hpa.Namespace).
 		Get(context.TODO(), hpa.Name, metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
@@ -50,7 +50,7 @@ func EnsureHPA(kubeClient kubernetes.Interface, hpa *autoscalingv2.HorizontalPod
 			return err
 		}
 		// try to create a new hpa.
-		if _, err = kubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(hpa.Namespace).
+		if _, err = kubeClient.AutoscalingV2().HorizontalPodAutoscalers(hpa.Namespace).
 			Create(context.Background(), hpa, metav1.CreateOptions{}); err != nil {
 			klog.Errorf("failed to create hpa (%v): %v", utils.UniqueName(hpa), err)
 			return err
@@ -62,7 +62,7 @@ func EnsureHPA(kubeClient kubernetes.Interface, hpa *autoscalingv2.HorizontalPod
 
 // RemoveHPA removes the hpa object.
 func RemoveHPA(kubClient kubernetes.Interface, hpa *autoscalingv2.HorizontalPodAutoscaler) error {
-	err := kubClient.AutoscalingV2beta2().HorizontalPodAutoscalers(hpa.Namespace).
+	err := kubClient.AutoscalingV2().HorizontalPodAutoscalers(hpa.Namespace).
 		Delete(context.TODO(), hpa.Name, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
@@ -94,7 +94,7 @@ func PatchHPA(kubeClient kubernetes.Interface,
 		klog.Errorf("failed to create merge patch for hpa %v: %v", utils.UniqueName(oldHPA), err)
 		return err
 	}
-	if _, err = kubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(oldHPA.Namespace).Patch(context.Background(),
+	if _, err = kubeClient.AutoscalingV2().HorizontalPodAutoscalers(oldHPA.Namespace).Patch(context.Background(),
 		oldHPA.Name, types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{}); err != nil {
 		klog.Errorf("failed to patch hpa (%v) with (%v): %v",
 			utils.UniqueName(oldHPA), string(patchBytes), err)

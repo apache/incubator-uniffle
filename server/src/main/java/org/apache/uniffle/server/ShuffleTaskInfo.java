@@ -64,6 +64,10 @@ public class ShuffleTaskInfo {
 
   private final AtomicReference<ShuffleSpecification> specification;
 
+  private final Map<Integer, Map<Integer, AtomicLong>> partitionBlockCounters;
+
+  private final Map<Integer, Integer> latestStageAttemptNumbers;
+
   public ShuffleTaskInfo(String appId) {
     this.appId = appId;
     this.currentTimes = System.currentTimeMillis();
@@ -75,6 +79,8 @@ public class ShuffleTaskInfo {
     this.hugePartitionTags = JavaUtils.newConcurrentMap();
     this.existHugePartition = new AtomicBoolean(false);
     this.specification = new AtomicReference<>();
+    this.partitionBlockCounters = JavaUtils.newConcurrentMap();
+    this.latestStageAttemptNumbers = JavaUtils.newConcurrentMap();
   }
 
   public Long getCurrentTimes() {
@@ -192,6 +198,43 @@ public class ShuffleTaskInfo {
           shuffleId,
           partitionId);
     }
+  }
+
+  public boolean isHugePartition(int shuffleId, int partitionId) {
+    return existHugePartition.get()
+        && hugePartitionTags.containsKey(shuffleId)
+        && hugePartitionTags.get(shuffleId).contains(partitionId);
+  }
+
+  public Set<Integer> getShuffleIds() {
+    return partitionDataSizes.keySet();
+  }
+
+  public void incBlockNumber(int shuffleId, int partitionId, int delta) {
+    this.partitionBlockCounters
+        .computeIfAbsent(shuffleId, x -> JavaUtils.newConcurrentMap())
+        .computeIfAbsent(partitionId, x -> new AtomicLong())
+        .addAndGet(delta);
+  }
+
+  public long getBlockNumber(int shuffleId, int partitionId) {
+    Map<Integer, AtomicLong> partitionBlockCounters = this.partitionBlockCounters.get(shuffleId);
+    if (partitionBlockCounters == null) {
+      return 0L;
+    }
+    AtomicLong counter = partitionBlockCounters.get(partitionId);
+    if (counter == null) {
+      return 0L;
+    }
+    return counter.get();
+  }
+
+  public Integer getLatestStageAttemptNumber(int shuffleId) {
+    return latestStageAttemptNumbers.computeIfAbsent(shuffleId, key -> 0);
+  }
+
+  public void refreshLatestStageAttemptNumber(int shuffleId, int stageAttemptNumber) {
+    latestStageAttemptNumbers.put(shuffleId, stageAttemptNumber);
   }
 
   @Override

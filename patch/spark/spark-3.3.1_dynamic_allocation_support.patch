@@ -34,14 +34,17 @@ diff --git a/core/src/main/scala/org/apache/spark/SparkConf.scala b/core/src/mai
 index 5f37a1abb19..af4bee1e1bb 100644
 --- a/core/src/main/scala/org/apache/spark/SparkConf.scala
 +++ b/core/src/main/scala/org/apache/spark/SparkConf.scala
-@@ -580,6 +580,10 @@ class SparkConf(loadDefaults: Boolean) extends Cloneable with Logging with Seria
+@@ -580,6 +580,13 @@ class SparkConf(loadDefaults: Boolean) extends Cloneable with Logging with Seria
      Utils.redact(this, getAll).sorted.map { case (k, v) => k + "=" + v }.mkString("\n")
    }
- 
+
 +  /**
 +   * Return true if remote shuffle service is enabled.
 +   */
-+  def isRssEnable(): Boolean = get("spark.shuffle.manager", "sort").contains("RssShuffleManager")
++  def isRssEnable(): Boolean = {
++    val shuffleMgr = get("spark.shuffle.manager", "sort")
++    shuffleMgr.contains("RssShuffleManager") || shuffleMgr.contains("UniffleShuffleManager")
++  }
  }
  
  private[spark] object SparkConf extends Logging {

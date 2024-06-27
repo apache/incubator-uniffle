@@ -62,7 +62,7 @@ and Continuous partition assignment mechanism.
 
     It can be enabled by the following config
       ```bash
-        # Default value is ROUND, it will poll to allocate partitions to ShuffleServer
+        # Another value is ROUND, it will poll to allocate partitions to ShuffleServer
         rss.coordinator.select.partition.strategy CONTINUOUS
         
         # Default value is 1.0, used to estimate task concurrency, how likely is this part of the resource between spark.dynamicAllocation.minExecutors and spark.dynamicAllocation.maxExecutors to be allocated
@@ -126,6 +126,11 @@ The bits reserved for sequence number, partition id and task attempt id are best
    For example: `22` bits is sufficient for `taskAttemptIdBits` with `partitionIdBits=20`, and Spark conf `spark.task.maxFailures=4` and `spark.speculation=false`.
 3. Reserve the remaining bits to `sequenceNoBits`: `sequenceNoBits = 63 - partitionIdBits - taskAttemptIdBits`.
 
+### Block id self management (experimental)
+
+Now, the block id could be managed by the spark driver self when specifying the `spark.rss.blockId.selfManagementEnabled=true`.
+And this will reduce shuffle server pressure but significantly increase memory consumption on the Spark driver side.
+
 ### Adaptive Remote Shuffle Enabling 
 Currently, this feature only supports Spark. 
 
@@ -145,3 +150,31 @@ Other configuration:
 |spark.rss.access.timeout.ms|10000|The timeout to access Uniffle coordinator|
 |spark.rss.client.access.retry.interval.ms|20000|The interval between retries fallback to SortShuffleManager|
 |spark.rss.client.access.retry.times|0|The number of retries fallback to SortShuffleManager|
+
+### Partition reassign in one shuffle attempt
+
+To achieve better task stability, the partition reassignment mechanism has been introduced, which requests new replacement shuffle servers to overcome server instability caused by unhealthy conditions or high memory pressure in a single shuffle attempt. 
+Currently, this feature is not compatible with stage retry and multiple replica mechanisms (additional testing is required).
+
+Using the following configs to enable this feature 
+
+```bash
+# whether to enable reassign mechanism
+spark.rss.client.reassign.enabled                  true
+# The max reassign server num for one partition when using partition reassign mechanism.
+spark.rss.client.reassign.maxReassignServerNum     10
+# The block retry max times when partition reassign is enabled. 
+spark.rss.client.reassign.blockRetryMaxTimes       1
+```
+
+### Map side combine
+
+Map side combine is a feature for rdd aggregation operators that combines the shuffle data on map side before sending it to the shuffle server, which can reduce the amount of data transmitted and the pressure on the shuffle server.
+
+We can enable this feature by using the following configuration:
+
+| Property Name                           | Default | Description                                           |
+|-----------------------------------------|---------|-------------------------------------------------------|
+| spark.rss.client.mapSideCombine.enabled | false   | Whether to enable map side combine of shuffle writer. |
+
+**Note**: Map side combine will handle entire map side shuffle write data, which may cause data spills and delay shuffle writes.

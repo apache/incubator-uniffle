@@ -20,6 +20,7 @@ package org.apache.uniffle.server.buffer;
 import java.io.File;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +29,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.google.common.collect.RangeMap;
 import com.google.common.util.concurrent.Uninterruptibles;
+import io.prometheus.client.Collector;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.Constants;
@@ -444,10 +447,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(6, 64));
     assertEquals(384, shuffleBufferManager.getUsedMemory());
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(8, 64));
-    waitForFlush(shuffleFlushManager, appId, shuffleId, 5);
-    assertEquals(0, shuffleBufferManager.getUsedMemory());
+    waitForFlush(shuffleFlushManager, appId, shuffleId, 4, 96);
     assertEquals(0, shuffleBufferManager.getInFlushSize());
 
+    shuffleBufferManager.removeBuffer(appId);
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     shuffleBufferManager.registerBuffer("bufferSizeTest1", shuffleId, 0, 1);
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 32));
     assertEquals(64, shuffleBufferManager.getUsedMemory());
@@ -473,7 +477,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleConf.set(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO, 0.1);
     shuffleConf.set(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD, 100L);
     shuffleConf.set(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, false);
-    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 64L);
+    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_SIZE_THRESHOLD, 64L);
 
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
     StorageManager storageManager =
@@ -533,7 +537,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 80.0);
     shuffleConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     shuffleConf.setBoolean(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, true);
-    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 128L);
+    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_SIZE_THRESHOLD, 128L);
 
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
     StorageManager storageManager =
@@ -627,6 +631,16 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   private void waitForFlush(
       ShuffleFlushManager shuffleFlushManager, String appId, int shuffleId, int expectedBlockNum)
       throws Exception {
+    waitForFlush(shuffleFlushManager, appId, shuffleId, expectedBlockNum, 0);
+  }
+
+  private void waitForFlush(
+      ShuffleFlushManager shuffleFlushManager,
+      String appId,
+      int shuffleId,
+      int expectedBlockNum,
+      long expectedUsedMemory)
+      throws Exception {
     int retry = 0;
     long committedCount = 0;
     do {
@@ -646,7 +660,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     // `shuffleBufferManager.getUsedMemory()` and `shuffleBufferManager.getInFlushSize()`.
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
-        .until(() -> shuffleBufferManager.getUsedMemory() == 0);
+        .until(() -> shuffleBufferManager.getUsedMemory() == expectedUsedMemory);
   }
 
   @Test
@@ -691,7 +705,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 80.0);
     shuffleConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     shuffleConf.setBoolean(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, true);
-    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 16L);
+    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_SIZE_THRESHOLD, 16L);
     shuffleConf.setSizeAsBytes(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 16L);
     shuffleConf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE_HDFS.name());
@@ -728,5 +742,46 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     executor.shutdown();
     assertEquals(0, shuffleBufferManager.getUsedMemory());
     assertEquals(0, shuffleBufferManager.getInFlushSize());
+  }
+
+  @Test
+  public void blockSizeMetricsTest() {
+    String appId = "blockSizeMetricsTest";
+    shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
+    ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
+    int shuffleId = 1;
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
+
+    // cache shuffle block data, and record metrics
+    double[] buckets =
+        ConfigUtils.convertBytesStringToDoubleArray(
+            new ShuffleServerConf()
+                .get(ShuffleServerConf.APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_BUCKETS));
+    Arrays.stream(buckets)
+        .sorted()
+        .forEach(
+            bucket -> {
+              StatusCode sc =
+                  shuffleBufferManager.cacheShuffleData(
+                      appId, shuffleId, true, createData(0, (int) bucket));
+              assertEquals(StatusCode.SUCCESS, sc);
+            });
+    // check metrics values
+    List<Collector.MetricFamilySamples> samples =
+        ShuffleServerMetrics.appHistogramWriteBlockSize.collect();
+    assertEquals(samples.size(), 1);
+    int index = 1;
+    Arrays.stream(buckets)
+        .sorted()
+        .forEach(
+            bucket -> {
+              for (Collector.MetricFamilySamples.Sample s : samples.get(0).samples) {
+                if (s.labelValues.contains(bucket)) {
+                  assertEquals(s.value, index);
+                }
+              }
+            });
   }
 }

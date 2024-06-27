@@ -133,6 +133,11 @@ var (
 			Name: "default-secret",
 		},
 	}
+
+	testAnnotations = map[string]string{
+		"key1": "value1",
+		"key2": "value2",
+	}
 )
 
 func buildRssWithLabels() *uniffleapi.RemoteShuffleService {
@@ -174,6 +179,12 @@ func withCustomAffinity(affinity *corev1.Affinity) *uniffleapi.RemoteShuffleServ
 func withCustomImagePullSecrets(imagePullSecrets []corev1.LocalObjectReference) *uniffleapi.RemoteShuffleService {
 	rss := utils.BuildRSSWithDefaultValue()
 	rss.Spec.ImagePullSecrets = imagePullSecrets
+	return rss
+}
+
+func withCustomAnnotations(annotations map[string]string) *uniffleapi.RemoteShuffleService {
+	rss := utils.BuildRSSWithDefaultValue()
+	rss.Spec.Coordinator.Annotations = annotations
 	return rss
 }
 
@@ -438,7 +449,6 @@ func TestGenerateDeploy(t *testing.T) {
 			rss:  withCustomAffinity(testAffinity),
 			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (bool, error) {
 				if deploy.Spec.Template.Spec.Affinity != nil {
-					deploy.Spec.Template.Spec.Affinity = rss.Spec.Coordinator.Affinity
 					equal := reflect.DeepEqual(deploy.Spec.Template.Spec.Affinity, testAffinity)
 					if equal {
 						return true, nil
@@ -452,13 +462,25 @@ func TestGenerateDeploy(t *testing.T) {
 			rss:  withCustomImagePullSecrets(testImagePullSecrets),
 			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (bool, error) {
 				if deploy.Spec.Template.Spec.ImagePullSecrets != nil {
-					deploy.Spec.Template.Spec.ImagePullSecrets = rss.Spec.ImagePullSecrets
 					equal := reflect.DeepEqual(deploy.Spec.Template.Spec.ImagePullSecrets, testImagePullSecrets)
 					if equal {
 						return true, nil
 					}
 				}
 				return false, fmt.Errorf("generated deploy should include imagePullSecrets: %v", testImagePullSecrets)
+			},
+		},
+		{
+			name: "set custom annotations",
+			rss:  withCustomAnnotations(testAnnotations),
+			IsValidDeploy: func(deploy *appsv1.Deployment, rss *uniffleapi.RemoteShuffleService) (bool, error) {
+				if deploy.Spec.Template.Annotations != nil {
+					equal := reflect.DeepEqual(deploy.Spec.Template.Annotations, testAnnotations)
+					if equal {
+						return true, nil
+					}
+				}
+				return false, fmt.Errorf("generated deploy should include annotations: %v", testAnnotations)
 			},
 		},
 	} {
@@ -472,7 +494,8 @@ func TestGenerateDeploy(t *testing.T) {
 }
 
 // generateServiceCuntMap generates a map with service type and its corresponding count. The headless svc is treated
-//   differently: the service type for headless is treated as an empty service.
+//
+//	differently: the service type for headless is treated as an empty service.
 func generateServiceCountMap(services []*corev1.Service) map[corev1.ServiceType]int {
 	result := make(map[corev1.ServiceType]int)
 	var empty corev1.ServiceType

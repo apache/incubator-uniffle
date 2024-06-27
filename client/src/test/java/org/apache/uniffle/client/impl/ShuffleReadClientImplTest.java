@@ -36,6 +36,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.apache.uniffle.client.TestUtils;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
@@ -64,6 +65,7 @@ public class ShuffleReadClientImplTest extends HadoopTestBase {
 
   private ShuffleClientFactory.ReadClientBuilder baseReadBuilder() {
     return ShuffleClientFactory.newReadBuilder()
+        .clientType(ClientType.GRPC)
         .storageType(StorageType.HDFS.name())
         .appId("appId")
         .shuffleId(0)

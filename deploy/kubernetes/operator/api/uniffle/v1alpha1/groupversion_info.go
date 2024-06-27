@@ -16,8 +16,8 @@
  */
 
 // Package v1alpha1 contains API Schema definitions for the uniffle v1alpha1 API group
-//+kubebuilder:object:generate=true
-//+groupName=uniffle.apache.org
+// +kubebuilder:object:generate=true
+// +groupName=uniffle.apache.org
 package v1alpha1
 
 import (

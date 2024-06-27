@@ -22,8 +22,6 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
@@ -40,13 +38,15 @@ import org.apache.hadoop.mapred.Task;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.util.Progress;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 
 public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
 
-  private static final Log LOG = LogFactory.getLog(RssRemoteMergeManagerImpl.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RssRemoteMergeManagerImpl.class);
 
   private final String appId;
   private final TaskAttemptID reduceId;
@@ -173,8 +173,7 @@ public class RssRemoteMergeManagerImpl<K, V> extends MergeManagerImpl<K, V> {
             (this.memoryLimit
                 * jobConf.getFloat(
                     MRJobConfig.SHUFFLE_MERGE_PERCENT, MRJobConfig.DEFAULT_SHUFFLE_MERGE_PERCENT));
-    LOG.info(
-        "MergerManager: memoryLimit=" + memoryLimit + ", " + "mergeThreshold=" + mergeThreshold);
+    LOG.info("MergerManager: memoryLimit={}, mergeThreshold={}", memoryLimit, mergeThreshold);
 
     this.inMemoryMerger = createRssInMemoryMerger();
     this.inMemoryMerger.start();

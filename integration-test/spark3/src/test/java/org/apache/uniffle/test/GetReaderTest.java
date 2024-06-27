@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 
 import scala.Option;
 import scala.Tuple2;
-import scala.collection.Seq;
 import scala.collection.immutable.Map;
+import scala.collection.immutable.Seq;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.hadoop.conf.Configuration;

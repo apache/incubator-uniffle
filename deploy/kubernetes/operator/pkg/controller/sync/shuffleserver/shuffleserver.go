@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -173,14 +173,6 @@ func GenerateSts(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShu
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: make(map[string]string),
-					Annotations: map[string]string{
-						constants.AnnotationRssName: rss.Name,
-						constants.AnnotationRssUID:  string(rss.UID),
-						constants.AnnotationMetricsServerPort: fmt.Sprintf("%v",
-							*rss.Spec.ShuffleServer.HTTPPort),
-						constants.AnnotationShuffleServerPort: fmt.Sprintf("%v",
-							*rss.Spec.ShuffleServer.RPCPort),
-					},
 				},
 				Spec: podSpec,
 			},
@@ -197,6 +189,38 @@ func GenerateSts(kubeClient kubernetes.Interface, rss *unifflev1alpha1.RemoteShu
 	if rss.Spec.ShuffleServer.RuntimeClassName != nil {
 		sts.Spec.Template.Spec.RuntimeClassName = rss.Spec.ShuffleServer.RuntimeClassName
 	}
+
+	// add VolumeClaimTemplates, support cloud storage
+	sts.Spec.VolumeClaimTemplates = make([]corev1.PersistentVolumeClaim, 0, len(rss.Spec.ShuffleServer.VolumeClaimTemplates))
+	for _, pvcTemplate := range rss.Spec.ShuffleServer.VolumeClaimTemplates {
+		sts.Spec.VolumeClaimTemplates = append(sts.Spec.VolumeClaimTemplates, corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: *pvcTemplate.VolumeNameTemplate,
+			},
+			Spec: pvcTemplate.Spec,
+		})
+	}
+
+	// add custom annotation, and default annotation used by rss
+	reservedAnnotations := map[string]string{
+		constants.AnnotationRssName: rss.Name,
+		constants.AnnotationRssUID:  string(rss.UID),
+		constants.AnnotationMetricsServerPort: fmt.Sprintf("%v",
+			*rss.Spec.ShuffleServer.HTTPPort),
+		constants.AnnotationShuffleServerPort: fmt.Sprintf("%v",
+			*rss.Spec.ShuffleServer.RPCPort),
+	}
+
+	annotations := map[string]string{}
+	for key, value := range rss.Spec.ShuffleServer.Annotations {
+		annotations[key] = value
+	}
+	// reserved annotations have higher preference.
+	for key, value := range reservedAnnotations {
+		annotations[key] = value
+	}
+
+	sts.Spec.Template.Annotations = annotations
 
 	// add init containers, the main container and other containers.
 	sts.Spec.Template.Spec.InitContainers = util.GenerateInitContainers(rss.Spec.ShuffleServer.RSSPodSpec)
@@ -238,6 +262,11 @@ func generateStorageBasePath(rss *unifflev1alpha1.RemoteShuffleService) string {
 		}
 		paths = append(paths, strings.TrimSuffix(v, "/")+"/"+controllerconstants.RssDataDir)
 	}
+
+	for _, vm := range rss.Spec.ShuffleServer.VolumeMounts {
+		paths = append(paths, strings.TrimSuffix(vm.MountPath, "/")+"/"+controllerconstants.RssDataDir)
+	}
+
 	sort.Strings(paths)
 	return strings.Join(paths, ",")
 }

@@ -21,13 +21,16 @@ import java.util.List;
 import java.util.Map;
 
 import scala.Function0;
+import scala.Function2;
 import scala.Option;
 import scala.Product2;
 import scala.collection.Iterator;
 import scala.runtime.AbstractFunction0;
+import scala.runtime.AbstractFunction1;
 import scala.runtime.BoxedUnit;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.spark.Aggregator;
 import org.apache.spark.InterruptibleIterator;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.TaskContext;
@@ -50,6 +53,8 @@ import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
+
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
 
 public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
 
@@ -108,6 +113,14 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   @Override
   public Iterator<Product2<K, C>> read() {
     LOG.info("Shuffle read started:" + getReadInfo());
+    int retryMax =
+        rssConf.getInteger(
+            RssClientConfig.RSS_CLIENT_RETRY_MAX,
+            RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
+    long retryIntervalMax =
+        rssConf.getLong(
+            RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
+            RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
     ShuffleReadClient shuffleReadClient =
         ShuffleClientFactory.getInstance()
             .createShuffleReadClient(
@@ -123,6 +136,8 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
                     .shuffleServerInfoList(shuffleServerInfoList)
                     .hadoopConf(hadoopConf)
                     .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                    .retryMax(retryMax)
+                    .retryIntervalMax(retryIntervalMax)
                     .rssConf(rssConf));
     RssShuffleDataIterator rssShuffleDataIterator =
         new RssShuffleDataIterator<K, C>(
@@ -145,33 +160,38 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
           completionIterator.completion();
         });
 
-    Iterator<Product2<K, C>> resultIter = null;
-    Iterator<Product2<K, C>> aggregatedIter = null;
-
-    if (shuffleDependency.aggregator().isDefined()) {
-      if (shuffleDependency.mapSideCombine()) {
-        // We are reading values that are already combined
-        aggregatedIter =
-            shuffleDependency.aggregator().get().combineCombinersByKey(completionIterator, context);
-      } else {
-        // We don't know the value type, but also don't care -- the dependency *should*
-        // have made sure its compatible w/ this aggregator, which will convert the value
-        // type to the combined type C
-        aggregatedIter =
-            shuffleDependency.aggregator().get().combineValuesByKey(completionIterator, context);
-      }
-    } else {
-      aggregatedIter = completionIterator;
-    }
+    Iterator<Product2<K, C>> resultIter;
 
     if (shuffleDependency.keyOrdering().isDefined()) {
       // Create an ExternalSorter to sort the data
-      ExternalSorter<K, C, C> sorter =
+      Option<Aggregator<K, Object, C>> aggregator = Option.empty();
+      if (shuffleDependency.aggregator().isDefined()) {
+        if (shuffleDependency.mapSideCombine()) {
+          aggregator =
+              Option.apply(
+                  (Aggregator<K, Object, C>)
+                      new Aggregator<K, C, C>(
+                          new AbstractFunction1<C, C>() {
+                            @Override
+                            public C apply(C x) {
+                              return x;
+                            }
+                          },
+                          (Function2<C, C, C>)
+                              shuffleDependency.aggregator().get().mergeCombiners(),
+                          (Function2<C, C, C>)
+                              shuffleDependency.aggregator().get().mergeCombiners()));
+        } else {
+          aggregator =
+              Option.apply((Aggregator<K, Object, C>) shuffleDependency.aggregator().get());
+        }
+      }
+      ExternalSorter<K, Object, C> sorter =
           new ExternalSorter<>(
-              context, Option.empty(), Option.empty(), shuffleDependency.keyOrdering(), serializer);
+              context, aggregator, Option.empty(), shuffleDependency.keyOrdering(), serializer);
       LOG.info("Inserting aggregated records to sorter");
       long startTime = System.currentTimeMillis();
-      sorter.insertAll(aggregatedIter);
+      sorter.insertAll(rssShuffleDataIterator);
       LOG.info(
           "Inserted aggregated records to sorter: millis:"
               + (System.currentTimeMillis() - startTime));
@@ -196,8 +216,16 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
             }
           };
       resultIter = CompletionIterator$.MODULE$.apply(sorter.iterator(), fn0);
+    } else if (shuffleDependency.aggregator().isDefined()) {
+      Aggregator<K, Object, C> aggregator =
+          (Aggregator<K, Object, C>) shuffleDependency.aggregator().get();
+      if (shuffleDependency.mapSideCombine()) {
+        resultIter = aggregator.combineCombinersByKey(rssShuffleDataIterator, context);
+      } else {
+        resultIter = aggregator.combineValuesByKey(rssShuffleDataIterator, context);
+      }
     } else {
-      resultIter = aggregatedIter;
+      resultIter = rssShuffleDataIterator;
     }
 
     if (!(resultIter instanceof InterruptibleIterator)) {
@@ -205,7 +233,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     }
 
     // stage re-compute and shuffle manager server port are both set
-    if (rssConf.getBoolean(RssClientConfig.RSS_RESUBMIT_STAGE, false)
+    if (rssConf.getBoolean(RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED)
         && rssConf.getInteger(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT, 0) > 0) {
       String driver = rssConf.getString("driver.host", "");
       int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);

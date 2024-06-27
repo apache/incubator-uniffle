@@ -20,7 +20,7 @@
 </template>
 
 <script>
-import LayoutPage from "@/components/LayoutPage";
+import LayoutPage from '@/components/LayoutPage'
 export default {
   name: 'App',
   components: {

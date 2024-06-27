@@ -66,86 +66,87 @@ public class AccessCandidatesCheckerTest {
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, tempDir.toURI().toString());
     String checkerClassName = AccessCandidatesChecker.class.getName();
     conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(), checkerClassName);
-    final ApplicationManager applicationManager = new ApplicationManager(conf);
-    // file load checking at startup
-    Exception expectedException = null;
-    try {
-      new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
-    } catch (RuntimeException e) {
-      expectedException = e;
-    }
-    assertNotNull(expectedException);
-    assertTrue(
-        expectedException
-            .getMessage()
-            .contains(
-                "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
-    conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, cfgFile.toURI().toString());
-    expectedException = null;
-    try {
-      new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
-    } catch (RuntimeException e) {
-      expectedException = e;
-    }
-    assertNotNull(expectedException);
-    assertTrue(
-        expectedException
-            .getMessage()
-            .contains(
-                "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
-
-    // load the config at the beginning
-    FileWriter fileWriter = new FileWriter(cfgFile);
-    PrintWriter printWriter = new PrintWriter(fileWriter);
-    printWriter.println("9527");
-    printWriter.println(" 135 ");
-    printWriter.println("2 ");
-    printWriter.flush();
-    printWriter.close();
-    AccessManager accessManager =
+    try (ApplicationManager applicationManager = new ApplicationManager(conf)) {
+      // file load checking at startup
+      Exception expectedException = null;
+      try {
         new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
-    AccessCandidatesChecker checker =
-        (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
-    sleep(1200);
-    assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
-    assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
-    assertTrue(checker.check(new AccessInfo("135")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
+      } catch (RuntimeException e) {
+        expectedException = e;
+      }
+      assertNotNull(expectedException);
+      assertTrue(
+          expectedException
+              .getMessage()
+              .contains(
+                  "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
+      conf.set(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_PATH, cfgFile.toURI().toString());
+      expectedException = null;
+      try {
+        new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
+      } catch (RuntimeException e) {
+        expectedException = e;
+      }
+      assertNotNull(expectedException);
+      assertTrue(
+          expectedException
+              .getMessage()
+              .contains(
+                  "NoSuchMethodException: org.apache.uniffle.coordinator.access.checker.AccessCandidatesChecker.<init>()"));
 
-    // ignore empty or wrong content
-    printWriter.println("");
-    printWriter.flush();
-    printWriter.close();
-    sleep(1300);
-    assertTrue(cfgFile.exists());
-    assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
-    assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
-    assertTrue(checker.check(new AccessInfo("135")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
+      // load the config at the beginning
+      FileWriter fileWriter = new FileWriter(cfgFile);
+      PrintWriter printWriter = new PrintWriter(fileWriter);
+      printWriter.println("9527");
+      printWriter.println(" 135 ");
+      printWriter.println("2 ");
+      printWriter.flush();
+      printWriter.close();
+      AccessManager accessManager =
+          new AccessManager(conf, null, applicationManager.getQuotaManager(), new Configuration());
+      AccessCandidatesChecker checker =
+          (AccessCandidatesChecker) accessManager.getAccessCheckers().get(0);
+      sleep(1200);
+      assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
+      assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
+      assertTrue(checker.check(new AccessInfo("135")).isSuccess());
+      assertFalse(checker.check(new AccessInfo("1")).isSuccess());
+      assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
 
-    // the config will not be changed when the conf file is deleted
-    assertTrue(cfgFile.delete());
-    sleep(1200);
-    assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
-    assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
-    assertTrue(checker.check(new AccessInfo("135")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1")).isSuccess());
-    assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
+      // ignore empty or wrong content
+      printWriter.println("");
+      printWriter.flush();
+      printWriter.close();
+      sleep(1300);
+      assertTrue(cfgFile.exists());
+      assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
+      assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
+      assertTrue(checker.check(new AccessInfo("135")).isSuccess());
+      assertFalse(checker.check(new AccessInfo("1")).isSuccess());
+      assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
 
-    // the normal update config process, move the new conf file to the old one
-    File cfgFileTmp = new File(cfgFileName + ".tmp");
-    fileWriter = new FileWriter(cfgFileTmp);
-    printWriter = new PrintWriter(fileWriter);
-    printWriter.println("13");
-    printWriter.println("57");
-    printWriter.close();
-    FileUtils.moveFile(cfgFileTmp, cfgFile);
-    sleep(1200);
-    assertEquals(Sets.newHashSet("13", "57"), checker.getCandidates().get());
-    assertTrue(checker.check(new AccessInfo("13")).isSuccess());
-    assertTrue(checker.check(new AccessInfo("57")).isSuccess());
-    checker.close();
+      // the config will not be changed when the conf file is deleted
+      assertTrue(cfgFile.delete());
+      sleep(1200);
+      assertEquals(Sets.newHashSet("2", "9527", "135"), checker.getCandidates().get());
+      assertTrue(checker.check(new AccessInfo("9527")).isSuccess());
+      assertTrue(checker.check(new AccessInfo("135")).isSuccess());
+      assertFalse(checker.check(new AccessInfo("1")).isSuccess());
+      assertFalse(checker.check(new AccessInfo("1_2")).isSuccess());
+
+      // the normal update config process, move the new conf file to the old one
+      File cfgFileTmp = new File(cfgFileName + ".tmp");
+      fileWriter = new FileWriter(cfgFileTmp);
+      printWriter = new PrintWriter(fileWriter);
+      printWriter.println("13");
+      printWriter.println("57");
+      printWriter.close();
+      FileUtils.moveFile(cfgFileTmp, cfgFile);
+      sleep(1200);
+      assertEquals(Sets.newHashSet("13", "57"), checker.getCandidates().get());
+      assertTrue(checker.check(new AccessInfo("13")).isSuccess());
+      assertTrue(checker.check(new AccessInfo("57")).isSuccess());
+      checker.close();
+    }
   }
 }

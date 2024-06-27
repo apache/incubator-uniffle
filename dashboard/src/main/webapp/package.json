@@ -32,6 +32,7 @@
     "core-js": "^3.8.3",
     "element-plus": "^2.3.6",
     "moment": "^2.29.4",
+    "pinia": "^2.1.7",
     "rimraf": "^5.0.1",
     "vue": "^3.2.13",
     "vue-resource": "^1.5.3",
@@ -42,32 +43,19 @@
     "@babel/eslint-parser": "^7.12.16",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",
-    "@vue/cli-service": "~5.0.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3",
+    "@vue/cli-service": "^5.0.8",
+    "@vue/eslint-config-prettier": "^9.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-n": "^16.6.2",
+    "eslint-plugin-prettier": "^5.1.3",
+    "eslint-plugin-promise": "^6.2.0",
+    "eslint-plugin-vue": "^9.26.0",
     "node-sass": "^9.0.0",
+    "prettier": "^3.3.2",
     "sass-loader": "^13.3.1",
     "vue-loader": "^17.2.2",
     "vue-template-compiler": "^2.7.14"
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/vue3-essential",
-      "eslint:recommended"
-    ],
-    "parserOptions": {
-      "parser": "@babel/eslint-parser"
-    },
-    "rules": {}
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
-  ]
+  }
 }

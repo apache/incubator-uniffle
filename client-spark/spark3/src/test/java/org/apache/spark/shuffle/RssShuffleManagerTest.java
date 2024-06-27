@@ -27,14 +27,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.config.ConfigOption;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_SHUFFLE_MANAGER_GRPC_PORT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -100,12 +103,15 @@ public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
     SparkConf conf = new SparkConf();
     conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(), "false");
     conf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "m1:8001,m2:8002");
+    conf.set("spark.driver.host", "localhost");
     conf.set("spark.rss.storage.type", StorageType.LOCALFILE.name());
     conf.set(RssSparkConfig.RSS_TEST_MODE_ENABLE, true);
     // enable stage recompute
     conf.set("spark." + RssClientConfig.RSS_RESUBMIT_STAGE, "true");
 
     RssShuffleManager shuffleManager = new RssShuffleManager(conf, true);
+
+    ConfigOption<Boolean> a = RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
 
     assertTrue(conf.get(RSS_SHUFFLE_MANAGER_GRPC_PORT) > 0);
   }
@@ -169,5 +175,60 @@ public class RssShuffleManagerTest extends RssShuffleManagerTestBase {
             + layout.maxNumPartitions
             + " partitions.",
         e.getMessage());
+  }
+
+  @Test
+  public void testWithStageRetry() {
+    // case1: disable the stage retry
+    SparkConf conf = createSparkConf();
+    RssShuffleManager shuffleManager = new RssShuffleManager(conf, true);
+    assertFalse(shuffleManager.isRssStageRetryEnabled());
+    assertFalse(shuffleManager.isRssStageRetryForFetchFailureEnabled());
+    assertFalse(shuffleManager.isRssStageRetryForWriteFailureEnabled());
+    shuffleManager.stop();
+
+    // case2: enable the stage retry
+    conf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssSparkConfig.RSS_RESUBMIT_STAGE_ENABLED.key(),
+        "true");
+    shuffleManager = new RssShuffleManager(conf, true);
+    assertTrue(shuffleManager.isRssStageRetryEnabled());
+    assertTrue(shuffleManager.isRssStageRetryForFetchFailureEnabled());
+    assertTrue(shuffleManager.isRssStageRetryForWriteFailureEnabled());
+    shuffleManager.stop();
+
+    // case3: overwrite the stage retry
+    conf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX
+            + RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED.key(),
+        "false");
+    shuffleManager = new RssShuffleManager(conf, true);
+    assertTrue(shuffleManager.isRssStageRetryEnabled());
+    assertFalse(shuffleManager.isRssStageRetryForFetchFailureEnabled());
+    assertTrue(shuffleManager.isRssStageRetryForWriteFailureEnabled());
+    shuffleManager.stop();
+
+    // case4: enable the partial stage retry of fetch failure
+    conf = createSparkConf();
+    conf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX
+            + RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED.key(),
+        "true");
+    shuffleManager = new RssShuffleManager(conf, true);
+    assertTrue(shuffleManager.isRssStageRetryEnabled());
+    assertTrue(shuffleManager.isRssStageRetryForFetchFailureEnabled());
+    assertFalse(shuffleManager.isRssStageRetryForWriteFailureEnabled());
+    shuffleManager.stop();
+  }
+
+  private SparkConf createSparkConf() {
+    SparkConf conf = new SparkConf();
+    conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(), "false");
+    conf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "m1:8001,m2:8002");
+    conf.set("spark.rss.storage.type", StorageType.LOCALFILE.name());
+    conf.set(RssSparkConfig.RSS_TEST_MODE_ENABLE, true);
+    conf.set("spark.task.maxFailures", "4");
+    conf.set("spark.driver.host", "localhost");
+    return conf;
   }
 }

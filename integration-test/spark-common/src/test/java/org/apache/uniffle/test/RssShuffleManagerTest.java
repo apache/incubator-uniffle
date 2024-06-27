@@ -35,7 +35,7 @@ import org.apache.spark.SparkEnv;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.RssSparkShuffleUtils;
-import org.apache.spark.shuffle.ShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -141,16 +141,16 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
       BlockIdLayout clientConfLayout,
       BlockIdLayout dynamicConfLayout,
       BlockIdLayout expectedLayout,
-      boolean enableDynamicCLientConf)
+      boolean enableDynamicClientConf)
       throws Exception {
     Map<String, String> dynamicConf = startServers(dynamicConfLayout);
 
     SparkConf conf = createSparkConf();
-    updateSparkConfWithRss(conf);
+    updateSparkConfWithRssGrpc(conf);
     // enable stage recompute
     conf.set("spark." + RssClientConfig.RSS_RESUBMIT_STAGE, "true");
     // enable dynamic client conf
-    conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED, enableDynamicCLientConf);
+    conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED, enableDynamicClientConf);
     // configure storage type
     conf.set("spark." + RssClientConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE.name());
     // restarting the coordinator may cause RssException: There isn't enough shuffle servers
@@ -215,12 +215,13 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
               .dataTransferPoolSize(1)
               .dataCommitPoolSize(1)
               .unregisterThreadPoolSize(10)
+              .unregisterTimeSec(10)
               .unregisterRequestTimeSec(10)
               .rssConf(rssConf)
               .build();
       ShuffleHandleInfo handle = shuffleManager.getShuffleHandleInfoByShuffleId(0);
       Set<ShuffleServerInfo> servers =
-          handle.getPartitionToServers().values().stream()
+          handle.getAvailablePartitionServersForWriter().values().stream()
               .flatMap(Collection::stream)
               .collect(Collectors.toSet());
 

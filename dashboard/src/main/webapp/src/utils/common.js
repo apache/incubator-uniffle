@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import moment from "moment"
+import moment from 'moment'
 /**
  * Format the memory display value.
  * @param row
@@ -24,16 +24,16 @@ import moment from "moment"
  * @returns {string}
  */
 const memFormatter = (row, column, cellValue) => {
-    var arrUnit = ["B", "K", "M", "G", "T", "P"],
-        baseStep = 1024,
-        unitCount = arrUnit.length,
-        unitIndex = 0;
-    while(cellValue >= baseStep && unitIndex < unitCount - 1){
-        unitIndex++;
-        cellValue /= baseStep;
-    }
-    cellValue = cellValue.toFixed(2);
-    return cellValue + " " + arrUnit[unitIndex];
+  const arrUnit = ['B', 'K', 'M', 'G', 'T', 'P']
+  const baseStep = 1024
+  const unitCount = arrUnit.length
+  let unitIndex = 0
+  while (cellValue >= baseStep && unitIndex < unitCount - 1) {
+    unitIndex++
+    cellValue /= baseStep
+  }
+  cellValue = cellValue.toFixed(2)
+  return cellValue + ' ' + arrUnit[unitIndex]
 }
 /**
  * Format the time display value.
@@ -43,7 +43,7 @@ const memFormatter = (row, column, cellValue) => {
  * @returns {string}
  */
 const dateFormatter = (row, column, cellValue) => {
-    return moment(cellValue).format("YYYY-MM-DD hh:mm:ss");
+  return moment(cellValue).format('YYYY-MM-DD HH:mm:ss')
 }
 
-export {memFormatter, dateFormatter}
+export { memFormatter, dateFormatter }

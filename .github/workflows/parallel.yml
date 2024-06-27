@@ -35,6 +35,10 @@ on:
         default: 'test-reports'
         required: false
         type: string
+      tests-name:
+        default: 'unit-tests'
+        required: false
+        type: string
       java-version:
         default: '8'
         required: false
@@ -60,6 +64,7 @@ jobs:
           - spark3.3
           - spark3.4
           - spark3.5
+          - spark3.5-scala2.13
           - mr-hadoop2.8
           - mr-hadoop3.2
           - tez
@@ -104,3 +109,10 @@ jobs:
       continue-on-error: true
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
+    - name: Upload test logs
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ inputs.tests-name }}-log-${{ matrix.profile }}
+        path: |
+          **/target/unit-tests.log

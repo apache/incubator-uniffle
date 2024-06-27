@@ -104,6 +104,71 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     ShuffleServerMetrics.clear();
   }
 
+  private ShuffleServerConf constructServerConfWithLocalfile() {
+    String confFile = ClassLoader.getSystemResource("server.conf").getFile();
+    ShuffleServerConf conf = new ShuffleServerConf(confFile);
+    conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
+    conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
+    conf.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
+    conf.set(ShuffleServerConf.JETTY_CORE_POOL_SIZE, 64);
+    conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1000L);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
+    conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
+    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 100000L);
+    conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
+
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
+    conf.setString(
+        ShuffleServerConf.RSS_STORAGE_BASE_PATH.key(),
+        tempDir1.getAbsolutePath() + "," + tempDir2.getAbsolutePath());
+    return conf;
+  }
+
+  /** Test the shuffleMeta's diskSize when app is removed. */
+  @Test
+  public void appPurgeWithLocalfileTest() throws Exception {
+    ShuffleServerConf conf = constructServerConfWithLocalfile();
+    shuffleServer = new ShuffleServer(conf);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
+
+    String appId = "removeShuffleDataWithLocalfileTest";
+
+    int shuffleNum = 4;
+    for (int i = 0; i < shuffleNum; i++) {
+      shuffleTaskManager.registerShuffle(
+          appId,
+          i,
+          Lists.newArrayList(new PartitionRange(0, 1)),
+          RemoteStorageInfo.EMPTY_REMOTE_STORAGE,
+          StringUtils.EMPTY);
+
+      ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 35);
+      shuffleTaskManager.requireBuffer(35);
+      shuffleTaskManager.cacheShuffleData(appId, i, false, partitionedData0);
+      shuffleTaskManager.updateCachedBlockIds(appId, i, partitionedData0.getBlockList());
+    }
+
+    assertEquals(1, shuffleTaskManager.getAppIds().size());
+    for (int i = 0; i < shuffleNum; i++) {
+      shuffleTaskManager.commitShuffle(appId, i);
+    }
+
+    shuffleTaskManager.removeResources(appId, false);
+    for (String path : conf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH)) {
+      String appPath = path + "/" + appId;
+      assertFalse(new File(appPath).exists());
+    }
+
+    // once the app is removed. the disk size should be 0
+    LocalStorageManager localStorageManager =
+        (LocalStorageManager) shuffleServer.getStorageManager();
+    for (LocalStorage localStorage : localStorageManager.getStorages()) {
+      assertEquals(0, localStorage.getMetaData().getDiskSize().get());
+    }
+  }
+
   @Test
   public void hugePartitionMemoryUsageLimitTest() throws Exception {
     String confFile = ClassLoader.getSystemResource("server.conf").getFile();
@@ -470,30 +535,16 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     assertTrue(fs.exists(new Path(appBasePath)));
     assertNull(shuffleBufferManager.getBufferPool().get(appId).get(0));
     assertNotNull(shuffleBufferManager.getBufferPool().get(appId).get(1));
+
+    // the shufflePurgeEvent only will delete the children folders
+    // Once the app is expired, all the app folders should be deleted.
     shuffleTaskManager.removeResources(appId, false);
+    assertFalse(fs.exists(new Path(appBasePath)));
   }
 
   @Test
   public void removeShuffleDataWithLocalfileTest() throws Exception {
-    String confFile = ClassLoader.getSystemResource("server.conf").getFile();
-    ShuffleServerConf conf = new ShuffleServerConf(confFile);
-    conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
-    conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
-    conf.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
-    conf.set(ShuffleServerConf.JETTY_CORE_POOL_SIZE, 64);
-    conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 1000L);
-    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
-    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
-    conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
-    conf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 100000L);
-    conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
-
-    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), "LOCALFILE");
-    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
-    conf.setString(
-        ShuffleServerConf.RSS_STORAGE_BASE_PATH.key(),
-        tempDir1.getAbsolutePath() + "," + tempDir2.getAbsolutePath());
-
+    ShuffleServerConf conf = constructServerConfWithLocalfile();
     shuffleServer = new ShuffleServer(conf);
     ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
 
@@ -527,6 +578,14 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
       if (files != null) {
         assertEquals(0, files.length);
       }
+    }
+
+    // the shufflePurgeEvent only will delete the children folders
+    // Once the app is expired, all the app folders should be deleted.
+    shuffleTaskManager.removeResources(appId, false);
+    for (String path : conf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH)) {
+      String appPath = path + "/" + appId;
+      assertFalse(new File(appPath).exists());
     }
   }
 

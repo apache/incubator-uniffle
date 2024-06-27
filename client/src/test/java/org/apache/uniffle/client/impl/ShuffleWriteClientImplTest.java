@@ -78,6 +78,7 @@ public class ShuffleWriteClientImplTest {
             .dataTransferPoolSize(1)
             .dataCommitPoolSize(1)
             .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
             .unregisterRequestTimeSec(10)
             .build();
     ShuffleServerClient mockShuffleServerClient = mock(ShuffleServerClient.class);
@@ -124,6 +125,7 @@ public class ShuffleWriteClientImplTest {
             .dataTransferPoolSize(1)
             .dataCommitPoolSize(1)
             .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
             .unregisterRequestTimeSec(10)
             .build();
     ShuffleServerClient mockShuffleServerClient = mock(ShuffleServerClient.class);
@@ -159,6 +161,7 @@ public class ShuffleWriteClientImplTest {
             .dataTransferPoolSize(1)
             .dataCommitPoolSize(1)
             .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
             .unregisterRequestTimeSec(10)
             .build();
     String appId1 = "testRegisterAndUnRegisterShuffleServer-1";
@@ -197,6 +200,7 @@ public class ShuffleWriteClientImplTest {
             .dataTransferPoolSize(1)
             .dataCommitPoolSize(1)
             .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
             .unregisterRequestTimeSec(10)
             .build();
     ShuffleServerClient mockShuffleServerClient = mock(ShuffleServerClient.class);
@@ -324,6 +328,7 @@ public class ShuffleWriteClientImplTest {
             .dataTransferPoolSize(1)
             .dataCommitPoolSize(1)
             .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
             .unregisterRequestTimeSec(10)
             .rssConf(rssConf);
     ShuffleWriteClientImpl client = writeClientBuilder.build();
@@ -357,6 +362,7 @@ public class ShuffleWriteClientImplTest {
             .dataTransferPoolSize(1)
             .dataCommitPoolSize(1)
             .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
             .unregisterRequestTimeSec(10)
             .rssConf(rssConf)
             .build();

@@ -43,13 +43,10 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.common.BufferSegment;
-import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.config.RssClientConf;
-import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
@@ -76,7 +73,7 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
       LoggerFactory.getLogger(ShuffleServerWithMemLocalHadoopTest.class);
   private ShuffleServerGrpcClient grpcShuffleServerClient;
   private ShuffleServerGrpcNettyClient nettyShuffleServerClient;
-  private static String REMOTE_STORAGE = HDFS_URI + "rss/test";
+  private static String REMOTE_STORAGE = HDFS_URI + "rss/test_%s";
   private static ShuffleServerConf grpcShuffleServerConfig;
   private static ShuffleServerConf nettyShuffleServerConfig;
 
@@ -107,11 +104,8 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     grpcShuffleServerClient =
         new ShuffleServerGrpcClient(
             LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
-    RssConf rssConf = new RssConf();
-    rssConf.set(RssClientConf.RSS_CLIENT_TYPE, ClientType.GRPC_NETTY);
     nettyShuffleServerClient =
         new ShuffleServerGrpcNettyClient(
-            rssConf,
             LOCALHOST,
             nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
             nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
@@ -162,12 +156,15 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
     LOG.info("checkSkippedMetrics={}, isNettyMode={}", checkSkippedMetrics, isNettyMode);
     ShuffleServerGrpcClient shuffleServerClient =
         isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
-    String testAppId = "memoryLocalFileHDFSReadWithFilterTest_" + "ship_" + checkSkippedMetrics;
+    String testAppId = "memoryLocalFileHDFSReadWithFilterTest_ship_" + checkSkippedMetrics;
     int shuffleId = 0;
     int partitionId = 0;
     RssRegisterShuffleRequest rrsr =
         new RssRegisterShuffleRequest(
-            testAppId, 0, Lists.newArrayList(new PartitionRange(0, 0)), REMOTE_STORAGE);
+            testAppId,
+            0,
+            Lists.newArrayList(new PartitionRange(0, 0)),
+            String.format(REMOTE_STORAGE, isNettyMode));
     shuffleServerClient.registerShuffle(rrsr);
     Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();
     Map<Long, byte[]> dataMap = Maps.newHashMap();
@@ -216,7 +213,7 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
             500,
             expectBlockIds,
             processBlockIds,
-            REMOTE_STORAGE,
+            String.format(REMOTE_STORAGE, isNettyMode),
             conf);
     ClientReadHandler[] handlers = new ClientReadHandler[3];
     handlers[0] = memoryClientReadHandler;

@@ -21,14 +21,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.spark.executor.TaskMetrics;
-import org.apache.spark.scheduler.SparkListener;
-import org.apache.spark.scheduler.SparkListenerTaskEnd;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
 import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.test.listener.WriteAndReadMetricsSparkListener;
 
 public class WriteAndReadMetricsTest extends SimpleTestBase {
 
@@ -63,6 +62,7 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
 
     // take a rest to make sure all task metrics are updated before read stageData
     Thread.sleep(100);
+
     for (int stageId : spark.sparkContext().statusTracker().getJobInfo(0).get().stageIds()) {
       long writeRecords = listener.getWriteRecords(stageId);
       long readRecords = listener.getReadRecords(stageId);
@@ -71,33 +71,5 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
     }
 
     return result;
-  }
-
-  private static class WriteAndReadMetricsSparkListener extends SparkListener {
-    private HashMap<Integer, Long> stageIdToWriteRecords = new HashMap<>();
-    private HashMap<Integer, Long> stageIdToReadRecords = new HashMap<>();
-
-    @Override
-    public void onTaskEnd(SparkListenerTaskEnd event) {
-      int stageId = event.stageId();
-      TaskMetrics taskMetrics = event.taskMetrics();
-      if (taskMetrics != null) {
-        long writeRecords = taskMetrics.shuffleWriteMetrics().recordsWritten();
-        long readRecords = taskMetrics.shuffleReadMetrics().recordsRead();
-        // Accumulate writeRecords and readRecords for the given stageId
-        stageIdToWriteRecords.put(
-            stageId, stageIdToWriteRecords.getOrDefault(stageId, 0L) + writeRecords);
-        stageIdToReadRecords.put(
-            stageId, stageIdToReadRecords.getOrDefault(stageId, 0L) + readRecords);
-      }
-    }
-
-    public long getWriteRecords(int stageId) {
-      return stageIdToWriteRecords.getOrDefault(stageId, 0L);
-    }
-
-    public long getReadRecords(int stageId) {
-      return stageIdToReadRecords.getOrDefault(stageId, 0L);
-    }
   }
 }

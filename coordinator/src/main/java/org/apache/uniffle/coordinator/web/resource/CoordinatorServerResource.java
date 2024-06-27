@@ -31,10 +31,11 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.web.resource.BaseResource;
+import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.util.CoordinatorUtils;
-import org.apache.uniffle.coordinator.web.Response;
 import org.apache.uniffle.coordinator.web.vo.CoordinatorConfVO;
 
 import static org.apache.uniffle.common.config.RssBaseConf.JETTY_HTTP_PORT;

@@ -38,7 +38,7 @@ import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.storage.StorageInfoUtils;
 import org.apache.uniffle.coordinator.access.AccessCheckResult;
 import org.apache.uniffle.coordinator.access.AccessInfo;
-import org.apache.uniffle.coordinator.conf.DynamicClientConfService;
+import org.apache.uniffle.coordinator.conf.RssClientConfFetchInfo;
 import org.apache.uniffle.coordinator.strategy.assignment.PartitionRangeAssignment;
 import org.apache.uniffle.coordinator.util.CoordinatorUtils;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
@@ -50,6 +50,7 @@ import org.apache.uniffle.proto.RssProtos.ApplicationInfoRequest;
 import org.apache.uniffle.proto.RssProtos.ApplicationInfoResponse;
 import org.apache.uniffle.proto.RssProtos.CheckServiceAvailableResponse;
 import org.apache.uniffle.proto.RssProtos.ClientConfItem;
+import org.apache.uniffle.proto.RssProtos.FetchClientConfRequest;
 import org.apache.uniffle.proto.RssProtos.FetchClientConfResponse;
 import org.apache.uniffle.proto.RssProtos.FetchRemoteStorageRequest;
 import org.apache.uniffle.proto.RssProtos.FetchRemoteStorageResponse;
@@ -116,8 +117,9 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     final Set<String> faultyServerIds = new HashSet<>(request.getFaultyServerIdsList());
 
     LOG.info(
-        "Request of getShuffleAssignments for appId[{}], shuffleId[{}], partitionNum[{}], "
-            + " partitionNumPerRange[{}], replica[{}], requiredTags[{}], requiredShuffleServerNumber[{}],faultyServerIds[{}]",
+        "Request of getShuffleAssignments for appId[{}], shuffleId[{}], partitionNum[{}],"
+            + " partitionNumPerRange[{}], replica[{}], requiredTags[{}], requiredShuffleServerNumber[{}],"
+            + " faultyServerIds[{}], stageId[{}], stageAttemptNumber[{}], isReassign[{}]",
         appId,
         shuffleId,
         partitionNum,
@@ -125,7 +127,10 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         replica,
         requiredTags,
         requiredShuffleServerNumber,
-        faultyServerIds.size());
+        faultyServerIds.size(),
+        request.getStageId(),
+        request.getStageAttemptNumber(),
+        request.getReassign());
 
     GetShuffleAssignmentsResponse response;
     try {
@@ -297,9 +302,22 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     responseObserver.onCompleted();
   }
 
+  /** To be compatible with the older client version. */
   @Override
   public void fetchClientConf(
       Empty empty, StreamObserver<FetchClientConfResponse> responseObserver) {
+    fetchClientConfImpl(RssClientConfFetchInfo.EMPTY_CLIENT_CONF_FETCH_INFO, responseObserver);
+  }
+
+  @Override
+  public void fetchClientConfV2(
+      FetchClientConfRequest request, StreamObserver<FetchClientConfResponse> responseObserver) {
+    fetchClientConfImpl(RssClientConfFetchInfo.fromProto(request), responseObserver);
+  }
+
+  private void fetchClientConfImpl(
+      RssClientConfFetchInfo rssClientConfFetchInfo,
+      StreamObserver<FetchClientConfResponse> responseObserver) {
     FetchClientConfResponse response;
     FetchClientConfResponse.Builder builder =
         FetchClientConfResponse.newBuilder().setStatus(StatusCode.SUCCESS);
@@ -308,9 +326,9 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
             .getCoordinatorConf()
             .getBoolean(CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED);
     if (dynamicConfEnabled) {
-      DynamicClientConfService dynamicClientConfService =
-          coordinatorServer.getDynamicClientConfService();
-      for (Map.Entry<String, String> kv : dynamicClientConfService.getRssClientConf().entrySet()) {
+      Map<String, String> clientConfigs =
+          coordinatorServer.getClientConfApplyManager().apply(rssClientConfFetchInfo);
+      for (Map.Entry<String, String> kv : clientConfigs.entrySet()) {
         builder.addClientConf(
             ClientConfItem.newBuilder().setKey(kv.getKey()).setValue(kv.getValue()).build());
       }

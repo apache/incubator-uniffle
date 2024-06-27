@@ -42,7 +42,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -267,8 +267,8 @@ public class ShuffleTaskManager {
       ShuffleDataDistributionType dataDistType,
       int maxConcurrencyPerPartitionToWrite) {
     ReentrantReadWriteLock.WriteLock lock = getAppWriteLock(appId);
+    lock.lock();
     try {
-      lock.lock();
       refreshAppId(appId);
 
       ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
@@ -387,7 +387,16 @@ public class ShuffleTaskManager {
     return StatusCode.SUCCESS;
   }
 
-  public void addFinishedBlockIds(
+  /**
+   * Add finished blockIds from client
+   *
+   * @param appId
+   * @param shuffleId
+   * @param partitionToBlockIds
+   * @param bitmapNum
+   * @return the number of added blockIds
+   */
+  public int addFinishedBlockIds(
       String appId, Integer shuffleId, Map<Integer, long[]> partitionToBlockIds, int bitmapNum) {
     refreshAppId(appId);
     Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
@@ -413,15 +422,28 @@ public class ShuffleTaskManager {
               + " bitmaps!");
     }
 
+    ShuffleTaskInfo taskInfo = getShuffleTaskInfo(appId);
+    if (taskInfo == null) {
+      throw new InvalidRequestException(
+          "ShuffleTaskInfo is not found that should not happen for appId: " + appId);
+    }
+    int totalUpdatedBlockCount = 0;
     for (Map.Entry<Integer, long[]> entry : partitionToBlockIds.entrySet()) {
       Integer partitionId = entry.getKey();
       Roaring64NavigableMap bitmap = blockIds[partitionId % bitmapNum];
+      int updatedBlockCount = 0;
       synchronized (bitmap) {
         for (long blockId : entry.getValue()) {
-          bitmap.addLong(blockId);
+          if (!bitmap.contains(blockId)) {
+            bitmap.addLong(blockId);
+            updatedBlockCount++;
+            totalUpdatedBlockCount++;
+          }
         }
       }
+      taskInfo.incBlockNumber(shuffleId, partitionId, updatedBlockCount);
     }
+    return totalUpdatedBlockCount;
   }
 
   public int updateAndGetCommitCount(String appId, int shuffleId) {
@@ -516,7 +538,7 @@ public class ShuffleTaskManager {
           new PreAllocatedBufferInfo(appId, requireId, System.currentTimeMillis(), requireSize));
       return requireId;
     } else {
-      LOG.error("Failed to require buffer, require size: {}", requireSize);
+      LOG.warn("Failed to require buffer, require size: {}", requireSize);
       throw new NoBufferException("No Buffer For Regular Partition, requireSize: " + requireSize);
     }
   }
@@ -553,13 +575,18 @@ public class ShuffleTaskManager {
     }
     Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
     if (shuffleIdToPartitions == null) {
+      LOG.warn("Empty blockIds for app: {}. This should not happen", appId);
       return null;
     }
 
     Roaring64NavigableMap[] blockIds = shuffleIdToPartitions.get(shuffleId);
     if (blockIds == null) {
+      LOG.warn("Empty blockIds for app: {}, shuffleId: {}", appId, shuffleId);
       return new byte[] {};
     }
+
+    ShuffleTaskInfo taskInfo = getShuffleTaskInfo(appId);
+    long expectedBlockNumber = 0;
     Map<Integer, Set<Integer>> bitmapIndexToPartitions = Maps.newHashMap();
     for (int partitionId : partitions) {
       int bitmapIndex = partitionId % blockIds.length;
@@ -569,6 +596,7 @@ public class ShuffleTaskManager {
         HashSet<Integer> newHashSet = Sets.newHashSet(partitionId);
         bitmapIndexToPartitions.put(bitmapIndex, newHashSet);
       }
+      expectedBlockNumber += taskInfo.getBlockNumber(shuffleId, partitionId);
     }
 
     Roaring64NavigableMap res = Roaring64NavigableMap.bitmapOf();
@@ -577,6 +605,17 @@ public class ShuffleTaskManager {
       Roaring64NavigableMap bitmap = blockIds[entry.getKey()];
       getBlockIdsByPartitionId(requestPartitions, bitmap, res, blockIdLayout);
     }
+
+    if (res.getLongCardinality() != expectedBlockNumber) {
+      throw new RssException(
+          "Inconsistent block number for partitions: "
+              + partitions
+              + ". Excepted: "
+              + expectedBlockNumber
+              + ", actual: "
+              + res.getLongCardinality());
+    }
+
     return RssUtils.serializeBitMap(res);
   }
 
@@ -753,8 +792,8 @@ public class ShuffleTaskManager {
   @VisibleForTesting
   public void removeResources(String appId, boolean checkAppExpired) {
     Lock lock = getAppWriteLock(appId);
+    lock.lock();
     try {
-      lock.lock();
       LOG.info("Start remove resource for appId[" + appId + "]");
       if (checkAppExpired && !isAppExpired(appId)) {
         LOG.info(
@@ -763,25 +802,24 @@ public class ShuffleTaskManager {
         return;
       }
       final long start = System.currentTimeMillis();
-      String user = getUserByAppId(appId);
       ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.remove(appId);
       if (shuffleTaskInfo == null) {
         LOG.info("Resource for appId[" + appId + "] had been removed before.");
         return;
       }
 
-      final Map<Integer, Roaring64NavigableMap> shuffleToCachedBlockIds =
-          shuffleTaskInfo.getCachedBlockIds();
       partitionsToBlockIds.remove(appId);
       shuffleBufferManager.removeBuffer(appId);
       shuffleFlushManager.removeResources(appId);
-      if (!shuffleToCachedBlockIds.isEmpty()) {
-        storageManager.removeResources(
-            new AppPurgeEvent(appId, user, new ArrayList<>(shuffleToCachedBlockIds.keySet())));
-      }
+      storageManager.removeResources(
+          new AppPurgeEvent(
+              appId,
+              shuffleTaskInfo.getUser(),
+              new ArrayList<>(shuffleTaskInfo.getShuffleIds()),
+              checkAppExpired));
       if (shuffleTaskInfo.hasHugePartition()) {
         ShuffleServerMetrics.gaugeAppWithHugePartitionNum.dec();
-        ShuffleServerMetrics.gaugeHugePartitionNum.dec(shuffleTaskInfo.getHugePartitionSize());
+        ShuffleServerMetrics.gaugeHugePartitionNum.dec();
       }
       LOG.info(
           "Finish remove resource for appId["
@@ -872,7 +910,7 @@ public class ShuffleTaskManager {
   }
 
   @VisibleForTesting
-  void removeShuffleDataSync(String appId, int shuffleId) {
+  public void removeShuffleDataSync(String appId, int shuffleId) {
     removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId));
   }
 

@@ -123,6 +123,10 @@ public class RssUtils {
       }
       return ip;
     }
+    // Unit tests are executed on a single machine and do not interact with other machines.
+    // Therefore, unit tests should not require a valid broadcast address.
+    // When running UTs, we will still return the IP address whose broadcast address is invalid.
+    boolean isTestMode = Boolean.parseBoolean(System.getProperty("test.mode", "false"));
     Enumeration<NetworkInterface> nif = NetworkInterface.getNetworkInterfaces();
     String siteLocalAddress = null;
     while (nif.hasMoreElements()) {
@@ -133,7 +137,7 @@ public class RssUtils {
       for (InterfaceAddress ifa : ni.getInterfaceAddresses()) {
         InetAddress ia = ifa.getAddress();
         InetAddress brd = ifa.getBroadcast();
-        if (brd == null || brd.isAnyLocalAddress()) {
+        if ((brd == null || brd.isAnyLocalAddress()) && !isTestMode) {
           LOGGER.info(
               "ip {} was filtered, because it don't have effective broadcast address",
               ia.getHostAddress());
@@ -272,6 +276,14 @@ public class RssUtils {
   public static String generatePartitionKey(String appId, Integer shuffleId, Integer partition) {
     return String.join(
         Constants.KEY_SPLIT_CHAR, appId, String.valueOf(shuffleId), String.valueOf(partition));
+  }
+
+  public static <T> T loadExtension(Class<T> extCls, String clsPackage, Object obj) {
+    List<T> exts = loadExtensions(extCls, Arrays.asList(clsPackage), obj);
+    if (exts != null && exts.size() == 1) {
+      return exts.get(0);
+    }
+    throw new IllegalArgumentException("No such extension for " + clsPackage);
   }
 
   @SuppressWarnings("unchecked")

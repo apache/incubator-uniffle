@@ -25,18 +25,23 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
-import com.google.common.collect.Sets;
+import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.stub.StreamObserver;
-import org.apache.spark.shuffle.ShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.StageAttemptShuffleHandleInfo;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.ReceivingFailureServer;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.ShuffleManagerGrpc.ShuffleManagerImplBase;
+import org.apache.uniffle.shuffle.BlockIdManager;
 
 public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleManagerGrpcService.class);
@@ -184,67 +189,67 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
   }
 
   @Override
-  public void getPartitionToShufflerServer(
+  public void getPartitionToShufflerServerWithStageRetry(
       RssProtos.PartitionToShuffleServerRequest request,
-      StreamObserver<RssProtos.PartitionToShuffleServerResponse> responseObserver) {
-    RssProtos.PartitionToShuffleServerResponse reply;
+      StreamObserver<RssProtos.ReassignOnStageRetryResponse> responseObserver) {
+    RssProtos.ReassignOnStageRetryResponse reply;
     RssProtos.StatusCode code;
     int shuffleId = request.getShuffleId();
-    ShuffleHandleInfo shuffleHandleInfoByShuffleId =
-        shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
-    if (shuffleHandleInfoByShuffleId != null) {
+    StageAttemptShuffleHandleInfo shuffleHandle =
+        (StageAttemptShuffleHandleInfo) shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
+    if (shuffleHandle != null) {
       code = RssProtos.StatusCode.SUCCESS;
-      Map<Integer, List<ShuffleServerInfo>> partitionToServers =
-          shuffleHandleInfoByShuffleId.getPartitionToServers();
-      Map<Integer, RssProtos.GetShuffleServerListResponse> protopartitionToServers =
-          JavaUtils.newConcurrentMap();
-      for (Map.Entry<Integer, List<ShuffleServerInfo>> integerListEntry :
-          partitionToServers.entrySet()) {
-        List<RssProtos.ShuffleServerId> shuffleServerIds =
-            ShuffleServerInfo.toProto(integerListEntry.getValue());
-        RssProtos.GetShuffleServerListResponse getShuffleServerListResponse =
-            RssProtos.GetShuffleServerListResponse.newBuilder()
-                .addAllServers(shuffleServerIds)
-                .build();
-        protopartitionToServers.put(integerListEntry.getKey(), getShuffleServerListResponse);
-      }
-      RemoteStorageInfo remoteStorage = shuffleHandleInfoByShuffleId.getRemoteStorage();
-      RssProtos.RemoteStorageInfo.Builder protosRemoteStage =
-          RssProtos.RemoteStorageInfo.newBuilder()
-              .setPath(remoteStorage.getPath())
-              .putAllConfItems(remoteStorage.getConfItems());
       reply =
-          RssProtos.PartitionToShuffleServerResponse.newBuilder()
+          RssProtos.ReassignOnStageRetryResponse.newBuilder()
               .setStatus(code)
-              .putAllPartitionToShuffleServer(protopartitionToServers)
-              .setRemoteStorageInfo(protosRemoteStage)
+              .setShuffleHandleInfo(StageAttemptShuffleHandleInfo.toProto(shuffleHandle))
               .build();
     } else {
       code = RssProtos.StatusCode.INVALID_REQUEST;
-      reply =
-          RssProtos.PartitionToShuffleServerResponse.newBuilder()
-              .setStatus(code)
-              .putAllPartitionToShuffleServer(null)
-              .build();
+      reply = RssProtos.ReassignOnStageRetryResponse.newBuilder().setStatus(code).build();
     }
     responseObserver.onNext(reply);
     responseObserver.onCompleted();
   }
 
   @Override
-  public void reassignShuffleServers(
+  public void getPartitionToShufflerServerWithBlockRetry(
+      RssProtos.PartitionToShuffleServerRequest request,
+      StreamObserver<RssProtos.ReassignOnBlockSendFailureResponse> responseObserver) {
+    RssProtos.ReassignOnBlockSendFailureResponse reply;
+    RssProtos.StatusCode code;
+    int shuffleId = request.getShuffleId();
+    MutableShuffleHandleInfo shuffleHandle =
+        (MutableShuffleHandleInfo) shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
+    if (shuffleHandle != null) {
+      code = RssProtos.StatusCode.SUCCESS;
+      reply =
+          RssProtos.ReassignOnBlockSendFailureResponse.newBuilder()
+              .setStatus(code)
+              .setHandle(MutableShuffleHandleInfo.toProto(shuffleHandle))
+              .build();
+    } else {
+      code = RssProtos.StatusCode.INVALID_REQUEST;
+      reply = RssProtos.ReassignOnBlockSendFailureResponse.newBuilder().setStatus(code).build();
+    }
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void reassignOnStageResubmit(
       RssProtos.ReassignServersRequest request,
-      StreamObserver<RssProtos.ReassignServersReponse> responseObserver) {
+      StreamObserver<RssProtos.ReassignServersResponse> responseObserver) {
     int stageId = request.getStageId();
     int stageAttemptNumber = request.getStageAttemptNumber();
     int shuffleId = request.getShuffleId();
     int numPartitions = request.getNumPartitions();
     boolean needReassign =
-        shuffleManager.reassignAllShuffleServersForWholeStage(
+        shuffleManager.reassignOnStageResubmit(
             stageId, stageAttemptNumber, shuffleId, numPartitions);
     RssProtos.StatusCode code = RssProtos.StatusCode.SUCCESS;
-    RssProtos.ReassignServersReponse reply =
-        RssProtos.ReassignServersReponse.newBuilder()
+    RssProtos.ReassignServersResponse reply =
+        RssProtos.ReassignServersResponse.newBuilder()
             .setStatus(code)
             .setNeedReassign(needReassign)
             .build();
@@ -253,20 +258,44 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
   }
 
   @Override
-  public void reassignFaultyShuffleServer(
-      RssProtos.RssReassignFaultyShuffleServerRequest request,
-      StreamObserver<RssProtos.RssReassignFaultyShuffleServerResponse> responseObserver) {
-    ShuffleServerInfo shuffleServerInfo =
-        shuffleManager.reassignFaultyShuffleServerForTasks(
-            request.getShuffleId(),
-            Sets.newHashSet(request.getPartitionIdsList()),
-            request.getFaultyShuffleServerId());
-    RssProtos.StatusCode code = RssProtos.StatusCode.SUCCESS;
-    RssProtos.RssReassignFaultyShuffleServerResponse reply =
-        RssProtos.RssReassignFaultyShuffleServerResponse.newBuilder()
-            .setStatus(code)
-            .setServer(ShuffleServerInfo.convertToShuffleServerId(shuffleServerInfo))
-            .build();
+  public void reassignOnBlockSendFailure(
+      org.apache.uniffle.proto.RssProtos.RssReassignOnBlockSendFailureRequest request,
+      io.grpc.stub.StreamObserver<
+              org.apache.uniffle.proto.RssProtos.ReassignOnBlockSendFailureResponse>
+          responseObserver) {
+    RssProtos.StatusCode code = RssProtos.StatusCode.INTERNAL_ERROR;
+    RssProtos.ReassignOnBlockSendFailureResponse reply;
+    try {
+      LOG.info(
+          "Accepted reassign request on block sent failure for shuffleId: {}, stageId: {}, stageAttemptNumber: {} from taskAttemptId: {} on executorId: {}",
+          request.getShuffleId(),
+          request.getStageId(),
+          request.getStageAttemptNumber(),
+          request.getTaskAttemptId(),
+          request.getExecutorId());
+      MutableShuffleHandleInfo handle =
+          shuffleManager.reassignOnBlockSendFailure(
+              request.getStageId(),
+              request.getStageAttemptNumber(),
+              request.getShuffleId(),
+              request.getFailurePartitionToServerIdsMap().entrySet().stream()
+                  .collect(
+                      Collectors.toMap(
+                          Map.Entry::getKey, x -> ReceivingFailureServer.fromProto(x.getValue()))));
+      code = RssProtos.StatusCode.SUCCESS;
+      reply =
+          RssProtos.ReassignOnBlockSendFailureResponse.newBuilder()
+              .setStatus(code)
+              .setHandle(MutableShuffleHandleInfo.toProto(handle))
+              .build();
+    } catch (Exception e) {
+      LOG.error("Errors on reassigning when block send failure.", e);
+      reply =
+          RssProtos.ReassignOnBlockSendFailureResponse.newBuilder()
+              .setStatus(code)
+              .setMsg(e.getMessage())
+              .build();
+    }
     responseObserver.onNext(reply);
     responseObserver.onCompleted();
   }
@@ -445,5 +474,123 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
             }
           });
     }
+  }
+
+  @Override
+  public void getShuffleResult(
+      RssProtos.GetShuffleResultRequest request,
+      StreamObserver<RssProtos.GetShuffleResultResponse> responseObserver) {
+    String appId = request.getAppId();
+    if (!appId.equals(shuffleManager.getAppId())) {
+      RssProtos.GetShuffleResultResponse reply =
+          RssProtos.GetShuffleResultResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.ACCESS_DENIED)
+              .setRetMsg("Illegal appId: " + appId)
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+      return;
+    }
+
+    int shuffleId = request.getShuffleId();
+    int partitionId = request.getPartitionId();
+
+    BlockIdManager blockIdManager = shuffleManager.getBlockIdManager();
+    Roaring64NavigableMap blockIdBitmap = blockIdManager.get(shuffleId, partitionId);
+    RssProtos.GetShuffleResultResponse reply;
+    try {
+      byte[] serializeBitmap = RssUtils.serializeBitMap(blockIdBitmap);
+      reply =
+          RssProtos.GetShuffleResultResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.SUCCESS)
+              .setSerializedBitmap(UnsafeByteOperations.unsafeWrap(serializeBitmap))
+              .build();
+    } catch (Exception exception) {
+      LOG.error("Errors on getting the blockId bitmap.", exception);
+      reply =
+          RssProtos.GetShuffleResultResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.INTERNAL_ERROR)
+              .build();
+    }
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void getShuffleResultForMultiPart(
+      RssProtos.GetShuffleResultForMultiPartRequest request,
+      StreamObserver<RssProtos.GetShuffleResultForMultiPartResponse> responseObserver) {
+    String appId = request.getAppId();
+    if (!appId.equals(shuffleManager.getAppId())) {
+      RssProtos.GetShuffleResultForMultiPartResponse reply =
+          RssProtos.GetShuffleResultForMultiPartResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.ACCESS_DENIED)
+              .setRetMsg("Illegal appId: " + appId)
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+      return;
+    }
+
+    BlockIdManager blockIdManager = shuffleManager.getBlockIdManager();
+    int shuffleId = request.getShuffleId();
+    List<Integer> partitionIds = request.getPartitionsList();
+
+    Roaring64NavigableMap blockIdBitmapCollection = Roaring64NavigableMap.bitmapOf();
+    for (int partitionId : partitionIds) {
+      Roaring64NavigableMap blockIds = blockIdManager.get(shuffleId, partitionId);
+      blockIds.forEach(x -> blockIdBitmapCollection.add(x));
+    }
+
+    RssProtos.GetShuffleResultForMultiPartResponse reply;
+    try {
+      byte[] serializeBitmap = RssUtils.serializeBitMap(blockIdBitmapCollection);
+      reply =
+          RssProtos.GetShuffleResultForMultiPartResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.SUCCESS)
+              .setSerializedBitmap(UnsafeByteOperations.unsafeWrap(serializeBitmap))
+              .build();
+    } catch (Exception exception) {
+      LOG.error("Errors on getting the blockId bitmap.", exception);
+      reply =
+          RssProtos.GetShuffleResultForMultiPartResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.INTERNAL_ERROR)
+              .build();
+    }
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void reportShuffleResult(
+      RssProtos.ReportShuffleResultRequest request,
+      StreamObserver<RssProtos.ReportShuffleResultResponse> responseObserver) {
+    String appId = request.getAppId();
+    if (!appId.equals(shuffleManager.getAppId())) {
+      RssProtos.ReportShuffleResultResponse reply =
+          RssProtos.ReportShuffleResultResponse.newBuilder()
+              .setStatus(RssProtos.StatusCode.ACCESS_DENIED)
+              .setRetMsg("Illegal appId: " + appId)
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+      return;
+    }
+
+    BlockIdManager blockIdManager = shuffleManager.getBlockIdManager();
+    int shuffleId = request.getShuffleId();
+
+    for (RssProtos.PartitionToBlockIds partitionToBlockIds : request.getPartitionToBlockIdsList()) {
+      int partitionId = partitionToBlockIds.getPartitionId();
+      List<Long> blockIds = partitionToBlockIds.getBlockIdsList();
+      blockIdManager.add(shuffleId, partitionId, blockIds);
+    }
+
+    RssProtos.ReportShuffleResultResponse reply =
+        RssProtos.ReportShuffleResultResponse.newBuilder()
+            .setStatus(RssProtos.StatusCode.SUCCESS)
+            .build();
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
   }
 }

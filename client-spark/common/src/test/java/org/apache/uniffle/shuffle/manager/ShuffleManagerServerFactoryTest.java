@@ -17,26 +17,29 @@
 
 package org.apache.uniffle.shuffle.manager;
 
-import org.junit.jupiter.api.Test;
+import java.util.Arrays;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.rpc.ServerType;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 public class ShuffleManagerServerFactoryTest {
-  @Test
-  public void testShuffleManagerServerType() {
+  private static Stream<Arguments> shuffleManagerServerTypeProvider() {
+    return Arrays.stream(ServerType.values()).map(Arguments::of);
+  }
+
+  @ParameterizedTest
+  @MethodSource("shuffleManagerServerTypeProvider")
+  public void testShuffleManagerServerType(ServerType serverType) {
     // add code to generate tests that check the server type
     RssBaseConf conf = new RssBaseConf();
-    conf.set(RssBaseConf.RPC_SERVER_TYPE, ServerType.GRPC);
+    conf.set(RssBaseConf.RPC_SERVER_TYPE, serverType);
     ShuffleManagerServerFactory factory = new ShuffleManagerServerFactory(null, conf);
     // this should execute normally;
     factory.getServer();
-
-    // other types should raise an exception
-    conf.set(RssBaseConf.RPC_SERVER_TYPE, ServerType.GRPC_NETTY);
-    factory = new ShuffleManagerServerFactory(null, conf);
-    assertThrows(UnsupportedOperationException.class, factory::getServer);
   }
 }

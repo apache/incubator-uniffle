@@ -17,21 +17,60 @@
 
 import axios from 'axios'
 
-const axiosInstance = axios.create({
-    baseURL: '/api',
-    timeout: 10000,
-    headers: {}
+/**
+ * The root directory, starting with web, is handled by the dashboard server's servlet
+ * @type {axios.AxiosInstance}
+ */
+const frontEndAxiosInstance = axios.create({
+  baseURL: '/web',
+  timeout: 10000
+})
+/**
+ * The root directory starts with API. The dashboard server reverse proxy requests Coordinator apis
+ * @type {axios.AxiosInstance}
+ */
+const backEndAxiosInstance = axios.create({
+  baseURL: '/api',
+  timeout: 10000
 })
 
-axiosInstance.interceptors.request.use(config => {
-    config.headers['Content-type'] = 'application/json';
-    config.headers['Accept'] = 'application/json';
-    return config;
+const axiosInstance = {
+  getFrontEndAxiosInstance() {
+    return frontEndAxiosInstance
+  },
+  getBackEndAxiosInstance() {
+    return backEndAxiosInstance
+  }
+}
+
+frontEndAxiosInstance.interceptors.request.use((config) => {
+  config.headers['Content-type'] = 'application/json'
+  config.headers.Accept = 'application/json'
+  return config
 })
 
-axiosInstance.interceptors.response.use(response => {
-    return response;
-}, error => {
-    return error;
+backEndAxiosInstance.interceptors.request.use((config) => {
+  config.headers['Content-type'] = 'application/json'
+  config.headers.Accept = 'application/json'
+  return config
 })
-export default axiosInstance;
+
+frontEndAxiosInstance.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error) => {
+    return error
+  }
+)
+
+backEndAxiosInstance.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error) => {
+    return error
+  }
+)
+
+export default axiosInstance

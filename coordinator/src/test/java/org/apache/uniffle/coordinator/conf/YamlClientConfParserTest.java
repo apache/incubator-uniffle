@@ -32,6 +32,11 @@ public class YamlClientConfParserTest {
             getClass().getClassLoader().getResource("dynamicClientConf.yaml").openStream());
     assertEquals("v1", conf.getRssClientConf().get("k1"));
     assertEquals("v2", conf.getRssClientConf().get("k2"));
+    assertEquals("true", conf.getRssClientConf().get("k3"));
+    assertEquals("false", conf.getRssClientConf().get("k4"));
+    assertEquals("1", conf.getRssClientConf().get("k5"));
+    assertEquals("2", conf.getRssClientConf().get("k6"));
+
     assertEquals(
         "v1,v2,v3", conf.getRemoteStorageInfos().get("hdfs://a-ns01").getConfItems().get("k1"));
     assertEquals("v1", conf.getRemoteStorageInfos().get("hdfs://x-ns01").getConfItems().get("k1"));
@@ -43,7 +48,7 @@ public class YamlClientConfParserTest {
 
     // rssClientConf with format of 'k : v'
 
-    String yaml = "rssClientConf:\n" + "    k1: v1\n" + "    k2: v2";
+    String yaml = "rssClientConf:\n    k1: v1\n    k2: v2";
 
     ClientConf conf = parser.tryParse(IOUtils.toInputStream(yaml));
     assertEquals(2, conf.getRssClientConf().size());

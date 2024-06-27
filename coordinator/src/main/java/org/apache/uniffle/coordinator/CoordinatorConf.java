@@ -36,6 +36,13 @@ import static org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrat
  */
 public class CoordinatorConf extends RssBaseConf {
 
+  public static final ConfigOption<String> COORDINATOR_CLIENT_CONF_APPLY_STRATEGY =
+      ConfigOptions.key("rss.coordinator.client.confApplyStrategy")
+          .stringType()
+          .defaultValue("org.apache.uniffle.coordinator.conf.BypassRssClientConfApplyStrategy")
+          .withDescription(
+              "The client conf apply strategy which is used on fetchClientConf rpc interface.");
+
   public static final ConfigOption<String> COORDINATOR_EXCLUDE_NODES_FILE_PATH =
       ConfigOptions.key("rss.coordinator.exclude.nodes.file.path")
           .stringType()

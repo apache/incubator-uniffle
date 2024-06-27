@@ -53,11 +53,20 @@ public class NettyDirectMemoryTracker {
     service.scheduleAtFixedRate(
         () -> {
           try {
-            long usedDirectMemory = PlatformDependent.usedDirectMemory();
+            long usedDirectMemoryByNetty = PlatformDependent.usedDirectMemory();
+            long usedDirectMemoryByGrpcNetty =
+                io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent.usedDirectMemory();
             if (LOG.isDebugEnabled()) {
-              LOG.debug("Current usedDirectMemory:{}", usedDirectMemory);
+              LOG.debug(
+                  "Current usedDirectMemoryByNetty:{}, usedDirectMemoryByGrpcNetty:{}",
+                  usedDirectMemoryByNetty,
+                  usedDirectMemoryByGrpcNetty);
             }
-            ShuffleServerMetrics.gaugeUsedDirectMemorySize.set(usedDirectMemory);
+            ShuffleServerMetrics.gaugeUsedDirectMemorySizeByNetty.set(usedDirectMemoryByNetty);
+            ShuffleServerMetrics.gaugeUsedDirectMemorySizeByGrpcNetty.set(
+                usedDirectMemoryByGrpcNetty);
+            ShuffleServerMetrics.gaugeUsedDirectMemorySize.set(
+                usedDirectMemoryByNetty + usedDirectMemoryByGrpcNetty);
           } catch (Throwable t) {
             LOG.error("Failed to report direct memory.", t);
           }

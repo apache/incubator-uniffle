@@ -91,7 +91,7 @@ func addVolumeMountsOfMainContainer(mainContainer *corev1.Container,
 	}
 	if len(clearPathCMDs) > 0 {
 		mainContainer.Lifecycle = &corev1.Lifecycle{
-			PreStop: &corev1.Handler{
+			PreStop: &corev1.LifecycleHandler{
 				Exec: &corev1.ExecAction{
 					Command: []string{"/bin/sh", "-c", strings.Join(clearPathCMDs, ";")},
 				},

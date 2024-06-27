@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.servlet.ServletContext;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hbase.thirdparty.javax.ws.rs.GET;
 import org.apache.hbase.thirdparty.javax.ws.rs.POST;
 import org.apache.hbase.thirdparty.javax.ws.rs.Path;
@@ -39,10 +39,12 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
 import org.apache.uniffle.common.Application;
 import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.web.resource.BaseResource;
+import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.ClusterManager;
 import org.apache.uniffle.coordinator.ServerNode;
-import org.apache.uniffle.coordinator.web.Response;
 import org.apache.uniffle.coordinator.web.request.ApplicationRequest;
 import org.apache.uniffle.coordinator.web.request.CancelDecommissionRequest;
 import org.apache.uniffle.coordinator.web.request.DecommissionRequest;
@@ -99,8 +101,9 @@ public class ServerResource extends BaseResource {
   public Response<Object> cancelDecommission(CancelDecommissionRequest params) {
     return execute(
         () -> {
-          assert CollectionUtils.isNotEmpty(params.getServerIds())
-              : "Parameter[serverIds] should not be null!";
+          if (CollectionUtils.isEmpty(params.getServerIds())) {
+            throw new RssException("Parameter[serverIds] should not be empty!");
+          }
           params.getServerIds().forEach(getClusterManager()::cancelDecommission);
           return null;
         });
@@ -121,8 +124,9 @@ public class ServerResource extends BaseResource {
   public Response<Object> decommission(DecommissionRequest params) {
     return execute(
         () -> {
-          assert CollectionUtils.isNotEmpty(params.getServerIds())
-              : "Parameter[serverIds] should not be null!";
+          if (CollectionUtils.isEmpty(params.getServerIds())) {
+            throw new RssException("Parameter[serverIds] should not be empty!");
+          }
           params.getServerIds().forEach(getClusterManager()::decommission);
           return null;
         });

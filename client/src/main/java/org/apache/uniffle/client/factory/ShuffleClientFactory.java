@@ -36,8 +36,6 @@ public class ShuffleClientFactory {
 
   private static final ShuffleClientFactory INSTANCE = new ShuffleClientFactory();
 
-  private ShuffleClientFactory() {}
-
   public static ShuffleClientFactory getInstance() {
     return INSTANCE;
   }
@@ -53,9 +51,7 @@ public class ShuffleClientFactory {
     return builder.build();
   }
 
-  public static class WriteClientBuilder {
-    private WriteClientBuilder() {}
-
+  public static class WriteClientBuilder<T extends WriteClientBuilder> {
     private String clientType;
     private int retryMax;
     private long retryIntervalMax;
@@ -67,6 +63,7 @@ public class ShuffleClientFactory {
     private int dataTransferPoolSize;
     private int dataCommitPoolSize;
     private int unregisterThreadPoolSize;
+    private int unregisterTimeSec;
     private int unregisterRequestTimeSec;
     private RssConf rssConf;
 
@@ -114,6 +111,10 @@ public class ShuffleClientFactory {
       return unregisterThreadPoolSize;
     }
 
+    public int getUnregisterTimeSec() {
+      return unregisterTimeSec;
+    }
+
     public int getUnregisterRequestTimeSec() {
       return unregisterRequestTimeSec;
     }
@@ -122,69 +123,78 @@ public class ShuffleClientFactory {
       return rssConf;
     }
 
-    public WriteClientBuilder clientType(String clientType) {
+    protected T self() {
+      return (T) this;
+    }
+
+    public T clientType(String clientType) {
       this.clientType = clientType;
-      return this;
+      return self();
     }
 
-    public WriteClientBuilder retryMax(int retryMax) {
+    public T retryMax(int retryMax) {
       this.retryMax = retryMax;
-      return this;
+      return self();
     }
 
-    public WriteClientBuilder retryIntervalMax(long retryIntervalMax) {
+    public T retryIntervalMax(long retryIntervalMax) {
       this.retryIntervalMax = retryIntervalMax;
-      return this;
+      return self();
     }
 
-    public WriteClientBuilder heartBeatThreadNum(int heartBeatThreadNum) {
+    public T heartBeatThreadNum(int heartBeatThreadNum) {
       this.heartBeatThreadNum = heartBeatThreadNum;
-      return this;
+      return self();
     }
 
-    public WriteClientBuilder replica(int replica) {
+    public T replica(int replica) {
       this.replica = replica;
-      return this;
+      return self();
     }
 
-    public WriteClientBuilder replicaWrite(int replicaWrite) {
+    public T replicaWrite(int replicaWrite) {
       this.replicaWrite = replicaWrite;
-      return this;
+      return self();
     }
 
-    public WriteClientBuilder replicaRead(int replicaRead) {
+    public T replicaRead(int replicaRead) {
       this.replicaRead = replicaRead;
-      return this;
+      return self();
     }
 
-    public WriteClientBuilder replicaSkipEnabled(boolean replicaSkipEnabled) {
+    public T replicaSkipEnabled(boolean replicaSkipEnabled) {
       this.replicaSkipEnabled = replicaSkipEnabled;
-      return this;
+      return self();
     }
 
-    public WriteClientBuilder dataTransferPoolSize(int dataTransferPoolSize) {
+    public T dataTransferPoolSize(int dataTransferPoolSize) {
       this.dataTransferPoolSize = dataTransferPoolSize;
-      return this;
+      return self();
     }
 
-    public WriteClientBuilder dataCommitPoolSize(int dataCommitPoolSize) {
+    public T dataCommitPoolSize(int dataCommitPoolSize) {
       this.dataCommitPoolSize = dataCommitPoolSize;
-      return this;
+      return self();
     }
 
-    public WriteClientBuilder unregisterThreadPoolSize(int unregisterThreadPoolSize) {
+    public T unregisterThreadPoolSize(int unregisterThreadPoolSize) {
       this.unregisterThreadPoolSize = unregisterThreadPoolSize;
-      return this;
+      return self();
     }
 
-    public WriteClientBuilder unregisterRequestTimeSec(int unregisterRequestTimeSec) {
+    public T unregisterTimeSec(int unregisterTimeSec) {
+      this.unregisterTimeSec = unregisterTimeSec;
+      return self();
+    }
+
+    public T unregisterRequestTimeSec(int unregisterRequestTimeSec) {
       this.unregisterRequestTimeSec = unregisterRequestTimeSec;
-      return this;
+      return self();
     }
 
-    public WriteClientBuilder rssConf(RssConf rssConf) {
+    public T rssConf(RssConf rssConf) {
       this.rssConf = rssConf;
-      return this;
+      return self();
     }
 
     public ShuffleWriteClientImpl build() {
@@ -212,6 +222,8 @@ public class ShuffleClientFactory {
     private int indexReadLimit;
     private long readBufferSize;
     private ClientType clientType;
+    private int retryMax;
+    private long retryIntervalMax;
 
     public ReadClientBuilder appId(String appId) {
       this.appId = appId;
@@ -310,6 +322,16 @@ public class ShuffleClientFactory {
       return this;
     }
 
+    public ReadClientBuilder retryMax(int retryMax) {
+      this.retryMax = retryMax;
+      return this;
+    }
+
+    public ReadClientBuilder retryIntervalMax(long retryIntervalMax) {
+      this.retryIntervalMax = retryIntervalMax;
+      return this;
+    }
+
     public ReadClientBuilder() {}
 
     public String getAppId() {
@@ -386,6 +408,14 @@ public class ShuffleClientFactory {
 
     public ClientType getClientType() {
       return clientType;
+    }
+
+    public int getRetryMax() {
+      return retryMax;
+    }
+
+    public long getRetryIntervalMax() {
+      return retryIntervalMax;
     }
 
     public ShuffleReadClientImpl build() {

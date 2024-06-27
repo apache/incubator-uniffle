@@ -102,12 +102,13 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
         readBufferSize = Integer.MAX_VALUE;
       }
       boolean offHeapEnabled = builder.getRssConf().get(RssClientConf.OFF_HEAP_MEMORY_ENABLE);
-
       builder.indexReadLimit(indexReadLimit);
       builder.storageType(storageType);
       builder.readBufferSize(readBufferSize);
       builder.offHeapEnable(offHeapEnabled);
-      builder.clientType(builder.getRssConf().get(RssClientConf.RSS_CLIENT_TYPE));
+      if (builder.getClientType() == null) {
+        builder.clientType(builder.getRssConf().get(RssClientConf.RSS_CLIENT_TYPE));
+      }
     } else {
       // most for test
       RssConf rssConf = (builder.getRssConf() == null) ? new RssConf() : builder.getRssConf();
@@ -131,7 +132,9 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       builder.rssConf(rssConf);
       builder.offHeapEnable(false);
       builder.expectedTaskIdsBitmapFilterEnable(false);
-      builder.clientType(rssConf.get(RssClientConf.RSS_CLIENT_TYPE));
+      if (builder.getClientType() == null) {
+        builder.clientType(rssConf.get(RssClientConf.RSS_CLIENT_TYPE));
+      }
     }
     if (builder.getIdHelper() == null) {
       builder.idHelper(new DefaultIdHelper(BlockIdLayout.from(builder.getRssConf())));
@@ -168,6 +171,8 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     request.setExpectTaskIds(taskIdBitmap);
     request.setClientConf(builder.getRssConf());
     request.setClientType(builder.getClientType());
+    request.setRetryMax(builder.getRetryMax());
+    request.setRetryIntervalMax(builder.getRetryIntervalMax());
     if (builder.isExpectedTaskIdsBitmapFilterEnable()) {
       request.useExpectedTaskIdsBitmapFilter();
     }

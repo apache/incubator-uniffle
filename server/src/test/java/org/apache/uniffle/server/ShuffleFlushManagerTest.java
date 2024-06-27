@@ -343,6 +343,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     int storageIndex1 = storagePaths.indexOf(flushEvent.getUnderStorage().getStoragePath());
     validateLocalMetadata(storageManager, storageIndex1, 1010L);
 
+    storageManager.getStorageChecker().checkIsHealthy();
     flushEvent = createShuffleDataFlushEvent(appId, 3, 1, 1, 10, 102, null);
     manager.addToFlushQueue(flushEvent);
     // wait for write data
@@ -737,6 +738,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     Thread.sleep(1000);
     assertTrue(event.getUnderStorage() instanceof LocalStorage);
 
+    storageManager.getStorageChecker().checkIsHealthy();
     // case2: huge event is written to cold storage directly
     event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100000);
     flushManager.addToFlushQueue(event);
@@ -753,6 +755,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         ((HybridStorageManager) storageManager).getWarmStorageManager().selectStorage(event));
     ((HybridStorageManager) storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
 
+    storageManager.getStorageChecker().checkIsHealthy();
     event = createShuffleDataFlushEvent(appId, 3, 1, 1, null, 100);
     flushManager.addToFlushQueue(event);
     Thread.sleep(1000);
@@ -793,6 +796,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     assertEquals(0, event.getRetryTimes());
     assertEquals(1, ShuffleServerMetrics.counterLocalFileEventFlush.get());
 
+    storageManager.getStorageChecker().checkIsHealthy();
     // case2: huge event is written to cold storage directly
     event = createShuffleDataFlushEvent(appId, 1, 1, 1, null, 100000);
     flushManager.addToFlushQueue(event);
@@ -809,6 +813,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         ((HybridStorageManager) storageManager).getWarmStorageManager().selectStorage(event));
     ((HybridStorageManager) storageManager).getWarmStorageManager().updateWriteMetrics(bigEvent, 0);
 
+    storageManager.getStorageChecker().checkIsHealthy();
     event = createShuffleDataFlushEvent(appId, 2, 1, 1, null, 100);
     flushManager.addToFlushQueue(event);
     waitForFlush(flushManager, appId, 2, 5);

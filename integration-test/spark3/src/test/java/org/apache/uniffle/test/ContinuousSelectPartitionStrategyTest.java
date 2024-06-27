@@ -48,6 +48,7 @@ import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.spark.shuffle.RssSparkConfig.RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -140,8 +141,19 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
   }
 
   @Override
-  public void updateSparkConfWithRss(SparkConf sparkConf) {
-    super.updateSparkConfWithRss(sparkConf);
+  public void updateSparkConfWithRssGrpc(SparkConf sparkConf) {
+    super.updateSparkConfWithRssGrpc(sparkConf);
+    addMultiReplicaConf(sparkConf);
+  }
+
+  @Override
+  public void updateSparkConfWithRssNetty(SparkConf sparkConf) {
+    super.updateSparkConfWithRssNetty(sparkConf);
+    // Add multi replica conf
+    addMultiReplicaConf(sparkConf);
+  }
+
+  private static void addMultiReplicaConf(SparkConf sparkConf) {
     // Add multi replica conf
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA.key(), String.valueOf(replicateWrite));
     sparkConf.set(RssSparkConfig.RSS_DATA_REPLICA_WRITE.key(), String.valueOf(replicateWrite));
@@ -227,8 +239,12 @@ public class ContinuousSelectPartitionStrategyTest extends SparkIntegrationTestB
       // Validate getShuffleResultForMultiPart is correct before return result
       ClientType clientType =
           ClientType.valueOf(spark.sparkContext().getConf().get(RssSparkConfig.RSS_CLIENT_TYPE));
-      if (ClientType.GRPC == clientType) {
+      boolean blockIdSelfManagedEnabled =
+          RssSparkConfig.toRssConf(spark.sparkContext().getConf())
+              .get(RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
+      if (ClientType.GRPC == clientType && !blockIdSelfManagedEnabled) {
         // TODO skip validating for GRPC_NETTY, needs to mock ShuffleServerNettyHandler
+        // skip validating when blockId is managed in spark driver side.
         validateRequestCount(
             spark.sparkContext().applicationId(), expectRequestNum * replicateRead);
       }

@@ -30,7 +30,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -43,11 +43,11 @@ import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.metrics.TestUtils;
 import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.SimpleClusterManager;
-import org.apache.uniffle.coordinator.web.Response;
 import org.apache.uniffle.coordinator.web.request.CancelDecommissionRequest;
 import org.apache.uniffle.coordinator.web.request.DecommissionRequest;
 import org.apache.uniffle.server.ShuffleServer;
@@ -105,7 +105,9 @@ public class ServletTest extends IntegrationTestBase {
     shuffleServerConf.set(
         RssBaseConf.RPC_SERVER_PORT,
         shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT) + 1);
-    shuffleServerConf.set(RssBaseConf.JETTY_HTTP_PORT, 18081);
+    shuffleServerConf.set(
+        RssBaseConf.JETTY_HTTP_PORT,
+        shuffleServerConf.getInteger(ShuffleServerConf.JETTY_HTTP_PORT) + 1);
     rpcPort2 = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     createShuffleServer(shuffleServerConf);
     File dataDir5 = new File(tmpDir, "data5");
@@ -115,7 +117,9 @@ public class ServletTest extends IntegrationTestBase {
     shuffleServerConf.set(
         RssBaseConf.RPC_SERVER_PORT,
         shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT) + 1);
-    shuffleServerConf.set(RssBaseConf.JETTY_HTTP_PORT, 18082);
+    shuffleServerConf.set(
+        RssBaseConf.JETTY_HTTP_PORT,
+        shuffleServerConf.getInteger(ShuffleServerConf.JETTY_HTTP_PORT) + 1);
     rpcPort3 = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     createShuffleServer(shuffleServerConf);
     File dataDir7 = new File(tmpDir, "data7");
@@ -125,7 +129,9 @@ public class ServletTest extends IntegrationTestBase {
     shuffleServerConf.set(
         RssBaseConf.RPC_SERVER_PORT,
         shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT) + 1);
-    shuffleServerConf.set(RssBaseConf.JETTY_HTTP_PORT, 18083);
+    shuffleServerConf.set(
+        RssBaseConf.JETTY_HTTP_PORT,
+        shuffleServerConf.getInteger(ShuffleServerConf.JETTY_HTTP_PORT) + 1);
     rpcPort4 = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     createShuffleServer(shuffleServerConf);
     startServers();
@@ -164,26 +170,27 @@ public class ServletTest extends IntegrationTestBase {
 
   @Test
   public void testLostNodesServlet() throws IOException {
-    SimpleClusterManager clusterManager =
-        (SimpleClusterManager) coordinatorServer.getClusterManager();
-    ShuffleServer shuffleServer3 = grpcShuffleServers.get(2);
-    ShuffleServer shuffleServer4 = grpcShuffleServers.get(3);
-    Map<String, ServerNode> servers = clusterManager.getServers();
-    servers.get(shuffleServer3.getId()).setTimestamp(System.currentTimeMillis() - 40000);
-    servers.get(shuffleServer4.getId()).setTimestamp(System.currentTimeMillis() - 40000);
-    clusterManager.nodesCheckTest();
-    List<String> expectShuffleIds = Arrays.asList(shuffleServer3.getId(), shuffleServer4.getId());
-    List<String> shuffleIds = new ArrayList<>();
-    Response<List<HashMap<String, Object>>> response =
-        objectMapper.readValue(
-            TestUtils.httpGet(LOSTNODES_URL),
-            new TypeReference<Response<List<HashMap<String, Object>>>>() {});
-    List<HashMap<String, Object>> serverList = response.getData();
-    for (HashMap<String, Object> stringObjectHashMap : serverList) {
-      String shuffleId = (String) stringObjectHashMap.get("id");
-      shuffleIds.add(shuffleId);
+    try (SimpleClusterManager clusterManager =
+        (SimpleClusterManager) coordinatorServer.getClusterManager()) {
+      ShuffleServer shuffleServer3 = grpcShuffleServers.get(2);
+      ShuffleServer shuffleServer4 = grpcShuffleServers.get(3);
+      Map<String, ServerNode> servers = clusterManager.getServers();
+      servers.get(shuffleServer3.getId()).setTimestamp(System.currentTimeMillis() - 40000);
+      servers.get(shuffleServer4.getId()).setTimestamp(System.currentTimeMillis() - 40000);
+      clusterManager.nodesCheckTest();
+      List<String> expectShuffleIds = Arrays.asList(shuffleServer3.getId(), shuffleServer4.getId());
+      List<String> shuffleIds = new ArrayList<>();
+      Response<List<HashMap<String, Object>>> response =
+          objectMapper.readValue(
+              TestUtils.httpGet(LOSTNODES_URL),
+              new TypeReference<Response<List<HashMap<String, Object>>>>() {});
+      List<HashMap<String, Object>> serverList = response.getData();
+      for (HashMap<String, Object> stringObjectHashMap : serverList) {
+        String shuffleId = (String) stringObjectHashMap.get("id");
+        shuffleIds.add(shuffleId);
+      }
+      assertTrue(CollectionUtils.isEqualCollection(expectShuffleIds, shuffleIds));
     }
-    assertTrue(CollectionUtils.isEqualCollection(expectShuffleIds, shuffleIds));
   }
 
   @Test

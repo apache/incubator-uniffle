@@ -116,6 +116,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
             .dataTransferPoolSize(1)
             .dataCommitPoolSize(1)
             .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
             .unregisterRequestTimeSec(10)
             .build();
   }
@@ -357,6 +358,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
 
     ShuffleReadClientImpl readClient =
         ShuffleClientFactory.newReadBuilder()
+            .clientType(ClientType.GRPC)
             .storageType(StorageType.LOCALFILE.name())
             .appId(testAppId)
             .shuffleId(0)
@@ -380,6 +382,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     assertTrue(commitResult);
     readClient =
         ShuffleClientFactory.newReadBuilder()
+            .clientType(ClientType.GRPC)
             .storageType(StorageType.LOCALFILE.name())
             .appId(testAppId)
             .shuffleId(0)

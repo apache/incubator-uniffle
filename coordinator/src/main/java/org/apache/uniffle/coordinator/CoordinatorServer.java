@@ -26,8 +26,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
-import org.apache.uniffle.common.config.ReconfigurableBase;
-import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.ReconfigurableConfManager;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
@@ -41,6 +40,7 @@ import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.coordinator.conf.ClientConf;
 import org.apache.uniffle.coordinator.conf.DynamicClientConfService;
+import org.apache.uniffle.coordinator.conf.RssClientConfApplyManager;
 import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategy;
@@ -54,7 +54,7 @@ import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_K
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KRB5_CONF_FILE;
 
 /** The main entrance of coordinator service */
-public class CoordinatorServer extends ReconfigurableBase {
+public class CoordinatorServer {
 
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorServer.class);
 
@@ -63,7 +63,7 @@ public class CoordinatorServer extends ReconfigurableBase {
   private ServerInterface server;
   private ClusterManager clusterManager;
   private AssignmentStrategy assignmentStrategy;
-  private DynamicClientConfService dynamicClientConfService;
+  private RssClientConfApplyManager clientConfApplyManager;
   private AccessManager accessManager;
   private ApplicationManager applicationManager;
   private GRPCMetrics grpcMetrics;
@@ -71,7 +71,6 @@ public class CoordinatorServer extends ReconfigurableBase {
   private String id;
 
   public CoordinatorServer(CoordinatorConf coordinatorConf) throws Exception {
-    super(coordinatorConf);
     this.coordinatorConf = coordinatorConf;
     try {
       initialization();
@@ -90,8 +89,7 @@ public class CoordinatorServer extends ReconfigurableBase {
 
     // Load configuration from config files
     final CoordinatorConf coordinatorConf = new CoordinatorConf(configFile);
-
-    coordinatorConf.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, configFile);
+    ReconfigurableConfManager.init(coordinatorConf, configFile);
 
     // Start the coordinator service
     final CoordinatorServer coordinatorServer = new CoordinatorServer(coordinatorConf);
@@ -101,7 +99,6 @@ public class CoordinatorServer extends ReconfigurableBase {
   }
 
   public void start() throws Exception {
-    startReconfigureThread();
     jettyServer.start();
     server.start();
     if (metricReporter != null) {
@@ -137,14 +134,13 @@ public class CoordinatorServer extends ReconfigurableBase {
     if (accessManager != null) {
       accessManager.close();
     }
-    if (dynamicClientConfService != null) {
-      dynamicClientConfService.close();
+    if (clientConfApplyManager != null) {
+      clientConfApplyManager.close();
     }
     if (metricReporter != null) {
       metricReporter.stop();
       LOG.info("Metric Reporter Stopped!");
     }
-    stopReconfigureThread();
     SecurityContextFactory.get().getSecurityContext().close();
     server.stop();
   }
@@ -181,11 +177,15 @@ public class CoordinatorServer extends ReconfigurableBase {
         new ClusterManagerFactory(coordinatorConf, hadoopConf);
 
     this.clusterManager = clusterManagerFactory.getClusterManager();
-    this.dynamicClientConfService =
+
+    DynamicClientConfService dynamicClientConfService =
         new DynamicClientConfService(
             coordinatorConf,
             hadoopConf,
             new Consumer[] {(Consumer<ClientConf>) applicationManager::refreshRemoteStorages});
+    this.clientConfApplyManager =
+        new RssClientConfApplyManager(coordinatorConf, dynamicClientConfService);
+
     AssignmentStrategyFactory assignmentStrategyFactory =
         new AssignmentStrategyFactory(coordinatorConf, clusterManager);
     this.assignmentStrategy = assignmentStrategyFactory.getAssignmentStrategy();
@@ -255,8 +255,8 @@ public class CoordinatorServer extends ReconfigurableBase {
     return accessManager;
   }
 
-  public DynamicClientConfService getDynamicClientConfService() {
-    return dynamicClientConfService;
+  public RssClientConfApplyManager getClientConfApplyManager() {
+    return clientConfApplyManager;
   }
 
   public GRPCMetrics getGrpcMetrics() {
@@ -266,28 +266,5 @@ public class CoordinatorServer extends ReconfigurableBase {
   /** Await termination on the main thread since the grpc library uses daemon threads. */
   protected void blockUntilShutdown() throws InterruptedException {
     server.blockUntilShutdown();
-  }
-
-  @Override
-  public void reconfigure(RssConf conf) {
-    clusterManager.reconfigure(conf);
-    accessManager.reconfigure(conf);
-  }
-
-  @Override
-  public boolean isPropertyReconfigurable(String property) {
-    if (clusterManager.isPropertyReconfigurable(property)) {
-      return true;
-    }
-    if (accessManager.isPropertyReconfigurable(property)) {
-      return true;
-    }
-    return false;
-  }
-
-  @Override
-  public RssConf reloadConfiguration() {
-    return new CoordinatorConf(
-        coordinatorConf.getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, ""));
   }
 }

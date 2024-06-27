@@ -20,7 +20,7 @@ package org.apache.uniffle.coordinator.web;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
-import org.apache.uniffle.common.config.ReconfigurableBase;
+import org.apache.uniffle.common.ReconfigurableConfManager;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -50,8 +50,7 @@ public class CoordinatorTestServer extends CoordinatorServer {
 
     // Load configuration from config files
     final CoordinatorConf coordinatorConf = new CoordinatorConf(configFile);
-
-    coordinatorConf.setString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, configFile);
+    ReconfigurableConfManager.init(coordinatorConf, configFile);
 
     // Start the coordinator service
     final CoordinatorTestServer coordinatorServer = new CoordinatorTestServer(coordinatorConf);
