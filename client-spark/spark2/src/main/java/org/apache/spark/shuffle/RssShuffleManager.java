@@ -219,7 +219,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               .createShuffleWriteClient(
                   RssShuffleClientFactory.newWriteBuilder()
                       .blockIdSelfManagedEnabled(blockIdSelfManagedEnabled)
-                      .shuffleManagerClient(shuffleManagerClient)
+                      .shuffleManagerClientSupplier(this::getOrCreateShuffleManagerClient)
                       .clientType(clientType)
                       .retryMax(retryMax)
                       .retryIntervalMax(retryIntervalMax)
