@@ -109,7 +109,7 @@ public class WriteBufferManager<K, V> {
       TezTaskAttemptID tezTaskAttemptID,
       long maxMemSize,
       String appId,
-      long taskAttemptId,
+      int taskAttemptId,
       Set<Long> successBlockIds,
       Set<Long> failedBlockIds,
       ShuffleWriteClient shuffleWriteClient,

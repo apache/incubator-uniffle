@@ -192,8 +192,10 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
               + maxPartitions);
     }
 
-    int attemptIdBits = getAttemptIdBits(getMaxAttemptNo(maxFailures, speculation));
-    int partitionIdBits = 32 - Integer.numberOfLeadingZeros(maxPartitions - 1); // [1..31]
+    int attemptIdBits =
+        ClientUtils.getNumberOfSignificantBits(
+            ClientUtils.getMaxAttemptNo(maxFailures, speculation));
+    int partitionIdBits = ClientUtils.getNumberOfSignificantBits(maxPartitions - 1); // [1..31]
     int taskAttemptIdBits = partitionIdBits + attemptIdBits; // [1+attemptIdBits..31+attemptIdBits]
     int sequenceNoBits = 63 - partitionIdBits - taskAttemptIdBits; // [1-attemptIdBits..61]
 
@@ -332,25 +334,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     }
   }
 
-  protected static int getMaxAttemptNo(int maxFailures, boolean speculation) {
-    // attempt number is zero based: 0, 1, …, maxFailures-1
-    // max maxFailures < 1 is not allowed but for safety, we interpret that as maxFailures == 1
-    int maxAttemptNo = maxFailures < 1 ? 0 : maxFailures - 1;
-
-    // with speculative execution enabled we could observe +1 attempts
-    if (speculation) {
-      maxAttemptNo++;
-    }
-
-    return maxAttemptNo;
-  }
-
-  protected static int getAttemptIdBits(int maxAttemptNo) {
-    return 32 - Integer.numberOfLeadingZeros(maxAttemptNo);
-  }
-
   /** See static overload of this method. */
-  public abstract long getTaskAttemptIdForBlockId(int mapIndex, int attemptNo);
+  public abstract int getTaskAttemptIdForBlockId(int mapIndex, int attemptNo);
 
   /**
    * Provides a task attempt id to be used in the block id, that is unique for a shuffle stage.
@@ -365,10 +350,10 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
    *
    * @return a task attempt id unique for a shuffle stage
    */
-  protected static long getTaskAttemptIdForBlockId(
+  protected static int getTaskAttemptIdForBlockId(
       int mapIndex, int attemptNo, int maxFailures, boolean speculation, int maxTaskAttemptIdBits) {
-    int maxAttemptNo = getMaxAttemptNo(maxFailures, speculation);
-    int attemptBits = getAttemptIdBits(maxAttemptNo);
+    int maxAttemptNo = ClientUtils.getMaxAttemptNo(maxFailures, speculation);
+    int attemptBits = ClientUtils.getNumberOfSignificantBits(maxAttemptNo);
 
     if (attemptNo > maxAttemptNo) {
       // this should never happen, if it does, our assumptions are wrong,
@@ -382,7 +367,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
               + ".");
     }
 
-    int mapIndexBits = 32 - Integer.numberOfLeadingZeros(mapIndex);
+    int mapIndexBits = ClientUtils.getNumberOfSignificantBits(mapIndex);
     if (mapIndexBits + attemptBits > maxTaskAttemptIdBits) {
       throw new RssException(
           "Observing mapIndex["
@@ -398,7 +383,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
               + "]). Please consider providing more bits for taskAttemptIds.");
     }
 
-    return (long) mapIndex << attemptBits | attemptNo;
+    return mapIndex << attemptBits | attemptNo;
   }
 
   protected static void fetchAndApplyDynamicConf(SparkConf sparkConf) {

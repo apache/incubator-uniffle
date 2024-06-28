@@ -370,46 +370,6 @@ public class RssShuffleManagerBaseTest {
     assertTrue(e.getMessage().startsWith("All block id bit config keys must be provided "));
   }
 
-  @Test
-  public void testGetMaxAttemptNo() {
-    // without speculation
-    assertEquals(0, RssShuffleManagerBase.getMaxAttemptNo(-1, false));
-    assertEquals(0, RssShuffleManagerBase.getMaxAttemptNo(0, false));
-    assertEquals(0, RssShuffleManagerBase.getMaxAttemptNo(1, false));
-    assertEquals(1, RssShuffleManagerBase.getMaxAttemptNo(2, false));
-    assertEquals(2, RssShuffleManagerBase.getMaxAttemptNo(3, false));
-    assertEquals(3, RssShuffleManagerBase.getMaxAttemptNo(4, false));
-    assertEquals(4, RssShuffleManagerBase.getMaxAttemptNo(5, false));
-    assertEquals(1023, RssShuffleManagerBase.getMaxAttemptNo(1024, false));
-
-    // with speculation
-    assertEquals(1, RssShuffleManagerBase.getMaxAttemptNo(-1, true));
-    assertEquals(1, RssShuffleManagerBase.getMaxAttemptNo(0, true));
-    assertEquals(1, RssShuffleManagerBase.getMaxAttemptNo(1, true));
-    assertEquals(2, RssShuffleManagerBase.getMaxAttemptNo(2, true));
-    assertEquals(3, RssShuffleManagerBase.getMaxAttemptNo(3, true));
-    assertEquals(4, RssShuffleManagerBase.getMaxAttemptNo(4, true));
-    assertEquals(5, RssShuffleManagerBase.getMaxAttemptNo(5, true));
-    assertEquals(1024, RssShuffleManagerBase.getMaxAttemptNo(1024, true));
-  }
-
-  @Test
-  public void testGetAttemptIdBits() {
-    assertEquals(0, RssShuffleManagerBase.getAttemptIdBits(0));
-    assertEquals(1, RssShuffleManagerBase.getAttemptIdBits(1));
-    assertEquals(2, RssShuffleManagerBase.getAttemptIdBits(2));
-    assertEquals(2, RssShuffleManagerBase.getAttemptIdBits(3));
-    assertEquals(3, RssShuffleManagerBase.getAttemptIdBits(4));
-    assertEquals(3, RssShuffleManagerBase.getAttemptIdBits(5));
-    assertEquals(3, RssShuffleManagerBase.getAttemptIdBits(6));
-    assertEquals(3, RssShuffleManagerBase.getAttemptIdBits(7));
-    assertEquals(4, RssShuffleManagerBase.getAttemptIdBits(8));
-    assertEquals(4, RssShuffleManagerBase.getAttemptIdBits(9));
-    assertEquals(10, RssShuffleManagerBase.getAttemptIdBits(1023));
-    assertEquals(11, RssShuffleManagerBase.getAttemptIdBits(1024));
-    assertEquals(11, RssShuffleManagerBase.getAttemptIdBits(1025));
-  }
-
   private long bits(String string) {
     return Long.parseLong(string.replaceAll("[|]", ""), 2);
   }
@@ -484,14 +444,11 @@ public class RssShuffleManagerBaseTest {
     // test with ints that overflow into signed int and long
     assertEquals(Integer.MAX_VALUE, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 0, 1, false, 31));
     assertEquals(
-        (long) Integer.MAX_VALUE << 1 | 1,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 1, 2, false, 32));
+        Integer.MAX_VALUE << 1 | 1, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 1, 2, false, 32));
     assertEquals(
-        (long) Integer.MAX_VALUE << 2 | 3,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 3, 4, false, 33));
+        Integer.MAX_VALUE << 2 | 3, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 3, 4, false, 33));
     assertEquals(
-        (long) Integer.MAX_VALUE << 3 | 7,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 7, 8, false, 34));
+        Integer.MAX_VALUE << 3 | 7, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 7, 8, false, 34));
 
     // test with attemptNo >= maxFailures
     assertThrowsExactly(RssException.class, () -> getTaskAttemptIdForBlockId(0, 1, -1, false, 10));
@@ -599,17 +556,13 @@ public class RssShuffleManagerBaseTest {
 
     // test with ints that overflow into signed int and long
     assertEquals(
-        (long) Integer.MAX_VALUE << 1,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 0, 1, true, 32));
+        Integer.MAX_VALUE << 1, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 0, 1, true, 32));
     assertEquals(
-        (long) Integer.MAX_VALUE << 1 | 1,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 1, 1, true, 32));
+        Integer.MAX_VALUE << 1 | 1, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 1, 1, true, 32));
     assertEquals(
-        (long) Integer.MAX_VALUE << 2 | 3,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 3, 3, true, 33));
+        Integer.MAX_VALUE << 2 | 3, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 3, 3, true, 33));
     assertEquals(
-        (long) Integer.MAX_VALUE << 3 | 7,
-        getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 7, 7, true, 34));
+        Integer.MAX_VALUE << 3 | 7, getTaskAttemptIdForBlockId(Integer.MAX_VALUE, 7, 7, true, 34));
 
     // test with attemptNo > maxFailures (attemptNo == maxFailures allowed for speculation enabled)
     assertThrowsExactly(RssException.class, () -> getTaskAttemptIdForBlockId(0, 2, -1, true, 10));

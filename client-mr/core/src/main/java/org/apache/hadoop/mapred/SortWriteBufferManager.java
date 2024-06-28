@@ -101,7 +101,7 @@ public class SortWriteBufferManager<K, V> {
 
   public SortWriteBufferManager(
       long maxMemSize,
-      long taskAttemptId,
+      int taskAttemptId,
       int batch,
       Serializer<K> keySerializer,
       Serializer<V> valSerializer,
