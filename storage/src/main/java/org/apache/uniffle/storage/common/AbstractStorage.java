@@ -55,6 +55,7 @@ public abstract class AbstractStorage implements Storage {
     Map<String, CreateShuffleWriteHandlerRequest> requestMap = requests.get(request.getAppId());
     requestMap.putIfAbsent(partitionKey, request);
     return map.get(partitionKey);
+//    return newWriteHandler(request);
   }
 
   @Override
@@ -68,6 +69,7 @@ public abstract class AbstractStorage implements Storage {
         RssUtils.generatePartitionKey(request.getAppId(), request.getShuffleId(), range[0]);
     map.computeIfAbsent(partitionKey, key -> newReadHandler(request));
     return map.get(partitionKey);
+//    return newReadHandler(request);
   }
 
   protected abstract ServerReadHandler newReadHandler(CreateShuffleReadHandlerRequest request);
@@ -91,21 +93,9 @@ public abstract class AbstractStorage implements Storage {
   @Override
   public void removeHandlers(String appId, Set<Integer> shuffleIds) {
     long start = System.currentTimeMillis();
-//    for (int shuffleId : shuffleIds) {
-//      String shuffleKeyPrefix = RssUtils.generateShuffleKeyWithSplitKey(appId, shuffleId);
-//      Map<String, ShuffleWriteHandler> writeHandlers = writerHandlers.get(appId);
-//      if (writeHandlers != null) {
-//        writeHandlers.keySet().stream().filter(x -> x.startsWith(shuffleKeyPrefix)).forEach(x -> writeHandlers.remove(x));
-//      }
-//      Map<String, ServerReadHandler> readHandlers = readerHandlers.get(appId);
-//      if (readHandlers != null) {
-//        readHandlers.keySet().stream().filter(x -> x.startsWith(shuffleKeyPrefix)).forEach(x -> readHandlers.remove(x));
-//      }
-//      Map<String, CreateShuffleWriteHandlerRequest> requests = this.requests.get(appId);
-//      if (requests != null) {
-//        requests.keySet().stream().filter(x -> x.startsWith(shuffleKeyPrefix)).forEach(x -> requests.remove(x));
-//      }
-//    }
+    LOGGER.info("Removing handlers....");
+//    writerHandlers.clear();
+//    readerHandlers.clear();
     LOGGER.info("Removed the handlers for appId:{}, shuffleId:{} costs {} ms", appId, shuffleIds, System.currentTimeMillis() - start);
   }
 

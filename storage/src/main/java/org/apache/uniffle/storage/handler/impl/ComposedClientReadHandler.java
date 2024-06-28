@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -215,5 +216,20 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
     }
     sb.append(" ]");
     return sb.toString();
+  }
+
+  public long getBlockCounter() {
+    long counter = 0;
+    for (ClientReadHandler readHandler : handlerMap.values()) {
+      if (readHandler instanceof MemoryClientReadHandler) {
+        counter += ((MemoryClientReadHandler) readHandler).getBlockCounter();
+        LOG.info("Mem: {}", ((MemoryClientReadHandler) readHandler).getBlockCounter());
+      }
+      if (readHandler instanceof DataSkippableReadHandler) {
+        counter += ((DataSkippableReadHandler) readHandler).getBlockCounter();
+        LOG.info("Disk: {}", ((DataSkippableReadHandler) readHandler).getBlockCounter());
+      }
+    }
+    return counter;
   }
 }

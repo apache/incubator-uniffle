@@ -525,11 +525,24 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               shuffleId, rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
     }
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
+//    return new RssShuffleWriter<>(
+//        rssHandle.getAppId(),
+//        shuffleId,
+//        taskId,
+//        getTaskAttemptIdForBlockId(context.partitionId(), context.attemptNumber()),
+//        writeMetrics,
+//        this,
+//        sparkConf,
+//        shuffleWriteClient,
+//        rssHandle,
+//        this::markFailedTask,
+//        context,
+//        shuffleHandleInfo);
     return new RssShuffleWriter<>(
         rssHandle.getAppId(),
         shuffleId,
         taskId,
-        getTaskAttemptIdForBlockId(context.partitionId(), context.attemptNumber()),
+        context.taskAttemptId(),
         writeMetrics,
         this,
         sparkConf,

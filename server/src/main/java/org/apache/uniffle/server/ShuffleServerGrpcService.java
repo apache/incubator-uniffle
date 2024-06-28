@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
@@ -33,6 +34,7 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +97,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcService.class);
   private final ShuffleServer shuffleServer;
+
+  // shuffleId -> partitionId -> blocks
+  private Map<Integer, Map<Integer, AtomicInteger>> blockIdCounter = JavaUtils.newConcurrentMap();
 
   public ShuffleServerGrpcService(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
@@ -659,6 +664,17 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     GetShuffleResultForMultiPartResponse reply;
 
     try {
+      if (request.getStageAttemptNumber() == 1) {
+        for (int pid : partitionsList) {
+          long blockCnt = blockIdCounter.get(shuffleId).get(pid).get();
+          LOG.info("ShuffleId:{}. partitionId:{}. blockCount: {}", shuffleId, pid, blockCnt);
+        }
+      }
+    } catch (Exception e) {
+      LOG.error("Errors on getting shuffle result. ", e);
+    }
+
+    try {
       ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
       if (taskInfo != null) {
         synchronized (taskInfo) {
@@ -1041,8 +1057,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
   private List<ShufflePartitionedData> toPartitionedData(SendShuffleDataRequest req) {
     List<ShufflePartitionedData> ret = Lists.newArrayList();
+    int shuffleId = req.getShuffleId();
+    Map<Integer, AtomicInteger> partitionBlockIds =
+        blockIdCounter.computeIfAbsent(shuffleId, x -> JavaUtils.newConcurrentMap());
 
     for (ShuffleData data : req.getShuffleDataList()) {
+      if (req.getStageAttemptNumber() == 1) {
+        partitionBlockIds.computeIfAbsent(data.getPartitionId(), x -> new AtomicInteger()).incrementAndGet();
+      }
       ret.add(
           new ShufflePartitionedData(
               data.getPartitionId(), toPartitionedBlock(data.getBlockList())));
