@@ -26,6 +26,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -36,6 +37,7 @@ import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.MockedGrpcServer;
+import org.apache.uniffle.server.MockedShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -52,12 +54,17 @@ public class RSSStageDynamicServerReWriteTest extends SparkTaskFailureIntegratio
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     createServer(0, tmpDir, true, ServerType.GRPC);
-    createServer(1, tmpDir, false, ServerType.GRPC);
+    createServer(1, tmpDir, true, ServerType.GRPC);
     createServer(2, tmpDir, false, ServerType.GRPC);
     createServer(3, tmpDir, true, ServerType.GRPC_NETTY);
-    createServer(4, tmpDir, false, ServerType.GRPC_NETTY);
+    createServer(4, tmpDir, true, ServerType.GRPC_NETTY);
     createServer(5, tmpDir, false, ServerType.GRPC_NETTY);
     startServers();
+  }
+
+  @AfterAll
+  public static void shutdownAll() throws Exception {
+    IntegrationTestBase.shutdownServers();
   }
 
   public static void createServer(int id, File tmpDir, boolean abnormalFlag, ServerType serverType)
@@ -74,32 +81,25 @@ public class RSSStageDynamicServerReWriteTest extends SparkTaskFailureIntegratio
         shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT) + id);
     shuffleServerConf.setInteger("rss.jetty.http.port", 19081 + id * 100);
     shuffleServerConf.setString("rss.storage.basePath", basePath);
+
+    MockedShuffleServer server = createMockedShuffleServer(shuffleServerConf);
     if (abnormalFlag) {
-      createMockedShuffleServer(shuffleServerConf);
       // Set the sending block data timeout for the first shuffleServer
       switch (serverType) {
         case GRPC:
-          ((MockedGrpcServer) grpcShuffleServers.get(0).getServer())
-              .getService()
-              .enableMockSendDataFailed(true);
-          break;
         case GRPC_NETTY:
-          ((MockedGrpcServer) nettyShuffleServers.get(0).getServer())
-              .getService()
-              .enableMockSendDataFailed(true);
+          ((MockedGrpcServer) server.getServer()).getService().enableMockSendDataFailed(true);
           break;
         default:
           throw new UnsupportedOperationException("Unsupported server type " + serverType);
       }
-    } else {
-      createShuffleServer(shuffleServerConf);
     }
   }
 
   @Override
   public Map runTest(SparkSession spark, String fileName) throws Exception {
     List<Row> rows =
-        spark.range(0, 1000, 1, 4).repartition(2).groupBy("id").count().collectAsList();
+        spark.range(0, 1000, 1, 4).repartition(4).groupBy("id").count().collectAsList();
     Map<String, Long> result = Maps.newHashMap();
     for (Row row : rows) {
       result.put(row.get(0).toString(), row.getLong(1));

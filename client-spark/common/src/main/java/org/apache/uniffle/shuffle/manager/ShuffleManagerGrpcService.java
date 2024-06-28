@@ -19,7 +19,6 @@ package org.apache.uniffle.shuffle.manager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -379,17 +378,16 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
                 });
             List<Map.Entry<String, AtomicInteger>> list =
                 new ArrayList(shuffleServerFailureRecordCount.entrySet());
-            if (!list.isEmpty()) {
-              Collections.sort(list, (o1, o2) -> (o1.getValue().get() - o2.getValue().get()));
-              Map.Entry<String, AtomicInteger> shuffleServerInfoIntegerEntry = list.get(0);
+            boolean retry = false;
+            for (Map.Entry<String, AtomicInteger> shuffleServerInfoIntegerEntry : list) {
               if (shuffleServerInfoIntegerEntry.getValue().get()
                   > shuffleManager.getMaxFetchFailures()) {
                 shuffleManager.addFailuresShuffleServerInfos(
                     shuffleServerInfoIntegerEntry.getKey());
-                return true;
+                retry = true;
               }
             }
-            return false;
+            return retry;
           });
     }
   }

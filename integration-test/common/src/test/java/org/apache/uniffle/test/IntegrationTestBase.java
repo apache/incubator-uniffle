@@ -183,18 +183,21 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     }
   }
 
-  protected static void createMockedShuffleServer(ShuffleServerConf serverConf) throws Exception {
+  protected static MockedShuffleServer createMockedShuffleServer(ShuffleServerConf serverConf)
+      throws Exception {
     ServerType serverType = serverConf.get(ShuffleServerConf.RPC_SERVER_TYPE);
+    MockedShuffleServer server = new MockedShuffleServer(serverConf);
     switch (serverType) {
       case GRPC:
-        grpcShuffleServers.add(new MockedShuffleServer(serverConf));
+        grpcShuffleServers.add(server);
         break;
       case GRPC_NETTY:
-        nettyShuffleServers.add(new MockedShuffleServer(serverConf));
+        nettyShuffleServers.add(server);
         break;
       default:
         throw new UnsupportedOperationException("Unsupported server type " + serverType);
     }
+    return server;
   }
 
   protected static void createAndStartServers(
