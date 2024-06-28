@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import com.google.common.primitives.Ints;
-import org.apache.tez.runtime.library.common.shuffle.DiskFetchedInput;
 import org.apache.tez.runtime.library.common.shuffle.FetchedInput;
 import org.apache.tez.runtime.library.common.shuffle.MemoryFetchedInput;
 import org.slf4j.Logger;
@@ -73,7 +72,7 @@ public class RssTezBypassWriter {
       byte[] memory = ((MemoryFetchedInput) mapOutput).getBytes();
       System.arraycopy(buffer, 0, memory, 0, buffer.length);
     } else if (mapOutput.getType() == FetchedInput.Type.DISK) {
-      OutputStream output = ((DiskFetchedInput) mapOutput).getOutputStream();
+      OutputStream output = mapOutput.getOutputStream();
       output.write(HEADER);
       output.write(buffer);
       output.write(Ints.toByteArray((int) ChecksumUtils.getCrc32(buffer)));

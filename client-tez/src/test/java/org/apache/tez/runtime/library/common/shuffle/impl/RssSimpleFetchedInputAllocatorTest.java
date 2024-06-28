@@ -17,20 +17,20 @@
 
 package org.apache.tez.runtime.library.common.shuffle.impl;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
-import org.apache.tez.runtime.library.common.shuffle.DiskFetchedInput;
 import org.apache.tez.runtime.library.common.shuffle.FetchedInput;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedConstruction;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.tez.common.TezRuntimeFrameworkConfigs.LOCAL_DIRS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RssSimpleFetchedInputAllocatorTest {
@@ -39,8 +39,9 @@ public class RssSimpleFetchedInputAllocatorTest {
       LoggerFactory.getLogger(RssSimpleFetchedInputAllocatorTest.class);
 
   @Test
-  public void testAllocate() throws IOException {
+  public void testAllocate(@TempDir File tmpDir) throws IOException {
     Configuration conf = new Configuration();
+    conf.set(LOCAL_DIRS, tmpDir + "/local");
 
     long jvmMax = 954728448L;
     LOG.info("jvmMax: " + jvmMax);
@@ -59,7 +60,8 @@ public class RssSimpleFetchedInputAllocatorTest {
             123,
             conf,
             Runtime.getRuntime().maxMemory(),
-            inMemThreshold);
+            inMemThreshold,
+            "");
 
     long requestSize = (long) (0.4f * inMemThreshold);
     long compressedSize = 1L;
@@ -73,31 +75,23 @@ public class RssSimpleFetchedInputAllocatorTest {
         inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(2, 1));
     assertEquals(FetchedInput.Type.MEMORY, fi2.getType());
 
-    MockedConstruction<DiskFetchedInput> mockedConstruction =
-        Mockito.mockConstruction(
-            DiskFetchedInput.class,
-            ((mockedInput, context) -> {
-              // Over limit by this point. Next reserve should give back a DISK allocation
-              FetchedInput fi3 =
-                  inputManager.allocate(
-                      requestSize, compressedSize, new InputAttemptIdentifier(3, 1));
-              assertEquals(FetchedInput.Type.DISK, fi3.getType());
+    // Over limit by this point. Next reserve should give back a DISK allocation
+    FetchedInput fi3 =
+        inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(3, 1));
+    assertEquals(FetchedInput.Type.DISK, fi3.getType());
 
-              // Freed one memory allocation. Next should be mem again.
-              fi1.abort();
-              fi1.free();
-              FetchedInput fi4 =
-                  inputManager.allocate(
-                      requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
-              assertEquals(FetchedInput.Type.MEMORY, fi4.getType());
+    // Freed one memory allocation. Next should be mem again.
+    fi1.abort();
+    fi1.free();
+    FetchedInput fi4 =
+        inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
+    assertEquals(FetchedInput.Type.MEMORY, fi4.getType());
 
-              // Freed one disk allocation. Next sould be disk again (no mem freed)
-              fi3.abort();
-              fi3.free();
-              FetchedInput fi5 =
-                  inputManager.allocate(
-                      requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
-              assertEquals(FetchedInput.Type.DISK, fi5.getType());
-            }));
+    // Freed one disk allocation. Next sould be disk again (no mem freed)
+    fi3.abort();
+    fi3.free();
+    FetchedInput fi5 =
+        inputManager.allocate(requestSize, compressedSize, new InputAttemptIdentifier(4, 1));
+    assertEquals(FetchedInput.Type.DISK, fi5.getType());
   }
 }

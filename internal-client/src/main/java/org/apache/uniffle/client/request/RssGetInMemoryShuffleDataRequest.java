@@ -17,9 +17,10 @@
 
 package org.apache.uniffle.client.request;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-public class RssGetInMemoryShuffleDataRequest {
+public class RssGetInMemoryShuffleDataRequest extends RetryableRequest {
   private final String appId;
   private final int shuffleId;
   private final int partitionId;
@@ -33,13 +34,28 @@ public class RssGetInMemoryShuffleDataRequest {
       int partitionId,
       long lastBlockId,
       int readBufferSize,
-      Roaring64NavigableMap expectedTaskIds) {
+      Roaring64NavigableMap expectedTaskIds,
+      int retryMax,
+      long retryIntervalMax) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.lastBlockId = lastBlockId;
     this.readBufferSize = readBufferSize;
     this.expectedTaskIds = expectedTaskIds;
+    this.retryMax = retryMax;
+    this.retryIntervalMax = retryIntervalMax;
+  }
+
+  @VisibleForTesting
+  public RssGetInMemoryShuffleDataRequest(
+      String appId,
+      int shuffleId,
+      int partitionId,
+      long lastBlockId,
+      int readBufferSize,
+      Roaring64NavigableMap expectedTaskIds) {
+    this(appId, shuffleId, partitionId, lastBlockId, readBufferSize, expectedTaskIds, 1, 0);
   }
 
   public String getAppId() {
@@ -64,5 +80,10 @@ public class RssGetInMemoryShuffleDataRequest {
 
   public Roaring64NavigableMap getExpectedTaskIds() {
     return expectedTaskIds;
+  }
+
+  @Override
+  public String operationType() {
+    return "GetInMemoryShuffleData";
   }
 }

@@ -123,6 +123,10 @@ public class RssUtils {
       }
       return ip;
     }
+    // Unit tests are executed on a single machine and do not interact with other machines.
+    // Therefore, unit tests should not require a valid broadcast address.
+    // When running UTs, we will still return the IP address whose broadcast address is invalid.
+    boolean isTestMode = Boolean.parseBoolean(System.getProperty("test.mode", "false"));
     Enumeration<NetworkInterface> nif = NetworkInterface.getNetworkInterfaces();
     String siteLocalAddress = null;
     while (nif.hasMoreElements()) {
@@ -133,7 +137,7 @@ public class RssUtils {
       for (InterfaceAddress ifa : ni.getInterfaceAddresses()) {
         InetAddress ia = ifa.getAddress();
         InetAddress brd = ifa.getBroadcast();
-        if (brd == null || brd.isAnyLocalAddress()) {
+        if ((brd == null || brd.isAnyLocalAddress()) && !isTestMode) {
           LOGGER.info(
               "ip {} was filtered, because it don't have effective broadcast address",
               ia.getHostAddress());
@@ -274,6 +278,14 @@ public class RssUtils {
         Constants.KEY_SPLIT_CHAR, appId, String.valueOf(shuffleId), String.valueOf(partition));
   }
 
+  public static <T> T loadExtension(Class<T> extCls, String clsPackage, Object obj) {
+    List<T> exts = loadExtensions(extCls, Arrays.asList(clsPackage), obj);
+    if (exts != null && exts.size() == 1) {
+      return exts.get(0);
+    }
+    throw new IllegalArgumentException("No such extension for " + clsPackage);
+  }
+
   @SuppressWarnings("unchecked")
   public static <T> List<T> loadExtensions(Class<T> extClass, List<String> classes, Object obj) {
     if (classes == null || classes.isEmpty()) {
@@ -310,7 +322,7 @@ public class RssUtils {
   public static void checkQuorumSetting(int replica, int replicaWrite, int replicaRead) {
     if (replica < 1 || replicaWrite > replica || replicaRead > replica) {
       throw new RssException(
-          "Replica config is invalid, recommend replica.write + replica.read > replica");
+          "Replica config is invalid, it cannot be less than 1 or less than replica.write  or less than replica.read. Please check it.");
     }
     if (replicaWrite + replicaRead <= replica) {
       throw new RssException(
@@ -329,16 +341,18 @@ public class RssUtils {
   }
 
   public static Map<Integer, Roaring64NavigableMap> generatePartitionToBitmap(
-      Roaring64NavigableMap shuffleBitmap, int startPartition, int endPartition) {
+      Roaring64NavigableMap shuffleBitmap,
+      int startPartition,
+      int endPartition,
+      BlockIdLayout layout) {
     Map<Integer, Roaring64NavigableMap> result = Maps.newHashMap();
     for (int partitionId = startPartition; partitionId < endPartition; partitionId++) {
       result.computeIfAbsent(partitionId, key -> Roaring64NavigableMap.bitmapOf());
     }
     Iterator<Long> it = shuffleBitmap.iterator();
-    long mask = (1L << Constants.PARTITION_ID_MAX_LENGTH) - 1;
     while (it.hasNext()) {
       Long blockId = it.next();
-      int partitionId = Math.toIntExact((blockId >> Constants.TASK_ATTEMPT_ID_MAX_LENGTH) & mask);
+      int partitionId = layout.getPartitionId(blockId);
       if (partitionId >= startPartition && partitionId < endPartition) {
         result.get(partitionId).add(blockId);
       }
@@ -364,16 +378,22 @@ public class RssUtils {
 
   public static void checkProcessedBlockIds(
       Roaring64NavigableMap blockIdBitmap, Roaring64NavigableMap processedBlockIds) {
-    Roaring64NavigableMap cloneBitmap;
-    cloneBitmap = RssUtils.cloneBitMap(blockIdBitmap);
-    cloneBitmap.and(processedBlockIds);
-    if (!blockIdBitmap.equals(cloneBitmap)) {
-      throw new RssException(
-          "Blocks read inconsistent: expected "
-              + blockIdBitmap.getLongCardinality()
-              + " blocks, actual "
-              + cloneBitmap.getLongCardinality()
-              + " blocks");
+    // processedBlockIds can be a superset of blockIdBitmap,
+    // here we check that processedBlockIds has all bits of blockIdBitmap set
+    // first a quick check:
+    //   we only need to do the bitwise AND when blockIdBitmap is not equal to processedBlockIds
+    if (!blockIdBitmap.equals(processedBlockIds)) {
+      Roaring64NavigableMap cloneBitmap;
+      cloneBitmap = RssUtils.cloneBitMap(blockIdBitmap);
+      cloneBitmap.and(processedBlockIds);
+      if (!blockIdBitmap.equals(cloneBitmap)) {
+        throw new RssException(
+            "Blocks read inconsistent: expected "
+                + blockIdBitmap.getLongCardinality()
+                + " blocks, actual "
+                + cloneBitmap.getLongCardinality()
+                + " blocks");
+      }
     }
   }
 

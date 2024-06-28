@@ -52,6 +52,7 @@ public class DynamicConfTest extends MRIntegrationTestBase {
 
   @Override
   protected void updateRssConfiguration(Configuration jobConf) {
+    jobConf.set(RssMRConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
     jobConf.setInt(LargeSorter.NUM_MAP_TASKS, 1);
     jobConf.setInt(LargeSorter.MBS_PER_MAP, 256);
   }

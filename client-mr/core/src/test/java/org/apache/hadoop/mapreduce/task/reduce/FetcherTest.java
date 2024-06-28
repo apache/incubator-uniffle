@@ -59,8 +59,10 @@ import org.apache.hadoop.util.Progress;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.PartitionRange;
@@ -73,10 +75,12 @@ import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.compression.Lz4Codec;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.hadoop.shim.HadoopShimImpl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
 public class FetcherTest {
   static JobID jobId = new JobID("a", 0);
@@ -338,6 +342,7 @@ public class FetcherTest {
     MockShuffleWriteClient client = new MockShuffleWriteClient();
     client.setMode(2);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = JavaUtils.newConcurrentMap();
+    partitionToServers.put(0, Lists.newArrayList(mock(ShuffleServerInfo.class)));
     Set<Long> successBlocks = Sets.newConcurrentHashSet();
     Set<Long> failedBlocks = Sets.newConcurrentHashSet();
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
@@ -367,7 +372,8 @@ public class FetcherTest {
             5,
             0.2f,
             1024000L,
-            new RssConf());
+            new RssConf(),
+            null);
 
     for (String key : keysToValues.keySet()) {
       String value = keysToValues.get(key);
@@ -462,7 +468,12 @@ public class FetcherTest {
       if (mode == 0) {
         throw new RssException("send data failed");
       } else if (mode == 1) {
-        return new SendShuffleDataResult(Sets.newHashSet(2L), Sets.newHashSet(1L));
+        FailedBlockSendTracker failedBlockSendTracker = new FailedBlockSendTracker();
+        ShuffleBlockInfo failedBlock =
+            new ShuffleBlockInfo(1, 1, 3, 1, 1, new byte[1], null, 1, 100, 1);
+        failedBlockSendTracker.add(
+            failedBlock, new ShuffleServerInfo("host", 39998), StatusCode.NO_BUFFER);
+        return new SendShuffleDataResult(Sets.newHashSet(2L), failedBlockSendTracker);
       } else {
         Set<Long> successBlockIds = Sets.newHashSet();
         for (ShuffleBlockInfo blockInfo : shuffleBlockInfoList) {
@@ -475,7 +486,7 @@ public class FetcherTest {
                   block.getData().nioBuffer(), block.getUncompressLength(), uncompressedBuffer, 0);
               data.add(uncompressedBuffer.array());
             });
-        return new SendShuffleDataResult(successBlockIds, Sets.newHashSet());
+        return new SendShuffleDataResult(successBlockIds, new FailedBlockSendTracker());
       }
     }
 
@@ -493,7 +504,8 @@ public class FetcherTest {
         List<PartitionRange> partitionRanges,
         RemoteStorageInfo storageType,
         ShuffleDataDistributionType distributionType,
-        int maxConcurrencyPerPartitionToWrite) {}
+        int maxConcurrencyPerPartitionToWrite,
+        int stageAttemptNumber) {}
 
     @Override
     public boolean sendCommit(
@@ -516,11 +528,10 @@ public class FetcherTest {
 
     @Override
     public void reportShuffleResult(
-        Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+        Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds,
         String appId,
         int shuffleId,
         long taskAttemptId,
-        Map<Integer, List<Long>> partitionToBlockIds,
         int bitmapNum) {}
 
     @Override
@@ -531,7 +542,11 @@ public class FetcherTest {
         int partitionNumPerRange,
         Set<String> requiredTags,
         int assignmentShuffleServerNumber,
-        int estimateTaskConcurrency) {
+        int estimateTaskConcurrency,
+        Set<String> faultyServerIds,
+        int stageId,
+        int stageAttemptNumber,
+        boolean reassign) {
       return null;
     }
 
@@ -551,7 +566,8 @@ public class FetcherTest {
         Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
         String appId,
         int shuffleId,
-        Set<Integer> failedPartitions) {
+        Set<Integer> failedPartitions,
+        PartitionDataReplicaRequirementTracking tracking) {
       return null;
     }
 

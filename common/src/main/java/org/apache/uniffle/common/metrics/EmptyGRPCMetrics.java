@@ -17,10 +17,12 @@
 
 package org.apache.uniffle.common.metrics;
 
+import org.apache.uniffle.common.config.RssConf;
+
 public class EmptyGRPCMetrics extends GRPCMetrics {
 
-  public EmptyGRPCMetrics(String tags) {
-    super(tags);
+  public EmptyGRPCMetrics(RssConf rssConf, String tags) {
+    super(rssConf, tags);
   }
 
   @Override

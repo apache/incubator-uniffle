@@ -17,6 +17,7 @@
 
 package org.apache.tez.runtime.library.common.shuffle.impl;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -26,6 +27,8 @@ import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.io.BoundedByteArrayOutputStream;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
@@ -35,6 +38,7 @@ import org.apache.hadoop.io.serializer.Deserializer;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
+import org.apache.tez.runtime.library.common.readers.UnorderedKVReader;
 import org.apache.tez.runtime.library.common.shuffle.FetchedInput;
 import org.apache.tez.runtime.library.common.shuffle.FetcherCallback;
 import org.apache.tez.runtime.library.common.shuffle.MemoryFetchedInput;
@@ -42,7 +46,10 @@ import org.apache.tez.runtime.library.common.shuffle.orderedgrouped.InMemoryRead
 import org.apache.tez.runtime.library.common.shuffle.orderedgrouped.InMemoryWriter;
 import org.apache.tez.runtime.library.common.sort.impl.IFile;
 import org.apache.tez.runtime.library.utils.BufferUtils;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +59,12 @@ import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.compression.Lz4Codec;
 import org.apache.uniffle.common.config.RssConf;
 
+import static org.apache.tez.common.RssTezConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED;
+import static org.apache.tez.common.RssTezConfig.RSS_REMOTE_SPILL_STORAGE_PATH;
+import static org.apache.tez.common.TezRuntimeFrameworkConfigs.LOCAL_DIRS;
+import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS;
+import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_SHUFFLE_MEMORY_LIMIT_PERCENT;
+import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_VALUE_CLASS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -64,6 +77,25 @@ public class RssTezFetcherTest {
   static List<byte[]> data;
   static List<KVPair> textData;
   static Codec codec = new Lz4Codec();
+
+  private static FileSystem remoteFS;
+  private static MiniDFSCluster cluster;
+
+  @BeforeAll
+  public static void setUpHdfs(@TempDir File tempDir) throws Exception {
+    Configuration conf = new Configuration();
+    File baseDir = tempDir;
+    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
+    cluster = (new MiniDFSCluster.Builder(conf)).build();
+    String hdfsUri = cluster.getURI().toString() + "/";
+    remoteFS = (new Path(hdfsUri)).getFileSystem(conf);
+  }
+
+  @AfterAll
+  public static void tearDownHdfs() throws Exception {
+    remoteFS.close();
+    cluster.shutdown();
+  }
 
   @Test
   public void writeAndReadDataTestWithoutRss() throws Throwable {
@@ -138,6 +170,149 @@ public class RssTezFetcherTest {
       }
       assertEquals(textData.size(), numRecordsRead);
       LOG.info("Found: " + numRecordsRead + " records");
+    }
+  }
+
+  @Test
+  public void testReadWithDiskFetchedInput(@TempDir File tmpDir) throws Throwable {
+    initRssData();
+    conf.setFloat(TEZ_RUNTIME_SHUFFLE_MEMORY_LIMIT_PERCENT, 0.25F);
+    conf.set(LOCAL_DIRS, tmpDir + "/local");
+    conf.set(TEZ_RUNTIME_KEY_CLASS, Text.class.getName());
+    conf.set(TEZ_RUNTIME_VALUE_CLASS, IntWritable.class.getName());
+    RssSimpleFetchedInputAllocator inputManager =
+        new RssSimpleFetchedInputAllocator(
+            "test", "uniqueId1", 0, conf, 2 * 1024 * 1024, 2 * 1024 * 1024, "appattemptid1");
+    List<FetchedInput> inputs = new ArrayList<>();
+    FetcherCallback fetcherCallback =
+        new FetcherCallback() {
+          @Override
+          public void fetchSucceeded(
+              String host,
+              InputAttemptIdentifier srcAttemptIdentifier,
+              FetchedInput fetchedInput,
+              long fetchedBytes,
+              long decompressedLength,
+              long copyDuration)
+              throws IOException {
+            LOG.info("Fetch success");
+            fetchedInput.commit();
+            inputs.add(fetchedInput);
+          }
+
+          @Override
+          public void fetchFailed(
+              String host, InputAttemptIdentifier srcAttemptIdentifier, boolean connectFailed) {
+            fail();
+          }
+        };
+
+    ShuffleReadClient shuffleReadClient = new MockedShuffleReadClient(data);
+    RssTezFetcher rssFetcher =
+        new RssTezFetcher(fetcherCallback, inputManager, shuffleReadClient, null, 2, new RssConf());
+    rssFetcher.fetchAllRssBlocks();
+    for (int i = 0; i < data.size(); i++) {
+      Text readKey = new Text();
+      IntWritable readValue = new IntWritable();
+      Deserializer<Text> keyDeserializer;
+      Deserializer<IntWritable> valDeserializer;
+      SerializationFactory serializationFactory = new SerializationFactory(conf);
+      keyDeserializer = serializationFactory.getDeserializer(Text.class);
+      valDeserializer = serializationFactory.getDeserializer(IntWritable.class);
+      DataInputBuffer keyIn = new DataInputBuffer();
+      DataInputBuffer valIn = new DataInputBuffer();
+      keyDeserializer.open(keyIn);
+      valDeserializer.open(valIn);
+
+      UnorderedKVReader unorderedKVReader =
+          new UnorderedKVReader(null, conf, null, false, 0, 0, null, null);
+      IFile.Reader reader = unorderedKVReader.openIFileReader(inputs.get(i));
+      int numRecordsRead = 0;
+      while (reader.nextRawKey(keyIn)) {
+        reader.nextRawValue(valIn);
+        readKey = keyDeserializer.deserialize(readKey);
+        readValue = valDeserializer.deserialize(readValue);
+
+        KVPair expected = textData.get(numRecordsRead);
+        assertEquals(expected.getKey(), readKey);
+        assertEquals(expected.getvalue(), readValue);
+
+        numRecordsRead++;
+      }
+      assertEquals(textData.size(), numRecordsRead);
+    }
+  }
+
+  @Test
+  public void testReadWithRemoteFetchedInput(@TempDir File tmpDir) throws Throwable {
+    initRssData();
+    conf.setFloat(TEZ_RUNTIME_SHUFFLE_MEMORY_LIMIT_PERCENT, 0.25F);
+    conf.set(LOCAL_DIRS, tmpDir + "/local");
+    conf.set(TEZ_RUNTIME_KEY_CLASS, Text.class.getName());
+    conf.set(TEZ_RUNTIME_VALUE_CLASS, IntWritable.class.getName());
+    conf.setBoolean(RSS_REDUCE_REMOTE_SPILL_ENABLED, true);
+    conf.set(RSS_REMOTE_SPILL_STORAGE_PATH, "/tmp/spill");
+    RssSimpleFetchedInputAllocator inputManager =
+        new RssSimpleFetchedInputAllocator(
+            "test", "uniqueId1", 0, conf, 2 * 1024 * 1024, 2 * 1024 * 1024, "appattemptid1");
+    inputManager.setRemoteFS(remoteFS);
+    List<FetchedInput> inputs = new ArrayList<>();
+    FetcherCallback fetcherCallback =
+        new FetcherCallback() {
+          @Override
+          public void fetchSucceeded(
+              String host,
+              InputAttemptIdentifier srcAttemptIdentifier,
+              FetchedInput fetchedInput,
+              long fetchedBytes,
+              long decompressedLength,
+              long copyDuration)
+              throws IOException {
+            LOG.info("Fetch success");
+            fetchedInput.commit();
+            inputs.add(fetchedInput);
+          }
+
+          @Override
+          public void fetchFailed(
+              String host, InputAttemptIdentifier srcAttemptIdentifier, boolean connectFailed) {
+            fail();
+          }
+        };
+
+    ShuffleReadClient shuffleReadClient = new MockedShuffleReadClient(data);
+    RssTezFetcher rssFetcher =
+        new RssTezFetcher(fetcherCallback, inputManager, shuffleReadClient, null, 2, new RssConf());
+    rssFetcher.fetchAllRssBlocks();
+    for (int i = 0; i < data.size(); i++) {
+      Text readKey = new Text();
+      IntWritable readValue = new IntWritable();
+      Deserializer<Text> keyDeserializer;
+      Deserializer<IntWritable> valDeserializer;
+      SerializationFactory serializationFactory = new SerializationFactory(conf);
+      keyDeserializer = serializationFactory.getDeserializer(Text.class);
+      valDeserializer = serializationFactory.getDeserializer(IntWritable.class);
+      DataInputBuffer keyIn = new DataInputBuffer();
+      DataInputBuffer valIn = new DataInputBuffer();
+      keyDeserializer.open(keyIn);
+      valDeserializer.open(valIn);
+
+      UnorderedKVReader unorderedKVReader =
+          new UnorderedKVReader(null, conf, null, false, 0, 0, null, null);
+      IFile.Reader reader = unorderedKVReader.openIFileReader(inputs.get(i));
+      int numRecordsRead = 0;
+      while (reader.nextRawKey(keyIn)) {
+        reader.nextRawValue(valIn);
+        readKey = keyDeserializer.deserialize(readKey);
+        readValue = valDeserializer.deserialize(readValue);
+
+        KVPair expected = textData.get(numRecordsRead);
+        assertEquals(expected.getKey(), readKey);
+        assertEquals(expected.getvalue(), readValue);
+
+        numRecordsRead++;
+      }
+      assertEquals(textData.size(), numRecordsRead);
     }
   }
 

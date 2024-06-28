@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.Lists;
 import io.grpc.StatusRuntimeException;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,7 @@ import org.apache.uniffle.client.response.RssCancelDecommissionResponse;
 import org.apache.uniffle.client.response.RssDecommissionResponse;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServer;
@@ -52,26 +54,34 @@ public class ShuffleServerInternalGrpcTest extends IntegrationTestBase {
   private ShuffleServerGrpcClient shuffleServerClient;
   private ShuffleServerInternalGrpcClient shuffleServerInternalClient;
 
+  private static int rpcPort1;
+
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     File dataDir1 = new File(tmpDir, "data1");
     String basePath = dataDir1.getAbsolutePath();
     shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5000L);
     shuffleServerConf.set(ShuffleServerConf.SERVER_DECOMMISSION_CHECK_INTERVAL, 500L);
+    rpcPort1 = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     createShuffleServer(shuffleServerConf);
     startServers();
   }
 
   @BeforeEach
   public void createClient() {
-    shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
-    shuffleServerInternalClient =
-        new ShuffleServerInternalGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+    shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, rpcPort1);
+    shuffleServerInternalClient = new ShuffleServerInternalGrpcClient(LOCALHOST, rpcPort1);
+  }
+
+  @AfterEach
+  public void closeClient() {
+    shuffleServerClient.close();
+    shuffleServerInternalClient.close();
   }
 
   @Test
@@ -82,7 +92,7 @@ public class ShuffleServerInternalGrpcTest extends IntegrationTestBase {
         new RssRegisterShuffleRequest(
             appId, shuffleId, Lists.newArrayList(new PartitionRange(0, 1)), ""));
 
-    ShuffleServer shuffleServer = shuffleServers.get(0);
+    ShuffleServer shuffleServer = grpcShuffleServers.get(0);
     RssDecommissionResponse response =
         shuffleServerInternalClient.decommission(new RssDecommissionRequest());
     assertEquals(StatusCode.SUCCESS, response.getStatusCode());
@@ -93,7 +103,7 @@ public class ShuffleServerInternalGrpcTest extends IntegrationTestBase {
     assertEquals(ServerStatus.ACTIVE, shuffleServer.getServerStatus());
 
     // Clean all apps, shuffle server will be shutdown right now.
-    shuffleServerClient.unregisterShuffle(new RssUnregisterShuffleRequest(appId, shuffleId));
+    shuffleServerClient.unregisterShuffle(new RssUnregisterShuffleRequest(appId, shuffleId, 1));
     response = shuffleServerInternalClient.decommission(new RssDecommissionRequest());
     assertEquals(StatusCode.SUCCESS, response.getStatusCode());
     assertEquals(ServerStatus.DECOMMISSIONING, shuffleServer.getServerStatus());

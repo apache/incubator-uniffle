@@ -37,7 +37,8 @@ public class RssBaseConf extends RssConf {
       ConfigOptions.key("rss.rpc.server.type")
           .enumType(ServerType.class)
           .defaultValue(ServerType.GRPC)
-          .withDescription("Shuffle server type, default is grpc");
+          .withDescription(
+              "Shuffle server type, supports GRPC_NETTY, GRPC. The default value is GRPC for now. But we recommend using GRPC_NETTY to enable Netty on the server side for better stability and performance.");
 
   public static final ConfigOption<Integer> RPC_SERVER_PORT =
       ConfigOptions.key("rss.rpc.server.port")
@@ -50,6 +51,30 @@ public class RssBaseConf extends RssConf {
           .booleanType()
           .defaultValue(true)
           .withDescription("If enable metrics for rpc connection");
+
+  public static final ConfigOption<Integer> RPC_NETTY_PAGE_SIZE =
+      ConfigOptions.key("rss.rpc.netty.pageSize")
+          .intType()
+          .defaultValue(4096)
+          .withDescription(
+              "The value of pageSize for PooledByteBufAllocator when using gRPC internal Netty on the server-side. "
+                  + "This configuration will only take effect when rss.rpc.server.type is set to GRPC_NETTY.");
+
+  public static final ConfigOption<Integer> RPC_NETTY_MAX_ORDER =
+      ConfigOptions.key("rss.rpc.netty.maxOrder")
+          .intType()
+          .defaultValue(3)
+          .withDescription(
+              "The value of maxOrder for PooledByteBufAllocator when using gRPC internal Netty on the server-side. "
+                  + "This configuration will only take effect when rss.rpc.server.type is set to GRPC_NETTY.");
+
+  public static final ConfigOption<Integer> RPC_NETTY_SMALL_CACHE_SIZE =
+      ConfigOptions.key("rss.rpc.netty.smallCacheSize")
+          .intType()
+          .defaultValue(1024)
+          .withDescription(
+              "The value of smallCacheSize for PooledByteBufAllocator when using gRPC internal Netty on the server-side. "
+                  + "This configuration will only take effect when rss.rpc.server.type is set to GRPC_NETTY.");
 
   public static final ConfigOption<Integer> JETTY_HTTP_PORT =
       ConfigOptions.key("rss.jetty.http.port")
@@ -174,6 +199,13 @@ public class RssBaseConf extends RssConf {
           .booleanType()
           .defaultValue(false)
           .withDescription("Whether enable visiting secured hadoop cluster.");
+
+  public static final ConfigOption<Boolean> RSS_SECURITY_HADOOP_KERBEROS_PROXY_USER_ENABLE =
+      ConfigOptions.key("rss.security.hadoop.kerberos.proxy.user.enable")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription(
+              "Whether using proxy user for job user to access secured Hadoop cluster.");
 
   public static final ConfigOption<String> RSS_SECURITY_HADOOP_KRB5_CONF_FILE =
       ConfigOptions.key("rss.security.hadoop.kerberos.krb5-conf.file")

@@ -23,7 +23,7 @@ set -x
 set -u
 
 NAME="rss"
-MVN="mvn"
+MVN="./mvnw"
 RSS_HOME="$(
   cd "$(dirname "$0")"
   pwd
@@ -37,7 +37,9 @@ function exit_with_usage() {
   echo "+------------------------------------------------------------------------------------------------------+"
   echo "| ./build_distribution.sh [--spark2-profile <spark2 profile id>] [--spark2-mvn <custom maven options>] |"
   echo "|                         [--spark3-profile <spark3 profile id>] [--spark3-mvn <custom maven options>] |"
-  echo "|                         [--hadoop-profile <hadoop profile id>]                                       |"
+  echo "|                         [--hadoop-profile <hadoop profile id>] [--without-mr] [--without-tez]        |"
+  echo "|                         [--without-spark] [--without-spark2] [--without-spark3] [--without-dashboard]|"
+  echo "|                         [--name <custom name>]                                                       |"
   echo "|                         <maven build options>                                                        |"
   echo "+------------------------------------------------------------------------------------------------------+"
   exit 1
@@ -48,6 +50,12 @@ SPARK2_MVN_OPTS=""
 SPARK3_PROFILE_ID="spark3"
 SPARK3_MVN_OPTS=""
 HADOOP_PROFILE_ID="hadoop2.8"
+WITH_MR="true"
+WITH_TEZ="true"
+WITH_SPARK="true"
+WITH_SPARK2="true"
+WITH_SPARK3="true"
+WITH_DASHBOARD="true"
 NAME=none
 while (( "$#" )); do
   case $1 in
@@ -70,6 +78,25 @@ while (( "$#" )); do
     --hadoop-profile)
       HADOOP_PROFILE_ID=$2
       shift
+      ;;
+    --without-mr)
+      WITH_MR="false"
+      ;;
+    --without-tez)
+      WITH_TEZ="false"
+      ;;
+    --without-spark)
+      WITH_SPARK2="false"
+      WITH_SPARK3="false"
+      ;;
+    --without-spark2)
+      WITH_SPARK2="false"
+      ;;
+    --without-spark3)
+      WITH_SPARK3="false"
+      ;;
+    --without-dashboard)
+      WITH_DASHBOARD="false"
       ;;
     --name)
       NAME="$2"
@@ -133,12 +160,12 @@ fi
 
 echo "RSS version is $VERSION"
 
-export MAVEN_OPTS="${MAVEN_OPTS:--Xmx2g -XX:ReservedCodeCacheSize=1g}"
+export MAVEN_OPTS="${MAVEN_OPTS:--Xss128m -Xmx5g -XX:ReservedCodeCacheSize=1g}"
 
 # Store the command as an array because $MVN variable might have spaces in it.
 # Normal quoting tricks don't work.
 # See: http://mywiki.wooledge.org/BashFAQ/050
-BUILD_COMMAND=("$MVN" clean package -DskipTests $@)
+BUILD_COMMAND=("$MVN" clean package -DskipTests -P$HADOOP_PROFILE_ID $@)
 
 # Actually build the jar
 echo -e "\nBuilding with..."
@@ -179,52 +206,78 @@ cp "${RSS_HOME}"/cli/target/jars/* ${CLI_JAR_DIR}
 CLIENT_JAR_DIR="${DISTDIR}/jars/client"
 mkdir -p $CLIENT_JAR_DIR
 
-BUILD_COMMAND_SPARK2=("$MVN" clean package -P$SPARK2_PROFILE_ID -pl client-spark/spark2 -DskipTests -am $@ $SPARK2_MVN_OPTS)
 
 # Actually build the jar
-echo -e "\nBuilding with..."
-echo -e "\$ ${BUILD_COMMAND_SPARK2[@]}\n"
+if [ "$WITH_SPARK2" == "true" ]; then
+  BUILD_COMMAND_SPARK2=("$MVN" clean package -P$SPARK2_PROFILE_ID,$HADOOP_PROFILE_ID -pl client-spark/spark2-shaded -DskipTests -am $@ $SPARK2_MVN_OPTS)
 
-"${BUILD_COMMAND_SPARK2[@]}"
+  echo -e "\nBuilding with..."
+  echo -e "\$ ${BUILD_COMMAND_SPARK2[@]}\n"
+  "${BUILD_COMMAND_SPARK2[@]}"
 
-SPARK_CLIENT2_JAR_DIR="${CLIENT_JAR_DIR}/spark2"
-mkdir -p $SPARK_CLIENT2_JAR_DIR
+  SPARK_CLIENT2_JAR_DIR="${CLIENT_JAR_DIR}/spark2"
+  mkdir -p $SPARK_CLIENT2_JAR_DIR
+  SPARK_CLIENT2_JAR="${RSS_HOME}/client-spark/spark2-shaded/target/rss-client-spark2-shaded-${VERSION}.jar"
+  echo "copy $SPARK_CLIENT2_JAR to ${SPARK_CLIENT2_JAR_DIR}"
+  cp $SPARK_CLIENT2_JAR ${SPARK_CLIENT2_JAR_DIR}
+fi
 
-SPARK_CLIENT2_JAR="${RSS_HOME}/client-spark/spark2/target/shaded/rss-client-spark2-${VERSION}-shaded.jar"
-echo "copy $SPARK_CLIENT2_JAR to ${SPARK_CLIENT2_JAR_DIR}"
-cp $SPARK_CLIENT2_JAR ${SPARK_CLIENT2_JAR_DIR}
+if [ "$WITH_SPARK3" == "true" ]; then
+  BUILD_COMMAND_SPARK3=("$MVN" clean package -P$SPARK3_PROFILE_ID,$HADOOP_PROFILE_ID -pl client-spark/spark3-shaded -DskipTests -am $@ $SPARK3_MVN_OPTS)
 
-BUILD_COMMAND_SPARK3=("$MVN" clean package -P$SPARK3_PROFILE_ID -pl client-spark/spark3 -DskipTests -am $@ $SPARK3_MVN_OPTS)
+  echo -e "\nBuilding with..."
+  echo -e "\$ ${BUILD_COMMAND_SPARK3[@]}\n"
+  "${BUILD_COMMAND_SPARK3[@]}"
 
-echo -e "\nBuilding with..."
-echo -e "\$ ${BUILD_COMMAND_SPARK3[@]}\n"
-"${BUILD_COMMAND_SPARK3[@]}"
+  SPARK_CLIENT3_JAR_DIR="${CLIENT_JAR_DIR}/spark3"
+  mkdir -p $SPARK_CLIENT3_JAR_DIR
+  SPARK_CLIENT3_JAR="${RSS_HOME}/client-spark/spark3-shaded/target/rss-client-spark3-shaded-${VERSION}.jar"
+  echo "copy $SPARK_CLIENT3_JAR to ${SPARK_CLIENT3_JAR_DIR}"
+  cp $SPARK_CLIENT3_JAR $SPARK_CLIENT3_JAR_DIR
+fi
 
-SPARK_CLIENT3_JAR_DIR="${CLIENT_JAR_DIR}/spark3"
-mkdir -p $SPARK_CLIENT3_JAR_DIR
-SPARK_CLIENT3_JAR="${RSS_HOME}/client-spark/spark3/target/shaded/rss-client-spark3-${VERSION}-shaded.jar"
-echo "copy $SPARK_CLIENT3_JAR to ${SPARK_CLIENT3_JAR_DIR}"
-cp $SPARK_CLIENT3_JAR $SPARK_CLIENT3_JAR_DIR
+if [ "$WITH_MR" == "true" ]; then
+  BUILD_COMMAND_MR=("$MVN" clean package -Pmr,$HADOOP_PROFILE_ID -pl client-mr/core -DskipTests -am $@)
 
-BUILD_COMMAND_MR=("$MVN" clean package -Pmr,$HADOOP_PROFILE_ID -pl client-mr/core -DskipTests -am $@)
-echo -e "\nBuilding with..."
-echo -e "\$ ${BUILD_COMMAND_MR[@]}\n"
-"${BUILD_COMMAND_MR[@]}"
-MR_CLIENT_JAR_DIR="${CLIENT_JAR_DIR}/mr"
-mkdir -p $MR_CLIENT_JAR_DIR
-MR_CLIENT_JAR="${RSS_HOME}/client-mr/core/target/shaded/rss-client-mr-${VERSION}-shaded.jar"
-echo "copy $MR_CLIENT_JAR to ${MR_CLIENT_JAR_DIR}"
-cp $MR_CLIENT_JAR $MR_CLIENT_JAR_DIR
+  echo -e "\nBuilding with..."
+  echo -e "\$ ${BUILD_COMMAND_MR[@]}\n"
+  "${BUILD_COMMAND_MR[@]}"
 
-BUILD_COMMAND_TEZ=("$MVN" clean package -Ptez,$HADOOP_PROFILE_ID -pl client-tez -DskipTests -am $@)
-echo -e "\nBuilding with..."
-echo -e "\$ ${BUILD_COMMAND_TEZ[@]}\n"
-"${BUILD_COMMAND_TEZ[@]}"
-TEZ_CLIENT_JAR_DIR="${CLIENT_JAR_DIR}/tez"
-mkdir -p $TEZ_CLIENT_JAR_DIR
-TEZ_CLIENT_JAR="${RSS_HOME}/client-tez/target/shaded/rss-client-tez-${VERSION}-shaded.jar"
-echo "copy $TEZ_CLIENT_JAR to ${TEZ_CLIENT_JAR_DIR}"
-cp $TEZ_CLIENT_JAR $TEZ_CLIENT_JAR_DIR
+  MR_CLIENT_JAR_DIR="${CLIENT_JAR_DIR}/mr"
+  mkdir -p $MR_CLIENT_JAR_DIR
+  MR_CLIENT_JAR="${RSS_HOME}/client-mr/core/target/shaded/rss-client-mr-${VERSION}-shaded.jar"
+  echo "copy $MR_CLIENT_JAR to ${MR_CLIENT_JAR_DIR}"
+  cp $MR_CLIENT_JAR $MR_CLIENT_JAR_DIR
+fi
+
+if [ "$WITH_TEZ" == "true" ]; then
+  BUILD_COMMAND_TEZ=("$MVN" clean package -Ptez,$HADOOP_PROFILE_ID -pl client-tez -DskipTests -am $@)
+
+  echo -e "\nBuilding with..."
+  echo -e "\$ ${BUILD_COMMAND_TEZ[@]}\n"
+  "${BUILD_COMMAND_TEZ[@]}"
+
+  TEZ_CLIENT_JAR_DIR="${CLIENT_JAR_DIR}/tez"
+  mkdir -p $TEZ_CLIENT_JAR_DIR
+  TEZ_CLIENT_JAR="${RSS_HOME}/client-tez/target/shaded/rss-client-tez-${VERSION}-shaded.jar"
+  echo "copy $TEZ_CLIENT_JAR to ${TEZ_CLIENT_JAR_DIR}"
+  cp $TEZ_CLIENT_JAR $TEZ_CLIENT_JAR_DIR
+fi
+
+if [ "$WITH_DASHBOARD" == "true" ]; then
+  BUILD_COMMAND_DASHBOARD=("$MVN" clean package -Pdashboard -pl dashboard -DskipTests -am $@)
+
+  echo -e "\nBuilding with..."
+  echo -e "\$ ${BUILD_COMMAND_DASHBOARD[@]}\n"
+  "${BUILD_COMMAND_DASHBOARD[@]}"
+
+  DASHBOARD_JAR_DIR="${DISTDIR}/jars/dashboard"
+  mkdir -p $DASHBOARD_JAR_DIR
+  DASHBOARD_JAR="${RSS_HOME}/dashboard/target/dashboard-${VERSION}.jar"
+  echo "copy $DASHBOARD_JAR to ${DASHBOARD_JAR_DIR}"
+  cp $DASHBOARD_JAR $DASHBOARD_JAR_DIR
+  cp "${RSS_HOME}"/dashboard/target/jars/* ${DASHBOARD_JAR_DIR}
+fi
 
 cp -r bin $DISTDIR
 cp -r conf $DISTDIR

@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RawKeyValueIterator;
@@ -38,18 +36,19 @@ import org.apache.hadoop.mapreduce.RssMRConfig;
 import org.apache.hadoop.mapreduce.RssMRUtils;
 import org.apache.hadoop.util.Progress;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
-import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.hadoop.shim.HadoopShimImpl;
 
 public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionReporter {
 
-  private static final Log LOG = LogFactory.getLog(RssShuffle.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RssShuffle.class);
 
   private static final int MAX_EVENTS_TO_FETCH = 10000;
 
@@ -217,23 +216,32 @@ public class RssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionR
       LOG.info("In reduce: " + reduceId + ", Rss MR client starts to fetch blocks from RSS server");
       JobConf readerJobConf = getRemoteConf();
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoList.size() > 1;
-      CreateShuffleReadClientRequest request =
-          new CreateShuffleReadClientRequest(
-              appId,
-              0,
-              reduceId.getTaskID().getId(),
-              basePath,
-              partitionNumPerRange,
-              partitionNum,
-              blockIdBitmap,
-              taskIdBitmap,
-              serverInfoList,
-              readerJobConf,
-              new MRIdHelper(),
-              expectedTaskIdsBitmapFilterEnable,
-              RssMRConfig.toRssConf(rssJobConf));
+      int retryMax =
+          rssJobConf.getInt(
+              RssMRConfig.RSS_CLIENT_RETRY_MAX, RssMRConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
+      long retryIntervalMax =
+          rssJobConf.getLong(
+              RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
+              RssMRConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
       ShuffleReadClient shuffleReadClient =
-          ShuffleClientFactory.getInstance().createShuffleReadClient(request);
+          ShuffleClientFactory.getInstance()
+              .createShuffleReadClient(
+                  ShuffleClientFactory.newReadBuilder()
+                      .appId(appId)
+                      .shuffleId(0)
+                      .partitionId(reduceId.getTaskID().getId())
+                      .basePath(basePath)
+                      .partitionNumPerRange(partitionNumPerRange)
+                      .partitionNum(partitionNum)
+                      .blockIdBitmap(blockIdBitmap)
+                      .taskIdBitmap(taskIdBitmap)
+                      .shuffleServerInfoList(serverInfoList)
+                      .hadoopConf(readerJobConf)
+                      .idHelper(new MRIdHelper())
+                      .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                      .retryMax(retryMax)
+                      .retryIntervalMax(retryIntervalMax)
+                      .rssConf(RssMRConfig.toRssConf(rssJobConf)));
       RssFetcher fetcher =
           new RssFetcher(
               mrJobConf,

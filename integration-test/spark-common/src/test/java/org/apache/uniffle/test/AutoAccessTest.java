@@ -32,6 +32,7 @@ import org.apache.spark.shuffle.ShuffleManager;
 import org.apache.spark.shuffle.sort.SortShuffleManager;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -87,7 +88,7 @@ public class AutoAccessTest extends IntegrationTestBase {
             + "org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker");
     createCoordinatorServer(coordinatorConf);
 
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     createShuffleServer(shuffleServerConf);
     startServers();
     Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);

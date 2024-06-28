@@ -40,6 +40,7 @@ public class HadoopSecurityContext implements SecurityContext {
 
   private UserGroupInformation loginUgi;
   private ScheduledExecutorService refreshScheduledExecutor;
+  private boolean enableProxyUser;
 
   // The purpose of the proxy user ugi cache is to prevent the creation of
   // multiple cache keys for the same user, scheme, and authority in the Hadoop filesystem.
@@ -51,6 +52,16 @@ public class HadoopSecurityContext implements SecurityContext {
   public HadoopSecurityContext(
       String krb5ConfPath, String keytabFile, String principal, long refreshIntervalSec)
       throws Exception {
+    this(krb5ConfPath, keytabFile, principal, refreshIntervalSec, true);
+  }
+
+  public HadoopSecurityContext(
+      String krb5ConfPath,
+      String keytabFile,
+      String principal,
+      long refreshIntervalSec,
+      boolean enableProxyUser)
+      throws Exception {
     if (StringUtils.isEmpty(keytabFile)) {
       throw new IllegalArgumentException("KeytabFilePath must be not null or empty");
     }
@@ -60,7 +71,7 @@ public class HadoopSecurityContext implements SecurityContext {
     if (refreshIntervalSec <= 0) {
       throw new IllegalArgumentException("refreshIntervalSec must be not negative");
     }
-
+    this.enableProxyUser = enableProxyUser;
     if (StringUtils.isNotEmpty(krb5ConfPath)) {
       System.setProperty(KRB5_CONF_KEY, krb5ConfPath);
     }
@@ -100,7 +111,7 @@ public class HadoopSecurityContext implements SecurityContext {
     }
 
     // Run with the proxy user.
-    if (!user.equals(loginUgi.getShortUserName())) {
+    if (enableProxyUser && !user.equals(loginUgi.getShortUserName())) {
       UserGroupInformation proxyUserUgi =
           proxyUserUgiPool.computeIfAbsent(
               user, x -> UserGroupInformation.createProxyUser(x, loginUgi));

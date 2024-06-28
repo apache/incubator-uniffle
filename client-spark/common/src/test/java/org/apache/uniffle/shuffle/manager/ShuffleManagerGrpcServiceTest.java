@@ -24,6 +24,8 @@ import org.mockito.Mockito;
 
 import org.apache.uniffle.proto.RssProtos.ReportShuffleFetchFailureRequest;
 import org.apache.uniffle.proto.RssProtos.ReportShuffleFetchFailureResponse;
+import org.apache.uniffle.proto.RssProtos.ReportShuffleWriteFailureRequest;
+import org.apache.uniffle.proto.RssProtos.ReportShuffleWriteFailureResponse;
 import org.apache.uniffle.proto.RssProtos.StatusCode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,7 +35,7 @@ import static org.mockito.Mockito.mock;
 
 public class ShuffleManagerGrpcServiceTest {
   // create mock of RssShuffleManagerInterface.
-  private static RssShuffleManagerInterface mockShuffleManager;
+  private static RssShuffleManagerBase mockShuffleManager;
   private static final String appId = "app-123";
   private static final int maxFetchFailures = 2;
   private static final int shuffleId = 0;
@@ -63,7 +65,7 @@ public class ShuffleManagerGrpcServiceTest {
 
   @BeforeAll
   public static void setup() {
-    mockShuffleManager = mock(RssShuffleManagerInterface.class);
+    mockShuffleManager = mock(RssShuffleManagerBase.class);
     Mockito.when(mockShuffleManager.getAppId()).thenReturn(appId);
     Mockito.when(mockShuffleManager.getNumMaps(shuffleId)).thenReturn(numMaps);
     Mockito.when(mockShuffleManager.getPartitionNum(shuffleId)).thenReturn(numReduces);
@@ -107,5 +109,17 @@ public class ShuffleManagerGrpcServiceTest {
     service.reportShuffleFetchFailure(req, appIdResponseObserver);
     assertEquals(StatusCode.INVALID_REQUEST, appIdResponseObserver.value.getStatus());
     assertTrue(appIdResponseObserver.value.getMsg().contains("old stage"));
+
+    // reportShuffleWriteFailure with an empty list of shuffleServerIds
+    MockedStreamObserver<ReportShuffleWriteFailureResponse>
+        reportShuffleWriteFailureResponseObserver = new MockedStreamObserver<>();
+    ReportShuffleWriteFailureRequest reportShuffleWriteFailureRequest =
+        ReportShuffleWriteFailureRequest.newBuilder()
+            .setAppId(appId)
+            .setShuffleId(shuffleId)
+            .buildPartial();
+    service.reportShuffleWriteFailure(
+        reportShuffleWriteFailureRequest, reportShuffleWriteFailureResponseObserver);
+    assertEquals(StatusCode.SUCCESS, reportShuffleWriteFailureResponseObserver.value.getStatus());
   }
 }

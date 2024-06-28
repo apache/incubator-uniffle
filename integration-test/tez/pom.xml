@@ -21,14 +21,14 @@
   <parent>
     <artifactId>uniffle-parent</artifactId>
     <groupId>org.apache.uniffle</groupId>
-    <version>0.9.0-SNAPSHOT</version>
+    <version>0.10.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.apache.uniffle</groupId>
   <artifactId>rss-integration-tez-test</artifactId>
-  <version>0.9.0-SNAPSHOT</version>
+  <version>0.10.0-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Apache Uniffle Integration Test (Tez)</name>
 
@@ -42,6 +42,7 @@
     <dependency>
       <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-integration-common-test</artifactId>
+      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -64,6 +65,7 @@
     <dependency>
       <groupId>org.apache.tez</groupId>
       <artifactId>tez-dag</artifactId>
+      <version>${tez.version}</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -83,6 +85,7 @@
     <dependency>
       <groupId>org.apache.tez</groupId>
       <artifactId>tez-tests</artifactId>
+      <version>${tez.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
       <exclusions>
@@ -104,6 +107,12 @@
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-minicluster</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -114,16 +123,22 @@
           <groupId>com.sun.jersey</groupId>
           <artifactId>jersey-json</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-yarn-api</artifactId>
+      <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-yarn-server-common</artifactId>
+      <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>
     <!-- tez-0.9.1 depends on guava 11.0.2, is not compatibility with uniffle and hadoop-3.2.1 (guava-27.0-jre) until
@@ -142,15 +157,17 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.22.2</version>
           <configuration>
             <systemProperties>
               <java.awt.headless>true</java.awt.headless>
               <java.io.tmpdir>${project.build.directory}/tmp</java.io.tmpdir>
               <project.version>${project.version}</project.version>
+              <test.mode>true</test.mode>
             </systemProperties>
             <redirectTestOutputToFile>${test.redirectToFile}</redirectTestOutputToFile>
             <useFile>${test.redirectToFile}</useFile>
-            <argLine>-ea -Xmx3g</argLine>
+            <argLine>-ea -Xmx5g -Xss4m -XX:MaxMetaspaceSize=2g -XX:ReservedCodeCacheSize=1g</argLine>
             <failIfNoTests>false</failIfNoTests>
           </configuration>
         </plugin>

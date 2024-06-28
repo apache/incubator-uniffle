@@ -50,7 +50,11 @@ public class ShuffleTaskInfo {
 
   private AtomicReference<String> user;
 
-  private AtomicLong totalDataSize = new AtomicLong(0);
+  private final AtomicLong totalDataSize = new AtomicLong(0);
+  private final AtomicLong inMemoryDataSize = new AtomicLong(0);
+  private final AtomicLong onLocalFileDataSize = new AtomicLong(0);
+  private final AtomicLong onHadoopDataSize = new AtomicLong(0);
+
   /** shuffleId -> partitionId -> partition shuffle data size */
   private Map<Integer, Map<Integer, Long>> partitionDataSizes;
   /** shuffleId -> huge partitionIds set */
@@ -59,6 +63,10 @@ public class ShuffleTaskInfo {
   private final AtomicBoolean existHugePartition;
 
   private final AtomicReference<ShuffleSpecification> specification;
+
+  private final Map<Integer, Map<Integer, AtomicLong>> partitionBlockCounters;
+
+  private final Map<Integer, Integer> latestStageAttemptNumbers;
 
   public ShuffleTaskInfo(String appId) {
     this.appId = appId;
@@ -71,6 +79,8 @@ public class ShuffleTaskInfo {
     this.hugePartitionTags = JavaUtils.newConcurrentMap();
     this.existHugePartition = new AtomicBoolean(false);
     this.specification = new AtomicReference<>();
+    this.partitionBlockCounters = JavaUtils.newConcurrentMap();
+    this.latestStageAttemptNumbers = JavaUtils.newConcurrentMap();
   }
 
   public Long getCurrentTimes() {
@@ -115,6 +125,7 @@ public class ShuffleTaskInfo {
 
   public long addPartitionDataSize(int shuffleId, int partitionId, long delta) {
     totalDataSize.addAndGet(delta);
+    inMemoryDataSize.addAndGet(delta);
     partitionDataSizes.computeIfAbsent(shuffleId, key -> JavaUtils.newConcurrentMap());
     Map<Integer, Long> partitions = partitionDataSizes.get(shuffleId);
     partitions.putIfAbsent(partitionId, 0L);
@@ -123,6 +134,28 @@ public class ShuffleTaskInfo {
 
   public long getTotalDataSize() {
     return totalDataSize.get();
+  }
+
+  public long getInMemoryDataSize() {
+    return inMemoryDataSize.get();
+  }
+
+  public long addOnLocalFileDataSize(long delta) {
+    inMemoryDataSize.addAndGet(-delta);
+    return onLocalFileDataSize.addAndGet(delta);
+  }
+
+  public long getOnLocalFileDataSize() {
+    return onLocalFileDataSize.get();
+  }
+
+  public long addOnHadoopDataSize(long delta) {
+    inMemoryDataSize.addAndGet(-delta);
+    return onHadoopDataSize.addAndGet(delta);
+  }
+
+  public long getOnHadoopDataSize() {
+    return onHadoopDataSize.get();
   }
 
   public long getPartitionDataSize(int shuffleId, int partitionId) {
@@ -165,5 +198,61 @@ public class ShuffleTaskInfo {
           shuffleId,
           partitionId);
     }
+  }
+
+  public boolean isHugePartition(int shuffleId, int partitionId) {
+    return existHugePartition.get()
+        && hugePartitionTags.containsKey(shuffleId)
+        && hugePartitionTags.get(shuffleId).contains(partitionId);
+  }
+
+  public Set<Integer> getShuffleIds() {
+    return partitionDataSizes.keySet();
+  }
+
+  public void incBlockNumber(int shuffleId, int partitionId, int delta) {
+    this.partitionBlockCounters
+        .computeIfAbsent(shuffleId, x -> JavaUtils.newConcurrentMap())
+        .computeIfAbsent(partitionId, x -> new AtomicLong())
+        .addAndGet(delta);
+  }
+
+  public long getBlockNumber(int shuffleId, int partitionId) {
+    Map<Integer, AtomicLong> partitionBlockCounters = this.partitionBlockCounters.get(shuffleId);
+    if (partitionBlockCounters == null) {
+      return 0L;
+    }
+    AtomicLong counter = partitionBlockCounters.get(partitionId);
+    if (counter == null) {
+      return 0L;
+    }
+    return counter.get();
+  }
+
+  public Integer getLatestStageAttemptNumber(int shuffleId) {
+    return latestStageAttemptNumbers.computeIfAbsent(shuffleId, key -> 0);
+  }
+
+  public void refreshLatestStageAttemptNumber(int shuffleId, int stageAttemptNumber) {
+    latestStageAttemptNumbers.put(shuffleId, stageAttemptNumber);
+  }
+
+  @Override
+  public String toString() {
+    return "ShuffleTaskInfo{"
+        + "appId='"
+        + appId
+        + '\''
+        + ", totalDataSize="
+        + totalDataSize
+        + ", inMemoryDataSize="
+        + inMemoryDataSize
+        + ", onLocalFileDataSize="
+        + onLocalFileDataSize
+        + ", onHadoopDataSize="
+        + onHadoopDataSize
+        + ", partitionDataSizes="
+        + partitionDataSizes
+        + '}';
   }
 }

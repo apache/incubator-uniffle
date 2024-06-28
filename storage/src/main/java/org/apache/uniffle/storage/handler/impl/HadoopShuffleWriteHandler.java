@@ -138,10 +138,12 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
                   block.getTaskAttemptId());
           indexWriter.writeIndex(segment);
         }
-        LOG.debug(
-            "Write handler inside cost {} ms for {}",
-            (System.currentTimeMillis() - ss),
-            fileNamePrefix);
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(
+              "Write handler inside cost {} ms for {}",
+              (System.currentTimeMillis() - ss),
+              fileNamePrefix);
+        }
       } catch (IOException e) {
         LOG.warn(
             "Write failed with "
@@ -157,11 +159,13 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
     } finally {
       writeLock.unlock();
     }
-    LOG.debug(
-        "Write handler outside write {} blocks cost {} ms for {}",
-        shuffleBlocks.size(),
-        (System.currentTimeMillis() - start),
-        fileNamePrefix);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(
+          "Write handler outside write {} blocks cost {} ms for {}",
+          shuffleBlocks.size(),
+          (System.currentTimeMillis() - start),
+          fileNamePrefix);
+    }
   }
 
   @VisibleForTesting

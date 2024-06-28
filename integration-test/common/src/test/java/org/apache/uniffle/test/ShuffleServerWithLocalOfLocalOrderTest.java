@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -32,22 +33,29 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.segment.LocalOrderSegmentSplitter;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -55,37 +63,67 @@ import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.common.ShuffleDataDistributionType.LOCAL_ORDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** This class is to test the local_order shuffle-data distribution */
 public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase {
 
-  private ShuffleServerGrpcClient shuffleServerClient;
+  private ShuffleServerGrpcClient grpcShuffleServerClient;
+  private ShuffleServerGrpcNettyClient nettyShuffleServerClient;
+  private static ShuffleServerConf grpcShuffleServerConfig;
+  private static ShuffleServerConf nettyShuffleServerConfig;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
-    String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
+    String grpcBasePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
+    ShuffleServerConf grpcShuffleServerConf = buildShuffleServerConf(ServerType.GRPC, grpcBasePath);
+    createShuffleServer(grpcShuffleServerConf);
+
+    File dataDir3 = new File(tmpDir, "data3");
+    File dataDir4 = new File(tmpDir, "data4");
+    String nettyBasePath = dataDir3.getAbsolutePath() + "," + dataDir4.getAbsolutePath();
+    ShuffleServerConf nettyShuffleServerConf =
+        buildShuffleServerConf(ServerType.GRPC_NETTY, nettyBasePath);
+    createShuffleServer(nettyShuffleServerConf);
+
+    startServers();
+
+    grpcShuffleServerConfig = grpcShuffleServerConf;
+    nettyShuffleServerConfig = nettyShuffleServerConf;
+  }
+
+  private static ShuffleServerConf buildShuffleServerConf(ServerType serverType, String basePath)
+      throws Exception {
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType);
     shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
     shuffleServerConf.setString("rss.storage.basePath", basePath);
     shuffleServerConf.setString("rss.server.app.expired.withoutHeartbeat", "5000");
-    createShuffleServer(shuffleServerConf);
-    startServers();
+    return shuffleServerConf;
   }
 
   @BeforeEach
-  public void createClient() {
-    shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+  public void createClient() throws Exception {
+    grpcShuffleServerClient =
+        new ShuffleServerGrpcClient(
+            LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
+    nettyShuffleServerClient =
+        new ShuffleServerGrpcNettyClient(
+            LOCALHOST,
+            nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
+            nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
   }
 
   @AfterEach
   public void closeClient() {
-    shuffleServerClient.close();
+    grpcShuffleServerClient.close();
+    nettyShuffleServerClient.close();
   }
 
   public static Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> createTestDataWithMultiMapIdx(
@@ -129,8 +167,15 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
     return partitionToBlocks;
   }
 
-  @Test
-  public void testWriteAndReadWithSpecifiedMapRange() throws Exception {
+  private static Stream<Arguments> testWriteAndReadWithSpecifiedMapRangeProvider() {
+    return Stream.of(Arguments.of(true), Arguments.of(false));
+  }
+
+  @ParameterizedTest
+  @MethodSource("testWriteAndReadWithSpecifiedMapRangeProvider")
+  private void testWriteAndReadWithSpecifiedMapRange(boolean isNettyMode) throws Exception {
+    ShuffleServerGrpcClient shuffleServerClient =
+        isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
     String testAppId = "testWriteAndReadWithSpecifiedMapRange";
 
     for (int i = 0; i < 4; i++) {
@@ -169,7 +214,8 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
 
     RssSendShuffleDataRequest rssdr =
         new RssSendShuffleDataRequest(testAppId, 3, 1000, shuffleToBlocks);
-    shuffleServerClient.sendShuffleData(rssdr);
+    RssSendShuffleDataResponse response = shuffleServerClient.sendShuffleData(rssdr);
+    assertSame(StatusCode.SUCCESS, response.getStatusCode());
 
     // Flush the data to file
     RssSendCommitRequest rscr = new RssSendCommitRequest(testAppId, 0);
@@ -263,8 +309,9 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
             .filter(x -> expectedBlockIds4.contains(x.getKey()))
             .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
     taskIds = Roaring64NavigableMap.bitmapOf();
+    BlockIdLayout layout = BlockIdLayout.DEFAULT;
     for (long blockId : expectedBlockIds4) {
-      taskIds.add(new DefaultIdHelper().getTaskAttemptId(blockId));
+      taskIds.add(new DefaultIdHelper(layout).getTaskAttemptId(blockId));
     }
     sdr =
         readShuffleData(

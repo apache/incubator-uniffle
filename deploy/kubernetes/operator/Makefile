@@ -105,7 +105,7 @@ docker-push: docker-build
 CONTROLLER_GEN = $(LOCAL_DIR)/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0)
+	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.12.1)
 	./hack/update-codegen.sh
 
 KUSTOMIZE = $(LOCAL_DIR)/kustomize
@@ -116,18 +116,18 @@ kustomize: ## Download kustomize locally if necessary.
 ENVTEST = $(LOCAL_DIR)/setup-envtest
 .PHONY: envtest
 envtest: ## Download envtest-setup locally if necessary.
-	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
+	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20230926180527-c93e2abcb28e)
 
 GOIMPORTS = $(LOCAL_DIR)/goimports
 .PHONY: goimports
 goimports: ## Download goimports locally if necessary.
-	$(call go-get-tool,$(GOIMPORTS),golang.org/x/tools/cmd/goimports@latest)
+	$(call go-get-tool,$(GOIMPORTS),golang.org/x/tools/cmd/goimports@v0.15.0)
 	$(GOIMPORTS) -local github.com/apache/incubator-uniffle/deploy/kubernetes/operator -w .
 
 REVIVE = $(LOCAL_DIR)/revive
 .PHONY: revive
 revive: ## Download revive locally if necessary.
-	$(call go-get-tool,$(REVIVE),github.com/mgechev/revive@latest)
+	$(call go-get-tool,$(REVIVE),github.com/mgechev/revive@v1.3.3)
 	files=$$(find . -name '*.go' | egrep -v './vendor|zz_generated|./pkg/generated|./api|./hack'); \
     $(REVIVE) -config hack/revive.toml -formatter friendly $$files
 

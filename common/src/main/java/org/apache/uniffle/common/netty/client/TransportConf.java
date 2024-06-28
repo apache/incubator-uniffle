@@ -50,7 +50,15 @@ public class TransportConf {
   }
 
   public boolean preferDirectBufs() {
-    return rssConf.get(RssClientConf.NETWORK_CLIENT_PREFER_DIRECT_BUFS);
+    return rssConf.get(RssClientConf.NETTY_CLIENT_PREFER_DIRECT_BUFS);
+  }
+
+  public boolean isPooledAllocatorEnabled() {
+    return rssConf.get(RssClientConf.NETTY_CLIENT_POOLED_ALLOCATOR_ENABLED);
+  }
+
+  public boolean isSharedAllocatorEnabled() {
+    return rssConf.get(RssClientConf.NETTY_CLIENT_SHARED_ALLOCATOR_ENABLED);
   }
 
   public int receiveBuf() {

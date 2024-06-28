@@ -46,7 +46,8 @@ public class SecurityContextFactory {
             securityConfig.getKrb5ConfPath(),
             securityConfig.getKeytabFilePath(),
             securityConfig.getPrincipal(),
-            securityConfig.getReloginIntervalSec());
+            securityConfig.getReloginIntervalSec(),
+            securityConfig.isEnableProxyUser());
     LOGGER.info("Initialized security context: {}", securityContext.getClass().getSimpleName());
   }
 

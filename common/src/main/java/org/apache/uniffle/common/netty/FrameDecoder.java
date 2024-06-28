@@ -19,5 +19,5 @@ package org.apache.uniffle.common.netty;
 
 public interface FrameDecoder {
   String HANDLER_NAME = "FrameDecoder";
-  int HEADER_SIZE = Integer.BYTES + Byte.BYTES;
+  int HEADER_SIZE = Integer.BYTES + Byte.BYTES + Integer.BYTES;
 }

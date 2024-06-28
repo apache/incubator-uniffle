@@ -30,9 +30,14 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.JavaUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,40 +48,35 @@ public class DataPusherTest {
     private SendShuffleDataResult fakedShuffleDataResult;
 
     FakedShuffleWriteClient() {
-      this("GRPC", 1, 1, 10, 1, 1, 1, false, 1, 1, 1, 1);
-    }
-
-    private FakedShuffleWriteClient(
-        String clientType,
-        int retryMax,
-        long retryIntervalMax,
-        int heartBeatThreadNum,
-        int replica,
-        int replicaWrite,
-        int replicaRead,
-        boolean replicaSkipEnabled,
-        int dataTransferPoolSize,
-        int dataCommitPoolSize,
-        int unregisterThreadPoolSize,
-        int unregisterRequestTimeSec) {
       super(
-          clientType,
-          retryMax,
-          retryIntervalMax,
-          heartBeatThreadNum,
-          replica,
-          replicaWrite,
-          replicaRead,
-          replicaSkipEnabled,
-          dataTransferPoolSize,
-          dataCommitPoolSize,
-          unregisterThreadPoolSize,
-          unregisterRequestTimeSec);
+          ShuffleClientFactory.newWriteBuilder()
+              .clientType("GRPC")
+              .retryMax(1)
+              .retryIntervalMax(1)
+              .heartBeatThreadNum(10)
+              .replica(1)
+              .replicaWrite(1)
+              .replicaRead(1)
+              .replicaSkipEnabled(true)
+              .dataTransferPoolSize(1)
+              .dataCommitPoolSize(1)
+              .unregisterThreadPoolSize(1)
+              .unregisterTimeSec(1)
+              .unregisterRequestTimeSec(1));
     }
 
     @Override
     public SendShuffleDataResult sendShuffleData(
         String appId,
+        List<ShuffleBlockInfo> shuffleBlockInfoList,
+        Supplier<Boolean> needCancelRequest) {
+      return sendShuffleData(appId, 0, shuffleBlockInfoList, needCancelRequest);
+    }
+
+    @Override
+    public SendShuffleDataResult sendShuffleData(
+        String appId,
+        int stageAttemptNumber,
         List<ShuffleBlockInfo> shuffleBlockInfoList,
         Supplier<Boolean> needCancelRequest) {
       return fakedShuffleDataResult;
@@ -92,27 +92,39 @@ public class DataPusherTest {
     FakedShuffleWriteClient shuffleWriteClient = new FakedShuffleWriteClient();
 
     Map<String, Set<Long>> taskToSuccessBlockIds = Maps.newConcurrentMap();
-    Map<String, Set<Long>> taskToFailedBlockIds = Maps.newConcurrentMap();
+    Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker = JavaUtils.newConcurrentMap();
     Set<String> failedTaskIds = new HashSet<>();
 
     DataPusher dataPusher =
         new DataPusher(
-            shuffleWriteClient, taskToSuccessBlockIds, taskToFailedBlockIds, failedTaskIds, 1, 2);
+            shuffleWriteClient,
+            taskToSuccessBlockIds,
+            taskToFailedBlockSendTracker,
+            failedTaskIds,
+            1,
+            2);
     dataPusher.setRssAppId("testSendData_appId");
-
-    // sync send
-    AddBlockEvent event =
-        new AddBlockEvent(
-            "taskId",
-            Arrays.asList(new ShuffleBlockInfo(1, 1, 1, 1, 1, new byte[1], null, 1, 100, 1)));
+    FailedBlockSendTracker failedBlockSendTracker = new FailedBlockSendTracker();
+    ShuffleBlockInfo failedBlock1 =
+        new ShuffleBlockInfo(1, 1, 3, 1, 1, new byte[1], null, 1, 100, 1);
+    ShuffleBlockInfo failedBlock2 =
+        new ShuffleBlockInfo(1, 1, 4, 1, 1, new byte[1], null, 1, 100, 1);
+    failedBlockSendTracker.add(
+        failedBlock1, new ShuffleServerInfo("host", 39998), StatusCode.NO_BUFFER);
+    failedBlockSendTracker.add(
+        failedBlock2, new ShuffleServerInfo("host", 39998), StatusCode.NO_BUFFER);
     shuffleWriteClient.setFakedShuffleDataResult(
-        new SendShuffleDataResult(Sets.newHashSet(1L, 2L), Sets.newHashSet(3L, 4L)));
+        new SendShuffleDataResult(Sets.newHashSet(1L, 2L), failedBlockSendTracker));
+    ShuffleBlockInfo shuffleBlockInfo =
+        new ShuffleBlockInfo(1, 1, 1, 1, 1, new byte[1], null, 1, 100, 1);
+    AddBlockEvent event = new AddBlockEvent("taskId", Arrays.asList(shuffleBlockInfo));
+    // sync send
     CompletableFuture<Long> future = dataPusher.send(event);
     long memoryFree = future.get();
     assertEquals(100, memoryFree);
     assertTrue(taskToSuccessBlockIds.get("taskId").contains(1L));
     assertTrue(taskToSuccessBlockIds.get("taskId").contains(2L));
-    assertTrue(taskToFailedBlockIds.get("taskId").contains(3L));
-    assertTrue(taskToFailedBlockIds.get("taskId").contains(4L));
+    assertTrue(taskToFailedBlockSendTracker.get("taskId").getFailedBlockIds().contains(3L));
+    assertTrue(taskToFailedBlockSendTracker.get("taskId").getFailedBlockIds().contains(4L));
   }
 }

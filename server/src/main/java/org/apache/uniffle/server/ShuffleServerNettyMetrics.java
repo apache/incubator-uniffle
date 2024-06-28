@@ -36,8 +36,8 @@ public class ShuffleServerNettyMetrics extends NettyMetrics {
   private static final String NETTY_GET_MEMORY_SHUFFLE_DATA_REQUEST =
       "netty_get_memory_shuffle_data_request";
 
-  public ShuffleServerNettyMetrics(String tags) {
-    super(tags);
+  public ShuffleServerNettyMetrics(ShuffleServerConf shuffleServerConf, String tags) {
+    super(shuffleServerConf, tags);
   }
 
   @Override

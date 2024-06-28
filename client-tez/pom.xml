@@ -23,13 +23,13 @@
     <parent>
         <artifactId>uniffle-parent</artifactId>
         <groupId>org.apache.uniffle</groupId>
-        <version>0.9.0-SNAPSHOT</version>
+        <version>0.10.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <groupId>org.apache.uniffle</groupId>
     <artifactId>rss-client-tez</artifactId>
-    <version>0.9.0-SNAPSHOT</version>
+    <version>0.10.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Apache Uniffle Client (Tez)</name>
 
@@ -37,10 +37,12 @@
       <dependency>
         <groupId>org.apache.tez</groupId>
         <artifactId>tez-common</artifactId>
+        <version>${tez.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tez</groupId>
         <artifactId>tez-runtime-library</artifactId>
+        <version>${tez.version}</version>
         <exclusions>
           <exclusion>
               <groupId>org.apache.hadoop</groupId>
@@ -51,14 +53,17 @@
       <dependency>
         <groupId>org.apache.tez</groupId>
         <artifactId>tez-runtime-internals</artifactId>
+        <version>${tez.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tez</groupId>
         <artifactId>tez-dag</artifactId>
+        <version>${tez.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tez</groupId>
         <artifactId>tez-api</artifactId>
+        <version>${tez.version}</version>
         <exclusions>
           <exclusion>
             <groupId>org.apache.hadoop</groupId>
@@ -83,6 +88,7 @@
       <dependency>
         <groupId>com.google.protobuf</groupId>
         <artifactId>protobuf-java</artifactId>
+        <version>${protobuf.version}</version>
       </dependency>
 
       <dependency>
@@ -93,11 +99,16 @@
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-json</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-mapreduce-client-core</artifactId>
+        <version>${hadoop.version}</version>
         <exclusions>
           <exclusion>
             <groupId>com.google.protobuf</groupId>
@@ -108,6 +119,7 @@
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-yarn-client</artifactId>
+        <version>${hadoop.version}</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
@@ -116,6 +128,17 @@
           </exclusion>
         </exclusions>
       </dependency>
+        <dependency>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-minicluster</artifactId>
+          <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-log4j12</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
@@ -141,7 +164,7 @@
                                     <include>io.grpc:*</include>
                                     <include>com.google.android:annotations</include>
                                     <include>io.perfmark:perfmark-api</include>
-                                    <include>io.netty:netty-all</include>
+                                    <include>io.netty:*</include>
                                     <include>com.google.api.grpc:proto-google-common-protos</include>
                                     <include>org.codehaus.mojo:animal-sniffer-annotations</include>
                                     <include>com.google.guava:*</include>
@@ -151,6 +174,7 @@
                                     <include>org.roaringbitmap:RoaringBitmap</include>
                                     <include>org.roaringbitmap:shims</include>
                                     <include>net.jpountz.lz4:lz4</include>
+                                    <include>org.apache.commons:commons-collections4</include>
                                 </includes>
                             </artifactSet>
                             <finalName>${project.artifactId}-${project.version}</finalName>
@@ -207,6 +231,99 @@
                                     <shadedPattern>${rss.shade.packageName}.org.roaringbitmap</shadedPattern>
                                 </relocation>
                             </relocations>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- shade the native netty libs as well -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>regex-property</id>
+                        <goals>
+                            <goal>regex-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>rss.shade.native.packageName</name>
+                            <value>${rss.shade.packageName}</value>
+                            <regex>\.</regex>
+                            <replacement>_</replacement>
+                            <failIfNoMatch>true</failIfNoMatch>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <echo message="Shade netty native libraries to ${rss.shade.native.packageName}"/>
+                                <unzip src="${project.build.directory}/shaded/${project.artifactId}-${project.version}-shaded.jar"
+                                       dest="${project.build.directory}/unpacked/"/>
+                                <echo message="renaming native epoll library"></echo>
+                                <move includeemptydirs="false"
+                                      todir="${project.build.directory}/unpacked/META-INF/native">
+                                    <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                                    <mapper from="libnetty_transport_native_epoll_x86_64.so"
+                                            to="lib${rss.shade.native.packageName}_netty_transport_native_epoll_x86_64.so"
+                                            type="glob"></mapper>
+                                </move>
+                                <move includeemptydirs="false"
+                                      todir="${project.build.directory}/unpacked/META-INF/native">
+                                    <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                                    <mapper from="libnetty_transport_native_epoll_aarch_64.so"
+                                            to="lib${rss.shade.native.packageName}_netty_transport_native_epoll_aarch_64.so"
+                                            type="glob"></mapper>
+                                </move>
+                              <move includeemptydirs="false"
+                                    todir="${project.build.directory}/unpacked/META-INF/native">
+                                <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                                <mapper from="libnetty_transport_native_epoll_riscv64.so"
+                                        to="lib${rss.shade.native.packageName}_netty_transport_native_epoll_riscv64.so"
+                                        type="glob"></mapper>
+                              </move>
+                                <move includeemptydirs="false"
+                                      todir="${project.build.directory}/unpacked/META-INF/native">
+                                    <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                                    <mapper from="libnetty_transport_native_kqueue_x86_64.jnilib"
+                                            to="lib${rss.shade.native.packageName}_netty_transport_native_kqueue_x86_64.jnilib"
+                                            type="glob"></mapper>
+                                </move>
+                                <move includeemptydirs="false"
+                                      todir="${project.build.directory}/unpacked/META-INF/native">
+                                    <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                                    <mapper from="libnetty_resolver_dns_native_macos_aarch_64.jnilib"
+                                            to="lib${rss.shade.native.packageName}_netty_resolver_dns_native_macos_aarch_64.jnilib"
+                                            type="glob"></mapper>
+                                </move>
+                                <move includeemptydirs="false"
+                                      todir="${project.build.directory}/unpacked/META-INF/native">
+                                    <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                                    <mapper from="libnetty_resolver_dns_native_macos_x86_64.jnilib"
+                                            to="lib${rss.shade.native.packageName}_netty_resolver_dns_native_macos_x86_64.jnilib"
+                                            type="glob"></mapper>
+                                </move>
+                                <move includeemptydirs="false"
+                                      todir="${project.build.directory}/unpacked/META-INF/native">
+                                    <fileset dir="${project.build.directory}/unpacked/META-INF/native"></fileset>
+                                    <mapper from="libnetty_transport_native_kqueue_aarch_64.jnilib"
+                                            to="lib${rss.shade.native.packageName}_netty_transport_native_kqueue_aarch_64.jnilib"
+                                            type="glob"></mapper>
+                                </move>
+                                <echo message="repackaging netty jar"></echo>
+                                <jar destfile="${project.build.directory}/shaded/${project.artifactId}-${project.version}-shaded.jar"
+                                     basedir="${project.build.directory}/unpacked"/>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>

@@ -17,7 +17,12 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.ContentSummary;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
@@ -29,11 +34,13 @@ import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(HadoopShuffleDeleteHandler.class);
+  private final String shuffleServerId;
 
   private Configuration hadoopConf;
 
-  public HadoopShuffleDeleteHandler(Configuration hadoopConf) {
+  public HadoopShuffleDeleteHandler(Configuration hadoopConf, String shuffleServerId) {
     this.hadoopConf = hadoopConf;
+    this.shuffleServerId = shuffleServerId;
   }
 
   @Override
@@ -52,9 +59,13 @@ public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
       while (!isSuccess && times < retryMax) {
         try {
           FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(user, path, hadoopConf);
-          fileSystem.delete(path, true);
+          delete(fileSystem, path, shuffleServerId);
           isSuccess = true;
         } catch (Exception e) {
+          if (e instanceof FileNotFoundException) {
+            LOG.info("[{}] doesn't exist, ignore it.", path);
+            return;
+          }
           times++;
           LOG.warn(
               "Can't delete shuffle data for appId[" + appId + "] with " + times + " times", e);
@@ -84,6 +95,27 @@ public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
                 + (System.currentTimeMillis() - start)
                 + " ms");
       }
+    }
+  }
+
+  private void delete(FileSystem fileSystem, Path path, String filePrefix) throws IOException {
+    if (filePrefix == null) {
+      fileSystem.delete(path, true);
+      return;
+    }
+    FileStatus[] fileStatuses = fileSystem.listStatus(path);
+    for (FileStatus fileStatus : fileStatuses) {
+      if (fileStatus.isDirectory()) {
+        delete(fileSystem, fileStatus.getPath(), filePrefix);
+      } else {
+        if (fileStatus.getPath().getName().startsWith(filePrefix)) {
+          fileSystem.delete(fileStatus.getPath(), true);
+        }
+      }
+    }
+    ContentSummary contentSummary = fileSystem.getContentSummary(path);
+    if (contentSummary.getFileCount() == 0) {
+      fileSystem.delete(path, true);
     }
   }
 }

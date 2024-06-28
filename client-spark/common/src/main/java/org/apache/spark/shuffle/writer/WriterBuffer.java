@@ -33,6 +33,7 @@ public class WriterBuffer {
   private List<WrappedBuffer> buffers = Lists.newArrayList();
   private int dataLength = 0;
   private int memoryUsed = 0;
+  private long recordCount = 0;
 
   public WriterBuffer(int bufferSize) {
     this.bufferSize = bufferSize;
@@ -66,6 +67,7 @@ public class WriterBuffer {
 
     nextOffset += length;
     dataLength += length;
+    recordCount++;
   }
 
   public boolean askForMemory(long length) {
@@ -96,6 +98,10 @@ public class WriterBuffer {
 
   public int getMemoryUsed() {
     return memoryUsed;
+  }
+
+  public long getRecordCount() {
+    return recordCount;
   }
 
   private static final class WrappedBuffer {

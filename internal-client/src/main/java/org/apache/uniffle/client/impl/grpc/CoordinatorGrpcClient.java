@@ -90,6 +90,12 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   public CoordinatorGrpcClient(String host, int port, int maxRetryAttempts, boolean usePlaintext) {
     super(host, port, maxRetryAttempts, usePlaintext);
     blockingStub = CoordinatorServerGrpc.newBlockingStub(channel);
+    LOG.info(
+        "Created CoordinatorGrpcClient, host:{}, port:{}, maxRetryAttempts:{}, usePlaintext:{}",
+        host,
+        port,
+        maxRetryAttempts,
+        usePlaintext);
   }
 
   public CoordinatorGrpcClient(ManagedChannel channel) {
@@ -145,7 +151,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       response = blockingStub.withDeadlineAfter(timeout, TimeUnit.MILLISECONDS).heartbeat(request);
       status = response.getStatus();
     } catch (StatusRuntimeException e) {
-      LOG.error(e.getMessage());
+      LOG.error("Failed to doSendHeartBeat, request: {}", request, e);
       status = RssProtos.StatusCode.TIMEOUT;
     } catch (Exception e) {
       LOG.error(e.getMessage());
@@ -171,8 +177,11 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       int dataReplica,
       Set<String> requiredTags,
       int assignmentShuffleServerNumber,
-      int estimateTaskConcurrency) {
-
+      int estimateTaskConcurrency,
+      Set<String> faultyServerIds,
+      int stageId,
+      int stageAttemptNumber,
+      boolean reassign) {
     RssProtos.GetShuffleServerRequest getServerRequest =
         RssProtos.GetShuffleServerRequest.newBuilder()
             .setApplicationId(appId)
@@ -183,6 +192,10 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             .addAllRequireTags(requiredTags)
             .setAssignmentShuffleServerNumber(assignmentShuffleServerNumber)
             .setEstimateTaskConcurrency(estimateTaskConcurrency)
+            .addAllFaultyServerIds(faultyServerIds)
+            .setStageId(stageId)
+            .setStageAttemptNumber(stageAttemptNumber)
+            .setReassign(reassign)
             .build();
 
     return blockingStub.getShuffleAssignments(getServerRequest);
@@ -275,7 +288,11 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             request.getDataReplica(),
             request.getRequiredTags(),
             request.getAssignmentShuffleServerNumber(),
-            request.getEstimateTaskConcurrency());
+            request.getEstimateTaskConcurrency(),
+            request.getFaultyServerIds(),
+            request.getStageId(),
+            request.getStageAttemptNumber(),
+            request.isReassign());
 
     RssGetShuffleAssignmentsResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
@@ -343,7 +360,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       rpcResponse =
           blockingStub
               .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS)
-              .fetchClientConf(Empty.getDefaultInstance());
+              .fetchClientConfV2(request.toProto());
       Map<String, String> clientConf =
           rpcResponse.getClientConfList().stream()
               .collect(Collectors.toMap(ClientConfItem::getKey, ClientConfItem::getValue));

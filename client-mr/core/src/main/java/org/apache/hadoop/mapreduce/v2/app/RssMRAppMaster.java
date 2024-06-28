@@ -446,7 +446,7 @@ public class RssMRAppMaster extends MRAppMaster {
           MRJobConfig.CACHE_FILE_TIMESTAMPS,
           ts == null ? String.valueOf(currentTs) : currentTs + "," + ts);
       String vis = conf.get(MRJobConfig.CACHE_FILE_VISIBILITIES);
-      conf.set(MRJobConfig.CACHE_FILE_VISIBILITIES, vis == null ? "false" : "false" + "," + vis);
+      conf.set(MRJobConfig.CACHE_FILE_VISIBILITIES, vis == null ? "false" : "false," + vis);
       long size = status.getLen();
       String sizes = conf.get(MRJobConfig.CACHE_FILES_SIZES);
       conf.set(

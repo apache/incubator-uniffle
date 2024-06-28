@@ -34,10 +34,10 @@ import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -76,6 +76,31 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
         handler,
         blockNum,
         recordNum,
+        BlockIdLayout.DEFAULT,
+        expectedData,
+        blockIdBitmap,
+        keyPrefix,
+        serializer,
+        partitionID,
+        true);
+  }
+
+  protected void writeTestData(
+      ShuffleWriteHandler handler,
+      int blockNum,
+      int recordNum,
+      BlockIdLayout layout,
+      Map<String, String> expectedData,
+      Roaring64NavigableMap blockIdBitmap,
+      String keyPrefix,
+      Serializer serializer,
+      int partitionID)
+      throws Exception {
+    writeTestData(
+        handler,
+        blockNum,
+        recordNum,
+        layout,
         expectedData,
         blockIdBitmap,
         keyPrefix,
@@ -95,6 +120,31 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
       int partitionID,
       boolean compress)
       throws Exception {
+    writeTestData(
+        handler,
+        blockNum,
+        recordNum,
+        BlockIdLayout.DEFAULT,
+        expectedData,
+        blockIdBitmap,
+        keyPrefix,
+        serializer,
+        partitionID,
+        compress);
+  }
+
+  protected void writeTestData(
+      ShuffleWriteHandler handler,
+      int blockNum,
+      int recordNum,
+      BlockIdLayout layout,
+      Map<String, String> expectedData,
+      Roaring64NavigableMap blockIdBitmap,
+      String keyPrefix,
+      Serializer serializer,
+      int partitionID,
+      boolean compress)
+      throws Exception {
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
     SerializerInstance serializerInstance = serializer.newInstance();
     for (int i = 0; i < blockNum; i++) {
@@ -106,7 +156,7 @@ public abstract class AbstractRssReaderTest extends HadoopTestBase {
         expectedData.put(key, value);
         writeData(serializeStream, key, value);
       }
-      long blockId = ClientUtils.getBlockId(partitionID, 0, atomicInteger.getAndIncrement());
+      long blockId = layout.getBlockId(atomicInteger.getAndIncrement(), partitionID, 0);
       blockIdBitmap.add(blockId);
       blocks.add(createShuffleBlock(output.toBytes(), blockId, compress));
       serializeStream.close();

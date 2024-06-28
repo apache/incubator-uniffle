@@ -32,7 +32,8 @@ public class RotateStorageManagerFallbackStrategy extends AbstractStorageManager
   public StorageManager tryFallback(
       StorageManager current, ShuffleDataFlushEvent event, StorageManager... candidates) {
     if (fallBackTimes > 0
-        && (event.getRetryTimes() < fallBackTimes || event.getRetryTimes() % fallBackTimes > 0)) {
+        && (event.getRetryTimes() < fallBackTimes || event.getRetryTimes() % fallBackTimes > 0)
+        && current.canWrite(event)) {
       return current;
     }
     return findNextStorageManager(current, null, event, candidates);

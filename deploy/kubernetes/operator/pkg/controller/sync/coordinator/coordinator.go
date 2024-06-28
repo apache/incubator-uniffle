@@ -136,7 +136,8 @@ func GenerateHeadlessSvc(rss *unifflev1alpha1.RemoteShuffleService, index int) *
 }
 
 // GenerateSvc generates NodePort service used by specific coordinator. If no RPCNodePort/HTTPNodePort is specified,
-//   this function is skipped.
+//
+//	this function is skipped.
 func GenerateSvc(rss *unifflev1alpha1.RemoteShuffleService, index int) *corev1.Service {
 	name := GenerateNameByIndex(rss, index)
 	svc := &corev1.Service{
@@ -233,6 +234,13 @@ func GenerateDeploy(rss *unifflev1alpha1.RemoteShuffleService, index int) *appsv
 	if rss.Spec.Coordinator.RuntimeClassName != nil {
 		deploy.Spec.Template.Spec.RuntimeClassName = rss.Spec.Coordinator.RuntimeClassName
 	}
+
+	// add custom annotations
+	annotations := map[string]string{}
+	for key, value := range rss.Spec.Coordinator.Annotations {
+		annotations[key] = value
+	}
+	deploy.Spec.Template.Annotations = annotations
 
 	// add init containers, the main container and other containers.
 	deploy.Spec.Template.Spec.InitContainers = util.GenerateInitContainers(rss.Spec.Coordinator.RSSPodSpec)

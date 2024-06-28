@@ -45,6 +45,12 @@ public class LocalStorage extends AbstractStorage {
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorage.class);
   public static final String STORAGE_HOST = "local";
 
+  private final long diskCapacity;
+  private volatile long diskAvailableBytes;
+  private volatile long serviceUsedBytes;
+  // for test cases
+  private boolean enableDiskCapacityCheck = false;
+
   private long capacity;
   private final String basePath;
   private final String mountPoint;
@@ -61,6 +67,7 @@ public class LocalStorage extends AbstractStorage {
     this.lowWaterMarkOfWrite = builder.lowWaterMarkOfWrite;
     this.capacity = builder.capacity;
     this.media = builder.media;
+    this.enableDiskCapacityCheck = builder.enableDiskCapacityWatermarkCheck;
 
     File baseFolder = new File(basePath);
     try {
@@ -74,16 +81,18 @@ public class LocalStorage extends AbstractStorage {
       LOG.warn("Init base directory " + basePath + " fail, the disk should be corrupted", ioe);
       throw new RssException(ioe);
     }
+    this.diskCapacity = baseFolder.getTotalSpace();
+    this.diskAvailableBytes = baseFolder.getUsableSpace();
+
     if (capacity < 0L) {
-      long totalSpace = baseFolder.getTotalSpace();
-      this.capacity = (long) (totalSpace * builder.ratio);
+      this.capacity = (long) (diskCapacity * builder.ratio);
       LOG.info(
           "The `rss.server.disk.capacity` is not specified nor negative, the "
               + "ratio(`rss.server.disk.capacity.ratio`:{}) * disk space({}) is used, ",
           builder.ratio,
-          totalSpace);
+          diskCapacity);
     } else {
-      long freeSpace = baseFolder.getFreeSpace();
+      final long freeSpace = diskAvailableBytes;
       if (freeSpace < capacity) {
         throw new IllegalArgumentException(
             "The Disk of "
@@ -142,13 +151,34 @@ public class LocalStorage extends AbstractStorage {
         basePath);
   }
 
+  // only for tests.
+  @VisibleForTesting
+  public void enableDiskCapacityCheck() {
+    this.enableDiskCapacityCheck = true;
+  }
+
+  public long getDiskCapacity() {
+    return diskCapacity;
+  }
+
   @Override
   public boolean canWrite() {
+    boolean serviceUsedCapacityCheck;
+    boolean diskUsedCapacityCheck;
+
     if (isSpaceEnough) {
-      isSpaceEnough = metaData.getDiskSize().doubleValue() * 100 / capacity < highWaterMarkOfWrite;
+      serviceUsedCapacityCheck =
+          (double) (serviceUsedBytes * 100) / capacity < highWaterMarkOfWrite;
+      diskUsedCapacityCheck =
+          ((double) (diskCapacity - diskAvailableBytes)) * 100 / diskCapacity
+              < highWaterMarkOfWrite;
     } else {
-      isSpaceEnough = metaData.getDiskSize().doubleValue() * 100 / capacity < lowWaterMarkOfWrite;
+      serviceUsedCapacityCheck = (double) (serviceUsedBytes * 100) / capacity < lowWaterMarkOfWrite;
+      diskUsedCapacityCheck =
+          ((double) (diskCapacity - diskAvailableBytes)) * 100 / diskCapacity < lowWaterMarkOfWrite;
     }
+    isSpaceEnough =
+        serviceUsedCapacityCheck && (enableDiskCapacityCheck ? diskUsedCapacityCheck : true);
     return isSpaceEnough && !isCorrupted;
   }
 
@@ -172,10 +202,6 @@ public class LocalStorage extends AbstractStorage {
 
   public void updateShuffleLastReadTs(String shuffleKey) {
     metaData.updateShuffleLastReadTs(shuffleKey);
-  }
-
-  public long getDiskSize() {
-    return metaData.getDiskSize().longValue();
   }
 
   @VisibleForTesting
@@ -204,7 +230,7 @@ public class LocalStorage extends AbstractStorage {
     LOG.info("Start to remove resource of {}", shuffleKey);
     try {
       metaData.updateDiskSize(-metaData.getShuffleSize(shuffleKey));
-      metaData.remoteShuffle(shuffleKey);
+      metaData.removeShuffle(shuffleKey);
       LOG.info(
           "Finish remove resource of {}, disk size is {} and {} shuffle metadata",
           shuffleKey,
@@ -237,6 +263,18 @@ public class LocalStorage extends AbstractStorage {
     return appIds;
   }
 
+  public void updateDiskAvailableBytes(long bytes) {
+    this.diskAvailableBytes = bytes;
+  }
+
+  public void updateServiceUsedBytes(long usedBytes) {
+    this.serviceUsedBytes = usedBytes;
+  }
+
+  public long getServiceUsedBytes() {
+    return serviceUsedBytes;
+  }
+
   // Only for test
   @VisibleForTesting
   public void markSpaceFull() {
@@ -250,6 +288,7 @@ public class LocalStorage extends AbstractStorage {
     private double highWaterMarkOfWrite;
     private String basePath;
     private StorageMedia media;
+    private boolean enableDiskCapacityWatermarkCheck;
 
     private Builder() {}
 
@@ -280,6 +319,11 @@ public class LocalStorage extends AbstractStorage {
 
     public Builder localStorageMedia(StorageMedia media) {
       this.media = media;
+      return this;
+    }
+
+    public Builder enableDiskCapacityWatermarkCheck() {
+      this.enableDiskCapacityWatermarkCheck = true;
       return this;
     }
 

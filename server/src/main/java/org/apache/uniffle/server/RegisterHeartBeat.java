@@ -21,10 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
@@ -33,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.request.RssSendHeartBeatRequest;
-import org.apache.uniffle.client.response.RssSendHeartBeatResponse;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.storage.StorageInfo;
@@ -57,9 +55,10 @@ public class RegisterHeartBeat {
     this.heartBeatInitialDelay = conf.getLong(ShuffleServerConf.SERVER_HEARTBEAT_DELAY);
     this.heartBeatInterval = conf.getLong(ShuffleServerConf.SERVER_HEARTBEAT_INTERVAL);
     this.coordinatorQuorum = conf.getString(ShuffleServerConf.RSS_COORDINATOR_QUORUM);
-    CoordinatorClientFactory factory =
-        new CoordinatorClientFactory(conf.get(ShuffleServerConf.RSS_CLIENT_TYPE));
-    this.coordinatorClients = factory.createCoordinatorClient(this.coordinatorQuorum);
+    CoordinatorClientFactory factory = CoordinatorClientFactory.getInstance();
+    this.coordinatorClients =
+        factory.createCoordinatorClient(
+            conf.get(ShuffleServerConf.RSS_CLIENT_TYPE), this.coordinatorQuorum);
     this.shuffleServer = shuffleServer;
     this.heartBeatExecutorService =
         ThreadUtils.getDaemonFixedThreadPool(
@@ -96,7 +95,7 @@ public class RegisterHeartBeat {
   }
 
   @VisibleForTesting
-  boolean sendHeartBeat(
+  public boolean sendHeartBeat(
       String id,
       String ip,
       int grpcPort,
@@ -108,7 +107,7 @@ public class RegisterHeartBeat {
       ServerStatus serverStatus,
       Map<String, StorageInfo> localStorageInfo,
       int nettyPort) {
-    boolean sendSuccessfully = false;
+    AtomicBoolean sendSuccessfully = new AtomicBoolean(false);
     // use `rss.server.heartbeat.interval` as the timeout option
     RssSendHeartBeatRequest request =
         new RssSendHeartBeatRequest(
@@ -124,28 +123,27 @@ public class RegisterHeartBeat {
             serverStatus,
             localStorageInfo,
             nettyPort);
-    List<Future<RssSendHeartBeatResponse>> respFutures =
-        coordinatorClients.stream()
-            .map(client -> heartBeatExecutorService.submit(() -> client.sendHeartBeat(request)))
-            .collect(Collectors.toList());
 
-    String msg = "";
-    for (Future<RssSendHeartBeatResponse> rf : respFutures) {
-      try {
-        if (rf.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode()
-            == StatusCode.SUCCESS) {
-          sendSuccessfully = true;
-        }
-      } catch (Exception e) {
-        msg = e.getMessage();
-      }
-    }
+    ThreadUtils.executeTasks(
+        heartBeatExecutorService,
+        coordinatorClients,
+        client -> client.sendHeartBeat(request),
+        request.getTimeout() * 2,
+        "send heartbeat",
+        future -> {
+          try {
+            if (future.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode()
+                == StatusCode.SUCCESS) {
+              sendSuccessfully.set(true);
+            }
+          } catch (Exception e) {
+            LOG.error(e.getMessage());
+            return null;
+          }
+          return null;
+        });
 
-    if (!sendSuccessfully) {
-      LOG.error(msg);
-    }
-
-    return sendSuccessfully;
+    return sendSuccessfully.get();
   }
 
   public void shutdown() {

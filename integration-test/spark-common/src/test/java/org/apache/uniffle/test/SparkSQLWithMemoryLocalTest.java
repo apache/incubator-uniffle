@@ -26,6 +26,7 @@ import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -44,15 +45,25 @@ public class SparkSQLWithMemoryLocalTest extends SparkSQLTest {
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
-    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 4000);
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    shuffleServerConf.setString("rss.storage.basePath", basePath);
-    createShuffleServer(shuffleServerConf);
+
+    ShuffleServerConf grpcShuffleServerConf = buildShuffleServerConf(ServerType.GRPC);
+    createShuffleServer(grpcShuffleServerConf);
+
+    ShuffleServerConf nettyShuffleServerConf = buildShuffleServerConf(ServerType.GRPC_NETTY);
+    createShuffleServer(nettyShuffleServerConf);
+
     startServers();
+  }
+
+  private static ShuffleServerConf buildShuffleServerConf(ServerType serverType) throws Exception {
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType);
+    shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
+    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 4000);
+    shuffleServerConf.setString("rss.storage.basePath", basePath);
+    return shuffleServerConf;
   }
 
   @Override

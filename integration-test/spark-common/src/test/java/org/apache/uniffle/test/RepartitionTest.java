@@ -32,15 +32,12 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class RepartitionTest extends SparkIntegrationTestBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepartitionTest.class);
-
-  static @TempDir File tempDir;
 
   @Test
   public void resultCompareTest() throws Exception {

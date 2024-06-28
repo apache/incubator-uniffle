@@ -39,12 +39,14 @@ import org.apache.uniffle.common.ShuffleRegisterInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.storage.StorageStatus;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.SimpleClusterManager;
 import org.apache.uniffle.coordinator.metric.CoordinatorGrpcMetrics;
@@ -72,11 +74,13 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     coordinatorConf.setLong("rss.coordinator.app.expired", 2000);
     coordinatorConf.setLong("rss.coordinator.server.heartbeat.timeout", 3000);
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     shuffleServerConf.remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
     createShuffleServer(shuffleServerConf);
-    shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 1);
-    shuffleServerConf.setInteger("rss.jetty.http.port", 18081);
+    shuffleServerConf.setInteger(
+        "rss.rpc.server.port", shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT) + 1);
+    shuffleServerConf.setInteger(
+        "rss.jetty.http.port", shuffleServerConf.getInteger(ShuffleServerConf.JETTY_HTTP_PORT) + 1);
     createShuffleServer(shuffleServerConf);
     startServers();
   }
@@ -145,23 +149,27 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     // When the shuffleServerHeartbeat Test is completed before the current test,
     // the server's tags will be [ss_v4, GRPC_NETTY] and [ss_v4, GRPC], respectively.
     // We need to remove the first machine's tag from GRPC_NETTY to GRPC
-    shuffleServers.get(0).stopServer();
-    RssConf shuffleServerConf = shuffleServers.get(0).getShuffleServerConf();
+    grpcShuffleServers.get(0).stopServer();
+    RssConf shuffleServerConf = grpcShuffleServers.get(0).getShuffleServerConf();
     Class<RssConf> clazz = RssConf.class;
     Field field = clazz.getDeclaredField("settings");
     field.setAccessible(true);
     ((ConcurrentHashMap<Object, Object>) field.get(shuffleServerConf))
         .remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
     String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
+
     withEnvironmentVariables("RSS_ENV_KEY", storageTypeJsonSource)
         .execute(
             () -> {
               shuffleServerConf.remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
               ShuffleServer ss = new ShuffleServer((ShuffleServerConf) shuffleServerConf);
               ss.start();
-              shuffleServers.set(0, ss);
+              grpcShuffleServers.set(0, ss);
             });
     Thread.sleep(5000);
+    CoordinatorServer coordinatorServer = coordinators.get(0);
+    ((SimpleClusterManager) (coordinatorServer.getClusterManager())).nodesCheckTest();
+
     // add tag when ClientType is `GRPC`
     RssGetShuffleAssignmentsRequest request =
         new RssGetShuffleAssignmentsRequest(
@@ -282,7 +290,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
   @Test
   public void shuffleServerHeartbeatTest() throws Exception {
     CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
-    shuffleServers.get(0).stopServer();
+    grpcShuffleServers.get(0).stopServer();
     Thread.sleep(5000);
     SimpleClusterManager scm = (SimpleClusterManager) coordinators.get(0).getClusterManager();
     List<ServerNode> nodes = scm.getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
@@ -291,15 +299,16 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     assertEquals(1, node.getStorageInfo().size());
     StorageInfo infoHead = node.getStorageInfo().values().iterator().next();
     final StorageInfo expectedStorageInfo =
-        shuffleServers.get(1).getStorageManager().getStorageInfo().values().iterator().next();
+        grpcShuffleServers.get(1).getStorageManager().getStorageInfo().values().iterator().next();
     assertEquals(expectedStorageInfo, infoHead);
     assertEquals(StorageStatus.NORMAL, infoHead.getStatus());
     assertTrue(node.getTags().contains(Constants.SHUFFLE_SERVER_VERSION));
     assertTrue(scm.getTagToNodes().get(Constants.SHUFFLE_SERVER_VERSION).contains(node));
-    ShuffleServerConf shuffleServerConf = shuffleServers.get(0).getShuffleServerConf();
-    shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 2);
-    shuffleServerConf.setInteger("rss.jetty.http.port", 18082);
-    shuffleServerConf.setInteger(ShuffleServerConf.NETTY_SERVER_PORT, SHUFFLE_SERVER_PORT + 5);
+    ShuffleServerConf shuffleServerConf = grpcShuffleServers.get(0).getShuffleServerConf();
+    shuffleServerConf.setInteger(
+        "rss.rpc.server.port", shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT) + 2);
+    shuffleServerConf.setInteger(
+        "rss.jetty.http.port", shuffleServerConf.getInteger(ShuffleServerConf.JETTY_HTTP_PORT) + 1);
     shuffleServerConf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "RSS_ENV_KEY");
     String baseDir = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0);
     String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
@@ -310,7 +319,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
               shuffleServerConf.set(ShuffleServerConf.TAGS, Lists.newArrayList("SSD"));
               ShuffleServer ss = new ShuffleServer(shuffleServerConf);
               ss.start();
-              shuffleServers.set(0, ss);
+              grpcShuffleServers.set(0, ss);
             });
     Thread.sleep(3000);
     assertEquals(2, coordinators.get(0).getClusterManager().getNodesNum());
@@ -318,7 +327,6 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     assertEquals(1, nodes.size());
     ServerNode ssdNode = nodes.get(0);
     infoHead = ssdNode.getStorageInfo().values().iterator().next();
-    assertEquals(SHUFFLE_SERVER_PORT + 5, ssdNode.getNettyPort());
     assertEquals(StorageMedia.SSD, infoHead.getType());
 
     scm.close();
@@ -326,13 +334,6 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
 
   @Test
   public void rpcMetricsTest() throws Exception {
-    double oldValue =
-        coordinators
-            .get(0)
-            .getGrpcMetrics()
-            .getCounterMap()
-            .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD)
-            .get();
     CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
     double newValue =
         coordinators
@@ -341,13 +342,13 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
             .getCounterMap()
             .get(CoordinatorGrpcMetrics.HEARTBEAT_METHOD)
             .get();
-    assertTrue(newValue - oldValue > 1);
+    assertTrue(newValue > 1);
 
     String appId = "rpcMetricsTest";
     RssGetShuffleAssignmentsRequest request =
         new RssGetShuffleAssignmentsRequest(
             appId, 1, 10, 4, 1, Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION));
-    oldValue =
+    double oldValue =
         coordinators
             .get(0)
             .getGrpcMetrics()

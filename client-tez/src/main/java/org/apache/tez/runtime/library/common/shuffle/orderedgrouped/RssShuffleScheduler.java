@@ -32,7 +32,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
@@ -95,10 +94,10 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
-import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.UnitConverter;
 
 class RssShuffleScheduler extends ShuffleScheduler {
@@ -181,7 +180,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   // TODO Clean this and other maps at some point
   @VisibleForTesting
   final ConcurrentMap<PathPartition, InputAttemptIdentifier> pathToIdentifierMap =
-      new ConcurrentHashMap<>();
+      JavaUtils.newConcurrentMap();
 
   // To track shuffleInfo events when finalMerge is disabled in source or pipelined shuffle is
   // enabled in source.
@@ -217,7 +216,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
   private final int numFetchers;
   private final Set<RssTezShuffleDataFetcher> rssRunningFetchers =
-      Collections.newSetFromMap(new ConcurrentHashMap<>());
+      Collections.newSetFromMap(JavaUtils.newConcurrentMap());
 
   private final ListeningExecutorService fetcherExecutor;
 
@@ -805,7 +804,9 @@ class RssShuffleScheduler extends ShuffleScheduler {
           pipelinedShuffleInfoEventsMap.put(inputIdentifier, eventInfo);
         }
 
-        assert (eventInfo != null);
+        if (eventInfo == null) {
+          throw new RssException("eventInfo should not be null");
+        }
         eventInfo.spillProcessed(srcAttemptIdentifier.getSpillEventId());
         numFetchedSpills++;
 
@@ -1057,7 +1058,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
   @Override
   public void reportLocalError(IOException ioe) {
-    LOG.error(srcNameTrimmed + ": " + "Shuffle failed : caused by local error", ioe);
+    LOG.error("{}: Shuffle failed: caused by local error", srcNameTrimmed, ioe);
     // Shuffle knows how to deal with failures post shutdown via the onFailure hook
     exceptionReporter.reportException(ioe);
   }
@@ -1321,7 +1322,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
   @Override
   public void obsoleteInput(InputAttemptIdentifier srcAttempt) {
     // The incoming srcAttempt does not contain a path component.
-    LOG.info(srcNameTrimmed + ": " + "Adding obsolete input: " + srcAttempt);
+    LOG.info("{}: Adding obsolete input: {}", srcNameTrimmed, srcAttempt);
     ShuffleEventInfo eventInfo = pipelinedShuffleInfoEventsMap.get(srcAttempt.getInputIdentifier());
 
     // Pipelined shuffle case (where pipelinedShuffleInfoEventsMap gets populated).
@@ -1685,8 +1686,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
         }
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(
-              srcNameTrimmed + ": " + "NumCompletedInputs: {}" + (numInputs - remainingMaps.get()));
+          LOG.debug("{}: NumCompletedInputs: {}", srcNameTrimmed, numInputs - remainingMaps.get());
         }
         // Ensure there's memory available before scheduling the next Fetcher.
         try {
@@ -1732,13 +1732,14 @@ class RssShuffleScheduler extends ShuffleScheduler {
                 break; // Check for the exit condition.
               }
               if (LOG.isDebugEnabled()) {
-                LOG.debug(srcNameTrimmed + ": " + "Processing pending host: " + mapHost.toString());
+                LOG.debug("{}: Processing pending host: {}", srcNameTrimmed, mapHost.toString());
               }
               if (!isShutdown.get()) {
                 count++;
                 if (LOG.isDebugEnabled()) {
                   LOG.debug(
-                      srcNameTrimmed + ": " + "Scheduling fetch for inputHost: {}",
+                      "{}: Scheduling fetch for inputHost: {}",
+                      srcNameTrimmed,
                       mapHost.getHostIdentifier() + ":" + mapHost.getPartitionId());
                 }
 
@@ -1851,24 +1852,23 @@ class RssShuffleScheduler extends ShuffleScheduler {
       int partitionNum = partitionToServers.size();
       boolean expectedTaskIdsBitmapFilterEnable = shuffleServerInfoSet.size() > 1;
 
-      CreateShuffleReadClientRequest request =
-          new CreateShuffleReadClientRequest(
-              applicationAttemptId.toString(),
-              shuffleId,
-              mapHost.getPartitionId(),
-              basePath,
-              partitionNumPerRange,
-              partitionNum,
-              blockIdBitmap,
-              taskIdBitmap,
-              shuffleServerInfoList,
-              hadoopConf,
-              new TezIdHelper(),
-              expectedTaskIdsBitmapFilterEnable,
-              RssTezConfig.toRssConf(conf));
-
       ShuffleReadClient shuffleReadClient =
-          ShuffleClientFactory.getInstance().createShuffleReadClient(request);
+          ShuffleClientFactory.getInstance()
+              .createShuffleReadClient(
+                  ShuffleClientFactory.newReadBuilder()
+                      .appId(applicationAttemptId.toString())
+                      .shuffleId(shuffleId)
+                      .partitionId(mapHost.getPartitionId())
+                      .basePath(basePath)
+                      .partitionNumPerRange(partitionNumPerRange)
+                      .partitionNum(partitionNum)
+                      .blockIdBitmap(blockIdBitmap)
+                      .taskIdBitmap(taskIdBitmap)
+                      .shuffleServerInfoList(shuffleServerInfoList)
+                      .hadoopConf(hadoopConf)
+                      .idHelper(new TezIdHelper())
+                      .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                      .rssConf(RssTezConfig.toRssConf(conf)));
       RssTezShuffleDataFetcher fetcher =
           new RssTezShuffleDataFetcher(
               partitionIdToSuccessMapTaskAttempts.get(mapHost.getPartitionId()).iterator().next(),
@@ -1939,7 +1939,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
       rssFetcherOrderedGrouped.shutDown();
 
       if (isShutdown.get()) {
-        LOG.info(srcNameTrimmed + ": " + "Already shutdown. Ignoring fetch complete");
+        LOG.info("{}: Already shutdown. Ignoring fetch complete", srcNameTrimmed);
       } else {
         successRssPartitionSet.add(partitionId);
         MapHost mapHost = runningRssPartitionMap.remove(partitionId);
@@ -1964,9 +1964,9 @@ class RssShuffleScheduler extends ShuffleScheduler {
       LOG.error("Failed to fetch.", t);
       rssFetcherOrderedGrouped.shutDown();
       if (isShutdown.get()) {
-        LOG.info(srcNameTrimmed + ": " + "Already shutdown. Ignoring fetch complete");
+        LOG.info("{}: Already shutdown. Ignoring fetch complete", srcNameTrimmed);
       } else {
-        LOG.error(srcNameTrimmed + ": " + "Fetcher failed with error", t);
+        LOG.error("{}: Fetcher failed with error", srcNameTrimmed, t);
         exceptionReporter.reportException(t);
         doBookKeepingForFetcherComplete();
       }

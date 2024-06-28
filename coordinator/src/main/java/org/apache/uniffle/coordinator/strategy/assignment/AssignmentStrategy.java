@@ -28,4 +28,13 @@ public interface AssignmentStrategy {
       Set<String> requiredTags,
       int requiredShuffleServerNumber,
       int estimateTaskConcurrency);
+
+  PartitionRangeAssignment assign(
+      int totalPartitionNum,
+      int partitionNumPerRange,
+      int replica,
+      Set<String> requiredTags,
+      int requiredShuffleServerNumber,
+      int estimateTaskConcurrency,
+      Set<String> serversList);
 }

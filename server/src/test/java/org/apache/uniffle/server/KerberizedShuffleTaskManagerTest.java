@@ -75,6 +75,7 @@ public class KerberizedShuffleTaskManagerTest extends KerberizedHadoopBase {
       shuffleServer.stopServer();
       shuffleServer = null;
     }
+    ShuffleServerMetrics.clear();
   }
 
   /**
@@ -158,7 +159,7 @@ public class KerberizedShuffleTaskManagerTest extends KerberizedHadoopBase {
     assertTrue(fs.exists(new Path(appBasePath)));
     assertNull(shuffleBufferManager.getBufferPool().get(appId).get(0));
     assertNotNull(shuffleBufferManager.getBufferPool().get(appId).get(1));
-    shuffleTaskManager.removeResources(appId);
+    shuffleTaskManager.removeResources(appId, false);
     assertFalse(fs.exists(new Path(appBasePath)));
     assertNull(shuffleBufferManager.getBufferPool().get(appId));
   }

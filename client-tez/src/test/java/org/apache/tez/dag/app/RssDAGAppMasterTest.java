@@ -87,6 +87,7 @@ import org.apache.tez.runtime.library.processor.SimpleProcessor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.exception.RssException;
@@ -497,36 +498,22 @@ public class RssDAGAppMasterTest {
     private int mode;
 
     FakedShuffleWriteClient(int mode) {
-      this("GRPC", 1, 1, 10, 1, 1, 1, false, 1, 1, 1, 1);
-      this.mode = mode;
-    }
-
-    private FakedShuffleWriteClient(
-        String clientType,
-        int retryMax,
-        long retryIntervalMax,
-        int heartBeatThreadNum,
-        int replica,
-        int replicaWrite,
-        int replicaRead,
-        boolean replicaSkipEnabled,
-        int dataTransferPoolSize,
-        int dataCommitPoolSize,
-        int unregisterThreadPoolSize,
-        int unregisterRequestTimeSec) {
       super(
-          clientType,
-          retryMax,
-          retryIntervalMax,
-          heartBeatThreadNum,
-          replica,
-          replicaWrite,
-          replicaRead,
-          replicaSkipEnabled,
-          dataTransferPoolSize,
-          dataCommitPoolSize,
-          unregisterThreadPoolSize,
-          unregisterRequestTimeSec);
+          ShuffleClientFactory.newWriteBuilder()
+              .clientType("GRPC")
+              .retryMax(1)
+              .retryIntervalMax(1)
+              .heartBeatThreadNum(10)
+              .replica(1)
+              .replicaWrite(1)
+              .replicaRead(1)
+              .replicaSkipEnabled(true)
+              .dataTransferPoolSize(1)
+              .dataCommitPoolSize(1)
+              .unregisterThreadPoolSize(1)
+              .unregisterTimeSec(1)
+              .unregisterRequestTimeSec(1));
+      this.mode = mode;
     }
 
     @Override

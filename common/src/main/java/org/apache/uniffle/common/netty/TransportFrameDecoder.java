@@ -19,13 +19,16 @@ package org.apache.uniffle.common.netty;
 
 import java.util.LinkedList;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.EmptyByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.protocol.Message;
 
 /**
@@ -45,6 +48,7 @@ import org.apache.uniffle.common.netty.protocol.Message;
  */
 public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implements FrameDecoder {
   private int msgSize = -1;
+  private int bodySize = -1;
   private Message.Type curType = Message.Type.UNKNOWN_TYPE;
   private ByteBuf headerBuf = Unpooled.buffer(HEADER_SIZE, HEADER_SIZE);
   private static final int MAX_FRAME_SIZE = Integer.MAX_VALUE;
@@ -66,18 +70,31 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
       if (frame == null) {
         break;
       }
-      // todo: An exception may be thrown during the decoding process, causing frame.release() to
-      // fail to be called
-      Message msg = Message.decode(curType, frame);
-      frame.release();
+      Message msg = null;
+      try {
+        msg = Message.decode(curType, frame);
+      } finally {
+        if (shouldRelease(msg)) {
+          frame.release();
+        }
+      }
       ctx.fireChannelRead(msg);
       clear();
     }
   }
 
+  @VisibleForTesting
+  static boolean shouldRelease(Message msg) {
+    if (msg == null || msg.body() == null || msg.body().byteBuf() == null) {
+      return true;
+    }
+    return msg.body().byteBuf() instanceof EmptyByteBuf;
+  }
+
   private void clear() {
     curType = Message.Type.UNKNOWN_TYPE;
     msgSize = -1;
+    bodySize = -1;
     headerBuf.clear();
   }
 
@@ -94,7 +111,8 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
     if (first.readableBytes() >= HEADER_SIZE) {
       msgSize = first.readInt();
       curType = Message.Type.decode(first);
-      nextFrameSize = msgSize;
+      bodySize = first.readInt();
+      nextFrameSize = msgSize + bodySize;
       totalSize -= HEADER_SIZE;
       if (!first.isReadable()) {
         buffers.removeFirst().release();
@@ -113,7 +131,8 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
 
     msgSize = headerBuf.readInt();
     curType = Message.Type.decode(headerBuf);
-    nextFrameSize = msgSize;
+    bodySize = headerBuf.readInt();
+    nextFrameSize = msgSize + bodySize;
     totalSize -= HEADER_SIZE;
     return nextFrameSize;
   }
@@ -126,7 +145,6 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
 
     // Reset size for next frame.
     nextFrameSize = UNKNOWN_FRAME_SIZE;
-
     Preconditions.checkArgument(frameSize < MAX_FRAME_SIZE, "Too large frame: %s", frameSize);
     Preconditions.checkArgument(frameSize > 0, "Frame length should be positive: %s", frameSize);
 
@@ -143,7 +161,9 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
       remaining -= next.readableBytes();
       frame.addComponent(next).writerIndex(frame.writerIndex() + next.readableBytes());
     }
-    assert remaining == 0;
+    if (remaining != 0) {
+      throw new RssException("The remaining should be 0");
+    }
     return frame;
   }
 

@@ -18,10 +18,12 @@
 package org.apache.uniffle.server.netty;
 
 import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.StreamSupport;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -31,6 +33,9 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.NettyRuntime;
+import io.netty.util.concurrent.SingleThreadEventExecutor;
+import io.netty.util.internal.SystemPropertyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +45,9 @@ import org.apache.uniffle.common.netty.client.TransportContext;
 import org.apache.uniffle.common.rpc.ServerInterface;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExitUtils;
+import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 
@@ -48,11 +55,20 @@ public class StreamServer implements ServerInterface {
 
   private static final Logger LOG = LoggerFactory.getLogger(StreamServer.class);
 
+  /** Use this value to ensure the minimum throughput. */
+  private static final int MIN_NETTY_SERVER_WORKER_THREAD_COUNT_DEFAULT = 100;
+
   private ShuffleServer shuffleServer;
   private EventLoopGroup shuffleBossGroup;
   private EventLoopGroup shuffleWorkerGroup;
   private ShuffleServerConf shuffleServerConf;
   private ChannelFuture channelFuture;
+
+  private final ScheduledExecutorService nettyPendingTasksNumTracker =
+      Executors.newSingleThreadScheduledExecutor(
+          ThreadUtils.getThreadFactory("NettyPendingTasksNumTracker"));
+  /** Interval to poll for Netty pending tasks number for Netty metrics, in milliseconds */
+  private final long pendingTasksNumMetricsPollingInterval;
 
   public StreamServer(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
@@ -61,6 +77,13 @@ public class StreamServer implements ServerInterface {
         shuffleServerConf.getBoolean(ShuffleServerConf.NETTY_SERVER_EPOLL_ENABLE);
     int acceptThreads = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_ACCEPT_THREAD);
     int workerThreads = shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_WORKER_THREAD);
+    if (workerThreads == 0) {
+      workerThreads =
+          Math.max(
+              MIN_NETTY_SERVER_WORKER_THREAD_COUNT_DEFAULT,
+              SystemPropertyUtil.getInt(
+                  "io.netty.eventLoopThreads", NettyRuntime.availableProcessors() * 2));
+    }
     if (isEpollEnable) {
       shuffleBossGroup = new EpollEventLoopGroup(acceptThreads);
       shuffleWorkerGroup = new EpollEventLoopGroup(workerThreads);
@@ -68,6 +91,37 @@ public class StreamServer implements ServerInterface {
       shuffleBossGroup = new NioEventLoopGroup(acceptThreads);
       shuffleWorkerGroup = new NioEventLoopGroup(workerThreads);
     }
+    this.pendingTasksNumMetricsPollingInterval =
+        shuffleServerConf.getLong(
+            ShuffleServerConf.SERVER_NETTY_PENDING_TASKS_NUM_TRACKER_INTERVAL);
+    startMonitoringPendingTasks();
+  }
+
+  private void startMonitoringPendingTasks() {
+    nettyPendingTasksNumTracker.scheduleAtFixedRate(
+        () -> {
+          int pendingTasksNumForBossGroup = getPendingTasksForEventLoopGroup(shuffleBossGroup);
+          shuffleServer
+              .getNettyMetrics()
+              .getGaugeNettyPendingTasksNumForBossGroup()
+              .set(pendingTasksNumForBossGroup);
+
+          int pendingTasksNumForWorkerGroup = getPendingTasksForEventLoopGroup(shuffleWorkerGroup);
+          shuffleServer
+              .getNettyMetrics()
+              .getGaugeNettyPendingTasksNumForWorkerGroup()
+              .set(pendingTasksNumForWorkerGroup);
+        },
+        0L,
+        pendingTasksNumMetricsPollingInterval,
+        TimeUnit.MILLISECONDS);
+  }
+
+  private int getPendingTasksForEventLoopGroup(EventLoopGroup eventLoopGroup) {
+    return StreamSupport.stream(eventLoopGroup.spliterator(), false)
+        .filter(eventExecutor -> eventExecutor instanceof SingleThreadEventExecutor)
+        .mapToInt(eventExecutor -> ((SingleThreadEventExecutor) eventExecutor).pendingTasks())
+        .sum();
   }
 
   private ServerBootstrap bootstrapChannel(
@@ -101,9 +155,9 @@ public class StreamServer implements ServerInterface {
             })
         .option(ChannelOption.SO_BACKLOG, backlogSize)
         .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMillis)
-        .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+        .option(ChannelOption.ALLOCATOR, NettyUtils.getSharedUnpooledByteBufAllocator(true))
         .childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMillis)
-        .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+        .childOption(ChannelOption.ALLOCATOR, NettyUtils.getSharedUnpooledByteBufAllocator(true))
         .childOption(ChannelOption.TCP_NODELAY, true)
         .childOption(ChannelOption.SO_KEEPALIVE, true);
 
@@ -164,6 +218,9 @@ public class StreamServer implements ServerInterface {
       shuffleWorkerGroup.shutdownGracefully();
       shuffleBossGroup = null;
       shuffleWorkerGroup = null;
+    }
+    if (!nettyPendingTasksNumTracker.isShutdown()) {
+      nettyPendingTasksNumTracker.shutdown();
     }
   }
 

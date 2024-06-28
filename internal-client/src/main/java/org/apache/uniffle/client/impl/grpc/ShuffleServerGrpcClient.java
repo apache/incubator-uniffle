@@ -24,15 +24,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
+import org.apache.uniffle.client.request.RetryableRequest;
 import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssGetInMemoryShuffleDataRequest;
@@ -44,6 +47,7 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.client.request.RssUnregisterShuffleByAppIdRequest;
 import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
 import org.apache.uniffle.client.response.RssFinishShuffleResponse;
@@ -55,15 +59,19 @@ import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.client.response.RssUnregisterShuffleByAppIdResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
+import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -102,35 +110,87 @@ import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerBlockingStub;
 
+import static org.apache.uniffle.proto.RssProtos.StatusCode.NO_BUFFER;
+
 public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServerClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcClient.class);
   protected static final long FAILED_REQUIRE_ID = -1;
-  protected static final long RPC_TIMEOUT_DEFAULT_MS = 60000;
-  private long rpcTimeout = RPC_TIMEOUT_DEFAULT_MS;
+  protected long rpcTimeout;
   private ShuffleServerBlockingStub blockingStub;
+  /**
+   * A single instance of the Random class is created as a member variable to be reused throughout
+   * `ShuffleServerGrpcClient`. This approach has the following benefits: 1. Performance
+   * optimization: It avoids the overhead of creating and destroying objects frequently, reducing
+   * memory allocation and garbage collection costs. 2. Randomness: Reusing the same Random object
+   * helps maintain the randomness of the generated numbers. If multiple Random objects are created
+   * in a short period of time, their seeds may be the same or very close, leading to less random
+   * numbers.
+   */
+  protected Random random = new Random();
 
+  protected static final int BACK_OFF_BASE = 2000;
+
+  @VisibleForTesting
   public ShuffleServerGrpcClient(String host, int port) {
-    this(host, port, 3);
+    this(
+        host,
+        port,
+        RssClientConf.RPC_MAX_ATTEMPTS.defaultValue(),
+        RssClientConf.RPC_TIMEOUT_MS.defaultValue(),
+        RssClientConf.RPC_NETTY_PAGE_SIZE.defaultValue(),
+        RssClientConf.RPC_NETTY_MAX_ORDER.defaultValue(),
+        RssClientConf.RPC_NETTY_SMALL_CACHE_SIZE.defaultValue());
   }
 
-  public ShuffleServerGrpcClient(String host, int port, int maxRetryAttempts) {
-    this(host, port, maxRetryAttempts, true);
+  public ShuffleServerGrpcClient(RssConf rssConf, String host, int port) {
+    this(
+        host,
+        port,
+        rssConf == null
+            ? RssClientConf.RPC_MAX_ATTEMPTS.defaultValue()
+            : rssConf.getInteger(RssClientConf.RPC_MAX_ATTEMPTS),
+        rssConf == null
+            ? RssClientConf.RPC_TIMEOUT_MS.defaultValue()
+            : rssConf.getLong(RssClientConf.RPC_TIMEOUT_MS),
+        rssConf == null
+            ? RssClientConf.RPC_NETTY_PAGE_SIZE.defaultValue()
+            : rssConf.getInteger(RssClientConf.RPC_NETTY_PAGE_SIZE),
+        rssConf == null
+            ? RssClientConf.RPC_NETTY_MAX_ORDER.defaultValue()
+            : rssConf.getInteger(RssClientConf.RPC_NETTY_MAX_ORDER),
+        rssConf == null
+            ? RssClientConf.RPC_NETTY_SMALL_CACHE_SIZE.defaultValue()
+            : rssConf.getInteger(RssClientConf.RPC_NETTY_SMALL_CACHE_SIZE));
   }
 
   public ShuffleServerGrpcClient(
-      String host, int port, int maxRetryAttempts, boolean usePlaintext) {
-    super(host, port, maxRetryAttempts, usePlaintext);
+      String host,
+      int port,
+      int maxRetryAttempts,
+      long rpcTimeoutMs,
+      int pageSize,
+      int maxOrder,
+      int smallCacheSize) {
+    this(host, port, maxRetryAttempts, rpcTimeoutMs, true, pageSize, maxOrder, smallCacheSize);
+  }
+
+  public ShuffleServerGrpcClient(
+      String host,
+      int port,
+      int maxRetryAttempts,
+      long rpcTimeoutMs,
+      boolean usePlaintext,
+      int pageSize,
+      int maxOrder,
+      int smallCacheSize) {
+    super(host, port, maxRetryAttempts, usePlaintext, pageSize, maxOrder, smallCacheSize);
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
+    rpcTimeout = rpcTimeoutMs;
   }
 
   public ShuffleServerBlockingStub getBlockingStub() {
     return blockingStub.withDeadlineAfter(rpcTimeout, TimeUnit.MILLISECONDS);
-  }
-
-  @Override
-  public String getDesc() {
-    return "Shuffle server grpc client ref " + host + ":" + port;
   }
 
   private ShuffleRegisterResponse doRegisterShuffle(
@@ -140,7 +200,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       RemoteStorageInfo remoteStorageInfo,
       String user,
       ShuffleDataDistributionType dataDistributionType,
-      int maxConcurrencyPerPartitionToWrite) {
+      int maxConcurrencyPerPartitionToWrite,
+      int stageAttemptNumber) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
@@ -148,7 +209,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setUser(user)
         .setShuffleDataDistribution(RssProtos.DataDistribution.valueOf(dataDistributionType.name()))
         .setMaxConcurrencyPerPartitionToWrite(maxConcurrencyPerPartitionToWrite)
-        .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges));
+        .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges))
+        .setStageAttemptNumber(stageAttemptNumber);
     RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
     rsBuilder.setPath(remoteStorageInfo.getPath());
     Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
@@ -200,6 +262,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         appId, 0, Collections.emptyList(), requireSize, retryMax, retryIntervalMax);
   }
 
+  @VisibleForTesting
   public long requirePreAllocation(
       String appId,
       int shuffleId,
@@ -207,6 +270,24 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       int requireSize,
       int retryMax,
       long retryIntervalMax) {
+    return requirePreAllocation(
+        appId,
+        shuffleId,
+        partitionIds,
+        requireSize,
+        retryMax,
+        retryIntervalMax,
+        new AtomicReference<>(StatusCode.INTERNAL_ERROR));
+  }
+
+  public long requirePreAllocation(
+      String appId,
+      int shuffleId,
+      List<Integer> partitionIds,
+      int requireSize,
+      int retryMax,
+      long retryIntervalMax,
+      AtomicReference<StatusCode> failedStatusCodeRef) {
     RequireBufferRequest rpcRequest =
         RequireBufferRequest.newBuilder()
             .setShuffleId(shuffleId)
@@ -216,22 +297,32 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .build();
 
     long start = System.currentTimeMillis();
-    RequireBufferResponse rpcResponse = getBlockingStub().requireBuffer(rpcRequest);
     int retry = 0;
     long result = FAILED_REQUIRE_ID;
-    Random random = new Random();
-    final int backOffBase = 2000;
-    while (rpcResponse.getStatus() == RssProtos.StatusCode.NO_BUFFER) {
-      LOG.info(
-          "Can't require "
-              + requireSize
-              + " bytes from "
-              + host
-              + ":"
-              + port
-              + ", sleep and try["
-              + retry
-              + "] again");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(
+          "Requiring buffer for appId: {}, shuffleId: {}, partitionIds: {} with {} bytes from {}:{}",
+          appId,
+          shuffleId,
+          partitionIds,
+          requireSize,
+          host,
+          port);
+    }
+    RequireBufferResponse rpcResponse;
+    while (true) {
+      try {
+        rpcResponse = getBlockingStub().requireBuffer(rpcRequest);
+      } catch (Exception e) {
+        LOG.error(
+            "Exception happened when requiring pre-allocated buffer from {}:{}", host, port, e);
+        return result;
+      }
+      if (rpcResponse.getStatus() != NO_BUFFER
+          && rpcResponse.getStatus() != RssProtos.StatusCode.NO_BUFFER_FOR_HUGE_PARTITION) {
+        break;
+      }
+      failedStatusCodeRef.set(StatusCode.fromCode(rpcResponse.getStatus().getNumber()));
       if (retry >= retryMax) {
         LOG.warn(
             "ShuffleServer "
@@ -239,31 +330,45 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                 + ":"
                 + port
                 + " is full and can't send shuffle"
-                + " data successfully after retry "
+                + " data successfully due to "
+                + rpcResponse.getStatus()
+                + " after retry "
                 + retryMax
                 + " times, cost: {}(ms)",
             System.currentTimeMillis() - start);
         return result;
       }
       try {
+        LOG.info(
+            "Can't require buffer for appId: {}, shuffleId: {}, partitionIds: {} with {} bytes from {}:{} due to {}, sleep and try[{}] again",
+            appId,
+            shuffleId,
+            partitionIds,
+            requireSize,
+            host,
+            port,
+            rpcResponse.getStatus(),
+            retry);
         long backoffTime =
             Math.min(
                 retryIntervalMax,
-                backOffBase * (1L << Math.min(retry, 16)) + random.nextInt(backOffBase));
+                BACK_OFF_BASE * (1L << Math.min(retry, 16)) + random.nextInt(BACK_OFF_BASE));
         Thread.sleep(backoffTime);
       } catch (Exception e) {
-        LOG.warn("Exception happened when require pre allocation from " + host + ":" + port, e);
+        LOG.warn(
+            "Exception happened when requiring pre-allocated buffer from {}:{}", host, port, e);
       }
-      rpcResponse = getBlockingStub().requireBuffer(rpcRequest);
       retry++;
     }
     if (rpcResponse.getStatus() == RssProtos.StatusCode.SUCCESS) {
-      LOG.debug(
-          "Require preAllocated size of {} from {}:{}, cost: {}(ms)",
-          requireSize,
-          host,
-          port,
-          System.currentTimeMillis() - start);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+            "Require preAllocated size of {} from {}:{}, cost: {}(ms)",
+            requireSize,
+            host,
+            port,
+            System.currentTimeMillis() - start);
+      }
       result = rpcResponse.getRequireBufferId();
     } else if (rpcResponse.getStatus() == RssProtos.StatusCode.NO_REGISTER) {
       String msg =
@@ -282,19 +387,54 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     return result;
   }
 
-  private RssProtos.ShuffleUnregisterResponse doUnregisterShuffle(String appId, int shuffleId) {
+  private RssProtos.ShuffleUnregisterByAppIdResponse doUnregisterShuffleByAppId(
+      String appId, int timeoutSec) {
+    RssProtos.ShuffleUnregisterByAppIdRequest request =
+        RssProtos.ShuffleUnregisterByAppIdRequest.newBuilder().setAppId(appId).build();
+    return blockingStub
+        .withDeadlineAfter(timeoutSec, TimeUnit.SECONDS)
+        .unregisterShuffleByAppId(request);
+  }
+
+  @Override
+  public RssUnregisterShuffleByAppIdResponse unregisterShuffleByAppId(
+      RssUnregisterShuffleByAppIdRequest request) {
+    RssProtos.ShuffleUnregisterByAppIdResponse rpcResponse =
+        doUnregisterShuffleByAppId(request.getAppId(), request.getTimeoutSec());
+
+    RssUnregisterShuffleByAppIdResponse response;
+    RssProtos.StatusCode statusCode = rpcResponse.getStatus();
+
+    switch (statusCode) {
+      case SUCCESS:
+        response = new RssUnregisterShuffleByAppIdResponse(StatusCode.SUCCESS);
+        break;
+      default:
+        String msg =
+            String.format(
+                "Errors on unregistering app from %s:%s for appId[%s] and timeout[%ss], error: %s",
+                host, port, request.getAppId(), request.getTimeoutSec(), rpcResponse.getRetMsg());
+        LOG.error(msg);
+        throw new RssException(msg);
+    }
+
+    return response;
+  }
+
+  private RssProtos.ShuffleUnregisterResponse doUnregisterShuffle(
+      String appId, int shuffleId, int timeoutSec) {
     RssProtos.ShuffleUnregisterRequest request =
         RssProtos.ShuffleUnregisterRequest.newBuilder()
             .setAppId(appId)
             .setShuffleId(shuffleId)
             .build();
-    return blockingStub.unregisterShuffle(request);
+    return blockingStub.withDeadlineAfter(timeoutSec, TimeUnit.SECONDS).unregisterShuffle(request);
   }
 
   @Override
   public RssUnregisterShuffleResponse unregisterShuffle(RssUnregisterShuffleRequest request) {
     RssProtos.ShuffleUnregisterResponse rpcResponse =
-        doUnregisterShuffle(request.getAppId(), request.getShuffleId());
+        doUnregisterShuffle(request.getAppId(), request.getShuffleId(), request.getTimeoutSec());
 
     RssUnregisterShuffleResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
@@ -306,8 +446,13 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       default:
         String msg =
             String.format(
-                "Errors on unregister shuffle to %s:%s for appId[%s].shuffleId[%], error: %s",
-                host, port, request.getAppId(), request.getShuffleId(), rpcResponse.getRetMsg());
+                "Errors on unregistering shuffle from %s:%s for appId[%s].shuffleId[%s] and timeout[%ss], error: %s",
+                host,
+                port,
+                request.getAppId(),
+                request.getShuffleId(),
+                request.getTimeoutSec(),
+                rpcResponse.getRetMsg());
         LOG.error(msg);
         throw new RssException(msg);
     }
@@ -325,7 +470,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             request.getRemoteStorageInfo(),
             request.getUser(),
             request.getDataDistributionType(),
-            request.getMaxConcurrencyPerPartitionToWrite());
+            request.getMaxConcurrencyPerPartitionToWrite(),
+            request.getStageAttemptNumber());
 
     RssRegisterShuffleResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
@@ -356,8 +502,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     String appId = request.getAppId();
     Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks =
         request.getShuffleIdToBlocks();
+    int stageAttemptNumber = request.getStageAttemptNumber();
 
     boolean isSuccessful = true;
+    AtomicReference<StatusCode> failedStatusCode = new AtomicReference<>(StatusCode.INTERNAL_ERROR);
 
     // prepare rpc request based on shuffleId -> partitionId -> blocks
     for (Map.Entry<Integer, Map<Integer, List<ShuffleBlockInfo>>> stb :
@@ -394,7 +542,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       final int allocateSize = size;
       final int finalBlockNum = blockNum;
       try {
-        RetryUtils.retry(
+        RetryUtils.retryWithCondition(
             () -> {
               long requireId =
                   requirePreAllocation(
@@ -403,7 +551,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                       partitionIds,
                       allocateSize,
                       request.getRetryMax() / maxRetryAttempts,
-                      request.getRetryIntervalMax());
+                      request.getRetryIntervalMax(),
+                      failedStatusCode);
               if (requireId == FAILED_REQUIRE_ID) {
                 throw new RssException(
                     String.format(
@@ -418,18 +567,21 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                       .setRequireBufferId(requireId)
                       .addAllShuffleData(shuffleData)
                       .setTimestamp(start)
+                      .setStageAttemptNumber(stageAttemptNumber)
                       .build();
               SendShuffleDataResponse response = getBlockingStub().sendShuffleData(rpcRequest);
-              LOG.debug(
-                  "Do sendShuffleData to {}:{} rpc cost:"
-                      + (System.currentTimeMillis() - start)
-                      + " ms for "
-                      + allocateSize
-                      + " bytes with "
-                      + finalBlockNum
-                      + " blocks",
-                  host,
-                  port);
+              if (LOG.isDebugEnabled()) {
+                LOG.debug(
+                    "Do sendShuffleData to {}:{} rpc cost:"
+                        + (System.currentTimeMillis() - start)
+                        + " ms for "
+                        + allocateSize
+                        + " bytes with "
+                        + finalBlockNum
+                        + " blocks",
+                    host,
+                    port);
+              }
               if (response.getStatus() != RssProtos.StatusCode.SUCCESS) {
                 String msg =
                     "Can't send shuffle data with "
@@ -442,6 +594,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                         + response.getStatus()
                         + ", errorMsg:"
                         + response.getRetMsg();
+                failedStatusCode.set(StatusCode.fromCode(response.getStatus().getNumber()));
                 if (response.getStatus() == RssProtos.StatusCode.NO_REGISTER) {
                   throw new NotRetryException(msg);
                 } else {
@@ -450,10 +603,12 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               }
               return response;
             },
+            null,
             request.getRetryIntervalMax(),
-            maxRetryAttempts);
+            maxRetryAttempts,
+            t -> !(t instanceof OutOfMemoryError));
       } catch (Throwable throwable) {
-        LOG.warn(throwable.getMessage());
+        LOG.warn("Failed to send shuffle data due to ", throwable);
         isSuccessful = false;
         break;
       }
@@ -463,7 +618,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     if (isSuccessful) {
       response = new RssSendShuffleDataResponse(StatusCode.SUCCESS);
     } else {
-      response = new RssSendShuffleDataResponse(StatusCode.INTERNAL_ERROR);
+      response = new RssSendShuffleDataResponse(failedStatusCode.get());
     }
     return response;
   }
@@ -638,6 +793,12 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setAppId(request.getAppId())
             .setShuffleId(request.getShuffleId())
             .setPartitionId(request.getPartitionId())
+            .setBlockIdLayout(
+                RssProtos.BlockIdLayout.newBuilder()
+                    .setSequenceNoBits(request.getBlockIdLayout().sequenceNoBits)
+                    .setPartitionIdBits(request.getBlockIdLayout().partitionIdBits)
+                    .setTaskAttemptIdBits(request.getBlockIdLayout().taskAttemptIdBits)
+                    .build())
             .build();
     GetShuffleResultResponse rpcResponse = getBlockingStub().getShuffleResult(rpcRequest);
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
@@ -680,6 +841,12 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setAppId(request.getAppId())
             .setShuffleId(request.getShuffleId())
             .addAllPartitions(request.getPartitions())
+            .setBlockIdLayout(
+                RssProtos.BlockIdLayout.newBuilder()
+                    .setSequenceNoBits(request.getBlockIdLayout().sequenceNoBits)
+                    .setPartitionIdBits(request.getBlockIdLayout().partitionIdBits)
+                    .setTaskAttemptIdBits(request.getBlockIdLayout().taskAttemptIdBits)
+                    .build())
             .build();
     GetShuffleResultForMultiPartResponse rpcResponse =
         getBlockingStub().getShuffleResultForMultiPart(rpcRequest);
@@ -729,7 +896,6 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setLength(request.getLength())
             .setTimestamp(start)
             .build();
-    GetLocalShuffleDataResponse rpcResponse = getBlockingStub().getLocalShuffleData(rpcRequest);
     String requestInfo =
         "appId["
             + request.getAppId()
@@ -738,22 +904,29 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             + "], partitionId["
             + request.getPartitionId()
             + "]";
-    LOG.info(
-        "GetShuffleData from {}:{} for {} cost {} ms",
-        host,
-        port,
-        requestInfo,
-        System.currentTimeMillis() - start);
-
-    RssProtos.StatusCode statusCode = rpcResponse.getStatus();
-
+    int retry = 0;
+    GetLocalShuffleDataResponse rpcResponse;
+    while (true) {
+      rpcResponse = getBlockingStub().getLocalShuffleData(rpcRequest);
+      if (rpcResponse.getStatus() != NO_BUFFER) {
+        break;
+      }
+      waitOrThrow(
+          request, retry, requestInfo, StatusCode.fromProto(rpcResponse.getStatus()), start);
+      retry++;
+    }
     RssGetShuffleDataResponse response;
-    switch (statusCode) {
+    switch (rpcResponse.getStatus()) {
       case SUCCESS:
+        LOG.info(
+            "GetShuffleData from {}:{} for {} cost {} ms",
+            host,
+            port,
+            requestInfo,
+            System.currentTimeMillis() - start);
         response =
             new RssGetShuffleDataResponse(
                 StatusCode.SUCCESS, ByteBuffer.wrap(rpcResponse.getData().toByteArray()));
-
         break;
       default:
         String msg =
@@ -781,8 +954,6 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setPartitionNumPerRange(request.getPartitionNumPerRange())
             .setPartitionNum(request.getPartitionNum())
             .build();
-    long start = System.currentTimeMillis();
-    GetLocalShuffleIndexResponse rpcResponse = getBlockingStub().getLocalShuffleIndex(rpcRequest);
     String requestInfo =
         "appId["
             + request.getAppId()
@@ -791,22 +962,32 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             + "], partitionId["
             + request.getPartitionId()
             + "]";
-    LOG.info(
-        "GetShuffleIndex from {}:{} for {} cost {} ms",
-        host,
-        port,
-        requestInfo,
-        System.currentTimeMillis() - start);
-
-    RssProtos.StatusCode statusCode = rpcResponse.getStatus();
-
+    long start = System.currentTimeMillis();
+    int retry = 0;
+    GetLocalShuffleIndexResponse rpcResponse;
+    while (true) {
+      rpcResponse = getBlockingStub().getLocalShuffleIndex(rpcRequest);
+      if (rpcResponse.getStatus() != NO_BUFFER) {
+        break;
+      }
+      waitOrThrow(
+          request, retry, requestInfo, StatusCode.fromProto(rpcResponse.getStatus()), start);
+      retry++;
+    }
     RssGetShuffleIndexResponse response;
-    switch (statusCode) {
+    switch (rpcResponse.getStatus()) {
       case SUCCESS:
+        LOG.info(
+            "GetShuffleIndex from {}:{} for {} cost {} ms",
+            host,
+            port,
+            requestInfo,
+            System.currentTimeMillis() - start);
         response =
             new RssGetShuffleIndexResponse(
                 StatusCode.SUCCESS,
-                ByteBuffer.wrap(rpcResponse.getIndexData().toByteArray()),
+                new NettyManagedBuffer(
+                    Unpooled.wrappedBuffer(rpcResponse.getIndexData().toByteArray())),
                 rpcResponse.getDataFileLen());
 
         break;
@@ -850,8 +1031,6 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setSerializedExpectedTaskIdsBitmap(serializedTaskIdsBytes)
             .setTimestamp(start)
             .build();
-
-    GetMemoryShuffleDataResponse rpcResponse = getBlockingStub().getMemoryShuffleData(rpcRequest);
     String requestInfo =
         "appId["
             + request.getAppId()
@@ -860,20 +1039,28 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             + "], partitionId["
             + request.getPartitionId()
             + "]";
-    LOG.info(
-        "GetInMemoryShuffleData from {}:{} for "
-            + requestInfo
-            + " cost "
-            + (System.currentTimeMillis() - start)
-            + " ms",
-        host,
-        port);
-
-    RssProtos.StatusCode statusCode = rpcResponse.getStatus();
-
+    int retry = 0;
+    GetMemoryShuffleDataResponse rpcResponse;
+    while (true) {
+      rpcResponse = getBlockingStub().getMemoryShuffleData(rpcRequest);
+      if (rpcResponse.getStatus() != NO_BUFFER) {
+        break;
+      }
+      waitOrThrow(
+          request, retry, requestInfo, StatusCode.fromProto(rpcResponse.getStatus()), start);
+      retry++;
+    }
     RssGetInMemoryShuffleDataResponse response;
-    switch (statusCode) {
+    switch (rpcResponse.getStatus()) {
       case SUCCESS:
+        LOG.info(
+            "GetInMemoryShuffleData from {}:{} for "
+                + requestInfo
+                + " cost "
+                + (System.currentTimeMillis() - start)
+                + " ms",
+            host,
+            port);
         response =
             new RssGetInMemoryShuffleDataResponse(
                 StatusCode.SUCCESS,
@@ -899,6 +1086,47 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   @Override
   public String getClientInfo() {
     return "ShuffleServerGrpcClient for host[" + host + "], port[" + port + "]";
+  }
+
+  protected void waitOrThrow(
+      RetryableRequest request, int retry, String requestInfo, StatusCode statusCode, long start) {
+    if (retry >= request.getRetryMax()) {
+      String msg =
+          String.format(
+              "ShuffleServer %s:%s is full when %s due to %s, after %d retries, cost %d ms",
+              host,
+              port,
+              request.operationType(),
+              statusCode,
+              request.getRetryMax(),
+              System.currentTimeMillis() - start);
+      LOG.error(msg);
+      throw new RssFetchFailedException(msg);
+    }
+    try {
+      long backoffTime =
+          Math.min(
+              request.getRetryIntervalMax(),
+              BACK_OFF_BASE * (1L << Math.min(retry, 16)) + random.nextInt(BACK_OFF_BASE));
+      LOG.warn(
+          "Can't acquire buffer for {} from {}:{} when executing {}, due to {}. "
+              + "Will retry {} more time(s) after waiting {} milliseconds.",
+          requestInfo,
+          host,
+          port,
+          request.operationType(),
+          statusCode,
+          request.getRetryMax() - retry,
+          backoffTime);
+      Thread.sleep(backoffTime);
+    } catch (InterruptedException e) {
+      LOG.warn(
+          "Exception happened when executing {} from {}:{}",
+          request.operationType(),
+          host,
+          port,
+          e);
+    }
   }
 
   private List<ShufflePartitionRange> toShufflePartitionRanges(

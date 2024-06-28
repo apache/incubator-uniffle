@@ -53,14 +53,17 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.Constants;
 
 public class RssTezUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssTezUtils.class);
-
+  private static final BlockIdLayout LAYOUT = BlockIdLayout.DEFAULT;
   private static final int MAX_ATTEMPT_LENGTH = 6;
-  private static final long MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
+  private static final int MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
+  private static final int MAX_SEQUENCE_NO =
+      (1 << (LAYOUT.sequenceNoBits - MAX_ATTEMPT_LENGTH)) - 1;
 
   public static final String HOST_NAME = "hostname";
 
@@ -111,16 +114,17 @@ public class RssTezUtils {
     ShuffleWriteClient client =
         ShuffleClientFactory.getInstance()
             .createShuffleWriteClient(
-                clientType,
-                retryMax,
-                retryIntervalMax,
-                heartBeatThreadNum,
-                replica,
-                replicaWrite,
-                replicaRead,
-                replicaSkipEnabled,
-                dataTransferPoolSize,
-                dataCommitPoolSize);
+                ShuffleClientFactory.newWriteBuilder()
+                    .clientType(clientType)
+                    .retryMax(retryMax)
+                    .retryIntervalMax(retryIntervalMax)
+                    .heartBeatThreadNum(heartBeatThreadNum)
+                    .replica(replica)
+                    .replicaWrite(replicaWrite)
+                    .replicaRead(replicaRead)
+                    .replicaSkipEnabled(replicaSkipEnabled)
+                    .dataTransferPoolSize(dataTransferPoolSize)
+                    .dataCommitPoolSize(dataCommitPoolSize));
     return client;
   }
 
@@ -154,57 +158,33 @@ public class RssTezUtils {
     return StringUtils.join(ids, "_", 0, 7);
   }
 
-  public static long getBlockId(long partitionId, long taskAttemptId, int nextSeqNo) {
+  public static long getBlockId(int partitionId, long taskAttemptId, int nextSeqNo) {
     LOG.info(
         "GetBlockId, partitionId:{}, taskAttemptId:{}, nextSeqNo:{}",
         partitionId,
         taskAttemptId,
         nextSeqNo);
-    long attemptId =
-        taskAttemptId >> (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH);
+    long attemptId = taskAttemptId >> (LAYOUT.partitionIdBits + LAYOUT.taskAttemptIdBits);
     if (attemptId < 0 || attemptId > MAX_ATTEMPT_ID) {
       throw new RssException(
           "Can't support attemptId [" + attemptId + "], the max value should be " + MAX_ATTEMPT_ID);
     }
-    long atomicInt = (nextSeqNo << MAX_ATTEMPT_LENGTH) + attemptId;
-    if (atomicInt < 0 || atomicInt > Constants.MAX_SEQUENCE_NO) {
+    if (nextSeqNo < 0 || nextSeqNo > MAX_SEQUENCE_NO) {
       throw new RssException(
-          "Can't support sequence ["
-              + atomicInt
-              + "], the max value should be "
-              + Constants.MAX_SEQUENCE_NO);
+          "Can't support sequence [" + nextSeqNo + "], the max value should be " + MAX_SEQUENCE_NO);
     }
-    if (partitionId < 0 || partitionId > Constants.MAX_PARTITION_ID) {
-      throw new RssException(
-          "Can't support partitionId["
-              + partitionId
-              + "], the max value should be "
-              + Constants.MAX_PARTITION_ID);
-    }
-    long taskId =
-        taskAttemptId
-            - (attemptId
-                << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH));
 
-    if (taskId < 0 || taskId > Constants.MAX_TASK_ATTEMPT_ID) {
-      throw new RssException(
-          "Can't support taskId["
-              + taskId
-              + "], the max value should be "
-              + Constants.MAX_TASK_ATTEMPT_ID);
-    }
-    return (atomicInt << (Constants.PARTITION_ID_MAX_LENGTH + Constants.TASK_ATTEMPT_ID_MAX_LENGTH))
-        + (partitionId << Constants.TASK_ATTEMPT_ID_MAX_LENGTH)
-        + taskId;
+    int atomicInt = (int) ((nextSeqNo << MAX_ATTEMPT_LENGTH) + attemptId);
+    long taskId =
+        taskAttemptId - (attemptId << (LAYOUT.partitionIdBits + LAYOUT.taskAttemptIdBits));
+
+    return LAYOUT.getBlockId(atomicInt, partitionId, taskId);
   }
 
   public static long getTaskAttemptId(long blockId) {
-    long mapId = blockId & Constants.MAX_TASK_ATTEMPT_ID;
-    long attemptId =
-        (blockId >> (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH))
-            & MAX_ATTEMPT_ID;
-    return (attemptId << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH))
-        + mapId;
+    int mapId = LAYOUT.getTaskAttemptId(blockId);
+    int attemptId = LAYOUT.getSequenceNo(blockId) & MAX_ATTEMPT_ID;
+    return LAYOUT.getBlockId(attemptId, 0, mapId);
   }
 
   public static int estimateTaskConcurrency(Configuration jobConf, int mapNum, int reduceNum) {
@@ -297,18 +277,16 @@ public class RssTezUtils {
   }
 
   public static long convertTaskAttemptIdToLong(TezTaskAttemptID taskAttemptID) {
-    long lowBytes = taskAttemptID.getTaskID().getId();
-    if (lowBytes > Constants.MAX_TASK_ATTEMPT_ID) {
+    int lowBytes = taskAttemptID.getTaskID().getId();
+    if (lowBytes > LAYOUT.maxTaskAttemptId) {
       throw new RssException("TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed");
     }
-    long highBytes = taskAttemptID.getId();
+    int highBytes = taskAttemptID.getId();
     if (highBytes > MAX_ATTEMPT_ID || highBytes < 0) {
       throw new RssException(
           "TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed.");
     }
-    long id =
-        (highBytes << (Constants.TASK_ATTEMPT_ID_MAX_LENGTH + Constants.PARTITION_ID_MAX_LENGTH))
-            + lowBytes;
+    long id = LAYOUT.getBlockId(highBytes, 0, lowBytes);
     LOG.info("ConvertTaskAttemptIdToLong taskAttemptID:{}, id is {}, .", taskAttemptID, id);
     return id;
   }
@@ -384,7 +362,10 @@ public class RssTezUtils {
           new ShuffleServerInfo(info[0].split(":")[0], Integer.parseInt(info[0].split(":")[1]));
 
       String[] partitions = info[1].split("_");
-      assert (partitions.length > 0);
+
+      if (partitions.length <= 0) {
+        throw new RssException("The length of partitions should not be less than 0");
+      }
       for (String partitionId : partitions) {
         rssWorker.computeIfAbsent(Integer.parseInt(partitionId), k -> new HashSet<>());
         rssWorker.get(Integer.parseInt(partitionId)).add(serverInfo);

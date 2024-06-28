@@ -72,8 +72,8 @@ public class ShuffleServerGrpcMetrics extends GRPCMetrics {
   private static final String GRPC_GET_MEMORY_SHUFFLE_DATA_PROCESS_LATENCY =
       "grpc_get_memory_shuffle_data_process_latency";
 
-  public ShuffleServerGrpcMetrics(String tags) {
-    super(tags);
+  public ShuffleServerGrpcMetrics(ShuffleServerConf shuffleServerConf, String tags) {
+    super(shuffleServerConf, tags);
   }
 
   @Override

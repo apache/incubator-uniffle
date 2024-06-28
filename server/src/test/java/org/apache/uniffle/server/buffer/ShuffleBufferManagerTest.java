@@ -20,13 +20,16 @@ package org.apache.uniffle.server.buffer;
 import java.io.File;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.google.common.collect.RangeMap;
 import com.google.common.util.concurrent.Uninterruptibles;
+import io.prometheus.client.Collector;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +40,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.Constants;
@@ -84,7 +88,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     mockShuffleServer = mock(ShuffleServer.class);
     mockShuffleTaskManager = mock(ShuffleTaskManager.class);
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
-    shuffleBufferManager = new ShuffleBufferManager(conf, mockShuffleFlushManager);
+    shuffleBufferManager = new ShuffleBufferManager(conf, mockShuffleFlushManager, false);
+    shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
   }
 
   @Test
@@ -115,6 +120,10 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   @Test
   public void getShuffleDataWithExpectedTaskIdsTest() {
     String appId = "getShuffleDataWithExpectedTaskIdsTest";
+    shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
+    ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
     shuffleBufferManager.registerBuffer(appId, 1, 0, 1);
     ShufflePartitionedData spd1 = createData(0, 1, 68);
     ShufflePartitionedData spd2 = createData(0, 2, 68);
@@ -146,6 +155,10 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   @Test
   public void getShuffleDataTest() {
     String appId = "getShuffleDataTest";
+    shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
+    ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
     shuffleBufferManager.registerBuffer(appId, 1, 0, 1);
     shuffleBufferManager.registerBuffer(appId, 2, 0, 1);
     shuffleBufferManager.registerBuffer(appId, 3, 0, 1);
@@ -209,6 +222,10 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   public void shuffleIdToSizeTest() {
     String appId1 = "shuffleIdToSizeTest1";
     String appId2 = "shuffleIdToSizeTest2";
+    ReentrantReadWriteLock rwLock1 = new ReentrantReadWriteLock();
+    when(mockShuffleTaskManager.getAppReadLock(appId1)).thenReturn(rwLock1.readLock());
+    ReentrantReadWriteLock rwLock2 = new ReentrantReadWriteLock();
+    when(mockShuffleTaskManager.getAppReadLock(appId2)).thenReturn(rwLock2.readLock());
     shuffleBufferManager.registerBuffer(appId1, 1, 0, 0);
     shuffleBufferManager.registerBuffer(appId1, 2, 0, 0);
     shuffleBufferManager.registerBuffer(appId2, 1, 0, 0);
@@ -254,9 +271,12 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   @Test
   public void cacheShuffleDataTest() {
     String appId = "cacheShuffleDataTest";
-    int shuffleId = 1;
-
+    shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
+    ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
     int startPartitionNum = (int) ShuffleServerMetrics.gaugeTotalPartitionNum.get();
+    int shuffleId = 1;
     StatusCode sc =
         shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 16));
     assertEquals(StatusCode.NO_REGISTER, sc);
@@ -322,8 +342,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   @Test
   public void cacheShuffleDataWithPreAllocationTest() {
     String appId = "cacheShuffleDataWithPreAllocationTest";
+    shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
+    ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
     int shuffleId = 1;
-
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     // pre allocate memory
     shuffleBufferManager.requireMemory(48, true);
@@ -386,15 +409,19 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(conf);
     ShuffleFlushManager shuffleFlushManager =
         new ShuffleFlushManager(conf, mockShuffleServer, storageManager);
-    shuffleBufferManager = new ShuffleBufferManager(conf, shuffleFlushManager);
+    shuffleBufferManager = new ShuffleBufferManager(conf, shuffleFlushManager, false);
 
     when(mockShuffleServer.getShuffleFlushManager()).thenReturn(shuffleFlushManager);
     when(mockShuffleServer.getShuffleBufferManager()).thenReturn(shuffleBufferManager);
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mock(ShuffleTaskManager.class));
 
     String appId = "bufferSizeTest";
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
+    shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
+    ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
     int shuffleId = 1;
-
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
     shuffleBufferManager.registerBuffer(appId, shuffleId, 4, 5);
@@ -420,10 +447,11 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(6, 64));
     assertEquals(384, shuffleBufferManager.getUsedMemory());
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(8, 64));
-    waitForFlush(shuffleFlushManager, appId, shuffleId, 5);
-    assertEquals(0, shuffleBufferManager.getUsedMemory());
+    waitForFlush(shuffleFlushManager, appId, shuffleId, 4, 96);
     assertEquals(0, shuffleBufferManager.getInFlushSize());
 
+    shuffleBufferManager.removeBuffer(appId);
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     shuffleBufferManager.registerBuffer("bufferSizeTest1", shuffleId, 0, 1);
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 32));
     assertEquals(64, shuffleBufferManager.getUsedMemory());
@@ -449,14 +477,14 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleConf.set(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO, 0.1);
     shuffleConf.set(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD, 100L);
     shuffleConf.set(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, false);
-    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 64L);
+    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_SIZE_THRESHOLD, 64L);
 
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
     ShuffleFlushManager shuffleFlushManager =
         new ShuffleFlushManager(shuffleConf, mockShuffleServer, storageManager);
-    shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager);
+    shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager, false);
     ShuffleTaskManager shuffleTaskManager =
         new ShuffleTaskManager(
             shuffleConf, shuffleFlushManager, shuffleBufferManager, storageManager);
@@ -509,22 +537,25 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 80.0);
     shuffleConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     shuffleConf.setBoolean(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, true);
-    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 128L);
+    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_SIZE_THRESHOLD, 128L);
 
     ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
     StorageManager storageManager =
         StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
     ShuffleFlushManager shuffleFlushManager =
         new ShuffleFlushManager(shuffleConf, mockShuffleServer, storageManager);
-    shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager);
+    shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager, false);
 
     when(mockShuffleServer.getShuffleFlushManager()).thenReturn(shuffleFlushManager);
     when(mockShuffleServer.getShuffleBufferManager()).thenReturn(shuffleBufferManager);
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mock(ShuffleTaskManager.class));
 
     String appId = "bufferSizeTest";
+    shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
+    ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
     int shuffleId = 1;
-
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 64));
@@ -552,13 +583,17 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     StorageManager storageManager = StorageManagerFactory.getInstance().createStorageManager(conf);
     ShuffleFlushManager shuffleFlushManager =
         new ShuffleFlushManager(conf, mockShuffleServer, storageManager);
-    shuffleBufferManager = new ShuffleBufferManager(serverConf, shuffleFlushManager);
+    shuffleBufferManager = new ShuffleBufferManager(serverConf, shuffleFlushManager, false);
 
     String appId = "shuffleFlushTest";
+    shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
+    ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
+
     int shuffleId = 0;
     int smallShuffleId = 1;
     int smallShuffleIdTwo = 2;
-
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
     shuffleBufferManager.registerBuffer(appId, smallShuffleId, 0, 1);
@@ -596,6 +631,16 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
   private void waitForFlush(
       ShuffleFlushManager shuffleFlushManager, String appId, int shuffleId, int expectedBlockNum)
       throws Exception {
+    waitForFlush(shuffleFlushManager, appId, shuffleId, expectedBlockNum, 0);
+  }
+
+  private void waitForFlush(
+      ShuffleFlushManager shuffleFlushManager,
+      String appId,
+      int shuffleId,
+      int expectedBlockNum,
+      long expectedUsedMemory)
+      throws Exception {
     int retry = 0;
     long committedCount = 0;
     do {
@@ -615,13 +660,13 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     // `shuffleBufferManager.getUsedMemory()` and `shuffleBufferManager.getInFlushSize()`.
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
-        .until(() -> shuffleBufferManager.getUsedMemory() == 0);
+        .until(() -> shuffleBufferManager.getUsedMemory() == expectedUsedMemory);
   }
 
   @Test
   public void bufferManagerInitTest() {
     ShuffleServerConf serverConf = new ShuffleServerConf();
-    shuffleBufferManager = new ShuffleBufferManager(serverConf, mockShuffleFlushManager);
+    shuffleBufferManager = new ShuffleBufferManager(serverConf, mockShuffleFlushManager, false);
     double ratio = ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO.defaultValue();
     double readRatio = ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO.defaultValue();
     assertEquals(
@@ -633,7 +678,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     readRatio = 0.1;
     serverConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY_RATIO, ratio);
     serverConf.set(ShuffleServerConf.SERVER_READ_BUFFER_CAPACITY_RATIO, readRatio);
-    shuffleBufferManager = new ShuffleBufferManager(serverConf, mockShuffleFlushManager);
+    shuffleBufferManager = new ShuffleBufferManager(serverConf, mockShuffleFlushManager, false);
     assertEquals(
         (long) (Runtime.getRuntime().maxMemory() * ratio), shuffleBufferManager.getCapacity());
     assertEquals(
@@ -660,7 +705,7 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 80.0);
     shuffleConf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
     shuffleConf.setBoolean(ShuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, true);
-    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 16L);
+    shuffleConf.setSizeAsBytes(ShuffleServerConf.SINGLE_BUFFER_FLUSH_SIZE_THRESHOLD, 16L);
     shuffleConf.setSizeAsBytes(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 16L);
     shuffleConf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE_HDFS.name());
@@ -669,13 +714,17 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
         StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
     ShuffleFlushManager shuffleFlushManager =
         new ShuffleFlushManager(shuffleConf, mockShuffleServer, storageManager);
-    shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager);
+    shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager, false);
 
     when(mockShuffleServer.getShuffleFlushManager()).thenReturn(shuffleFlushManager);
     when(mockShuffleServer.getShuffleBufferManager()).thenReturn(shuffleBufferManager);
     when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mock(ShuffleTaskManager.class));
 
     String appId = "bufferSizeTest";
+    shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
+    ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
     int shuffleId = 1;
     shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
     shuffleBufferManager.registerBuffer(appId, shuffleId, 2, 3);
@@ -693,5 +742,46 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     executor.shutdown();
     assertEquals(0, shuffleBufferManager.getUsedMemory());
     assertEquals(0, shuffleBufferManager.getInFlushSize());
+  }
+
+  @Test
+  public void blockSizeMetricsTest() {
+    String appId = "blockSizeMetricsTest";
+    shuffleBufferManager.setShuffleTaskManager(mockShuffleTaskManager);
+    ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    when(mockShuffleTaskManager.getAppReadLock(appId)).thenReturn(rwLock.readLock());
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(mockShuffleTaskManager);
+    int shuffleId = 1;
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 1);
+
+    // cache shuffle block data, and record metrics
+    double[] buckets =
+        ConfigUtils.convertBytesStringToDoubleArray(
+            new ShuffleServerConf()
+                .get(ShuffleServerConf.APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_BUCKETS));
+    Arrays.stream(buckets)
+        .sorted()
+        .forEach(
+            bucket -> {
+              StatusCode sc =
+                  shuffleBufferManager.cacheShuffleData(
+                      appId, shuffleId, true, createData(0, (int) bucket));
+              assertEquals(StatusCode.SUCCESS, sc);
+            });
+    // check metrics values
+    List<Collector.MetricFamilySamples> samples =
+        ShuffleServerMetrics.appHistogramWriteBlockSize.collect();
+    assertEquals(samples.size(), 1);
+    int index = 1;
+    Arrays.stream(buckets)
+        .sorted()
+        .forEach(
+            bucket -> {
+              for (Collector.MetricFamilySamples.Sample s : samples.get(0).samples) {
+                if (s.labelValues.contains(bucket)) {
+                  assertEquals(s.value, index);
+                }
+              }
+            });
   }
 }

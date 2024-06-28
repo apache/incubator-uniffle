@@ -29,9 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ShuffleServerGrpcMetricsTest {
   @Test
-  public void testLatencyMetrics() {
+  public void testLatencyMetrics() throws InterruptedException {
+    ShuffleServerConf shuffleServerConf = new ShuffleServerConf();
     ShuffleServerGrpcMetrics metrics =
-        new ShuffleServerGrpcMetrics(Constants.SHUFFLE_SERVER_VERSION);
+        new ShuffleServerGrpcMetrics(shuffleServerConf, Constants.SHUFFLE_SERVER_VERSION);
     metrics.register(new CollectorRegistry(true));
     metrics.recordTransportTime(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, 1000);
     metrics.recordTransportTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, 500);
@@ -44,6 +45,7 @@ public class ShuffleServerGrpcMetricsTest {
     assertEquals(3, sendTimeSummaryTime.size());
     assertEquals(3, processTimeSummaryTime.size());
 
+    Thread.sleep(1000L);
     assertEquals(
         1D, sendTimeSummaryTime.get(ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD).get().sum);
     assertEquals(

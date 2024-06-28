@@ -181,6 +181,17 @@ public class ConfigUtils {
     return Double.parseDouble(o.toString());
   }
 
+  public static double[] convertBytesStringToDoubleArray(Object o) {
+    if (o == null) {
+      return new double[0];
+    } else {
+      return Arrays.stream(o.toString().split(","))
+          .map(UnitConverter::byteStringAsBytes)
+          .mapToDouble(l -> (double) l)
+          .toArray();
+    }
+  }
+
   @SuppressWarnings("unchecked")
   public static List<ConfigOption<Object>> getAllConfigOptions(
       Class<? extends RssBaseConf> confClass) {

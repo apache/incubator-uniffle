@@ -58,7 +58,7 @@ This document will introduce how to deploy Uniffle coordinators.
     rss.coordinator.remote.storage.path hdfs://cluster1/path,hdfs://cluster2/path
     rss.writer.require.memory.retryMax 1200
     rss.client.retry.max 100
-    rss.writer.send.check.timeout 600000
+    rss.client.send.check.timeout.ms 600000
     rss.client.read.buffer.size 14m
    ```
    
@@ -101,7 +101,7 @@ This document will introduce how to deploy Uniffle coordinators.
 |rss.coordinator.remote.storage.io.sample.access.times|3| The number of times to read and write HADOOP FS files                                                                                                                                                                                                                    |
 |rss.coordinator.startup-silent-period.enabled|false| Enable the startup-silent-period to reject the assignment requests for avoiding partial assignments. To avoid service interruption, this mechanism is disabled by default. Especially it's recommended to use in coordinator HA mode when restarting single coordinator. |
 |rss.coordinator.startup-silent-period.duration|20000| The waiting duration(ms) when conf of rss.coordinator.startup-silent-period.enabled is enabled.                                                                                                                                                                          |
-|rss.coordinator.select.partition.strategy|ROUND| There are two strategies for selecting partitions: ROUND and CONTINUOUS. ROUND will poll to allocate partitions to ShuffleServer, and CONTINUOUS will try to allocate consecutive partitions to ShuffleServer, this feature can improve performance in AQE scenarios.    |
+|rss.coordinator.select.partition.strategy|CONTINUOUS| There are two strategies for selecting partitions: ROUND and CONTINUOUS. ROUND will poll to allocate partitions to ShuffleServer, and CONTINUOUS will try to allocate consecutive partitions to ShuffleServer, this feature can improve performance in AQE scenarios.    |
 |rss.metrics.reporter.class|-| The class of metrics reporter.                                                                                                                                                                                                                                           |
 |rss.reconfigure.interval.sec|5| Reconfigure check interval.                                                                                                                                                                                                                                              |
 
@@ -181,7 +181,7 @@ AccessQuotaChecker is a checker when the number of concurrent tasks submitted by
 ##### Example cURL
 
 > ```bash
->  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/decommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
+>  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/decommission  -d '{"serverIds": ["127.0.0.1-19999"]}'
 > ```
 </details>
 
@@ -219,7 +219,7 @@ AccessQuotaChecker is a checker when the number of concurrent tasks submitted by
 ##### Example cURL
 
 > ```bash
->  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/cancelDecommission  -d '{"serverIds:": ["127.0.0.1:19999"]}'
+>  curl -X POST -H "Content-Type: application/json" http://localhost:19998/api/server/cancelDecommission  -d '{"serverIds": ["127.0.0.1-19999"]}'
 > ```
 </details>
 

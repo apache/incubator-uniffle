@@ -29,6 +29,8 @@ public abstract class ManagedBuffer {
 
   public abstract ByteBuffer nioByteBuffer();
 
+  public abstract ManagedBuffer retain();
+
   public abstract ManagedBuffer release();
 
   /**

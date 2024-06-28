@@ -37,6 +37,36 @@ import org.apache.uniffle.common.config.RssConf;
 
 public class RssSparkConfig {
 
+  public static final ConfigOption<Boolean> RSS_RESUBMIT_STAGE_ENABLED =
+      ConfigOptions.key("rss.stageRetry.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDeprecatedKeys(RssClientConfig.RSS_RESUBMIT_STAGE)
+          .withDescription("Whether to enable the resubmit stage for fetch/write failure");
+
+  public static final ConfigOption<Boolean> RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED =
+      ConfigOptions.key("rss.stageRetry.fetchFailureEnabled")
+          .booleanType()
+          .defaultValue(false)
+          .withFallbackKeys(RSS_RESUBMIT_STAGE_ENABLED.key(), RssClientConfig.RSS_RESUBMIT_STAGE)
+          .withDescription(
+              "If set to true, the stage retry mechanism will be enabled when a fetch failure occurs.");
+
+  public static final ConfigOption<Boolean> RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED =
+      ConfigOptions.key("rss.stageRetry.writeFailureEnabled")
+          .booleanType()
+          .defaultValue(false)
+          .withFallbackKeys(RSS_RESUBMIT_STAGE_ENABLED.key(), RssClientConfig.RSS_RESUBMIT_STAGE)
+          .withDescription(
+              "If set to true, the stage retry mechanism will be enabled when a write failure occurs.");
+
+  public static final ConfigOption<Boolean> RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED =
+      ConfigOptions.key("rss.blockId.selfManagementEnabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "Whether to enable the blockId self management in spark driver side. Default value is false.");
+
   public static final ConfigOption<Long> RSS_CLIENT_SEND_SIZE_LIMITATION =
       ConfigOptions.key("rss.client.send.size.limit")
           .longType()
@@ -63,6 +93,31 @@ public class RssSparkConfig {
           .defaultValue(false)
           .withDescription(
               "The memory spill switch triggered by Spark TaskMemoryManager, default value is false.");
+
+  public static final ConfigOption<Double> RSS_MEMORY_SPILL_RATIO =
+      ConfigOptions.key("rss.client.memory.spill.ratio")
+          .doubleType()
+          .defaultValue(1.0d)
+          .withDescription(
+              "The buffer size to spill when spill triggered by config spark.rss.writer.buffer.spill.size");
+  public static final ConfigOption<Integer> RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM =
+      ConfigOptions.key("rss.client.reassign.maxReassignServerNum")
+          .intType()
+          .defaultValue(10)
+          .withDescription(
+              "The max reassign server num for one partition when using partition reassign mechanism.");
+
+  public static final ConfigOption<Integer> RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES =
+      ConfigOptions.key("rss.client.reassign.blockRetryMaxTimes")
+          .intType()
+          .defaultValue(1)
+          .withDescription("The block retry max times when partition reassign is enabled.");
+
+  public static final ConfigOption<Boolean> RSS_CLIENT_MAP_SIDE_COMBINE_ENABLED =
+      ConfigOptions.key("rss.client.mapSideCombine.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Whether to enable map side combine of shuffle writer.");
 
   public static final String SPARK_RSS_CONFIG_PREFIX = "spark.";
 
@@ -165,8 +220,20 @@ public class RssSparkConfig {
       createIntegerBuilder(new ConfigBuilder("spark.rss.client.unregister.thread.pool.size"))
           .createWithDefault(10);
 
+  public static final ConfigEntry<Integer> RSS_CLIENT_UNREGISTER_TIMEOUT_SEC =
+      createIntegerBuilder(
+              new ConfigBuilder("spark.rss.client.unregister.timeout.sec")
+                  .doc(
+                      "Unregister requests are executed concurrently and all requests together "
+                          + "have to complete within this timeout."))
+          .createWithDefault(10);
+
   public static final ConfigEntry<Integer> RSS_CLIENT_UNREGISTER_REQUEST_TIMEOUT_SEC =
-      createIntegerBuilder(new ConfigBuilder("spark.rss.client.unregister.request.timeout.sec"))
+      createIntegerBuilder(
+              new ConfigBuilder("spark.rss.client.unregister.request.timeout.sec")
+                  .doc(
+                      "Unregister requests are executed concurrently and individual requests "
+                          + "have to complete within this timeout."))
           .createWithDefault(10);
 
   // When the size of read buffer reaches the half of JVM region (i.e., 32m),
@@ -366,12 +433,14 @@ public class RssSparkConfig {
                   .doc(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT.description()))
           .createWithDefault(-1);
 
-  public static final ConfigEntry<Boolean> RSS_RESUBMIT_STAGE =
-      createBooleanBuilder(
-              new ConfigBuilder(SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_RESUBMIT_STAGE)
-                  .internal()
-                  .doc("Whether to enable the resubmit stage."))
-          .createWithDefault(false);
+  public static final ConfigEntry<Integer> RSS_MAX_PARTITIONS =
+      createIntegerBuilder(
+              new ConfigBuilder("spark.rss.blockId.maxPartitions")
+                  .doc(
+                      "Sets the maximum number of partitions to be supported by block ids. "
+                          + "This determines the bits reserved in block ids for the "
+                          + "sequence number, the partition id and the task attempt id."))
+          .createWithDefault(1048576);
 
   // spark2 doesn't have this key defined
   public static final String SPARK_SHUFFLE_COMPRESS_KEY = "spark.shuffle.compress";

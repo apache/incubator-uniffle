@@ -17,21 +17,17 @@
 
 package org.apache.uniffle.test;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import scala.collection.Seq;
 
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
-import org.apache.spark.status.AppStatusStore;
-import org.apache.spark.status.api.v1.StageData;
 import org.junit.jupiter.api.Test;
+
+import org.apache.uniffle.test.listener.WriteAndReadMetricsSparkListener;
 
 public class WriteAndReadMetricsTest extends SimpleTestBase {
 
@@ -42,6 +38,10 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
 
   @Override
   public Map<String, Long> runTest(SparkSession spark, String fileName) throws Exception {
+    // Instantiate WriteAndReadMetricsSparkListener and add it to SparkContext
+    WriteAndReadMetricsSparkListener listener = new WriteAndReadMetricsSparkListener();
+    spark.sparkContext().addSparkListener(listener);
+
     // take a rest to make sure shuffle server is registered
     Thread.sleep(3000);
 
@@ -60,41 +60,16 @@ public class WriteAndReadMetricsTest extends SimpleTestBase {
     Map<String, Long> result = new HashMap<>();
     result.put("size", (long) list.size());
 
+    // take a rest to make sure all task metrics are updated before read stageData
+    Thread.sleep(100);
+
     for (int stageId : spark.sparkContext().statusTracker().getJobInfo(0).get().stageIds()) {
-      long writeRecords = getFirstStageData(spark, stageId).shuffleWriteRecords();
-      long readRecords = getFirstStageData(spark, stageId).shuffleReadRecords();
+      long writeRecords = listener.getWriteRecords(stageId);
+      long readRecords = listener.getReadRecords(stageId);
       result.put(stageId + "-write-records", writeRecords);
       result.put(stageId + "-read-records", readRecords);
     }
 
     return result;
-  }
-
-  private StageData getFirstStageData(SparkSession spark, int stageId)
-      throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-    AppStatusStore statestore = spark.sparkContext().statusStore();
-    try {
-      return ((Seq<StageData>)
-              statestore
-                  .getClass()
-                  .getDeclaredMethod("stageData", int.class, boolean.class)
-                  .invoke(statestore, stageId, false))
-          .toList()
-          .head();
-    } catch (Exception e) {
-      return ((Seq<StageData>)
-              statestore
-                  .getClass()
-                  .getDeclaredMethod(
-                      "stageData",
-                      int.class,
-                      boolean.class,
-                      List.class,
-                      boolean.class,
-                      double[].class)
-                  .invoke(statestore, stageId, false, new ArrayList<>(), true, new double[] {}))
-          .toList()
-          .head();
-    }
   }
 }

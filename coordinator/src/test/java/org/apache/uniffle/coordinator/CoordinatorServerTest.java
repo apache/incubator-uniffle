@@ -45,6 +45,9 @@ public class CoordinatorServerTest {
     } catch (Exception e) {
       assertEquals(expectMessage, e.getMessage());
       assertEquals(expectStatus, ((ExitException) e).getStatus());
+    } finally {
+      // Always call stopServer after new CoordinatorServer to shut down ExecutorService
+      cs2.stopServer();
     }
 
     coordinatorConf.setInteger("rss.jetty.http.port", 9529);
@@ -55,6 +58,10 @@ public class CoordinatorServerTest {
     } catch (Exception e) {
       assertEquals(expectMessage, e.getMessage());
       assertEquals(expectStatus, ((ExitException) e).getStatus());
+    } finally {
+      // Always call stopServer after new CoordinatorServer to shut down ExecutorService
+      cs2.stopServer();
+      cs1.stopServer();
     }
 
     final Thread t =

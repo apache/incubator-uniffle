@@ -20,6 +20,7 @@ package org.apache.uniffle.test;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
@@ -32,11 +33,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
-import org.apache.uniffle.client.util.ClientUtils;
-import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -44,6 +44,8 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -62,39 +64,61 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
   private static ShuffleServerInfo shuffleServerInfo1;
   private static ShuffleServerInfo shuffleServerInfo2;
   private ShuffleWriteClientImpl shuffleWriteClientImpl;
+  private static int rpcPort1;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 4000);
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
     shuffleServerConf.setString("rss.storage.basePath", basePath);
+    rpcPort1 = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     createShuffleServer(shuffleServerConf);
     File dataDir3 = new File(tmpDir, "data3");
     File dataDir4 = new File(tmpDir, "data4");
     basePath = dataDir3.getAbsolutePath() + "," + dataDir4.getAbsolutePath();
     shuffleServerConf.setString("rss.storage.basePath", basePath);
-    shuffleServerConf.setInteger("rss.rpc.server.port", SHUFFLE_SERVER_PORT + 1);
-    shuffleServerConf.setInteger("rss.jetty.http.port", 18081);
+    shuffleServerConf.setInteger(
+        "rss.rpc.server.port", shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT) + 1);
+    shuffleServerConf.setInteger(
+        "rss.jetty.http.port", shuffleServerConf.getInteger(ShuffleServerConf.JETTY_HTTP_PORT) + 1);
     createShuffleServer(shuffleServerConf);
     startServers();
     shuffleServerInfo1 =
         new ShuffleServerInfo(
-            "127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT);
+            String.format("127.0.0.1-%s", grpcShuffleServers.get(0).getGrpcPort()),
+            grpcShuffleServers.get(0).getIp(),
+            grpcShuffleServers.get(0).getGrpcPort());
     shuffleServerInfo2 =
         new ShuffleServerInfo(
-            "127.0.0.1-20001", shuffleServers.get(1).getIp(), SHUFFLE_SERVER_PORT + 1);
+            String.format("127.0.0.1-%s", grpcShuffleServers.get(0).getGrpcPort() + 1),
+            grpcShuffleServers.get(1).getIp(),
+            grpcShuffleServers.get(0).getGrpcPort() + 1);
   }
 
   @BeforeEach
   public void createClient() {
     shuffleWriteClientImpl =
-        new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1, 1, 1, 1, true, 1, 1, 10, 10);
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(1000)
+            .heartBeatThreadNum(1)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
+            .unregisterRequestTimeSec(10)
+            .build();
   }
 
   @AfterEach
@@ -118,8 +142,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
 
     // simulator a failed server
     ShuffleServerInfo fakeShuffleServerInfo =
-        new ShuffleServerInfo(
-            "127.0.0.1-20001", shuffleServers.get(0).getIp(), SHUFFLE_SERVER_PORT + 100);
+        new ShuffleServerInfo("127.0.0.1-20001", grpcShuffleServers.get(0).getIp(), rpcPort1 + 100);
     List<ShuffleBlockInfo> blocks =
         createShuffleBlockList(
             0,
@@ -150,11 +173,12 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     assertFalse(commitResult);
 
     // Report will success when replica=2
-    Map<Integer, List<Long>> ptb = Maps.newHashMap();
-    ptb.put(0, Lists.newArrayList(blockIdBitmap.stream().iterator()));
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    partitionToServers.put(0, Lists.newArrayList(shuffleServerInfo1, fakeShuffleServerInfo));
-    shuffleWriteClientImpl.reportShuffleResult(partitionToServers, testAppId, 0, 0, ptb, 2);
+    Map<Integer, Set<Long>> ptb = Maps.newHashMap();
+    ptb.put(0, Sets.newHashSet(blockIdBitmap.stream().iterator()));
+    Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds = Maps.newHashMap();
+    serverToPartitionToBlockIds.put(shuffleServerInfo1, ptb);
+    serverToPartitionToBlockIds.put(fakeShuffleServerInfo, ptb);
+    shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 0, 0, 2);
     Roaring64NavigableMap report =
         shuffleWriteClientImpl.getShuffleResult(
             "GRPC", Sets.newHashSet(shuffleServerInfo1, fakeShuffleServerInfo), testAppId, 0, 0);
@@ -164,6 +188,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
   @Test
   public void reportBlocksToShuffleServerIfNecessary() {
     String testAppId = "reportBlocksToShuffleServerIfNecessary_appId";
+    BlockIdLayout layout = BlockIdLayout.DEFAULT;
 
     shuffleWriteClientImpl.registerShuffle(
         shuffleServerInfo1,
@@ -183,21 +208,17 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         ShuffleDataDistributionType.NORMAL,
         -1);
 
-    Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
-    partitionToServers.put(1, Lists.newArrayList(shuffleServerInfo1));
-    partitionToServers.put(2, Lists.newArrayList(shuffleServerInfo2));
-    Map<Integer, List<Long>> partitionToBlocks = Maps.newHashMap();
-    List<Long> blockIds = Lists.newArrayList();
-
+    Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds = Maps.newHashMap();
+    Map<Integer, Set<Long>> partitionToBlocks = Maps.newHashMap();
+    Set<Long> blockIds = Sets.newHashSet();
     int partitionIdx = 1;
     for (int i = 0; i < 5; i++) {
-      blockIds.add(ClientUtils.getBlockId(partitionIdx, 0, i));
+      blockIds.add(layout.getBlockId(i, partitionIdx, 0));
     }
     partitionToBlocks.put(partitionIdx, blockIds);
-
+    serverToPartitionToBlockIds.put(shuffleServerInfo1, partitionToBlocks);
     // case1
-    shuffleWriteClientImpl.reportShuffleResult(
-        partitionToServers, testAppId, 1, 0, partitionToBlocks, 1);
+    shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 1, 0, 1);
     Roaring64NavigableMap bitmap =
         shuffleWriteClientImpl.getShuffleResult(
             "GRPC", Sets.newHashSet(shuffleServerInfo1), testAppId, 1, 0);
@@ -207,14 +228,15 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         shuffleWriteClientImpl.getShuffleResult(
             "GRPC", Sets.newHashSet(shuffleServerInfo1), testAppId, 1, partitionIdx);
     assertEquals(5, bitmap.getLongCardinality());
-    for (int i = 0; i < 5; i++) {
-      assertTrue(bitmap.contains(partitionToBlocks.get(1).get(i)));
+    for (Long b : partitionToBlocks.get(1)) {
+      assertTrue(bitmap.contains(b));
     }
   }
 
   @Test
   public void reportMultipleServerTest() throws Exception {
     String testAppId = "reportMultipleServerTest";
+    BlockIdLayout layout = BlockIdLayout.DEFAULT;
 
     shuffleWriteClientImpl.registerShuffle(
         shuffleServerInfo1,
@@ -237,19 +259,24 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = Maps.newHashMap();
     partitionToServers.putIfAbsent(1, Lists.newArrayList(shuffleServerInfo1));
     partitionToServers.putIfAbsent(2, Lists.newArrayList(shuffleServerInfo2));
-    Map<Integer, List<Long>> partitionToBlocks = Maps.newHashMap();
-    List<Long> blockIds = Lists.newArrayList();
+    Map<Integer, Set<Long>> partitionToBlocks1 = Maps.newHashMap();
+    Set<Long> blockIds = Sets.newHashSet();
     for (int i = 0; i < 5; i++) {
-      blockIds.add(ClientUtils.getBlockId(1, 0, i));
+      blockIds.add(layout.getBlockId(i, 1, 0));
     }
-    partitionToBlocks.put(1, blockIds);
-    blockIds = Lists.newArrayList();
+    partitionToBlocks1.put(1, blockIds);
+    Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds = Maps.newHashMap();
+    serverToPartitionToBlockIds.put(shuffleServerInfo1, partitionToBlocks1);
+
+    Map<Integer, Set<Long>> partitionToBlocks2 = Maps.newHashMap();
+    blockIds = Sets.newHashSet();
     for (int i = 0; i < 7; i++) {
-      blockIds.add(ClientUtils.getBlockId(2, 0, i));
+      blockIds.add(layout.getBlockId(i, 2, 0));
     }
-    partitionToBlocks.put(2, blockIds);
-    shuffleWriteClientImpl.reportShuffleResult(
-        partitionToServers, testAppId, 1, 0, partitionToBlocks, 1);
+    partitionToBlocks2.put(2, blockIds);
+    serverToPartitionToBlockIds.put(shuffleServerInfo2, partitionToBlocks2);
+
+    shuffleWriteClientImpl.reportShuffleResult(serverToPartitionToBlockIds, testAppId, 1, 0, 1);
 
     Roaring64NavigableMap bitmap =
         shuffleWriteClientImpl.getShuffleResult(
@@ -260,8 +287,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         shuffleWriteClientImpl.getShuffleResult(
             "GRPC", Sets.newHashSet(shuffleServerInfo1), testAppId, 1, 1);
     assertEquals(5, bitmap.getLongCardinality());
-    for (int i = 0; i < 5; i++) {
-      assertTrue(bitmap.contains(partitionToBlocks.get(1).get(i)));
+    for (Long b : partitionToBlocks1.get(1)) {
+      assertTrue(bitmap.contains(b));
     }
 
     bitmap =
@@ -283,8 +310,8 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
         shuffleWriteClientImpl.getShuffleResult(
             "GRPC", Sets.newHashSet(shuffleServerInfo2), testAppId, 1, 2);
     assertEquals(7, bitmap.getLongCardinality());
-    for (int i = 0; i < 7; i++) {
-      assertTrue(bitmap.contains(partitionToBlocks.get(2).get(i)));
+    for (Long b : partitionToBlocks2.get(2)) {
+      assertTrue(bitmap.contains(b));
     }
   }
 
@@ -330,21 +357,21 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     assertTrue(commitResult);
 
     ShuffleReadClientImpl readClient =
-        new ShuffleReadClientImpl(
-            StorageType.LOCALFILE.name(),
-            testAppId,
-            0,
-            0,
-            100,
-            1,
-            10,
-            1000,
-            "",
-            blockIdBitmap,
-            taskIdBitmap,
-            Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2),
-            null,
-            new DefaultIdHelper());
+        ShuffleClientFactory.newReadBuilder()
+            .clientType(ClientType.GRPC)
+            .storageType(StorageType.LOCALFILE.name())
+            .appId(testAppId)
+            .shuffleId(0)
+            .partitionId(0)
+            .indexReadLimit(100)
+            .partitionNumPerRange(1)
+            .partitionNum(10)
+            .readBufferSize(1000)
+            .basePath("")
+            .blockIdBitmap(blockIdBitmap)
+            .taskIdBitmap(taskIdBitmap)
+            .shuffleServerInfoList(Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2))
+            .build();
     assertNull(readClient.readShuffleBlockData());
     readClient.close();
 
@@ -354,21 +381,21 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
             Sets.newHashSet(shuffleServerInfo1, shuffleServerInfo2), testAppId, 0, 2);
     assertTrue(commitResult);
     readClient =
-        new ShuffleReadClientImpl(
-            StorageType.LOCALFILE.name(),
-            testAppId,
-            0,
-            0,
-            100,
-            1,
-            10,
-            1000,
-            "",
-            blockIdBitmap,
-            taskIdBitmap,
-            Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2),
-            null,
-            new DefaultIdHelper());
+        ShuffleClientFactory.newReadBuilder()
+            .clientType(ClientType.GRPC)
+            .storageType(StorageType.LOCALFILE.name())
+            .appId(testAppId)
+            .shuffleId(0)
+            .partitionId(0)
+            .indexReadLimit(100)
+            .partitionNumPerRange(1)
+            .partitionNum(10)
+            .readBufferSize(1000)
+            .basePath("")
+            .blockIdBitmap(blockIdBitmap)
+            .taskIdBitmap(taskIdBitmap)
+            .shuffleServerInfoList(Lists.newArrayList(shuffleServerInfo1, shuffleServerInfo2))
+            .build();
     validateResult(readClient, expectedData);
     readClient.checkProcessedBlockIds();
     readClient.close();
@@ -376,8 +403,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
     // commit will be failed because of fakeIp
     commitResult =
         shuffleWriteClientImpl.sendCommit(
-            Sets.newHashSet(
-                new ShuffleServerInfo("127.0.0.1-20001", "fakeIp", SHUFFLE_SERVER_PORT)),
+            Sets.newHashSet(new ShuffleServerInfo("127.0.0.1-20001", "fakeIp", rpcPort1)),
             testAppId,
             0,
             2);
@@ -414,12 +440,12 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
 
   @Test
   public void testRetryAssgin() throws Throwable {
-    int maxTryTime = shuffleServers.size();
+    int maxTryTime = grpcShuffleServers.size();
     AtomicInteger tryTime = new AtomicInteger();
     String appId = "app-1";
     RemoteStorageInfo remoteStorage = new RemoteStorageInfo("");
     ShuffleAssignmentsInfo response = null;
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     int heartbeatInterval = shuffleServerConf.getInteger("rss.server.heartbeat.interval", 1000);
     Thread.sleep(heartbeatInterval * 2);
     shuffleWriteClientImpl.registerCoordinators(COORDINATOR_QUORUM);
@@ -439,7 +465,7 @@ public class ShuffleWithRssClientTest extends ShuffleReadWriteBase {
                   .forEach(
                       entry -> {
                         if (currentTryTime < maxTryTime) {
-                          shuffleServers.forEach(
+                          grpcShuffleServers.forEach(
                               (ss) -> {
                                 if (ss.getId().equals(entry.getKey().getId())) {
                                   try {

@@ -22,6 +22,7 @@ import java.util.Set;
 
 import com.google.common.collect.Sets;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,11 @@ public class ApplicationManagerTest {
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_APP_EXPIRED, appExpiredTime);
     applicationManager = new ApplicationManager(conf);
+  }
+
+  @AfterEach
+  public void tearDown() {
+    applicationManager.close();
   }
 
   @Test

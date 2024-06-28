@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
@@ -51,7 +51,7 @@ func TestRemoveHPA(t *testing.T) {
 	testHPA := buildTestHPA()
 	kubeClient := kubefake.NewSimpleClientset(testHPA)
 	assertion.Empty(RemoveHPA(kubeClient, testHPA))
-	curHPA, err := kubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(testHPA.Namespace).
+	curHPA, err := kubeClient.AutoscalingV2().HorizontalPodAutoscalers(testHPA.Namespace).
 		Get(context.TODO(), testHPA.Name, metav1.GetOptions{})
 	assertion.Empty(curHPA)
 	assertion.Equal(errors.IsNotFound(err), true)
@@ -64,7 +64,7 @@ func TestPatchHPA(t *testing.T) {
 	newHPA := buildTestHPA()
 	newHPA.Spec.MaxReplicas = 5
 	assertion.Empty(PatchHPA(kubeClient, oldHPA, newHPA))
-	curHPA, err := kubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(oldHPA.Namespace).
+	curHPA, err := kubeClient.AutoscalingV2().HorizontalPodAutoscalers(oldHPA.Namespace).
 		Get(context.TODO(), oldHPA.Name, metav1.GetOptions{})
 	assertion.Empty(err)
 	assertion.Equal(curHPA, newHPA)
@@ -77,7 +77,7 @@ func TestEnsureHPA(t *testing.T) {
 	// try to create a hpa.
 	initHPA := buildTestHPA()
 	assertion.Empty(EnsureHPA(kubeClient, initHPA))
-	curHPA, err := kubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(initHPA.Namespace).
+	curHPA, err := kubeClient.AutoscalingV2().HorizontalPodAutoscalers(initHPA.Namespace).
 		Get(context.TODO(), initHPA.Name, metav1.GetOptions{})
 	assertion.Empty(err)
 	assertion.Equal(curHPA, initHPA)
@@ -85,7 +85,7 @@ func TestEnsureHPA(t *testing.T) {
 	// try to update the hpa
 	initHPA.Spec.MaxReplicas = 5
 	assertion.Empty(EnsureHPA(kubeClient, initHPA))
-	curHPA, err = kubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(initHPA.Namespace).
+	curHPA, err = kubeClient.AutoscalingV2().HorizontalPodAutoscalers(initHPA.Namespace).
 		Get(context.TODO(), initHPA.Name, metav1.GetOptions{})
 	assertion.Empty(err)
 	assertion.Equal(curHPA, initHPA)
@@ -98,14 +98,14 @@ func TestSyncHPA(t *testing.T) {
 	// try to create a hpa.
 	initHPA := buildTestHPA()
 	assertion.Empty(SyncHPA(kubeClient, initHPA, true))
-	curHPA, err := kubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(initHPA.Namespace).
+	curHPA, err := kubeClient.AutoscalingV2().HorizontalPodAutoscalers(initHPA.Namespace).
 		Get(context.TODO(), initHPA.Name, metav1.GetOptions{})
 	assertion.Empty(err)
 	assertion.Equal(curHPA, initHPA)
 
 	// try to delete the hpa
 	assertion.Empty(SyncHPA(kubeClient, initHPA, false))
-	curHPA, err = kubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(initHPA.Namespace).
+	curHPA, err = kubeClient.AutoscalingV2().HorizontalPodAutoscalers(initHPA.Namespace).
 		Get(context.TODO(), initHPA.Name, metav1.GetOptions{})
 	assertion.Empty(curHPA)
 	assertion.Equal(errors.IsNotFound(err), true)

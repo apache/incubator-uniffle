@@ -21,9 +21,7 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.uniffle.common.config.Reconfigurable;
-
-public interface ClusterManager extends Closeable, Reconfigurable {
+public interface ClusterManager extends Closeable {
 
   /**
    * Add a server to the cluster.
@@ -41,6 +39,15 @@ public interface ClusterManager extends Closeable, Reconfigurable {
   List<ServerNode> getServerList(Set<String> requiredTags);
 
   /**
+   * Get available nodes from the cluster
+   *
+   * @param requiredTags tags for filter
+   * @param faultyServerIds servernode information that is excluded because of an exception
+   * @return list of available server nodes
+   */
+  List<ServerNode> getServerList(Set<String> requiredTags, Set<String> faultyServerIds);
+
+  /**
    * Get lost nodes from the cluster
    *
    * @return list of lost nodes
@@ -53,6 +60,8 @@ public interface ClusterManager extends Closeable, Reconfigurable {
    * @return list of unhealthy nodes
    */
   List<ServerNode> getUnhealthyServerList();
+
+  Set<String> getExcludeNodes();
 
   /** @return number of server nodes in the cluster */
   int getNodesNum();

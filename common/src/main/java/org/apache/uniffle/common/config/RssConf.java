@@ -29,6 +29,8 @@ import java.util.stream.Collectors;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 
+import org.apache.uniffle.common.ReconfigurableConfManager;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.UnitConverter;
 
 public class RssConf implements Cloneable {
@@ -38,7 +40,7 @@ public class RssConf implements Cloneable {
 
   /** Creates a new empty configuration. */
   public RssConf() {
-    this.settings = new ConcurrentHashMap<>();
+    this.settings = JavaUtils.newConcurrentMap();
   }
 
   /**
@@ -47,7 +49,7 @@ public class RssConf implements Cloneable {
    * @param other The configuration to copy the entries from.
    */
   public RssConf(RssConf other) {
-    this.settings = new ConcurrentHashMap<>(other.settings);
+    this.settings = JavaUtils.newConcurrentMap(other.settings);
   }
 
   public Set<String> getKeySet() {
@@ -426,6 +428,11 @@ public class RssConf implements Cloneable {
     return getOptional(configOption).orElseGet(configOption::defaultValue);
   }
 
+  public <T> ReconfigurableConfManager.Reconfigurable<T> getReconfigurableConf(
+      ConfigOption<T> configOption) {
+    return ReconfigurableConfManager.register(this, configOption);
+  }
+
   /**
    * Adds the given key/value pair to the configuration object.
    *
@@ -509,7 +516,7 @@ public class RssConf implements Cloneable {
   @Override
   public RssConf clone() throws CloneNotSupportedException {
     RssConf config = (RssConf) super.clone();
-    config.settings = new ConcurrentHashMap<>(settings);
+    config.settings = JavaUtils.newConcurrentMap(settings);
     return config;
   }
 
@@ -661,6 +668,10 @@ public class RssConf implements Cloneable {
   @Override
   public String toString() {
     return this.settings.toString();
+  }
+
+  public Set<Map.Entry<String, Object>> getAll() {
+    return this.settings.entrySet();
   }
 
   public String getEnv(String key) {

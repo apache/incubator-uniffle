@@ -19,19 +19,27 @@ package org.apache.uniffle.common.netty.protocol;
 
 import io.netty.buffer.ByteBuf;
 
+import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
+import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
 
-public class RpcResponse extends Message {
+public class RpcResponse extends ResponseMessage {
   private long requestId;
   private StatusCode statusCode;
   private String retMessage;
 
-  public RpcResponse(long requestId, StatusCode statusCode) {
-    this(requestId, statusCode, null);
+  public RpcResponse(long requestId, StatusCode statusCode, String retMessage) {
+    this(requestId, statusCode, retMessage, null);
   }
 
-  public RpcResponse(long requestId, StatusCode statusCode, String retMessage) {
+  public RpcResponse(long requestId, StatusCode statusCode, ManagedBuffer message) {
+    this(requestId, statusCode, null, message);
+  }
+
+  public RpcResponse(
+      long requestId, StatusCode statusCode, String retMessage, ManagedBuffer message) {
+    super(message);
     this.requestId = requestId;
     this.statusCode = statusCode;
     this.retMessage = retMessage;
@@ -70,11 +78,16 @@ public class RpcResponse extends Message {
     ByteBufUtils.writeLengthAndString(buf, retMessage);
   }
 
-  public static RpcResponse decode(ByteBuf buf) {
-    long requestId = buf.readLong();
-    StatusCode statusCode = StatusCode.fromCode(buf.readInt());
-    String retMessage = ByteBufUtils.readLengthAndString(buf);
-    return new RpcResponse(requestId, statusCode, retMessage);
+  public static RpcResponse decode(ByteBuf byteBuf, boolean decodeBody) {
+    long requestId = byteBuf.readLong();
+    StatusCode statusCode = StatusCode.fromCode(byteBuf.readInt());
+    String retMessage = ByteBufUtils.readLengthAndString(byteBuf);
+    if (decodeBody) {
+      NettyManagedBuffer nettyManagedBuffer = new NettyManagedBuffer(byteBuf);
+      return new RpcResponse(requestId, statusCode, retMessage, nettyManagedBuffer);
+    } else {
+      return new RpcResponse(requestId, statusCode, retMessage, NettyManagedBuffer.EMPTY_BUFFER);
+    }
   }
 
   public long getRequestId() {

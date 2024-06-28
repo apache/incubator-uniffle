@@ -97,7 +97,9 @@ public class RestClientImpl implements RestClient {
       }
       HttpUriRequest httpRequest = requestBuilder.setUri(uri).build();
 
-      LOG.debug("Executing {} request: {}", httpRequest.getMethod(), uri);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Executing {} request: {}", httpRequest.getMethod(), uri);
+      }
 
       ResponseHandler<String> responseHandler =
           resp -> {
@@ -112,7 +114,9 @@ public class RestClientImpl implements RestClient {
           };
 
       response = httpclient.execute(httpRequest, responseHandler);
-      LOG.debug("Response: {}", response);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Response: {}", response);
+      }
     } catch (ConnectException | ConnectTimeoutException | NoHttpResponseException e) {
       throw new UniffleRestException("Api request failed for " + uri.toString(), e);
     } catch (UniffleRestException rethrow) {

@@ -22,6 +22,7 @@ public class SecurityConfig {
   private String keytabFilePath;
   private String principal;
   private long reloginIntervalSec;
+  private boolean enableProxyUser;
 
   private SecurityConfig() {
     // ignore.
@@ -41,6 +42,10 @@ public class SecurityConfig {
 
   public long getReloginIntervalSec() {
     return reloginIntervalSec;
+  }
+
+  public boolean isEnableProxyUser() {
+    return enableProxyUser;
   }
 
   public static class Builder {
@@ -67,6 +72,11 @@ public class SecurityConfig {
 
     public SecurityConfig.Builder krb5ConfPath(String krb5ConfPath) {
       info.krb5ConfPath = krb5ConfPath;
+      return this;
+    }
+
+    public SecurityConfig.Builder enableProxyUser(boolean enableProxyUser) {
+      info.enableProxyUser = enableProxyUser;
       return this;
     }
 

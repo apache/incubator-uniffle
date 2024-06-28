@@ -26,6 +26,7 @@ package rss.common;
 service ShuffleServer {
   rpc registerShuffle (ShuffleRegisterRequest) returns (ShuffleRegisterResponse);
   rpc unregisterShuffle(ShuffleUnregisterRequest) returns (ShuffleUnregisterResponse);
+  rpc unregisterShuffleByAppId(ShuffleUnregisterByAppIdRequest) returns (ShuffleUnregisterByAppIdResponse);
   rpc sendShuffleData (SendShuffleDataRequest) returns (SendShuffleDataResponse);
   rpc getLocalShuffleIndex (GetLocalShuffleIndexRequest) returns (GetLocalShuffleIndexResponse);
   rpc getLocalShuffleData (GetLocalShuffleDataRequest) returns (GetLocalShuffleDataResponse);
@@ -142,6 +143,13 @@ message GetShuffleResultRequest {
   string appId = 1;
   int32 shuffleId = 2;
   int32 partitionId = 3;
+  BlockIdLayout blockIdLayout = 4;
+}
+
+message BlockIdLayout {
+  int32 sequenceNoBits = 1;
+  int32 partitionIdBits = 2;
+  int32 taskAttemptIdBits = 3;
 }
 
 message GetShuffleResultResponse {
@@ -154,6 +162,7 @@ message GetShuffleResultForMultiPartRequest {
   string appId = 1;
   int32 shuffleId = 2;
   repeated int32 partitions = 3;
+  BlockIdLayout blockIdLayout = 4;
 }
 
 message GetShuffleResultForMultiPartResponse {
@@ -175,6 +184,7 @@ message ShuffleRegisterRequest {
   string user = 5;
   DataDistribution shuffleDataDistribution = 6;
   int32 maxConcurrencyPerPartitionToWrite = 7;
+  int32 stageAttemptNumber = 8;
 }
 
 enum DataDistribution {
@@ -197,12 +207,22 @@ message ShuffleRegisterResponse {
   string retMsg = 2;
 }
 
+message ShuffleUnregisterByAppIdRequest {
+  string appId = 1;
+}
+
+message ShuffleUnregisterByAppIdResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
 message SendShuffleDataRequest {
   string appId = 1;
   int32 shuffleId = 2;
   int64 requireBufferId = 3;
   repeated ShuffleData shuffleData = 4;
   int64 timestamp = 5;
+  int32 stageAttemptNumber = 6;
 }
 
 message SendShuffleDataResponse {
@@ -241,6 +261,7 @@ enum ServerStatus {
   DECOMMISSIONED = 2;
   LOST = 3;
   UNHEALTHY = 4;
+  EXCLUDED = 5;
   // todo: more status, such as UPGRADING
 }
 
@@ -285,6 +306,8 @@ enum StatusCode {
   TIMEOUT = 7;
   ACCESS_DENIED = 8;
   INVALID_REQUEST = 9;
+  NO_BUFFER_FOR_HUGE_PARTITION = 10;
+  STAGE_RETRY_IGNORE = 11;
   // add more status
 }
 
@@ -347,6 +370,7 @@ service CoordinatorServer {
 
   // Get basic client conf from coordinator
   rpc fetchClientConf(google.protobuf.Empty) returns (FetchClientConfResponse);
+  rpc fetchClientConfV2(FetchClientConfRequest) returns (FetchClientConfResponse);
 
   // Get remote storage from coordinator
   rpc fetchRemoteStorage(FetchRemoteStorageRequest) returns (FetchRemoteStorageResponse);
@@ -391,6 +415,10 @@ message GetShuffleServerRequest {
   repeated string requireTags = 9;
   int32 assignmentShuffleServerNumber = 10;
   int32 estimateTaskConcurrency = 11;
+  repeated string faultyServerIds = 12;
+  int32 stageId = 13;
+  int32 stageAttemptNumber = 14;
+  bool reassign = 15;
 }
 
 message PartitionRangeAssignment {
@@ -440,6 +468,16 @@ message AccessClusterResponse {
   StatusCode status = 1;
   string retMsg = 2;
   string uuid = 3;
+}
+
+message FetchClientConfRequest {
+  string user = 1;
+  /**
+   For the potential extension for customize delegation shuffle manager.
+   You could put more internal properties in customize delegation shuffle manager,
+   and then it could be as metadata in your own customize ClientConfApplyStrategy.
+   */
+  map<string, string> properties = 2;
 }
 
 message FetchClientConfResponse {
@@ -496,6 +534,19 @@ message CancelDecommissionResponse {
 // per application.
 service ShuffleManager {
   rpc reportShuffleFetchFailure (ReportShuffleFetchFailureRequest) returns (ReportShuffleFetchFailureResponse);
+  // Gets the mapping between partitions and ShuffleServer from the ShuffleManager server on Stage Retry.
+  rpc getPartitionToShufflerServerWithStageRetry(PartitionToShuffleServerRequest) returns (ReassignOnStageRetryResponse);
+  // Gets the mapping between partitions and ShuffleServer from the ShuffleManager server on Block Retry.
+  rpc getPartitionToShufflerServerWithBlockRetry(PartitionToShuffleServerRequest) returns (ReassignOnBlockSendFailureResponse);
+  // Report write failures to ShuffleManager
+  rpc reportShuffleWriteFailure (ReportShuffleWriteFailureRequest) returns (ReportShuffleWriteFailureResponse);
+  // Reassign on stage resubmit
+  rpc reassignOnStageResubmit(ReassignServersRequest) returns (ReassignServersResponse);
+  // Reassign on block send failure that occurs in writer
+  rpc reassignOnBlockSendFailure(RssReassignOnBlockSendFailureRequest) returns (ReassignOnBlockSendFailureResponse);
+  rpc reportShuffleResult (ReportShuffleResultRequest) returns (ReportShuffleResultResponse);
+  rpc getShuffleResult (GetShuffleResultRequest) returns (GetShuffleResultResponse);
+  rpc getShuffleResultForMultiPart (GetShuffleResultForMultiPartRequest) returns (GetShuffleResultForMultiPartResponse);
 }
 
 message ReportShuffleFetchFailureRequest {
@@ -515,3 +566,90 @@ message ReportShuffleFetchFailureResponse {
   bool reSubmitWholeStage = 2;
   string msg = 3;
 }
+
+message PartitionToShuffleServerRequest {
+  int32 shuffleId = 2;
+}
+
+message ReassignOnStageRetryResponse {
+  StatusCode status = 1;
+  string msg = 2;
+  StageAttemptShuffleHandleInfo shuffleHandleInfo = 3;
+}
+
+message StageAttemptShuffleHandleInfo {
+  repeated MutableShuffleHandleInfo historyMutableShuffleHandleInfo= 1;
+  MutableShuffleHandleInfo currentMutableShuffleHandleInfo = 2;
+}
+
+message MutableShuffleHandleInfo {
+  int32 shuffleId = 1;
+  map<int32, PartitionReplicaServers> partitionToServers = 2;
+  RemoteStorageInfo remoteStorageInfo = 3;
+}
+
+message PartitionReplicaServers {
+  map<int32, ReplicaServersItem> replicaServers = 1;
+}
+
+message ReplicaServersItem {
+  repeated ShuffleServerId serverId = 1;
+}
+
+message RemoteStorageInfo{
+  string path = 1;
+  map<string, string> confItems = 2;
+}
+
+message ReportShuffleWriteFailureRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+  int32 stageAttemptNumber = 3;
+  repeated ShuffleServerId shuffleServerIds= 5;
+  string exception = 6;
+}
+
+message ReportShuffleWriteFailureResponse {
+  StatusCode status = 1;
+  bool reSubmitWholeStage = 2;
+  string msg = 3;
+}
+
+message ReassignServersRequest{
+  int32 stageId = 1;
+  int32 stageAttemptNumber = 2;
+  int32 shuffleId = 3;
+  int32 numPartitions = 4;
+}
+
+message ReassignServersResponse {
+  StatusCode status = 1;
+  bool needReassign = 2;
+  string msg = 3;
+}
+
+message RssReassignOnBlockSendFailureRequest {
+  int32 shuffleId  = 1;
+  map<int32, ReceivingFailureServers> failurePartitionToServerIds = 2;
+  int64 taskAttemptId = 3;
+  int32 stageId = 4;
+  int32 stageAttemptNumber = 5;
+  string executorId = 6;
+}
+
+message ReceivingFailureServers {
+  repeated ReceivingFailureServer server = 1;
+}
+
+message ReceivingFailureServer {
+  string serverId = 1;
+  StatusCode statusCode = 2;
+}
+
+message ReassignOnBlockSendFailureResponse {
+  StatusCode status = 1;
+  string msg = 2;
+  MutableShuffleHandleInfo handle = 3;
+}
+
+

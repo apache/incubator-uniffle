@@ -71,7 +71,7 @@ public class LocalStorageMeta {
     }
   }
 
-  public void remoteShuffle(String shuffleKey) {
+  public void removeShuffle(String shuffleKey) {
     shuffleMetaMap.remove(shuffleKey);
   }
 
@@ -114,7 +114,9 @@ public class LocalStorageMeta {
   private ShuffleMeta getShuffleMeta(String shuffleKey) {
     ShuffleMeta shuffleMeta = shuffleMetaMap.get(shuffleKey);
     if (shuffleMeta == null) {
-      LOG.debug("Shuffle {} metadata has been removed!", shuffleKey);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Shuffle {} metadata has been removed!", shuffleKey);
+      }
     }
     return shuffleMeta;
   }

@@ -19,27 +19,46 @@ package org.apache.uniffle.client.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
+import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
+import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.netty.IOMode;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.common.util.RssUtils;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class ShuffleWriteClientImplTest {
@@ -47,7 +66,21 @@ public class ShuffleWriteClientImplTest {
   @Test
   public void testAbandonEventWhenTaskFailed() {
     ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl("GRPC", 3, 2000, 4, 1, 1, 1, true, 1, 1, 10, 10);
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(2000)
+            .heartBeatThreadNum(4)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
+            .unregisterRequestTimeSec(10)
+            .build();
     ShuffleServerClient mockShuffleServerClient = mock(ShuffleServerClient.class);
     ShuffleWriteClientImpl spyClient = Mockito.spy(shuffleWriteClient);
     doReturn(mockShuffleServerClient).when(spyClient).getShuffleServerClient(any());
@@ -65,7 +98,7 @@ public class ShuffleWriteClientImplTest {
     List<ShuffleBlockInfo> shuffleBlockInfoList =
         Lists.newArrayList(
             new ShuffleBlockInfo(
-                0, 0, 10, 10, 10, new byte[] {1}, shuffleServerInfoList, 10, 100, 0));
+                0, 0, 10, 10, 10, new byte[] {10}, shuffleServerInfoList, 10, 100, 0));
 
     // It should directly exit and wont do rpc request.
     Awaitility.await()
@@ -80,7 +113,21 @@ public class ShuffleWriteClientImplTest {
   @Test
   public void testSendData() {
     ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl("GRPC", 3, 2000, 4, 1, 1, 1, true, 1, 1, 10, 10);
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(2000)
+            .heartBeatThreadNum(4)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
+            .unregisterRequestTimeSec(10)
+            .build();
     ShuffleServerClient mockShuffleServerClient = mock(ShuffleServerClient.class);
     ShuffleWriteClientImpl spyClient = Mockito.spy(shuffleWriteClient);
     doReturn(mockShuffleServerClient).when(spyClient).getShuffleServerClient(any());
@@ -92,7 +139,7 @@ public class ShuffleWriteClientImplTest {
     List<ShuffleBlockInfo> shuffleBlockInfoList =
         Lists.newArrayList(
             new ShuffleBlockInfo(
-                0, 0, 10, 10, 10, new byte[] {1}, shuffleServerInfoList, 10, 100, 0));
+                0, 0, 10, 10, 10, new byte[] {10}, shuffleServerInfoList, 10, 100, 0));
     SendShuffleDataResult result =
         spyClient.sendShuffleData("appId", shuffleBlockInfoList, () -> false);
 
@@ -102,7 +149,21 @@ public class ShuffleWriteClientImplTest {
   @Test
   public void testRegisterAndUnRegisterShuffleServer() {
     ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl("GRPC", 3, 2000, 4, 1, 1, 1, true, 1, 1, 10, 10);
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(2000)
+            .heartBeatThreadNum(4)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
+            .unregisterRequestTimeSec(10)
+            .build();
     String appId1 = "testRegisterAndUnRegisterShuffleServer-1";
     String appId2 = "testRegisterAndUnRegisterShuffleServer-2";
     ShuffleServerInfo server1 = new ShuffleServerInfo("host1-0", "host1", 0);
@@ -127,7 +188,21 @@ public class ShuffleWriteClientImplTest {
   @Test
   public void testSendDataWithDefectiveServers() {
     ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl("GRPC", 3, 2000, 4, 3, 2, 2, true, 1, 1, 10, 10);
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(2000)
+            .heartBeatThreadNum(4)
+            .replica(3)
+            .replicaWrite(2)
+            .replicaRead(2)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
+            .unregisterRequestTimeSec(10)
+            .build();
     ShuffleServerClient mockShuffleServerClient = mock(ShuffleServerClient.class);
     ShuffleWriteClientImpl spyClient = Mockito.spy(shuffleWriteClient);
     doReturn(mockShuffleServerClient).when(spyClient).getShuffleServerClient(any());
@@ -145,7 +220,7 @@ public class ShuffleWriteClientImplTest {
     List<ShuffleBlockInfo> shuffleBlockInfoList =
         Lists.newArrayList(
             new ShuffleBlockInfo(
-                0, 0, 10, 10, 10, new byte[] {1}, shuffleServerInfoList, 10, 100, 0));
+                0, 0, 10, 10, 10, new byte[] {10}, shuffleServerInfoList, 10, 100, 0));
     SendShuffleDataResult result =
         spyClient.sendShuffleData(appId, shuffleBlockInfoList, () -> false);
     assertEquals(0, result.getFailedBlockIds().size());
@@ -191,7 +266,7 @@ public class ShuffleWriteClientImplTest {
     List<ShuffleBlockInfo> shuffleBlockInfoList2 =
         Lists.newArrayList(
             new ShuffleBlockInfo(
-                0, 0, 10, 10, 10, new byte[] {1}, shuffleServerInfoList2, 10, 100, 0));
+                0, 0, 10, 10, 10, new byte[] {10}, shuffleServerInfoList2, 10, 100, 0));
     result = spyClient.sendShuffleData(appId, shuffleBlockInfoList2, () -> false);
     assertEquals(0, result.getFailedBlockIds().size());
     assertEquals(1, spyClient.getDefectiveServers().size());
@@ -234,5 +309,82 @@ public class ShuffleWriteClientImplTest {
     assertEquals(2, excludeServers.size());
     assertEquals(ssi3, excludeServers.get(0));
     assertEquals(ssi1, excludeServers.get(1));
+  }
+
+  @Test
+  public void testSettingRssClientConfigs() {
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.NETTY_IO_MODE, IOMode.EPOLL);
+    ShuffleClientFactory.WriteClientBuilder writeClientBuilder =
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC_NETTY.name())
+            .retryMax(3)
+            .retryIntervalMax(2000)
+            .heartBeatThreadNum(4)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
+            .unregisterRequestTimeSec(10)
+            .rssConf(rssConf);
+    ShuffleWriteClientImpl client = writeClientBuilder.build();
+    IOMode ioMode = writeClientBuilder.getRssConf().get(RssClientConf.NETTY_IO_MODE);
+    client.close();
+    assertEquals(IOMode.EPOLL, ioMode);
+  }
+
+  public static Stream<Arguments> testBlockIdLayouts() {
+    return Stream.of(
+        Arguments.of(BlockIdLayout.DEFAULT), Arguments.of(BlockIdLayout.from(20, 21, 22)));
+  }
+
+  @ParameterizedTest
+  @MethodSource("testBlockIdLayouts")
+  public void testGetShuffleResult(BlockIdLayout layout) {
+    RssConf rssConf = new RssConf();
+    rssConf.set(RssClientConf.BLOCKID_SEQUENCE_NO_BITS, layout.sequenceNoBits);
+    rssConf.set(RssClientConf.BLOCKID_PARTITION_ID_BITS, layout.partitionIdBits);
+    rssConf.set(RssClientConf.BLOCKID_TASK_ATTEMPT_ID_BITS, layout.taskAttemptIdBits);
+    ShuffleWriteClientImpl shuffleWriteClient =
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(2000)
+            .heartBeatThreadNum(4)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
+            .unregisterRequestTimeSec(10)
+            .rssConf(rssConf)
+            .build();
+    ShuffleServerClient mockShuffleServerClient = mock(ShuffleServerClient.class);
+    ShuffleWriteClientImpl spyClient = Mockito.spy(shuffleWriteClient);
+    doReturn(mockShuffleServerClient).when(spyClient).getShuffleServerClient(any());
+    RssGetShuffleResultResponse response;
+    try {
+      Roaring64NavigableMap res = Roaring64NavigableMap.bitmapOf(1L, 2L, 5L);
+      response = new RssGetShuffleResultResponse(StatusCode.SUCCESS, RssUtils.serializeBitMap(res));
+    } catch (Exception e) {
+      throw new RssException(e);
+    }
+    when(mockShuffleServerClient.getShuffleResult(any())).thenReturn(response);
+
+    Set<ShuffleServerInfo> shuffleServerInfoSet =
+        Sets.newHashSet(new ShuffleServerInfo("id", "host", 0));
+    Roaring64NavigableMap result =
+        spyClient.getShuffleResult("GRPC", shuffleServerInfoSet, "appId", 1, 2);
+
+    verify(mockShuffleServerClient)
+        .getShuffleResult(argThat(request -> request.getBlockIdLayout().equals(layout)));
+    assertArrayEquals(result.stream().sorted().toArray(), new long[] {1L, 2L, 5L});
   }
 }

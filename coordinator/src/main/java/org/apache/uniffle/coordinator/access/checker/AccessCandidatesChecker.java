@@ -81,7 +81,9 @@ public class AccessCandidatesChecker extends AbstractAccessChecker {
       LOG.error(msg);
       throw new RssException(msg);
     }
-    LOG.debug("Load candidates: {}", String.join(";", candidates.get()));
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Load candidates: {}", String.join(";", candidates.get()));
+    }
 
     int updateIntervalS =
         conf.getInteger(CoordinatorConf.COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC);
@@ -96,7 +98,9 @@ public class AccessCandidatesChecker extends AbstractAccessChecker {
     String accessId = accessInfo.getAccessId().trim();
     if (!candidates.get().contains(accessId)) {
       String msg = String.format("Denied by AccessCandidatesChecker, accessInfo[%s].", accessInfo);
-      LOG.debug("Candidates is {}, {}", candidates.get(), msg);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Candidates is {}, {}", candidates.get(), msg);
+      }
       CoordinatorMetrics.counterTotalCandidatesDeniedRequest.inc();
       return new AccessCheckResult(false, msg);
     }
@@ -119,7 +123,9 @@ public class AccessCandidatesChecker extends AbstractAccessChecker {
         if (lastCandidatesUpdateMS.get() != lastModifiedMS) {
           updateAccessCandidatesInternal();
           lastCandidatesUpdateMS.set(lastModifiedMS);
-          LOG.debug("Load candidates: {}", String.join(";", candidates.get()));
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Load candidates: {}", String.join(";", candidates.get()));
+          }
         }
       } else {
         LOG.warn("Candidates file not found.");

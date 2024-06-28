@@ -11,6 +11,7 @@
 .project
 .classpath
 .scala_dependencies
+.mvn/wrapper/maven-wrapper.jar
 docs/api/
 lib_managed/
 logs/
@@ -27,7 +28,6 @@ hadoop-*.tar.gz
 *.dll
 *.so
 *.dylib
-local
 vendor
 VERSION
 testbin/*
@@ -45,3 +45,13 @@ build/
 deploy/kubernetes/integration-test/e2e/rss.yaml
 deploy/kubernetes/integration-test/e2e/rss-controller.yaml
 deploy/kubernetes/integration-test/e2e/rss-webhook.yaml
+dashboard/src/main/webapp/node_modules/
+dashboard/src/main/webapp/node/
+dashboard/src/main/webapp/dist/
+dashboard/src/main/resources/static/
+dashboard/src/main/webapp/package-lock.json
+rust/experimental/server/target
+rust/experimental/server/.idea
+rust/experimental/server/._target
+rust/experimental/server/src/proto/uniffle.rs
+.flattened-pom.xml

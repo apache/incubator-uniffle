@@ -17,7 +17,9 @@
 
 package org.apache.hadoop.mapred;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -25,15 +27,21 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.serializer.SerializationFactory;
+import org.apache.hadoop.io.serializer.Serializer;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -43,12 +51,14 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.JavaUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class SortWriteBufferManagerTest {
 
@@ -62,7 +72,6 @@ public class SortWriteBufferManagerTest {
     Set<Long> failedBlocks = Sets.newConcurrentHashSet();
     Counters.Counter mapOutputByteCounter = new Counters.Counter();
     Counters.Counter mapOutputRecordCounter = new Counters.Counter();
-    RssException rssException;
     SortWriteBufferManager<BytesWritable, BytesWritable> manager;
     manager =
         new SortWriteBufferManager<BytesWritable, BytesWritable>(
@@ -89,10 +98,12 @@ public class SortWriteBufferManagerTest {
             5,
             0.2f,
             1024000L,
-            new RssConf());
+            new RssConf(),
+            null);
 
     // case 1
     Random random = new Random();
+    partitionToServers.put(1, Lists.newArrayList(mock(ShuffleServerInfo.class)));
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
       byte[] value = new byte[1024];
@@ -100,7 +111,7 @@ public class SortWriteBufferManagerTest {
       random.nextBytes(value);
       manager.addRecord(1, new BytesWritable(key), new BytesWritable(value));
     }
-    rssException = assertThrows(RssException.class, manager::waitSendFinished);
+    RssException rssException = assertThrows(RssException.class, manager::waitSendFinished);
     assertTrue(rssException.getMessage().contains("Timeout"));
 
     // case 2
@@ -151,7 +162,8 @@ public class SortWriteBufferManagerTest {
             5,
             0.2f,
             1024000L,
-            new RssConf());
+            new RssConf(),
+            null);
     byte[] key = new byte[20];
     byte[] value = new byte[1024];
     random.nextBytes(key);
@@ -202,7 +214,8 @@ public class SortWriteBufferManagerTest {
             5,
             0.2f,
             100L,
-            new RssConf());
+            new RssConf(),
+            null);
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -210,6 +223,7 @@ public class SortWriteBufferManagerTest {
       random.nextBytes(key);
       random.nextBytes(value);
       int partitionId = random.nextInt(50);
+      partitionToServers.put(partitionId, Lists.newArrayList(mock(ShuffleServerInfo.class)));
       manager.addRecord(partitionId, new BytesWritable(key), new BytesWritable(value));
       assertTrue(manager.getWaitSendBuffers().isEmpty());
     }
@@ -252,7 +266,8 @@ public class SortWriteBufferManagerTest {
             5,
             0.2f,
             1024000L,
-            new RssConf());
+            new RssConf(),
+            null);
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -260,6 +275,7 @@ public class SortWriteBufferManagerTest {
       random.nextBytes(key);
       random.nextBytes(value);
       int partitionId = random.nextInt(50);
+      partitionToServers.put(partitionId, Lists.newArrayList(mock(ShuffleServerInfo.class)));
       manager.addRecord(partitionId, new BytesWritable(key), new BytesWritable(value));
     }
     manager.waitSendFinished();
@@ -317,7 +333,8 @@ public class SortWriteBufferManagerTest {
             5,
             0.2f,
             1024000L,
-            new RssConf());
+            new RssConf(),
+            null);
     Random random = new Random();
     for (int i = 0; i < 1000; i++) {
       byte[] key = new byte[20];
@@ -325,6 +342,7 @@ public class SortWriteBufferManagerTest {
       random.nextBytes(key);
       random.nextBytes(value);
       int partitionId = random.nextInt(50);
+      partitionToServers.put(partitionId, Lists.newArrayList(mock(ShuffleServerInfo.class)));
       manager.addRecord(partitionId, new BytesWritable(key), new BytesWritable(value));
     }
     manager.waitSendFinished();
@@ -333,6 +351,85 @@ public class SortWriteBufferManagerTest {
     assertEquals(
         client.mockedShuffleServer.getFinishBlockSize(),
         client.mockedShuffleServer.getFlushBlockSize());
+  }
+
+  @Test
+  public void testCombineBuffer() throws Exception {
+    JobConf jobConf = new JobConf(new Configuration());
+    jobConf.setOutputKeyClass(Text.class);
+    jobConf.setOutputValueClass(IntWritable.class);
+    jobConf.setCombinerClass(Reduce.class);
+    SerializationFactory serializationFactory = new SerializationFactory(jobConf);
+    Serializer<Text> keySerializer = serializationFactory.getSerializer(Text.class);
+    Serializer<IntWritable> valueSerializer = serializationFactory.getSerializer(IntWritable.class);
+    WritableComparator comparator = WritableComparator.get(Text.class);
+
+    Task.TaskReporter reporter = mock(Task.TaskReporter.class);
+
+    final Counters.Counter combineInputCounter = new Counters.Counter();
+
+    Task.CombinerRunner<Text, IntWritable> combinerRunner =
+        Task.CombinerRunner.create(
+            jobConf, new TaskAttemptID(), combineInputCounter, reporter, null);
+
+    SortWriteBuffer<Text, IntWritable> buffer =
+        new SortWriteBuffer<Text, IntWritable>(1, comparator, 3072, keySerializer, valueSerializer);
+
+    List<String> wordTable =
+        Lists.newArrayList(
+            "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
+    Random random = new Random();
+    for (int i = 0; i < 8; i++) {
+      buffer.addRecord(new Text(wordTable.get(i)), new IntWritable(1));
+    }
+    for (int i = 0; i < 10000; i++) {
+      int index = random.nextInt(wordTable.size());
+      buffer.addRecord(new Text(wordTable.get(index)), new IntWritable(1));
+    }
+
+    SortWriteBufferManager<Text, IntWritable> manager =
+        new SortWriteBufferManager<Text, IntWritable>(
+            10240,
+            1L,
+            10,
+            keySerializer,
+            valueSerializer,
+            comparator,
+            0.9,
+            "test",
+            null,
+            500,
+            5 * 1000,
+            null,
+            null,
+            null,
+            null,
+            null,
+            1,
+            100,
+            1,
+            true,
+            5,
+            0.2f,
+            1024000L,
+            new RssConf(),
+            combinerRunner);
+
+    buffer.sort();
+    SortWriteBuffer<Text, IntWritable> newBuffer = manager.combineBuffer(buffer);
+
+    RawKeyValueIterator kvIterator1 = new SortWriteBuffer.SortBufferIterator<>(buffer);
+    RawKeyValueIterator kvIterator2 = new SortWriteBuffer.SortBufferIterator<>(newBuffer);
+    int count1 = 0;
+    while (kvIterator1.next()) {
+      count1++;
+    }
+    int count2 = 0;
+    while (kvIterator2.next()) {
+      count2++;
+    }
+    assertEquals(10008, count1);
+    assertEquals(8, count2);
   }
 
   class MockShuffleServer {
@@ -382,7 +479,12 @@ public class SortWriteBufferManagerTest {
       if (mode == 0) {
         throw new RssException("send data failed");
       } else if (mode == 1) {
-        return new SendShuffleDataResult(Sets.newHashSet(2L), Sets.newHashSet(1L));
+        FailedBlockSendTracker failedBlockSendTracker = new FailedBlockSendTracker();
+        ShuffleBlockInfo failedBlock =
+            new ShuffleBlockInfo(1, 1, 3, 1, 1, new byte[1], null, 1, 100, 1);
+        failedBlockSendTracker.add(
+            failedBlock, new ShuffleServerInfo("host", 39998), StatusCode.NO_BUFFER);
+        return new SendShuffleDataResult(Sets.newHashSet(2L), failedBlockSendTracker);
       } else {
         if (mode == 3) {
           try {
@@ -397,7 +499,7 @@ public class SortWriteBufferManagerTest {
         for (ShuffleBlockInfo blockInfo : shuffleBlockInfoList) {
           successBlockIds.add(blockInfo.getBlockId());
         }
-        return new SendShuffleDataResult(successBlockIds, Sets.newHashSet());
+        return new SendShuffleDataResult(successBlockIds, new FailedBlockSendTracker());
       }
     }
 
@@ -415,7 +517,8 @@ public class SortWriteBufferManagerTest {
         List<PartitionRange> partitionRanges,
         RemoteStorageInfo remoteStorage,
         ShuffleDataDistributionType distributionType,
-        int maxConcurrencyPerPartitionToWrite) {}
+        int maxConcurrencyPerPartitionToWrite,
+        int stageAttemptNumber) {}
 
     @Override
     public boolean sendCommit(
@@ -445,17 +548,21 @@ public class SortWriteBufferManagerTest {
 
     @Override
     public void reportShuffleResult(
-        Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+        Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds,
         String appId,
         int shuffleId,
         long taskAttemptId,
-        Map<Integer, List<Long>> partitionToBlockIds,
         int bitmapNum) {
       if (mode == 3) {
-        mockedShuffleServer.addFinishedBlockInfos(
-            partitionToBlockIds.values().stream()
-                .flatMap(it -> it.stream())
-                .collect(Collectors.toList()));
+        serverToPartitionToBlockIds
+            .values()
+            .forEach(
+                partitionToBlockIds -> {
+                  mockedShuffleServer.addFinishedBlockInfos(
+                      partitionToBlockIds.values().stream()
+                          .flatMap(it -> it.stream())
+                          .collect(Collectors.toList()));
+                });
       }
     }
 
@@ -467,7 +574,11 @@ public class SortWriteBufferManagerTest {
         int partitionNumPerRange,
         Set<String> requiredTags,
         int assignmentShuffleServerNumber,
-        int estimateTaskConcurrency) {
+        int estimateTaskConcurrency,
+        Set<String> faultyServerIds,
+        int stageId,
+        int stageAttemptNumber,
+        boolean reassign) {
       return null;
     }
 
@@ -487,7 +598,8 @@ public class SortWriteBufferManagerTest {
         Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
         String appId,
         int shuffleId,
-        Set<Integer> failedPartitions) {
+        Set<Integer> failedPartitions,
+        PartitionDataReplicaRequirementTracking tracking) {
       return null;
     }
 
@@ -499,5 +611,24 @@ public class SortWriteBufferManagerTest {
 
     @Override
     public void unregisterShuffle(String appId) {}
+  }
+
+  static class Reduce extends MapReduceBase
+      implements Reducer<Text, IntWritable, Text, IntWritable> {
+
+    Reduce() {}
+
+    public void reduce(
+        Text key,
+        Iterator<IntWritable> values,
+        OutputCollector<Text, IntWritable> output,
+        Reporter reporter)
+        throws IOException {
+      int sum = 0;
+      while (values.hasNext()) {
+        sum += values.next().get();
+      }
+      output.collect(key, new IntWritable(sum));
+    }
   }
 }

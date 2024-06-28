@@ -60,7 +60,9 @@ public class HadoopFilesystemProvider {
     }
 
     if (fileSystem instanceof LocalFileSystem) {
-      LOGGER.debug("{} is local file system", path);
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("{} is local file system", path);
+      }
       return ((LocalFileSystem) fileSystem).getRawFileSystem();
     }
 

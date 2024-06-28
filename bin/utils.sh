@@ -59,7 +59,7 @@ function common_shutdown {
 }
 
 #---
-# args:               Process name, coordinator or shuffle-server
+# args:               Process name, coordinator, shuffle-server or dashboard
 #---
 function get_pid_file_name {
   process_name="$1"
@@ -67,6 +67,8 @@ function get_pid_file_name {
     pid_file="coordinator.pid"
   elif [[ $process_name == "shuffle-server" ]]; then
     pid_file="shuffle-server.pid"
+  elif [[ $process_name == "dashboard" ]]; then
+    pid_file="dashboard.pid"
   else
     echo "Invalid process name: $process_name"
     exit 1
@@ -150,6 +152,11 @@ function is_port_in_use {
 function load_rss_env {
   set -o allexport
 
+  is_dashboard=0
+  if [ $# -eq 1 ]; then
+    is_dashboard=1
+  fi
+
   # find rss-env.sh
   set +o nounset
   if [ -f "${RSS_CONF_DIR}/rss-env.sh" ]; then
@@ -172,10 +179,6 @@ function load_rss_env {
     echo "No env JAVA_HOME."
     exit 1
   fi
-  if [ -z "$HADOOP_HOME" ]; then
-    echo "No env HADOOP_HOME."
-    exit 1
-  fi
 
   # export default value
   set +o nounset
@@ -185,7 +188,7 @@ function load_rss_env {
   if [ -z "$RSS_CONF_DIR" ]; then
     RSS_CONF_DIR="${RSS_HOME}/conf"
   fi
-  if [ -z "$HADOOP_CONF_DIR" ]; then
+  if [ -z "$HADOOP_CONF_DIR" ] && [ "$HADOOP_HOME" ]; then
     HADOOP_CONF_DIR="${HADOOP_HOME}/etc/hadoop"
   fi
   if [ -z "$RSS_LOG_DIR" ]; then
@@ -204,14 +207,21 @@ function load_rss_env {
   # If UNIFFLE_SHELL_SCRIPT_DEBUG is false, we do not print Env information.
   if [[ "${UNIFFLE_SHELL_SCRIPT_DEBUG}" = true ]]; then
     echo "Using Java from ${JAVA_HOME}"
-    echo "Using Hadoop from ${HADOOP_HOME}"
     echo "Using RSS from ${RSS_HOME}"
     echo "Using RSS conf from ${RSS_CONF_DIR}"
-    echo "Using Hadoop conf from ${HADOOP_CONF_DIR}"
+
+    set +u
+    if [ $HADOOP_HOME ]; then
+      echo "Using Hadoop from ${HADOOP_HOME}"
+    fi
+    if [ $HADOOP_CONF_DIR ]; then
+      echo "Using Hadoop conf from ${HADOOP_CONF_DIR}"
+    fi
+    set -u
+
     echo "Write log file to ${RSS_LOG_DIR}"
     echo "Write pid file to ${RSS_PID_DIR}"
   fi
 
   set +o allexport
 }
-

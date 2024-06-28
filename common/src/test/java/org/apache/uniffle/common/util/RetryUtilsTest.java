@@ -28,6 +28,31 @@ import org.apache.uniffle.common.exception.RssException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RetryUtilsTest {
+
+  @Test
+  public void testRetryWithCondition() {
+    AtomicInteger tryTimes = new AtomicInteger();
+    AtomicInteger callbackTime = new AtomicInteger();
+    try {
+      RetryUtils.retryWithCondition(
+          () -> {
+            tryTimes.incrementAndGet();
+            throw new RssException("");
+          },
+          () -> {
+            callbackTime.incrementAndGet();
+          },
+          10,
+          3,
+          (t) -> true);
+    } catch (Throwable throwable) {
+      // ignore
+    }
+
+    assertEquals(tryTimes.get(), 3);
+    assertEquals(callbackTime.get(), 2);
+  }
+
   @Test
   public void testRetry() {
     AtomicInteger tryTimes = new AtomicInteger();

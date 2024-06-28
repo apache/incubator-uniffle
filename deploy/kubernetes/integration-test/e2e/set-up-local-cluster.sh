@@ -66,7 +66,7 @@ function prepare_local_k8s_cluster() {
 function build_rss_image() {
   cd $RSS_BUILD_DIR
   export IMAGE_VERSION=$TEST_VERSION
-  sh ./build.sh --registry $TEST_REGISTRY
+  ./build.sh --registry $TEST_REGISTRY
   cd "$OLDPWD"
 }
 

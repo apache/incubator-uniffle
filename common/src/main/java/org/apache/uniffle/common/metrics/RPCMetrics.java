@@ -18,27 +18,63 @@
 package org.apache.uniffle.common.metrics;
 
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Queues;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Summary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 
 public abstract class RPCMetrics {
+  private static final Logger LOG = LoggerFactory.getLogger(RPCMetrics.class);
+
   protected boolean isRegistered = false;
   protected Map<String, Counter.Child> counterMap = JavaUtils.newConcurrentMap();
   protected Map<String, Gauge.Child> gaugeMap = JavaUtils.newConcurrentMap();
   protected Map<String, Summary.Child> transportTimeSummaryMap = JavaUtils.newConcurrentMap();
   protected Map<String, Summary.Child> processTimeSummaryMap = JavaUtils.newConcurrentMap();
+  private static final String THREAD_POOL_CORE_SIZE =
+      "rss.server.summary.metric.thread.pool.core.size";
+  private static final int THREAD_POOL_CORE_SIZE_DEFAULT_VALUE = 2;
+  private static final String THREAD_POOL_MAX_SIZE =
+      "rss.server.summary.metric.thread.pool.max.size";
+  private static final int THREAD_POOL_MAX_SIZE_DEFAULT_VALUE = 20;
+  private static final String KEEP_ALIVE_TIME =
+      "rss.server.summary.metric.thread.pool.keep.alive.time";
+  private static final int KEEP_ALIVE_TIME_DEFAULT_VALUE = 60;
+  private final ExecutorService summaryObservePool;
   protected MetricsManager metricsManager;
   protected String tags;
 
-  public RPCMetrics(String tags) {
+  public RPCMetrics(RssConf rssConf, String tags) {
     this.tags = tags;
+    int coreSize = rssConf.getInteger(THREAD_POOL_CORE_SIZE, THREAD_POOL_CORE_SIZE_DEFAULT_VALUE);
+    int maxSize = rssConf.getInteger(THREAD_POOL_MAX_SIZE, THREAD_POOL_MAX_SIZE_DEFAULT_VALUE);
+    int keepAliveTime = rssConf.getInteger(KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_DEFAULT_VALUE);
+    this.summaryObservePool =
+        new ThreadPoolExecutor(
+            coreSize,
+            maxSize,
+            keepAliveTime,
+            TimeUnit.SECONDS,
+            Queues.newLinkedBlockingQueue(),
+            ThreadUtils.getThreadFactory("SummaryObserveThreadPool"));
+    LOG.info(
+        "Init summary observe thread pool, core size:{}, max size:{}, keep alive time:{}",
+        coreSize,
+        maxSize,
+        keepAliveTime);
   }
 
   public abstract void registerMetrics();
@@ -116,14 +152,17 @@ public abstract class RPCMetrics {
   public void recordTransportTime(String methodName, long transportTimeInMillionSecond) {
     Summary.Child summary = transportTimeSummaryMap.get(methodName);
     if (summary != null) {
-      summary.observe(transportTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND);
+      summaryObservePool.execute(
+          () ->
+              summary.observe(transportTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND));
     }
   }
 
   public void recordProcessTime(String methodName, long processTimeInMillionSecond) {
     Summary.Child summary = processTimeSummaryMap.get(methodName);
     if (summary != null) {
-      summary.observe(processTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND);
+      summaryObservePool.execute(
+          () -> summary.observe(processTimeInMillionSecond / Constants.MILLION_SECONDS_PER_SECOND));
     }
   }
 

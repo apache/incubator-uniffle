@@ -75,4 +75,8 @@ public class ShuffleIndexResult {
       this.buffer.release();
     }
   }
+
+  public ManagedBuffer getManagedBuffer() {
+    return buffer;
+  }
 }

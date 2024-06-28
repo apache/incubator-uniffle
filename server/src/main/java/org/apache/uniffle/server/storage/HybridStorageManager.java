@@ -20,10 +20,7 @@ package org.apache.uniffle.server.storage;
 import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +42,6 @@ public class HybridStorageManager implements StorageManager {
 
   private final StorageManager warmStorageManager;
   private final StorageManager coldStorageManager;
-  private final Cache<ShuffleDataFlushEvent, StorageManager> eventOfUnderStorageManagers;
   private final StorageManagerSelector storageManagerSelector;
 
   HybridStorageManager(ShuffleServerConf conf) {
@@ -61,10 +57,6 @@ public class HybridStorageManager implements StorageManager {
     } catch (Exception e) {
       throw new RssException("Errors on loading selector manager.", e);
     }
-
-    long cacheTimeout = conf.getLong(ShuffleServerConf.STORAGEMANAGER_CACHE_TIMEOUT);
-    eventOfUnderStorageManagers =
-        CacheBuilder.newBuilder().expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS).build();
   }
 
   private StorageManagerSelector loadManagerSelector(
@@ -129,17 +121,12 @@ public class HybridStorageManager implements StorageManager {
 
   private StorageManager selectStorageManager(ShuffleDataFlushEvent event) {
     StorageManager storageManager = storageManagerSelector.select(event);
-    eventOfUnderStorageManagers.put(event, storageManager);
-    event.addCleanupCallback(() -> eventOfUnderStorageManagers.invalidate(event));
     return storageManager;
   }
 
   @Override
   public boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event) {
-    StorageManager underStorageManager = eventOfUnderStorageManagers.getIfPresent(event);
-    if (underStorageManager == null) {
-      return false;
-    }
+    StorageManager underStorageManager = selectStorageManager(event);
     return underStorageManager.write(storage, handler, event);
   }
 

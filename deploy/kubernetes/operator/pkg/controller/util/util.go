@@ -86,11 +86,12 @@ func addVolumeMountsOfMainContainer(mainContainer *corev1.Container,
 	mainContainer.VolumeMounts = append(mainContainer.VolumeMounts,
 		GenerateHostPathVolumeMounts(hostPathMounts)...)
 	for _, mountPath := range hostPathMounts {
-		clearPathCMDs = append(clearPathCMDs, fmt.Sprintf("rm -rf %v/*", strings.TrimSuffix(mountPath, "/")))
+		clearPathCMDs = append(clearPathCMDs, fmt.Sprintf("rm -rf %v/%v/*",
+			strings.TrimSuffix(mountPath, "/"), controllerconstants.RssDataDir))
 	}
 	if len(clearPathCMDs) > 0 {
 		mainContainer.Lifecycle = &corev1.Lifecycle{
-			PreStop: &corev1.Handler{
+			PreStop: &corev1.LifecycleHandler{
 				Exec: &corev1.ExecAction{
 					Command: []string{"/bin/sh", "-c", strings.Join(clearPathCMDs, ";")},
 				},

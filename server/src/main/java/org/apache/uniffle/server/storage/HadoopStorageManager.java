@@ -57,12 +57,14 @@ public class HadoopStorageManager extends SingleStorageManager {
   private static final Logger LOG = LoggerFactory.getLogger(HadoopStorageManager.class);
 
   private final Configuration hadoopConf;
+  private final String shuffleServerId;
   private Map<String, HadoopStorage> appIdToStorages = JavaUtils.newConcurrentMap();
   private Map<String, HadoopStorage> pathToStorages = JavaUtils.newConcurrentMap();
 
   HadoopStorageManager(ShuffleServerConf conf) {
     super(conf);
     hadoopConf = conf.getHadoopConf();
+    shuffleServerId = conf.getString(ShuffleServerConf.SHUFFLE_SERVER_ID, "shuffleServerId");
   }
 
   @Override
@@ -73,7 +75,8 @@ public class HadoopStorageManager extends SingleStorageManager {
       LOG.warn("The storage owned by event: {} is null, this should not happen", event);
       return;
     }
-    ShuffleServerMetrics.incHadoopStorageWriteDataSize(storage.getStorageHost(), event.getSize());
+    ShuffleServerMetrics.incHadoopStorageWriteDataSize(
+        storage.getStorageHost(), event.getSize(), event.isOwnedByHugePartition());
   }
 
   @Override
@@ -93,15 +96,19 @@ public class HadoopStorageManager extends SingleStorageManager {
     String appId = event.getAppId();
     HadoopStorage storage = getStorageByAppId(appId);
     if (storage != null) {
+      boolean purgeForExpired = false;
       if (event instanceof AppPurgeEvent) {
         storage.removeHandlers(appId);
         appIdToStorages.remove(appId);
+        purgeForExpired = ((AppPurgeEvent) event).isAppExpired();
       }
       ShuffleDeleteHandler deleteHandler =
           ShuffleHandlerFactory.getInstance()
               .createShuffleDeleteHandler(
                   new CreateShuffleDeleteHandlerRequest(
-                      StorageType.HDFS.name(), storage.getConf()));
+                      StorageType.HDFS.name(),
+                      storage.getConf(),
+                      purgeForExpired ? shuffleServerId : null));
 
       String basicPath =
           ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);

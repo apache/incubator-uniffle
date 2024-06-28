@@ -23,12 +23,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
+import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
 
 public class GetMemoryShuffleDataResponse extends RpcResponse {
   private List<BufferSegment> bufferSegments;
-  private ByteBuf data;
 
   public GetMemoryShuffleDataResponse(
       long requestId, StatusCode statusCode, List<BufferSegment> bufferSegments, byte[] data) {
@@ -50,35 +51,43 @@ public class GetMemoryShuffleDataResponse extends RpcResponse {
       String retMessage,
       List<BufferSegment> bufferSegments,
       ByteBuf data) {
-    super(requestId, statusCode, retMessage);
+    this(requestId, statusCode, retMessage, bufferSegments, new NettyManagedBuffer(data));
+  }
+
+  public GetMemoryShuffleDataResponse(
+      long requestId,
+      StatusCode statusCode,
+      String retMessage,
+      List<BufferSegment> bufferSegments,
+      ManagedBuffer managedBuffer) {
+    super(requestId, statusCode, retMessage, managedBuffer);
     this.bufferSegments = bufferSegments;
-    this.data = data;
   }
 
   @Override
   public int encodedLength() {
-    return super.encodedLength()
-        + Encoders.encodeLengthOfBufferSegments(bufferSegments)
-        + Integer.BYTES
-        + data.readableBytes();
+    return super.encodedLength() + Encoders.encodeLengthOfBufferSegments(bufferSegments);
   }
 
   @Override
   public void encode(ByteBuf buf) {
     super.encode(buf);
     Encoders.encodeBufferSegments(bufferSegments, buf);
-    ByteBufUtils.copyByteBuf(data, buf);
-    data.release();
   }
 
-  public static GetMemoryShuffleDataResponse decode(ByteBuf byteBuf) {
+  public static GetMemoryShuffleDataResponse decode(ByteBuf byteBuf, boolean decodeBody) {
     long requestId = byteBuf.readLong();
     StatusCode statusCode = StatusCode.fromCode(byteBuf.readInt());
     String retMessage = ByteBufUtils.readLengthAndString(byteBuf);
     List<BufferSegment> bufferSegments = Decoders.decodeBufferSegments(byteBuf);
-    ByteBuf data = ByteBufUtils.readSlice(byteBuf);
-    return new GetMemoryShuffleDataResponse(
-        requestId, statusCode, retMessage, bufferSegments, data);
+    if (decodeBody) {
+      NettyManagedBuffer nettyManagedBuffer = new NettyManagedBuffer(byteBuf);
+      return new GetMemoryShuffleDataResponse(
+          requestId, statusCode, retMessage, bufferSegments, nettyManagedBuffer);
+    } else {
+      return new GetMemoryShuffleDataResponse(
+          requestId, statusCode, retMessage, bufferSegments, NettyManagedBuffer.EMPTY_BUFFER);
+    }
   }
 
   @Override
@@ -88,9 +97,5 @@ public class GetMemoryShuffleDataResponse extends RpcResponse {
 
   public List<BufferSegment> getBufferSegments() {
     return bufferSegments;
-  }
-
-  public ByteBuf getData() {
-    return data;
   }
 }

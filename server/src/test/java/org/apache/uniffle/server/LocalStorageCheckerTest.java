@@ -20,12 +20,81 @@ package org.apache.uniffle.server;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
+import org.apache.uniffle.common.StorageType;
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.storage.common.LocalStorage;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 public class LocalStorageCheckerTest {
+  @BeforeAll
+  public static void setup() {
+    ShuffleServerMetrics.register();
+  }
+
+  @AfterAll
+  public static void clear() {
+    ShuffleServerMetrics.clear();
+  }
+
+  private class SlowDiskStorageChecker extends LocalStorageChecker {
+    private long hangTimeSec;
+
+    SlowDiskStorageChecker(ShuffleServerConf conf, List<LocalStorage> storages, long hangTimeSec) {
+      super(conf, storages);
+      this.hangTimeSec = hangTimeSec;
+
+      List<StorageInfo> storageInfoList =
+          storages.stream().map(x -> new SlowStorageInfo(x)).collect(Collectors.toList());
+      super.storageInfos = storageInfoList;
+    }
+
+    private class SlowStorageInfo extends StorageInfo {
+
+      SlowStorageInfo(LocalStorage storage) {
+        super(storage);
+      }
+
+      @Override
+      public boolean checkStorageReadAndWrite() {
+        try {
+          Thread.sleep(hangTimeSec * 1000);
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+        return true;
+      }
+    }
+  }
+
+  @Test
+  @Timeout(10)
+  public void testCheckingStorageHang(@TempDir File tempDir) {
+    String basePath = tempDir.getAbsolutePath();
+
+    ShuffleServerConf conf = new ShuffleServerConf();
+    conf.set(RssBaseConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
+    conf.set(RssBaseConf.RSS_STORAGE_TYPE, StorageType.LOCALFILE);
+    conf.set(ShuffleServerConf.HEALTH_CHECKER_LOCAL_STORAGE_EXECUTE_TIMEOUT, 2 * 1000L);
+
+    LocalStorage localStorage =
+        LocalStorage.newBuilder().basePath(tempDir.getAbsolutePath()).capacity(100000L).build();
+
+    SlowDiskStorageChecker checker =
+        new SlowDiskStorageChecker(conf, Arrays.asList(localStorage), 600);
+    assertFalse(checker.checkIsHealthy());
+  }
 
   @Test
   public void testGetUniffleUsedSpace(@TempDir File tempDir) throws IOException {

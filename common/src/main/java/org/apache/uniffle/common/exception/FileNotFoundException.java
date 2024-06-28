@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.common.exception;
 
-public class FileNotFoundException extends RuntimeException {
+public class FileNotFoundException extends RssException {
 
   public FileNotFoundException(String message) {
     super(message);

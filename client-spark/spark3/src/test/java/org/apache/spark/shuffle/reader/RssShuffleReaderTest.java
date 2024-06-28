@@ -109,7 +109,8 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 taskIdBitmap,
                 new ShuffleReadMetrics(),
                 rssConf,
-                ShuffleDataDistributionType.NORMAL));
+                ShuffleDataDistributionType.NORMAL,
+                partitionToServers));
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
 
     writeTestData(
@@ -131,7 +132,8 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 taskIdBitmap,
                 new ShuffleReadMetrics(),
                 rssConf,
-                ShuffleDataDistributionType.NORMAL));
+                ShuffleDataDistributionType.NORMAL,
+                partitionToServers));
     validateResult(rssShuffleReaderSpy1.read(), expectedData, 18);
 
     RssShuffleReader<String, String> rssShuffleReaderSpy2 =
@@ -150,7 +152,8 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 Roaring64NavigableMap.bitmapOf(),
                 new ShuffleReadMetrics(),
                 rssConf,
-                ShuffleDataDistributionType.NORMAL));
+                ShuffleDataDistributionType.NORMAL,
+                partitionToServers));
     validateResult(rssShuffleReaderSpy2.read(), Maps.newHashMap(), 0);
   }
 }

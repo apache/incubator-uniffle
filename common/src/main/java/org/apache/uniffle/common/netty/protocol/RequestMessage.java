@@ -17,16 +17,24 @@
 
 package org.apache.uniffle.common.netty.protocol;
 
+import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
+
 public abstract class RequestMessage extends Message {
   private final long requestId;
   public static final int REQUEST_ID_ENCODE_LENGTH = Long.BYTES;
 
   public RequestMessage(long requestId) {
-    super();
+    this(requestId, null);
+  }
+
+  public RequestMessage(long requestId, ManagedBuffer managedBuffer) {
+    super(managedBuffer);
     this.requestId = requestId;
   }
 
   public long getRequestId() {
     return requestId;
   }
+
+  public abstract String getOperationType();
 }

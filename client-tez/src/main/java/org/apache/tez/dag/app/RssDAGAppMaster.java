@@ -204,7 +204,9 @@ public class RssDAGAppMaster extends DAGAppMaster {
         () -> {
           try {
             appMaster.getShuffleWriteClient().sendAppHeartbeat(strAppAttemptId, heartbeatTimeout);
-            LOG.debug("Finish send heartbeat to coordinator and servers");
+            if (LOG.isDebugEnabled()) {
+              LOG.debug("Finish send heartbeat to coordinator and servers");
+            }
           } catch (Exception e) {
             LOG.warn("Fail to send heartbeat to coordinator and servers", e);
           }
@@ -323,7 +325,15 @@ public class RssDAGAppMaster extends DAGAppMaster {
     try {
       // We use trick way to introduce RssDAGAppMaster by the config tez.am.launch.cmd-opts.
       // It means some property which is set by command line will be ingored, so we must reload it.
+      Configuration conf = new Configuration(new YarnConfiguration());
+      DAGProtos.ConfigurationProto confProto =
+          TezUtilsInternal.readUserSpecifiedTezConfiguration(
+              System.getenv(ApplicationConstants.Environment.PWD.name()));
+      TezUtilsInternal.addUserSpecifiedTezConfiguration(conf, confProto.getConfKeyValuesList());
+
       boolean sessionModeCliOption = false;
+      boolean rollBackToLocalShuffle = false;
+      String[] rollBackRemainingArgs = null;
       for (int i = 0; i < args.length; i++) {
         if (args[i].startsWith("-D")) {
           String[] property = args[i].split("=");
@@ -335,10 +345,24 @@ public class RssDAGAppMaster extends DAGAppMaster {
         } else if (args[i].contains("--session") || args[i].contains("-s")) {
           sessionModeCliOption = true;
         }
+        if (args[i].contains(DAGAppMaster.class.getName()) && isLocalShuffleMode(conf)) {
+          rollBackToLocalShuffle = true;
+          rollBackRemainingArgs = Arrays.copyOfRange(args, i + 1, args.length);
+        }
       }
+
       // Load the log4j config is only init in static code block of LogManager, so we must
       // reconfigure.
       reconfigureLog4j();
+      // if set tez.shuffle.mode = local then degenerates to the native way.
+      if (rollBackToLocalShuffle) {
+        // rollback to local shuffle mode.
+        LOG.info(
+            "Rollback to local shuffle mode, since tez.shuffle.mode = {}",
+            conf.get(RssTezConfig.RSS_SHUFFLE_MODE, RssTezConfig.DEFAULT_RSS_SHUFFLE_MODE));
+        DAGAppMaster.main(rollBackRemainingArgs);
+        return;
+      }
 
       // Install the tez class loader, which can be used add new resources
       TezClassLoader.setupTezClassLoader();
@@ -379,13 +403,6 @@ public class RssDAGAppMaster extends DAGAppMaster {
               + System.getenv(ApplicationConstants.Environment.LOCAL_DIRS.name())
               + ", logDirs="
               + System.getenv(ApplicationConstants.Environment.LOG_DIRS.name()));
-
-      Configuration conf = new Configuration(new YarnConfiguration());
-
-      DAGProtos.ConfigurationProto confProto =
-          TezUtilsInternal.readUserSpecifiedTezConfiguration(
-              System.getenv(ApplicationConstants.Environment.PWD.name()));
-      TezUtilsInternal.addUserSpecifiedTezConfiguration(conf, confProto.getConfKeyValuesList());
 
       AMPluginDescriptorProto amPluginDescriptorProto = null;
       if (confProto.hasAmPluginDescriptor()) {
@@ -448,6 +465,20 @@ public class RssDAGAppMaster extends DAGAppMaster {
     } catch (Throwable t) {
       LOG.error("Error starting RssDAGAppMaster", t);
       System.exit(1);
+    }
+  }
+
+  private static boolean isLocalShuffleMode(Configuration conf) {
+    String shuffleMode =
+        conf.get(RssTezConfig.RSS_SHUFFLE_MODE, RssTezConfig.DEFAULT_RSS_SHUFFLE_MODE);
+    switch (shuffleMode) {
+      case "remote":
+        return false;
+      case "local":
+        return true;
+      default:
+        throw new RssException(
+            "Unsupported shuffle mode" + shuffleMode + ", ensure that it is set to local/remote.");
     }
   }
 

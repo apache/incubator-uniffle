@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -81,7 +82,7 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
     dynamicConf.put(RssTezConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     createShuffleServer(shuffleServerConf);
     startServers();
   }
@@ -123,8 +124,18 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
     runTezApp(appConf, getTestTool(), getTestArgs("rss"));
     final String rssPath = getOutputDir("rss");
 
-    // 3 verify the results
+    // 3 Run Tez examples base on rss with remote spill enable
+    appConf = new TezConfiguration(miniTezCluster.getConfig());
+    appConf.setBoolean(RssTezConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED, true);
+    appConf.set(RssTezConfig.RSS_REMOTE_SPILL_STORAGE_PATH, "/tmp/spill");
+    updateRssConfiguration(appConf);
+    appendAndUploadRssJars(appConf);
+    runTezApp(appConf, getTestTool(), getTestArgs("rss-spill"));
+    final String rssPathSpill = getOutputDir("rss-spill");
+
+    // 4 verify the results
     verifyResults(originPath, rssPath);
+    verifyResults(originPath, rssPathSpill);
   }
 
   public Tool getTestTool() {

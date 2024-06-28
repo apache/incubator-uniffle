@@ -28,6 +28,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.handler.impl.MemoryClientReadHandler;
@@ -39,20 +40,22 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class ShuffleServerWithLocalOfExceptionTest extends ShuffleReadWriteBase {
 
   private ShuffleServerGrpcClient shuffleServerClient;
-  private static String REMOTE_STORAGE = HDFS_URI + "rss/test";
+
+  private static int rpcPort;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
 
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
     shuffleServerConf.setString("rss.storage.basePath", basePath);
     shuffleServerConf.setString("rss.server.app.expired.withoutHeartbeat", "5000");
+    rpcPort = shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT);
     createShuffleServer(shuffleServerConf);
 
     startServers();
@@ -60,7 +63,7 @@ public class ShuffleServerWithLocalOfExceptionTest extends ShuffleReadWriteBase 
 
   @BeforeEach
   public void createClient() {
-    shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, SHUFFLE_SERVER_PORT);
+    shuffleServerClient = new ShuffleServerGrpcClient(LOCALHOST, rpcPort);
   }
 
   @AfterEach
@@ -82,7 +85,7 @@ public class ShuffleServerWithLocalOfExceptionTest extends ShuffleReadWriteBase 
             150,
             shuffleServerClient,
             Roaring64NavigableMap.bitmapOf());
-    shuffleServers.get(0).stopServer();
+    grpcShuffleServers.get(0).stopServer();
     try {
       memoryClientReadHandler.readShuffleData();
       fail("Should throw connection exception directly.");

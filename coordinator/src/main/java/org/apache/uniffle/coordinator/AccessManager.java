@@ -21,13 +21,11 @@ import java.io.IOException;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.config.Reconfigurable;
-import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.access.AccessCheckResult;
@@ -35,7 +33,7 @@ import org.apache.uniffle.coordinator.access.AccessInfo;
 import org.apache.uniffle.coordinator.access.checker.AccessChecker;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 
-public class AccessManager implements Reconfigurable {
+public class AccessManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(AccessManager.class);
 
@@ -108,24 +106,6 @@ public class AccessManager implements Reconfigurable {
   public void close() throws IOException {
     for (AccessChecker checker : accessCheckers) {
       checker.close();
-    }
-  }
-
-  public boolean isPropertyReconfigurable(String property) {
-    for (AccessChecker checker : accessCheckers) {
-      if (checker instanceof Reconfigurable
-          && ((Reconfigurable) checker).isPropertyReconfigurable(property)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  public void reconfigure(RssConf conf) {
-    for (AccessChecker checker : accessCheckers) {
-      if (checker instanceof Reconfigurable) {
-        ((Reconfigurable) checker).reconfigure(conf);
-      }
     }
   }
 }

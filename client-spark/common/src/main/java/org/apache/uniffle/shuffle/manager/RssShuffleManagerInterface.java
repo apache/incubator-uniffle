@@ -17,7 +17,15 @@
 
 package org.apache.uniffle.shuffle.manager;
 
+import java.util.List;
+import java.util.Map;
+
 import org.apache.spark.SparkException;
+import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
+
+import org.apache.uniffle.common.ReceivingFailureServer;
+import org.apache.uniffle.shuffle.BlockIdManager;
 
 /**
  * This is a proxy interface that mainly delegates the un-registration of shuffles to the
@@ -28,12 +36,6 @@ public interface RssShuffleManagerInterface {
 
   /** @return the unique spark id for rss shuffle */
   String getAppId();
-
-  /**
-   * @return the maximum number of fetch failures per shuffle partition before that shuffle stage
-   *     should be re-submitted
-   */
-  int getMaxFetchFailures();
 
   /**
    * @param shuffleId the shuffle id to query
@@ -54,4 +56,35 @@ public interface RssShuffleManagerInterface {
    * @throws SparkException
    */
   void unregisterAllMapOutput(int shuffleId) throws SparkException;
+
+  BlockIdManager getBlockIdManager();
+
+  /**
+   * Get ShuffleHandleInfo with ShuffleId
+   *
+   * @param shuffleId
+   * @return ShuffleHandleInfo
+   */
+  ShuffleHandleInfo getShuffleHandleInfoByShuffleId(int shuffleId);
+
+  /**
+   * @return the maximum number of fetch failures per shuffle partition before that shuffle stage
+   *     should be re-submitted
+   */
+  int getMaxFetchFailures();
+
+  /**
+   * Add the shuffleServer that failed to write to the failure list
+   *
+   * @param shuffleServerId
+   */
+  void addFailuresShuffleServerInfos(String shuffleServerId);
+
+  boolean reassignOnStageResubmit(int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
+
+  MutableShuffleHandleInfo reassignOnBlockSendFailure(
+      int stageId,
+      int stageAttemptNumber,
+      int shuffleId,
+      Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers);
 }

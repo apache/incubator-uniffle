@@ -17,7 +17,15 @@
 
 name: build
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - 'master'
+      - 'branch-*'
+    tags:
+      - '*'
+  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -52,7 +60,7 @@ jobs:
     with:
       maven-args: test-compile spotbugs:check
       cache-key: spotbugs
-  
+
   java-11:
     needs: [spotbugs] # delay execution
     name: 'compile'
@@ -75,13 +83,25 @@ jobs:
     uses: ./.github/workflows/parallel.yml
     with:
       maven-args: package -Dtest=!org.apache.uniffle.test.**
-      reports-path: "**/target/surefire-reports/*.txt"
+      tests-name: 'unit-tests'
+      reports-name: 'unit-reports'
+      reports-path: |
+        **/target/surefire-reports/*.txt
+        **/target/surefire-reports/*.xml
 
   integration:
     uses: ./.github/workflows/parallel.yml
     with:
       maven-args: package -Dtest=org.apache.uniffle.test.**
-      reports-path: "**/target/surefire-reports/*.txt"
+      tests-name: 'integration-tests'
+      reports-name: 'integration-reports'
+      reports-path: |
+        **/target/surefire-reports/*.txt
+        **/target/surefire-reports/*.xml
+
+  docker:
+    needs: [integration]
+    uses: ./.github/workflows/docker.yml
 
   kubernetes:
     needs: [checkstyle, license, changes] # delay execution
@@ -90,4 +110,14 @@ jobs:
     with:
       maven-args: package -Pkubernetes -DskipUTs -DskipITs -DskipBuildImage=${{ needs.changes.outputs.rss_server_docker == 'false' }}
       cache-key: package
-      go-version: '1.17'
+      go-version: '1.19'
+
+  event_file:
+    name: "Event File"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Upload
+      uses: actions/upload-artifact@v3
+      with:
+        name: Event File
+        path: ${{ github.event_path }}

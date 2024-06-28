@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapTaskCompletionEventsUpdate;
 import org.apache.hadoop.mapred.TaskCompletionEvent;
@@ -30,11 +28,13 @@ import org.apache.hadoop.mapred.TaskUmbilicalProtocol;
 import org.apache.hadoop.mapreduce.RssMRUtils;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.exception.RssException;
 
 public class RssEventFetcher<K, V> {
-  private static final Log LOG = LogFactory.getLog(RssEventFetcher.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RssEventFetcher.class);
 
   private final TaskAttemptID reduce;
   private final TaskUmbilicalProtocol umbilical;
@@ -104,7 +104,7 @@ public class RssEventFetcher<K, V> {
     if (taskIdBitmap.getLongCardinality() + tipFailedCount != totalMapsCount) {
       for (int index = 0; index < totalMapsCount; index++) {
         if (!mapIndexBitmap.contains(index)) {
-          LOG.error("Fail to fetch " + " map task on index: " + index);
+          LOG.error("Fail to fetch map task on index: {}", index);
         }
       }
       throw new IllegalStateException(errMsg);
@@ -159,9 +159,13 @@ public class RssEventFetcher<K, V> {
               maxEventsToFetch,
               (org.apache.hadoop.mapred.TaskAttemptID) reduce);
       events = update.getMapTaskCompletionEvents();
-      LOG.debug("Got " + events.length + " map completion events from " + fromEventIdx);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Got " + events.length + " map completion events from " + fromEventIdx);
+      }
 
-      assert !update.shouldReset() : "Unexpected legacy state";
+      if (update.shouldReset()) {
+        throw new RssException("Unexpected legacy state");
+      }
 
       // Update the last seen event ID
       fromEventIdx += events.length;

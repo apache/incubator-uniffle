@@ -33,4 +33,14 @@ public class APIResource {
   public Class<AdminResource> getAdminResource() {
     return AdminResource.class;
   }
+
+  @Path("coordinator")
+  public Class<CoordinatorServerResource> getCoordinatorServerResource() {
+    return CoordinatorServerResource.class;
+  }
+
+  @Path("app")
+  public Class<ApplicationResource> getApplicationResource() {
+    return ApplicationResource.class;
+  }
 }

@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -40,9 +38,11 @@ import org.apache.hadoop.mapreduce.CryptoUtils;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.util.Progressable;
 import org.apache.hadoop.util.ReflectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RssInMemoryRemoteMerger<K, V> extends MergeThread<InMemoryMapOutput<K, V>, K, V> {
-  private static final Log LOG = LogFactory.getLog(RssInMemoryRemoteMerger.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RssInMemoryRemoteMerger.class);
 
   private static final String SPILL_OUTPUT_PREFIX = "spill";
   private final RssRemoteMergeManagerImpl<K, V> manager;

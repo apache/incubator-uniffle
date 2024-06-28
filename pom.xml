@@ -23,7 +23,7 @@
 
   <groupId>org.apache.uniffle</groupId>
   <artifactId>uniffle-parent</artifactId>
-  <version>0.9.0-SNAPSHOT</version>
+  <version>0.10.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Apache Uniffle</name>
   <description>A high performance, general purpose Remote Shuffle Service.</description>
@@ -34,19 +34,39 @@
     <version>18</version>
   </parent>
 
+  <distributionManagement>
+    <repository>
+      <id>apache.releases.https</id>
+      <name>${distMgmtReleasesName}</name>
+      <url>${distMgmtReleasesUrl}</url>
+    </repository>
+    <snapshotRepository>
+      <id>apache.snapshots.https</id>
+      <name>${distMgmtSnapshotsName}</name>
+      <url>${distMgmtSnapshotsUrl}</url>
+    </snapshotRepository>
+  </distributionManagement>
+
   <properties>
+    <distMgmtReleasesName>Apache Release Distribution Repository</distMgmtReleasesName>
+    <distMgmtReleasesUrl>https://repository.apache.org/service/local/staging/deploy/maven2</distMgmtReleasesUrl>
+    <distMgmtSnapshotsName>Apache Development Snapshot Repository</distMgmtSnapshotsName>
+    <distMgmtSnapshotsUrl>https://repository.apache.org/content/repositories/snapshots</distMgmtSnapshotsUrl>
+    <version.apache-resource-bundles>1.5</version.apache-resource-bundles>
+    <version.checksum-maven-plugin>1.11</version.checksum-maven-plugin>
     <awaitility.version>4.2.0</awaitility.version>
     <checkstyle.version>9.3</checkstyle.version>
+    <commons-collections4.version>4.4</commons-collections4.version>
     <commons-logging.version>1.2</commons-logging.version>
     <commons-lang3.version>3.10</commons-lang3.version>
     <commons-codec.version>1.9</commons-codec.version>
     <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
-    <error_prone_annotations.version>2.10.0</error_prone_annotations.version>
+    <error_prone_annotations.version>2.23.0</error_prone_annotations.version>
     <execution.root>${user.dir}</execution.root>
     <fasterxml.jackson.version>2.10.0</fasterxml.jackson.version>
-    <grpc.version>1.47.0</grpc.version>
-    <gson.version>2.9.0</gson.version>
-    <guava.version>31.0.1-jre</guava.version>
+    <grpc.version>1.64.0</grpc.version>
+    <gson.version>2.10.1</gson.version>
+    <guava.version>32.1.3-jre</guava.version>
     <hadoop.scope>provided</hadoop.scope>
     <hadoop.version>2.8.5</hadoop.version>
     <httpclient.version>4.5.3</httpclient.version>
@@ -58,18 +78,18 @@
     <junit.jupiter.version>5.8.2</junit.jupiter.version>
     <junit.platform.version>1.8.2</junit.platform.version>
     <system.stubs.version>2.0.1</system.stubs.version>
-    <log4j.core.version>2.17.1</log4j.core.version>
+    <log4j.version>2.23.0</log4j.version>
     <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <spotless-maven-plugin.version>2.30.0</spotless-maven-plugin.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>3.12.4</mockito.version>
-    <netty.version>4.1.68.Final</netty.version>
+    <netty.version>4.1.109.Final</netty.version>
     <picocli.version>4.5.2</picocli.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <prometheus.simpleclient.version>0.9.0</prometheus.simpleclient.version>
-    <protobuf.version>3.19.6</protobuf.version>
+    <protobuf.version>3.25.1</protobuf.version>
     <roaring.bitmap.version>0.9.15</roaring.bitmap.version>
     <rss.shade.packageName>org.apache.uniffle</rss.shade.packageName>
     <skipDeploy>false</skipDeploy>
@@ -84,6 +104,7 @@
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
     <skipBuildImage>true</skipBuildImage>
+    <snakeyaml.version>2.2</snakeyaml.version>
   </properties>
 
   <repositories>
@@ -131,11 +152,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-reload4j</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>com.google.errorprone</groupId>
       <artifactId>error_prone_annotations</artifactId>
     </dependency>
@@ -165,17 +181,30 @@
       <artifactId>system-stubs-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!-- log4j2 -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <!-- Use log4j-slf4j-impl by default -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j-impl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+    <!-- end -->
   </dependencies>
 
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-reload4j</artifactId>
-        <version>${slf4j.version}</version>
-        <scope>runtime</scope>
-      </dependency>
-
       <dependency>
         <groupId>com.google.protobuf</groupId>
         <artifactId>protobuf-java-util</artifactId>
@@ -223,16 +252,6 @@
         <groupId>io.netty</groupId>
         <artifactId>netty-all</artifactId>
         <version>${netty.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-core</artifactId>
-        <version>${log4j.core.version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
@@ -304,6 +323,11 @@
         <version>${commons-lang3.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-collections4</artifactId>
+        <version>${commons-collections4.version}</version>
+      </dependency>
+      <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
         <version>${commons-codec.version}</version>
@@ -373,6 +397,10 @@
           <exclusion>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -489,6 +517,10 @@
           <exclusion>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -619,6 +651,10 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
 
@@ -693,6 +729,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-proxy</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
         <version>${jetty.version}</version>
       </dependency>
@@ -706,6 +747,39 @@
         <artifactId>hbase-shaded-jersey</artifactId>
         <version>${hbase.thirdparty.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>${snakeyaml.version}</version>
+      </dependency>
+
+      <!-- log4j -->
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j-impl</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j2-impl</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+      <!-- end -->
     </dependencies>
   </dependencyManagement>
 
@@ -762,6 +836,11 @@
               <configuration>
                 <rules>
                   <requireUpperBoundDeps/>
+                  <bannedDependencies>
+                    <excludes>
+                      <exclude>org.slf4j:slf4j-log4j12</exclude>
+                    </excludes>
+                  </bannedDependencies>
                 </rules>
               </configuration>
             </execution>
@@ -776,6 +855,30 @@
               <goals>
                 <goal>test-jar</goal>
               </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>flatten-maven-plugin</artifactId>
+          <version>1.3.0</version>
+          <configuration>
+            <flattenMode>oss</flattenMode>
+          </configuration>
+          <executions>
+            <execution>
+              <id>flatten</id>
+              <goals>
+                <goal>flatten</goal>
+              </goals>
+              <phase>process-resources</phase>
+            </execution>
+            <execution>
+              <id>flatten.clean</id>
+              <goals>
+                <goal>clean</goal>
+              </goals>
+              <phase>clean</phase>
             </execution>
           </executions>
         </plugin>
@@ -818,10 +921,11 @@
               <java.io.tmpdir>${project.build.directory}/tmp</java.io.tmpdir>
               <project.version>${project.version}</project.version>
               <jacoco-agent.destfile>target/jacoco.exec</jacoco-agent.destfile>
+              <test.mode>true</test.mode>
             </systemProperties>
             <redirectTestOutputToFile>${test.redirectToFile}</redirectTestOutputToFile>
             <useFile>${test.redirectToFile}</useFile>
-            <argLine>${argLine} -ea -Xmx3g</argLine>
+            <argLine>${argLine} -ea -Xmx5g -Xss4m -XX:MaxMetaspaceSize=2g -XX:ReservedCodeCacheSize=1g</argLine>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>${trimStackTrace}</trimStackTrace>
             <skipTests>${skipUTs}</skipTests>
@@ -885,6 +989,7 @@
                 <file>${execution.root}/.baseline/copyright/apache-license-header.txt</file>
               </licenseHeader>
             </java>
+            <lineEndings>UNIX</lineEndings>
           </configuration>
           <executions>
             <execution>
@@ -1062,6 +1167,10 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
@@ -1078,6 +1187,8 @@
             <exclude>deploy/kubernetes/operator/go.sum</exclude>
             <exclude>deploy/kubernetes/operator/PROJECT</exclude>
             <exclude>licenses-binary/*</exclude>
+            <exclude>rust/experimental/server/Cargo.lock</exclude>
+            <exclude>rust/experimental/server/src/proto/uniffle.rs</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -1102,6 +1213,12 @@
   </reporting>
 
   <profiles>
+    <profile>
+      <id>dashboard</id>
+      <modules>
+        <module>dashboard</module>
+      </modules>
+    </profile>
 
     <profile>
       <!-- This will search remote and local repos to generate THIRD-PARTY license file, make sure
@@ -1174,6 +1291,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark2</module>
+        <module>client-spark/spark2-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark2</module>
       </modules>
@@ -1233,6 +1351,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark2</module>
+        <module>client-spark/spark2-shaded</module>
         <module>integration-test/spark-common</module>
       </modules>
       <dependencyManagement>
@@ -1289,6 +1408,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark3</module>
       </modules>
@@ -1369,6 +1489,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark3</module>
       </modules>
@@ -1458,6 +1579,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark3</module>
       </modules>
@@ -1543,11 +1665,13 @@
         <spark.version>3.4.1</spark.version>
         <client.type>3</client.type>
         <jackson.version>2.14.2</jackson.version>
-        <log4j.core.version>2.19.0</log4j.core.version>
+        <log4j.version>2.19.0</log4j.version>
+        <slf4j.version>2.0.6</slf4j.version>
       </properties>
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark3</module>
       </modules>
@@ -1624,6 +1748,124 @@
           </dependency>
         </dependencies>
       </dependencyManagement>
+      <dependencies>
+        <!-- Remove log4j-slf4j-impl dependency -->
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-slf4j-impl</artifactId>
+          <scope>provided</scope>
+        </dependency>
+        <!-- Add log4j-slf4j2-impl dependency -->
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-slf4j2-impl</artifactId>
+        </dependency>
+      </dependencies>
+    </profile>
+
+    <profile>
+      <id>spark3.5</id>
+      <properties>
+        <scala.binary.version>2.12</scala.binary.version>
+        <spark.version>3.5.1</spark.version>
+        <client.type>3</client.type>
+        <jackson.version>2.15.2</jackson.version>
+        <log4j.version>2.20.0</log4j.version>
+        <slf4j.version>2.0.7</slf4j.version>
+      </properties>
+      <modules>
+        <module>client-spark/common</module>
+        <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
+        <module>integration-test/spark-common</module>
+        <module>integration-test/spark3</module>
+      </modules>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-client-spark3</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+              </exclusion>
+            </exclusions>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+              </exclusion>
+            </exclusions>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-client-spark-common</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-client-spark-common</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-integration-common-test</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+          </dependency>
+
+          <dependency>
+            <groupId>org.apache.uniffle</groupId>
+            <artifactId>rss-integration-spark-common-test</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+      <dependencies>
+        <!-- Remove log4j-slf4j-impl dependency -->
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-slf4j-impl</artifactId>
+          <scope>provided</scope>
+        </dependency>
+        <!-- Add log4j-slf4j2-impl dependency -->
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-slf4j2-impl</artifactId>
+        </dependency>
+      </dependencies>
     </profile>
 
     <profile>
@@ -1637,6 +1879,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark3</module>
       </modules>
@@ -1726,6 +1969,7 @@
       <modules>
         <module>client-spark/common</module>
         <module>client-spark/spark3</module>
+        <module>client-spark/spark3-shaded</module>
         <module>integration-test/spark-common</module>
         <module>integration-test/spark3</module>
       </modules>
@@ -1814,6 +2058,14 @@
         </dependencies>
       </dependencyManagement>
     </profile>
+
+    <profile>
+      <id>scala2.13</id>
+      <properties>
+        <scala.binary.version>2.13</scala.binary.version>
+      </properties>
+    </profile>
+
     <profile>
       <id>tez</id>
       <modules>
@@ -1971,6 +2223,10 @@
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
               </exclusion>
+              <exclusion>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-log4j12</artifactId>
+              </exclusion>
             </exclusions>
           </dependency>
           <dependency>
@@ -2008,11 +2264,18 @@
         </dependencies>
       </dependencyManagement>
       </profile>
+
       <profile>
       <id>kubernetes</id>
       <modules>
         <module>deploy/kubernetes</module>
       </modules>
+    </profile>
+    <profile>
+      <id>hadoop-dependencies-included</id>
+      <properties>
+        <hadoop.scope>compile</hadoop.scope>
+      </properties>
     </profile>
     <profile>
       <id>hadoop2.8</id>
@@ -2043,6 +2306,109 @@
           <scope>test</scope>
         </dependency>
       </dependencies>
+    </profile>
+
+    <profile>
+      <id>apache-release</id>
+      <build>
+        <plugins>
+          <!-- Create a source-release artifact that contains the fully buildable
+               project directory source structure. This is the artifact which is
+               the official subject of any release vote. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.apache.resources</groupId>
+                <artifactId>apache-source-release-assembly-descriptor</artifactId>
+                <version>${version.apache-resource-bundles}</version>
+              </dependency>
+            </dependencies>
+            <executions>
+              <execution>
+                <id>source-release-assembly</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                  <descriptorRefs>
+                    <descriptorRef>${sourceReleaseAssemblyDescriptor}</descriptorRef>
+                  </descriptorRefs>
+                  <tarLongFileMode>${assembly.tarLongFileMode}</tarLongFileMode>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- calculate checksums of source release for Apache dist area -->
+          <plugin>
+            <groupId>net.nicoulaj.maven.plugins</groupId>
+            <artifactId>checksum-maven-plugin</artifactId>
+            <version>${version.checksum-maven-plugin}</version>
+            <executions>
+              <execution>
+                <id>source-release-checksum</id>
+                <goals>
+                  <goal>artifacts</goal>
+                </goals>
+                <!-- execute prior to maven-gpg-plugin:sign due to https://github.com/nicoulaj/checksum-maven-plugin/issues/112 -->
+                <phase>post-integration-test</phase>
+                <configuration>
+                  <algorithms>
+                    <algorithm>SHA-512</algorithm>
+                  </algorithms>
+                  <!-- https://maven.apache.org/apache-resource-bundles/#source-release-assembly-descriptor -->
+                  <includeClassifiers>source-release</includeClassifiers>
+                  <excludeMainArtifact>true</excludeMainArtifact>
+                  <csvSummary>false</csvSummary>
+                  <!-- attach SHA-512 checksum as well to upload to Maven Staging Repo,
+                       as this eases uploading from stage to dist and doesn't do harm in Maven Central -->
+                  <attachChecksums>true</attachChecksums>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- We want to sign the artifact, the POM, and all attached artifacts (except for SHA-512 checksum) -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sign-release-artifacts</id>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>

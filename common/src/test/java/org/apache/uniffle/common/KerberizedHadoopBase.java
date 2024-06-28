@@ -49,6 +49,7 @@ public class KerberizedHadoopBase {
             .keytabFilePath(kerberizedHadoop.getHdfsKeytab())
             .principal(kerberizedHadoop.getHdfsPrincipal())
             .reloginIntervalSec(1000)
+            .enableProxyUser(true)
             .build();
     SecurityContextFactory.get().init(securityConfig);
 

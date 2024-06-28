@@ -18,27 +18,31 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
-import org.apache.uniffle.common.config.ReconfigurableBase;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.SimpleClusterManager;
+import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -58,9 +62,6 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     CoordinatorConf coordinatorConf1 = getCoordinatorConf();
     coordinatorConf1.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
     coordinatorConf1.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, SHUFFLE_NODES_MAX);
-    coordinatorConf1.setString(
-        ReconfigurableBase.RECONFIGURABLE_FILE_NAME,
-        new File(tmpDir, "coordinator.conf").getPath());
     coordinatorConf1.setLong(RssBaseConf.RSS_RECONFIGURE_INTERVAL_SEC, 1L);
     createCoordinatorServer(coordinatorConf1);
 
@@ -69,16 +70,13 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     coordinatorConf2.setInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, SHUFFLE_NODES_MAX);
     coordinatorConf2.setInteger(CoordinatorConf.RPC_SERVER_PORT, COORDINATOR_PORT_2);
     coordinatorConf2.setInteger(CoordinatorConf.JETTY_HTTP_PORT, JETTY_PORT_2);
-    coordinatorConf2.setString(
-        ReconfigurableBase.RECONFIGURABLE_FILE_NAME,
-        new File(tmpDir, "coordinator.conf").getPath());
     coordinatorConf2.setLong(RssBaseConf.RSS_RECONFIGURE_INTERVAL_SEC, 1L);
     createCoordinatorServer(coordinatorConf2);
 
     for (int i = 0; i < SERVER_NUM; i++) {
-      ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-      File dataDir1 = new File(tmpDir, "data1");
-      String basePath = dataDir1.getAbsolutePath();
+      ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+      File dataDir = new File(tmpDir, "data" + i);
+      String basePath = dataDir.getAbsolutePath();
       shuffleServerConf.setString(
           ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
       shuffleServerConf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(basePath));
@@ -99,7 +97,21 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
   @Test
   public void testSilentPeriod() throws Exception {
     ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1, 1, 1, 1, true, 1, 1, 10, 10);
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(1000)
+            .heartBeatThreadNum(1)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
+            .unregisterRequestTimeSec(10)
+            .build();
     shuffleWriteClient.registerCoordinators(QUORUM);
 
     // Case1: Disable silent period
@@ -108,25 +120,40 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
     assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
 
     // Case2: Enable silent period mechanism, it should fallback to slave coordinator.
-    SimpleClusterManager clusterManager =
-        (SimpleClusterManager) coordinators.get(0).getClusterManager();
-    clusterManager.setReadyForServe(false);
-    clusterManager.setStartupSilentPeriodEnabled(true);
-    clusterManager.setStartTime(System.currentTimeMillis() - 1);
+    try (SimpleClusterManager clusterManager =
+        (SimpleClusterManager) coordinators.get(0).getClusterManager()) {
+      clusterManager.setReadyForServe(false);
+      clusterManager.setStartupSilentPeriodEnabled(true);
+      clusterManager.setStartTime(System.currentTimeMillis() - 1);
 
-    if (clusterManager.getNodesNum() < 10) {
-      info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, -1, -1);
-      assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
+      if (clusterManager.getNodesNum() < 10) {
+        info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, -1, -1);
+        assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
+      }
+
+      // recover
+      clusterManager.setReadyForServe(true);
     }
-
-    // recover
-    clusterManager.setReadyForServe(true);
   }
 
   @Test
   public void testAssignmentServerNodesNumber() throws Exception {
     ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1, 1, 1, 1, true, 1, 1, 10, 10);
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(1000)
+            .heartBeatThreadNum(1)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
+            .unregisterRequestTimeSec(10)
+            .build();
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
 
     /**
@@ -160,29 +187,39 @@ public class CoordinatorAssignmentTest extends CoordinatorTestBase {
   }
 
   @Test
-  public void testReconfigureNodeMax() throws Exception {
-    String fileName =
-        coordinators
-            .get(0)
-            .getCoordinatorConf()
-            .getString(ReconfigurableBase.RECONFIGURABLE_FILE_NAME, "");
-    new File(fileName).createNewFile();
+  public void testGetReShuffleAssignments() {
     ShuffleWriteClientImpl shuffleWriteClient =
-        new ShuffleWriteClientImpl(ClientType.GRPC.name(), 3, 1000, 1, 1, 1, 1, true, 1, 1, 10, 10);
+        ShuffleClientFactory.newWriteBuilder()
+            .clientType(ClientType.GRPC.name())
+            .retryMax(3)
+            .retryIntervalMax(1000)
+            .heartBeatThreadNum(1)
+            .replica(1)
+            .replicaWrite(1)
+            .replicaRead(1)
+            .replicaSkipEnabled(true)
+            .dataTransferPoolSize(1)
+            .dataCommitPoolSize(1)
+            .unregisterThreadPoolSize(10)
+            .unregisterTimeSec(10)
+            .unregisterRequestTimeSec(10)
+            .build();
     shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
-    ShuffleAssignmentsInfo info =
-        shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
-    assertEquals(SHUFFLE_NODES_MAX, info.getServerToPartitionRanges().keySet().size());
-    Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
-    try (FileWriter fileWriter = new FileWriter(fileName)) {
-      fileWriter.append(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key() + " " + 5);
+    Set<String> excludeServer = Sets.newConcurrentHashSet();
+    List<ShuffleServer> excludeShuffleServer =
+        grpcShuffleServers.stream().limit(3).collect(Collectors.toList());
+    excludeShuffleServer.stream().map(ss -> ss.getId()).peek(excludeServer::add);
+    ShuffleAssignmentsInfo shuffleAssignmentsInfo =
+        shuffleWriteClient.getShuffleAssignments(
+            "app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1, excludeServer);
+    List<ShuffleServerInfo> resultShuffle = Lists.newArrayList();
+    for (List<ShuffleServerInfo> ssis : shuffleAssignmentsInfo.getPartitionToServers().values()) {
+      resultShuffle.addAll(ssis);
     }
-    Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
-    info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
-    assertEquals(5, info.getServerToPartitionRanges().keySet().size());
-    try (FileWriter fileWriter = new FileWriter(fileName)) {
-      fileWriter.append(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key() + " " + 10);
-    }
-    Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+
+    List<String> resultShuffleServerId =
+        resultShuffle.stream().map(a -> a.getId()).collect(Collectors.toList());
+    assertEquals(true, resultShuffleServerId.retainAll(excludeServer));
+    assertEquals(true, resultShuffleServerId.isEmpty());
   }
 }

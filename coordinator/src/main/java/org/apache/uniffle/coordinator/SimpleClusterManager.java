@@ -48,8 +48,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.impl.grpc.ShuffleServerInternalGrpcClient;
 import org.apache.uniffle.client.request.RssCancelDecommissionRequest;
 import org.apache.uniffle.client.request.RssDecommissionRequest;
+import org.apache.uniffle.common.ReconfigurableConfManager;
 import org.apache.uniffle.common.ServerStatus;
-import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
@@ -72,7 +72,7 @@ public class SimpleClusterManager implements ClusterManager {
   private Map<String, Set<ServerNode>> tagToNodes = JavaUtils.newConcurrentMap();
   private AtomicLong excludeLastModify = new AtomicLong(0L);
   private long heartbeatTimeout;
-  private volatile int shuffleNodesMax;
+  private ReconfigurableConfManager.Reconfigurable<Integer> shuffleNodesMax;
   private ScheduledExecutorService scheduledExecutorService;
   private ScheduledExecutorService checkNodesExecutorService;
   private FileSystem hadoopFileSystem;
@@ -86,7 +86,8 @@ public class SimpleClusterManager implements ClusterManager {
   private boolean readyForServe = false;
 
   public SimpleClusterManager(CoordinatorConf conf, Configuration hadoopConf) throws Exception {
-    this.shuffleNodesMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
+    this.shuffleNodesMax =
+        conf.getReconfigurableConf(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
     this.heartbeatTimeout = conf.getLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT);
     // the thread for checking if shuffle server report heartbeat in time
     scheduledExecutorService =
@@ -254,6 +255,28 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   @Override
+  public List<ServerNode> getServerList(Set<String> requiredTags, Set<String> faultyServerIds) {
+    List<ServerNode> availableNodes = Lists.newArrayList();
+    for (ServerNode node : servers.values()) {
+      if (!ServerStatus.ACTIVE.equals(node.getStatus())) {
+        continue;
+      }
+      if (isNodeAvailable(requiredTags, faultyServerIds, node)) {
+        availableNodes.add(node);
+      }
+    }
+    return availableNodes;
+  }
+
+  private boolean isNodeAvailable(
+      Set<String> requiredTags, Set<String> faultyServerIds, ServerNode node) {
+    if (faultyServerIds != null && faultyServerIds.contains(node.getId())) {
+      return false;
+    }
+    return !excludeNodes.contains(node.getId()) && node.getTags().containsAll(requiredTags);
+  }
+
+  @Override
   public List<ServerNode> getLostServerList() {
     return Lists.newArrayList(lostNodes);
   }
@@ -263,6 +286,7 @@ public class SimpleClusterManager implements ClusterManager {
     return Lists.newArrayList(unhealthyNodes);
   }
 
+  @Override
   public Set<String> getExcludeNodes() {
     return excludeNodes;
   }
@@ -288,7 +312,7 @@ public class SimpleClusterManager implements ClusterManager {
 
   @Override
   public int getShuffleNodesMax() {
-    return shuffleNodesMax;
+    return shuffleNodesMax.get();
   }
 
   @Override
@@ -368,19 +392,5 @@ public class SimpleClusterManager implements ClusterManager {
   @VisibleForTesting
   public Map<String, ServerNode> getServers() {
     return servers;
-  }
-
-  @Override
-  public void reconfigure(RssConf conf) {
-    int nodeMax = conf.getInteger(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX);
-    if (nodeMax != shuffleNodesMax) {
-      LOG.warn("Coordinator update new shuffleNodesMax {}", nodeMax);
-      shuffleNodesMax = nodeMax;
-    }
-  }
-
-  @Override
-  public boolean isPropertyReconfigurable(String property) {
-    return CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key().equals(property);
   }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.common.storage;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.proto.RssProtos.StorageInfo;
 
 public enum StorageStatus {
@@ -28,7 +29,9 @@ public enum StorageStatus {
   private final byte val;
 
   StorageStatus(int code) {
-    assert (code >= -1 && code < 256);
+    if (code < -1 || code >= 256) {
+      throw new RssException("The code should be within [-1, 256)");
+    }
     this.val = (byte) code;
   }
 

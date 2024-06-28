@@ -53,12 +53,16 @@ public class ShuffleDataResult {
   }
 
   public ShuffleDataResult(ByteBuf data, List<BufferSegment> bufferSegments) {
-    this.buffer = new NettyManagedBuffer(data);
-    this.bufferSegments = bufferSegments;
+    this(new NettyManagedBuffer(data), bufferSegments);
   }
 
   public ShuffleDataResult(byte[] data, List<BufferSegment> bufferSegments) {
     this(data != null ? ByteBuffer.wrap(data) : null, bufferSegments);
+  }
+
+  public ShuffleDataResult(ManagedBuffer data, List<BufferSegment> bufferSegments) {
+    this.buffer = data;
+    this.bufferSegments = bufferSegments;
   }
 
   public byte[] getData() {
@@ -75,10 +79,7 @@ public class ShuffleDataResult {
     if (buffer == null) {
       return 0;
     }
-    if (buffer.nioByteBuffer().hasArray()) {
-      return buffer.nioByteBuffer().array().length;
-    }
-    return buffer.nioByteBuffer().remaining();
+    return buffer.size();
   }
 
   public ByteBuf getDataBuf() {

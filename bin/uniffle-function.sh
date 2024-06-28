@@ -384,7 +384,7 @@ function uniffle_basic_init
   UNIFFLE_LOGFILE=${UNIFFLE_LOGFILE:-uniffle.log}
   UNIFFLE_STOP_TIMEOUT=${UNIFFLE_STOP_TIMEOUT:-60}
   UNIFFLE_PID_DIR=${RSS_PID_DIR:-"${RSS_HOME}"}
-  UNIFFLE_LOG_CONF_FILE=${LOG_CONF_FILE:-"${RSS_CONF_DIR}/log4j.properties"}
+  UNIFFLE_LOG_CONF_FILE=${LOG_CONF_FILE:-"${RSS_CONF_DIR}/log4j2.xml"}
 
   uniffle_debug "USER: "$USER
   uniffle_debug "UNIFFLE_IDENT_STRING: "$UNIFFLE_IDENT_STRING
@@ -793,7 +793,7 @@ function uniffle_mkdir
 function uniffle_finalize_uniffle_opts
 {
   set +u
-  uniffle_add_param UNIFFLE_OPTS log4j.configuration "-Dlog4j.configuration=file:${UNIFFLE_LOG_CONF_FILE}"
+  uniffle_add_param UNIFFLE_OPTS log4j2.configurationFile "-Dlog4j2.configurationFile=file:${UNIFFLE_LOG_CONF_FILE}"
   uniffle_add_param UNIFFLE_OPTS uniffle.log.dir "-Duniffle.log.dir=${UNIFFLE_LOG_DIR}"
   uniffle_add_param UNIFFLE_OPTS uniffle.home.dir "-Duniffle.home.dir=${RSS_HOME}"
   uniffle_add_param UNIFFLE_OPTS uniffle.id.str "-Duniffle.id.str=${UNIFFLE_IDENT_STRING}"

@@ -30,7 +30,6 @@ import java.util.stream.Stream;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.BeforeAll;
@@ -39,23 +38,29 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
+import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleReadClientImpl;
+import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcClient;
 import org.apache.uniffle.client.request.RssFinishShuffleRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
-import org.apache.uniffle.client.util.DefaultIdHelper;
+import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.common.util.Constants.SHUFFLE_DATA_FILE_SUFFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithHadoopTest {
   private static final int MAX_CONCURRENCY = 3;
@@ -64,25 +69,44 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
   public static void setupServers() throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
+
+    ShuffleServerConf grpcShuffleServerConf = buildShuffleServerConf(ServerType.GRPC);
+    createShuffleServer(grpcShuffleServerConf);
+
+    ShuffleServerConf nettyShuffleServerConf = buildShuffleServerConf(ServerType.GRPC_NETTY);
+    createShuffleServer(nettyShuffleServerConf);
+
+    startServers();
+
+    grpcShuffleServerConfig = grpcShuffleServerConf;
+    nettyShuffleServerConfig = nettyShuffleServerConf;
+  }
+
+  private static ShuffleServerConf buildShuffleServerConf(ServerType serverType) throws Exception {
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType);
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     shuffleServerConf.setInteger(
         ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION, MAX_CONCURRENCY);
     shuffleServerConf.setBoolean(shuffleServerConf.SINGLE_BUFFER_FLUSH_ENABLED, true);
-    shuffleServerConf.setLong(shuffleServerConf.SINGLE_BUFFER_FLUSH_THRESHOLD, 1024 * 1024L);
-    createShuffleServer(shuffleServerConf);
-    startServers();
+    shuffleServerConf.setLong(shuffleServerConf.SINGLE_BUFFER_FLUSH_SIZE_THRESHOLD, 1024 * 1024L);
+    return shuffleServerConf;
   }
 
   private static Stream<Arguments> clientConcurrencyAndExpectedProvider() {
     return Stream.of(
-        Arguments.of(-1, MAX_CONCURRENCY), Arguments.of(MAX_CONCURRENCY + 1, MAX_CONCURRENCY + 1));
+        Arguments.of(-1, MAX_CONCURRENCY, true),
+        Arguments.of(MAX_CONCURRENCY + 1, MAX_CONCURRENCY + 1, true),
+        Arguments.of(-1, MAX_CONCURRENCY, false),
+        Arguments.of(MAX_CONCURRENCY + 1, MAX_CONCURRENCY + 1, false));
   }
 
   @ParameterizedTest
   @MethodSource("clientConcurrencyAndExpectedProvider")
-  public void testConcurrentWrite2Hadoop(int clientSpecifiedConcurrency, int expectedConcurrency)
+  public void testConcurrentWrite2Hadoop(
+      int clientSpecifiedConcurrency, int expectedConcurrency, boolean isNettyMode)
       throws Exception {
+    ShuffleServerGrpcClient shuffleServerClient =
+        isNettyMode ? nettyShuffleServerClient : grpcShuffleServerClient;
     String appId = "testConcurrentWrite2Hadoop_" + new Random().nextInt();
     String dataBasePath = HDFS_URI + "rss/test";
     RssRegisterShuffleRequest rrsr =
@@ -117,7 +141,8 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
               shuffleToBlocks.put(0, partitionToBlocks);
               RssSendShuffleDataRequest rssdr =
                   new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
-              shuffleServerClient.sendShuffleData(rssdr);
+              RssSendShuffleDataResponse response = shuffleServerClient.sendShuffleData(rssdr);
+              assertSame(StatusCode.SUCCESS, response.getStatusCode());
             });
 
     RssSendCommitRequest rscr = new RssSendCommitRequest(appId, 0);
@@ -134,7 +159,14 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
             .count();
     assertEquals(expectedConcurrency, actual);
 
-    ShuffleServerInfo ssi = new ShuffleServerInfo(LOCALHOST, SHUFFLE_SERVER_PORT);
+    ShuffleServerInfo ssi =
+        isNettyMode
+            ? new ShuffleServerInfo(
+                LOCALHOST,
+                nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
+                nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT))
+            : new ShuffleServerInfo(
+                LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
     Roaring64NavigableMap blocksBitmap = Roaring64NavigableMap.bitmapOf();
     bitmaps.stream()
         .forEach(
@@ -144,23 +176,22 @@ public class ShuffleServerConcurrentWriteOfHadoopTest extends ShuffleServerWithH
                 blocksBitmap.add(iterator.next());
               }
             });
-
     ShuffleReadClientImpl readClient =
-        new ShuffleReadClientImpl(
-            StorageType.HDFS.name(),
-            appId,
-            0,
-            0,
-            100,
-            2,
-            10,
-            1000,
-            dataBasePath,
-            blocksBitmap,
-            Roaring64NavigableMap.bitmapOf(0),
-            Lists.newArrayList(ssi),
-            new Configuration(),
-            new DefaultIdHelper());
+        ShuffleClientFactory.newReadBuilder()
+            .clientType(isNettyMode ? ClientType.GRPC_NETTY : ClientType.GRPC)
+            .storageType(StorageType.HDFS.name())
+            .appId(appId)
+            .shuffleId(0)
+            .partitionId(0)
+            .indexReadLimit(100)
+            .partitionNumPerRange(2)
+            .partitionNum(10)
+            .readBufferSize(1000)
+            .basePath(dataBasePath)
+            .blockIdBitmap(blocksBitmap)
+            .taskIdBitmap(Roaring64NavigableMap.bitmapOf(0))
+            .shuffleServerInfoList(Lists.newArrayList(ssi))
+            .build();
 
     validateResult(readClient, expectedDataList, blocksBitmap);
   }

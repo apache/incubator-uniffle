@@ -20,9 +20,13 @@ package org.apache.uniffle.client.impl.grpc;
 import java.util.concurrent.TimeUnit;
 
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
+import io.grpc.netty.shaded.io.netty.buffer.ByteBufAllocator;
+import io.grpc.netty.shaded.io.netty.channel.ChannelOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.util.GrpcNettyUtils;
 
 public abstract class GrpcClient {
 
@@ -34,13 +38,27 @@ public abstract class GrpcClient {
   protected ManagedChannel channel;
 
   protected GrpcClient(String host, int port, int maxRetryAttempts, boolean usePlaintext) {
+    this(host, port, maxRetryAttempts, usePlaintext, 0, 0, 0);
+  }
+
+  protected GrpcClient(
+      String host,
+      int port,
+      int maxRetryAttempts,
+      boolean usePlaintext,
+      int pageSize,
+      int maxOrder,
+      int smallCacheSize) {
     this.host = host;
     this.port = port;
     this.maxRetryAttempts = maxRetryAttempts;
     this.usePlaintext = usePlaintext;
 
-    // build channel
-    ManagedChannelBuilder<?> channelBuilder = ManagedChannelBuilder.forAddress(host, port);
+    NettyChannelBuilder channelBuilder =
+        NettyChannelBuilder.forAddress(host, port)
+            .withOption(
+                ChannelOption.ALLOCATOR,
+                createByteBufAllocator(pageSize, maxOrder, smallCacheSize));
 
     if (usePlaintext) {
       channelBuilder.usePlaintext();
@@ -56,6 +74,11 @@ public abstract class GrpcClient {
 
   protected GrpcClient(ManagedChannel channel) {
     this.channel = channel;
+  }
+
+  protected ByteBufAllocator createByteBufAllocator(
+      int pageSize, int maxOrder, int smallCacheSize) {
+    return GrpcNettyUtils.createPooledByteBufAllocator(true, 0, 0, 0, 0);
   }
 
   public void close() {

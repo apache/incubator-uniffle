@@ -19,16 +19,14 @@ package org.apache.uniffle.common.netty.protocol;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
 
-import org.apache.uniffle.common.netty.buffer.FileSegmentManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
 
-public class GetLocalShuffleIndexResponse extends RpcResponse implements Transferable {
-  private ManagedBuffer buffer;
+public class GetLocalShuffleIndexResponse extends RpcResponse {
+
   private long fileLength;
 
   public GetLocalShuffleIndexResponse(
@@ -54,38 +52,36 @@ public class GetLocalShuffleIndexResponse extends RpcResponse implements Transfe
       long requestId,
       StatusCode statusCode,
       String retMessage,
-      ManagedBuffer indexData,
+      ManagedBuffer managedBuffer,
       long fileLength) {
-    super(requestId, statusCode, retMessage);
-    this.buffer = indexData;
+    super(requestId, statusCode, retMessage, managedBuffer);
     this.fileLength = fileLength;
   }
 
   @Override
   public int encodedLength() {
-    return super.encodedLength() + Integer.BYTES + buffer.size() + Long.BYTES;
+    return super.encodedLength() + Long.BYTES;
   }
 
   @Override
   public void encode(ByteBuf buf) {
     super.encode(buf);
-    if (buffer instanceof FileSegmentManagedBuffer) {
-      buf.writeInt(buffer.size());
-    } else {
-      ByteBufUtils.copyByteBuf(buffer.byteBuf(), buf);
-      buffer.release();
-    }
     buf.writeLong(fileLength);
   }
 
-  public static GetLocalShuffleIndexResponse decode(ByteBuf byteBuf) {
+  public static GetLocalShuffleIndexResponse decode(ByteBuf byteBuf, boolean decodeBody) {
     long requestId = byteBuf.readLong();
     StatusCode statusCode = StatusCode.fromCode(byteBuf.readInt());
     String retMessage = ByteBufUtils.readLengthAndString(byteBuf);
-    ByteBuf indexData = ByteBufUtils.readSlice(byteBuf);
     long fileLength = byteBuf.readLong();
-    return new GetLocalShuffleIndexResponse(
-        requestId, statusCode, retMessage, indexData, fileLength);
+    if (decodeBody) {
+      NettyManagedBuffer nettyManagedBuffer = new NettyManagedBuffer(byteBuf);
+      return new GetLocalShuffleIndexResponse(
+          requestId, statusCode, retMessage, nettyManagedBuffer, fileLength);
+    } else {
+      return new GetLocalShuffleIndexResponse(
+          requestId, statusCode, retMessage, NettyManagedBuffer.EMPTY_BUFFER, fileLength);
+    }
   }
 
   @Override
@@ -93,17 +89,7 @@ public class GetLocalShuffleIndexResponse extends RpcResponse implements Transfe
     return Type.GET_LOCAL_SHUFFLE_INDEX_RESPONSE;
   }
 
-  public ByteBuf getIndexData() {
-    return buffer.byteBuf();
-  }
-
   public long getFileLength() {
     return fileLength;
-  }
-
-  @Override
-  public void transferTo(Channel channel) {
-    channel.write(buffer.convertToNetty());
-    buffer.release();
   }
 }

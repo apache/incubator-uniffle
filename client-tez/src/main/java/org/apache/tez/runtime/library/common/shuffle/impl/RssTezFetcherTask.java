@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
@@ -42,9 +43,9 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
-import org.apache.uniffle.client.request.CreateShuffleReadClientRequest;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.UnitConverter;
 
 public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
@@ -90,7 +91,9 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
       Map<Integer, Roaring64NavigableMap> rssSuccessBlockIdBitmapMap,
       int numPhysicalInputs,
       int partitionNum) {
-    assert (inputs != null && inputs.size() > 0);
+    if (CollectionUtils.isEmpty(inputs)) {
+      throw new RssException("inputs should not be empty");
+    }
     this.fetcherCallback = fetcherCallback;
     this.inputContext = inputContext;
     this.conf = conf;
@@ -179,23 +182,24 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
       Configuration hadoopConf = getRemoteConf();
       LOG.info("RssTezFetcherTask storageType:{}", storageType);
       boolean expectedTaskIdsBitmapFilterEnable = serverInfoSet.size() > 1;
-      CreateShuffleReadClientRequest request =
-          new CreateShuffleReadClientRequest(
-              applicationAttemptId.toString(),
-              shuffleId,
-              partition,
-              basePath,
-              partitionNumPerRange,
-              partitionNum,
-              blockIdBitmap,
-              taskIdBitmap,
-              new ArrayList<>(serverInfoSet),
-              hadoopConf,
-              new TezIdHelper(),
-              expectedTaskIdsBitmapFilterEnable,
-              RssTezConfig.toRssConf(this.conf));
+
       ShuffleReadClient shuffleReadClient =
-          ShuffleClientFactory.getInstance().createShuffleReadClient(request);
+          ShuffleClientFactory.getInstance()
+              .createShuffleReadClient(
+                  ShuffleClientFactory.newReadBuilder()
+                      .appId(applicationAttemptId.toString())
+                      .shuffleId(shuffleId)
+                      .partitionId(partition)
+                      .basePath(basePath)
+                      .partitionNumPerRange(partitionNumPerRange)
+                      .partitionNum(partitionNum)
+                      .blockIdBitmap(blockIdBitmap)
+                      .taskIdBitmap(taskIdBitmap)
+                      .shuffleServerInfoList(new ArrayList<>(serverInfoSet))
+                      .hadoopConf(hadoopConf)
+                      .idHelper(new TezIdHelper())
+                      .expectedTaskIdsBitmapFilterEnable(expectedTaskIdsBitmapFilterEnable)
+                      .rssConf(RssTezConfig.toRssConf(this.conf)));
       RssTezFetcher fetcher =
           new RssTezFetcher(
               fetcherCallback,

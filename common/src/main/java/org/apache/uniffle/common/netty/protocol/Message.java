@@ -19,9 +19,26 @@ package org.apache.uniffle.common.netty.protocol;
 
 import io.netty.buffer.ByteBuf;
 
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
+
 public abstract class Message implements Encodable {
 
+  private ManagedBuffer body;
+
+  protected Message() {
+    this(null);
+  }
+
+  protected Message(ManagedBuffer body) {
+    this.body = body;
+  }
+
   public abstract Type type();
+
+  public ManagedBuffer body() {
+    return body;
+  }
 
   public enum Type implements Encodable {
     UNKNOWN_TYPE(-1),
@@ -50,7 +67,9 @@ public abstract class Message implements Encodable {
     private final byte id;
 
     Type(int id) {
-      assert id < 128 : "Cannot have more than 128 message types";
+      if (id >= 128) {
+        throw new RssException("Cannot have more than 128 message types");
+      }
       this.id = (byte) id;
     }
 
@@ -124,9 +143,21 @@ public abstract class Message implements Encodable {
   public static Message decode(Type msgType, ByteBuf in) {
     switch (msgType) {
       case RPC_RESPONSE:
-        return RpcResponse.decode(in);
+        return RpcResponse.decode(in, false);
       case SEND_SHUFFLE_DATA_REQUEST:
         return SendShuffleDataRequest.decode(in);
+      case GET_LOCAL_SHUFFLE_DATA_REQUEST:
+        return GetLocalShuffleDataRequest.decode(in);
+      case GET_LOCAL_SHUFFLE_DATA_RESPONSE:
+        return GetLocalShuffleDataResponse.decode(in, true);
+      case GET_LOCAL_SHUFFLE_INDEX_REQUEST:
+        return GetLocalShuffleIndexRequest.decode(in);
+      case GET_LOCAL_SHUFFLE_INDEX_RESPONSE:
+        return GetLocalShuffleIndexResponse.decode(in, true);
+      case GET_MEMORY_SHUFFLE_DATA_REQUEST:
+        return GetMemoryShuffleDataRequest.decode(in);
+      case GET_MEMORY_SHUFFLE_DATA_RESPONSE:
+        return GetMemoryShuffleDataResponse.decode(in, true);
       default:
         throw new IllegalArgumentException("Unexpected message type: " + msgType);
     }

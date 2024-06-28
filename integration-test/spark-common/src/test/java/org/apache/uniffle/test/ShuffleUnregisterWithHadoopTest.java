@@ -32,6 +32,7 @@ import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -49,9 +50,12 @@ public class ShuffleUnregisterWithHadoopTest extends SparkIntegrationTestBase {
     dynamicConf.put(RssSparkConfig.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf();
-    shuffleServerConf.setString("rss.storage.type", StorageType.HDFS.name());
-    createShuffleServer(shuffleServerConf);
+    ShuffleServerConf grpcShuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+    grpcShuffleServerConf.setString("rss.storage.type", StorageType.HDFS.name());
+    ShuffleServerConf nettyShuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
+    nettyShuffleServerConf.setString("rss.storage.type", StorageType.HDFS.name());
+    createShuffleServer(grpcShuffleServerConf);
+    createShuffleServer(nettyShuffleServerConf);
     startServers();
   }
 

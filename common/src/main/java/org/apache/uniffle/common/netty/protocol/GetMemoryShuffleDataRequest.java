@@ -67,7 +67,7 @@ public class GetMemoryShuffleDataRequest extends RequestMessage {
             + ByteBufUtils.encodedLength(appId)
             + 4 * Integer.BYTES
             + 2 * Long.BYTES
-            + expectedTaskIdsBitmap.serializedSizeInBytes());
+            + (expectedTaskIdsBitmap == null ? 0L : expectedTaskIdsBitmap.serializedSizeInBytes()));
   }
 
   @Override
@@ -79,9 +79,13 @@ public class GetMemoryShuffleDataRequest extends RequestMessage {
     buf.writeLong(lastBlockId);
     buf.writeInt(readBufferSize);
     buf.writeLong(timestamp);
-    buf.writeInt((int) expectedTaskIdsBitmap.serializedSizeInBytes());
     try {
-      buf.writeBytes(RssUtils.serializeBitMap(expectedTaskIdsBitmap));
+      if (expectedTaskIdsBitmap != null) {
+        buf.writeInt((int) expectedTaskIdsBitmap.serializedSizeInBytes());
+        buf.writeBytes(RssUtils.serializeBitMap(expectedTaskIdsBitmap));
+      } else {
+        buf.writeInt(-1);
+      }
     } catch (IOException ioException) {
       throw new EncodeException(
           "serializeBitMap failed while encode GetMemoryShuffleDataRequest!", ioException);
@@ -97,9 +101,11 @@ public class GetMemoryShuffleDataRequest extends RequestMessage {
     int readBufferSize = byteBuf.readInt();
     long timestamp = byteBuf.readLong();
     byte[] bytes = ByteBufUtils.readByteArray(byteBuf);
-    Roaring64NavigableMap expectedTaskIdsBitmap;
+    Roaring64NavigableMap expectedTaskIdsBitmap = null;
     try {
-      expectedTaskIdsBitmap = RssUtils.deserializeBitMap(bytes);
+      if (bytes != null) {
+        expectedTaskIdsBitmap = RssUtils.deserializeBitMap(bytes);
+      }
     } catch (IOException ioException) {
       throw new DecodeException(
           "serializeBitMap failed while decode GetMemoryShuffleDataRequest!", ioException);
@@ -141,5 +147,10 @@ public class GetMemoryShuffleDataRequest extends RequestMessage {
 
   public Roaring64NavigableMap getExpectedTaskIdsBitmap() {
     return expectedTaskIdsBitmap;
+  }
+
+  @Override
+  public String getOperationType() {
+    return "getMemoryShuffleData";
   }
 }

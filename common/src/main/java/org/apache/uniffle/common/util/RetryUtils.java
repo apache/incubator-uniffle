@@ -18,6 +18,7 @@
 package org.apache.uniffle.common.util;
 
 import java.util.Set;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,23 +58,48 @@ public class RetryUtils {
       int retryTimes,
       Set<Class<? extends Throwable>> exceptionClasses)
       throws Throwable {
+    return retryWithCondition(
+        cmd,
+        callBack,
+        intervalMs,
+        retryTimes,
+        t ->
+            (exceptionClasses != null && isInstanceOf(exceptionClasses, t))
+                || !(t instanceof NotRetryException));
+  }
+
+  public static <T> T retryWithCondition(
+      RetryCmd<T> cmd,
+      RetryCallBack callBack,
+      long intervalMs,
+      int retryTimes,
+      Function<Throwable, Boolean> isRetryFunc)
+      throws Throwable {
     int retry = 0;
     while (true) {
       try {
         return cmd.execute();
       } catch (Throwable t) {
         retry++;
-        if ((exceptionClasses != null && !isInstanceOf(exceptionClasses, t))
-            || retry >= retryTimes
-            || t instanceof NotRetryException) {
-          throw t;
-        } else {
-          LOG.info("Retry due to Throwable, " + t.getClass().getName() + " " + t.getMessage());
-          LOG.info("Waiting " + intervalMs + " milliseconds before next connection attempt.");
+        if (isRetryFunc.apply(t) && retry < retryTimes) {
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Retry due to: ", t);
+          } else {
+            LOG.info(
+                "Retry due to: {}. Use DEBUG level to see the full stack: {}",
+                t.getClass().getName(),
+                t.getMessage());
+          }
+          LOG.info(
+              "Will retry {} more time(s) after waiting {} milliseconds.",
+              retryTimes - retry,
+              intervalMs);
           Thread.sleep(intervalMs);
           if (callBack != null) {
             callBack.execute();
           }
+        } else {
+          throw t;
         }
       }
     }

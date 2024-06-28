@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.exception.RssException;
@@ -53,7 +54,7 @@ public class DataPusher implements Closeable {
   // Must be thread safe
   private final Map<String, Set<Long>> taskToSuccessBlockIds;
   // Must be thread safe
-  private final Map<String, Set<Long>> taskToFailedBlockIds;
+  Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker;
   private String rssAppId;
   // Must be thread safe
   private final Set<String> failedTaskIds;
@@ -61,13 +62,13 @@ public class DataPusher implements Closeable {
   public DataPusher(
       ShuffleWriteClient shuffleWriteClient,
       Map<String, Set<Long>> taskToSuccessBlockIds,
-      Map<String, Set<Long>> taskToFailedBlockIds,
+      Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker,
       Set<String> failedTaskIds,
       int threadPoolSize,
       int threadKeepAliveTime) {
     this.shuffleWriteClient = shuffleWriteClient;
     this.taskToSuccessBlockIds = taskToSuccessBlockIds;
-    this.taskToFailedBlockIds = taskToFailedBlockIds;
+    this.taskToFailedBlockSendTracker = taskToFailedBlockSendTracker;
     this.failedTaskIds = failedTaskIds;
     this.executorService =
         new ThreadPoolExecutor(
@@ -84,28 +85,46 @@ public class DataPusher implements Closeable {
       throw new RssException("RssAppId should be set.");
     }
     return CompletableFuture.supplyAsync(
-        () -> {
-          String taskId = event.getTaskId();
-          List<ShuffleBlockInfo> shuffleBlockInfoList = event.getShuffleDataInfoList();
-          try {
-            SendShuffleDataResult result =
-                shuffleWriteClient.sendShuffleData(
-                    rssAppId, shuffleBlockInfoList, () -> !isValidTask(taskId));
-            putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
-            putBlockId(taskToFailedBlockIds, taskId, result.getFailedBlockIds());
-          } finally {
-            List<Runnable> callbackChain =
-                Optional.of(event.getProcessedCallbackChain()).orElse(Collections.EMPTY_LIST);
-            for (Runnable runnable : callbackChain) {
-              runnable.run();
-            }
-          }
-          return shuffleBlockInfoList.stream()
-              .map(x -> x.getFreeMemory())
-              .reduce((a, b) -> a + b)
-              .get();
-        },
-        executorService);
+            () -> {
+              String taskId = event.getTaskId();
+              List<ShuffleBlockInfo> shuffleBlockInfoList = event.getShuffleDataInfoList();
+              SendShuffleDataResult result = null;
+              try {
+                result =
+                    shuffleWriteClient.sendShuffleData(
+                        rssAppId,
+                        event.getStageAttemptNumber(),
+                        shuffleBlockInfoList,
+                        () -> !isValidTask(taskId));
+                putBlockId(taskToSuccessBlockIds, taskId, result.getSuccessBlockIds());
+                putFailedBlockSendTracker(
+                    taskToFailedBlockSendTracker, taskId, result.getFailedBlockSendTracker());
+              } finally {
+                Set<Long> succeedBlockIds =
+                    result.getSuccessBlockIds() == null
+                        ? Collections.emptySet()
+                        : result.getSuccessBlockIds();
+                for (ShuffleBlockInfo block : shuffleBlockInfoList) {
+                  block.executeCompletionCallback(succeedBlockIds.contains(block.getBlockId()));
+                }
+
+                List<Runnable> callbackChain =
+                    Optional.of(event.getProcessedCallbackChain()).orElse(Collections.EMPTY_LIST);
+                for (Runnable runnable : callbackChain) {
+                  runnable.run();
+                }
+              }
+              return shuffleBlockInfoList.stream()
+                  .map(x -> x.getFreeMemory())
+                  .reduce((a, b) -> a + b)
+                  .get();
+            },
+            executorService)
+        .exceptionally(
+            ex -> {
+              LOGGER.error("Unexpected exceptions occurred while sending shuffle data", ex);
+              return null;
+            });
   }
 
   private synchronized void putBlockId(
@@ -116,6 +135,18 @@ public class DataPusher implements Closeable {
     taskToBlockIds
         .computeIfAbsent(taskAttemptId, x -> Sets.newConcurrentHashSet())
         .addAll(blockIds);
+  }
+
+  private synchronized void putFailedBlockSendTracker(
+      Map<String, FailedBlockSendTracker> taskToFailedBlockSendTracker,
+      String taskAttemptId,
+      FailedBlockSendTracker failedBlockSendTracker) {
+    if (failedBlockSendTracker == null) {
+      return;
+    }
+    taskToFailedBlockSendTracker
+        .computeIfAbsent(taskAttemptId, x -> new FailedBlockSendTracker())
+        .merge(failedBlockSendTracker);
   }
 
   public boolean isValidTask(String taskId) {
