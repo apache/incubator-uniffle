@@ -156,11 +156,11 @@ public class RssTezUtils {
     return StringUtils.join(ids, "_", 0, 7);
   }
 
-  public static long getBlockId(int partitionId, int taskAttemptId, int nextSeqNo) {
+  public static long getBlockId(int partitionId, long taskAttemptId, int nextSeqNo) {
     return LAYOUT.getBlockId(nextSeqNo, partitionId, taskAttemptId);
   }
 
-  public static long getTaskAttemptId(long blockId) {
+  public static int getTaskAttemptId(long blockId) {
     return LAYOUT.getTaskAttemptId(blockId);
   }
 

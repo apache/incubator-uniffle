@@ -143,7 +143,7 @@ public class BlockIdLayout {
     return Objects.hash(sequenceNoBits, partitionIdBits, taskAttemptIdBits);
   }
 
-  public long getBlockId(int sequenceNo, int partitionId, int taskAttemptId) {
+  public long getBlockId(int sequenceNo, int partitionId, long taskAttemptId) {
     if (sequenceNo < 0 || sequenceNo > maxSequenceNo) {
       throw new IllegalArgumentException(
           "Don't support sequenceNo[" + sequenceNo + "], the max value should be " + maxSequenceNo);
@@ -165,7 +165,7 @@ public class BlockIdLayout {
 
     return (long) sequenceNo << sequenceNoOffset
         | (long) partitionId << partitionIdOffset
-        | (long) taskAttemptId << taskAttemptIdOffset;
+        | taskAttemptId << taskAttemptIdOffset;
   }
 
   public int getSequenceNo(long blockId) {
@@ -185,13 +185,13 @@ public class BlockIdLayout {
         blockId, this, getSequenceNo(blockId), getPartitionId(blockId), getTaskAttemptId(blockId));
   }
 
-  public BlockId asBlockId(int sequenceNo, int partitionId, int taskAttemptId) {
+  public BlockId asBlockId(int sequenceNo, int partitionId, long taskAttemptId) {
     return new BlockId(
         getBlockId(sequenceNo, partitionId, taskAttemptId),
         this,
         sequenceNo,
         partitionId,
-        taskAttemptId);
+        (int) taskAttemptId);
   }
 
   public static BlockIdLayout from(RssConf rssConf) {
