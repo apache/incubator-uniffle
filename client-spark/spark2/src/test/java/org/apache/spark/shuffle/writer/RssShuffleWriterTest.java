@@ -126,7 +126,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            mockShuffleManagerClient,
+            () -> mockShuffleManagerClient,
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -303,7 +303,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            mockShuffleManagerClient,
+            () -> mockShuffleManagerClient,
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -417,7 +417,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockWriteClient,
-            mockShuffleManagerClient,
+            () -> mockShuffleManagerClient,
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);

@@ -18,6 +18,7 @@
 package org.apache.spark.shuffle.reader;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import scala.Product2;
 import scala.collection.AbstractIterator;
@@ -49,7 +50,7 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     private int shuffleId;
     private int partitionId;
     private int stageAttemptId;
-    private ShuffleManagerClient shuffleManagerClient;
+    private Supplier<ShuffleManagerClient> shuffleManagerClientSupplier;
 
     private Builder() {}
 
@@ -73,8 +74,9 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
       return this;
     }
 
-    Builder shuffleManagerClient(ShuffleManagerClient shuffleManagerClient) {
-      this.shuffleManagerClient = shuffleManagerClient;
+    Builder shuffleManagerClientSupplier(
+        Supplier<ShuffleManagerClient> shuffleManagerClientSupplier) {
+      this.shuffleManagerClientSupplier = shuffleManagerClientSupplier;
       return this;
     }
 
@@ -97,7 +99,7 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
             builder.partitionId,
             e.getMessage());
     RssReportShuffleFetchFailureResponse response =
-        builder.shuffleManagerClient.reportShuffleFetchFailure(req);
+        builder.shuffleManagerClientSupplier.get().reportShuffleFetchFailure(req);
     if (response.getReSubmitWholeStage()) {
       // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1 is
       // provided.

@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.shuffle.manager;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -804,6 +805,17 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           reassignResult);
 
       return internalHandle;
+    }
+  }
+
+  @Override
+  public void stop() {
+    if (shuffleManagerClient != null) {
+      try {
+        shuffleManagerClient.close();
+      } catch (IOException e) {
+        LOG.warn("Errors on closing shuffleManagerClient", e);
+      }
     }
   }
 

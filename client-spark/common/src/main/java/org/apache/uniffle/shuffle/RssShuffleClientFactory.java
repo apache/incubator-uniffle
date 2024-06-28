@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.shuffle;
 
+import java.util.function.Supplier;
+
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
@@ -41,18 +43,18 @@ public class RssShuffleClientFactory extends ShuffleClientFactory {
   public static class ExtendWriteClientBuilder<T extends ExtendWriteClientBuilder<T>>
       extends WriteClientBuilder<T> {
     private boolean blockIdSelfManagedEnabled;
-    private ShuffleManagerClient shuffleManagerClient;
+    private Supplier<ShuffleManagerClient> shuffleManagerClientSupplier;
 
     public boolean isBlockIdSelfManagedEnabled() {
       return blockIdSelfManagedEnabled;
     }
 
     public ShuffleManagerClient getShuffleManagerClient() {
-      return shuffleManagerClient;
+      return shuffleManagerClientSupplier.get();
     }
 
-    public T shuffleManagerClient(ShuffleManagerClient client) {
-      this.shuffleManagerClient = client;
+    public T shuffleManagerClientSupplier(Supplier<ShuffleManagerClient> clientSupplier) {
+      this.shuffleManagerClientSupplier = clientSupplier;
       return self();
     }
 

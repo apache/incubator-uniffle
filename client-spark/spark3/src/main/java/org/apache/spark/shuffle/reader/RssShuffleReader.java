@@ -19,6 +19,7 @@ package org.apache.spark.shuffle.reader;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import scala.Function0;
 import scala.Function1;
@@ -83,7 +84,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private ShuffleReadMetrics readMetrics;
   private RssConf rssConf;
   private ShuffleDataDistributionType dataDistributionType;
-  private ShuffleManagerClient shuffleManagerClient;
+  private Supplier<ShuffleManagerClient> lazyShuffleManagerClient;
 
   public RssShuffleReader(
       int startPartition,
@@ -98,7 +99,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks,
       Roaring64NavigableMap taskIdBitmap,
       ShuffleReadMetrics readMetrics,
-      ShuffleManagerClient shuffleManagerClient,
+      Supplier<ShuffleManagerClient> lazyShuffleManagerClient,
       RssConf rssConf,
       ShuffleDataDistributionType dataDistributionType,
       Map<Integer, List<ShuffleServerInfo>> allPartitionToServers) {
@@ -122,7 +123,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.partitionToShuffleServers = allPartitionToServers;
     this.rssConf = rssConf;
     this.dataDistributionType = dataDistributionType;
-    this.shuffleManagerClient = shuffleManagerClient;
+    this.lazyShuffleManagerClient = lazyShuffleManagerClient;
   }
 
   @Override
@@ -202,7 +203,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
               .shuffleId(shuffleId)
               .partitionId(startPartition)
               .stageAttemptId(context.stageAttemptNumber())
-              .shuffleManagerClient(shuffleManagerClient)
+              .shuffleManagerClientSupplier(lazyShuffleManagerClient)
               .build(resultIter);
     }
     return resultIter;

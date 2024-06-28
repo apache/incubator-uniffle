@@ -102,7 +102,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 taskIdBitmap,
                 rssConf,
                 partitionToServers,
-                mockShuffleManagerClient));
+                () -> mockShuffleManagerClient));
 
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
   }

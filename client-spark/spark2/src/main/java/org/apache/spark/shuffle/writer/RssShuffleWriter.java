@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import scala.Function1;
@@ -108,7 +109,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final Set<Long> blockIds = Sets.newConcurrentHashSet();
   private TaskContext taskContext;
   private SparkConf sparkConf;
-  private ShuffleManagerClient shuffleManagerClient;
+  private Supplier<ShuffleManagerClient> lazyShuffleManagerClient;
 
   public RssShuffleWriter(
       String appId,
@@ -120,7 +121,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
-      ShuffleManagerClient shuffleManagerClient,
+      Supplier<ShuffleManagerClient> lazyShuffleManagerClient,
       RssShuffleHandle<K, V, C> rssHandle,
       SimpleShuffleHandleInfo shuffleHandleInfo,
       TaskContext context) {
@@ -133,7 +134,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleManager,
         sparkConf,
         shuffleWriteClient,
-        shuffleManagerClient,
+        lazyShuffleManagerClient,
         rssHandle,
         (tid) -> true,
         shuffleHandleInfo,
@@ -150,7 +151,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
-      ShuffleManagerClient shuffleManagerClient,
+      Supplier<ShuffleManagerClient> lazyShuffleManagerClient,
       RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback,
       ShuffleHandleInfo shuffleHandleInfo,
@@ -170,7 +171,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.bitmapSplitNum = sparkConf.get(RssSparkConfig.RSS_CLIENT_BITMAP_SPLIT_NUM);
     this.serverToPartitionToBlockIds = Maps.newHashMap();
     this.shuffleWriteClient = shuffleWriteClient;
-    this.shuffleManagerClient = shuffleManagerClient;
+    this.lazyShuffleManagerClient = lazyShuffleManagerClient;
     this.shuffleServersForData = shuffleHandleInfo.getServers();
     this.partitionToServers = shuffleHandleInfo.getAvailablePartitionServersForWriter();
     this.isMemoryShuffleEnabled =
@@ -189,7 +190,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
-      ShuffleManagerClient shuffleManagerClient,
+      Supplier<ShuffleManagerClient> lazyShuffleManagerClient,
       RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback,
       TaskContext context,
@@ -203,7 +204,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleManager,
         sparkConf,
         shuffleWriteClient,
-        shuffleManagerClient,
+        lazyShuffleManagerClient,
         rssHandle,
         taskFailureCallback,
         shuffleHandleInfo,
@@ -544,7 +545,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               shuffleServerInfos,
               e.getMessage());
       RssReportShuffleWriteFailureResponse response =
-          shuffleManagerClient.reportShuffleWriteFailure(req);
+          lazyShuffleManagerClient.get().reportShuffleWriteFailure(req);
       if (response.getReSubmitWholeStage()) {
         // The shuffle server is reassigned.
         RssReassignServersRequest rssReassignServersRequest =
@@ -554,7 +555,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                 shuffleId,
                 partitioner.numPartitions());
         RssReassignServersResponse rssReassignServersResponse =
-            shuffleManagerClient.reassignOnStageResubmit(rssReassignServersRequest);
+            lazyShuffleManagerClient.get().reassignOnStageResubmit(rssReassignServersRequest);
         LOG.info(
             "Whether the reassignment is successful: {}",
             rssReassignServersResponse.isNeedReassign());

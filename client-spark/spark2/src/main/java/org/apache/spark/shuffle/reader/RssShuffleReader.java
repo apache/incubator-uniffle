@@ -19,6 +19,7 @@ package org.apache.spark.shuffle.reader;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import scala.Function0;
 import scala.Function2;
@@ -78,7 +79,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
   private RssConf rssConf;
-  private ShuffleManagerClient shuffleManagerClient;
+  private Supplier<ShuffleManagerClient> lazyShuffleManagerClient;
 
   public RssShuffleReader(
       int startPartition,
@@ -93,7 +94,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       Roaring64NavigableMap taskIdBitmap,
       RssConf rssConf,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
-      ShuffleManagerClient shuffleManagerClient) {
+      Supplier<ShuffleManagerClient> lazyShuffleManagerClient) {
     this.appId = rssShuffleHandle.getAppId();
     this.startPartition = startPartition;
     this.endPartition = endPartition;
@@ -110,7 +111,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.hadoopConf = hadoopConf;
     this.shuffleServerInfoList = (List<ShuffleServerInfo>) (partitionToServers.get(startPartition));
     this.rssConf = rssConf;
-    this.shuffleManagerClient = shuffleManagerClient;
+    this.lazyShuffleManagerClient = lazyShuffleManagerClient;
     expectedTaskIdsBitmapFilterEnable = shuffleServerInfoList.size() > 1;
   }
 
@@ -245,6 +246,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
               .shuffleId(shuffleId)
               .partitionId(startPartition)
               .stageAttemptId(context.stageAttemptNumber())
+              .shuffleManagerClientSupplier(lazyShuffleManagerClient)
               .build(resultIter);
     }
     return resultIter;
