@@ -161,6 +161,8 @@ function load_rss_env {
   set +o nounset
   if [ -f "${RSS_CONF_DIR}/rss-env.sh" ]; then
      RSS_ENV_SH="${RSS_CONF_DIR}/rss-env.sh"
+  elif [ -f "${RSS_HOME}/conf/rss-env.sh" ]; then
+     RSS_ENV_SH="${RSS_HOME}/conf/rss-env.sh"
   elif [ -f "${RSS_HOME}/bin/rss-env.sh" ]; then
      RSS_ENV_SH="${RSS_HOME}/bin/rss-env.sh"
   else

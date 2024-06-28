@@ -34,6 +34,15 @@ Run the following command:
 cd deploy/kubernetes/docker && sh build.sh --registry ${our-registry}
 ```
 
+## Preparing Images of Webhook and Controller
+
+Build operator images:
+````
+cd deploy/kubernetes && sh build-operator.sh
+````
+
+Please make sure all of `rss-server` `rss-controller` and `rss-webhook` images are pushed to your registry.
+
 ## Creating or Updating CRD
 
 We can refer
@@ -67,6 +76,22 @@ Run the following command:
 
 ```
 kubectl apply -f ${controller-yaml-file}
+```
+
+## Setup or Update Uniffle Configurations
+
+We can refer to [rss configuration](../../deploy/kubernetes/operator/examples/configuration.yaml)
+
+```
+kubectl apply -f ${configuration-yaml-file}
+```
+
+## Setup or Update Hadoop Configurations
+
+We can refer to [hadoop configuration](../../deploy/kubernetes/operator/examples/hadoop-configuration.yaml)
+
+```
+kubectl apply -f ${hadoop-configuration-yaml-file}
 ```
 
 ## How To Use
