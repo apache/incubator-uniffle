@@ -45,6 +45,9 @@ public class WriterBuffer {
       if (nextOffset > 0) {
         buffers.add(new WrappedBuffer(buffer, nextOffset));
         nextOffset = 0;
+      } else {
+        // buffer not be used and record is larger than buffer size, so release current buffer
+        memoryUsed -= buffer.length;
       }
       int newBufferSize = Math.max(length, bufferSize);
       buffer = new byte[newBufferSize];
