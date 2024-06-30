@@ -348,7 +348,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             estimateTaskConcurrency,
             rssStageResubmitManager.getServerIdBlackList(),
             0);
-
     startHeartbeat();
 
     shuffleIdToPartitionNum.putIfAbsent(shuffleId, dependency.partitioner().numPartitions());
@@ -427,10 +426,20 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       ShuffleHandleInfo shuffleHandleInfo;
       if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
         // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId
-        shuffleHandleInfo = getRemoteShuffleHandleInfoWithStageRetry(shuffleId);
+        shuffleHandleInfo =
+            getRemoteShuffleHandleInfoWithStageRetry(
+                context.stageId(),
+                context.stageAttemptNumber(),
+                shuffleId,
+                rssHandle.getDependency().partitioner().numPartitions());
       } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
         // In Block Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId
-        shuffleHandleInfo = getRemoteShuffleHandleInfoWithBlockRetry(shuffleId);
+        shuffleHandleInfo =
+            getRemoteShuffleHandleInfoWithBlockRetry(
+                context.stageId(),
+                context.stageAttemptNumber(),
+                shuffleId,
+                rssHandle.getDependency().partitioner().numPartitions());
       } else {
         shuffleHandleInfo =
             new SimpleShuffleHandleInfo(
@@ -500,10 +509,14 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       ShuffleHandleInfo shuffleHandleInfo;
       if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
         // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
-        shuffleHandleInfo = getRemoteShuffleHandleInfoWithStageRetry(shuffleId);
+        shuffleHandleInfo =
+            getRemoteShuffleHandleInfoWithStageRetry(
+                context.stageId(), context.stageAttemptNumber(), shuffleId, partitionNum);
       } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
         // In Block Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId
-        shuffleHandleInfo = getRemoteShuffleHandleInfoWithBlockRetry(shuffleId);
+        shuffleHandleInfo =
+            getRemoteShuffleHandleInfoWithBlockRetry(
+                context.stageId(), context.stageAttemptNumber(), shuffleId, partitionNum);
       } else {
         shuffleHandleInfo =
             new SimpleShuffleHandleInfo(

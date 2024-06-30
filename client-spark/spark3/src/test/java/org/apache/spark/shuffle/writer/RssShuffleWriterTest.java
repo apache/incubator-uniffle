@@ -709,7 +709,8 @@ public class RssShuffleWriterTest {
             fakedTaskMemoryManager,
             new ShuffleWriteMetrics(),
             RssSparkConfig.toRssConf(conf),
-            null);
+            null,
+            0);
 
     Serializer kryoSerializer = new KryoSerializer(conf);
     Partitioner mockPartitioner = mock(Partitioner.class);

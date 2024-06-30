@@ -331,7 +331,8 @@ public class WriteBufferManagerTest {
             mockTaskMemoryManager,
             new ShuffleWriteMetrics(),
             RssSparkConfig.toRssConf(conf),
-            null);
+            null,
+            0);
 
     WriteBufferManager spyManager = spy(wbm);
     doReturn(512L).when(spyManager).acquireMemory(anyLong());
@@ -364,7 +365,8 @@ public class WriteBufferManagerTest {
             mockTaskMemoryManager,
             new ShuffleWriteMetrics(),
             RssSparkConfig.toRssConf(conf),
-            null);
+            null,
+            0);
 
     Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc =
         blocks -> {
@@ -474,7 +476,8 @@ public class WriteBufferManagerTest {
             mockTaskMemoryManager,
             new ShuffleWriteMetrics(),
             RssSparkConfig.toRssConf(conf),
-            null);
+            null,
+            0);
 
     Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc =
         blocks -> {
@@ -563,7 +566,8 @@ public class WriteBufferManagerTest {
             fakedTaskMemoryManager,
             new ShuffleWriteMetrics(),
             RssSparkConfig.toRssConf(conf),
-            null);
+            null,
+            0);
 
     List<ShuffleBlockInfo> blockList = new ArrayList<>();
 
