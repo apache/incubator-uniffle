@@ -74,10 +74,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
-import org.apache.uniffle.common.util.BlockIdLayout;
-import org.apache.uniffle.common.util.JavaUtils;
-import org.apache.uniffle.common.util.RssUtils;
-import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.common.util.*;
 import org.apache.uniffle.shuffle.RssShuffleClientFactory;
 import org.apache.uniffle.shuffle.manager.RssShuffleManagerBase;
 import org.apache.uniffle.shuffle.manager.ShuffleManagerGrpcService;
@@ -531,7 +528,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         this,
         sparkConf,
         shuffleWriteClient,
-        this::getOrCreateShuffleManagerClient,
+        new AutoCloseWrapper<>(this::getOrCreateShuffleManagerClient),
         rssHandle,
         this::markFailedTask,
         context,
@@ -719,7 +716,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             blockIdBitmap, startPartition, endPartition, blockIdLayout),
         taskIdBitmap,
         readMetrics,
-        this::getOrCreateShuffleManagerClient,
+        new AutoCloseWrapper<>(this::getOrCreateShuffleManagerClient),
         RssSparkConfig.toRssConf(sparkConf),
         dataDistributionType,
         shuffleHandleInfo.getAllPartitionServersForReader());

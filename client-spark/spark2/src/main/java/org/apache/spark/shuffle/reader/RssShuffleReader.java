@@ -19,7 +19,6 @@ package org.apache.spark.shuffle.reader;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import scala.Function0;
 import scala.Function2;
@@ -55,6 +54,7 @@ import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.AutoCloseWrapper;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
 
@@ -79,7 +79,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
   private RssConf rssConf;
-  private Supplier<ShuffleManagerClient> lazyShuffleManagerClient;
+  private AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper;
 
   public RssShuffleReader(
       int startPartition,
@@ -94,7 +94,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       Roaring64NavigableMap taskIdBitmap,
       RssConf rssConf,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
-      Supplier<ShuffleManagerClient> lazyShuffleManagerClient) {
+      AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper) {
     this.appId = rssShuffleHandle.getAppId();
     this.startPartition = startPartition;
     this.endPartition = endPartition;
@@ -111,7 +111,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.hadoopConf = hadoopConf;
     this.shuffleServerInfoList = (List<ShuffleServerInfo>) (partitionToServers.get(startPartition));
     this.rssConf = rssConf;
-    this.lazyShuffleManagerClient = lazyShuffleManagerClient;
+    this.managerClientAutoCloseWrapper = managerClientAutoCloseWrapper;
     expectedTaskIdsBitmapFilterEnable = shuffleServerInfoList.size() > 1;
   }
 
@@ -246,7 +246,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
               .shuffleId(shuffleId)
               .partitionId(startPartition)
               .stageAttemptId(context.stageAttemptNumber())
-              .shuffleManagerClientSupplier(lazyShuffleManagerClient)
+              .managerClientAutoCloseWrapper(managerClientAutoCloseWrapper)
               .build(resultIter);
     }
     return resultIter;
