@@ -31,7 +31,6 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
