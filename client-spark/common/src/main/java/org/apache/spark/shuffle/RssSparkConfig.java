@@ -236,6 +236,14 @@ public class RssSparkConfig {
                           + "have to complete within this timeout."))
           .createWithDefault(10);
 
+  public static final ConfigEntry<Boolean> RSS_CLIENT_FORCE_COMMIT_ENABLED =
+      createBooleanBuilder(
+              new ConfigBuilder("spark.rss.client.force.commit.enabled")
+                  .doc(
+                      "If true, the shuffle data will always be committed "
+                          + "regardless of whether the memory storage mode is enabled or not."))
+          .createWithDefault(false);
+
   // When the size of read buffer reaches the half of JVM region (i.e., 32m),
   // it will incur humongous allocation, so we set it to 14m.
   public static final ConfigEntry<String> RSS_CLIENT_READ_BUFFER_SIZE =

@@ -120,6 +120,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final Set<ShuffleServerInfo> shuffleServersForData;
   private final long[] partitionLengths;
   private final boolean isMemoryShuffleEnabled;
+  private final boolean isForceCommitEnabled;
   private final Function<String, Boolean> taskFailureCallback;
   private final Set<Long> blockIds = Sets.newConcurrentHashSet();
   private TaskContext taskContext;
@@ -210,6 +211,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     Arrays.fill(partitionLengths, 0);
     this.isMemoryShuffleEnabled =
         isMemoryShuffleEnabled(sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
+    this.isForceCommitEnabled = sparkConf.get(RssSparkConfig.RSS_CLIENT_FORCE_COMMIT_ENABLED);
     this.taskFailureCallback = taskFailureCallback;
     this.taskContext = context;
     this.sparkConf = sparkConf;
@@ -329,7 +331,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     checkSentBlockCount();
     long commitStartTs = System.currentTimeMillis();
     long checkDuration = commitStartTs - checkStartTs;
-    if (!isMemoryShuffleEnabled) {
+    if (!isMemoryShuffleEnabled || isForceCommitEnabled) {
       sendCommit();
     }
     long writeDurationMs = bufferManager.getWriteTime() + (System.currentTimeMillis() - start);
