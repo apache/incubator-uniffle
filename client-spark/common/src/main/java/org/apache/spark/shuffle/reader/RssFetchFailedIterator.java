@@ -30,12 +30,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleManagerClient;
-import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
-import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
+import org.apache.uniffle.common.util.AutoCloseWrapper;
 
 public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C>> {
   private static final Logger LOG = LoggerFactory.getLogger(RssFetchFailedIterator.class);
@@ -52,8 +51,7 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     private int shuffleId;
     private int partitionId;
     private int stageAttemptId;
-    private String reportServerHost;
-    private int reportServerPort;
+    private AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper;
 
     private Builder() {}
 
@@ -77,19 +75,14 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
       return this;
     }
 
-    Builder reportServerHost(String host) {
-      this.reportServerHost = host;
-      return this;
-    }
-
-    Builder port(int port) {
-      this.reportServerPort = port;
+    Builder managerClientAutoCloseWrapper(
+        AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper) {
+      this.managerClientAutoCloseWrapper = managerClientAutoCloseWrapper;
       return this;
     }
 
     <K, C> RssFetchFailedIterator<K, C> build(Iterator<Product2<K, C>> iter) {
       Objects.requireNonNull(this.appId);
-      Objects.requireNonNull(this.reportServerHost);
       return new RssFetchFailedIterator<>(this, iter);
     }
   }
@@ -98,19 +91,8 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     return new Builder();
   }
 
-  private static ShuffleManagerClient createShuffleManagerClient(String host, int port)
-      throws IOException {
-    ClientType grpc = ClientType.GRPC;
-    // host is passed from spark.driver.bindAddress, which would be set when SparkContext is
-    // constructed.
-    return ShuffleManagerClientFactory.getInstance().createShuffleManagerClient(grpc, host, port);
-  }
-
   private RssException generateFetchFailedIfNecessary(RssFetchFailedException e) {
-    String driver = builder.reportServerHost;
-    int port = builder.reportServerPort;
-    // todo: reuse this manager client if this is a bottleneck.
-    try (ShuffleManagerClient client = createShuffleManagerClient(driver, port)) {
+    try (ShuffleManagerClient client = builder.managerClientAutoCloseWrapper.get()) {
       RssReportShuffleFetchFailureRequest req =
           new RssReportShuffleFetchFailureRequest(
               builder.appId,

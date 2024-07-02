@@ -74,10 +74,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
-import org.apache.uniffle.common.util.BlockIdLayout;
-import org.apache.uniffle.common.util.JavaUtils;
-import org.apache.uniffle.common.util.RssUtils;
-import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.common.util.*;
 import org.apache.uniffle.shuffle.RssShuffleClientFactory;
 import org.apache.uniffle.shuffle.manager.RssShuffleManagerBase;
 import org.apache.uniffle.shuffle.manager.ShuffleManagerGrpcService;
@@ -239,7 +236,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       }
     }
     if (shuffleManagerRpcServiceEnabled) {
-      this.shuffleManagerClient = getOrCreateShuffleManagerClient();
+      getOrCreateShuffleManagerClientWrapper();
     }
     int unregisterThreadPoolSize =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
@@ -253,7 +250,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             .createShuffleWriteClient(
                 RssShuffleClientFactory.newWriteBuilder()
                     .blockIdSelfManagedEnabled(blockIdSelfManagedEnabled)
-                    .shuffleManagerClient(shuffleManagerClient)
+                    .managerClientAutoCloseWrapper(managerClientAutoCloseWrapper)
                     .clientType(clientType)
                     .retryMax(retryMax)
                     .retryIntervalMax(retryIntervalMax)
@@ -534,6 +531,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         this,
         sparkConf,
         shuffleWriteClient,
+        managerClientAutoCloseWrapper,
         rssHandle,
         this::markFailedTask,
         context,
@@ -721,6 +719,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             blockIdBitmap, startPartition, endPartition, blockIdLayout),
         taskIdBitmap,
         readMetrics,
+        managerClientAutoCloseWrapper,
         RssSparkConfig.toRssConf(sparkConf),
         dataDistributionType,
         shuffleHandleInfo.getAllPartitionServersForReader());
@@ -878,6 +877,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
   @Override
   public void stop() {
+    super.stop();
     if (heartBeatScheduledExecutorService != null) {
       heartBeatScheduledExecutorService.shutdownNow();
     }

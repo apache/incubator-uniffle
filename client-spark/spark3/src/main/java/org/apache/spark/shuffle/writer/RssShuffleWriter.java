@@ -17,7 +17,6 @@
 
 package org.apache.spark.shuffle.writer;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -71,7 +70,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
-import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
 import org.apache.uniffle.client.impl.TrackingBlockStatus;
 import org.apache.uniffle.client.request.RssReassignOnBlockSendFailureRequest;
@@ -80,16 +78,15 @@ import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
 import org.apache.uniffle.client.response.RssReassignOnBlockSendFailureResponse;
 import org.apache.uniffle.client.response.RssReassignServersResponse;
 import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
-import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ReceivingFailureServer;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
-import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssSendFailedException;
 import org.apache.uniffle.common.exception.RssWaitFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.AutoCloseWrapper;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_CLIENT_MAP_SIDE_COMBINE_ENABLED;
@@ -140,6 +137,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private static final Set<StatusCode> STATUS_CODE_WITHOUT_BLOCK_RESEND =
       Sets.newHashSet(StatusCode.NO_REGISTER);
 
+  private AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper;
+
   // Only for tests
   @VisibleForTesting
   public RssShuffleWriter(
@@ -152,6 +151,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
+      AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper,
       RssShuffleHandle<K, V, C> rssHandle,
       ShuffleHandleInfo shuffleHandleInfo,
       TaskContext context) {
@@ -164,6 +164,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleManager,
         sparkConf,
         shuffleWriteClient,
+        managerClientAutoCloseWrapper,
         rssHandle,
         (tid) -> true,
         shuffleHandleInfo,
@@ -181,6 +182,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
+      AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper,
       RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback,
       ShuffleHandleInfo shuffleHandleInfo,
@@ -213,6 +215,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.taskFailureCallback = taskFailureCallback;
     this.taskContext = context;
     this.sparkConf = sparkConf;
+    this.managerClientAutoCloseWrapper = managerClientAutoCloseWrapper;
     this.blockFailSentRetryEnabled =
         sparkConf.getBoolean(
             RssSparkConfig.SPARK_RSS_CONFIG_PREFIX
@@ -231,6 +234,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
+      AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper,
       RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback,
       TaskContext context,
@@ -244,6 +248,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleManager,
         sparkConf,
         shuffleWriteClient,
+        managerClientAutoCloseWrapper,
         rssHandle,
         taskFailureCallback,
         shuffleHandleInfo,
@@ -600,42 +605,40 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     LOG.info(
         "Initiate reassignOnBlockSendFailure. failure partition servers: {}",
         failurePartitionToServers);
-    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
-    String driver = rssConf.getString("driver.host", "");
-    int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
-    try (ShuffleManagerClient shuffleManagerClient = createShuffleManagerClient(driver, port)) {
-      String executorId = SparkEnv.get().executorId();
-      long taskAttemptId = taskContext.taskAttemptId();
-      int stageId = taskContext.stageId();
-      int stageAttemptNum = taskContext.stageAttemptNumber();
-      RssReassignOnBlockSendFailureRequest request =
-          new RssReassignOnBlockSendFailureRequest(
-              shuffleId,
-              failurePartitionToServers,
-              executorId,
-              taskAttemptId,
-              stageId,
-              stageAttemptNum);
-      RssReassignOnBlockSendFailureResponse response =
-          shuffleManagerClient.reassignOnBlockSendFailure(request);
-      if (response.getStatusCode() != StatusCode.SUCCESS) {
-        String msg =
-            String.format(
-                "Reassign failed. statusCode: %s, msg: %s",
-                response.getStatusCode(), response.getMessage());
-        throw new RssException(msg);
-      }
-      MutableShuffleHandleInfo handle = MutableShuffleHandleInfo.fromProto(response.getHandle());
-      taskAttemptAssignment.update(handle);
-      LOG.info(
-          "Success to reassign. The latest available assignment is {}",
-          handle.getAvailablePartitionServersForWriter());
-    } catch (Exception e) {
-      throw new RssException(
-          "Errors on reassign on block send failure. failure partition->servers : "
-              + failurePartitionToServers,
-          e);
-    }
+
+    String executorId = SparkEnv.get().executorId();
+    long taskAttemptId = taskContext.taskAttemptId();
+    int stageId = taskContext.stageId();
+    int stageAttemptNum = taskContext.stageAttemptNumber();
+    RssReassignOnBlockSendFailureRequest request =
+        new RssReassignOnBlockSendFailureRequest(
+            shuffleId,
+            failurePartitionToServers,
+            executorId,
+            taskAttemptId,
+            stageId,
+            stageAttemptNum);
+    AutoCloseWrapper.run(
+        managerClientAutoCloseWrapper,
+        (ShuffleManagerClient client) -> {
+          ShuffleManagerClient shuffleManagerClient = client;
+          RssReassignOnBlockSendFailureResponse response =
+              shuffleManagerClient.reassignOnBlockSendFailure(request);
+          if (response.getStatusCode() != StatusCode.SUCCESS) {
+            String msg =
+                String.format(
+                    "Reassign failed. statusCode: %s, msg: %s",
+                    response.getStatusCode(), response.getMessage());
+            throw new RssException(msg);
+          }
+          MutableShuffleHandleInfo handle =
+              MutableShuffleHandleInfo.fromProto(response.getHandle());
+          taskAttemptAssignment.update(handle);
+          LOG.info(
+              "Success to reassign. The latest available assignment is {}",
+              handle.getAvailablePartitionServersForWriter());
+          return true;
+        });
   }
 
   private void reassignAndResendBlocks(Set<TrackingBlockStatus> blocks) {
@@ -817,14 +820,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     return bufferManager;
   }
 
-  private static ShuffleManagerClient createShuffleManagerClient(String host, int port)
-      throws IOException {
-    ClientType grpc = ClientType.GRPC;
-    // Host can be inferred from `spark.driver.bindAddress`, which would be set when SparkContext is
-    // constructed.
-    return ShuffleManagerClientFactory.getInstance().createShuffleManagerClient(grpc, host, port);
-  }
-
   private void throwFetchFailedIfNecessary(Exception e) {
     // The shuffleServer is registered only when a Block fails to be sent
     if (e instanceof RssSendFailedException) {
@@ -839,34 +834,32 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               taskContext.stageAttemptNumber(),
               shuffleServerInfos,
               e.getMessage());
-      RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
-      String driver = rssConf.getString("driver.host", "");
-      int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
-      try (ShuffleManagerClient shuffleManagerClient = createShuffleManagerClient(driver, port)) {
-        RssReportShuffleWriteFailureResponse response =
-            shuffleManagerClient.reportShuffleWriteFailure(req);
-        if (response.getReSubmitWholeStage()) {
-          RssReassignServersRequest rssReassignServersRequest =
-              new RssReassignServersRequest(
-                  taskContext.stageId(),
-                  taskContext.stageAttemptNumber(),
-                  shuffleId,
-                  partitioner.numPartitions());
-          RssReassignServersResponse rssReassignServersResponse =
-              shuffleManagerClient.reassignOnStageResubmit(rssReassignServersRequest);
-          LOG.info(
-              "Whether the reassignment is successful: {}",
-              rssReassignServersResponse.isNeedReassign());
-          // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1 is
-          // provided.
-          FetchFailedException ffe =
-              RssSparkShuffleUtils.createFetchFailedException(
-                  shuffleId, -1, taskContext.stageAttemptNumber(), e);
-          throw new RssException(ffe);
-        }
-      } catch (IOException ioe) {
-        LOG.info("Error closing shuffle manager client with error:", ioe);
-      }
+      AutoCloseWrapper.run(
+          managerClientAutoCloseWrapper,
+          (ShuffleManagerClient client) -> {
+            RssReportShuffleWriteFailureResponse response = client.reportShuffleWriteFailure(req);
+            if (response.getReSubmitWholeStage()) {
+              RssReassignServersRequest rssReassignServersRequest =
+                  new RssReassignServersRequest(
+                      taskContext.stageId(),
+                      taskContext.stageAttemptNumber(),
+                      shuffleId,
+                      partitioner.numPartitions());
+              RssReassignServersResponse rssReassignServersResponse =
+                  client.reassignOnStageResubmit(rssReassignServersRequest);
+              LOG.info(
+                  "Whether the reassignment is successful: {}",
+                  rssReassignServersResponse.isNeedReassign());
+              // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
+              // is
+              // provided.
+              FetchFailedException ffe =
+                  RssSparkShuffleUtils.createFetchFailedException(
+                      shuffleId, -1, taskContext.stageAttemptNumber(), e);
+              throw new RssException(ffe);
+            }
+            return true;
+          });
     }
     throw new RssException(e);
   }

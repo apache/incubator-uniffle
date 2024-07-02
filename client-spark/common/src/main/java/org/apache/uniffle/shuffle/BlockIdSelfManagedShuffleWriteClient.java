@@ -34,6 +34,7 @@ import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.util.AutoCloseWrapper;
 import org.apache.uniffle.common.util.BlockIdLayout;
 
 /**
@@ -41,16 +42,16 @@ import org.apache.uniffle.common.util.BlockIdLayout;
  * driver side.
  */
 public class BlockIdSelfManagedShuffleWriteClient extends ShuffleWriteClientImpl {
-  private ShuffleManagerClient shuffleManagerClient;
+  private AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper;
 
   public BlockIdSelfManagedShuffleWriteClient(
       RssShuffleClientFactory.ExtendWriteClientBuilder builder) {
     super(builder);
 
-    if (builder.getShuffleManagerClient() == null) {
+    if (builder.getManagerClientAutoCloseWrapper() == null) {
       throw new RssException("Illegal empty shuffleManagerClient. This should not happen");
     }
-    this.shuffleManagerClient = builder.getShuffleManagerClient();
+    this.managerClientAutoCloseWrapper = builder.getManagerClientAutoCloseWrapper();
   }
 
   @Override
@@ -73,7 +74,12 @@ public class BlockIdSelfManagedShuffleWriteClient extends ShuffleWriteClientImpl
     RssReportShuffleResultRequest request =
         new RssReportShuffleResultRequest(
             appId, shuffleId, taskAttemptId, partitionToBlockIds, bitmapNum);
-    shuffleManagerClient.reportShuffleResult(request);
+    AutoCloseWrapper.run(
+        managerClientAutoCloseWrapper,
+        (ShuffleManagerClient client) -> {
+          client.reportShuffleResult(request);
+          return true;
+        });
   }
 
   @Override
@@ -85,7 +91,11 @@ public class BlockIdSelfManagedShuffleWriteClient extends ShuffleWriteClientImpl
       int partitionId) {
     RssGetShuffleResultRequest request =
         new RssGetShuffleResultRequest(appId, shuffleId, partitionId, BlockIdLayout.DEFAULT);
-    return shuffleManagerClient.getShuffleResult(request).getBlockIdBitmap();
+    return AutoCloseWrapper.run(
+        managerClientAutoCloseWrapper,
+        (ShuffleManagerClient client) -> {
+          return client.getShuffleResult(request).getBlockIdBitmap();
+        });
   }
 
   @Override
@@ -101,6 +111,10 @@ public class BlockIdSelfManagedShuffleWriteClient extends ShuffleWriteClientImpl
     RssGetShuffleResultForMultiPartRequest request =
         new RssGetShuffleResultForMultiPartRequest(
             appId, shuffleId, partitionIds, BlockIdLayout.DEFAULT);
-    return shuffleManagerClient.getShuffleResultForMultiPart(request).getBlockIdBitmap();
+    return AutoCloseWrapper.run(
+        managerClientAutoCloseWrapper,
+        (ShuffleManagerClient client) -> {
+          return client.getShuffleResultForMultiPart(request).getBlockIdBitmap();
+        });
   }
 }
