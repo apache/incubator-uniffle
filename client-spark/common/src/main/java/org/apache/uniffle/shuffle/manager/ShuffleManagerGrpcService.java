@@ -20,6 +20,7 @@ package org.apache.uniffle.shuffle.manager;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,18 +76,17 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
       code = RssProtos.StatusCode.INVALID_REQUEST;
       reSubmitWholeStage = false;
     } else {
-      Map<String, AtomicInteger> shuffleServerInfoIntegerMap = JavaUtils.newConcurrentMap();
+      Map<String, AtomicInteger> initServerFailures = JavaUtils.newConcurrentMap();
       List<ShuffleServerInfo> shuffleServerInfos =
           ShuffleServerInfo.fromProto(shuffleServerIdsList);
       shuffleServerInfos.forEach(
-          shuffleServerInfo -> {
-            shuffleServerInfoIntegerMap.put(shuffleServerInfo.getId(), new AtomicInteger(0));
-          });
+          shuffleServerInfo ->
+              initServerFailures.computeIfAbsent(
+                  shuffleServerInfo.getId(), key -> new AtomicInteger(0)));
       ShuffleServerFailureRecord shuffleServerFailureRecord =
           shuffleWrtieStatus.computeIfAbsent(
               shuffleId,
-              key ->
-                  new ShuffleServerFailureRecord(shuffleServerInfoIntegerMap, stageAttemptNumber));
+              key -> new ShuffleServerFailureRecord(stageAttemptNumber, initServerFailures));
       boolean resetflag =
           shuffleServerFailureRecord.resetStageAttemptIfNecessary(stageAttemptNumber);
       if (resetflag) {
@@ -99,7 +99,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
         reSubmitWholeStage = false;
       } else {
         code = RssProtos.StatusCode.SUCCESS;
-        // update the stage shuffleServer write failed count
+        // update the stage shuffleServer write failed count.
         boolean fetchFailureflag =
             shuffleServerFailureRecord.incPartitionWriteFailure(
                 stageAttemptNumber, shuffleServerInfos, shuffleManager);
@@ -194,20 +194,55 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
       StreamObserver<RssProtos.ReassignOnStageRetryResponse> responseObserver) {
     RssProtos.ReassignOnStageRetryResponse reply;
     RssProtos.StatusCode code;
+    int stageAttemptId = request.getStageAttemptId();
+    int stageAttemptNumber = request.getStageAttemptNumber();
     int shuffleId = request.getShuffleId();
-    StageAttemptShuffleHandleInfo shuffleHandle =
-        (StageAttemptShuffleHandleInfo) shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
-    if (shuffleHandle != null) {
-      code = RssProtos.StatusCode.SUCCESS;
-      reply =
-          RssProtos.ReassignOnStageRetryResponse.newBuilder()
-              .setStatus(code)
-              .setShuffleHandleInfo(StageAttemptShuffleHandleInfo.toProto(shuffleHandle))
-              .build();
+    int numPartitions = request.getNumPartitions();
+    ShuffleServerFailureRecord shuffleServerFailureRecord = shuffleWrtieStatus.get(shuffleId);
+    StageAttemptShuffleHandleInfo shuffleHandle;
+    if (shuffleServerFailureRecord != null) {
+      boolean shuffleIdAndStageNumber =
+          shuffleServerFailureRecord.getShuffleIdAndStageNumber(stageAttemptNumber);
+      if (shuffleIdAndStageNumber) {
+        // The assignment of the shuffle server is triggered only when no assignment is performed.
+        shuffleManager.reassignOnStageResubmit(
+            stageAttemptId, stageAttemptNumber, shuffleId, numPartitions);
+        shuffleServerFailureRecord.stageAttemptRetryStatuses.alreadyRetryFlag = true;
+        shuffleHandle =
+            (StageAttemptShuffleHandleInfo)
+                shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
+      } else {
+        shuffleHandle =
+            (StageAttemptShuffleHandleInfo)
+                shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
+      }
+      if (shuffleHandle != null) {
+        code = RssProtos.StatusCode.SUCCESS;
+        reply =
+            RssProtos.ReassignOnStageRetryResponse.newBuilder()
+                .setStatus(code)
+                .setShuffleHandleInfo(StageAttemptShuffleHandleInfo.toProto(shuffleHandle))
+                .build();
+      } else {
+        code = RssProtos.StatusCode.INVALID_REQUEST;
+        reply = RssProtos.ReassignOnStageRetryResponse.newBuilder().setStatus(code).build();
+      }
     } else {
-      code = RssProtos.StatusCode.INVALID_REQUEST;
-      reply = RssProtos.ReassignOnStageRetryResponse.newBuilder().setStatus(code).build();
+      shuffleHandle =
+          (StageAttemptShuffleHandleInfo) shuffleManager.getShuffleHandleInfoByShuffleId(shuffleId);
+      if (shuffleHandle != null) {
+        code = RssProtos.StatusCode.SUCCESS;
+        reply =
+            RssProtos.ReassignOnStageRetryResponse.newBuilder()
+                .setStatus(code)
+                .setShuffleHandleInfo(StageAttemptShuffleHandleInfo.toProto(shuffleHandle))
+                .build();
+      } else {
+        code = RssProtos.StatusCode.INVALID_REQUEST;
+        reply = RssProtos.ReassignOnStageRetryResponse.newBuilder().setStatus(code).build();
+      }
     }
+
     responseObserver.onNext(reply);
     responseObserver.onCompleted();
   }
@@ -232,27 +267,6 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
       code = RssProtos.StatusCode.INVALID_REQUEST;
       reply = RssProtos.ReassignOnBlockSendFailureResponse.newBuilder().setStatus(code).build();
     }
-    responseObserver.onNext(reply);
-    responseObserver.onCompleted();
-  }
-
-  @Override
-  public void reassignOnStageResubmit(
-      RssProtos.ReassignServersRequest request,
-      StreamObserver<RssProtos.ReassignServersResponse> responseObserver) {
-    int stageId = request.getStageId();
-    int stageAttemptNumber = request.getStageAttemptNumber();
-    int shuffleId = request.getShuffleId();
-    int numPartitions = request.getNumPartitions();
-    boolean needReassign =
-        shuffleManager.reassignOnStageResubmit(
-            stageId, stageAttemptNumber, shuffleId, numPartitions);
-    RssProtos.StatusCode code = RssProtos.StatusCode.SUCCESS;
-    RssProtos.ReassignServersResponse reply =
-        RssProtos.ReassignServersResponse.newBuilder()
-            .setStatus(code)
-            .setNeedReassign(needReassign)
-            .build();
     responseObserver.onNext(reply);
     responseObserver.onCompleted();
   }
@@ -314,13 +328,15 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
     private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
-    private final Map<String, AtomicInteger> shuffleServerFailureRecordCount;
-    private int stageAttemptNumber;
+    private final Map<String, AtomicInteger> serverFailures;
+    private final StageAttemptRetryStatus stageAttemptRetryStatuses;
+    private int lastStageAttemptNumber;
 
     private ShuffleServerFailureRecord(
-        Map<String, AtomicInteger> shuffleServerFailureRecordCount, int stageAttemptNumber) {
-      this.shuffleServerFailureRecordCount = shuffleServerFailureRecordCount;
-      this.stageAttemptNumber = stageAttemptNumber;
+        int stageAttemptNumber, Map<String, AtomicInteger> initServerFailures) {
+      this.serverFailures = initServerFailures;
+      this.stageAttemptRetryStatuses = new StageAttemptRetryStatus();
+      this.lastStageAttemptNumber = stageAttemptNumber;
     }
 
     private <T> T withReadLock(Supplier<T> fn) {
@@ -342,19 +358,16 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     }
 
     public int getStageAttempt() {
-      return withReadLock(() -> this.stageAttemptNumber);
+      return withReadLock(() -> this.lastStageAttemptNumber);
     }
 
     public boolean resetStageAttemptIfNecessary(int stageAttemptNumber) {
       return withWriteLock(
           () -> {
-            if (this.stageAttemptNumber < stageAttemptNumber) {
-              // a new stage attempt is issued. Record the shuffleServer status of the Map should be
-              // clear and reset.
-              shuffleServerFailureRecordCount.clear();
-              this.stageAttemptNumber = stageAttemptNumber;
+            if (this.lastStageAttemptNumber < stageAttemptNumber) {
+              this.lastStageAttemptNumber = stageAttemptNumber;
               return false;
-            } else if (this.stageAttemptNumber > stageAttemptNumber) {
+            } else if (this.lastStageAttemptNumber > stageAttemptNumber) {
               return true;
             }
             return false;
@@ -367,30 +380,69 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
         RssShuffleManagerInterface shuffleManager) {
       return withWriteLock(
           () -> {
-            if (this.stageAttemptNumber != stageAttemptNumber) {
-              // do nothing here
-              return false;
+            boolean needStageAttemptRetry = false;
+            if (this.lastStageAttemptNumber != stageAttemptNumber) {
+              // If it is not the latest StageAttemptNumber, skip it.
+              return needStageAttemptRetry;
             }
             shuffleServerInfos.forEach(
-                shuffleServerInfo -> {
-                  shuffleServerFailureRecordCount
-                      .computeIfAbsent(shuffleServerInfo.getId(), k -> new AtomicInteger())
-                      .incrementAndGet();
-                });
-            List<Map.Entry<String, AtomicInteger>> list =
-                new ArrayList(shuffleServerFailureRecordCount.entrySet());
-            if (!list.isEmpty()) {
-              Collections.sort(list, (o1, o2) -> (o1.getValue().get() - o2.getValue().get()));
-              Map.Entry<String, AtomicInteger> shuffleServerInfoIntegerEntry = list.get(0);
-              if (shuffleServerInfoIntegerEntry.getValue().get()
-                  > shuffleManager.getMaxFetchFailures()) {
-                shuffleManager.addFailuresShuffleServerInfos(
-                    shuffleServerInfoIntegerEntry.getKey());
-                return true;
+                shuffleServerInfo ->
+                    serverFailures
+                        .computeIfAbsent(shuffleServerInfo.getId(), key -> new AtomicInteger())
+                        .incrementAndGet());
+            List<Map.Entry<String, AtomicInteger>> serverFailuresList =
+                new ArrayList(serverFailures.entrySet());
+            if (serverFailuresList.isEmpty()) {
+              return needStageAttemptRetry;
+            } else {
+              Collections.sort(
+                  serverFailuresList, Comparator.comparingInt(o -> o.getValue().get()));
+              // Sort the number of Server failures from smallest to largest, and jump out of the
+              // loop when the first one is found that is not greater than the maximum number of
+              // failures.
+              for (int i = 0; i < serverFailuresList.size(); i++) {
+                Map.Entry<String, AtomicInteger> serverFailure = serverFailuresList.get(i);
+                if (serverFailure.getValue().get() > shuffleManager.getMaxFetchFailures()) {
+                  shuffleManager.addFailuresShuffleServerInfos(serverFailure.getKey());
+                  needStageAttemptRetry = true;
+                } else {
+                  needStageAttemptRetry = false;
+                  break;
+                }
               }
+              if (needStageAttemptRetry) {
+                stageAttemptRetryStatuses.needRetryFlag = true;
+              }
+              return needStageAttemptRetry;
             }
-            return false;
           });
+    }
+
+    public boolean getShuffleIdAndStageNumber(int stageAttemptNumber) {
+      return withReadLock(
+          () -> {
+            if (stageAttemptNumber == 0 || lastStageAttemptNumber != stageAttemptNumber - 1) {
+              return false;
+            }
+            return stageAttemptRetryStatuses.needRetryFlag
+                && !stageAttemptRetryStatuses.alreadyRetryFlag;
+          });
+    }
+  }
+
+  private static class StageAttemptRetryStatus {
+    /** Record the serial number of this Stage attempt to retry. */
+    private boolean needRetryFlag;
+    /** Records whether the sequence number of this Stage attempt has been retried. */
+    private boolean alreadyRetryFlag;
+
+    private StageAttemptRetryStatus() {
+      this(false, false);
+    }
+
+    private StageAttemptRetryStatus(boolean needRetryFlag, boolean alreadyRetryFlag) {
+      this.needRetryFlag = needRetryFlag;
+      this.alreadyRetryFlag = alreadyRetryFlag;
     }
   }
 
