@@ -39,7 +39,7 @@
       <el-table-column prop="status" label="Status" min-width="80" />
       <el-table-column
         prop="timestamp"
-        label="RegistrationTime"
+        label="HeartbeatTime"
         min-width="80"
         :formatter="dateFormatter"
       />
