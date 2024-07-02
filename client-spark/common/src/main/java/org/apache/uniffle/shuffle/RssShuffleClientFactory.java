@@ -17,12 +17,11 @@
 
 package org.apache.uniffle.shuffle;
 
-import java.util.function.Supplier;
-
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
+import org.apache.uniffle.common.util.AutoCloseWrapper;
 
 public class RssShuffleClientFactory extends ShuffleClientFactory {
 
@@ -43,18 +42,19 @@ public class RssShuffleClientFactory extends ShuffleClientFactory {
   public static class ExtendWriteClientBuilder<T extends ExtendWriteClientBuilder<T>>
       extends WriteClientBuilder<T> {
     private boolean blockIdSelfManagedEnabled;
-    private Supplier<ShuffleManagerClient> shuffleManagerClientSupplier;
+    private AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper;
 
     public boolean isBlockIdSelfManagedEnabled() {
       return blockIdSelfManagedEnabled;
     }
 
-    public ShuffleManagerClient getShuffleManagerClient() {
-      return shuffleManagerClientSupplier.get();
+    public AutoCloseWrapper<ShuffleManagerClient> getManagerClientAutoCloseWrapper() {
+      return managerClientAutoCloseWrapper;
     }
 
-    public T shuffleManagerClientSupplier(Supplier<ShuffleManagerClient> clientSupplier) {
-      this.shuffleManagerClientSupplier = clientSupplier;
+    public T managerClientAutoCloseWrapper(
+        AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper) {
+      this.managerClientAutoCloseWrapper = managerClientAutoCloseWrapper;
       return self();
     }
 

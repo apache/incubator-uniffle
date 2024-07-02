@@ -81,6 +81,7 @@ import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.AutoCloseWrapper;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.shuffle.BlockIdManager;
 
@@ -103,7 +104,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   protected String clientType;
 
   protected SparkConf sparkConf;
-  protected ShuffleManagerClient shuffleManagerClient;
+  protected AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper;
   protected boolean rssStageRetryEnabled;
   protected boolean rssStageRetryForWriteFailureEnabled;
   protected boolean rssStageRetryForFetchFailureEnabled;
@@ -585,15 +586,19 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
    */
   protected synchronized StageAttemptShuffleHandleInfo getRemoteShuffleHandleInfoWithStageRetry(
       int shuffleId) {
-    RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
-        new RssPartitionToShuffleServerRequest(shuffleId);
-    RssReassignOnStageRetryResponse rpcPartitionToShufflerServer =
-        getOrCreateShuffleManagerClient()
-            .getPartitionToShufflerServerWithStageRetry(rssPartitionToShuffleServerRequest);
-    StageAttemptShuffleHandleInfo shuffleHandleInfo =
-        StageAttemptShuffleHandleInfo.fromProto(
-            rpcPartitionToShufflerServer.getShuffleHandleInfoProto());
-    return shuffleHandleInfo;
+    return AutoCloseWrapper.run(
+        getOrCreateShuffleManagerClientWrapper(),
+        (ShuffleManagerClient shuffleManagerClient) -> {
+          RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
+              new RssPartitionToShuffleServerRequest(shuffleId);
+          RssReassignOnStageRetryResponse rpcPartitionToShufflerServer =
+              shuffleManagerClient.getPartitionToShufflerServerWithStageRetry(
+                  rssPartitionToShuffleServerRequest);
+          StageAttemptShuffleHandleInfo shuffleHandleInfo =
+              StageAttemptShuffleHandleInfo.fromProto(
+                  rpcPartitionToShufflerServer.getShuffleHandleInfoProto());
+          return shuffleHandleInfo;
+        });
   }
 
   /**
@@ -604,28 +609,32 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
    */
   protected synchronized MutableShuffleHandleInfo getRemoteShuffleHandleInfoWithBlockRetry(
       int shuffleId) {
-    RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
-        new RssPartitionToShuffleServerRequest(shuffleId);
-    RssReassignOnBlockSendFailureResponse rpcPartitionToShufflerServer =
-        getOrCreateShuffleManagerClient()
-            .getPartitionToShufflerServerWithBlockRetry(rssPartitionToShuffleServerRequest);
-    MutableShuffleHandleInfo shuffleHandleInfo =
-        MutableShuffleHandleInfo.fromProto(rpcPartitionToShufflerServer.getHandle());
-    return shuffleHandleInfo;
+    return AutoCloseWrapper.run(
+        getOrCreateShuffleManagerClientWrapper(),
+        (ShuffleManagerClient shuffleManagerClient) -> {
+          RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
+              new RssPartitionToShuffleServerRequest(shuffleId);
+          RssReassignOnBlockSendFailureResponse rpcPartitionToShufflerServer =
+              shuffleManagerClient.getPartitionToShufflerServerWithBlockRetry(
+                  rssPartitionToShuffleServerRequest);
+          MutableShuffleHandleInfo shuffleHandleInfo =
+              MutableShuffleHandleInfo.fromProto(rpcPartitionToShufflerServer.getHandle());
+          return shuffleHandleInfo;
+        });
   }
 
-  // todo: automatic close client when the client is idle to avoid too much connections for spark
-  // driver.
-  protected ShuffleManagerClient getOrCreateShuffleManagerClient() {
-    if (shuffleManagerClient == null) {
+  protected AutoCloseWrapper<ShuffleManagerClient> getOrCreateShuffleManagerClientWrapper() {
+    if (managerClientAutoCloseWrapper == null) {
       RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
       String driver = rssConf.getString("driver.host", "");
       int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
-      this.shuffleManagerClient =
-          ShuffleManagerClientFactory.getInstance()
-              .createShuffleManagerClient(ClientType.GRPC, driver, port);
+      this.managerClientAutoCloseWrapper =
+          new AutoCloseWrapper<>(
+              () ->
+                  ShuffleManagerClientFactory.getInstance()
+                      .createShuffleManagerClient(ClientType.GRPC, driver, port));
     }
-    return shuffleManagerClient;
+    return managerClientAutoCloseWrapper;
   }
 
   @Override
@@ -810,9 +819,9 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
 
   @Override
   public void stop() {
-    if (shuffleManagerClient != null) {
+    if (managerClientAutoCloseWrapper != null) {
       try {
-        shuffleManagerClient.close();
+        managerClientAutoCloseWrapper.forceClose();
       } catch (IOException e) {
         LOG.warn("Errors on closing shuffleManagerClient", e);
       }

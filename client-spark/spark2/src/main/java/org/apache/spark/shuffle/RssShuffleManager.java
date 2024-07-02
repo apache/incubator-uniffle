@@ -65,7 +65,6 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.rpc.GrpcServer;
-import org.apache.uniffle.common.util.AutoCloseWrapper;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -220,7 +219,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               .createShuffleWriteClient(
                   RssShuffleClientFactory.newWriteBuilder()
                       .blockIdSelfManagedEnabled(blockIdSelfManagedEnabled)
-                      .shuffleManagerClientSupplier(this::getOrCreateShuffleManagerClient)
+                      .managerClientAutoCloseWrapper(getOrCreateShuffleManagerClient())
                       .clientType(clientType)
                       .retryMax(retryMax)
                       .retryIntervalMax(retryIntervalMax)
@@ -443,7 +442,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           this,
           sparkConf,
           shuffleWriteClient,
-          new AutoCloseWrapper<>(this::getOrCreateShuffleManagerClient),
+          getOrCreateShuffleManagerClient(),
           rssHandle,
           this::markFailedTask,
           context,
@@ -549,7 +548,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           taskIdBitmap,
           RssSparkConfig.toRssConf(sparkConf),
           partitionToServers,
-          new AutoCloseWrapper<>(this::getOrCreateShuffleManagerClient));
+          getOrCreateShuffleManagerClient());
     } else {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }

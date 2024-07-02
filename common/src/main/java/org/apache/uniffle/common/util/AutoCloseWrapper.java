@@ -24,6 +24,8 @@ import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import org.apache.uniffle.common.exception.RssException;
+
 public class AutoCloseWrapper<T extends Closeable> implements Closeable {
   private static final AtomicInteger REF_COUNTER = new AtomicInteger();
   private volatile T t;
@@ -64,8 +66,27 @@ public class AutoCloseWrapper<T extends Closeable> implements Closeable {
     }
   }
 
+  public void forceClose() throws IOException {
+    while (t != null) {
+      this.close();
+    }
+  }
+
   @VisibleForTesting
   public int getRefCount() {
     return REF_COUNTER.get();
+  }
+
+  public static <T, X extends Closeable> T run(
+      AutoCloseWrapper<X> autoCloseWrapper, AutoCloseCmd<T, X> cmd) {
+    try (AutoCloseWrapper<X> wrapper = autoCloseWrapper) {
+      return cmd.execute(wrapper.get());
+    } catch (IOException e) {
+      throw new RssException("Error closing client with error:", e);
+    }
+  }
+
+  public interface AutoCloseCmd<T, X> {
+    T execute(X x);
   }
 }

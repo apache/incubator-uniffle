@@ -247,7 +247,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             .createShuffleWriteClient(
                 RssShuffleClientFactory.newWriteBuilder()
                     .blockIdSelfManagedEnabled(blockIdSelfManagedEnabled)
-                    .shuffleManagerClientSupplier(this::getOrCreateShuffleManagerClient)
+                    .managerClientAutoCloseWrapper(getOrCreateShuffleManagerClientWrapper())
                     .clientType(clientType)
                     .retryMax(retryMax)
                     .retryIntervalMax(retryIntervalMax)
@@ -528,7 +528,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         this,
         sparkConf,
         shuffleWriteClient,
-        new AutoCloseWrapper<>(this::getOrCreateShuffleManagerClient),
+        getOrCreateShuffleManagerClientWrapper(),
         rssHandle,
         this::markFailedTask,
         context,
@@ -716,7 +716,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             blockIdBitmap, startPartition, endPartition, blockIdLayout),
         taskIdBitmap,
         readMetrics,
-        new AutoCloseWrapper<>(this::getOrCreateShuffleManagerClient),
+        getOrCreateShuffleManagerClientWrapper(),
         RssSparkConfig.toRssConf(sparkConf),
         dataDistributionType,
         shuffleHandleInfo.getAllPartitionServersForReader());
