@@ -545,7 +545,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               taskContext.stageAttemptNumber(),
               shuffleServerInfos,
               e.getMessage());
-      try (ShuffleManagerClient shuffleManagerClient = managerClientAutoCloseWrapper.get()) {
+      try (AutoCloseWrapper<ShuffleManagerClient> wrapper = managerClientAutoCloseWrapper) {
+        ShuffleManagerClient shuffleManagerClient = wrapper.get();
         RssReportShuffleWriteFailureResponse response =
             shuffleManagerClient.reportShuffleWriteFailure(req);
         if (response.getReSubmitWholeStage()) {

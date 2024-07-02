@@ -17,13 +17,15 @@
 
 package org.apache.uniffle.common.util;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 public class AutoCloseWrapper<T extends Closeable> implements Closeable {
-  private static final AtomicLong REF_COUNTER = new AtomicLong();
+  private static final AtomicInteger REF_COUNTER = new AtomicInteger();
   private volatile T t;
   private Supplier<T> cf;
 
@@ -32,23 +34,22 @@ public class AutoCloseWrapper<T extends Closeable> implements Closeable {
   }
 
   public T get() {
-    synchronized (this) {
-      if (t == null) {
+    if (t == null) {
         synchronized (this) {
-          t = cf.get();
+          if(t == null){
+            t = cf.get();
+          }
         }
-      }
     }
     REF_COUNTER.incrementAndGet();
     return t;
   }
 
   @Override
-  public void close() throws IOException {
-    while (true) {
-      long count = REF_COUNTER.get();
+  public synchronized void close() throws IOException {
+      int count = REF_COUNTER.get();
       if (count == 0 || t == null) {
-        break;
+        return;
       }
       if (REF_COUNTER.compareAndSet(count, count - 1)) {
         if (count == 1) {
@@ -59,9 +60,12 @@ public class AutoCloseWrapper<T extends Closeable> implements Closeable {
           } finally {
             t = null;
           }
-          break;
         }
       }
-    }
+  }
+
+  @VisibleForTesting
+  public int getRefCount(){
+   return REF_COUNTER.get();
   }
 }
