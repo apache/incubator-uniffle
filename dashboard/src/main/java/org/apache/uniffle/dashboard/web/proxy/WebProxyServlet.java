@@ -44,6 +44,14 @@ public class WebProxyServlet extends ProxyServlet {
     }
     String targetAddress =
         coordinatorServerAddressesMap.get(clientRequest.getHeader("targetAddress"));
+    if (targetAddress == null) {
+      // Get random one from coordinatorServerAddressesMap
+      if (coordinatorServerAddressesMap.isEmpty()) {
+        LOG.error("No coordinator server address found.");
+        return null;
+      }
+      targetAddress = coordinatorServerAddressesMap.values().iterator().next();
+    }
     StringBuilder target = new StringBuilder();
     if (targetAddress.endsWith("/")) {
       targetAddress = targetAddress.substring(0, targetAddress.length() - 1);
