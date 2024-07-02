@@ -44,6 +44,9 @@ public class WebProxyServlet extends ProxyServlet {
     }
     String targetAddress =
         coordinatorServerAddressesMap.get(clientRequest.getHeader("targetAddress"));
+    if (targetAddress == null) {
+      return null;
+    }
     StringBuilder target = new StringBuilder();
     if (targetAddress.endsWith("/")) {
       targetAddress = targetAddress.substring(0, targetAddress.length() - 1);
