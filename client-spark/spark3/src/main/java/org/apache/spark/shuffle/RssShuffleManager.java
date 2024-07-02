@@ -284,7 +284,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.partitionReassignMaxServerNum =
         rssConf.get(RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM);
     this.shuffleHandleInfoManager = new ShuffleHandleInfoManager();
-    this.rssStageResubmitManager = new RssStageResubmitManager();
+    this.rssStageResubmitManager = new RssStageResubmitManager(sparkConf);
   }
 
   public CompletableFuture<Long> sendData(AddBlockEvent event) {
@@ -378,7 +378,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.partitionReassignMaxServerNum =
         rssConf.get(RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM);
     this.shuffleHandleInfoManager = new ShuffleHandleInfoManager();
-    this.rssStageResubmitManager = new RssStageResubmitManager();
+    this.rssStageResubmitManager = new RssStageResubmitManager(sparkConf);
   }
 
   // This method is called in Spark driver side,
@@ -464,7 +464,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             1,
             requiredShuffleServerNumber,
             estimateTaskConcurrency,
-            rssStageResubmitManager.getServerIdBlackList(),
+            rssStageResubmitManager.getBlackListedServerIds(),
             0);
     startHeartbeat();
     shuffleIdToPartitionNum.putIfAbsent(shuffleId, dependency.partitioner().numPartitions());
@@ -525,11 +525,24 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               shuffleId, rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
     }
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
+//    return new RssShuffleWriter<>(
+//        rssHandle.getAppId(),
+//        shuffleId,
+//        taskId,
+//        getTaskAttemptIdForBlockId(context.partitionId(), context.attemptNumber()),
+//        writeMetrics,
+//        this,
+//        sparkConf,
+//        shuffleWriteClient,
+//        rssHandle,
+//        this::markFailedTask,
+//        context,
+//        shuffleHandleInfo);
     return new RssShuffleWriter<>(
         rssHandle.getAppId(),
         shuffleId,
         taskId,
-        getTaskAttemptIdForBlockId(context.partitionId(), context.attemptNumber()),
+        context.taskAttemptId(),
         writeMetrics,
         this,
         sparkConf,
@@ -1053,7 +1066,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           appId,
           shuffleId,
           failedPartitions,
-          replicaRequirementTracking);
+          replicaRequirementTracking,
+          stageAttemptId);
     } catch (RssFetchFailedException e) {
       throw RssSparkShuffleUtils.reportRssFetchFailedException(
           e, sparkConf, appId, shuffleId, stageAttemptId, failedPartitions);

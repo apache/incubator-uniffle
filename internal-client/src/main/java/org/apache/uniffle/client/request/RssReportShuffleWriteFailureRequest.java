@@ -31,18 +31,30 @@ public class RssReportShuffleWriteFailureRequest {
   private int stageAttemptNumber;
   private List<ShuffleServerInfo> shuffleServerInfos;
   private String exception;
+  private int stageId;
+  private long taskAttemptId;
+  private int taskAttemptNumber;
+  private String executorId;
 
   public RssReportShuffleWriteFailureRequest(
       String appId,
       int shuffleId,
       int stageAttemptNumber,
       List<ShuffleServerInfo> shuffleServerInfos,
-      String exception) {
+      String exception,
+      int stageId,
+      long taskAttemptId,
+      int taskAttemptNumber,
+      String executorId) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.stageAttemptNumber = stageAttemptNumber;
     this.shuffleServerInfos = shuffleServerInfos;
     this.exception = exception;
+    this.stageId = stageId;
+    this.taskAttemptId = taskAttemptId;
+    this.taskAttemptNumber = taskAttemptNumber;
+    this.executorId = executorId;
   }
 
   public ReportShuffleWriteFailureRequest toProto() {
@@ -61,7 +73,11 @@ public class RssReportShuffleWriteFailureRequest {
         .setAppId(appId)
         .setShuffleId(shuffleId)
         .setStageAttemptNumber(stageAttemptNumber)
-        .addAllShuffleServerIds(shuffleServerIds);
+        .addAllShuffleServerIds(shuffleServerIds)
+        .setStageId(stageId)
+        .setTaskAttemptId(taskAttemptId)
+        .setTaskAttemptNumber(taskAttemptNumber)
+        .setExecutorId(executorId);
     if (exception != null) {
       builder.setException(exception);
     }

@@ -19,6 +19,7 @@ package org.apache.uniffle.server.storage;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,6 +29,7 @@ import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.server.event.ShufflePurgeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +103,9 @@ public class HadoopStorageManager extends SingleStorageManager {
         storage.removeHandlers(appId);
         appIdToStorages.remove(appId);
         purgeForExpired = ((AppPurgeEvent) event).isAppExpired();
+      }
+      if (event instanceof ShufflePurgeEvent) {
+        storage.removeHandlers(appId, new HashSet<>(event.getShuffleIds()));
       }
       ShuffleDeleteHandler deleteHandler =
           ShuffleHandlerFactory.getInstance()

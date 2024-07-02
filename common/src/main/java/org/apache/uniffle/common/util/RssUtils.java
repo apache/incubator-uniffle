@@ -269,6 +269,10 @@ public class RssUtils {
     return clone;
   }
 
+  public static String generateShuffleKeyWithSplitKey(String appId, int shuffleId) {
+    return String.join(Constants.KEY_SPLIT_CHAR, appId, String.valueOf(shuffleId), "");
+  }
+
   public static String generateShuffleKey(String appId, int shuffleId) {
     return String.join(Constants.KEY_SPLIT_CHAR, appId, String.valueOf(shuffleId));
   }

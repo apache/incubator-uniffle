@@ -21,6 +21,7 @@ import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import java.util.Set;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
@@ -28,8 +29,11 @@ import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractStorage implements Storage {
+  private static final Logger LOGGER = LoggerFactory.getLogger(AbstractStorage.class);
 
   private Map<String, Map<String, ShuffleWriteHandler>> writerHandlers =
       JavaUtils.newConcurrentMap();
@@ -51,6 +55,7 @@ public abstract class AbstractStorage implements Storage {
     Map<String, CreateShuffleWriteHandlerRequest> requestMap = requests.get(request.getAppId());
     requestMap.putIfAbsent(partitionKey, request);
     return map.get(partitionKey);
+//    return newWriteHandler(request);
   }
 
   @Override
@@ -64,6 +69,7 @@ public abstract class AbstractStorage implements Storage {
         RssUtils.generatePartitionKey(request.getAppId(), request.getShuffleId(), range[0]);
     map.computeIfAbsent(partitionKey, key -> newReadHandler(request));
     return map.get(partitionKey);
+//    return newReadHandler(request);
   }
 
   protected abstract ServerReadHandler newReadHandler(CreateShuffleReadHandlerRequest request);
@@ -82,6 +88,15 @@ public abstract class AbstractStorage implements Storage {
     writerHandlers.remove(appId);
     readerHandlers.remove(appId);
     requests.remove(appId);
+  }
+
+  @Override
+  public void removeHandlers(String appId, Set<Integer> shuffleIds) {
+    long start = System.currentTimeMillis();
+    LOGGER.info("Removing handlers....");
+//    writerHandlers.clear();
+//    readerHandlers.clear();
+    LOGGER.info("Removed the handlers for appId:{}, shuffleId:{} costs {} ms", appId, shuffleIds, System.currentTimeMillis() - start);
   }
 
   @VisibleForTesting

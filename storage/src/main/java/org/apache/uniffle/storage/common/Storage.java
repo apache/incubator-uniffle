@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.common;
 
 import java.io.IOException;
 
+import java.util.Set;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
@@ -38,6 +39,8 @@ public interface Storage {
   ServerReadHandler getOrCreateReadHandler(CreateShuffleReadHandlerRequest request);
 
   void removeHandlers(String appId);
+
+  void removeHandlers(String appId, Set<Integer> shuffleIds);
 
   void createMetadataIfNotExist(String shuffleKey);
 

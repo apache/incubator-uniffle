@@ -18,6 +18,8 @@
 package org.apache.uniffle.shuffle.manager;
 
 import io.grpc.stub.StreamObserver;
+import org.apache.spark.SparkConf;
+import org.apache.spark.shuffle.RssStageResubmitManager;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -41,6 +43,8 @@ public class ShuffleManagerGrpcServiceTest {
   private static final int shuffleId = 0;
   private static final int numMaps = 100;
   private static final int numReduces = 10;
+  private static final RssStageResubmitManager stageResubmitManager =
+      new RssStageResubmitManager(new SparkConf());
 
   private static class MockedStreamObserver<T> implements StreamObserver<T> {
     T value;
@@ -70,6 +74,7 @@ public class ShuffleManagerGrpcServiceTest {
     Mockito.when(mockShuffleManager.getNumMaps(shuffleId)).thenReturn(numMaps);
     Mockito.when(mockShuffleManager.getPartitionNum(shuffleId)).thenReturn(numReduces);
     Mockito.when(mockShuffleManager.getMaxFetchFailures()).thenReturn(maxFetchFailures);
+    Mockito.when(mockShuffleManager.getStageResubmitManager()).thenReturn(stageResubmitManager);
   }
 
   @Test

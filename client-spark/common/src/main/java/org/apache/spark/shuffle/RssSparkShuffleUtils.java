@@ -20,6 +20,7 @@ package org.apache.spark.shuffle;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +34,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.apache.spark.SparkEnv;
+import org.apache.spark.TaskContext;
+import org.apache.spark.TaskContext$;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.deploy.SparkHadoopUtil;
 import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
@@ -360,6 +364,7 @@ public class RssSparkShuffleUtils {
       try (ShuffleManagerClient client =
           ShuffleManagerClientFactory.getInstance()
               .createShuffleManagerClient(ClientType.GRPC, driver, port)) {
+        TaskContext taskContext = TaskContext$.MODULE$.get();
         // todo: Create a new rpc interface to report failures in batch.
         for (int partitionId : failedPartitions) {
           RssReportShuffleFetchFailureRequest req =
@@ -368,15 +373,23 @@ public class RssSparkShuffleUtils {
                   shuffleId,
                   stageAttemptId,
                   partitionId,
-                  rssFetchFailedException.getMessage());
+                  rssFetchFailedException.getMessage(),
+                  new ArrayList<>(rssFetchFailedException.getFetchFailureServerIds()),
+                  taskContext.stageId(),
+                  taskContext.taskAttemptId(),
+                  taskContext.attemptNumber(),
+                  SparkEnv.get().executorId());
           RssReportShuffleFetchFailureResponse response = client.reportShuffleFetchFailure(req);
           if (response.getReSubmitWholeStage()) {
+            LOG.error("Task:{}-{} is throwing the spark's fetchFailure exception to trigger stage retry as [{}]", taskContext.taskAttemptId(), taskContext.attemptNumber(), response.getMessage());
             // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
             // is provided.
             FetchFailedException ffe =
                 RssSparkShuffleUtils.createFetchFailedException(
                     shuffleId, -1, partitionId, rssFetchFailedException);
             return new RssException(ffe);
+          } else {
+            LOG.warn("Task:{}-{} haven't receive the shuffle manager's retry signal as [{}]", taskContext.taskAttemptId(), taskContext.attemptNumber(), response.getMessage());
           }
         }
       } catch (IOException ioe) {

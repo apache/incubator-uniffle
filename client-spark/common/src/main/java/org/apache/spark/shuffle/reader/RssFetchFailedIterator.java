@@ -18,12 +18,16 @@
 package org.apache.spark.shuffle.reader;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Objects;
 
 import scala.Product2;
 import scala.collection.AbstractIterator;
 import scala.collection.Iterator;
 
+import org.apache.spark.SparkEnv;
+import org.apache.spark.TaskContext;
+import org.apache.spark.TaskContext$;
 import org.apache.spark.shuffle.FetchFailedException;
 import org.apache.spark.shuffle.RssSparkShuffleUtils;
 import org.slf4j.Logger;
@@ -111,13 +115,19 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     int port = builder.reportServerPort;
     // todo: reuse this manager client if this is a bottleneck.
     try (ShuffleManagerClient client = createShuffleManagerClient(driver, port)) {
+      TaskContext taskContext = TaskContext$.MODULE$.get();
       RssReportShuffleFetchFailureRequest req =
           new RssReportShuffleFetchFailureRequest(
               builder.appId,
               builder.shuffleId,
               builder.stageAttemptId,
               builder.partitionId,
-              e.getMessage());
+              e.getMessage(),
+              new ArrayList<>(e.getFetchFailureServerIds()),
+              taskContext.stageId(),
+              taskContext.taskAttemptId(),
+              taskContext.attemptNumber(),
+              SparkEnv.get().executorId());
       RssReportShuffleFetchFailureResponse response = client.reportShuffleFetchFailure(req);
       if (response.getReSubmitWholeStage()) {
         // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1 is

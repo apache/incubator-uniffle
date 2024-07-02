@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.spark.SparkConf;
+import org.apache.spark.shuffle.RssStageResubmitManager;
 import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 
@@ -30,6 +32,8 @@ import org.apache.uniffle.shuffle.BlockIdManager;
 
 public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   public Set<Integer> unregisteredShuffleIds = new LinkedHashSet<>();
+  private RssStageResubmitManager stageResubmitManager =
+      new RssStageResubmitManager(new SparkConf());
 
   @Override
   public String getAppId() {
@@ -67,7 +71,7 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   }
 
   @Override
-  public void addFailuresShuffleServerInfos(String shuffleServerId) {}
+  public void addFaultShuffleServer(String shuffleServerId) {}
 
   @Override
   public boolean reassignOnStageResubmit(
@@ -82,5 +86,10 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
       int shuffleId,
       Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
     return null;
+  }
+
+  @Override
+  public RssStageResubmitManager getStageResubmitManager() {
+    return stageResubmitManager;
   }
 }

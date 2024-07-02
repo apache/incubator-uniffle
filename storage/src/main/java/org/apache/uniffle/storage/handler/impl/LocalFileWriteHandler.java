@@ -88,6 +88,7 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
     File baseFolder = new File(basePath);
     if (!baseFolder.exists()) {
       LOG.warn("{} don't exist, the app or shuffle may be deleted", baseFolder.getAbsolutePath());
+      createBasePath();
       return;
     }
 

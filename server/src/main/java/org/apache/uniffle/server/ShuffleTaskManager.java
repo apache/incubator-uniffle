@@ -733,13 +733,17 @@ public class ShuffleTaskManager {
         > appExpiredWithoutHB;
   }
 
+  public void removeResourcesByShuffleIds(String appId, List<Integer> shuffleIds) {
+    removeResourcesByShuffleIds(appId, shuffleIds, false, 0);
+  }
+
   /**
    * Clear up the partial resources of shuffleIds of App.
    *
    * @param appId
    * @param shuffleIds
    */
-  public void removeResourcesByShuffleIds(String appId, List<Integer> shuffleIds) {
+  public void removeResourcesByShuffleIds(String appId, List<Integer> shuffleIds, boolean isLazyDeletion, int stageAttemptNumber) {
     Lock writeLock = getAppWriteLock(appId);
     writeLock.lock();
     try {
@@ -755,6 +759,7 @@ public class ShuffleTaskManager {
           taskInfo.getCachedBlockIds().remove(shuffleId);
           taskInfo.getCommitCounts().remove(shuffleId);
           taskInfo.getCommitLocks().remove(shuffleId);
+          taskInfo.clearBlockNumber(shuffleId);
         }
       }
       Optional.ofNullable(partitionsToBlockIds.get(appId))
@@ -767,7 +772,7 @@ public class ShuffleTaskManager {
       shuffleBufferManager.removeBufferByShuffleId(appId, shuffleIds);
       shuffleFlushManager.removeResourcesOfShuffleId(appId, shuffleIds);
       storageManager.removeResources(
-          new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds));
+          new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds, isLazyDeletion, stageAttemptNumber));
       LOG.info(
           "Finish remove resource for appId[{}], shuffleIds[{}], cost[{}]",
           appId,
@@ -912,6 +917,10 @@ public class ShuffleTaskManager {
   @VisibleForTesting
   public void removeShuffleDataSync(String appId, int shuffleId) {
     removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId));
+  }
+
+  public void removeShuffleForStageRetry(String appId, int shuffleId, int stageAttemptNumber) {
+    removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId), true, stageAttemptNumber);
   }
 
   public ShuffleDataDistributionType getDataDistributionType(String appId) {

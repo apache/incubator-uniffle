@@ -100,8 +100,13 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
     }
     spark = SparkSession.builder().config(sparkConf).getOrCreate();
     Map result = runTest(spark, testFileName);
+    injectBeforeStop(sparkConf);
     spark.stop();
     return result;
+  }
+
+  protected void injectBeforeStop(SparkConf conf) throws InterruptedException {
+
   }
 
   protected SparkConf createSparkConf() {

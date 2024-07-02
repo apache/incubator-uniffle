@@ -229,6 +229,10 @@ public class ShuffleTaskInfo {
     return counter.get();
   }
 
+  public void clearBlockNumber(int shuffleId) {
+    partitionBlockCounters.remove(shuffleId);
+  }
+
   public Integer getLatestStageAttemptNumber(int shuffleId) {
     return latestStageAttemptNumbers.computeIfAbsent(shuffleId, key -> 0);
   }

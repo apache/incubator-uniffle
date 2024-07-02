@@ -41,6 +41,8 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
   private int retryMax;
   private long retryIntervalMax;
 
+  private long blockCounter;
+
   public MemoryClientReadHandler(
       String appId,
       int shuffleId,
@@ -104,6 +106,11 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
       lastBlockId = bufferSegments.get(bufferSegments.size() - 1).getBlockId();
     }
 
+    blockCounter += result.getBufferSegments().size();
     return result;
+  }
+
+  public long getBlockCounter() {
+    return blockCounter;
   }
 }

@@ -37,6 +37,7 @@ import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleIndexResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.NotRetryException;
@@ -304,8 +305,12 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
                 + ", errorMsg:"
                 + getMemoryShuffleDataResponse.getRetMessage();
         LOG.error(msg);
-        throw new RssFetchFailedException(msg);
+        throw new RssFetchFailedException(msg, getShuffleServerInfo());
     }
+  }
+
+  private ShuffleServerInfo getShuffleServerInfo() {
+    return new ShuffleServerInfo(host, port, nettyPort);
   }
 
   @Override
@@ -364,7 +369,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
                 + ", errorMsg:"
                 + getLocalShuffleIndexResponse.getRetMessage();
         LOG.error(msg);
-        throw new RssFetchFailedException(msg);
+        throw new RssFetchFailedException(msg, getShuffleServerInfo());
     }
   }
 
@@ -425,7 +430,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
                 + ", errorMsg:"
                 + getLocalShuffleDataResponse.getRetMessage();
         LOG.error(msg);
-        throw new RssFetchFailedException(msg);
+        throw new RssFetchFailedException(msg, getShuffleServerInfo());
     }
   }
 

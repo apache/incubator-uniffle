@@ -42,6 +42,8 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
   protected ShuffleDataDistributionType distributionType;
   protected Roaring64NavigableMap expectTaskIds;
 
+  protected long blockCounter;
+
   public DataSkippableReadHandler(
       String appId,
       int shuffleId,
@@ -78,6 +80,7 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
             SegmentSplitterFactory.getInstance()
                 .get(distributionType, expectTaskIds, readBufferSize)
                 .split(shuffleIndexResult);
+        shuffleDataSegments.forEach(x -> blockCounter += x.getBufferSegments().size());
       } finally {
         shuffleIndexResult.release();
       }
@@ -104,5 +107,9 @@ public abstract class DataSkippableReadHandler extends AbstractClientReadHandler
       segmentIndex++;
     }
     return result;
+  }
+
+  public long getBlockCounter() {
+    return blockCounter;
   }
 }
