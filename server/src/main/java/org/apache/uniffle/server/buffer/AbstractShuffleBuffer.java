@@ -39,11 +39,9 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
 
   private static final Logger LOG = LoggerFactory.getLogger(AbstractShuffleBuffer.class);
 
-  private final long capacity;
   protected long size;
 
-  public AbstractShuffleBuffer(long capacity) {
-    this.capacity = capacity;
+  public AbstractShuffleBuffer() {
     this.size = 0;
   }
 
@@ -67,11 +65,6 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
   @Override
   public long getSize() {
     return size;
-  }
-
-  @Override
-  public boolean isFull() {
-    return size > capacity;
   }
 
   @Override

@@ -42,8 +42,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
   private List<ShufflePartitionedBlock> blocks;
   private Map<Long, List<ShufflePartitionedBlock>> inFlushBlockMap;
 
-  public ShuffleBufferWithLinkedList(long capacity) {
-    super(capacity);
+  public ShuffleBufferWithLinkedList() {
     this.blocks = new LinkedList<>();
     this.inFlushBlockMap = JavaUtils.newConcurrentMap();
   }
