@@ -235,6 +235,9 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         }
       }
     }
+    if (shuffleManagerRpcServiceEnabled) {
+      getOrCreateShuffleManagerClientWrapper();
+    }
     int unregisterThreadPoolSize =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
     int unregisterTimeoutSec = sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_TIMEOUT_SEC);
@@ -247,7 +250,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             .createShuffleWriteClient(
                 RssShuffleClientFactory.newWriteBuilder()
                     .blockIdSelfManagedEnabled(blockIdSelfManagedEnabled)
-                    .managerClientAutoCloseWrapper(getOrCreateShuffleManagerClientWrapper())
+                    .managerClientAutoCloseWrapper(managerClientAutoCloseWrapper)
                     .clientType(clientType)
                     .retryMax(retryMax)
                     .retryIntervalMax(retryIntervalMax)
@@ -528,7 +531,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         this,
         sparkConf,
         shuffleWriteClient,
-        getOrCreateShuffleManagerClientWrapper(),
+        managerClientAutoCloseWrapper,
         rssHandle,
         this::markFailedTask,
         context,
@@ -716,7 +719,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             blockIdBitmap, startPartition, endPartition, blockIdLayout),
         taskIdBitmap,
         readMetrics,
-        getOrCreateShuffleManagerClientWrapper(),
+        managerClientAutoCloseWrapper,
         RssSparkConfig.toRssConf(sparkConf),
         dataDistributionType,
         shuffleHandleInfo.getAllPartitionServersForReader());

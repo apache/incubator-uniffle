@@ -214,12 +214,15 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           }
         }
       }
+      if (shuffleManagerRpcServiceEnabled) {
+        getOrCreateShuffleManagerClientWrapper();
+      }
       this.shuffleWriteClient =
           RssShuffleClientFactory.getInstance()
               .createShuffleWriteClient(
                   RssShuffleClientFactory.newWriteBuilder()
                       .blockIdSelfManagedEnabled(blockIdSelfManagedEnabled)
-                      .managerClientAutoCloseWrapper(getOrCreateShuffleManagerClient())
+                      .managerClientAutoCloseWrapper(managerClientAutoCloseWrapper)
                       .clientType(clientType)
                       .retryMax(retryMax)
                       .retryIntervalMax(retryIntervalMax)
@@ -442,7 +445,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           this,
           sparkConf,
           shuffleWriteClient,
-          getOrCreateShuffleManagerClient(),
+          managerClientAutoCloseWrapper,
           rssHandle,
           this::markFailedTask,
           context,
@@ -548,7 +551,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           taskIdBitmap,
           RssSparkConfig.toRssConf(sparkConf),
           partitionToServers,
-          getOrCreateShuffleManagerClient());
+          managerClientAutoCloseWrapper);
     } else {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
