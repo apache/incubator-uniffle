@@ -17,68 +17,69 @@
 
 package org.apache.uniffle.common.util;
 
-import org.junit.jupiter.api.Test;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.function.Supplier;
+
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class AutoCloseWrapperTest {
 
-    @Test
-    void test1() {
-        Supplier<MockClient> cf = ()-> new MockClient(false);
-        AutoCloseWrapper<MockClient> mockClientAutoCloseWrapper = new AutoCloseWrapper<>(cf);
+  @Test
+  void test1() {
+    Supplier<MockClient> cf = () -> new MockClient(false);
+    AutoCloseWrapper<MockClient> mockClientAutoCloseWrapper = new AutoCloseWrapper<>(cf);
 
-        MockClient mockClient = mockClientAutoCloseWrapper.get();
-        MockClient mockClient2 = mockClientAutoCloseWrapper.get();
-        assertTrue(mockClient == mockClient2);
-        assertEquals(mockClientAutoCloseWrapper.getRefCount(), 2);
-        closeWrapper(mockClientAutoCloseWrapper);
-        closeWrapper(mockClientAutoCloseWrapper);
-        assertEquals(mockClientAutoCloseWrapper.getRefCount(), 0);
+    MockClient mockClient = mockClientAutoCloseWrapper.get();
+    MockClient mockClient2 = mockClientAutoCloseWrapper.get();
+    assertTrue(mockClient == mockClient2);
+    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 2);
+    closeWrapper(mockClientAutoCloseWrapper);
+    closeWrapper(mockClientAutoCloseWrapper);
+    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 0);
+  }
+
+  @Test
+  void test2() {
+    Supplier<MockClient> cf = () -> new MockClient(false);
+    AutoCloseWrapper<MockClient> mockClientAutoCloseWrapper = new AutoCloseWrapper<>(cf);
+    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 0);
+    MockClient mockClient1 = mockClientAutoCloseWrapper.get();
+    assertNotNull(mockClient1);
+    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 1);
+    try (AutoCloseWrapper<MockClient> wrapper = mockClientAutoCloseWrapper) {
+      MockClient mockClient2 = wrapper.get();
+      assertEquals(mockClientAutoCloseWrapper.getRefCount(), 2);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 1);
+    closeWrapper(mockClientAutoCloseWrapper);
+    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 0);
+  }
+
+  static class MockClient implements Closeable {
+    boolean withException;
+
+    public MockClient(boolean withException) {
+      this.withException = withException;
     }
 
-    @Test
-    void test2() {
-        Supplier<MockClient> cf = ()-> new MockClient(false);
-        AutoCloseWrapper<MockClient> mockClientAutoCloseWrapper = new AutoCloseWrapper<>(cf);
-        assertEquals(mockClientAutoCloseWrapper.getRefCount(), 0);
-        MockClient mockClient1 = mockClientAutoCloseWrapper.get();
-        assertNotNull(mockClient1);
-        assertEquals(mockClientAutoCloseWrapper.getRefCount(), 1);
-        try (AutoCloseWrapper<MockClient> wrapper = mockClientAutoCloseWrapper){
-            MockClient mockClient2 = wrapper.get();
-            assertEquals(mockClientAutoCloseWrapper.getRefCount(), 2);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        assertEquals(mockClientAutoCloseWrapper.getRefCount(), 1);
-        closeWrapper(mockClientAutoCloseWrapper);
-        assertEquals(mockClientAutoCloseWrapper.getRefCount(), 0);
+    @Override
+    public void close() throws IOException {
+      if (withException) {
+        throw new IOException("test exception!");
+      }
     }
+  }
 
-    static class MockClient implements Closeable {
-        boolean withException;
-        public MockClient(boolean withException) {
-            this.withException = withException;
-        }
-
-        @Override
-        public void close() throws IOException {
-            if(withException) {
-                throw new IOException("test exception!");
-            }
-        }
+  private static void closeWrapper(AutoCloseWrapper<MockClient> mockClientAutoCloseWrapper) {
+    try {
+      mockClientAutoCloseWrapper.close();
+    } catch (IOException e) {
+      // ignore
     }
-
-    private static void closeWrapper(AutoCloseWrapper<MockClient> mockClientAutoCloseWrapper) {
-        try {
-            mockClientAutoCloseWrapper.close();
-        } catch (IOException e) {
-            // ignore
-        }
-    }
+  }
 }

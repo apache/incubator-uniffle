@@ -17,12 +17,12 @@
 
 package org.apache.uniffle.common.util;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+
+import com.google.common.annotations.VisibleForTesting;
 
 public class AutoCloseWrapper<T extends Closeable> implements Closeable {
   private static final AtomicInteger REF_COUNTER = new AtomicInteger();
@@ -35,11 +35,11 @@ public class AutoCloseWrapper<T extends Closeable> implements Closeable {
 
   public T get() {
     if (t == null) {
-        synchronized (this) {
-          if(t == null){
-            t = cf.get();
-          }
+      synchronized (this) {
+        if (t == null) {
+          t = cf.get();
         }
+      }
     }
     REF_COUNTER.incrementAndGet();
     return t;
@@ -47,25 +47,25 @@ public class AutoCloseWrapper<T extends Closeable> implements Closeable {
 
   @Override
   public synchronized void close() throws IOException {
-      int count = REF_COUNTER.get();
-      if (count == 0 || t == null) {
-        return;
-      }
-      if (REF_COUNTER.compareAndSet(count, count - 1)) {
-        if (count == 1) {
-          try {
-            t.close();
-          } catch (Exception e) {
-            throw new IOException("Failed to close the resource", e);
-          } finally {
-            t = null;
-          }
+    int count = REF_COUNTER.get();
+    if (count == 0 || t == null) {
+      return;
+    }
+    if (REF_COUNTER.compareAndSet(count, count - 1)) {
+      if (count == 1) {
+        try {
+          t.close();
+        } catch (Exception e) {
+          throw new IOException("Failed to close the resource", e);
+        } finally {
+          t = null;
         }
       }
+    }
   }
 
   @VisibleForTesting
-  public int getRefCount(){
-   return REF_COUNTER.get();
+  public int getRefCount() {
+    return REF_COUNTER.get();
   }
 }
