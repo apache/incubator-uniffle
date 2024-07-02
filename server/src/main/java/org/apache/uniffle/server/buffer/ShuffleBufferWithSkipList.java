@@ -42,6 +42,7 @@ import org.apache.uniffle.server.ShuffleFlushManager;
 public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   private ConcurrentSkipListMap<Long, ShufflePartitionedBlock> blocksMap;
   private final Map<Long, ConcurrentSkipListMap<Long, ShufflePartitionedBlock>> inFlushBlockMap;
+  private int blockCount;
 
   public ShuffleBufferWithSkipList(long capacity) {
     super(capacity);
@@ -63,6 +64,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
     synchronized (this) {
       for (ShufflePartitionedBlock block : data.getBlockList()) {
         blocksMap.put(block.getBlockId(), block);
+        blockCount++;
         mSize += block.getSize();
       }
       size += mSize;
@@ -94,6 +96,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
         });
     inFlushBlockMap.put(eventId, blocksMap);
     blocksMap = newConcurrentSkipListMap();
+    blockCount = 0;
     size = 0;
     return event;
   }
@@ -101,6 +104,11 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   @Override
   public List<ShufflePartitionedBlock> getBlocks() {
     return new LinkedList<>(blocksMap.values());
+  }
+
+  @Override
+  public int getBlockCount() {
+    return blockCount;
   }
 
   @Override

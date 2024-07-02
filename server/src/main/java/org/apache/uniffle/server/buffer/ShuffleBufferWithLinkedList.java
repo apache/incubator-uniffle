@@ -106,6 +106,11 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
   }
 
   @Override
+  public int getBlockCount() {
+    return getBlocks().size();
+  }
+
+  @Override
   public void release() {
     blocks.forEach(spb -> spb.getData().release());
   }

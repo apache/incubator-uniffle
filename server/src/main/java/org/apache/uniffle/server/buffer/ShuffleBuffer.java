@@ -57,6 +57,8 @@ public interface ShuffleBuffer {
   /** Only for test */
   List<ShufflePartitionedBlock> getBlocks();
 
+  int getBlockCount();
+
   void release();
 
   void clearInFlushBuffer(long eventId);

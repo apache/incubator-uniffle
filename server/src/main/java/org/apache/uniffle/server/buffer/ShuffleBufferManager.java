@@ -278,7 +278,7 @@ public class ShuffleBufferManager {
     // than rss.server.flush.cold.storage.threshold.size, otherwise cold storage will be useless.
     if ((isHugePartition || this.bufferFlushEnabled)
         && (buffer.getSize() > this.bufferFlushThreshold
-            || buffer.getBlocks().size() > bufferFlushBlocksNumThreshold)) {
+            || buffer.getBlockCount() > bufferFlushBlocksNumThreshold)) {
       if (LOG.isDebugEnabled()) {
         LOG.debug(
             "Start to flush single buffer. Details - shuffleId:{}, startPartition:{}, endPartition:{}, isHugePartition:{}, bufferSize:{}, blocksNum:{}",
@@ -287,7 +287,7 @@ public class ShuffleBufferManager {
             endPartition,
             isHugePartition,
             buffer.getSize(),
-            buffer.getBlocks().size());
+            buffer.getBlockCount());
       }
       flushBuffer(buffer, appId, shuffleId, startPartition, endPartition, isHugePartition);
     }
