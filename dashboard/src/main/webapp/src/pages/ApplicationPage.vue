@@ -52,7 +52,7 @@
 <script>
 import { getApplicationInfoList, getAppTotal, getTotalForUser } from '@/api/api'
 import { onMounted, reactive } from 'vue'
-import { memFormatter, dateFormatter } from '@/utils/common'
+import { dateFormatter } from '@/utils/common'
 import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 export default {
