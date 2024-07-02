@@ -447,6 +447,14 @@ public class ShuffleServerConf extends RssBaseConf {
                   + " The cpu usage of the shuffle server will be reduced."
                   + " But SKIP_LIST doesn't support the slow-start feature of MR.");
 
+  public static final ConfigOption<Long> SERVER_SHUFFLE_BUFFER_SIZE =
+      ConfigOptions.key("rss.server.shuffleBuffer.size")
+          .longType()
+          .defaultValue(0L)
+          .withDescription(
+              "The size for shuffle buffers."
+                  + " The default value is 0 to keep consistant with the previous version.");
+
   public static final ConfigOption<Long> SERVER_SHUFFLE_FLUSH_THRESHOLD =
       ConfigOptions.key("rss.server.shuffle.flush.threshold")
           .longType()

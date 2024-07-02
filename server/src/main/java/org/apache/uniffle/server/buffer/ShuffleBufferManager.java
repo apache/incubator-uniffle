@@ -139,6 +139,7 @@ public class ShuffleBufferManager {
     appBlockSizeMetricEnabled =
         conf.getBoolean(ShuffleServerConf.APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_ENABLED);
     shuffleBufferType = conf.get(ShuffleServerConf.SERVER_SHUFFLE_BUFFER_TYPE);
+    bufferSize = conf.get(ShuffleServerConf.SERVER_SHUFFLE_BUFFER_SIZE);
   }
 
   public void setShuffleTaskManager(ShuffleTaskManager taskManager) {
