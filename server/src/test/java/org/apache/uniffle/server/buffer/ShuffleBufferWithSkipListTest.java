@@ -40,24 +40,21 @@ public class ShuffleBufferWithSkipListTest extends BufferTestBase {
 
   @Test
   public void appendTest() {
-    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList(100);
+    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList();
     shuffleBuffer.append(createData(10));
     // ShufflePartitionedBlock has constant 32 bytes overhead
     assertEquals(42, shuffleBuffer.getSize());
-    assertFalse(shuffleBuffer.isFull());
 
     shuffleBuffer.append(createData(26));
     assertEquals(100, shuffleBuffer.getSize());
-    assertFalse(shuffleBuffer.isFull());
 
     shuffleBuffer.append(createData(1));
     assertEquals(133, shuffleBuffer.getSize());
-    assertTrue(shuffleBuffer.isFull());
   }
 
   @Test
   public void appendMultiBlocksTest() {
-    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList(100);
+    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList();
     ShufflePartitionedData data1 = createData(10);
     ShufflePartitionedData data2 = createData(10);
     ShufflePartitionedBlock[] dataCombine = new ShufflePartitionedBlock[2];
@@ -69,7 +66,7 @@ public class ShuffleBufferWithSkipListTest extends BufferTestBase {
 
   @Test
   public void toFlushEventTest() {
-    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList(100);
+    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList();
     ShuffleDataFlushEvent event = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
     assertNull(event);
     shuffleBuffer.append(createData(10));
@@ -83,7 +80,7 @@ public class ShuffleBufferWithSkipListTest extends BufferTestBase {
   @Test
   public void getShuffleDataWithExpectedTaskIdsFilterTest() {
     /** case1: all blocks in cached(or in flushed map) and size < readBufferSize */
-    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList(100);
+    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList();
     ShufflePartitionedData spd1 = createData(1, 1, 15);
     ShufflePartitionedData spd2 = createData(1, 0, 15);
     ShufflePartitionedData spd3 = createData(1, 2, 55);

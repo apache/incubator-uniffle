@@ -49,15 +49,12 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
     shuffleBuffer.append(createData(10));
     // ShufflePartitionedBlock has constant 32 bytes overhead
     assertEquals(42, shuffleBuffer.getSize());
-    assertFalse(shuffleBuffer.isFull());
 
     shuffleBuffer.append(createData(26));
     assertEquals(100, shuffleBuffer.getSize());
-    assertFalse(shuffleBuffer.isFull());
 
     shuffleBuffer.append(createData(1));
     assertEquals(133, shuffleBuffer.getSize());
-    assertTrue(shuffleBuffer.isFull());
   }
 
   @Test

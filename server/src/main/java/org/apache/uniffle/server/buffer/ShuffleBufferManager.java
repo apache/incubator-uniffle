@@ -156,9 +156,9 @@ public class ShuffleBufferManager {
       ShuffleServerMetrics.gaugeTotalPartitionNum.inc();
       ShuffleBuffer shuffleBuffer;
       if (shuffleBufferType == ShuffleBufferType.SKIP_LIST) {
-        shuffleBuffer = new ShuffleBufferWithSkipList(bufferSize);
+        shuffleBuffer = new ShuffleBufferWithSkipList();
       } else {
-        shuffleBuffer = new ShuffleBufferWithLinkedList(bufferSize);
+        shuffleBuffer = new ShuffleBufferWithLinkedList();
       }
       bufferRangeMap.put(Range.closed(startPartition, endPartition), shuffleBuffer);
     } else {

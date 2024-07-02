@@ -44,8 +44,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   private final Map<Long, ConcurrentSkipListMap<Long, ShufflePartitionedBlock>> inFlushBlockMap;
   private int blockCount;
 
-  public ShuffleBufferWithSkipList(long capacity) {
-    super(capacity);
+  public ShuffleBufferWithSkipList() {
     this.blocksMap = newConcurrentSkipListMap();
     this.inFlushBlockMap = JavaUtils.newConcurrentMap();
   }
