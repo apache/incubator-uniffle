@@ -96,7 +96,7 @@ export default {
         getAppTotalPage()
       }
     })
-    return { pageData, memFormatter, dateFormatter }
+    return { pageData, dateFormatter }
   }
 }
 </script>
