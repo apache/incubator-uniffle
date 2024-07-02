@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -15,18 +17,8 @@
 # limitations under the License.
 #
 
-rss.rpc.server.port 19999
-rss.jetty.http.port 19978
-# change to the actual disk path
-rss.storage.basePath /tmp/dir0,/tmp/dir1
-rss.storage.type MEMORY_LOCALFILE_HDFS
-# change to actual coordinator rpc addresses
-rss.coordinator.quorum localhost:19999,localhost:19999
-rss.server.buffer.capacity 40gb
-rss.server.read.buffer.capacity 20gb
-rss.server.flush.thread.alive 5
-rss.server.flush.localfile.threadPool.size 10
-rss.server.flush.hadoop.threadPool.size 60
-rss.server.disk.capacity 1g
-rss.server.single.buffer.flush.enabled true
-rss.server.single.buffer.flush.threshold 128m
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+SRC_DIR="$SCRIPT_DIR/runConfigurations"
+DEST_DIR="$SCRIPT_DIR/../../.idea/runConfigurations/"
+mkdir -p "$DEST_DIR"
+ls -1 "$SRC_DIR" | xargs -n1 -I FILE cp "$SRC_DIR/FILE" "$DEST_DIR"
