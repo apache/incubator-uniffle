@@ -547,9 +547,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       AutoCloseWrapper.run(
           managerClientAutoCloseWrapper,
           (ShuffleManagerClient client) -> {
-            ShuffleManagerClient shuffleManagerClient = wrapper.get();
-            RssReportShuffleWriteFailureResponse response =
-                shuffleManagerClient.reportShuffleWriteFailure(req);
+            RssReportShuffleWriteFailureResponse response = client.reportShuffleWriteFailure(req);
             if (response.getReSubmitWholeStage()) {
               // The shuffle server is reassigned.
               RssReassignServersRequest rssReassignServersRequest =
@@ -559,7 +557,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                       shuffleId,
                       partitioner.numPartitions());
               RssReassignServersResponse rssReassignServersResponse =
-                  shuffleManagerClient.reassignOnStageResubmit(rssReassignServersRequest);
+                  client.reassignOnStageResubmit(rssReassignServersRequest);
               LOG.info(
                   "Whether the reassignment is successful: {}",
                   rssReassignServersResponse.isNeedReassign());
