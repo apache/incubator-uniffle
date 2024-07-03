@@ -139,8 +139,7 @@ public class QuotaManager {
     }
   }
 
-  public void registerApplicationInfo(String appId, Map<String,
-      AppInfo> appAndTime) {
+  public void registerApplicationInfo(String appId, Map<String, AppInfo> appAndTime) {
     long currentTimeMillis = System.currentTimeMillis();
     String[] appIdAndUuid = appId.split("_");
     String uuidFromApp = appIdAndUuid[appIdAndUuid.length - 1];

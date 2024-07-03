@@ -61,7 +61,8 @@ public class ApplicationResource extends BaseResource {
           Map<String, Map<String, AppInfo>> currentUserAndApp =
               getApplicationManager().getCurrentUserAndApp();
           List<UserAppNumVO> usercnt = new ArrayList<>();
-          for (Map.Entry<String, Map<String, AppInfo>> stringMapEntry : currentUserAndApp.entrySet()) {
+          for (Map.Entry<String, Map<String, AppInfo>> stringMapEntry :
+              currentUserAndApp.entrySet()) {
             String userName = stringMapEntry.getKey();
             usercnt.add(new UserAppNumVO(userName, stringMapEntry.getValue().size()));
           }
@@ -84,8 +85,12 @@ public class ApplicationResource extends BaseResource {
             for (Map.Entry<String, AppInfo> appIdTimestampMap :
                 userAppIdTimestampMap.getValue().entrySet()) {
               AppInfo appInfo = appIdTimestampMap.getValue();
-              userToAppList.add(new AppInfoVO(userAppIdTimestampMap.getKey(), appInfo.getAppId(),
-                  appInfo.getUpdateTime(), appInfo.getRegisterTime()));
+              userToAppList.add(
+                  new AppInfoVO(
+                      userAppIdTimestampMap.getKey(),
+                      appInfo.getAppId(),
+                      appInfo.getUpdateTime(),
+                      appInfo.getRegisterTime()));
             }
           }
           // Display is inverted by the submission time of the application.

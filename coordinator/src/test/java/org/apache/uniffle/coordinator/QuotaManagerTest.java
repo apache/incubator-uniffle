@@ -107,8 +107,9 @@ public class QuotaManagerTest {
       appId = String.valueOf(uuid.incrementAndGet());
       uuidAndTime.put(appId, AppInfo.createAppInfo(appId, System.currentTimeMillis()));
       final int i1 = uuid.incrementAndGet();
-      uuidAndTime.put(String.valueOf(i1), AppInfo.createAppInfo(String.valueOf(i1),
-          System.currentTimeMillis()));
+      uuidAndTime.put(
+          String.valueOf(i1),
+          AppInfo.createAppInfo(String.valueOf(i1), System.currentTimeMillis()));
       Map<String, AppInfo> appAndTime =
           applicationManager
               .getQuotaManager()
@@ -229,9 +230,6 @@ public class QuotaManagerTest {
         uuidAndTime.put(appId, appInfo);
       }
     }
-
-
-
 
     return uuidAndTime;
   }
