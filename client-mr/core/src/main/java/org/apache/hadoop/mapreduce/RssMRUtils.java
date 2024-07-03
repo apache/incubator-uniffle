@@ -91,13 +91,13 @@ public class RssMRUtils {
   }
 
   public static TaskAttemptID createMRTaskAttemptId(
-      JobID jobID, TaskType taskType, int rssTaskAttemptId, int appAttemptId, int maxAttemptNo) {
+      JobID jobID, TaskType taskType, long rssTaskAttemptId, int appAttemptId, int maxAttemptNo) {
     int attemptBits = ClientUtils.getNumberOfSignificantBits(maxAttemptNo);
     if (appAttemptId < 1) {
       throw new RssException("appAttemptId " + appAttemptId + " is wrong");
     }
-    int task = rssTaskAttemptId >> attemptBits;
-    int attempt = rssTaskAttemptId & ((1 << attemptBits) - 1);
+    int task = (int) rssTaskAttemptId >> attemptBits;
+    int attempt = (int) rssTaskAttemptId & ((1 << attemptBits) - 1);
     TaskID taskID = new TaskID(jobID, taskType, task);
     int id = attempt + 1000 * (appAttemptId - 1);
     return new TaskAttemptID(taskID, id);

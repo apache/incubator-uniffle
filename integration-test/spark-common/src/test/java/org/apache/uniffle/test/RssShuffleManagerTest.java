@@ -235,8 +235,8 @@ public class RssShuffleManagerTest extends SparkIntegrationTestBase {
                 .mapToObj(expectedLayout::asBlockId)
                 .collect(Collectors.toList());
         assertEquals(2, blockIds.size());
-        int taskAttemptId0 = shuffleManager.getTaskAttemptIdForBlockId(0, 0);
-        int taskAttemptId1 = shuffleManager.getTaskAttemptIdForBlockId(1, 0);
+        long taskAttemptId0 = shuffleManager.getTaskAttemptIdForBlockId(0, 0);
+        long taskAttemptId1 = shuffleManager.getTaskAttemptIdForBlockId(1, 0);
         assertEquals(expectedLayout.asBlockId(0, partitionId, taskAttemptId0), blockIds.get(0));
         assertEquals(expectedLayout.asBlockId(0, partitionId, taskAttemptId1), blockIds.get(1));
       }

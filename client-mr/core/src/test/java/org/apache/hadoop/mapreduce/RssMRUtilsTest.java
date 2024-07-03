@@ -39,9 +39,9 @@ public class RssMRUtilsTest {
 
   @Test
   public void baskAttemptIdTest() {
-    int taskAttemptId = 0x1000ad12;
+    long taskAttemptId = 0x1000ad12;
     JobID jobID = new JobID();
-    TaskID taskId = new TaskID(jobID, TaskType.MAP, taskAttemptId);
+    TaskID taskId = new TaskID(jobID, TaskType.MAP, (int) taskAttemptId);
     TaskAttemptID mrTaskAttemptId = new TaskAttemptID(taskId, 3);
     boolean isException = false;
     try {
@@ -71,7 +71,7 @@ public class RssMRUtilsTest {
     JobID jobID = new JobID();
     TaskID taskId = new TaskID(jobID, TaskType.MAP, 233);
     TaskAttemptID taskAttemptID = new TaskAttemptID(taskId, 1);
-    int taskAttemptId = RssMRUtils.createRssTaskAttemptId(taskAttemptID, 1, 4);
+    long taskAttemptId = RssMRUtils.createRssTaskAttemptId(taskAttemptID, 1, 4);
     long blockId = RssMRUtils.getBlockId(1, taskAttemptId, 0);
     long newTaskAttemptId = RssMRUtils.getTaskAttemptId(blockId);
     assertEquals(taskAttemptId, newTaskAttemptId);
@@ -86,7 +86,7 @@ public class RssMRUtilsTest {
     JobID jobID = new JobID();
     TaskID taskId = new TaskID(jobID, TaskType.MAP, 233);
     TaskAttemptID taskAttemptID = new TaskAttemptID(taskId, 1);
-    int taskAttemptId = RssMRUtils.createRssTaskAttemptId(taskAttemptID, 1, 4);
+    long taskAttemptId = RssMRUtils.createRssTaskAttemptId(taskAttemptID, 1, 4);
     long mask = (1L << layout.partitionIdBits) - 1;
     for (int partitionId = 0; partitionId <= 3000; partitionId++) {
       for (int seqNo = 0; seqNo <= 10; seqNo++) {

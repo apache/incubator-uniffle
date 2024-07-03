@@ -49,7 +49,7 @@ public class HadoopShuffleHandlerTestBase {
       HadoopShuffleWriteHandler writeHandler,
       int num,
       int length,
-      int taskAttemptId,
+      long taskAttemptId,
       Map<Long, byte[]> expectedData)
       throws Exception {
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
@@ -71,7 +71,7 @@ public class HadoopShuffleHandlerTestBase {
       int partitionId,
       int num,
       int length,
-      int taskAttemptId,
+      long taskAttemptId,
       Map<Long, byte[]> expectedData,
       Map<Integer, List<ShufflePartitionedBlock>> expectedBlocks,
       Map<Integer, List<FileBasedShuffleSegment>> expectedIndexSegments,

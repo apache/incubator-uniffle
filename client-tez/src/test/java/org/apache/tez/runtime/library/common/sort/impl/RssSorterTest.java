@@ -88,7 +88,7 @@ public class RssSorterTest {
 
     long initialMemoryAvailable = 10240000;
     int shuffleId = 1001;
-    int rssTaskAttemptId = RssTezUtils.createRssTaskAttemptId(tezTaskAttemptID, 3);
+    long rssTaskAttemptId = RssTezUtils.createRssTaskAttemptId(tezTaskAttemptID, 3);
 
     RssSorter rssSorter =
         new RssSorter(

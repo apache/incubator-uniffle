@@ -217,7 +217,7 @@ public class RssOrderedPartitionedKVOutput extends AbstractLogicalOutput {
   public void start() throws Exception {
     if (!isStarted.get()) {
       memoryUpdateCallbackHandler.validateUpdateReceived();
-      int rssTaskAttemptId = RssTezUtils.createRssTaskAttemptId(taskAttemptId, conf);
+      long rssTaskAttemptId = RssTezUtils.createRssTaskAttemptId(taskAttemptId, conf);
       sorter =
           new RssSorter(
               taskAttemptId,

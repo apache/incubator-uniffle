@@ -99,7 +99,7 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
             RssMRConfig.RSS_CLIENT_DEFAULT_MEMORY_THRESHOLD);
     ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
     String appId = applicationAttemptId.toString();
-    int taskAttemptId =
+    long taskAttemptId =
         RssMRUtils.createRssTaskAttemptId(
             mapTask.getTaskID(), applicationAttemptId.getAttemptId(), mrJobConf);
     double sendThreshold =

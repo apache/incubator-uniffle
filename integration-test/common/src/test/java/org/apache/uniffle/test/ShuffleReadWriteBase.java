@@ -52,7 +52,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
   public static List<ShuffleBlockInfo> createShuffleBlockList(
       int shuffleId,
       int partitionId,
-      int taskAttemptId,
+      long taskAttemptId,
       int blockNum,
       int length,
       Roaring64NavigableMap blockIdBitmap,
@@ -86,7 +86,7 @@ public abstract class ShuffleReadWriteBase extends IntegrationTestBase {
   public static List<ShuffleBlockInfo> createShuffleBlockList(
       int shuffleId,
       int partitionId,
-      int taskAttemptId,
+      long taskAttemptId,
       int blockNum,
       int length,
       Roaring64NavigableMap blockIdBitmap,

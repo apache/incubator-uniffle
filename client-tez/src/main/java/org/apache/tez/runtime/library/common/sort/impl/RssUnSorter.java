@@ -61,7 +61,7 @@ public class RssUnSorter extends ExternalSorter {
       int shuffleId,
       ApplicationAttemptId applicationAttemptId,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
-      int taskAttemptId)
+      long taskAttemptId)
       throws IOException {
     super(outputContext, conf, numOutputs, initialMemoryAvailable);
     this.partitionToServers = partitionToServers;

@@ -81,7 +81,7 @@ public class WriteBufferManagerTest {
         TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
     final long maxMemSize = 10240;
     final String appId = "application_1681717153064_3770270";
-    final int taskAttemptId = 0;
+    final long taskAttemptId = 0;
     final Set<Long> successBlockIds = Sets.newConcurrentHashSet();
     final Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
     MockShuffleWriteClient writeClient = new MockShuffleWriteClient();
@@ -184,7 +184,7 @@ public class WriteBufferManagerTest {
         TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
     final long maxMemSize = 10240;
     final String appId = "appattempt_1681717153064_3770270_000001";
-    final int taskAttemptId = 0;
+    final long taskAttemptId = 0;
     final Set<Long> successBlockIds = Sets.newConcurrentHashSet();
     final Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
     MockShuffleWriteClient writeClient = new MockShuffleWriteClient();
@@ -300,7 +300,7 @@ public class WriteBufferManagerTest {
         TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
     final long maxMemSize = 10240;
     final String appId = "application_1681717153064_3770270";
-    final int taskAttemptId = 0;
+    final long taskAttemptId = 0;
     final Set<Long> successBlockIds = Sets.newConcurrentHashSet();
     final Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
     MockShuffleWriteClient writeClient = new MockShuffleWriteClient();
@@ -402,7 +402,7 @@ public class WriteBufferManagerTest {
         TezTaskAttemptID.fromString("attempt_1681717153064_3770270_1_00_000000_0");
     final long maxMemSize = 10240;
     final String appId = "application_1681717153064_3770270";
-    final int taskAttemptId = 0;
+    final long taskAttemptId = 0;
     final Set<Long> successBlockIds = Sets.newConcurrentHashSet();
     final Set<Long> failedBlockIds = Sets.newConcurrentHashSet();
     MockShuffleWriteClient writeClient = new MockShuffleWriteClient();
