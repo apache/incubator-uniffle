@@ -335,7 +335,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   }
 
   /** See static overload of this method. */
-  public abstract int getTaskAttemptIdForBlockId(int mapIndex, int attemptNo);
+  public abstract long getTaskAttemptIdForBlockId(int mapIndex, int attemptNo);
 
   /**
    * Provides a task attempt id to be used in the block id, that is unique for a shuffle stage.
@@ -350,7 +350,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
    *
    * @return a task attempt id unique for a shuffle stage
    */
-  protected static int getTaskAttemptIdForBlockId(
+  protected static long getTaskAttemptIdForBlockId(
       int mapIndex, int attemptNo, int maxFailures, boolean speculation, int maxTaskAttemptIdBits) {
     int maxAttemptNo = ClientUtils.getMaxAttemptNo(maxFailures, speculation);
     int attemptBits = ClientUtils.getNumberOfSignificantBits(maxAttemptNo);
@@ -383,7 +383,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
               + "]). Please consider providing more bits for taskAttemptIds.");
     }
 
-    return mapIndex << attemptBits | attemptNo;
+    return (long) mapIndex << attemptBits | attemptNo;
   }
 
   protected static void fetchAndApplyDynamicConf(SparkConf sparkConf) {

@@ -311,7 +311,7 @@ public class RssTezUtils {
     for (InputAttemptIdentifier inputAttemptIdentifier : successMapTaskAttempts) {
       String pathComponent = inputAttemptIdentifier.getPathComponent();
       TezTaskAttemptID mapTaskAttemptId = IdUtils.convertTezTaskAttemptID(pathComponent);
-      int rssTaskId = RssTezUtils.createRssTaskAttemptId(mapTaskAttemptId, maxAttemptNo);
+      long rssTaskId = RssTezUtils.createRssTaskAttemptId(mapTaskAttemptId, maxAttemptNo);
       long mapTaskId = mapTaskAttemptId.getTaskID().getId();
 
       LOG.info(
