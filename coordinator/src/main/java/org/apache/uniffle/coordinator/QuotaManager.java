@@ -44,7 +44,7 @@ import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 /** QuotaManager is a manager for resource restriction. */
 public class QuotaManager {
   private static final Logger LOG = LoggerFactory.getLogger(QuotaManager.class);
-  private final Map<String, Map<String, Long>> currentUserAndApp = JavaUtils.newConcurrentMap();
+  private final Map<String, Map<String, AppInfo>> currentUserAndApp = JavaUtils.newConcurrentMap();
   private final Map<String, String> appIdToUser = JavaUtils.newConcurrentMap();
   private final String quotaFilePath;
   private final Integer quotaAppNum;
@@ -116,7 +116,7 @@ public class QuotaManager {
   }
 
   public boolean checkQuota(String user, String uuid) {
-    Map<String, Long> appAndTimes =
+    Map<String, AppInfo> appAndTimes =
         currentUserAndApp.computeIfAbsent(user, x -> JavaUtils.newConcurrentMap());
     Integer userAppQuotaNum = defaultUserApps.computeIfAbsent(user, x -> quotaAppNum);
     synchronized (this) {
@@ -124,26 +124,42 @@ public class QuotaManager {
       if (userAppQuotaNum >= 0 && currentAppNum >= userAppQuotaNum) {
         return true;
       } else {
-        appAndTimes.put(uuid, System.currentTimeMillis());
+        // thread safe is guaranteed by synchronized
+        AppInfo appInfo = appAndTimes.get(uuid);
+        long currentTimeMillis = System.currentTimeMillis();
+        if (appInfo == null) {
+          appInfo = new AppInfo(uuid, currentTimeMillis, currentTimeMillis);
+          appAndTimes.put(uuid, appInfo);
+        } else {
+          appInfo.setUpdateTime(currentTimeMillis);
+        }
         CoordinatorMetrics.gaugeRunningAppNumToUser.labels(user).inc();
         return false;
       }
     }
   }
 
-  public void registerApplicationInfo(String appId, Map<String, Long> appAndTime) {
+  public void registerApplicationInfo(String appId, Map<String,
+      AppInfo> appAndTime) {
     long currentTimeMillis = System.currentTimeMillis();
     String[] appIdAndUuid = appId.split("_");
     String uuidFromApp = appIdAndUuid[appIdAndUuid.length - 1];
     // if appId created successfully, we need to remove the uuid
     synchronized (this) {
       appAndTime.remove(uuidFromApp);
-      appAndTime.put(appId, currentTimeMillis);
+      // thread safe is guaranteed by synchronized
+      AppInfo appInfo = appAndTime.get(appId);
+      if (appInfo == null) {
+        appInfo = new AppInfo(appId, currentTimeMillis, currentTimeMillis);
+        appAndTime.put(appId, appInfo);
+      } else {
+        appInfo.setUpdateTime(currentTimeMillis);
+      }
     }
   }
 
   protected void updateQuotaMetrics() {
-    for (Map.Entry<String, Map<String, Long>> userAndApp : currentUserAndApp.entrySet()) {
+    for (Map.Entry<String, Map<String, AppInfo>> userAndApp : currentUserAndApp.entrySet()) {
       String user = userAndApp.getKey();
       try {
         CoordinatorMetrics.gaugeRunningAppNumToUser.labels(user).set(userAndApp.getValue().size());
@@ -158,7 +174,7 @@ public class QuotaManager {
     return defaultUserApps;
   }
 
-  public Map<String, Map<String, Long>> getCurrentUserAndApp() {
+  public Map<String, Map<String, AppInfo>> getCurrentUserAndApp() {
     return currentUserAndApp;
   }
 
