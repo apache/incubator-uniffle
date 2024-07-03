@@ -593,7 +593,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
               new RssPartitionToShuffleServerRequest(shuffleId);
           RssReassignOnStageRetryResponse rpcPartitionToShufflerServer =
-              shuffleManagerClient.getPartitionToShufflerServerWithStageRetry(
+              getOrCreateShuffleManagerClient().getPartitionToShufflerServerWithStageRetry(
                   rssPartitionToShuffleServerRequest);
           StageAttemptShuffleHandleInfo shuffleHandleInfo =
               StageAttemptShuffleHandleInfo.fromProto(
@@ -616,7 +616,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
               new RssPartitionToShuffleServerRequest(shuffleId);
           RssReassignOnBlockSendFailureResponse rpcPartitionToShufflerServer =
-              shuffleManagerClient.getPartitionToShufflerServerWithBlockRetry(
+                  getOrCreateShuffleManagerClient().getPartitionToShufflerServerWithBlockRetry(
                   rssPartitionToShuffleServerRequest);
           MutableShuffleHandleInfo shuffleHandleInfo =
               MutableShuffleHandleInfo.fromProto(rpcPartitionToShufflerServer.getHandle());
@@ -624,7 +624,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
         });
   }
 
-  protected AutoCloseWrapper<ShuffleManagerClient> getOrCreateShuffleManagerClientWrapper() {
+  protected synchronized AutoCloseWrapper<ShuffleManagerClient> getOrCreateShuffleManagerClientWrapper() {
     if (managerClientAutoCloseWrapper == null) {
       RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
       String driver = rssConf.getString("driver.host", "");
@@ -637,6 +637,21 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                       .createShuffleManagerClient(ClientType.GRPC, driver, port, rpcTimeout));
     }
     return managerClientAutoCloseWrapper;
+  }
+
+  private ShuffleManagerClient shuffleManagerClient;
+
+  protected synchronized ShuffleManagerClient getOrCreateShuffleManagerClient() {
+    if (shuffleManagerClient == null) {
+      RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+      String driver = rssConf.getString("driver.host", "");
+      int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
+      long rpcTimeout = rssConf.getLong(RssBaseConf.RSS_CLIENT_TYPE_GRPC_TIMEOUT_MS);
+      this.shuffleManagerClient =
+              ShuffleManagerClientFactory.getInstance()
+                      .createShuffleManagerClient(ClientType.GRPC, driver, port);
+    }
+    return shuffleManagerClient;
   }
 
   @Override
