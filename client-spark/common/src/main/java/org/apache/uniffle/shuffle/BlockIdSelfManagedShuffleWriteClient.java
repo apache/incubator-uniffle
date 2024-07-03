@@ -77,8 +77,7 @@ public class BlockIdSelfManagedShuffleWriteClient extends ShuffleWriteClientImpl
     AutoCloseWrapper.run(
         managerClientAutoCloseWrapper,
         (ShuffleManagerClient client) -> {
-          client.reportShuffleResult(request);
-          return true;
+          return client.reportShuffleResult(request);
         });
   }
 

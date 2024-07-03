@@ -587,19 +587,19 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
    */
   protected synchronized StageAttemptShuffleHandleInfo getRemoteShuffleHandleInfoWithStageRetry(
       int shuffleId) {
-    return AutoCloseWrapper.run(
-        getOrCreateShuffleManagerClientWrapper(),
-        (ShuffleManagerClient shuffleManagerClient) -> {
-          RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
-              new RssPartitionToShuffleServerRequest(shuffleId);
-          RssReassignOnStageRetryResponse rpcPartitionToShufflerServer =
-              shuffleManagerClient.getPartitionToShufflerServerWithStageRetry(
+    RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
+        new RssPartitionToShuffleServerRequest(shuffleId);
+    RssReassignOnStageRetryResponse rpcPartitionToShufflerServer =
+        AutoCloseWrapper.run(
+            getOrCreateShuffleManagerClientWrapper(),
+            (ShuffleManagerClient shuffleManagerClient) -> {
+              return shuffleManagerClient.getPartitionToShufflerServerWithStageRetry(
                   rssPartitionToShuffleServerRequest);
-          StageAttemptShuffleHandleInfo shuffleHandleInfo =
-              StageAttemptShuffleHandleInfo.fromProto(
-                  rpcPartitionToShufflerServer.getShuffleHandleInfoProto());
-          return shuffleHandleInfo;
-        });
+            });
+    StageAttemptShuffleHandleInfo shuffleHandleInfo =
+        StageAttemptShuffleHandleInfo.fromProto(
+            rpcPartitionToShufflerServer.getShuffleHandleInfoProto());
+    return shuffleHandleInfo;
   }
 
   /**
@@ -610,21 +610,22 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
    */
   protected synchronized MutableShuffleHandleInfo getRemoteShuffleHandleInfoWithBlockRetry(
       int shuffleId) {
-    return AutoCloseWrapper.run(
-        getOrCreateShuffleManagerClientWrapper(),
-        (ShuffleManagerClient shuffleManagerClient) -> {
-          RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
-              new RssPartitionToShuffleServerRequest(shuffleId);
-          RssReassignOnBlockSendFailureResponse rpcPartitionToShufflerServer =
-              shuffleManagerClient.getPartitionToShufflerServerWithBlockRetry(
+    RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
+        new RssPartitionToShuffleServerRequest(shuffleId);
+    RssReassignOnBlockSendFailureResponse rpcPartitionToShufflerServer =
+        AutoCloseWrapper.run(
+            getOrCreateShuffleManagerClientWrapper(),
+            (ShuffleManagerClient shuffleManagerClient) -> {
+              return shuffleManagerClient.getPartitionToShufflerServerWithBlockRetry(
                   rssPartitionToShuffleServerRequest);
-          MutableShuffleHandleInfo shuffleHandleInfo =
-              MutableShuffleHandleInfo.fromProto(rpcPartitionToShufflerServer.getHandle());
-          return shuffleHandleInfo;
-        });
+            });
+    MutableShuffleHandleInfo shuffleHandleInfo =
+        MutableShuffleHandleInfo.fromProto(rpcPartitionToShufflerServer.getHandle());
+    return shuffleHandleInfo;
   }
 
-  protected AutoCloseWrapper<ShuffleManagerClient> getOrCreateShuffleManagerClientWrapper() {
+  protected synchronized AutoCloseWrapper<ShuffleManagerClient>
+      getOrCreateShuffleManagerClientWrapper() {
     if (managerClientAutoCloseWrapper == null) {
       RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
       String driver = rssConf.getString("driver.host", "");

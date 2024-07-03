@@ -561,16 +561,16 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               LOG.info(
                   "Whether the reassignment is successful: {}",
                   rssReassignServersResponse.isNeedReassign());
-              // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
-              // is
-              // provided.
-              FetchFailedException ffe =
-                  RssSparkShuffleUtils.createFetchFailedException(
-                      shuffleId, -1, taskContext.stageAttemptNumber(), e);
-              throw new RssException(ffe);
             }
             return true;
           });
+      // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
+      // is
+      // provided.
+      FetchFailedException ffe =
+          RssSparkShuffleUtils.createFetchFailedException(
+              shuffleId, -1, taskContext.stageAttemptNumber(), e);
+      throw new RssException(ffe);
     }
     throw new RssException(e);
   }

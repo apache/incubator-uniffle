@@ -19,62 +19,69 @@ package org.apache.uniffle.common.util;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.exception.RssException;
 
 public class AutoCloseWrapper<T extends Closeable> implements Closeable {
-  private static final AtomicInteger REF_COUNTER = new AtomicInteger();
+
+  private static final Logger LOG = LoggerFactory.getLogger(AutoCloseWrapper.class);
+  private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+  private AtomicInteger refCount = new AtomicInteger(0);
   private volatile T t;
   private Supplier<T> cf;
+  private long delayCloseInterval = 3000;
 
   public AutoCloseWrapper(Supplier<T> cf) {
     this.cf = cf;
   }
 
-  public T get() {
-    if (t == null) {
-      synchronized (this) {
-        if (t == null) {
-          t = cf.get();
-        }
-      }
+  public AutoCloseWrapper(Supplier<T> cf, long delayCloseInterval) {
+    this.cf = cf;
+    this.delayCloseInterval = delayCloseInterval;
+  }
+
+  public synchronized T get() {
+    if (refCount.incrementAndGet() == 1) {
+      t = cf.get();
     }
-    REF_COUNTER.incrementAndGet();
     return t;
   }
 
   @Override
-  public synchronized void close() throws IOException {
-    int count = REF_COUNTER.get();
-    if (count == 0 || t == null) {
-      return;
-    }
-    if (REF_COUNTER.compareAndSet(count, count - 1)) {
-      if (count == 1) {
-        try {
-          t.close();
-        } catch (Exception e) {
-          throw new IOException("Failed to close the resource", e);
-        } finally {
-          t = null;
-        }
+  public void close() throws IOException {
+    executor.schedule(this::closeInternal, delayCloseInterval, TimeUnit.MILLISECONDS);
+  }
+
+  public synchronized void closeInternal() {
+    if (refCount.decrementAndGet() == 0) {
+      try {
+        t.close();
+      } catch (Exception e) {
+        LOG.warn("Failed to close " + t.getClass().getName() + " the resource", e);
+      } finally {
+        t = null;
       }
     }
   }
 
-  public void forceClose() throws IOException {
-    while (t != null) {
-      this.close();
+  public synchronized void forceClose() throws IOException {
+    while (refCount.get() > 0) {
+      this.closeInternal();
     }
   }
 
   @VisibleForTesting
-  public int getRefCount() {
-    return REF_COUNTER.get();
+  public synchronized int getRefCount() {
+    return refCount.get();
   }
 
   public static <T, X extends Closeable> T run(

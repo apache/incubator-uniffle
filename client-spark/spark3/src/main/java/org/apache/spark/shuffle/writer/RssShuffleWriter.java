@@ -601,40 +601,44 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     LOG.info(
         "Initiate reassignOnBlockSendFailure. failure partition servers: {}",
         failurePartitionToServers);
-
     String executorId = SparkEnv.get().executorId();
     long taskAttemptId = taskContext.taskAttemptId();
     int stageId = taskContext.stageId();
     int stageAttemptNum = taskContext.stageAttemptNumber();
-    RssReassignOnBlockSendFailureRequest request =
-        new RssReassignOnBlockSendFailureRequest(
-            shuffleId,
-            failurePartitionToServers,
-            executorId,
-            taskAttemptId,
-            stageId,
-            stageAttemptNum);
-    AutoCloseWrapper.run(
-        managerClientAutoCloseWrapper,
-        (ShuffleManagerClient client) -> {
-          ShuffleManagerClient shuffleManagerClient = client;
-          RssReassignOnBlockSendFailureResponse response =
-              shuffleManagerClient.reassignOnBlockSendFailure(request);
-          if (response.getStatusCode() != StatusCode.SUCCESS) {
-            String msg =
-                String.format(
-                    "Reassign failed. statusCode: %s, msg: %s",
-                    response.getStatusCode(), response.getMessage());
-            throw new RssException(msg);
-          }
-          MutableShuffleHandleInfo handle =
-              MutableShuffleHandleInfo.fromProto(response.getHandle());
-          taskAttemptAssignment.update(handle);
-          LOG.info(
-              "Success to reassign. The latest available assignment is {}",
-              handle.getAvailablePartitionServersForWriter());
-          return true;
-        });
+    try {
+      RssReassignOnBlockSendFailureRequest request =
+          new RssReassignOnBlockSendFailureRequest(
+              shuffleId,
+              failurePartitionToServers,
+              executorId,
+              taskAttemptId,
+              stageId,
+              stageAttemptNum);
+      RssReassignOnBlockSendFailureResponse response =
+          AutoCloseWrapper.run(
+              managerClientAutoCloseWrapper,
+              (ShuffleManagerClient client) -> {
+                ShuffleManagerClient shuffleManagerClient = client;
+                return shuffleManagerClient.reassignOnBlockSendFailure(request);
+              });
+      if (response.getStatusCode() != StatusCode.SUCCESS) {
+        String msg =
+            String.format(
+                "Reassign failed. statusCode: %s, msg: %s",
+                response.getStatusCode(), response.getMessage());
+        throw new RssException(msg);
+      }
+      MutableShuffleHandleInfo handle = MutableShuffleHandleInfo.fromProto(response.getHandle());
+      taskAttemptAssignment.update(handle);
+      LOG.info(
+          "Success to reassign. The latest available assignment is {}",
+          handle.getAvailablePartitionServersForWriter());
+    } catch (Exception e) {
+      throw new RssException(
+          "Errors on reassign on block send failure. failure partition->servers : "
+              + failurePartitionToServers,
+          e);
+    }
   }
 
   private void reassignAndResendBlocks(Set<TrackingBlockStatus> blocks) {
@@ -830,32 +834,36 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               taskContext.stageAttemptNumber(),
               shuffleServerInfos,
               e.getMessage());
-      AutoCloseWrapper.run(
-          managerClientAutoCloseWrapper,
-          (ShuffleManagerClient client) -> {
-            RssReportShuffleWriteFailureResponse response = client.reportShuffleWriteFailure(req);
-            if (response.getReSubmitWholeStage()) {
-              RssReassignServersRequest rssReassignServersRequest =
-                  new RssReassignServersRequest(
-                      taskContext.stageId(),
-                      taskContext.stageAttemptNumber(),
-                      shuffleId,
-                      partitioner.numPartitions());
-              RssReassignServersResponse rssReassignServersResponse =
-                  client.reassignOnStageResubmit(rssReassignServersRequest);
-              LOG.info(
-                  "Whether the reassignment is successful: {}",
-                  rssReassignServersResponse.isNeedReassign());
-              // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
-              // is
-              // provided.
-              FetchFailedException ffe =
-                  RssSparkShuffleUtils.createFetchFailedException(
-                      shuffleId, -1, taskContext.stageAttemptNumber(), e);
-              throw new RssException(ffe);
-            }
-            return true;
-          });
+      RssReportShuffleWriteFailureResponse response =
+          AutoCloseWrapper.run(
+              managerClientAutoCloseWrapper,
+              (ShuffleManagerClient client) -> {
+                return client.reportShuffleWriteFailure(req);
+              });
+      if (response.getReSubmitWholeStage()) {
+        RssReassignServersRequest rssReassignServersRequest =
+            new RssReassignServersRequest(
+                taskContext.stageId(),
+                taskContext.stageAttemptNumber(),
+                shuffleId,
+                partitioner.numPartitions());
+        RssReassignServersResponse rssReassignServersResponse =
+            AutoCloseWrapper.run(
+                managerClientAutoCloseWrapper,
+                (ShuffleManagerClient client) -> {
+                  return client.reassignOnStageResubmit(rssReassignServersRequest);
+                });
+        LOG.info(
+            "Whether the reassignment is successful: {}",
+            rssReassignServersResponse.isNeedReassign());
+        // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
+        // is
+        // provided.
+        FetchFailedException ffe =
+            RssSparkShuffleUtils.createFetchFailedException(
+                shuffleId, -1, taskContext.stageAttemptNumber(), e);
+        throw new RssException(ffe);
+      }
     }
     throw new RssException(e);
   }
