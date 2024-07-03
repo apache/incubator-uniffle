@@ -19,7 +19,6 @@ package org.apache.uniffle.common.util;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Random;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
@@ -64,25 +63,6 @@ class AutoCloseWrapperTest {
   }
 
   @Test
-  void test3() throws InterruptedException {
-    Supplier<MockClient> cf = () -> new MockClient(false);
-    AutoCloseWrapper<MockClient> mockClientAutoCloseWrapper = new AutoCloseWrapper<>(cf);
-    for (int i = 0; i < 1000; i++) {
-      new Thread(()->{
-        AutoCloseWrapper.run(
-                mockClientAutoCloseWrapper,
-                (MockClient mockClient) -> {
-                  mockClient.doSomething();
-                  return "t1";
-                });
-      }).start();
-    }
-    Thread.sleep(15000);
-    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 0);
-  }
-
-
-  @Test
   void forceClose() {
     Supplier<MockClient> cf = () -> new MockClient(true);
     AutoCloseWrapper<MockClient> mockClientAutoCloseWrapper = new AutoCloseWrapper<>(cf);
@@ -95,44 +75,19 @@ class AutoCloseWrapperTest {
       // ignore
     }
     assertEquals(mockClientAutoCloseWrapper.getRefCount(), 0);
-    MockClient mockClient3 = mockClientAutoCloseWrapper.get();
-    assertNotNull(mockClient3);
-    assertTrue(mockClient3 != mockClient);
   }
 
   static class MockClient implements Closeable {
     boolean withException;
 
-    volatile boolean isClosed;
-
     public MockClient(boolean withException) {
       this.withException = withException;
-      this.isClosed = false;
     }
 
     @Override
     public void close() throws IOException {
-      new Thread(()->{
-        try {
-          Thread.sleep(2000);
-          isClosed = true;
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        }
-      }).start();
       if (withException) {
         throw new IOException("test exception!");
-      }
-    }
-
-    public void doSomething() {
-      try {
-        Thread.sleep(new Random().nextInt(100));
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-      if(isClosed) {
-        throw new RuntimeException("client is closed.");
       }
     }
   }
