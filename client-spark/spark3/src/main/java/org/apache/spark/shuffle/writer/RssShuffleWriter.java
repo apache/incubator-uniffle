@@ -104,6 +104,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
 
   private final String appId;
   private final int shuffleId;
+  private final ShuffleHandleInfo shuffleHandleInfo;
   private WriteBufferManager bufferManager;
   private String taskId;
   private final int numMaps;
@@ -119,7 +120,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private final ShuffleWriteClient shuffleWriteClient;
   private final Set<ShuffleServerInfo> shuffleServersForData;
   private final long[] partitionLengths;
-  private final boolean isMemoryShuffleEnabled;
+  // Gluten needs this variable
+  protected final boolean isMemoryShuffleEnabled;
   private final Function<String, Boolean> taskFailureCallback;
   private final Set<Long> blockIds = Sets.newConcurrentHashSet();
   private TaskContext taskContext;
@@ -211,6 +213,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.isMemoryShuffleEnabled =
         isMemoryShuffleEnabled(sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
     this.taskFailureCallback = taskFailureCallback;
+    this.shuffleHandleInfo = shuffleHandleInfo;
     this.taskContext = context;
     this.sparkConf = sparkConf;
     this.blockFailSentRetryEnabled =
@@ -233,8 +236,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       ShuffleWriteClient shuffleWriteClient,
       RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback,
-      TaskContext context,
-      ShuffleHandleInfo shuffleHandleInfo) {
+      TaskContext context) {
     this(
         appId,
         shuffleId,
@@ -246,7 +248,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleWriteClient,
         rssHandle,
         taskFailureCallback,
-        shuffleHandleInfo,
+        shuffleManager.getShuffleHandleInfo(rssHandle),
         context);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
     final WriteBufferManager bufferManager =
@@ -288,7 +290,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
   }
 
-  private void writeImpl(Iterator<Product2<K, V>> records) {
+  // Gluten needs this method.
+  protected void writeImpl(Iterator<Product2<K, V>> records) {
     List<ShuffleBlockInfo> shuffleBlockInfos;
     boolean isCombine = shuffleDependency.mapSideCombine();
 
@@ -452,6 +455,11 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       futures.add(shuffleManager.sendData(event));
     }
     return futures;
+  }
+
+  // Gluten needs this method
+  protected void internalCheckBlockSendResult() {
+    this.checkBlockSendResult(this.blockIds);
   }
 
   @VisibleForTesting

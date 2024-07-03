@@ -44,6 +44,7 @@ import org.apache.spark.MapOutputTrackerMaster;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
 import org.apache.spark.SparkException;
+import org.apache.spark.shuffle.RssShuffleHandle;
 import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.shuffle.RssSparkShuffleUtils;
 import org.apache.spark.shuffle.RssStageInfo;
@@ -53,6 +54,7 @@ import org.apache.spark.shuffle.ShuffleManager;
 import org.apache.spark.shuffle.SparkVersionUtils;
 import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
+import org.apache.spark.shuffle.handle.SimpleShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.StageAttemptShuffleHandleInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -574,6 +576,20 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
 
     return new RemoteStorageInfo(
         sparkConf.get(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), ""), confItems);
+  }
+
+  public ShuffleHandleInfo getShuffleHandleInfo(RssShuffleHandle<?, ?, ?> rssHandle) {
+    int shuffleId = rssHandle.getShuffleId();
+    if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
+      // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
+      return getRemoteShuffleHandleInfoWithStageRetry(shuffleId);
+    } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
+      // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
+      return getRemoteShuffleHandleInfoWithBlockRetry(shuffleId);
+    } else {
+      return new SimpleShuffleHandleInfo(
+          shuffleId, rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
+    }
   }
 
   /**

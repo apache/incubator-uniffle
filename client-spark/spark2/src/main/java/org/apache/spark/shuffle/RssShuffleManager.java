@@ -424,18 +424,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
       int shuffleId = rssHandle.getShuffleId();
       String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
-      ShuffleHandleInfo shuffleHandleInfo;
-      if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
-        // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId
-        shuffleHandleInfo = getRemoteShuffleHandleInfoWithStageRetry(shuffleId);
-      } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
-        // In Block Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId
-        shuffleHandleInfo = getRemoteShuffleHandleInfoWithBlockRetry(shuffleId);
-      } else {
-        shuffleHandleInfo =
-            new SimpleShuffleHandleInfo(
-                shuffleId, rssHandle.getPartitionToServers(), rssHandle.getRemoteStorage());
-      }
       ShuffleWriteMetrics writeMetrics = context.taskMetrics().shuffleWriteMetrics();
       return new RssShuffleWriter<>(
           rssHandle.getAppId(),
@@ -448,8 +436,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           shuffleWriteClient,
           rssHandle,
           this::markFailedTask,
-          context,
-          shuffleHandleInfo);
+          context);
     } else {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }

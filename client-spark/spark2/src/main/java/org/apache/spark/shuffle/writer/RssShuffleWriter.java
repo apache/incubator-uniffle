@@ -97,6 +97,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private String appId;
   private int numMaps;
   private int shuffleId;
+  private final ShuffleHandleInfo shuffleHandleInfo;
   private int bitmapSplitNum;
   private String taskId;
   private long taskAttemptId;
@@ -176,6 +177,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.isMemoryShuffleEnabled =
         isMemoryShuffleEnabled(sparkConf.get(RssSparkConfig.RSS_STORAGE_TYPE.key()));
     this.taskFailureCallback = taskFailureCallback;
+    this.shuffleHandleInfo = shuffleHandleInfo;
     this.taskContext = context;
     this.sparkConf = sparkConf;
   }
@@ -191,8 +193,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       ShuffleWriteClient shuffleWriteClient,
       RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback,
-      TaskContext context,
-      ShuffleHandleInfo shuffleHandleInfo) {
+      TaskContext context) {
     this(
         appId,
         shuffleId,
@@ -204,7 +205,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleWriteClient,
         rssHandle,
         taskFailureCallback,
-        shuffleHandleInfo,
+        shuffleManager.getShuffleHandleInfo(rssHandle),
         context);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
     final WriteBufferManager bufferManager =
