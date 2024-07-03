@@ -31,7 +31,7 @@ public class DashboardUtils {
   private static final Logger LOG = LoggerFactory.getLogger(DashboardUtils.class);
 
   public static Map<String, String> convertAddressesStrToMap(String coordinatorAddressesStr) {
-    Preconditions.checkNotNull(coordinatorAddressesStr);
+    Preconditions.checkNotNull(coordinatorAddressesStr, "Coordinator web address is null");
     HashMap<String, String> coordinatorAddressMap = Maps.newHashMap();
     String[] coordinators = coordinatorAddressesStr.split(",");
     for (String coordinator : coordinators) {
