@@ -544,33 +544,37 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               taskContext.stageAttemptNumber(),
               shuffleServerInfos,
               e.getMessage());
-      AutoCloseWrapper.run(
-          managerClientAutoCloseWrapper,
-          (ShuffleManagerClient client) -> {
-            RssReportShuffleWriteFailureResponse response = client.reportShuffleWriteFailure(req);
-            if (response.getReSubmitWholeStage()) {
-              // The shuffle server is reassigned.
-              RssReassignServersRequest rssReassignServersRequest =
-                  new RssReassignServersRequest(
-                      taskContext.stageId(),
-                      taskContext.stageAttemptNumber(),
-                      shuffleId,
-                      partitioner.numPartitions());
-              RssReassignServersResponse rssReassignServersResponse =
-                  client.reassignOnStageResubmit(rssReassignServersRequest);
-              LOG.info(
-                  "Whether the reassignment is successful: {}",
-                  rssReassignServersResponse.isNeedReassign());
-            }
-            return true;
-          });
-      // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
-      // is
-      // provided.
-      FetchFailedException ffe =
-          RssSparkShuffleUtils.createFetchFailedException(
-              shuffleId, -1, taskContext.stageAttemptNumber(), e);
-      throw new RssException(ffe);
+      RssReportShuffleWriteFailureResponse response =
+          AutoCloseWrapper.run(
+              managerClientAutoCloseWrapper,
+              (ShuffleManagerClient client) -> {
+                return client.reportShuffleWriteFailure(req);
+              });
+      if (response.getReSubmitWholeStage()) {
+        // The shuffle server is reassigned.
+        RssReassignServersRequest rssReassignServersRequest =
+            new RssReassignServersRequest(
+                taskContext.stageId(),
+                taskContext.stageAttemptNumber(),
+                shuffleId,
+                partitioner.numPartitions());
+        RssReassignServersResponse rssReassignServersResponse =
+            AutoCloseWrapper.run(
+                managerClientAutoCloseWrapper,
+                (ShuffleManagerClient client) -> {
+                  return client.reassignOnStageResubmit(rssReassignServersRequest);
+                });
+        LOG.info(
+            "Whether the reassignment is successful: {}",
+            rssReassignServersResponse.isNeedReassign());
+        // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
+        // is
+        // provided.
+        FetchFailedException ffe =
+            RssSparkShuffleUtils.createFetchFailedException(
+                shuffleId, -1, taskContext.stageAttemptNumber(), e);
+        throw new RssException(ffe);
+      }
     }
     throw new RssException(e);
   }
