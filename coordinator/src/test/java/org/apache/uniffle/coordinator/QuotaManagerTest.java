@@ -97,14 +97,20 @@ public class QuotaManagerTest {
     conf.setInteger(CoordinatorConf.COORDINATOR_QUOTA_DEFAULT_APP_NUM, 5);
     try (ApplicationManager applicationManager = new ApplicationManager(conf)) {
       final AtomicInteger uuid = new AtomicInteger();
-      Map<String, Long> uuidAndTime = JavaUtils.newConcurrentMap();
-      uuidAndTime.put(String.valueOf(uuid.incrementAndGet()), System.currentTimeMillis());
-      uuidAndTime.put(String.valueOf(uuid.incrementAndGet()), System.currentTimeMillis());
-      uuidAndTime.put(String.valueOf(uuid.incrementAndGet()), System.currentTimeMillis());
-      uuidAndTime.put(String.valueOf(uuid.incrementAndGet()), System.currentTimeMillis());
+      Map<String, AppInfo> uuidAndTime = JavaUtils.newConcurrentMap();
+      String appId = String.valueOf(uuid.incrementAndGet());
+      uuidAndTime.put(appId, AppInfo.createAppInfo(appId, System.currentTimeMillis()));
+      appId = String.valueOf(uuid.incrementAndGet());
+      uuidAndTime.put(appId, AppInfo.createAppInfo(appId, System.currentTimeMillis()));
+      appId = String.valueOf(uuid.incrementAndGet());
+      uuidAndTime.put(appId, AppInfo.createAppInfo(appId, System.currentTimeMillis()));
+      appId = String.valueOf(uuid.incrementAndGet());
+      uuidAndTime.put(appId, AppInfo.createAppInfo(appId, System.currentTimeMillis()));
       final int i1 = uuid.incrementAndGet();
-      uuidAndTime.put(String.valueOf(i1), System.currentTimeMillis());
-      Map<String, Long> appAndTime =
+      uuidAndTime.put(
+          String.valueOf(i1),
+          AppInfo.createAppInfo(String.valueOf(i1), System.currentTimeMillis()));
+      Map<String, AppInfo> appAndTime =
           applicationManager
               .getQuotaManager()
               .getCurrentUserAndApp()
@@ -184,7 +190,7 @@ public class QuotaManagerTest {
           .until(() -> applicationManager.getDefaultUserApps().size() > 2);
 
       QuotaManager quotaManager = applicationManager.getQuotaManager();
-      Map<String, Map<String, Long>> currentUserAndApp = quotaManager.getCurrentUserAndApp();
+      Map<String, Map<String, AppInfo>> currentUserAndApp = quotaManager.getCurrentUserAndApp();
 
       currentUserAndApp.computeIfAbsent("user1", x -> mockUUidAppAndTime(30));
       currentUserAndApp.computeIfAbsent("user2", x -> mockUUidAppAndTime(20));
@@ -211,11 +217,20 @@ public class QuotaManagerTest {
     return String.valueOf(uuid.incrementAndGet());
   }
 
-  private Map<String, Long> mockUUidAppAndTime(int mockAppNum) {
-    Map<String, Long> uuidAndTime = JavaUtils.newConcurrentMap();
+  private Map<String, AppInfo> mockUUidAppAndTime(int mockAppNum) {
+    Map<String, AppInfo> uuidAndTime = JavaUtils.newConcurrentMap();
     for (int i = 0; i < mockAppNum; i++) {
-      uuidAndTime.put(mockUUidAppId(), System.currentTimeMillis());
+      String appId = mockUUidAppId();
+      long currentTimeMs = System.currentTimeMillis();
+      AppInfo appInfo = uuidAndTime.get(appId);
+      if (appInfo != null) {
+        appInfo.setUpdateTime(currentTimeMs);
+      } else {
+        appInfo = new AppInfo(appId, currentTimeMs, currentTimeMs);
+        uuidAndTime.put(appId, appInfo);
+      }
     }
+
     return uuidAndTime;
   }
 }

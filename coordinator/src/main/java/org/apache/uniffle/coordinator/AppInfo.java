@@ -15,29 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.web.vo;
+package org.apache.uniffle.coordinator;
 
 import java.util.Objects;
 
-public class AppInfoVO implements Comparable<AppInfoVO> {
-  private String userName;
+public class AppInfo implements Comparable<AppInfo> {
   private String appId;
   private long updateTime;
   private long registrationTime;
 
-  public AppInfoVO(String userName, String appId, long updateTime, long registrationTime) {
-    this.userName = userName;
+  public AppInfo(String appId, long updateTime, long registrationTime) {
     this.appId = appId;
     this.updateTime = updateTime;
     this.registrationTime = registrationTime;
-  }
-
-  public String getUserName() {
-    return userName;
-  }
-
-  public void setUserName(String userName) {
-    this.userName = userName;
   }
 
   public String getAppId() {
@@ -65,8 +55,8 @@ public class AppInfoVO implements Comparable<AppInfoVO> {
   }
 
   @Override
-  public int compareTo(AppInfoVO appInfoVO) {
-    return Long.compare(registrationTime, appInfoVO.getRegistrationTime());
+  public int compareTo(AppInfo appInfo) {
+    return Long.compare(registrationTime, appInfo.getRegistrationTime());
   }
 
   @Override
@@ -74,18 +64,21 @@ public class AppInfoVO implements Comparable<AppInfoVO> {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof AppInfoVO)) {
+    if (!(o instanceof AppInfo)) {
       return false;
     }
-    AppInfoVO appInfoVO = (AppInfoVO) o;
-    return updateTime == appInfoVO.updateTime
-        && registrationTime == appInfoVO.registrationTime
-        && userName.equals(appInfoVO.userName)
-        && appId.equals(appInfoVO.appId);
+    AppInfo appInfo = (AppInfo) o;
+    return updateTime == appInfo.updateTime
+        && registrationTime == appInfo.registrationTime
+        && appId.equals(appInfo.appId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(userName, appId, updateTime, registrationTime);
+    return Objects.hash(appId, updateTime, registrationTime);
+  }
+
+  public static AppInfo createAppInfo(String appId, long updateTime) {
+    return new AppInfo(appId, updateTime, updateTime);
   }
 }

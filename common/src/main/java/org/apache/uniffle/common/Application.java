@@ -28,6 +28,7 @@ public class Application implements Comparable<Application> {
   private String user;
   private String lastHeartBeatTime;
   private String remoteStoragePath;
+  private String registrationTime;
 
   public Application() {}
 
@@ -36,12 +37,14 @@ public class Application implements Comparable<Application> {
     this.user = builder.user;
     this.lastHeartBeatTime = builder.lastHeartBeatTime;
     this.remoteStoragePath = builder.remoteStoragePath;
+    this.registrationTime = builder.registrationTime;
   }
 
   public static class Builder {
     private String applicationId;
     private String user;
     private String lastHeartBeatTime;
+    private String registrationTime;
     private String remoteStoragePath;
 
     public Builder() {}
@@ -58,6 +61,11 @@ public class Application implements Comparable<Application> {
 
     public Builder lastHeartBeatTime(long lastHeartBeatTime) {
       this.lastHeartBeatTime = DateFormatUtils.format(lastHeartBeatTime, DATE_PATTERN);
+      return this;
+    }
+
+    public Builder registrationTime(long registrationTime) {
+      this.registrationTime = DateFormatUtils.format(registrationTime, DATE_PATTERN);
       return this;
     }
 
@@ -85,6 +93,10 @@ public class Application implements Comparable<Application> {
     return lastHeartBeatTime;
   }
 
+  public String getRegistrationTime() {
+    return registrationTime;
+  }
+
   public String getRemoteStoragePath() {
     return remoteStoragePath;
   }
@@ -101,6 +113,10 @@ public class Application implements Comparable<Application> {
     this.lastHeartBeatTime = lastHeartBeatTime;
   }
 
+  public void setRegistrationTime(String registrationTime) {
+    this.registrationTime = registrationTime;
+  }
+
   public void setRemoteStoragePath(String remoteStoragePath) {
     this.remoteStoragePath = remoteStoragePath;
   }
@@ -115,6 +131,7 @@ public class Application implements Comparable<Application> {
         .append(this.getApplicationId(), otherImpl.getApplicationId())
         .append(this.getUser(), otherImpl.getUser())
         .append(this.getLastHeartBeatTime(), otherImpl.getLastHeartBeatTime())
+        .append(this.getRegistrationTime(), otherImpl.getRegistrationTime())
         .append(this.getRemoteStoragePath(), otherImpl.getRemoteStoragePath())
         .isEquals();
   }
@@ -125,6 +142,7 @@ public class Application implements Comparable<Application> {
         .append(this.getApplicationId())
         .append(this.getUser())
         .append(this.getLastHeartBeatTime())
+        .append(this.getRegistrationTime())
         .append(this.getRemoteStoragePath())
         .toHashCode();
   }
@@ -145,6 +163,9 @@ public class Application implements Comparable<Application> {
         + '\''
         + ", lastHeartBeatTime='"
         + lastHeartBeatTime
+        + '\''
+        + ", registrationTime='"
+        + registrationTime
         + '\''
         + ", remoteStoragePath='"
         + remoteStoragePath

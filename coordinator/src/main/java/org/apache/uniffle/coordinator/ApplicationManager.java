@@ -72,7 +72,7 @@ public class ApplicationManager implements Closeable {
   private final Map<String, RemoteStorageInfo> availableRemoteStorageInfo;
   private final ScheduledExecutorService detectStorageScheduler;
   private final ScheduledExecutorService checkAppScheduler;
-  private Map<String, Map<String, Long>> currentUserAndApp = JavaUtils.newConcurrentMap();
+  private Map<String, Map<String, AppInfo>> currentUserAndApp = JavaUtils.newConcurrentMap();
   private Map<String, String> appIdToUser = JavaUtils.newConcurrentMap();
   private QuotaManager quotaManager;
   // it's only for test case to check if status check has problem
@@ -130,17 +130,18 @@ public class ApplicationManager implements Closeable {
     // implementation class
     // in such case by default, there is no currentUserAndApp, so a unified user implementation
     // named "user" is used.
-    Map<String, Long> appAndTime =
+    Map<String, AppInfo> appAndTime =
         currentUserAndApp.computeIfAbsent(user, x -> JavaUtils.newConcurrentMap());
     appIdToUser.put(appId, user);
     if (!appAndTime.containsKey(appId)) {
       CoordinatorMetrics.counterTotalAppNum.inc();
       LOG.info("New application is registered: {}", appId);
     }
+    AppInfo appInfo = AppInfo.createAppInfo(appId, System.currentTimeMillis());
     if (quotaManager != null) {
       quotaManager.registerApplicationInfo(appId, appAndTime);
     } else {
-      appAndTime.put(appId, System.currentTimeMillis());
+      appAndTime.put(appId, appInfo);
     }
   }
 
@@ -150,8 +151,15 @@ public class ApplicationManager implements Closeable {
     if (user == null) {
       registerApplicationInfo(appId, "");
     } else {
-      Map<String, Long> appAndTime = currentUserAndApp.get(user);
-      appAndTime.put(appId, System.currentTimeMillis());
+      Map<String, AppInfo> appAndTime = currentUserAndApp.get(user);
+      AppInfo appInfo = appAndTime.get(appId);
+      long currentTimeMs = System.currentTimeMillis();
+      if (appInfo != null) {
+        appInfo.setUpdateTime(currentTimeMs);
+      } else {
+        appInfo = new AppInfo(appId, currentTimeMs, currentTimeMs);
+        appAndTime.put(appId, appInfo);
+      }
     }
   }
 
@@ -317,8 +325,8 @@ public class ApplicationManager implements Closeable {
   }
 
   protected void statusCheck() {
-    List<Map<String, Long>> appAndNums = Lists.newArrayList(currentUserAndApp.values());
-    Map<String, Long> appIds = Maps.newHashMap();
+    List<Map<String, AppInfo>> appAndNums = Lists.newArrayList(currentUserAndApp.values());
+    Map<String, AppInfo> appIds = Maps.newHashMap();
     // The reason for setting an expired uuid here is that there is a scenario where accessCluster
     // succeeds,
     // but the registration of shuffle fails, resulting in no normal heartbeat, and no normal update
@@ -326,12 +334,12 @@ public class ApplicationManager implements Closeable {
     // Therefore, an expiration time is set to automatically remove expired uuids
     Set<String> expiredAppIds = Sets.newHashSet();
     try {
-      for (Map<String, Long> appAndTimes : appAndNums) {
-        for (Map.Entry<String, Long> appAndTime : appAndTimes.entrySet()) {
+      for (Map<String, AppInfo> appAndTimes : appAndNums) {
+        for (Map.Entry<String, AppInfo> appAndTime : appAndTimes.entrySet()) {
           String appId = appAndTime.getKey();
-          long lastReport = appAndTime.getValue();
+          AppInfo lastReport = appAndTime.getValue();
           appIds.put(appId, lastReport);
-          if (System.currentTimeMillis() - lastReport > expired) {
+          if (System.currentTimeMillis() - lastReport.getUpdateTime() > expired) {
             expiredAppIds.add(appId);
             appAndTimes.remove(appId);
             appIdToUser.remove(appId);
@@ -416,11 +424,11 @@ public class ApplicationManager implements Closeable {
       String pHeartBeatEndTime,
       String appIdRegex) {
     List<Application> applications = new ArrayList<>();
-    for (Map.Entry<String, Map<String, Long>> entry : currentUserAndApp.entrySet()) {
+    for (Map.Entry<String, Map<String, AppInfo>> entry : currentUserAndApp.entrySet()) {
       String user = entry.getKey();
-      Map<String, Long> apps = entry.getValue();
+      Map<String, AppInfo> apps = entry.getValue();
       apps.forEach(
-          (appId, heartBeatTime) -> {
+          (appId, appInfo) -> {
             // Filter condition 1: Check whether applicationId is included in the filter list.
             boolean match = appIds.size() == 0 || appIds.contains(appId);
 
@@ -435,7 +443,7 @@ public class ApplicationManager implements Closeable {
                 || StringUtils.isNotBlank(pHeartBeatEndTime)) {
               match =
                   matchHeartBeatStartTimeAndEndTime(
-                      pHeartBeatStartTime, pHeartBeatEndTime, heartBeatTime);
+                      pHeartBeatStartTime, pHeartBeatEndTime, appInfo.getUpdateTime());
             }
 
             // If it meets expectations, add to the list to be returned.
@@ -446,7 +454,8 @@ public class ApplicationManager implements Closeable {
                   new Application.Builder()
                       .applicationId(appId)
                       .user(user)
-                      .lastHeartBeatTime(heartBeatTime)
+                      .lastHeartBeatTime(appInfo.getUpdateTime())
+                      .registrationTime(appInfo.getRegistrationTime())
                       .remoteStoragePath(remoteStorageInfo)
                       .build();
               applications.add(application);
@@ -527,7 +536,7 @@ public class ApplicationManager implements Closeable {
     return REMOTE_PATH_SCHEMA;
   }
 
-  public Map<String, Map<String, Long>> getCurrentUserAndApp() {
+  public Map<String, Map<String, AppInfo>> getCurrentUserAndApp() {
     return currentUserAndApp;
   }
 

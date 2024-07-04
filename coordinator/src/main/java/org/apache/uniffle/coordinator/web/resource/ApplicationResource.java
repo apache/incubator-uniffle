@@ -32,6 +32,7 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
 import org.apache.uniffle.common.web.resource.BaseResource;
 import org.apache.uniffle.common.web.resource.Response;
+import org.apache.uniffle.coordinator.AppInfo;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.web.vo.AppInfoVO;
 import org.apache.uniffle.coordinator.web.vo.UserAppNumVO;
@@ -57,10 +58,11 @@ public class ApplicationResource extends BaseResource {
   public Response<List<UserAppNumVO>> getUserApps() {
     return execute(
         () -> {
-          Map<String, Map<String, Long>> currentUserAndApp =
+          Map<String, Map<String, AppInfo>> currentUserAndApp =
               getApplicationManager().getCurrentUserAndApp();
           List<UserAppNumVO> usercnt = new ArrayList<>();
-          for (Map.Entry<String, Map<String, Long>> stringMapEntry : currentUserAndApp.entrySet()) {
+          for (Map.Entry<String, Map<String, AppInfo>> stringMapEntry :
+              currentUserAndApp.entrySet()) {
             String userName = stringMapEntry.getKey();
             usercnt.add(new UserAppNumVO(userName, stringMapEntry.getValue().size()));
           }
@@ -76,16 +78,19 @@ public class ApplicationResource extends BaseResource {
     return execute(
         () -> {
           List<AppInfoVO> userToAppList = new ArrayList<>();
-          Map<String, Map<String, Long>> currentUserAndApp =
+          Map<String, Map<String, AppInfo>> currentUserAndApp =
               getApplicationManager().getCurrentUserAndApp();
-          for (Map.Entry<String, Map<String, Long>> userAppIdTimestampMap :
+          for (Map.Entry<String, Map<String, AppInfo>> userAppIdTimestampMap :
               currentUserAndApp.entrySet()) {
-            String userName = userAppIdTimestampMap.getKey();
-            for (Map.Entry<String, Long> appIdTimestampMap :
+            for (Map.Entry<String, AppInfo> appIdTimestampMap :
                 userAppIdTimestampMap.getValue().entrySet()) {
+              AppInfo appInfo = appIdTimestampMap.getValue();
               userToAppList.add(
                   new AppInfoVO(
-                      userName, appIdTimestampMap.getKey(), appIdTimestampMap.getValue()));
+                      userAppIdTimestampMap.getKey(),
+                      appInfo.getAppId(),
+                      appInfo.getUpdateTime(),
+                      appInfo.getRegistrationTime()));
             }
           }
           // Display is inverted by the submission time of the application.
