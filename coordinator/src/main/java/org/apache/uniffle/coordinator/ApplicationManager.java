@@ -456,7 +456,7 @@ public class ApplicationManager implements Closeable {
                       .applicationId(appId)
                       .user(user)
                       .lastHeartBeatTime(appInfo.getUpdateTime())
-                      .registerTime(appInfo.getRegisterTime())
+                      .registrationTime(appInfo.getRegistrationTime())
                       .remoteStoragePath(remoteStorageInfo)
                       .build();
               applications.add(application);

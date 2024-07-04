@@ -22,12 +22,12 @@ import java.util.Objects;
 public class AppInfo implements Comparable<AppInfo> {
   private String appId;
   private long updateTime;
-  private long registerTime;
+  private long registrationTime;
 
-  public AppInfo(String appId, long updateTime, long registerTime) {
+  public AppInfo(String appId, long updateTime, long registrationTime) {
     this.appId = appId;
     this.updateTime = updateTime;
-    this.registerTime = registerTime;
+    this.registrationTime = registrationTime;
   }
 
   public String getAppId() {
@@ -46,17 +46,17 @@ public class AppInfo implements Comparable<AppInfo> {
     this.updateTime = updateTime;
   }
 
-  public long getRegisterTime() {
-    return registerTime;
+  public long getRegistrationTime() {
+    return registrationTime;
   }
 
-  public void setRegisterTime(long registerTime) {
-    this.registerTime = registerTime;
+  public void setRegistrationTime(long registrationTime) {
+    this.registrationTime = registrationTime;
   }
 
   @Override
   public int compareTo(AppInfo appInfo) {
-    return Long.compare(registerTime, appInfo.getRegisterTime());
+    return Long.compare(registrationTime, appInfo.getRegistrationTime());
   }
 
   @Override
@@ -69,13 +69,13 @@ public class AppInfo implements Comparable<AppInfo> {
     }
     AppInfo appInfo = (AppInfo) o;
     return updateTime == appInfo.updateTime
-        && registerTime == appInfo.registerTime
+        && registrationTime == appInfo.registrationTime
         && appId.equals(appInfo.appId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(appId, updateTime, registerTime);
+    return Objects.hash(appId, updateTime, registrationTime);
   }
 
   public static AppInfo createAppInfo(String appId, long updateTime) {

@@ -223,7 +223,7 @@ public class UniffleCLI extends AbstractCustomCommandLine {
                     formattingCLIUtils.addLine(
                         app.getApplicationId(),
                         app.getUser(),
-                        app.getRegisterTime(),
+                        app.getRegistrationTime(),
                         app.getLastHeartBeatTime(),
                         app.getRemoteStoragePath()));
           }

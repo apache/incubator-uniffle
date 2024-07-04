@@ -23,13 +23,13 @@ public class AppInfoVO implements Comparable<AppInfoVO> {
   private String userName;
   private String appId;
   private long updateTime;
-  private long registerTime;
+  private long registrationTime;
 
-  public AppInfoVO(String userName, String appId, long updateTime, long registerTime) {
+  public AppInfoVO(String userName, String appId, long updateTime, long registrationTime) {
     this.userName = userName;
     this.appId = appId;
     this.updateTime = updateTime;
-    this.registerTime = registerTime;
+    this.registrationTime = registrationTime;
   }
 
   public String getUserName() {
@@ -56,17 +56,17 @@ public class AppInfoVO implements Comparable<AppInfoVO> {
     this.updateTime = updateTime;
   }
 
-  public long getRegisterTime() {
-    return registerTime;
+  public long getRegistrationTime() {
+    return registrationTime;
   }
 
-  public void setRegisterTime(long registerTime) {
-    this.registerTime = registerTime;
+  public void setRegistrationTime(long registrationTime) {
+    this.registrationTime = registrationTime;
   }
 
   @Override
   public int compareTo(AppInfoVO appInfoVO) {
-    return Long.compare(registerTime, appInfoVO.getRegisterTime());
+    return Long.compare(registrationTime, appInfoVO.getRegistrationTime());
   }
 
   @Override
@@ -79,13 +79,13 @@ public class AppInfoVO implements Comparable<AppInfoVO> {
     }
     AppInfoVO appInfoVO = (AppInfoVO) o;
     return updateTime == appInfoVO.updateTime
-        && registerTime == appInfoVO.registerTime
+        && registrationTime == appInfoVO.registrationTime
         && userName.equals(appInfoVO.userName)
         && appId.equals(appInfoVO.appId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(userName, appId, updateTime, registerTime);
+    return Objects.hash(userName, appId, updateTime, registrationTime);
   }
 }

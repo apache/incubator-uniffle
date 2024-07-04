@@ -90,7 +90,7 @@ public class ApplicationResource extends BaseResource {
                       userAppIdTimestampMap.getKey(),
                       appInfo.getAppId(),
                       appInfo.getUpdateTime(),
-                      appInfo.getRegisterTime()));
+                      appInfo.getRegistrationTime()));
             }
           }
           // Display is inverted by the submission time of the application.
