@@ -137,8 +137,7 @@ public class ApplicationManager implements Closeable {
       CoordinatorMetrics.counterTotalAppNum.inc();
       LOG.info("New application is registered: {}", appId);
     }
-    long currentTimeMs = System.currentTimeMillis();
-    AppInfo appInfo = new AppInfo(appId, currentTimeMs, currentTimeMs);
+    AppInfo appInfo = AppInfo.createAppInfo(appId, System.currentTimeMillis());
     if (quotaManager != null) {
       quotaManager.registerApplicationInfo(appId, appAndTime);
     } else {
