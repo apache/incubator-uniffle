@@ -17,6 +17,10 @@
 # limitations under the License.
 #
 
+set -o pipefail
+set -o nounset   # exit the script if you try to use an uninitialised variable
+set -o errexit   # exit the script if any statement returns a non-true return value
+
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 SRC_DIR="$SCRIPT_DIR/runConfigurations"
 DEST_DIR="$SCRIPT_DIR/../../.idea/runConfigurations/"
