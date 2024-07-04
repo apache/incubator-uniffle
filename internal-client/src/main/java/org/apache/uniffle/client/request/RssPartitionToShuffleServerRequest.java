@@ -20,20 +20,34 @@ package org.apache.uniffle.client.request;
 import org.apache.uniffle.proto.RssProtos;
 
 public class RssPartitionToShuffleServerRequest {
+  private int stageAttemptId;
+  private int stageAttemptNumber;
   private int shuffleId;
+  private int numPartitions;
 
-  public RssPartitionToShuffleServerRequest(int shuffleId) {
+  public RssPartitionToShuffleServerRequest(
+      int stageAttemptId, int stageAttemptNumber, int shuffleId, int numPartitions) {
+    this.stageAttemptId = stageAttemptId;
+    this.stageAttemptNumber = stageAttemptNumber;
     this.shuffleId = shuffleId;
+    this.numPartitions = numPartitions;
   }
 
   public int getShuffleId() {
     return shuffleId;
   }
 
+  public int getStageAttemptNumber() {
+    return stageAttemptNumber;
+  }
+
   public RssProtos.PartitionToShuffleServerRequest toProto() {
     RssProtos.PartitionToShuffleServerRequest.Builder builder =
         RssProtos.PartitionToShuffleServerRequest.newBuilder();
+    builder.setStageAttemptId(stageAttemptId);
+    builder.setStageAttemptNumber(stageAttemptNumber);
     builder.setShuffleId(shuffleId);
+    builder.setNumPartitions(numPartitions);
     return builder.build();
   }
 }

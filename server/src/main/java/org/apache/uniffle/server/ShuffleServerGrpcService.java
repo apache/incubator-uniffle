@@ -206,43 +206,46 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       // If the Stage is registered for the first time, you do not need to consider the Stage retry
       // and delete the Block data that has been sent.
       if (stageAttemptNumber > 0) {
+
         ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
-        // Prevents AttemptNumber of multiple stages from modifying the latest AttemptNumber.
-        synchronized (taskInfo) {
-          int attemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
-          if (stageAttemptNumber > attemptNumber) {
-            taskInfo.refreshLatestStageAttemptNumber(shuffleId, stageAttemptNumber);
-            try {
-              long start = System.currentTimeMillis();
-              shuffleServer.getShuffleTaskManager().removeShuffleDataSync(appId, shuffleId);
-              LOG.info(
-                  "Deleted the previous stage attempt data due to stage recomputing for app: {}, "
-                      + "shuffleId: {}. It costs {} ms",
-                  appId,
-                  shuffleId,
-                  System.currentTimeMillis() - start);
-            } catch (Exception e) {
-              LOG.error(
-                  "Errors on clearing previous stage attempt data for app: {}, shuffleId: {}",
-                  appId,
-                  shuffleId,
-                  e);
-              StatusCode code = StatusCode.INTERNAL_ERROR;
+        if (taskInfo != null) {
+          // Prevents AttemptNumber of multiple stages from modifying the latest AttemptNumber.
+          synchronized (taskInfo) {
+            int attemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
+            if (stageAttemptNumber > attemptNumber) {
+              taskInfo.refreshLatestStageAttemptNumber(shuffleId, stageAttemptNumber);
+              try {
+                long start = System.currentTimeMillis();
+                shuffleServer.getShuffleTaskManager().removeShuffleDataSync(appId, shuffleId);
+                LOG.info(
+                    "Deleted the previous stage attempt data due to stage recomputing for app: {}, "
+                        + "shuffleId: {}. It costs {} ms",
+                    appId,
+                    shuffleId,
+                    System.currentTimeMillis() - start);
+              } catch (Exception e) {
+                LOG.error(
+                    "Errors on clearing previous stage attempt data for app: {}, shuffleId: {}",
+                    appId,
+                    shuffleId,
+                    e);
+                StatusCode code = StatusCode.INTERNAL_ERROR;
+                auditContext.setStatusCode(code);
+                reply = ShuffleRegisterResponse.newBuilder().setStatus(code.toProto()).build();
+                responseObserver.onNext(reply);
+                responseObserver.onCompleted();
+                return;
+              }
+            } else if (stageAttemptNumber < attemptNumber) {
+              // When a Stage retry occurs, the first or last registration of a Stage may need to be
+              // ignored and the ignored status quickly returned.
+              StatusCode code = StatusCode.STAGE_RETRY_IGNORE;
               auditContext.setStatusCode(code);
               reply = ShuffleRegisterResponse.newBuilder().setStatus(code.toProto()).build();
               responseObserver.onNext(reply);
               responseObserver.onCompleted();
               return;
             }
-          } else if (stageAttemptNumber < attemptNumber) {
-            // When a Stage retry occurs, the first or last registration of a Stage may need to be
-            // ignored and the ignored status quickly returned.
-            StatusCode code = StatusCode.STAGE_RETRY_IGNORE;
-            auditContext.setStatusCode(code);
-            reply = ShuffleRegisterResponse.newBuilder().setStatus(code.toProto()).build();
-            responseObserver.onNext(reply);
-            responseObserver.onCompleted();
-            return;
           }
         }
       }
