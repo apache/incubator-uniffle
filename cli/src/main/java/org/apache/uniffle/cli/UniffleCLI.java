@@ -60,7 +60,7 @@ public class UniffleCLI extends AbstractCustomCommandLine {
 
   private static final List<String> APPLICATIONS_HEADER =
       Arrays.asList(
-          "ApplicationId", "User", "Register Time", "Last HeartBeatTime", "RemoteStoragePath");
+          "ApplicationId", "User", "Registration Time", "Last HeartBeatTime", "RemoteStoragePath");
 
   public UniffleCLI(String shortPrefix, String longPrefix) {
     allOptions = new Options();
