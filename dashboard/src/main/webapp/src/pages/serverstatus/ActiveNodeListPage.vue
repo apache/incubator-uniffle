@@ -38,6 +38,12 @@
       <el-table-column prop="eventNumInFlush" label="FlushNum" min-width="80" />
       <el-table-column prop="status" label="Status" min-width="80" />
       <el-table-column
+        prop="registrationTime"
+        label="RegistrationTime"
+        min-width="80"
+        :formatter="dateFormatter"
+      />
+      <el-table-column
         prop="timestamp"
         label="HeartbeatTime"
         min-width="80"
@@ -68,6 +74,7 @@ export default {
           eventNumInFlush: 0,
           tags: '',
           status: '',
+          registrationTime: '',
           timestamp: ''
         }
       ]

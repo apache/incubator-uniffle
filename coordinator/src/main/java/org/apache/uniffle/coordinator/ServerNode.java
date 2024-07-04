@@ -36,6 +36,7 @@ public class ServerNode implements Comparable<ServerNode> {
   private long preAllocatedMemory;
   private long availableMemory;
   private int eventNumInFlush;
+  private long registrationTime;
   private long timestamp;
   private Set<String> tags;
   private ServerStatus status;
@@ -136,7 +137,8 @@ public class ServerNode implements Comparable<ServerNode> {
     this.preAllocatedMemory = preAllocatedMemory;
     this.availableMemory = availableMemory;
     this.eventNumInFlush = eventNumInFlush;
-    this.timestamp = System.currentTimeMillis();
+    this.registrationTime = System.currentTimeMillis();
+    this.timestamp = registrationTime;
     this.tags = tags;
     this.status = status;
     this.storageInfo = storageInfoMap;
@@ -237,6 +239,14 @@ public class ServerNode implements Comparable<ServerNode> {
     this.timestamp = timestamp;
   }
 
+  public void setRegistrationTime(long registrationTime) {
+    this.registrationTime = registrationTime;
+  }
+
+  public long getRegistrationTime() {
+    return registrationTime;
+  }
+
   @Override
   public int compareTo(ServerNode other) {
     if (availableMemory > other.getAvailableMemory()) {
@@ -266,5 +276,19 @@ public class ServerNode implements Comparable<ServerNode> {
 
   public int getNettyPort() {
     return nettyPort;
+  }
+
+  public void update(ServerNode node) {
+    this.ip = node.getIp();
+    this.grpcPort = node.getGrpcPort();
+    this.usedMemory = node.getUsedMemory();
+    this.preAllocatedMemory = node.getPreAllocatedMemory();
+    this.availableMemory = node.getAvailableMemory();
+    this.eventNumInFlush = node.getEventNumInFlush();
+    this.timestamp = System.currentTimeMillis();
+    this.tags = node.getTags();
+    this.status = node.getStatus();
+    this.storageInfo = node.getStorageInfo();
+    this.nettyPort = node.getNettyPort();
   }
 }
