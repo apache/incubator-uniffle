@@ -324,6 +324,11 @@ public class WriteBufferManager extends MemoryConsumer {
     return shuffleBlockInfos;
   }
 
+  // Gluten needs this method.
+  public synchronized List<ShuffleBlockInfo> clear() {
+    return clear(bufferSpillRatio);
+  }
+
   // transform all [partition, records] to [partition, ShuffleBlockInfo] and clear cache
   public synchronized List<ShuffleBlockInfo> clear(double bufferSpillRatio) {
     List<ShuffleBlockInfo> result = Lists.newArrayList();
