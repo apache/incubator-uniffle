@@ -162,13 +162,20 @@ public class ShuffleFlushManager {
               user,
               maxConcurrencyPerPartitionToWrite);
       ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
-      boolean writeSuccess = storageManager.write(storage, handler, event);
-      if (!writeSuccess) {
-        throw new EventRetryException();
+      boolean writeSuccess = false;
+      try {
+        writeSuccess = storageManager.write(storage, handler, event);
+      } catch(Exception e) {
+        // do nothing, log exception and proceed
+        LOG.error("storageManager write error.", e);
       }
 
       // update some metrics for shuffle task
       updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
+
+      if (!writeSuccess) {
+        throw new EventRetryException();
+      }
       ShuffleTaskInfo shuffleTaskInfo =
           shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
       if (null != shuffleTaskInfo) {
