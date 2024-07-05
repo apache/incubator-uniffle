@@ -140,7 +140,7 @@ public abstract class RPCMetrics {
       // getOrAdd counter by specified metricKey
       Counter.Child counter =
           counterMap.computeIfAbsent(metricKey, k -> metricsManager.addLabeledCounter(metricKey));
-      if (counter == null) {
+      if (counter != null) {
         counter.inc(value);
       }
     }
