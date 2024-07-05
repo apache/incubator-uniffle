@@ -128,15 +128,22 @@ public abstract class RPCMetrics {
   }
 
   public void incCounter(String metricKey) {
+    incCounter(metricKey, 1.0);
+  }
+
+  public void incCounter(String metricKey, double value) {
     if (isRegistered) {
       Gauge.Child gauge = gaugeMap.get(metricKey);
       if (gauge != null) {
-        gauge.inc();
+        gauge.inc(value);
       }
       Counter.Child counter = counterMap.get(metricKey);
-      if (counter != null) {
-        counter.inc();
+      // getOrAdd counter by specified metricKey
+      if (counter == null) {
+        counter = metricsManager.addLabeledCounter(metricKey);
+        counterMap.put(metricKey, counter);
       }
+      counter.inc(value);
     }
   }
 

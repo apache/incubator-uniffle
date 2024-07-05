@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.common.rpc.RpcUtils;
 import org.apache.uniffle.common.storage.StorageInfoUtils;
 import org.apache.uniffle.coordinator.access.AccessCheckResult;
 import org.apache.uniffle.coordinator.access.AccessInfo;
@@ -81,15 +82,20 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
   @Override
   public void getShuffleServerList(
       Empty request, StreamObserver<GetShuffleServerListResponse> responseObserver) {
-    final GetShuffleServerListResponse response =
-        GetShuffleServerListResponse.newBuilder()
-            .addAllServers(
-                coordinatorServer.getClusterManager().list().stream()
-                    .map(ServerNode::convertToGrpcProto)
-                    .collect(Collectors.toList()))
-            .build();
-    responseObserver.onNext(response);
-    responseObserver.onCompleted();
+    RpcUtils.call(
+        LOG,
+        coordinatorServer.getGrpcMetrics(),
+        () ->
+            GetShuffleServerListResponse.newBuilder()
+                .addAllServers(
+                    coordinatorServer.getClusterManager().list().stream()
+                        .map(ServerNode::convertToGrpcProto)
+                        .collect(Collectors.toList()))
+                .build(),
+        "GetShuffleServerList",
+        "request=%s",
+        responseObserver,
+        request);
   }
 
   @Override
@@ -178,18 +184,26 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
   public void heartbeat(
       ShuffleServerHeartBeatRequest request,
       StreamObserver<ShuffleServerHeartBeatResponse> responseObserver) {
-    final ServerNode serverNode = toServerNode(request);
-    coordinatorServer.getClusterManager().add(serverNode);
-    final ShuffleServerHeartBeatResponse response =
-        ShuffleServerHeartBeatResponse.newBuilder()
-            .setRetMsg("")
-            .setStatus(StatusCode.SUCCESS)
-            .build();
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Got heartbeat from {}", serverNode);
-    }
-    responseObserver.onNext(response);
-    responseObserver.onCompleted();
+    RpcUtils.call(
+        LOG,
+        coordinatorServer.getGrpcMetrics(),
+        () -> {
+          final ServerNode serverNode = toServerNode(request);
+          coordinatorServer.getClusterManager().add(serverNode);
+          final ShuffleServerHeartBeatResponse response =
+              ShuffleServerHeartBeatResponse.newBuilder()
+                  .setRetMsg("")
+                  .setStatus(StatusCode.SUCCESS)
+                  .build();
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Got heartbeat from {}", serverNode);
+          }
+          return response;
+        },
+        "Heartbeat",
+        "request=%s",
+        responseObserver,
+        request);
   }
 
   @Override
