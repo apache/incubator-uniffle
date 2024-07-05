@@ -75,7 +75,7 @@ public class RssEventFetcher<K, V> {
     String errMsg = "TaskAttemptIDs are inconsistent with map tasks";
     for (TaskAttemptID taskAttemptID : successMaps) {
       if (!obsoleteMaps.contains(taskAttemptID)) {
-        long rssTaskId = RssMRUtils.convertTaskAttemptIdToLong(taskAttemptID, appAttemptId);
+        long rssTaskId = RssMRUtils.createRssTaskAttemptId(taskAttemptID, appAttemptId, jobConf);
         int mapIndex = taskAttemptID.getTaskID().getId();
         // There can be multiple successful attempts on same map task.
         // So we only need to accept one of them.

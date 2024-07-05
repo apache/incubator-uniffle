@@ -36,6 +36,8 @@ import org.apache.uniffle.client.util.DefaultIdHelper;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.RssUtils;
 
+import static org.apache.uniffle.client.util.ClientUtils.getMaxAttemptNo;
+import static org.apache.uniffle.client.util.ClientUtils.getNumberOfSignificantBits;
 import static org.apache.uniffle.client.util.ClientUtils.waitUntilDoneOrFail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -133,5 +135,45 @@ public class ClientUtilsTest {
     } catch (Exception e) {
       // Ignore
     }
+  }
+
+  @Test
+  public void testGetMaxAttemptNo() {
+    // without speculation
+    assertEquals(0, getMaxAttemptNo(-1, false));
+    assertEquals(0, getMaxAttemptNo(0, false));
+    assertEquals(0, getMaxAttemptNo(1, false));
+    assertEquals(1, getMaxAttemptNo(2, false));
+    assertEquals(2, getMaxAttemptNo(3, false));
+    assertEquals(3, getMaxAttemptNo(4, false));
+    assertEquals(4, getMaxAttemptNo(5, false));
+    assertEquals(1023, getMaxAttemptNo(1024, false));
+
+    // with speculation
+    assertEquals(1, getMaxAttemptNo(-1, true));
+    assertEquals(1, getMaxAttemptNo(0, true));
+    assertEquals(1, getMaxAttemptNo(1, true));
+    assertEquals(2, getMaxAttemptNo(2, true));
+    assertEquals(3, getMaxAttemptNo(3, true));
+    assertEquals(4, getMaxAttemptNo(4, true));
+    assertEquals(5, getMaxAttemptNo(5, true));
+    assertEquals(1024, getMaxAttemptNo(1024, true));
+  }
+
+  @Test
+  public void testGetNumberOfSignificantBits() {
+    assertEquals(0, getNumberOfSignificantBits(0));
+    assertEquals(1, getNumberOfSignificantBits(1));
+    assertEquals(2, getNumberOfSignificantBits(2));
+    assertEquals(2, getNumberOfSignificantBits(3));
+    assertEquals(3, getNumberOfSignificantBits(4));
+    assertEquals(3, getNumberOfSignificantBits(5));
+    assertEquals(3, getNumberOfSignificantBits(6));
+    assertEquals(3, getNumberOfSignificantBits(7));
+    assertEquals(4, getNumberOfSignificantBits(8));
+    assertEquals(4, getNumberOfSignificantBits(9));
+    assertEquals(10, getNumberOfSignificantBits(1023));
+    assertEquals(11, getNumberOfSignificantBits(1024));
+    assertEquals(11, getNumberOfSignificantBits(1025));
   }
 }

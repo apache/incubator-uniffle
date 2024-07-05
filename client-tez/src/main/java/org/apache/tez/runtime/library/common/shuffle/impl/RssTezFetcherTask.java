@@ -74,6 +74,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
   private final int partitionNum;
   private final int shuffleId;
   private final ApplicationAttemptId applicationAttemptId;
+  private final int maxAttemptNo;
 
   public RssTezFetcherTask(
       FetcherCallback fetcherCallback,
@@ -88,7 +89,8 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
       Map<Integer, Roaring64NavigableMap> rssAllBlockIdBitmapMap,
       Map<Integer, Roaring64NavigableMap> rssSuccessBlockIdBitmapMap,
       int numPhysicalInputs,
-      int partitionNum) {
+      int partitionNum,
+      int maxAttemptNo) {
     assert (inputs != null && inputs.size() > 0);
     this.fetcherCallback = fetcherCallback;
     this.inputContext = inputContext;
@@ -131,6 +133,7 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
         conf.getInt(
             RssTezConfig.RSS_PARTITION_NUM_PER_RANGE,
             RssTezConfig.RSS_PARTITION_NUM_PER_RANGE_DEFAULT_VALUE);
+    this.maxAttemptNo = maxAttemptNo;
     LOG.info(
         "RssTezFetcherTask fetch partition:{}, with inputs:{}, readBufferSize:{}, partitionNumPerRange:{}.",
         this.partition,
@@ -159,7 +162,8 @@ public class RssTezFetcherTask extends CallableWithNdc<FetchResult> {
     // final RssEventFetcher eventFetcher = new RssEventFetcher(inputs, numPhysicalInputs);
     int appAttemptId = applicationAttemptId.getAttemptId();
     Roaring64NavigableMap taskIdBitmap =
-        RssTezUtils.fetchAllRssTaskIds(new HashSet<>(inputs), numPhysicalInputs, appAttemptId);
+        RssTezUtils.fetchAllRssTaskIds(
+            new HashSet<>(inputs), numPhysicalInputs, appAttemptId, this.maxAttemptNo);
     LOG.info(
         "Inputs:{}, num input:{}, appAttemptId:{}, taskIdBitmap:{}",
         inputs,

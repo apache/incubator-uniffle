@@ -75,7 +75,7 @@ public class SortWriteBufferManagerTest {
     manager =
         new SortWriteBufferManager<BytesWritable, BytesWritable>(
             10240,
-            1L,
+            1,
             10,
             serializationFactory.getSerializer(BytesWritable.class),
             serializationFactory.getSerializer(BytesWritable.class),
@@ -139,7 +139,7 @@ public class SortWriteBufferManagerTest {
     manager =
         new SortWriteBufferManager<BytesWritable, BytesWritable>(
             100,
-            1L,
+            1,
             10,
             serializationFactory.getSerializer(BytesWritable.class),
             serializationFactory.getSerializer(BytesWritable.class),
@@ -191,7 +191,7 @@ public class SortWriteBufferManagerTest {
     manager =
         new SortWriteBufferManager<BytesWritable, BytesWritable>(
             10240,
-            1L,
+            1,
             10,
             serializationFactory.getSerializer(BytesWritable.class),
             serializationFactory.getSerializer(BytesWritable.class),
@@ -243,7 +243,7 @@ public class SortWriteBufferManagerTest {
     manager =
         new SortWriteBufferManager<BytesWritable, BytesWritable>(
             10240,
-            1L,
+            1,
             10,
             serializationFactory.getSerializer(BytesWritable.class),
             serializationFactory.getSerializer(BytesWritable.class),
@@ -310,7 +310,7 @@ public class SortWriteBufferManagerTest {
     manager =
         new SortWriteBufferManager<BytesWritable, BytesWritable>(
             10240,
-            1L,
+            1,
             10,
             serializationFactory.getSerializer(BytesWritable.class),
             serializationFactory.getSerializer(BytesWritable.class),
@@ -389,7 +389,7 @@ public class SortWriteBufferManagerTest {
     SortWriteBufferManager<Text, IntWritable> manager =
         new SortWriteBufferManager<Text, IntWritable>(
             10240,
-            1L,
+            1,
             10,
             keySerializer,
             valueSerializer,
