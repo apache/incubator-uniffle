@@ -17,6 +17,7 @@
 
 package org.apache.spark.shuffle.writer;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +30,8 @@ public class AddBlockEvent {
   private List<ShuffleBlockInfo> shuffleDataInfoList;
   private List<Runnable> processedCallbackChain;
 
+  // only for tests.
+  @VisibleForTesting
   public AddBlockEvent(String taskId, List<ShuffleBlockInfo> shuffleDataInfoList) {
     this(taskId, 0, shuffleDataInfoList);
   }

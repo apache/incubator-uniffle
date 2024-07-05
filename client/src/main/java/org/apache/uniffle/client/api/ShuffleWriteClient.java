@@ -162,13 +162,32 @@ public interface ShuffleWriteClient {
       int shuffleId,
       int partitionId);
 
+  default Roaring64NavigableMap getShuffleResultForMultiPart(
+      String clientType,
+      Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
+      String appId,
+      int shuffleId,
+      Set<Integer> failedPartitions,
+      PartitionDataReplicaRequirementTracking replicaRequirementTracking) {
+    return getShuffleResultForMultiPart(
+        clientType,
+        serverToPartitions,
+        appId,
+        shuffleId,
+        failedPartitions,
+        replicaRequirementTracking,
+        0
+    );
+  }
+
   Roaring64NavigableMap getShuffleResultForMultiPart(
       String clientType,
       Map<ShuffleServerInfo, Set<Integer>> serverToPartitions,
       String appId,
       int shuffleId,
       Set<Integer> failedPartitions,
-      PartitionDataReplicaRequirementTracking replicaRequirementTracking);
+      PartitionDataReplicaRequirementTracking replicaRequirementTracking,
+      int stageAttemptNumber);
 
   void close();
 

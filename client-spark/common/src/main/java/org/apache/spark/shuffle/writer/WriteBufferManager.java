@@ -34,6 +34,7 @@ import scala.reflect.ManifestFactory$;
 import com.clearspring.analytics.util.Lists;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import org.apache.spark.TaskContext$;
 import org.apache.spark.executor.ShuffleWriteMetrics;
 import org.apache.spark.memory.MemoryConsumer;
 import org.apache.spark.memory.MemoryMode;
@@ -100,6 +101,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private BlockIdLayout blockIdLayout;
   private double bufferSpillRatio;
   private Function<Integer, List<ShuffleServerInfo>> partitionAssignmentRetrieveFunc;
+  private final int stageAttemptNumber;
 
   public WriteBufferManager(
       int shuffleId,
@@ -167,6 +169,7 @@ public class WriteBufferManager extends MemoryConsumer {
     this.bufferSpillRatio = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_RATIO);
     this.blockIdLayout = BlockIdLayout.from(rssConf);
     this.partitionAssignmentRetrieveFunc = partitionAssignmentRetrieveFunc;
+    this.stageAttemptNumber = TaskContext$.MODULE$.get().stageAttemptNumber();
   }
 
   public WriteBufferManager(
@@ -491,7 +494,7 @@ public class WriteBufferManager extends MemoryConsumer {
                   + totalSize
                   + " bytes");
         }
-        events.add(new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));
+        events.add(new AddBlockEvent(taskId, stageAttemptNumber, shuffleBlockInfosPerEvent));
         shuffleBlockInfosPerEvent = Lists.newArrayList();
         totalSize = 0;
       }
@@ -506,7 +509,7 @@ public class WriteBufferManager extends MemoryConsumer {
                 + " bytes");
       }
       // Use final temporary variables for closures
-      events.add(new AddBlockEvent(taskId, shuffleBlockInfosPerEvent));
+      events.add(new AddBlockEvent(taskId, stageAttemptNumber, shuffleBlockInfosPerEvent));
     }
     return events;
   }

@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
@@ -33,6 +34,7 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +97,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcService.class);
   private final ShuffleServer shuffleServer;
+
+  // shuffleId -> partitionId -> blocks
+  private Map<Integer, Map<Integer, AtomicInteger>> blockIdCounter = JavaUtils.newConcurrentMap();
 
   public ShuffleServerGrpcService(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
@@ -167,9 +172,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         int attemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
         if (stageAttemptNumber > attemptNumber) {
           taskInfo.refreshLatestStageAttemptNumber(shuffleId, stageAttemptNumber);
+          LOG.info("Refreshed the stage attempt number from {} to {}", attemptNumber, stageAttemptNumber);
           try {
             long start = System.currentTimeMillis();
-            shuffleServer.getShuffleTaskManager().removeShuffleDataSync(appId, shuffleId);
+            shuffleServer.getShuffleTaskManager().removeShuffleForStageRetry(appId, shuffleId, attemptNumber);
             LOG.info(
                 "Deleted the previous stage attempt data due to stage recomputing for app: {}, "
                     + "shuffleId: {}. It costs {} ms",
@@ -656,6 +662,42 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = StatusCode.SUCCESS;
     String msg = "OK";
     GetShuffleResultForMultiPartResponse reply;
+
+    try {
+      if (request.getStageAttemptNumber() == 1) {
+        for (int pid : partitionsList) {
+          long blockCnt = blockIdCounter.get(shuffleId).get(pid).get();
+          LOG.info("ShuffleId:{}. partitionId:{}. blockCount: {}", shuffleId, pid, blockCnt);
+        }
+      }
+    } catch (Exception e) {
+      LOG.error("Errors on getting shuffle result. ", e);
+    }
+
+    try {
+      ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
+      if (taskInfo != null) {
+        synchronized (taskInfo) {
+          int latestAttemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
+          if (request.getStageAttemptNumber() != latestAttemptNumber) {
+            LOG.error("Abort this request with the old stageAttemptNumber:{}. latest: {}", request.getStageAttemptNumber(), latestAttemptNumber);
+            reply =
+                GetShuffleResultForMultiPartResponse.newBuilder()
+                    .setStatus(StatusCode.STAGE_RETRY_IGNORE.toProto())
+                    .setRetMsg("Stage retry. Abort this request.")
+                    .build();
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+            return;
+          }
+        }
+      } else {
+        LOG.warn("TaskInfo is null. This should not happen");
+      }
+    } catch (Exception e) {
+      LOG.info("Errors on getting shuffle result with multi-parts.", e);
+    }
+
     byte[] serializedBlockIds = null;
     String requestInfo =
         "appId[" + appId + "], shuffleId[" + shuffleId + "], partitions" + partitionsList;
@@ -1015,8 +1057,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
   private List<ShufflePartitionedData> toPartitionedData(SendShuffleDataRequest req) {
     List<ShufflePartitionedData> ret = Lists.newArrayList();
+    int shuffleId = req.getShuffleId();
+    Map<Integer, AtomicInteger> partitionBlockIds =
+        blockIdCounter.computeIfAbsent(shuffleId, x -> JavaUtils.newConcurrentMap());
 
     for (ShuffleData data : req.getShuffleDataList()) {
+      if (req.getStageAttemptNumber() == 1) {
+        partitionBlockIds.computeIfAbsent(data.getPartitionId(), x -> new AtomicInteger()).incrementAndGet();
+      }
       ret.add(
           new ShufflePartitionedData(
               data.getPartitionId(), toPartitionedBlock(data.getBlockList())));

@@ -41,6 +41,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.uniffle.common.exception.StageRetryAbortException;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -797,6 +798,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     boolean isSuccessful = false;
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     int successCnt = 0;
+    Set<ShuffleServerInfo> failureServers = new HashSet<>();
     for (ShuffleServerInfo ssi : shuffleServerInfoSet) {
       try {
         RssGetShuffleResultResponse response =
@@ -812,6 +814,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           }
         }
       } catch (Exception e) {
+        failureServers.add(ssi);
         LOG.warn(
             "Get shuffle result is failed from "
                 + ssi
@@ -824,7 +827,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     }
     if (!isSuccessful) {
       throw new RssFetchFailedException(
-          "Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]");
+          "Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]",
+          failureServers.toArray(new ShuffleServerInfo[0]));
     }
     return blockIdBitmap;
   }
@@ -836,9 +840,11 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       String appId,
       int shuffleId,
       Set<Integer> failedPartitions,
-      PartitionDataReplicaRequirementTracking replicaRequirementTracking) {
+      PartitionDataReplicaRequirementTracking replicaRequirementTracking,
+      int stageAttemptNumber) {
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
     Set<Integer> allRequestedPartitionIds = new HashSet<>();
+    Set<ShuffleServerInfo> failureServers = new HashSet<>();
     for (Map.Entry<ShuffleServerInfo, Set<Integer>> entry : serverToPartitions.entrySet()) {
       ShuffleServerInfo shuffleServerInfo = entry.getKey();
       Set<Integer> requestPartitions = Sets.newHashSet();
@@ -850,7 +856,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       allRequestedPartitionIds.addAll(requestPartitions);
       RssGetShuffleResultForMultiPartRequest request =
           new RssGetShuffleResultForMultiPartRequest(
-              appId, shuffleId, requestPartitions, blockIdLayout);
+              appId, shuffleId, requestPartitions, blockIdLayout, stageAttemptNumber);
       try {
         RssGetShuffleResultResponse response =
             getShuffleServerClient(shuffleServerInfo).getShuffleResultForMultiPart(request);
@@ -864,6 +870,9 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           }
         }
       } catch (Exception e) {
+        if (!(e instanceof StageRetryAbortException)) {
+          failureServers.add(shuffleServerInfo);
+        }
         failedPartitions.addAll(requestPartitions);
         LOG.warn(
             "Get shuffle result is failed from "
@@ -883,7 +892,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (!isSuccessful) {
       LOG.error("Failed to meet replica requirement: {}", replicaRequirementTracking);
       throw new RssFetchFailedException(
-          "Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]");
+          "Get shuffle result is failed for appId[" + appId + "], shuffleId[" + shuffleId + "]",
+          failureServers.toArray(new ShuffleServerInfo[0]));
     }
     return blockIdBitmap;
   }
@@ -1152,7 +1162,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @VisibleForTesting
-  void removeShuffleServer(String appId, int shuffleId) {
+  public void removeShuffleServer(String appId, int shuffleId) {
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
     if (appServerMap != null) {
       appServerMap.remove(shuffleId);

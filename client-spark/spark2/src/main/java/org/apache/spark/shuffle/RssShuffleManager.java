@@ -254,7 +254,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               keepAliveTime);
     }
     this.shuffleHandleInfoManager = new ShuffleHandleInfoManager();
-    this.rssStageResubmitManager = new RssStageResubmitManager();
+    this.rssStageResubmitManager = new RssStageResubmitManager(sparkConf);
   }
 
   // This method is called in Spark driver side,
@@ -346,7 +346,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             1,
             requiredShuffleServerNumber,
             estimateTaskConcurrency,
-            rssStageResubmitManager.getServerIdBlackList(),
+            rssStageResubmitManager.getBlackListedServerIds(),
             0);
 
     startHeartbeat();
@@ -729,7 +729,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
   private ShuffleServerInfo assignShuffleServer(int shuffleId, String faultyShuffleServerId) {
     Set<String> faultyServerIds = Sets.newHashSet(faultyShuffleServerId);
-    faultyServerIds.addAll(rssStageResubmitManager.getServerIdBlackList());
+    faultyServerIds.addAll(rssStageResubmitManager.getBlackListedServerIds());
     Map<Integer, List<ShuffleServerInfo>> partitionToServers =
         requestShuffleAssignment(shuffleId, 1, 1, 1, 1, faultyServerIds, 0);
     if (partitionToServers.get(0) != null && partitionToServers.get(0).size() == 1) {

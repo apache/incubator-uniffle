@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.spark.SparkException;
+import org.apache.spark.shuffle.RssStageResubmitManager;
 import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
 import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
 
@@ -78,7 +79,7 @@ public interface RssShuffleManagerInterface {
    *
    * @param shuffleServerId
    */
-  void addFailuresShuffleServerInfos(String shuffleServerId);
+  void addFaultShuffleServer(String shuffleServerId);
 
   boolean reassignOnStageResubmit(int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
 
@@ -87,4 +88,6 @@ public interface RssShuffleManagerInterface {
       int stageAttemptNumber,
       int shuffleId,
       Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers);
+
+  RssStageResubmitManager getStageResubmitManager();
 }

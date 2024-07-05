@@ -36,6 +36,8 @@ import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.client.util.RssClientConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER;
+
 public class RSSStageResubmitTest extends SparkTaskFailureIntegrationTestBase {
 
   @BeforeAll
@@ -51,6 +53,8 @@ public class RSSStageResubmitTest extends SparkTaskFailureIntegrationTestBase {
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf grpcShuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     createMockedShuffleServer(grpcShuffleServerConf);
+    grpcShuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+    createMockedShuffleServer(grpcShuffleServerConf);
     enableFirstReadRequest(2 * maxTaskFailures);
     ShuffleServerConf nettyShuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
     createMockedShuffleServer(nettyShuffleServerConf);
@@ -58,9 +62,7 @@ public class RSSStageResubmitTest extends SparkTaskFailureIntegrationTestBase {
   }
 
   private static void enableFirstReadRequest(int failCount) {
-    for (ShuffleServer server : grpcShuffleServers) {
-      ((MockedGrpcServer) server.getServer()).getService().enableFirstNReadRequestToFail(failCount);
-    }
+    ((MockedGrpcServer) grpcShuffleServers.get(0).getServer()).getService().enableFirstNReadRequestToFail(Integer.MAX_VALUE);
   }
 
   @Override
@@ -79,7 +81,15 @@ public class RSSStageResubmitTest extends SparkTaskFailureIntegrationTestBase {
     super.updateSparkConfCustomer(sparkConf);
     sparkConf.set(
         RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_RESUBMIT_STAGE, "true");
+    sparkConf.set(
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER, "2");
   }
+
+//  protected void injectBeforeStop(SparkConf sparkConf) throws InterruptedException {
+//    if (sparkConf.getBoolean("spark.rss.resubmit.stage", false)) {
+//      Thread.sleep(1000000);
+//    }
+//  }
 
   @Test
   public void testRSSStageResubmit() throws Exception {

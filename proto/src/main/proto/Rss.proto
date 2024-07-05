@@ -163,6 +163,7 @@ message GetShuffleResultForMultiPartRequest {
   int32 shuffleId = 2;
   repeated int32 partitions = 3;
   BlockIdLayout blockIdLayout = 4;
+  int32 stageAttemptNumber = 5;
 }
 
 message GetShuffleResultForMultiPartResponse {
@@ -557,8 +558,11 @@ message ReportShuffleFetchFailureRequest {
   int32 stageAttemptId = 3;
   int32 partitionId = 4;
   string exception = 5;
-  // todo: report ShuffleServerId if needed
-  // ShuffleServerId serverId = 6;
+  repeated ShuffleServerId fetchFailureServerId = 6;
+  int32 stageId = 7;
+  int64 taskAttemptId = 8;
+  int32 taskAttemptNumber = 9;
+  string executorId = 10;
 }
 
 message ReportShuffleFetchFailureResponse {
@@ -607,6 +611,10 @@ message ReportShuffleWriteFailureRequest {
   int32 stageAttemptNumber = 3;
   repeated ShuffleServerId shuffleServerIds= 5;
   string exception = 6;
+  int32 stageId = 7;
+  int64 taskAttemptId = 8;
+  int32 taskAttemptNumber = 9;
+  string executorId = 10;
 }
 
 message ReportShuffleWriteFailureResponse {
