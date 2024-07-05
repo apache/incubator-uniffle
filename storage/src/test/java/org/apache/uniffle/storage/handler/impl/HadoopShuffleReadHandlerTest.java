@@ -108,7 +108,7 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
     int totalBlockNum = 0;
     int expectTotalBlockNum = 6;
     int blockSize = 7;
-    int taskAttemptId = 0;
+    long taskAttemptId = 0;
 
     // write expectTotalBlockNum - 1 complete block
     HadoopShuffleHandlerTestBase.writeTestData(

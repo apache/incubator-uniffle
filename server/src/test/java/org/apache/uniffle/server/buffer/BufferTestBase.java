@@ -51,7 +51,7 @@ public abstract class BufferTestBase {
     return createData(partitionId, 0, len);
   }
 
-  protected ShufflePartitionedData createData(int partitionId, int taskAttemptId, int len) {
+  protected ShufflePartitionedData createData(int partitionId, long taskAttemptId, int len) {
     byte[] buf = new byte[len];
     new Random().nextBytes(buf);
     long blockId =

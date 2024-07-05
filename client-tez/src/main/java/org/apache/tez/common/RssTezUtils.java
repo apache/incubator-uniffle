@@ -24,6 +24,7 @@ import java.util.Set;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.runtime.library.api.TezRuntimeConfiguration;
 import org.apache.tez.runtime.library.common.InputAttemptIdentifier;
@@ -51,6 +52,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
+import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.BlockIdLayout;
@@ -60,10 +62,6 @@ public class RssTezUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(RssTezUtils.class);
   private static final BlockIdLayout LAYOUT = BlockIdLayout.DEFAULT;
-  private static final int MAX_ATTEMPT_LENGTH = 6;
-  private static final int MAX_ATTEMPT_ID = (1 << MAX_ATTEMPT_LENGTH) - 1;
-  private static final int MAX_SEQUENCE_NO =
-      (1 << (LAYOUT.sequenceNoBits - MAX_ATTEMPT_LENGTH)) - 1;
 
   public static final String HOST_NAME = "hostname";
 
@@ -159,32 +157,11 @@ public class RssTezUtils {
   }
 
   public static long getBlockId(int partitionId, long taskAttemptId, int nextSeqNo) {
-    LOG.info(
-        "GetBlockId, partitionId:{}, taskAttemptId:{}, nextSeqNo:{}",
-        partitionId,
-        taskAttemptId,
-        nextSeqNo);
-    long attemptId = taskAttemptId >> (LAYOUT.partitionIdBits + LAYOUT.taskAttemptIdBits);
-    if (attemptId < 0 || attemptId > MAX_ATTEMPT_ID) {
-      throw new RssException(
-          "Can't support attemptId [" + attemptId + "], the max value should be " + MAX_ATTEMPT_ID);
-    }
-    if (nextSeqNo < 0 || nextSeqNo > MAX_SEQUENCE_NO) {
-      throw new RssException(
-          "Can't support sequence [" + nextSeqNo + "], the max value should be " + MAX_SEQUENCE_NO);
-    }
-
-    int atomicInt = (int) ((nextSeqNo << MAX_ATTEMPT_LENGTH) + attemptId);
-    long taskId =
-        taskAttemptId - (attemptId << (LAYOUT.partitionIdBits + LAYOUT.taskAttemptIdBits));
-
-    return LAYOUT.getBlockId(atomicInt, partitionId, taskId);
+    return LAYOUT.getBlockId(nextSeqNo, partitionId, taskAttemptId);
   }
 
-  public static long getTaskAttemptId(long blockId) {
-    int mapId = LAYOUT.getTaskAttemptId(blockId);
-    int attemptId = LAYOUT.getSequenceNo(blockId) & MAX_ATTEMPT_ID;
-    return LAYOUT.getBlockId(attemptId, 0, mapId);
+  public static int getTaskAttemptId(long blockId) {
+    return LAYOUT.getTaskAttemptId(blockId);
   }
 
   public static int estimateTaskConcurrency(Configuration jobConf, int mapNum, int reduceNum) {
@@ -276,23 +253,55 @@ public class RssTezUtils {
     }
   }
 
-  public static long convertTaskAttemptIdToLong(TezTaskAttemptID taskAttemptID) {
-    int lowBytes = taskAttemptID.getTaskID().getId();
-    if (lowBytes > LAYOUT.maxTaskAttemptId) {
-      throw new RssException("TaskAttempt " + taskAttemptID + " low bytes " + lowBytes + " exceed");
-    }
-    int highBytes = taskAttemptID.getId();
-    if (highBytes > MAX_ATTEMPT_ID || highBytes < 0) {
+  public static int createRssTaskAttemptId(TezTaskAttemptID taskAttemptId, int maxAttemptNo) {
+    int attemptBits = ClientUtils.getNumberOfSignificantBits(maxAttemptNo);
+
+    int attemptId = taskAttemptId.getId();
+    if (attemptId > maxAttemptNo || attemptId < 0) {
       throw new RssException(
-          "TaskAttempt " + taskAttemptID + " high bytes " + highBytes + " exceed.");
+          "TaskAttempt " + taskAttemptId + " attemptId " + attemptId + " exceed");
     }
-    long id = LAYOUT.getBlockId(highBytes, 0, lowBytes);
-    LOG.info("ConvertTaskAttemptIdToLong taskAttemptID:{}, id is {}, .", taskAttemptID, id);
+    int taskId = taskAttemptId.getTaskID().getId();
+
+    int mapIndexBits = ClientUtils.getNumberOfSignificantBits(taskId);
+    if (mapIndexBits + attemptBits > LAYOUT.taskAttemptIdBits) {
+      throw new RssException(
+          "Observing taskId["
+              + taskId
+              + "] that would produce a taskAttemptId with "
+              + (mapIndexBits + attemptBits)
+              + " bits which is larger than the allowed "
+              + LAYOUT.taskAttemptIdBits
+              + "]). Please consider providing more bits for taskAttemptIds.");
+    }
+
+    int id = (taskId << attemptBits) | attemptId;
+    LOG.info("createRssTaskAttemptId taskAttemptId:{}, id is {}, .", taskAttemptId, id);
     return id;
   }
 
+  public static int createRssTaskAttemptId(TezTaskAttemptID taskAttemptId, Configuration conf) {
+    int maxAttemptNo = getMaxAttemptNo(conf);
+    return createRssTaskAttemptId(taskAttemptId, maxAttemptNo);
+  }
+
+  public static int getMaxAttemptNo(Configuration conf) {
+    int maxFailures =
+        conf.getInt(
+            TezConfiguration.TEZ_AM_TASK_MAX_FAILED_ATTEMPTS,
+            TezConfiguration.TEZ_AM_TASK_MAX_FAILED_ATTEMPTS_DEFAULT);
+    boolean speculation =
+        conf.getBoolean(
+            TezConfiguration.TEZ_AM_SPECULATION_ENABLED,
+            TezConfiguration.TEZ_AM_SPECULATION_ENABLED_DEFAULT);
+    return ClientUtils.getMaxAttemptNo(maxFailures, speculation);
+  }
+
   public static Roaring64NavigableMap fetchAllRssTaskIds(
-      Set<InputAttemptIdentifier> successMapTaskAttempts, int totalMapsCount, int appAttemptId) {
+      Set<InputAttemptIdentifier> successMapTaskAttempts,
+      int totalMapsCount,
+      int appAttemptId,
+      int maxAttemptNo) {
     String errMsg = "TaskAttemptIDs are inconsistent with map tasks";
     Roaring64NavigableMap rssTaskIdBitmap = Roaring64NavigableMap.bitmapOf();
     Roaring64NavigableMap mapTaskIdBitmap = Roaring64NavigableMap.bitmapOf();
@@ -301,9 +310,9 @@ public class RssTezUtils {
 
     for (InputAttemptIdentifier inputAttemptIdentifier : successMapTaskAttempts) {
       String pathComponent = inputAttemptIdentifier.getPathComponent();
-      TezTaskAttemptID mapTaskAttemptID = IdUtils.convertTezTaskAttemptID(pathComponent);
-      long rssTaskId = RssTezUtils.convertTaskAttemptIdToLong(mapTaskAttemptID);
-      long mapTaskId = mapTaskAttemptID.getTaskID().getId();
+      TezTaskAttemptID mapTaskAttemptId = IdUtils.convertTezTaskAttemptID(pathComponent);
+      long rssTaskId = RssTezUtils.createRssTaskAttemptId(mapTaskAttemptId, maxAttemptNo);
+      long mapTaskId = mapTaskAttemptId.getTaskID().getId();
 
       LOG.info(
           "FetchAllRssTaskIds, pathComponent: {}, mapTaskId:{}, rssTaskId:{}, is contains:{}",

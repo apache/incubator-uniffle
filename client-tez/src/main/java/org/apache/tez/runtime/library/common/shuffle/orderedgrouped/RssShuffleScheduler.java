@@ -282,6 +282,8 @@ class RssShuffleScheduler extends ShuffleScheduler {
   private RemoteStorageInfo remoteStorageInfo;
   private int indexReadLimit;
 
+  private final int maxAttemptNo;
+
   RssShuffleScheduler(
       InputContext inputContext,
       Configuration conf,
@@ -538,6 +540,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
     this.basePath = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_PATH);
     String remoteStorageConf = this.conf.get(RssTezConfig.RSS_REMOTE_STORAGE_CONF);
     this.remoteStorageInfo = new RemoteStorageInfo(basePath, remoteStorageConf);
+    this.maxAttemptNo = RssTezUtils.getMaxAttemptNo(conf);
 
     LOG.info(
         "RSSShuffleScheduler running for sourceVertex: "
@@ -1834,7 +1837,8 @@ class RssShuffleScheduler extends ShuffleScheduler {
         RssTezUtils.fetchAllRssTaskIds(
             partitionIdToSuccessMapTaskAttempts.get(mapHost.getPartitionId()),
             this.numInputs,
-            appAttemptId);
+            appAttemptId,
+            maxAttemptNo);
 
     LOG.info(
         "In reduce: {}, RSS Tez client has fetched blockIds and taskIds successfully, partitionId:{}.",

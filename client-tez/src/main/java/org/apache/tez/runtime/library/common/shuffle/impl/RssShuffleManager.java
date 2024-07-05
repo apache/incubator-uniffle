@@ -67,6 +67,7 @@ import org.apache.hadoop.util.Time;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
 import org.apache.tez.common.InputContextUtils;
+import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.common.TezUtilsInternal;
 import org.apache.tez.common.UmbilicalUtils;
@@ -590,6 +591,8 @@ public class RssShuffleManager extends ShuffleManager {
                     partitionToServers.get(partition),
                     partitionToServers);
 
+                int maxAttemptNo = RssTezUtils.getMaxAttemptNo(conf);
+
                 RssTezFetcherTask fetcher =
                     new RssTezFetcherTask(
                         RssShuffleManager.this,
@@ -604,7 +607,8 @@ public class RssShuffleManager extends ShuffleManager {
                         rssAllBlockIdBitmapMap,
                         rssSuccessBlockIdBitmapMap,
                         numInputs,
-                        partitionToServers.size());
+                        partitionToServers.size(),
+                        maxAttemptNo);
                 rssRunningFetchers.add(fetcher);
                 if (isShutdown.get()) {
                   LOG.info(
