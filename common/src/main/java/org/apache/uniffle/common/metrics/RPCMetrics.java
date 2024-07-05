@@ -137,13 +137,12 @@ public abstract class RPCMetrics {
       if (gauge != null) {
         gauge.inc(value);
       }
-      Counter.Child counter = counterMap.get(metricKey);
       // getOrAdd counter by specified metricKey
+      Counter.Child counter =
+          counterMap.computeIfAbsent(metricKey, k -> metricsManager.addLabeledCounter(metricKey));
       if (counter == null) {
-        counter = metricsManager.addLabeledCounter(metricKey);
-        counterMap.put(metricKey, counter);
+        counter.inc(value);
       }
-      counter.inc(value);
     }
   }
 
