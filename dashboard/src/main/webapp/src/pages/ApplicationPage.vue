@@ -43,8 +43,18 @@
       <el-table :data="pageData.appInfoData" height="250" style="width: 100%">
         <el-table-column prop="appId" label="AppId" min-width="180" />
         <el-table-column prop="userName" label="UserName" min-width="180" />
-        <el-table-column prop="registrationTime" label="Registration Time" min-width="180" :formatter="dateFormatter" />
-        <el-table-column prop="updateTime" label="Update Time" min-width="180" :formatter="dateFormatter" />
+        <el-table-column
+          prop="registrationTime"
+          label="Registration Time"
+          min-width="180"
+          :formatter="dateFormatter"
+        />
+        <el-table-column
+          prop="updateTime"
+          label="Update Time"
+          min-width="180"
+          :formatter="dateFormatter"
+        />
       </el-table>
     </div>
   </div>

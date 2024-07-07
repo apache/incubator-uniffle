@@ -19,7 +19,7 @@
   <div>
     <el-row :gutter="20">
       <el-col :span="4">
-        <router-link to="/shuffleserverpage/activeNodeList">
+        <router-link class="router-link-active" to="/shuffleserverpage/activeNodeList">
           <el-card class="box-card" shadow="hover">
             <template #header>
               <div class="card-header">
@@ -31,7 +31,7 @@
         </router-link>
       </el-col>
       <el-col :span="4">
-        <router-link to="/shuffleserverpage/decommissioningNodeList">
+        <router-link class="router-link-active" to="/shuffleserverpage/decommissioningNodeList">
           <el-card class="box-card" shadow="hover">
             <template #header>
               <div class="card-header">
@@ -45,7 +45,7 @@
         </router-link>
       </el-col>
       <el-col :span="4">
-        <router-link to="/shuffleserverpage/decommissionedNodeList">
+        <router-link class="router-link-active" to="/shuffleserverpage/decommissionedNodeList">
           <el-card class="box-card" shadow="hover">
             <template #header>
               <div class="card-header">
@@ -59,7 +59,7 @@
         </router-link>
       </el-col>
       <el-col :span="4">
-        <router-link to="/shuffleserverpage/lostNodeList">
+        <router-link class="router-link-active" to="/shuffleserverpage/lostNodeList">
           <el-card class="box-card" shadow="hover">
             <template #header>
               <div class="card-header">
@@ -71,7 +71,7 @@
         </router-link>
       </el-col>
       <el-col :span="4">
-        <router-link to="/shuffleserverpage/unhealthyNodeList">
+        <router-link class="router-link-active" to="/shuffleserverpage/unhealthyNodeList">
           <el-card class="box-card" shadow="hover">
             <template #header>
               <div class="card-header">
@@ -83,7 +83,7 @@
         </router-link>
       </el-col>
       <el-col :span="4">
-        <router-link to="/shuffleserverpage/excludeNodeList">
+        <router-link class="router-link-active" to="/shuffleserverpage/excludeNodeList">
           <el-card class="box-card" shadow="hover">
             <template #header>
               <div class="card-header">
@@ -151,13 +151,17 @@ export default {
   font-size: larger;
 }
 
+/* Remove the underscore from the route label. */
+.router-link-active {
+  text-decoration: none;
+}
+
 .activenode {
   font-family: 'Lantinghei SC';
   font-style: normal;
   font-weight: bolder;
   font-size: 30px;
   color: green;
-  text-decoration: none;
 }
 
 .decommissioningnode {
@@ -166,7 +170,6 @@ export default {
   font-weight: bolder;
   font-size: 30px;
   color: #00c4ff;
-  text-decoration: none;
 }
 
 .decommissionednode {
@@ -175,7 +178,6 @@ export default {
   font-weight: bolder;
   font-size: 30px;
   color: blue;
-  text-decoration: none;
 }
 
 .lostnode {
@@ -184,7 +186,6 @@ export default {
   font-weight: bolder;
   font-size: 30px;
   color: red;
-  text-decoration: none;
 }
 
 .unhealthynode {
@@ -193,7 +194,6 @@ export default {
   font-weight: bolder;
   font-size: 30px;
   color: #ff8800;
-  text-decoration: none;
 }
 
 .excludesnode {
@@ -201,6 +201,5 @@ export default {
   font-style: normal;
   font-weight: bolder;
   font-size: 30px;
-  text-decoration: none;
 }
 </style>
