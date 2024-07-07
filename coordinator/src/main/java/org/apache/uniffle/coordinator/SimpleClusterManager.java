@@ -226,9 +226,11 @@ public class SimpleClusterManager implements ClusterManager {
   public void add(ServerNode node) {
     if (!servers.containsKey(node.getId())) {
       LOG.info("Newly registering node: {}", node.getId());
-      servers.put(node.getId(), node);
     } else {
-      servers.get(node.getId()).update(node);
+      ServerNode pre = servers.get(node.getId());
+      long regTime = pre.getRegistrationTime();
+      // inherit registration time
+      node.setRegisterationTime(regTime);
     }
 
     Set<String> tags = node.getTags();
