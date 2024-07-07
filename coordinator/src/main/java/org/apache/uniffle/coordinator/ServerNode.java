@@ -239,7 +239,7 @@ public class ServerNode implements Comparable<ServerNode> {
     this.timestamp = timestamp;
   }
 
-  public void setRegistrationTime(long registrationTime) {
+  void setRegistrationTime(long registrationTime) {
     this.registrationTime = registrationTime;
   }
 
