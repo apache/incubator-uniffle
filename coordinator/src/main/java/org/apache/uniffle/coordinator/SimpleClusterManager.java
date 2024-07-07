@@ -230,7 +230,7 @@ public class SimpleClusterManager implements ClusterManager {
       ServerNode pre = servers.get(node.getId());
       long regTime = pre.getRegistrationTime();
       // inherit registration time
-      node.setRegisterationTime(regTime);
+      node.setRegistrationTime(regTime);
     }
 
     Set<String> tags = node.getTags();

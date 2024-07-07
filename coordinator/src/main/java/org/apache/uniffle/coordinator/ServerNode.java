@@ -277,18 +277,4 @@ public class ServerNode implements Comparable<ServerNode> {
   public int getNettyPort() {
     return nettyPort;
   }
-
-  public void update(ServerNode node) {
-    this.ip = node.getIp();
-    this.grpcPort = node.getGrpcPort();
-    this.usedMemory = node.getUsedMemory();
-    this.preAllocatedMemory = node.getPreAllocatedMemory();
-    this.availableMemory = node.getAvailableMemory();
-    this.eventNumInFlush = node.getEventNumInFlush();
-    this.timestamp = System.currentTimeMillis();
-    this.tags = node.getTags();
-    this.status = node.getStatus();
-    this.storageInfo = node.getStorageInfo();
-    this.nettyPort = node.getNettyPort();
-  }
 }
