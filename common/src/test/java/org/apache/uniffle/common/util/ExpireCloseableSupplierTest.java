@@ -25,59 +25,44 @@ import java.util.function.Supplier;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class AutoCloseWrapperTest {
+class ExpireCloseableSupplierTest {
 
   @Test
   void test1() {
     Supplier<MockClient> cf = () -> new MockClient(false);
-    AutoCloseWrapper<MockClient> mockClientAutoCloseWrapper = new AutoCloseWrapper<>(cf);
+    ExpireCloseableSupplier<MockClient> mockClientExpireCloseableSupplier =
+        new ExpireCloseableSupplier<>(cf);
 
-    MockClient mockClient = mockClientAutoCloseWrapper.get();
-    MockClient mockClient2 = mockClientAutoCloseWrapper.get();
+    MockClient mockClient = mockClientExpireCloseableSupplier.get();
+    MockClient mockClient2 = mockClientExpireCloseableSupplier.get();
     assertTrue(mockClient == mockClient2);
-    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 2);
-    mockClientAutoCloseWrapper.closeInternal();
-    mockClientAutoCloseWrapper.closeInternal();
-    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 0);
+    mockClientExpireCloseableSupplier.forceClose();
+    mockClientExpireCloseableSupplier.forceClose();
   }
 
   @Test
   void test2() {
     Supplier<MockClient> cf = () -> new MockClient(true);
-    AutoCloseWrapper<MockClient> mockClientAutoCloseWrapper = new AutoCloseWrapper<>(cf, 10);
-    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 0);
-    MockClient mockClient1 = mockClientAutoCloseWrapper.get();
+    ExpireCloseableSupplier<MockClient> mockClientExpireCloseableSupplier =
+        new ExpireCloseableSupplier<>(cf, 10);
+    MockClient mockClient1 = mockClientExpireCloseableSupplier.get();
     assertNotNull(mockClient1);
-    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 1);
-    AutoCloseWrapper.run(
-        mockClientAutoCloseWrapper,
-        (MockClient mockClient) -> {
-          assertEquals(mockClientAutoCloseWrapper.getRefCount(), 2);
-          return "t1";
-        });
     Uninterruptibles.sleepUninterruptibly(30, TimeUnit.MILLISECONDS);
-    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 1);
-    mockClientAutoCloseWrapper.closeInternal();
-    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 0);
+    mockClientExpireCloseableSupplier.forceClose();
   }
 
   @Test
   void forceClose() {
     Supplier<MockClient> cf = () -> new MockClient(true);
-    AutoCloseWrapper<MockClient> mockClientAutoCloseWrapper = new AutoCloseWrapper<>(cf);
-    MockClient mockClient = mockClientAutoCloseWrapper.get();
-    MockClient mockClient2 = mockClientAutoCloseWrapper.get();
-    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 2);
-    try {
-      mockClientAutoCloseWrapper.forceClose();
-    } catch (IOException e) {
-      // ignore
-    }
-    assertEquals(mockClientAutoCloseWrapper.getRefCount(), 0);
+    ExpireCloseableSupplier<MockClient> mockClientExpireCloseableSupplier =
+        new ExpireCloseableSupplier<>(cf);
+    MockClient mockClient = mockClientExpireCloseableSupplier.get();
+    mockClientExpireCloseableSupplier.forceClose();
+    MockClient mockClient2 = mockClientExpireCloseableSupplier.get();
+    assertTrue(mockClient != mockClient2);
   }
 
   static class MockClient implements Closeable {

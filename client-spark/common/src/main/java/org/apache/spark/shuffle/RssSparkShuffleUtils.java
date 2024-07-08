@@ -17,7 +17,6 @@
 
 package org.apache.spark.shuffle;
 
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
@@ -43,21 +42,19 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
-import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.util.ExpireCloseableSupplier;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
-import static org.apache.uniffle.common.util.Constants.DRIVER_HOST;
 
 public class RssSparkShuffleUtils {
 
@@ -346,6 +343,7 @@ public class RssSparkShuffleUtils {
   }
 
   public static RssException reportRssFetchFailedException(
+      ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier,
       RssFetchFailedException rssFetchFailedException,
       SparkConf sparkConf,
       String appId,
@@ -355,32 +353,24 @@ public class RssSparkShuffleUtils {
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     if (rssConf.getBoolean(RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED)
         && RssSparkShuffleUtils.isStageResubmitSupported()) {
-      String driver = rssConf.getString(DRIVER_HOST, "");
-      int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
-      try (ShuffleManagerClient client =
-          ShuffleManagerClientFactory.getInstance()
-              .createShuffleManagerClient(ClientType.GRPC, driver, port)) {
-        // todo: Create a new rpc interface to report failures in batch.
-        for (int partitionId : failedPartitions) {
-          RssReportShuffleFetchFailureRequest req =
-              new RssReportShuffleFetchFailureRequest(
-                  appId,
-                  shuffleId,
-                  stageAttemptId,
-                  partitionId,
-                  rssFetchFailedException.getMessage());
-          RssReportShuffleFetchFailureResponse response = client.reportShuffleFetchFailure(req);
-          if (response.getReSubmitWholeStage()) {
-            // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
-            // is provided.
-            FetchFailedException ffe =
-                RssSparkShuffleUtils.createFetchFailedException(
-                    shuffleId, -1, partitionId, rssFetchFailedException);
-            return new RssException(ffe);
-          }
+      for (int partitionId : failedPartitions) {
+        RssReportShuffleFetchFailureRequest req =
+            new RssReportShuffleFetchFailureRequest(
+                appId,
+                shuffleId,
+                stageAttemptId,
+                partitionId,
+                rssFetchFailedException.getMessage());
+        RssReportShuffleFetchFailureResponse response =
+            managerClientSupplier.get().reportShuffleFetchFailure(req);
+        if (response.getReSubmitWholeStage()) {
+          // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
+          // is provided.
+          FetchFailedException ffe =
+              RssSparkShuffleUtils.createFetchFailedException(
+                  shuffleId, -1, partitionId, rssFetchFailedException);
+          return new RssException(ffe);
         }
-      } catch (IOException ioe) {
-        LOG.info("Error closing shuffle manager client with error:", ioe);
       }
     }
     return rssFetchFailedException;

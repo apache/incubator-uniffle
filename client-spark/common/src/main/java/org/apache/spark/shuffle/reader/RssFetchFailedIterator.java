@@ -34,7 +34,7 @@ import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
-import org.apache.uniffle.common.util.AutoCloseWrapper;
+import org.apache.uniffle.common.util.ExpireCloseableSupplier;
 
 public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C>> {
   private static final Logger LOG = LoggerFactory.getLogger(RssFetchFailedIterator.class);
@@ -51,7 +51,7 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     private int shuffleId;
     private int partitionId;
     private int stageAttemptId;
-    private AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper;
+    private ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier;
 
     private Builder() {}
 
@@ -75,9 +75,9 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
       return this;
     }
 
-    Builder managerClientAutoCloseWrapper(
-        AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper) {
-      this.managerClientAutoCloseWrapper = managerClientAutoCloseWrapper;
+    Builder managerClientSupplier(
+        ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier) {
+      this.managerClientSupplier = managerClientSupplier;
       return this;
     }
 
@@ -92,7 +92,7 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
   }
 
   private RssException generateFetchFailedIfNecessary(RssFetchFailedException e) {
-    try (ShuffleManagerClient client = builder.managerClientAutoCloseWrapper.get()) {
+    try (ShuffleManagerClient client = builder.managerClientSupplier.get()) {
       RssReportShuffleFetchFailureRequest req =
           new RssReportShuffleFetchFailureRequest(
               builder.appId,

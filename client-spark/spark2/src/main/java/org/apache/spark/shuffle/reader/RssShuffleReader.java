@@ -54,7 +54,7 @@ import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.util.AutoCloseWrapper;
+import org.apache.uniffle.common.util.ExpireCloseableSupplier;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
 
@@ -79,7 +79,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
   private RssConf rssConf;
-  private AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper;
+  private ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier;
 
   public RssShuffleReader(
       int startPartition,
@@ -94,7 +94,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       Roaring64NavigableMap taskIdBitmap,
       RssConf rssConf,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
-      AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper) {
+      ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier) {
     this.appId = rssShuffleHandle.getAppId();
     this.startPartition = startPartition;
     this.endPartition = endPartition;
@@ -111,7 +111,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.hadoopConf = hadoopConf;
     this.shuffleServerInfoList = (List<ShuffleServerInfo>) (partitionToServers.get(startPartition));
     this.rssConf = rssConf;
-    this.managerClientAutoCloseWrapper = managerClientAutoCloseWrapper;
+    this.managerClientSupplier = managerClientSupplier;
     expectedTaskIdsBitmapFilterEnable = shuffleServerInfoList.size() > 1;
   }
 
@@ -246,7 +246,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
               .shuffleId(shuffleId)
               .partitionId(startPartition)
               .stageAttemptId(context.stageAttemptNumber())
-              .managerClientAutoCloseWrapper(managerClientAutoCloseWrapper)
+              .managerClientSupplier(managerClientSupplier)
               .build(resultIter);
     }
     return resultIter;

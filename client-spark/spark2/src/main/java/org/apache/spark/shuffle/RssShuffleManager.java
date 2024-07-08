@@ -222,7 +222,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               .createShuffleWriteClient(
                   RssShuffleClientFactory.newWriteBuilder()
                       .blockIdSelfManagedEnabled(blockIdSelfManagedEnabled)
-                      .managerClientAutoCloseWrapper(managerClientAutoCloseWrapper)
+                      .managerClientSupplier(managerClientSupplier)
                       .clientType(clientType)
                       .retryMax(retryMax)
                       .retryIntervalMax(retryIntervalMax)
@@ -445,7 +445,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           this,
           sparkConf,
           shuffleWriteClient,
-          managerClientAutoCloseWrapper,
+          managerClientSupplier,
           rssHandle,
           this::markFailedTask,
           context,
@@ -551,7 +551,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           taskIdBitmap,
           RssSparkConfig.toRssConf(sparkConf),
           partitionToServers,
-          managerClientAutoCloseWrapper);
+          managerClientSupplier);
     } else {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
@@ -734,7 +734,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           clientType, shuffleServerInfoSet, appId, shuffleId, partitionId);
     } catch (RssFetchFailedException e) {
       throw RssSparkShuffleUtils.reportRssFetchFailedException(
-          e, sparkConf, appId, shuffleId, stageAttemptId, Sets.newHashSet(partitionId));
+          managerClientSupplier,
+          e,
+          sparkConf,
+          appId,
+          shuffleId,
+          stageAttemptId,
+          Sets.newHashSet(partitionId));
     }
   }
 

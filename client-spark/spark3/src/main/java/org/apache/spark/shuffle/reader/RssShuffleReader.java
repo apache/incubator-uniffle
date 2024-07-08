@@ -57,7 +57,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.util.AutoCloseWrapper;
+import org.apache.uniffle.common.util.ExpireCloseableSupplier;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
 
@@ -84,7 +84,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private ShuffleReadMetrics readMetrics;
   private RssConf rssConf;
   private ShuffleDataDistributionType dataDistributionType;
-  private AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper;
+  private ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier;
 
   public RssShuffleReader(
       int startPartition,
@@ -99,7 +99,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks,
       Roaring64NavigableMap taskIdBitmap,
       ShuffleReadMetrics readMetrics,
-      AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper,
+      ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier,
       RssConf rssConf,
       ShuffleDataDistributionType dataDistributionType,
       Map<Integer, List<ShuffleServerInfo>> allPartitionToServers) {
@@ -123,7 +123,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
     this.partitionToShuffleServers = allPartitionToServers;
     this.rssConf = rssConf;
     this.dataDistributionType = dataDistributionType;
-    this.managerClientAutoCloseWrapper = managerClientAutoCloseWrapper;
+    this.managerClientSupplier = managerClientSupplier;
   }
 
   @Override
@@ -203,7 +203,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
               .shuffleId(shuffleId)
               .partitionId(startPartition)
               .stageAttemptId(context.stageAttemptNumber())
-              .managerClientAutoCloseWrapper(managerClientAutoCloseWrapper)
+              .managerClientSupplier(managerClientSupplier)
               .build(resultIter);
     }
     return resultIter;

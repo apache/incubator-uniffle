@@ -85,7 +85,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssSendFailedException;
 import org.apache.uniffle.common.exception.RssWaitFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.util.AutoCloseWrapper;
+import org.apache.uniffle.common.util.ExpireCloseableSupplier;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES;
@@ -135,7 +135,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private static final Set<StatusCode> STATUS_CODE_WITHOUT_BLOCK_RESEND =
       Sets.newHashSet(StatusCode.NO_REGISTER);
 
-  private AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper;
+  private ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier;
 
   // Only for tests
   @VisibleForTesting
@@ -149,7 +149,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
-      AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper,
+      ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier,
       RssShuffleHandle<K, V, C> rssHandle,
       ShuffleHandleInfo shuffleHandleInfo,
       TaskContext context) {
@@ -162,7 +162,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleManager,
         sparkConf,
         shuffleWriteClient,
-        managerClientAutoCloseWrapper,
+        managerClientSupplier,
         rssHandle,
         (tid) -> true,
         shuffleHandleInfo,
@@ -180,7 +180,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
-      AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper,
+      ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier,
       RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback,
       ShuffleHandleInfo shuffleHandleInfo,
@@ -213,7 +213,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.taskFailureCallback = taskFailureCallback;
     this.taskContext = context;
     this.sparkConf = sparkConf;
-    this.managerClientAutoCloseWrapper = managerClientAutoCloseWrapper;
+    this.managerClientSupplier = managerClientSupplier;
     this.blockFailSentRetryEnabled =
         sparkConf.getBoolean(
             RssSparkConfig.SPARK_RSS_CONFIG_PREFIX
@@ -232,7 +232,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
-      AutoCloseWrapper<ShuffleManagerClient> managerClientAutoCloseWrapper,
+      ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier,
       RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback,
       TaskContext context,
@@ -246,7 +246,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         shuffleManager,
         sparkConf,
         shuffleWriteClient,
-        managerClientAutoCloseWrapper,
+        managerClientSupplier,
         rssHandle,
         taskFailureCallback,
         shuffleHandleInfo,
@@ -615,12 +615,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               stageId,
               stageAttemptNum);
       RssReassignOnBlockSendFailureResponse response =
-          AutoCloseWrapper.run(
-              managerClientAutoCloseWrapper,
-              (ShuffleManagerClient client) -> {
-                ShuffleManagerClient shuffleManagerClient = client;
-                return shuffleManagerClient.reassignOnBlockSendFailure(request);
-              });
+          managerClientSupplier.get().reassignOnBlockSendFailure(request);
       if (response.getStatusCode() != StatusCode.SUCCESS) {
         String msg =
             String.format(
@@ -835,11 +830,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
               shuffleServerInfos,
               e.getMessage());
       RssReportShuffleWriteFailureResponse response =
-          AutoCloseWrapper.run(
-              managerClientAutoCloseWrapper,
-              (ShuffleManagerClient client) -> {
-                return client.reportShuffleWriteFailure(req);
-              });
+          managerClientSupplier.get().reportShuffleWriteFailure(req);
       if (response.getReSubmitWholeStage()) {
         RssReassignServersRequest rssReassignServersRequest =
             new RssReassignServersRequest(
@@ -848,11 +839,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                 shuffleId,
                 partitioner.numPartitions());
         RssReassignServersResponse rssReassignServersResponse =
-            AutoCloseWrapper.run(
-                managerClientAutoCloseWrapper,
-                (ShuffleManagerClient client) -> {
-                  return client.reassignOnStageResubmit(rssReassignServersRequest);
-                });
+            managerClientSupplier.get().reassignOnStageResubmit(rssReassignServersRequest);
         LOG.info(
             "Whether the reassignment is successful: {}",
             rssReassignServersResponse.isNeedReassign());
