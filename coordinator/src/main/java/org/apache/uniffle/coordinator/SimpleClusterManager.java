@@ -232,6 +232,7 @@ public class SimpleClusterManager implements ClusterManager {
       // inherit registration time
       node.setRegistrationTime(regTime);
     }
+    servers.put(node.getId(), node);
 
     Set<String> tags = node.getTags();
     // remove node with all tags to deal with the situation of tag change
