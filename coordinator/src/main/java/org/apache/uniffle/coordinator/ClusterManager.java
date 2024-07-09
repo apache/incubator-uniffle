@@ -24,7 +24,7 @@ import java.util.Set;
 public interface ClusterManager extends Closeable {
 
   /**
-   * Add a server to the cluster.
+   * Add or update a server to the cluster.
    *
    * @param shuffleServerInfo server info
    */
