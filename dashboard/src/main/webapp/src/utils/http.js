@@ -48,6 +48,21 @@ const http = {
     } else {
       return request.getFrontEndAxiosInstance().post(url, data, headers)
     }
+  },
+  delete(url, params, headers, fontBackFlag) {
+    if (fontBackFlag === 0) {
+      // The system obtains the address of the Coordinator to be accessed from global variables.
+      const currentServerStore = useCurrentServerStore()
+      if (typeof headers !== 'undefined') {
+        headers.targetAddress = currentServerStore.currentServer
+      } else {
+        headers = {}
+        headers.targetAddress = currentServerStore.currentServer
+      }
+      return request.getBackEndAxiosInstance().delete(url, { params, headers })
+    } else {
+      return request.getFrontEndAxiosInstance().delete(url, { params, headers })
+    }
   }
 }
 export default http

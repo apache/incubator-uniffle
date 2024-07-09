@@ -65,21 +65,30 @@
         sortable
       />
       <el-table-column prop="tags" label="Tags" min-width="140" />
+      <el-table-column v-if="isShowRemove" label="Operations">
+        <template v-slot:default="scope">
+          <el-button size="small" type="danger" @click="showDeleteConfirm(scope.row)">
+            Remove
+          </el-button>
+        </template>
+      </el-table-column>
     </el-table>
   </div>
 </template>
 <script>
-import { onMounted, reactive, watch } from 'vue'
+import { onMounted, reactive, watch, ref } from 'vue'
 import { memFormatter, dateFormatter } from '@/utils/common'
+import { useRouter } from 'vue-router'
+import { useCurrentServerStore } from '@/store/useCurrentServerStore'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getShuffleActiveNodes,
   getShuffleDecommissionedList,
   getShuffleDecommissioningList,
   getShuffleLostList,
-  getShuffleUnhealthyList
+  getShuffleUnhealthyList,
+  deleteConfirmedLostServer
 } from '@/api/api'
-import { useRouter } from 'vue-router'
-import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
@@ -104,6 +113,17 @@ export default {
         }
       ]
     })
+    const deleteFlag = reactive({
+      code: 0,
+      data: '',
+      errMsg: ''
+    })
+    const isShowRemove = ref(false)
+    async function deleteLostServer(row) {
+      const params = { serverId: row.id }
+      const res = await deleteConfirmedLostServer(params, {})
+      Object.assign(deleteFlag, res.data)
+    }
 
     async function getShuffleActiveNodesPage() {
       const res = await getShuffleActiveNodes()
@@ -132,14 +152,19 @@ export default {
 
     const loadPageData = () => {
       if (router.currentRoute.value.name === 'activeNodeList') {
+        isShowRemove.value = false
         getShuffleActiveNodesPage()
       } else if (router.currentRoute.value.name === 'decommissioningNodeList') {
+        isShowRemove.value = false
         getShuffleDecommissioningListPage()
       } else if (router.currentRoute.value.name === 'decommissionedNodeList') {
+        isShowRemove.value = false
         getShuffleDecommissionedListPage()
       } else if (router.currentRoute.value.name === 'unhealthyNodeList') {
+        isShowRemove.value = false
         getShuffleUnhealthyListPage()
       } else if (router.currentRoute.value.name === 'lostNodeList') {
+        isShowRemove.value = true
         getShuffleLostListPage()
       }
     }
@@ -163,7 +188,44 @@ export default {
       }
       sortColumn[sortInfo.prop] = sortInfo.order
     }
-    return { listPageData, sortColumn, sortChangeEvent, memFormatter, dateFormatter }
+
+    const showDeleteConfirm = (row) => {
+      ElMessageBox.confirm(`Are you sure to remove ${row.id}?`, 'Confirmation', {
+        confirmButtonText: 'Remove',
+        cancelButtonText: 'Cancel',
+        type: 'warning'
+      })
+        .then(() => {
+          // Perform deletion logic here.
+          deleteLostServer(row)
+          // Invoke the interface to delete the lost server, prompting a message based on the result returned.
+          if (deleteFlag.data === 'success') {
+            ElMessage.success('remove ' + row.id + ' sucess...')
+          } else {
+            ElMessage.error('remove ' + row.id + ' fail...')
+          }
+          // Reload the lost server information
+          getShuffleLostListPage()
+          Object.assign(deleteFlag, {
+            code: 0,
+            data: '',
+            errMsg: ''
+          })
+        })
+        .catch(() => {
+          // Cancelled
+        })
+    }
+    return {
+      listPageData,
+      sortColumn,
+      deleteFlag,
+      isShowRemove,
+      showDeleteConfirm,
+      sortChangeEvent,
+      memFormatter,
+      dateFormatter
+    }
   }
 }
 </script>

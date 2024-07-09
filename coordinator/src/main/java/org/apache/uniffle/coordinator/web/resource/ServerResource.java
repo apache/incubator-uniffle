@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import javax.servlet.ServletContext;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.hbase.thirdparty.javax.ws.rs.DELETE;
 import org.apache.hbase.thirdparty.javax.ws.rs.GET;
 import org.apache.hbase.thirdparty.javax.ws.rs.POST;
 import org.apache.hbase.thirdparty.javax.ws.rs.Path;
@@ -197,6 +198,16 @@ public class ServerResource extends BaseResource {
                           n -> n.getStatus().name(), Collectors.reducing(0, n -> 1, Integer::sum)));
           return stringIntegerHash;
         });
+  }
+
+  @DELETE
+  @Path("/deleteServer")
+  public Response<String> deleteLostedServer(@QueryParam("serverId") String serverId) {
+    ClusterManager clusterManager = getClusterManager();
+    if (clusterManager.deleteLostServerById(serverId)) {
+      return Response.success("success");
+    }
+    return Response.success("failed");
   }
 
   private ClusterManager getClusterManager() {

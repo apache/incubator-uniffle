@@ -53,8 +53,8 @@
                         </goals>
                         <phase>generate-resources</phase>
                         <configuration>
-                            <nodeVersion>v16.20.2</nodeVersion>
-                            <npmVersion>8.19.4</npmVersion>
+                            <nodeVersion>v20.15.0</nodeVersion>
+                            <npmVersion>10.7.0</npmVersion>
                             <nodeDownloadRoot>${nodeRepositoryUrl}</nodeDownloadRoot>
                             <npmDownloadRoot>${npmRepositoryUrl}</npmDownloadRoot>
                         </configuration>
