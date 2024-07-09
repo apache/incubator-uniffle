@@ -52,10 +52,10 @@
       <el-table-column prop="eventNumInFlush" label="FlushNum" min-width="80" sortable />
       <el-table-column prop="status" label="Status" min-width="80" sortable />
       <el-table-column
-          prop="registrationTime"
-          label="RegistrationTime"
-          min-width="120"
-          :formatter="dateFormatter"
+        prop="registrationTime"
+        label="RegistrationTime"
+        min-width="120"
+        :formatter="dateFormatter"
       />
       <el-table-column
         prop="timestamp"
@@ -130,36 +130,30 @@ export default {
       listPageData.tableData = res.data.data
     }
 
+    const loadPageData = () => {
+      if (router.currentRoute.value.name === 'activeNodeList') {
+        getShuffleActiveNodesPage()
+      } else if (router.currentRoute.value.name === 'decommissioningNodeList') {
+        getShuffleDecommissioningListPage()
+      } else if (router.currentRoute.value.name === 'decommissionedNodeList') {
+        getShuffleDecommissionedListPage()
+      } else if (router.currentRoute.value.name === 'unhealthyNodeList') {
+        getShuffleUnhealthyListPage()
+      } else if (router.currentRoute.value.name === 'lostNodeList') {
+        getShuffleLostListPage()
+      }
+    }
+
     onMounted(() => {
       // If the coordinator address to request is not found in the global variable, the request is not initiated.
       if (currentServerStore.currentServer) {
-        if (router.currentRoute.value.name === 'activeNodeList') {
-          getShuffleActiveNodesPage()
-        } else if (router.currentRoute.value.name === 'decommissioningNodeList') {
-          getShuffleDecommissioningListPage()
-        } else if (router.currentRoute.value.name === 'decommissionedNodeList') {
-          getShuffleDecommissionedListPage()
-        } else if (router.currentRoute.value.name === 'unhealthyNodeList') {
-          getShuffleUnhealthyListPage()
-        } else if (router.currentRoute.value.name === 'lostNodeList') {
-          getShuffleLostListPage()
-        }
+        loadPageData()
       }
     })
 
     watch(router.currentRoute, () => {
       if (currentServerStore.currentServer) {
-        if (router.currentRoute.value.name === 'activeNodeList') {
-          getShuffleActiveNodesPage()
-        } else if (router.currentRoute.value.name === 'decommissioningNodeList') {
-          getShuffleDecommissioningListPage()
-        } else if (router.currentRoute.value.name === 'decommissionedNodeList') {
-          getShuffleDecommissionedListPage()
-        } else if (router.currentRoute.value.name === 'unhealthyNodeList') {
-          getShuffleUnhealthyListPage()
-        } else if (router.currentRoute.value.name === 'lostNodeList') {
-          getShuffleLostListPage()
-        }
+        loadPageData()
       }
     })
 
