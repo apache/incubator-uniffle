@@ -46,6 +46,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.AuditType;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.UnionKey;
 import org.apache.uniffle.common.exception.RssException;
@@ -77,6 +78,7 @@ import static org.apache.uniffle.server.ShuffleServerConf.LOCAL_STORAGE_INITIALI
 
 public class LocalStorageManager extends SingleStorageManager {
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorageManager.class);
+  private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger("audit");
   private static final String UNKNOWN_USER_NAME = "unknown";
 
   private final List<LocalStorage> localStorages;
@@ -85,6 +87,8 @@ public class LocalStorageManager extends SingleStorageManager {
 
   private final ConcurrentSkipListMap<String, LocalStorage> sortedPartitionsOfStorageMap;
   private final List<StorageMediaProvider> typeProviders = Lists.newArrayList();
+
+  private final boolean isAuditLogEnabled;
 
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
@@ -169,6 +173,7 @@ public class LocalStorageManager extends SingleStorageManager {
         StringUtils.join(
             localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList())));
     this.checker = new LocalStorageChecker(conf, localStorages);
+    isAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_AUDIT_LOG_ENABLED);
   }
 
   private StorageMedia getStorageTypeForBasePath(String basePath) {
@@ -295,8 +300,26 @@ public class LocalStorageManager extends SingleStorageManager {
                           ShuffleStorageUtils.getFullShuffleDataFolder(
                               basicPath, String.valueOf(shuffleId)));
                     }
+                    if (isAuditLogEnabled) {
+                      AUDIT_LOGGER.info(
+                          String.format(
+                              "%s|%s|%s|%s|%s",
+                              AuditType.DELETE.getValue(),
+                              appId,
+                              shuffleSet.stream()
+                                  .map(Object::toString)
+                                  .collect(Collectors.joining(",")),
+                              LocalStorage.STORAGE_HOST,
+                              path));
+                    }
                     return paths.stream();
                   } else {
+                    if (isAuditLogEnabled) {
+                      AUDIT_LOGGER.info(
+                          String.format(
+                              "%s|%s|%s|%s",
+                              AuditType.DELETE.getValue(), appId, LocalStorage.STORAGE_HOST, path));
+                    }
                     return Stream.of(basicPath);
                   }
                 })

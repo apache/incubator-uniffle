@@ -31,6 +31,7 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.AuditType;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
@@ -55,16 +56,19 @@ import org.apache.uniffle.storage.util.StorageType;
 public class HadoopStorageManager extends SingleStorageManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(HadoopStorageManager.class);
+  private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger("audit");
 
   private final Configuration hadoopConf;
   private final String shuffleServerId;
   private Map<String, HadoopStorage> appIdToStorages = JavaUtils.newConcurrentMap();
   private Map<String, HadoopStorage> pathToStorages = JavaUtils.newConcurrentMap();
+  private final boolean isAuditLogEnabled;
 
   HadoopStorageManager(ShuffleServerConf conf) {
     super(conf);
     hadoopConf = conf.getHadoopConf();
     shuffleServerId = conf.getString(ShuffleServerConf.SHUFFLE_SERVER_ID, "shuffleServerId");
+    isAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_AUDIT_LOG_ENABLED);
   }
 
   @Override
@@ -116,10 +120,31 @@ public class HadoopStorageManager extends SingleStorageManager {
 
       if (event instanceof AppPurgeEvent) {
         deletePaths.add(basicPath);
+        if (isAuditLogEnabled) {
+          AUDIT_LOGGER.info(
+              String.format(
+                  "%s|%s|%s|%s",
+                  AuditType.DELETE.getValue(),
+                  appId,
+                  storage.getStorageHost(),
+                  storage.getStoragePath()));
+        }
       } else {
         for (Integer shuffleId : event.getShuffleIds()) {
           deletePaths.add(
               ShuffleStorageUtils.getFullShuffleDataFolder(basicPath, String.valueOf(shuffleId)));
+        }
+        if (isAuditLogEnabled) {
+          AUDIT_LOGGER.info(
+              String.format(
+                  "%s|%s|%s|%s|%s",
+                  AuditType.DELETE.getValue(),
+                  appId,
+                  event.getShuffleIds().stream()
+                      .map(Object::toString)
+                      .collect(Collectors.joining(",")),
+                  storage.getStorageHost(),
+                  storage.getStoragePath()));
         }
       }
       deleteHandler.delete(deletePaths.toArray(new String[0]), appId, event.getUser());
