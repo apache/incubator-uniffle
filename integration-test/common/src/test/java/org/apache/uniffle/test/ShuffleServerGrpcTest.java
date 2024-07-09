@@ -33,6 +33,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.protobuf.UnsafeByteOperations;
+import org.apache.commons.lang3.StringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -188,9 +189,9 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
         ShuffleDataDistributionType.NORMAL,
         -1);
     shuffleWriteClient.registerApplicationInfo("application_clearResourceTest1", 500L, "user");
-    shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest1", 500L);
+    shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest1", "user", 500L);
     shuffleWriteClient.registerApplicationInfo("application_clearResourceTest2", 500L, "user");
-    shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest2", 500L);
+    shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest2", "user", 500L);
 
     RssRegisterShuffleRequest rrsr =
         new RssRegisterShuffleRequest(
@@ -210,7 +211,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
             () -> {
               int i = 0;
               while (i < 20) {
-                shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest1", 500L);
+                shuffleWriteClient.sendAppHeartbeat("application_clearResourceTest1", "user", 500L);
                 i++;
                 try {
                   Thread.sleep(1000);
@@ -783,7 +784,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
             .getCounterMap()
             .get(ShuffleServerGrpcMetrics.APP_HEARTBEAT_METHOD)
             .get();
-    grpcShuffleServerClient.sendHeartBeat(new RssAppHeartBeatRequest(appId, 10000));
+    grpcShuffleServerClient.sendHeartBeat(new RssAppHeartBeatRequest(appId, StringUtils.EMPTY, 10000));
     newValue =
         grpcShuffleServers
             .get(0)

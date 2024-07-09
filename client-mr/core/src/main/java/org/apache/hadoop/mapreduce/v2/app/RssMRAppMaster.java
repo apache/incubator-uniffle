@@ -303,7 +303,7 @@ public class RssMRAppMaster extends MRAppMaster {
       scheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {
-              client.sendAppHeartbeat(appId, heartbeatTimeout);
+              client.sendAppHeartbeat(appId, "user", heartbeatTimeout);
               LOG.info("Finish send heartbeat to coordinator and servers");
             } catch (Exception e) {
               LOG.warn("Fail to send heartbeat to coordinator and servers", e);

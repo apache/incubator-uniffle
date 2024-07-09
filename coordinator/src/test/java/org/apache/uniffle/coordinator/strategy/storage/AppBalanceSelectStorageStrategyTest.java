@@ -93,7 +93,7 @@ public class AppBalanceSelectStorageStrategyTest {
     applicationManager.incRemoteStorageCounter(remotePath1);
     String testApp1 = "application_test_" + 1;
     applicationManager.registerApplicationInfo(testApp1, "user");
-    applicationManager.refreshAppId(testApp1);
+    applicationManager.refreshAppId(testApp1, "user");
     // in this case, ensure that all the paths are read and written normally
     applicationManager.getRemoteStoragePathRankValue().get(remotePath1).getCostTime().set(0);
     applicationManager.getRemoteStoragePathRankValue().get(remotePath2).getCostTime().set(0);
@@ -116,7 +116,7 @@ public class AppBalanceSelectStorageStrategyTest {
     // refresh app1, got remotePath2, then remove remotePath2,
     // it should be existed in counter until it expired
     applicationManager.registerApplicationInfo(testApp1, "user");
-    applicationManager.refreshAppId(testApp1);
+    applicationManager.refreshAppId(testApp1, "user");
     assertEquals(remotePath2, applicationManager.pickRemoteStorage(testApp1).getPath());
     remoteStoragePath = remotePath1;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
@@ -160,7 +160,7 @@ public class AppBalanceSelectStorageStrategyTest {
               for (int i = 0; i < 1000; i++) {
                 String appId = testApp1 + i;
                 applicationManager.registerApplicationInfo(appId, "user");
-                applicationManager.refreshAppId(appId);
+                applicationManager.refreshAppId(appId, "user");
                 applicationManager.pickRemoteStorage(appId);
               }
               cdl.countDown();
@@ -172,7 +172,7 @@ public class AppBalanceSelectStorageStrategyTest {
               for (int i = 1000; i < 2000; i++) {
                 String appId = testApp1 + i;
                 applicationManager.registerApplicationInfo(appId, "user");
-                applicationManager.refreshAppId(appId);
+                applicationManager.refreshAppId(appId, "user");
                 applicationManager.pickRemoteStorage(appId);
               }
               cdl.countDown();
@@ -184,7 +184,7 @@ public class AppBalanceSelectStorageStrategyTest {
               for (int i = 2000; i < 3000; i++) {
                 String appId = testApp1 + i;
                 applicationManager.registerApplicationInfo(appId, "user");
-                applicationManager.refreshAppId(appId);
+                applicationManager.refreshAppId(appId, "user");
                 applicationManager.pickRemoteStorage(appId);
               }
               cdl.countDown();

@@ -107,7 +107,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     applicationManager.incRemoteStorageCounter(remoteStorage1);
     String testApp1 = "application_test_" + 1;
     applicationManager.registerApplicationInfo(testApp1, "user");
-    applicationManager.refreshAppId(testApp1);
+    applicationManager.refreshAppId(testApp1, "user");
     selectStorageStrategy.sortPathByRankValue(remoteStorage2, testFile, System.currentTimeMillis());
     // Ensure that the `System.currentTimeMillis()` corresponding to remoteStorage1 is greater than
     // that of
@@ -138,7 +138,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
     // refresh app1, got remotePath2, then remove remotePath2,
     // it should be existed in counter until it expired
     applicationManager.registerApplicationInfo(testApp1, "user");
-    applicationManager.refreshAppId(testApp1);
+    applicationManager.refreshAppId(testApp1, "user");
     assertEquals(remoteStorage2, applicationManager.pickRemoteStorage(testApp1).getPath());
     remoteStoragePath = remoteStorage1;
     applicationManager.refreshRemoteStorage(remoteStoragePath, "");
@@ -185,7 +185,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
               for (int i = 0; i < 1000; i++) {
                 String appId = testApp1 + i;
                 applicationManager.registerApplicationInfo(appId, "user");
-                applicationManager.refreshAppId(appId);
+                applicationManager.refreshAppId(appId, "user");
                 applicationManager.pickRemoteStorage(appId);
               }
               cdl.countDown();
@@ -197,7 +197,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
               for (int i = 1000; i < 2000; i++) {
                 String appId = testApp1 + i;
                 applicationManager.registerApplicationInfo(appId, "user");
-                applicationManager.refreshAppId(appId);
+                applicationManager.refreshAppId(appId, "user");
                 applicationManager.pickRemoteStorage(appId);
               }
               cdl.countDown();
@@ -209,7 +209,7 @@ public class LowestIOSampleCostSelectStorageStrategyTest {
               for (int i = 2000; i < 3000; i++) {
                 String appId = testApp1 + i;
                 applicationManager.registerApplicationInfo(appId, "user");
-                applicationManager.refreshAppId(appId);
+                applicationManager.refreshAppId(appId, "user");
                 applicationManager.pickRemoteStorage(appId);
               }
               cdl.countDown();

@@ -145,12 +145,12 @@ public class ApplicationManager implements Closeable {
     }
   }
 
-  public void refreshAppId(String appId) {
-    String user = appIdToUser.get(appId);
+  public void refreshAppId(String appId, String user) {
     // compatible with lower version clients
-    if (user == null) {
-      registerApplicationInfo(appId, "");
+    if (appIdToUser.get(appId) == null) {
+      registerApplicationInfo(appId, user);
     } else {
+      user = appIdToUser.get(appId);
       Map<String, AppInfo> appAndTime = currentUserAndApp.get(user);
       AppInfo appInfo = appAndTime.get(appId);
       long currentTimeMs = System.currentTimeMillis();

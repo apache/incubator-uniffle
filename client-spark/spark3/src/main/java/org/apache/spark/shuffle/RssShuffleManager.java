@@ -903,7 +903,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           () -> {
             try {
               String appId = id.get();
-              shuffleWriteClient.sendAppHeartbeat(appId, heartbeatTimeout);
+              shuffleWriteClient.sendAppHeartbeat(appId, user, heartbeatTimeout);
               LOG.info("Finish send heartbeat to coordinator and servers");
             } catch (Exception e) {
               LOG.warn("Fail to send heartbeat to coordinator and servers", e);

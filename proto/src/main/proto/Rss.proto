@@ -378,6 +378,7 @@ service CoordinatorServer {
 
 message AppHeartBeatRequest {
   string appId = 1;
+  string user = 2;
 }
 
 message AppHeartBeatResponse {

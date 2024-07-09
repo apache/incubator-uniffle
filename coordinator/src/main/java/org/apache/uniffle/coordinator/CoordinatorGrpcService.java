@@ -225,7 +225,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
   public void appHeartbeat(
       AppHeartBeatRequest request, StreamObserver<AppHeartBeatResponse> responseObserver) {
     String appId = request.getAppId();
-    coordinatorServer.getApplicationManager().refreshAppId(appId);
+    String user = request.getUser();
+    coordinatorServer.getApplicationManager().refreshAppId(appId, user);
     if (LOG.isDebugEnabled()) {
       LOG.debug("Got heartbeat from application: {}", appId);
     }
