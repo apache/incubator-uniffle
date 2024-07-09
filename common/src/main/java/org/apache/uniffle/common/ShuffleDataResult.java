@@ -30,7 +30,7 @@ import org.apache.uniffle.common.util.ByteBufUtils;
 
 public class ShuffleDataResult {
 
-  private final ManagedBuffer buffer;
+  private volatile ManagedBuffer buffer;
   private final List<BufferSegment> bufferSegments;
 
   public ShuffleDataResult() {
@@ -109,5 +109,6 @@ public class ShuffleDataResult {
     if (this.buffer != null) {
       this.buffer.release();
     }
+    this.buffer = null;
   }
 }
