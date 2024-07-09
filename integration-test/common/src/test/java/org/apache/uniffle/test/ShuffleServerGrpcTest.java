@@ -784,7 +784,8 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
             .getCounterMap()
             .get(ShuffleServerGrpcMetrics.APP_HEARTBEAT_METHOD)
             .get();
-    grpcShuffleServerClient.sendHeartBeat(new RssAppHeartBeatRequest(appId, StringUtils.EMPTY, 10000));
+    grpcShuffleServerClient.sendHeartBeat(
+        new RssAppHeartBeatRequest(appId, StringUtils.EMPTY, 10000));
     newValue =
         grpcShuffleServers
             .get(0)

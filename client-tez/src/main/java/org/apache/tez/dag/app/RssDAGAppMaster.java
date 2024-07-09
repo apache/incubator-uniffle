@@ -203,8 +203,9 @@ public class RssDAGAppMaster extends DAGAppMaster {
     appMaster.heartBeatExecutorService.scheduleAtFixedRate(
         () -> {
           try {
-            appMaster.getShuffleWriteClient().sendAppHeartbeat(strAppAttemptId, "user",
-                heartbeatTimeout);
+            appMaster
+                .getShuffleWriteClient()
+                .sendAppHeartbeat(strAppAttemptId, "user", heartbeatTimeout);
             if (LOG.isDebugEnabled()) {
               LOG.debug("Finish send heartbeat to coordinator and servers");
             }

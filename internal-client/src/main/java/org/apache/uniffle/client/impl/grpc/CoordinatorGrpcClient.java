@@ -236,8 +236,10 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
   @Override
   public RssAppHeartBeatResponse sendAppHeartBeat(RssAppHeartBeatRequest request) {
     RssProtos.AppHeartBeatRequest rpcRequest =
-        RssProtos.AppHeartBeatRequest.newBuilder().setAppId(request.getAppId())
-            .setUser(request.getUser()).build();
+        RssProtos.AppHeartBeatRequest.newBuilder()
+            .setAppId(request.getAppId())
+            .setUser(request.getUser())
+            .build();
     RssProtos.AppHeartBeatResponse rpcResponse =
         blockingStub
             .withDeadlineAfter(request.getTimeoutMs(), TimeUnit.MILLISECONDS)
