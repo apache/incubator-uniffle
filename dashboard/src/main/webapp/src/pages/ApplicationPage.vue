@@ -32,28 +32,42 @@
     <el-divider />
     <el-tag>User App ranking</el-tag>
     <div>
-      <el-table :data="pageData.userAppCount" height="250" style="width: 100%">
-        <el-table-column prop="userName" label="UserName" min-width="180" />
-        <el-table-column prop="appNum" label="Totality" min-width="180" />
+      <el-table
+        :data="pageData.userAppCount"
+        height="250"
+        style="width: 100%"
+        :default-sort="sortAppCollect"
+        @sort-change="sortAppCollectChangeEvent"
+      >
+        <el-table-column prop="userName" label="UserName" min-width="180" sortable fixed />
+        <el-table-column prop="appNum" label="Totality" min-width="180" sortable />
       </el-table>
     </div>
     <el-divider />
     <el-tag>Apps</el-tag>
     <div>
-      <el-table :data="pageData.appInfoData" height="250" style="width: 100%">
-        <el-table-column prop="appId" label="AppId" min-width="180" />
-        <el-table-column prop="userName" label="UserName" min-width="180" />
-        <el-table-column
+      <el-table
+        :data="pageData.appInfoData"
+        height="250"
+        style="width: 100%"
+        :default-sort="sortApp"
+        @sort-change="sortAppChangeEvent"
+      >
+        <el-table-column prop="appId" label="AppId" min-width="180" sortable fixed />
+        <el-table-column prop="userName" label="UserName" min-width="180" sortable />
+        <el-table-columnsortable
           prop="registrationTime"
           label="Registration Time"
           min-width="180"
           :formatter="dateFormatter"
+          sortable
         />
         <el-table-column
           prop="updateTime"
           label="Update Time"
           min-width="180"
           :formatter="dateFormatter"
+          sortable
         />
       </el-table>
     </div>
@@ -107,7 +121,31 @@ export default {
         getAppTotalPage()
       }
     })
-    return { pageData, dateFormatter }
+
+    const sortAppCollect = reactive({})
+    const sortAppCollectChangeEvent = (sortInfo) => {
+      for (const sortColumnKey in sortAppCollect) {
+        delete sortAppCollect[sortColumnKey]
+      }
+      sortAppCollect[sortInfo.prop] = sortInfo.order
+    }
+
+    const sortApp = reactive({})
+    const sortAppChangeEvent = (sortInfo) => {
+      for (const sortColumnKey in sortApp) {
+        delete sortApp[sortColumnKey]
+      }
+      sortApp[sortInfo.prop] = sortInfo.order
+    }
+
+    return {
+      pageData,
+      sortAppCollect,
+      sortAppCollectChangeEvent,
+      sortApp,
+      sortAppChangeEvent,
+      dateFormatter
+    }
   }
 }
 </script>
