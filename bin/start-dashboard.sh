@@ -55,20 +55,22 @@ JVM_ARGS=" -server \
           -XX:ParallelGCThreads=20 \
           -XX:ConcGCThreads=5 \
           -XX:InitiatingHeapOccupancyPercent=45 \
-          -XX:+PrintGC \
+          -XX:+PrintCommandLineFlags"
+
+GC_LOG_ARGS_LEGACY=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
           -XX:+PrintGCDateStamps \
           -XX:+PrintGCTimeStamps \
           -XX:+PrintTenuringDistribution \
           -XX:+PrintPromotionFailure \
           -XX:+PrintGCApplicationStoppedTime \
-          -XX:+PrintCommandLineFlags \
           -XX:+PrintGCCause \
           -XX:+PrintGCDetails \
           -Xloggc:${RSS_LOG_DIR}/gc-%t.log"
 
-JAVA11_EXTRA_ARGS=" -XX:+IgnoreUnrecognizedVMOptions \
-          -Xlog:gc:tags,time,uptime,level"
+GC_LOG_ARGS_NEW=" -XX:+IgnoreUnrecognizedVMOptions \
+          -Xlog:gc*:file=${RSS_LOG_DIR}/dashboard-gc-%t.log:tags,uptime,time,level:filecount=5,filesize=102400"
+
 
 ARGS=""
 
@@ -79,7 +81,14 @@ else
   exit 1
 fi
 
-$RUNNER $ARGS $JVM_ARGS $JAVA11_EXTRA_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$DASHBOARD_CONF_FILE" $@ &
+version=$($RUNNER -version 2>&1 | awk -F[\".] '/version/ {print $2}')
+if [[ "$version" -lt "9" ]]; then
+  GC_ARGS=$GC_LOG_ARGS_LEGACY
+else
+  GC_ARGS=$GC_LOG_ARGS_NEW
+fi
+
+$RUNNER $ARGS $JVM_ARGS $GC_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$DASHBOARD_CONF_FILE" $@ &
 
 get_pid_file_name dashboard
 echo $! >${RSS_PID_DIR}/${pid_file}
