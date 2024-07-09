@@ -121,6 +121,7 @@ export default {
         UNHEALTHY: 0
       }
     })
+
     const currentServerStore = useCurrentServerStore()
 
     async function getShufflegetStatusTotalPage() {

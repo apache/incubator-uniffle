@@ -19,12 +19,8 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import ApplicationPage from '@/pages/ApplicationPage.vue'
 import CoordinatorServerPage from '@/pages/CoordinatorServerPage.vue'
 import ShuffleServerPage from '@/pages/ShuffleServerPage.vue'
-import ActiveNodeListPage from '@/pages/serverstatus/ActiveNodeListPage'
-import DecommissioningNodeListPage from '@/pages/serverstatus/DecommissioningNodeListPage'
-import DecommissionednodeListPage from '@/pages/serverstatus/DecommissionednodeListPage'
-import LostNodeList from '@/pages/serverstatus/LostNodeList'
-import UnhealthyNodeListPage from '@/pages/serverstatus/UnhealthyNodeListPage'
 import ExcludeNodeList from '@/pages/serverstatus/ExcludeNodeList'
+import ListPage from '@/pages/serverstatus/ListPage.vue'
 
 const routes = [
   {
@@ -41,27 +37,27 @@ const routes = [
       {
         path: '/shuffleserverpage/activeNodeList',
         name: 'activeNodeList',
-        component: ActiveNodeListPage
+        component: ListPage
       },
       {
         path: '/shuffleserverpage/decommissioningNodeList',
         name: 'decommissioningNodeList',
-        component: DecommissioningNodeListPage
+        component: ListPage
       },
       {
         path: '/shuffleserverpage/decommissionedNodeList',
         name: 'decommissionedNodeList',
-        component: DecommissionednodeListPage
+        component: ListPage
       },
       {
         path: '/shuffleserverpage/lostNodeList',
         name: 'lostNodeList',
-        component: LostNodeList
+        component: ListPage
       },
       {
         path: '/shuffleserverpage/unhealthyNodeList',
         name: 'unhealthyNodeList',
-        component: UnhealthyNodeListPage
+        component: ListPage
       },
       {
         path: '/shuffleserverpage/excludeNodeList',
