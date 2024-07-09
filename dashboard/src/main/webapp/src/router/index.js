@@ -20,7 +20,7 @@ import ApplicationPage from '@/pages/ApplicationPage.vue'
 import CoordinatorServerPage from '@/pages/CoordinatorServerPage.vue'
 import ShuffleServerPage from '@/pages/ShuffleServerPage.vue'
 import ExcludeNodeList from '@/pages/serverstatus/ExcludeNodeList'
-import ListPage from '@/pages/serverstatus/ListPage.vue'
+import NodeListPage from '@/pages/serverstatus/NodeListPage.vue'
 
 const routes = [
   {
@@ -37,27 +37,27 @@ const routes = [
       {
         path: '/shuffleserverpage/activeNodeList',
         name: 'activeNodeList',
-        component: ListPage
+        component: NodeListPage
       },
       {
         path: '/shuffleserverpage/decommissioningNodeList',
         name: 'decommissioningNodeList',
-        component: ListPage
+        component: NodeListPage
       },
       {
         path: '/shuffleserverpage/decommissionedNodeList',
         name: 'decommissionedNodeList',
-        component: ListPage
+        component: NodeListPage
       },
       {
         path: '/shuffleserverpage/lostNodeList',
         name: 'lostNodeList',
-        component: ListPage
+        component: NodeListPage
       },
       {
         path: '/shuffleserverpage/unhealthyNodeList',
         name: 'unhealthyNodeList',
-        component: ListPage
+        component: NodeListPage
       },
       {
         path: '/shuffleserverpage/excludeNodeList',
