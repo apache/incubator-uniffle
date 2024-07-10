@@ -21,6 +21,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.base.Preconditions;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.proxy.ProxyServlet;
@@ -34,6 +35,8 @@ public class WebProxyServlet extends ProxyServlet {
   private Map<String, String> coordinatorServerAddressesMap;
 
   public WebProxyServlet(Map<String, String> coordinatorServerAddressesMap) {
+    Preconditions.checkArgument(coordinatorServerAddressesMap.isEmpty(),
+        "No coordinator server address found.");
     this.coordinatorServerAddressesMap = coordinatorServerAddressesMap;
   }
 
