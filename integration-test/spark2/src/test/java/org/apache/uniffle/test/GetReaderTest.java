@@ -33,8 +33,6 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.TaskContextImpl;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.shuffle.RssShuffleHandle;
-import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +41,9 @@ import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.spark.shuffle.RssShuffleHandle;
 import org.apache.uniffle.spark.shuffle.RssShuffleManager;
+import org.apache.uniffle.spark.shuffle.RssSparkConfig;
 import org.apache.uniffle.spark.shuffle.reader.RssShuffleReader;
 import org.apache.uniffle.storage.util.StorageType;
 
