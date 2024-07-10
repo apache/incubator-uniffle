@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.SparkConf;
-import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -34,6 +33,7 @@ import org.apache.uniffle.common.compression.Codec;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.spark.shuffle.RssSparkConfig;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.common.config.RssClientConf.COMPRESSION_TYPE;

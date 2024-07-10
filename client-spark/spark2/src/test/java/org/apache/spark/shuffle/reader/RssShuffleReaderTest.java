@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.shuffle.reader;
+package org.apache.uniffle.spark.shuffle.reader;
 
 import java.util.HashMap;
 import java.util.List;

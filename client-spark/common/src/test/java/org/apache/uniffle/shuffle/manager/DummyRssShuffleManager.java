@@ -22,11 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.spark.shuffle.handle.MutableShuffleHandleInfo;
-import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
-
 import org.apache.uniffle.common.ReceivingFailureServer;
 import org.apache.uniffle.shuffle.BlockIdManager;
+import org.apache.uniffle.spark.shuffle.handle.MutableShuffleHandleInfo;
+import org.apache.uniffle.spark.shuffle.handle.ShuffleHandleInfo;
 
 public class DummyRssShuffleManager implements RssShuffleManagerInterface {
   public Set<Integer> unregisteredShuffleIds = new LinkedHashSet<>();
