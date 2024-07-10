@@ -112,9 +112,9 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
   }
 
   public void updateSparkConfWithRssGrpc(SparkConf sparkConf) {
-    sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
+    sparkConf.set("spark.shuffle.manager", "org.apache.uniffle.spark.shuffle.RssShuffleManager");
     sparkConf.set(
-        "spark.shuffle.sort.io.plugin.class", "org.apache.spark.shuffle.RssShuffleDataIo");
+        "spark.shuffle.sort.io.plugin.class", "org.apache.uniffle.spark.shuffle.RssShuffleDataIo");
     sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
     sparkConf.set(RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key(), "4m");
     sparkConf.set(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key(), "32m");

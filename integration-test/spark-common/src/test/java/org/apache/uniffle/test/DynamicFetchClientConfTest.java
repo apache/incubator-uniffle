@@ -41,7 +41,7 @@ public class DynamicFetchClientConfTest extends IntegrationTestBase {
   @Test
   public void test() throws Exception {
     SparkConf sparkConf = new SparkConf();
-    sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
+    sparkConf.set("spark.shuffle.manager", "org.apache.uniffle.spark.shuffle.RssShuffleManager");
     sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.set("spark.mock.2", "no-overwrite-conf");
     sparkConf.set("spark.shuffle.service.enabled", "true");
@@ -94,7 +94,7 @@ public class DynamicFetchClientConfTest extends IntegrationTestBase {
     fs.delete(path, true);
     shutdownServers();
     sparkConf = new SparkConf();
-    sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
+    sparkConf.set("spark.shuffle.manager", "org.apache.uniffle.spark.shuffle.RssShuffleManager");
     sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.set("spark.mock.2", "no-overwrite-conf");
     sparkConf.set("spark.shuffle.service.enabled", "true");

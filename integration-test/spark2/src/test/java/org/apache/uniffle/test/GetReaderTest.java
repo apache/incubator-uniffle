@@ -56,7 +56,7 @@ public class GetReaderTest extends IntegrationTestBase {
   @Test
   public void test() throws Exception {
     SparkConf sparkConf = new SparkConf();
-    sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
+    sparkConf.set("spark.shuffle.manager", "org.apache.uniffle.spark.shuffle.RssShuffleManager");
     sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
     sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.setMaster("local[4]");

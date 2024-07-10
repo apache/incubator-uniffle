@@ -48,7 +48,7 @@ public class AutoAccessTest extends IntegrationTestBase {
   @Test
   public void test() throws Exception {
     SparkConf sparkConf = new SparkConf();
-    sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.DelegationRssShuffleManager");
+    sparkConf.set("spark.shuffle.manager", "org.apache.uniffle.spark.shuffle.DelegationRssShuffleManager");
     sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.set("spark.mock.2", "no-overwrite-conf");
     sparkConf.set(RssSparkConfig.RSS_REMOTE_STORAGE_PATH.key(), "overwrite-path");
