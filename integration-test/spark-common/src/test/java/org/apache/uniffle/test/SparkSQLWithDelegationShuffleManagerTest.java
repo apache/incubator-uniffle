@@ -88,7 +88,8 @@ public class SparkSQLWithDelegationShuffleManagerTest extends SparkSQLTest {
   @Override
   public void updateRssStorage(SparkConf sparkConf) {
     sparkConf.set(RssSparkConfig.RSS_ACCESS_ID.key(), "test_access_id");
-    sparkConf.set("spark.shuffle.manager", "org.apache.uniffle.spark.shuffle.DelegationRssShuffleManager");
+    sparkConf.set(
+        "spark.shuffle.manager", "org.apache.uniffle.spark.shuffle.DelegationRssShuffleManager");
   }
 
   @Override

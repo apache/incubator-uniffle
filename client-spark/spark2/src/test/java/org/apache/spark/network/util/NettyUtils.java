@@ -33,8 +33,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.SystemPropertyUtil;
-import org.apache.spark.network.util.IOMode;
-import org.apache.spark.network.util.TransportFrameDecoder;
 
 import org.apache.uniffle.common.exception.RssException;
 
