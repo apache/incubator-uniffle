@@ -708,8 +708,6 @@ public class ShuffleBufferManager {
 
     Map<Integer, AtomicLong> shuffleIdToSizeMap = shuffleSizeMap.get(appId);
     for (int shuffleId : shuffleIds) {
-      long size = 0;
-
       RangeMap<Integer, ShuffleBuffer> bufferRangeMap = shuffleIdToBuffers.remove(shuffleId);
       if (bufferRangeMap == null) {
         continue;
@@ -719,10 +717,9 @@ public class ShuffleBufferManager {
         for (ShuffleBuffer buffer : buffers) {
           buffer.release();
           ShuffleServerMetrics.gaugeTotalPartitionNum.dec();
-          size += buffer.getSize();
+          releaseMemory(buffer.getSize(), false, false);
         }
       }
-      releaseMemory(size, false, false);
       if (shuffleIdToSizeMap != null) {
         shuffleIdToSizeMap.remove(shuffleId);
       }
