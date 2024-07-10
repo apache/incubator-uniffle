@@ -36,7 +36,7 @@ spark's conf
 spark.executor.instances 400
 spark.executor.cores 1
 spark.executor.memory 2g
-spark.shuffle.manager org.apache.spark.shuffle.RssShuffleManager
+spark.shuffle.manager org.apache.uniffle.spark.shuffle.RssShuffleManager
 spark.rss.storage.type MEMORY_LOCALFILE
 ``` 
 
