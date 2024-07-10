@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.shuffle;
+package org.apache.uniffle.spark.shuffle;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -31,8 +31,6 @@ import org.mockito.Mockito;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
-import org.apache.uniffle.spark.shuffle.DelegationRssShuffleManager;
-import org.apache.uniffle.spark.shuffle.RssShuffleManager;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.common.rpc.StatusCode.ACCESS_DENIED;

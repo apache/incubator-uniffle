@@ -15,26 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.spark.shuffle;
+package org.apache.uniffle.spark.shuffle;
 
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.common.exception.RssFetchFailedException;
-
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RssSpark2ShuffleUtilsTest {
+public class SparkVersionUtilsTest {
   @Test
-  public void testCreateFetchFailedException() {
-    FetchFailedException ffe = RssSparkShuffleUtils.createFetchFailedException(0, -1, 10, null);
-    ffe =
-        RssSparkShuffleUtils.createFetchFailedException(
-            0, -1, 100, new RssFetchFailedException("xx"));
-  }
-
-  @Test
-  public void testIsStageResubmitSupported() {
-    // by default spark 2.3/2.4 is used, which supports stage resubmit.
-    assertTrue(RssSparkShuffleUtils.isStageResubmitSupported());
+  public void testSparkVersion() {
+    assertTrue(SparkVersionUtils.isSpark2());
+    assertFalse(SparkVersionUtils.isSpark3());
+    assertFalse(SparkVersionUtils.isSpark320());
   }
 }
