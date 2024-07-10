@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.spark.network.util;
+package org.apache.spark.network.util;
 
 import java.lang.reflect.Field;
 import java.util.concurrent.ThreadFactory;
