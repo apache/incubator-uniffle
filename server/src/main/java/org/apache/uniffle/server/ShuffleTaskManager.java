@@ -59,6 +59,7 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.exception.ExceedHugePartitionHardLimitException;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.exception.NoBufferException;
@@ -316,6 +317,18 @@ public class ShuffleTaskManager {
   public StatusCode cacheShuffleData(
       String appId, int shuffleId, boolean isPreAllocated, ShufflePartitionedData spd) {
     refreshAppId(appId);
+    long partitionSize = getPartitionDataSize(appId, shuffleId, spd.getPartitionId());
+    long deltaSize = spd.getTotalBlockSize();
+    partitionSize += deltaSize;
+    if (shuffleBufferManager.hasPartitionExceededHugeHardLimit(partitionSize)) {
+      throw new ExceedHugePartitionHardLimitException(
+          "Current partition size: "
+              + partitionSize
+              + " exceeded the huge hard limit size: "
+              + shuffleBufferManager.getHugePartitionSizeHardLimit()
+              + " if cache this shuffle data with size: "
+              + deltaSize);
+    }
     return shuffleBufferManager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
   }
 
@@ -489,6 +502,15 @@ public class ShuffleTaskManager {
     long partitionSize = shuffleTaskInfo.addPartitionDataSize(shuffleId, partitionId, size);
     if (shuffleBufferManager.isHugePartition(partitionSize)) {
       shuffleTaskInfo.markHugePartition(shuffleId, partitionId);
+    }
+    if (shuffleBufferManager.hasPartitionExceededHugeHardLimit(partitionSize)) {
+      throw new ExceedHugePartitionHardLimitException(
+          "Current partition size: "
+              + partitionSize
+              + " exceeded the huge hard limit size: "
+              + shuffleBufferManager.getHugePartitionSizeHardLimit()
+              + " after caching this shuffle data with size: "
+              + size);
     }
   }
 

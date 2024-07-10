@@ -33,6 +33,7 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.audit.AuditContext;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.exception.ExceedHugePartitionHardLimitException;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.NoBufferException;
 import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
@@ -429,6 +431,17 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               manager.updateCachedBlockIds(
                   appId, shuffleId, spd.getPartitionId(), spd.getBlockList());
             }
+          } catch (ExceedHugePartitionHardLimitException e) {
+            String errorMsg =
+                "ExceedHugePartitionHardLimitException Error happened when shuffleEngine.write for "
+                    + shuffleDataInfo
+                    + ": "
+                    + e.getMessage();
+            ShuffleServerMetrics.counterTotalHugePartitionExceedHardLimitNum.inc();
+            ret = StatusCode.EXCEED_HUGE_PARTITION_HARD_LIMIT;
+            responseMessage = errorMsg;
+            LOG.error(errorMsg);
+            hasFailureOccurred = true;
           } catch (Exception e) {
             String errorMsg =
                 "Error happened when shuffleEngine.write for "
@@ -1329,11 +1342,12 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     return ret;
   }
 
-  private ShufflePartitionedBlock[] toPartitionedBlock(List<ShuffleBlock> blocks) {
+  private Pair<Long, ShufflePartitionedBlock[]> toPartitionedBlock(List<ShuffleBlock> blocks) {
     if (blocks == null || blocks.size() == 0) {
-      return new ShufflePartitionedBlock[] {};
+      return Pair.of(0L, new ShufflePartitionedBlock[] {});
     }
     ShufflePartitionedBlock[] ret = new ShufflePartitionedBlock[blocks.size()];
+    long size = 0L;
     int i = 0;
     for (ShuffleBlock block : blocks) {
       ByteBuf data = ByteBufUtils.byteStringToByteBuf(block.getData());
@@ -1345,9 +1359,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               block.getBlockId(),
               block.getTaskAttemptId(),
               data);
+      size += ret[i].getSize();
       i++;
     }
-    return ret;
+    return Pair.of(size, ret);
   }
 
   private Map<Integer, long[]> toPartitionBlocksMap(List<PartitionToBlockIds> partitionToBlockIds) {

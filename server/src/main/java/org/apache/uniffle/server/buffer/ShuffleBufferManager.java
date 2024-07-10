@@ -73,6 +73,7 @@ public class ShuffleBufferManager {
   private long shuffleFlushThreshold;
   // Huge partition vars
   private ReconfigurableConfManager.Reconfigurable<Long> hugePartitionSizeThresholdRef;
+  private ReconfigurableConfManager.Reconfigurable<Long> hugePartitionSizeHardLimitRef;
   private long hugePartitionMemoryLimitSize;
   protected AtomicLong preAllocatedSize = new AtomicLong(0L);
   protected AtomicLong inFlushSize = new AtomicLong(0L);
@@ -131,6 +132,8 @@ public class ShuffleBufferManager {
         conf.getSizeAsBytes(ShuffleServerConf.SERVER_SHUFFLE_FLUSH_THRESHOLD);
     this.hugePartitionSizeThresholdRef =
         conf.getReconfigurableConf(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD);
+    this.hugePartitionSizeHardLimitRef =
+        conf.getReconfigurableConf(ShuffleServerConf.HUGE_PARTITION_SIZE_HARD_LIMIT);
     this.hugePartitionMemoryLimitSize =
         Math.round(
             capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO));
@@ -734,6 +737,14 @@ public class ShuffleBufferManager {
 
   public boolean isHugePartition(long usedPartitionDataSize) {
     return usedPartitionDataSize > hugePartitionSizeThresholdRef.getSizeAsBytes();
+  }
+
+  public boolean hasPartitionExceededHugeHardLimit(long usedPartitionDataSize) {
+    return usedPartitionDataSize > hugePartitionSizeHardLimitRef.getSizeAsBytes();
+  }
+
+  public long getHugePartitionSizeHardLimit() {
+    return hugePartitionSizeHardLimitRef.getSizeAsBytes();
   }
 
   public boolean limitHugePartition(

@@ -130,6 +130,8 @@ public class ShuffleServerMetrics {
       "total_app_with_huge_partition_num";
   private static final String TOTAL_PARTITION_NUM = "total_partition_num";
   private static final String TOTAL_HUGE_PARTITION_NUM = "total_huge_partition_num";
+  private static final String TOTAL_HUGE_PARTITION_EXCEED_HARD_LIMIT_NUM =
+      "total_huge_partition_exceed_hard_limit_num";
 
   private static final String HUGE_PARTITION_NUM = "huge_partition_num";
   private static final String APP_WITH_HUGE_PARTITION_NUM = "app_with_huge_partition_num";
@@ -157,6 +159,7 @@ public class ShuffleServerMetrics {
   public static Counter.Child counterTotalAppWithHugePartitionNum;
   public static Counter.Child counterTotalPartitionNum;
   public static Counter.Child counterTotalHugePartitionNum;
+  public static Counter.Child counterTotalHugePartitionExceedHardLimitNum;
 
   public static Counter.Child counterTotalReceivedDataSize;
   public static Counter.Child counterTotalWriteDataSize;
@@ -421,6 +424,8 @@ public class ShuffleServerMetrics {
         metricsManager.addLabeledCounter(TOTAL_APP_WITH_HUGE_PARTITION_NUM);
     counterTotalPartitionNum = metricsManager.addLabeledCounter(TOTAL_PARTITION_NUM);
     counterTotalHugePartitionNum = metricsManager.addLabeledCounter(TOTAL_HUGE_PARTITION_NUM);
+    counterTotalHugePartitionExceedHardLimitNum =
+        metricsManager.addLabeledCounter(TOTAL_HUGE_PARTITION_EXCEED_HARD_LIMIT_NUM);
 
     gaugeLocalStorageIsWritable =
         metricsManager.addGauge(LOCAL_STORAGE_IS_WRITABLE, LOCAL_DISK_PATH_LABEL);

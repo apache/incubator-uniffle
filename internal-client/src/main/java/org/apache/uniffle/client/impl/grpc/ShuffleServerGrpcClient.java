@@ -132,7 +132,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   protected static final int BACK_OFF_BASE = 2000;
   static final List<StatusCode> NOT_RETRY_STATUS_CODES =
       Lists.newArrayList(
-          StatusCode.NO_REGISTER, StatusCode.APP_NOT_FOUND, StatusCode.INTERNAL_NOT_RETRY_ERROR);
+          StatusCode.NO_REGISTER,
+          StatusCode.APP_NOT_FOUND,
+          StatusCode.INTERNAL_NOT_RETRY_ERROR,
+          StatusCode.EXCEED_HUGE_PARTITION_HARD_LIMIT);
 
   @VisibleForTesting
   public ShuffleServerGrpcClient(String host, int port) {

@@ -17,17 +17,16 @@
 
 package org.apache.uniffle.common.exception;
 
-public class NotRetryException extends RssException {
-
-  public NotRetryException(String message) {
+public class ExceedHugePartitionHardLimitException extends NotRetryException {
+  public ExceedHugePartitionHardLimitException(String message) {
     super(message);
   }
 
-  public NotRetryException(Throwable e) {
+  public ExceedHugePartitionHardLimitException(Throwable e) {
     super(e);
   }
 
-  public NotRetryException(String message, Throwable e) {
+  public ExceedHugePartitionHardLimitException(String message, Throwable e) {
     super(message, e);
   }
 }
