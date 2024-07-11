@@ -311,6 +311,14 @@ public class SimpleClusterManager implements ClusterManager {
     return Lists.newArrayList(servers.values());
   }
 
+  @Override
+  public boolean deleteLostServerById(String serverId) {
+    if (StringUtils.isNotBlank(serverId)) {
+      return lostNodes.remove(new ServerNode(serverId));
+    }
+    return false;
+  }
+
   @VisibleForTesting
   public void clear() {
     servers.clear();

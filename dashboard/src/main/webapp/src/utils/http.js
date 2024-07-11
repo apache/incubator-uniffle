@@ -23,7 +23,7 @@ const http = {
     if (fontBackFlag === 0) {
       // The system obtains the address of the Coordinator to be accessed from global variables.
       const currentServerStore = useCurrentServerStore()
-      if (typeof headers !== 'undefined') {
+      if (headers) {
         headers.targetAddress = currentServerStore.currentServer
       } else {
         headers = {}
@@ -38,7 +38,7 @@ const http = {
     if (fontBackFlag === 0) {
       // The system obtains the address of the Coordinator to be accessed from global variables.
       const currentServerStore = useCurrentServerStore()
-      if (typeof headers !== 'undefined') {
+      if (headers) {
         headers.targetAddress = currentServerStore.currentServer
       } else {
         headers = {}
@@ -47,6 +47,21 @@ const http = {
       return request.getBackEndAxiosInstance().post(url, data, headers)
     } else {
       return request.getFrontEndAxiosInstance().post(url, data, headers)
+    }
+  },
+  delete(url, params, headers, fontBackFlag) {
+    if (fontBackFlag === 0) {
+      // The system obtains the address of the Coordinator to be accessed from global variables.
+      const currentServerStore = useCurrentServerStore()
+      if (headers) {
+        headers.targetAddress = currentServerStore.currentServer
+      } else {
+        headers = {}
+        headers.targetAddress = currentServerStore.currentServer
+      }
+      return request.getBackEndAxiosInstance().delete(url, { params, headers })
+    } else {
+      return request.getFrontEndAxiosInstance().delete(url, { params, headers })
     }
   }
 }
