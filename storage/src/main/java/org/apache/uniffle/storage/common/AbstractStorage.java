@@ -54,6 +54,11 @@ public abstract class AbstractStorage implements Storage {
   }
 
   @Override
+  public boolean containsWriteHandler(String appId) {
+    return writerHandlers.containsKey(appId);
+  }
+
+  @Override
   public ServerReadHandler getOrCreateReadHandler(CreateShuffleReadHandlerRequest request) {
     readerHandlers.computeIfAbsent(request.getAppId(), key -> JavaUtils.newConcurrentMap());
     Map<String, ServerReadHandler> map = readerHandlers.get(request.getAppId());
