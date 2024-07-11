@@ -77,7 +77,7 @@
   </div>
 </template>
 <script>
-import { onMounted, reactive, watch, ref } from 'vue'
+import { onMounted, reactive, watch, ref, inject } from 'vue'
 import { memFormatter, dateFormatter } from '@/utils/common'
 import { useRouter } from 'vue-router'
 import { useCurrentServerStore } from '@/store/useCurrentServerStore'
@@ -114,16 +114,20 @@ export default {
         }
       ]
     })
-    const deleteFlag = reactive({
-      code: 0,
-      data: '',
-      errMsg: ''
-    })
     const isShowRemove = ref(false)
     async function deleteLostServer(row) {
-      const params = { serverId: row.id }
-      const res = await deleteConfirmedLostServer(params, {})
-      Object.assign(deleteFlag, res.data)
+      try {
+        const params = { serverId: row.id }
+        const res = await deleteConfirmedLostServer(params, {})
+        // Invoke the interface to delete the lost server, prompting a message based on the result returned.
+        if (res.data.data === 'success') {
+          ElMessage.success('remove ' + row.id + ' sucess...')
+        } else {
+          ElMessage.error('remove ' + row.id + ' fail...')
+        }
+      } catch (err) {
+        ElMessage.error('remove ' + row.id + ' request timeout...')
+      }
     }
 
     async function getShuffleActiveNodesPage() {
@@ -202,7 +206,10 @@ export default {
       }
       sortColumn[sortInfo.prop] = sortInfo.order
     }
-
+    /**
+     * Get the callback method of the parent page and update the number of servers on the page.
+     */
+    const updateTotalPage = inject('updateTotalPage')
     const showDeleteConfirm = (row) => {
       ElMessageBox.confirm(`Are you sure to remove ${row.id}?`, 'Confirmation', {
         confirmButtonText: 'Remove',
@@ -212,19 +219,9 @@ export default {
         .then(() => {
           // Perform deletion logic here.
           deleteLostServer(row)
-          // Invoke the interface to delete the lost server, prompting a message based on the result returned.
-          if (deleteFlag.data === 'success') {
-            ElMessage.success('remove ' + row.id + ' sucess...')
-          } else {
-            ElMessage.error('remove ' + row.id + ' fail...')
-          }
           // Reload the lost server information
           getShuffleLostListPage()
-          Object.assign(deleteFlag, {
-            code: 0,
-            data: '',
-            errMsg: ''
-          })
+          updateTotalPage()
         })
         .catch(() => {
           // Cancelled
@@ -233,7 +230,6 @@ export default {
     return {
       listPageData,
       sortColumn,
-      deleteFlag,
       isShowRemove,
       showDeleteConfirm,
       sortChangeEvent,
