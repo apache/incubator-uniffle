@@ -207,7 +207,7 @@ public class ServerResource extends BaseResource {
     if (clusterManager.deleteLostServerById(serverId)) {
       return Response.success("success");
     }
-    return Response.success("failed");
+    return Response.fail("fail");
   }
 
   private ClusterManager getClusterManager() {

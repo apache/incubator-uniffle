@@ -23,7 +23,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -314,15 +313,8 @@ public class SimpleClusterManager implements ClusterManager {
 
   @Override
   public boolean deleteLostServerById(String serverId) {
-    if (serverId != null && !serverId.equalsIgnoreCase("")) {
-      Iterator<ServerNode> lostNodeIter = lostNodes.iterator();
-      while (lostNodeIter.hasNext()) {
-        ServerNode node = lostNodeIter.next();
-        if (serverId.equalsIgnoreCase(node.getId())) {
-          lostNodes.remove(node);
-          return true;
-        }
-      }
+    if (StringUtils.isNotBlank(serverId)) {
+      return lostNodes.remove(new ServerNode(serverId));
     }
     return false;
   }

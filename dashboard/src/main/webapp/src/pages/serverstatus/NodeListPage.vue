@@ -56,6 +56,7 @@
         label="RegistrationTime"
         min-width="120"
         :formatter="dateFormatter"
+        sortable
       />
       <el-table-column
         prop="timestamp"
@@ -151,17 +152,30 @@ export default {
     }
 
     const loadPageData = () => {
+      isShowRemove.value = false
+      listPageData.tableData = [
+        {
+          id: '',
+          ip: '',
+          grpcPort: 0,
+          nettyPort: 0,
+          usedMemory: 0,
+          preAllocatedMemory: 0,
+          availableMemory: 0,
+          eventNumInFlush: 0,
+          tags: '',
+          status: '',
+          registrationTime: '',
+          timestamp: ''
+        }
+      ]
       if (router.currentRoute.value.name === 'activeNodeList') {
-        isShowRemove.value = false
         getShuffleActiveNodesPage()
       } else if (router.currentRoute.value.name === 'decommissioningNodeList') {
-        isShowRemove.value = false
         getShuffleDecommissioningListPage()
       } else if (router.currentRoute.value.name === 'decommissionedNodeList') {
-        isShowRemove.value = false
         getShuffleDecommissionedListPage()
       } else if (router.currentRoute.value.name === 'unhealthyNodeList') {
-        isShowRemove.value = false
         getShuffleUnhealthyListPage()
       } else if (router.currentRoute.value.name === 'lostNodeList') {
         isShowRemove.value = true

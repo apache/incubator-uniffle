@@ -23,7 +23,7 @@ const http = {
     if (fontBackFlag === 0) {
       // The system obtains the address of the Coordinator to be accessed from global variables.
       const currentServerStore = useCurrentServerStore()
-      if (typeof headers !== 'undefined') {
+      if (headers) {
         headers.targetAddress = currentServerStore.currentServer
       } else {
         headers = {}
@@ -38,7 +38,7 @@ const http = {
     if (fontBackFlag === 0) {
       // The system obtains the address of the Coordinator to be accessed from global variables.
       const currentServerStore = useCurrentServerStore()
-      if (typeof headers !== 'undefined') {
+      if (headers) {
         headers.targetAddress = currentServerStore.currentServer
       } else {
         headers = {}
@@ -53,7 +53,7 @@ const http = {
     if (fontBackFlag === 0) {
       // The system obtains the address of the Coordinator to be accessed from global variables.
       const currentServerStore = useCurrentServerStore()
-      if (typeof headers !== 'undefined') {
+      if (headers) {
         headers.targetAddress = currentServerStore.currentServer
       } else {
         headers = {}
