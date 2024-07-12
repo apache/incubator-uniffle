@@ -36,7 +36,7 @@ public class WebProxyServlet extends ProxyServlet {
 
   public WebProxyServlet(Map<String, String> coordinatorServerAddressesMap) {
     Preconditions.checkArgument(
-        coordinatorServerAddressesMap.isEmpty(), "No coordinator server address found.");
+        !coordinatorServerAddressesMap.isEmpty(), "No coordinator server address found.");
     this.coordinatorServerAddressesMap = coordinatorServerAddressesMap;
   }
 
