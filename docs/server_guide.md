@@ -150,8 +150,9 @@ When enabling Netty, we should also consider memory related configurations.
 #### Memory Configuration Principles
 
 - Reserve about `15%` of the machine's memory space (reserved space for OS slab, reserved, cache, buffer, kernel stack, etc.)
-- Recommended ratio for heap and off-heap memory: `1:9`
-- `rss.server.buffer.capacity` + `rss.server.read.buffer.capacity` + reserved = maximum off-heap
+- Recommended ratio for heap memory : off-heap memory is `1 : 9`
+- `rss.server.buffer.capacity` + `rss.server.read.buffer.capacity` + reserved = maximum off-heap memory
+- Recommended ratio for capacity configurations: `rss.server.read.buffer.capacity` : `rss.server.buffer.capacity` = 1 : 18
 
 Note: The reserved memory can be adjusted according to the actual situation, if the memory is relatively small, configuring 1g is completely sufficient.
 
@@ -177,7 +178,7 @@ MAX_DIRECT_MEMORY_SIZE=360g
 
 Generally, `rss.server.read.buffer.capacity` of 20g is enough, you can pay more attention to the metric `read_used_buffer_size`. 
 
-If we reserve 10g, and the remaining off-heap space is for `rss.server.buffer.capacity`, also assuming the machine has 470g of memory, the configs will be:
+If we reserve 10g, and the remaining off-heap memory is for `rss.server.buffer.capacity`, also assuming the machine has 470g of memory, the configs will be:
 
 ```
 rss.server.buffer.capacity 330g
