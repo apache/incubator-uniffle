@@ -155,12 +155,9 @@ When enabling Netty, we should also consider memory related configurations.
 
 Note: The reserved memory can be adjusted according to the actual situation, if the memory is relatively small, configuring 1g is completely sufficient.
 
-##### Example
+##### rss-env.sh
 
 Assuming the machine has 470g of memory.
-
-#### rss-env.sh
-
 The machine reserves 15% of memory space, about 70g, following the above principle (heap:off-heap=1:9):
 
 ```
@@ -176,18 +173,18 @@ XMX_SIZE=40g
 MAX_DIRECT_MEMORY_SIZE=360g
 ```
 
-#### server.conf
+##### server.conf
 
 Generally, `rss.server.read.buffer.capacity` of 20g is enough, you can pay more attention to the metric `read_used_buffer_size`. 
 
-If we reserve 10g, and the remaining off-heap space is for `rss.server.buffer.capacity`, the configs will be:
+If we reserve 10g, and the remaining off-heap space is for `rss.server.buffer.capacity`, also assuming the machine has 470g of memory, the configs will be:
 
 ```
 rss.server.buffer.capacity 330g
 rss.server.read.buffer.capacity 20g
 ```
 
-#### Example of server conf
+##### Example of server conf
 ```
 rss.rpc.server.port 19999
 rss.jetty.http.port 19998
