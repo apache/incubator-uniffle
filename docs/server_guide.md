@@ -145,17 +145,46 @@ Finally, to improve the speed of writing to HDFS for a single partition, the val
 ### Netty
 In version 0.8.0, we introduced Netty. Enabling Netty on ShuffleServer can significantly reduce GC time in high-throughput scenarios. We can enable Netty through the parameters `rss.server.netty.port` and `rss.rpc.server.type`. Note: After setting the parameter `rss.rpc.server.type` to `GRPC_NETTY`, ShuffleServer will be tagged with `GRPC_NETTY`, that is, the node can only be assigned to clients with `spark.rss.client.type=GRPC_NETTY`.
 
-When enabling Netty, we should also consider memory related configurations, the following is an example.
+When enabling Netty, we should also consider memory related configurations.
+
+#### Memory Configuration Principles
+
+- Reserve about `15%` of the machine's memory space (reserved space for OS slab, reserved, cache, buffer, kernel stack, etc.)
+- Recommended ratio for heap and off-heap memory: `1:9`
+- `rss.server.buffer.capacity` + `rss.server.read.buffer.capacity` + reserved = maximum off-heap
+
+Note: The reserved memory can be adjusted according to the actual situation, if the memory is relatively small, configuring 1g is completely sufficient.
+
+##### Example
+
+Assuming the machine has 470g of memory.
 
 #### rss-env.sh
+
+The machine reserves 15% of memory space, about 70g, following the above principle (heap:off-heap=1:9):
+
 ```
-XMX_SIZE=20g
-MAX_DIRECT_MEMORY_SIZE=120g
+heap = (470 - 70) * 1 / 10 = 40g
+off-heap = (470 - 70) * 9 / 10 = 360g 
+heap + off-heap = 400g
 ```
+
+So, `rss-env.sh` will be:
+
+```
+XMX_SIZE=40g 
+MAX_DIRECT_MEMORY_SIZE=360g
+```
+
 #### server.conf
+
+Generally, `rss.server.read.buffer.capacity` of 20g is enough, you can pay more attention to the metric `read_used_buffer_size`. 
+
+If we reserve 10g, and the remaining off-heap space is for `rss.server.buffer.capacity`, the configs will be:
+
 ```
-rss.server.buffer.capacity 110g
-rss.server.read.buffer.capacity 5g
+rss.server.buffer.capacity 330g
+rss.server.read.buffer.capacity 20g
 ```
 
 #### Example of server conf
@@ -169,8 +198,8 @@ rss.storage.type MEMORY_LOCALFILE_HDFS
 rss.coordinator.quorum <coordinatorIp1>:19999,<coordinatorIp2>:19999
 rss.storage.basePath /data1/rssdata,/data2/rssdata....
 rss.server.flush.thread.alive 10
-rss.server.buffer.capacity 110g
-rss.server.read.buffer.capacity 5g
+rss.server.buffer.capacity 330g
+rss.server.read.buffer.capacity 20g
 rss.server.heartbeat.interval 10000
 rss.rpc.message.max.size 1073741824
 rss.server.preAllocation.expired 120000
