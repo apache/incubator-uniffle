@@ -940,4 +940,8 @@ public class ShuffleTaskManager {
   public void start() {
     clearResourceThread.start();
   }
+
+  public StorageManager getStorageManager() {
+    return storageManager;
+  }
 }

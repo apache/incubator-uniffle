@@ -57,6 +57,7 @@ import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.merge.ShuffleMergeManager;
 import org.apache.uniffle.server.netty.StreamServer;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
@@ -103,6 +104,9 @@ public class ShuffleServer {
   private boolean nettyServerEnabled;
   private StreamServer streamServer;
   private JvmPauseMonitor jvmPauseMonitor;
+
+  private boolean remoteMergeEnable;
+  private ShuffleMergeManager shuffleMergeManager;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
@@ -304,6 +308,10 @@ public class ShuffleServer {
         new ShuffleTaskManager(
             shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
     shuffleTaskManager.start();
+    remoteMergeEnable = shuffleServerConf.get(ShuffleServerConf.SERVER_MERGE_ENABLE);
+    if (remoteMergeEnable) {
+      shuffleMergeManager = new ShuffleMergeManager(shuffleServerConf, shuffleTaskManager);
+    }
 
     setServer();
   }
@@ -558,5 +566,13 @@ public class ShuffleServer {
         shuffleServer.getStorageManager().getStorageInfo(),
         shuffleServer.getNettyPort(),
         shuffleServer.getJettyPort());
+  }
+
+  public ShuffleMergeManager getShuffleMergeManager() {
+    return shuffleMergeManager;
+  }
+
+  public boolean isRemoteMergeEnable() {
+    return remoteMergeEnable;
   }
 }

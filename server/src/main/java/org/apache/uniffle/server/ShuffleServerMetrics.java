@@ -58,6 +58,7 @@ public class ShuffleServerMetrics {
   private static final String EVENT_SIZE_THRESHOLD_LEVEL3 = "event_size_threshold_level3";
   private static final String EVENT_SIZE_THRESHOLD_LEVEL4 = "event_size_threshold_level4";
   private static final String EVENT_QUEUE_SIZE = "event_queue_size";
+  private static final String MERGE_EVENT_QUEUE_SIZE = "merge_event_queue_size";
   private static final String HADOOP_FLUSH_THREAD_POOL_QUEUE_SIZE =
       "hadoop_flush_thread_pool_queue_size";
   private static final String LOCALFILE_FLUSH_THREAD_POOL_QUEUE_SIZE =
@@ -219,6 +220,7 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeUsedDirectMemorySizeByGrpcNetty;
   public static Gauge.Child gaugeWriteHandler;
   public static Gauge.Child gaugeEventQueueSize;
+  public static Gauge.Child gaugeMergeEventQueueSize;
   public static Gauge.Child gaugeHadoopFlushThreadPoolQueueSize;
   public static Gauge.Child gaugeLocalfileFlushThreadPoolQueueSize;
   public static Gauge.Child gaugeFallbackFlushThreadPoolQueueSize;
@@ -449,6 +451,7 @@ public class ShuffleServerMetrics {
         metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE_BY_GRPC_NETTY);
     gaugeWriteHandler = metricsManager.addLabeledGauge(TOTAL_WRITE_HANDLER);
     gaugeEventQueueSize = metricsManager.addLabeledGauge(EVENT_QUEUE_SIZE);
+    gaugeMergeEventQueueSize = metricsManager.addLabeledGauge(MERGE_EVENT_QUEUE_SIZE);
     gaugeHadoopFlushThreadPoolQueueSize =
         metricsManager.addLabeledGauge(HADOOP_FLUSH_THREAD_POOL_QUEUE_SIZE);
     gaugeLocalfileFlushThreadPoolQueueSize =
