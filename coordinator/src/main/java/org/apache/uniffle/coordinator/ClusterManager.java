@@ -81,4 +81,6 @@ public interface ClusterManager extends Closeable {
   void decommission(String serverId);
 
   void cancelDecommission(String serverId);
+
+  boolean addExcludeNodes(List<String> excludeNodeIds);
 }

@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import javax.servlet.ServletContext;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.hbase.thirdparty.javax.ws.rs.Consumes;
 import org.apache.hbase.thirdparty.javax.ws.rs.DELETE;
 import org.apache.hbase.thirdparty.javax.ws.rs.GET;
 import org.apache.hbase.thirdparty.javax.ws.rs.POST;
@@ -82,7 +83,15 @@ public class ServerResource extends BaseResource {
               .map(excludeNodeStr -> new ServerNode(excludeNodeStr))
               .collect(Collectors.toList());
     } else {
-      serverList = clusterManager.list();
+      List<ServerNode> serverAllList = clusterManager.list();
+      List<ServerNode> serverExcludeList =
+          clusterManager.getExcludeNodes().stream()
+              .map(excludeNodeStr -> new ServerNode(excludeNodeStr))
+              .collect(Collectors.toList());
+      serverList =
+          serverAllList.stream()
+              .filter(node -> !serverExcludeList.contains(node))
+              .collect(Collectors.toList());
     }
     serverList =
         serverList.stream()
@@ -186,13 +195,18 @@ public class ServerResource extends BaseResource {
     return execute(
         () -> {
           ClusterManager clusterManager = getClusterManager();
+          List<ServerNode> serverAllList = clusterManager.list();
           List<ServerNode> excludeNodes =
               clusterManager.getExcludeNodes().stream()
                   .map(exclude -> new ServerNode(exclude))
                   .collect(Collectors.toList());
+          List<ServerNode> activeServerList =
+              serverAllList.stream()
+                  .filter(node -> !excludeNodes.contains(node))
+                  .collect(Collectors.toList());
           Map<String, Integer> stringIntegerHash =
               Stream.of(
-                      clusterManager.list(),
+                      activeServerList,
                       clusterManager.getLostServerList(),
                       excludeNodes,
                       clusterManager.getUnhealthyServerList())
@@ -207,9 +221,20 @@ public class ServerResource extends BaseResource {
 
   @DELETE
   @Path("/deleteServer")
-  public Response<String> deleteLostedServer(@QueryParam("serverId") String serverId) {
+  public Response<String> handleDeleteLostedServerRequest(@QueryParam("serverId") String serverId) {
     ClusterManager clusterManager = getClusterManager();
     if (clusterManager.deleteLostServerById(serverId)) {
+      return Response.success("success");
+    }
+    return Response.fail("fail");
+  }
+
+  @POST
+  @Path("/addExcludeNodes")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response<String> handleAddExcludeNodesRequest(Map<String, List<String>> excludeNodes) {
+    ClusterManager clusterManager = getClusterManager();
+    if (clusterManager.addExcludeNodes(excludeNodes.get("excludeNodes"))) {
       return Response.success("success");
     }
     return Response.fail("fail");
