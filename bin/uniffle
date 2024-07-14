@@ -96,7 +96,7 @@ function uniffle_cmd_case
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
           -XX:ConcGCThreads=5 \
-          -XX:InitiatingHeapOccupancyPercent=45”
+          -XX:InitiatingHeapOccupancyPercent=45"
 
       GC_LOG_ARGS_LEGACY=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
