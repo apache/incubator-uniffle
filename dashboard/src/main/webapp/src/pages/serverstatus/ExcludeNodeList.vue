@@ -32,7 +32,7 @@
       </el-table>
       <el-dialog
         v-model="dialogFormVisible"
-        title="Please enter the exclude server id list:"
+        title="Please enter the server id list to be excluded:"
         class="dialog-wrapper"
       >
         <el-form>
