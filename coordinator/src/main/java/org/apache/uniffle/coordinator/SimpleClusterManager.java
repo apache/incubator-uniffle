@@ -228,12 +228,19 @@ public class SimpleClusterManager implements ClusterManager {
   private void putInExcludeNodesFile(List<String> excludeNodes) throws IOException {
     StringBuilder appendExecludeNodes = new StringBuilder();
     String currentDate = DateFormatUtils.format(new Date(), "yyyy/MM/dd HH:mm:ss");
-    appendExecludeNodes.append(
-        "# Header " + currentDate + ":blacklist node added from the page.\\n");
+    appendExecludeNodes
+        .append("# Header ")
+        .append(currentDate)
+        .append(":blacklist node added from the page.")
+        .append("\n");
     for (String excludeNode : excludeNodes) {
-      appendExecludeNodes.append(excludeNode + "\\n");
+      appendExecludeNodes.append(excludeNode).append("\n");
     }
-    appendExecludeNodes.append("# End " + currentDate + ":blacklist node added from the page.\\n");
+    appendExecludeNodes
+        .append("# End ")
+        .append(currentDate)
+        .append(":blacklist node added from the page.")
+        .append("\n");
     Path hadoopPath = new Path(excludeNodesPath);
     FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
     if (fileStatus != null && fileStatus.isFile()) {
