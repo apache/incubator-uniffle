@@ -31,7 +31,10 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.web.resource.BaseResource;
+import org.apache.uniffle.common.web.resource.MetricResource;
+import org.apache.uniffle.common.web.resource.PrometheusMetricResource;
 import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.CoordinatorServer;
@@ -84,5 +87,23 @@ public class CoordinatorServerResource extends BaseResource {
   private CoordinatorServer getCoordinatorServer() {
     return (CoordinatorServer)
         servletContext.getAttribute(CoordinatorServer.class.getCanonicalName());
+  }
+
+  @Path("/metrics")
+  public Class<MetricResource> getMetricResource() {
+    return MetricResource.class;
+  }
+
+  @Path("/prometheus/metrics")
+  public Class<PrometheusMetricResource> getPrometheusMetricResource() {
+    return PrometheusMetricResource.class;
+  }
+
+  @GET
+  @Path("/stacks")
+  public String getCoordinatorStacks() {
+    StringBuilder builder = new StringBuilder();
+    ThreadUtils.printThreadInfo(builder, "");
+    return builder.toString();
   }
 }

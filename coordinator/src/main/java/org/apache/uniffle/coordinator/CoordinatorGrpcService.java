@@ -433,6 +433,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         Sets.newHashSet(request.getTagsList()),
         serverStatus,
         StorageInfoUtils.fromProto(request.getStorageInfoMap()),
-        request.getServerId().getNettyPort());
+        request.getServerId().getNettyPort(),
+        request.getServerId().getJettyPort());
   }
 }

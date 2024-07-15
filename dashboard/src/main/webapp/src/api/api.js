@@ -26,6 +26,84 @@ export function getCoordinatorConf(params, headers) {
   return http.get('/coordinator/conf', params, headers, 0)
 }
 
+export async function getShuffleServerConf(address, params, headers) {
+  if (typeof headers === 'undefined') {
+    headers = {};
+  }
+  headers.targetAddress = address;
+  const response = await http.get('/shuffleServer/conf', params, headers, 0);
+  const newWindow = window.open('', '_blank');
+  let tableHTML = `
+    <style>
+      table {
+        width: 100%;
+      }
+      th, td {
+        padding: 0 20px;
+        text-align: left;
+      }
+    </style>
+    <table>
+      <tr>
+        <th>Key</th>
+        <th>Value</th>
+      </tr>
+  `;
+  for (const item of response.data.data) {
+    tableHTML += `<tr><td>${item.argumentKey}</td><td>${item.argumentValue}</td></tr>`;
+  }
+  tableHTML += '</table>';
+  newWindow.document.write(tableHTML);
+}
+
+export async function getCoordinatorMetrics(params, headers) {
+  const response = await http.get('/coordinator/metrics', params, headers, 0)
+  const newWindow = window.open('', '_blank');
+  newWindow.document.write('<pre>' + JSON.stringify(response.data, null, 2) + '</pre>');
+}
+
+export async function getShuffleServerMetrics(address, params, headers) {
+  if (typeof headers === 'undefined') {
+    headers = {}
+  }
+  headers.targetAddress = address
+  const response = await http.get('/shuffleServer/metrics', params, headers, 0)
+  const newWindow = window.open('', '_blank');
+  newWindow.document.write('<pre>' + JSON.stringify(response.data, null, 2) + '</pre>');
+}
+
+export async function getCoordinatorPrometheusMetrics(params, headers) {
+  const response = await http.get('/coordinator/prometheus/metrics/all', params, headers, 0)
+  const newWindow = window.open('', '_blank');
+  newWindow.document.write('<pre>' + response.data + '</pre>');
+}
+
+export async function getShuffleServerPrometheusMetrics(address, params, headers) {
+  if (typeof headers === 'undefined') {
+    headers = {}
+  }
+  headers.targetAddress = address
+  const response = await http.get('/shuffleServer/prometheus/metrics/all', params, headers, 0)
+  const newWindow = window.open('', '_blank');
+  newWindow.document.write('<pre>' + response.data + '</pre>');
+}
+
+export async function getCoordinatorStacks(params, headers) {
+  const response = await http.get('/coordinator/stacks', params, headers, 0)
+  const newWindow = window.open('', '_blank');
+  newWindow.document.write('<pre>' + response.data + '</pre>');
+}
+
+export async function getShuffleServerStacks(address, params, headers) {
+  if (typeof headers === 'undefined') {
+    headers = {}
+  }
+  headers.targetAddress = address
+  const response = await http.get('/shuffleServer/stacks', params, headers, 0)
+  const newWindow = window.open('', '_blank');
+  newWindow.document.write('<pre>' + response.data + '</pre>');
+}
+
 // Create an interface for the total number of nodes
 export function getShufflegetStatusTotal(params, headers) {
   return http.get('/server/nodes/summary', params, headers, 0)

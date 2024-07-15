@@ -42,8 +42,12 @@ public class WebProxyServlet extends ProxyServlet {
     if (!validateDestination(clientRequest.getServerName(), clientRequest.getServerPort())) {
       return null;
     }
-    String targetAddress =
-        coordinatorServerAddressesMap.get(clientRequest.getHeader("targetAddress"));
+    String targetAddress;
+    if (clientRequest.getHeader("serverType").equals("coordinator")) {
+      targetAddress = coordinatorServerAddressesMap.get(clientRequest.getHeader("targetAddress"));
+    } else {
+      targetAddress = clientRequest.getHeader("targetAddress");
+    }
     StringBuilder target = new StringBuilder();
     if (targetAddress.endsWith("/")) {
       targetAddress = targetAddress.substring(0, targetAddress.length() - 1);

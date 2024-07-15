@@ -42,6 +42,7 @@ public class ServerNode implements Comparable<ServerNode> {
   private ServerStatus status;
   private Map<String, StorageInfo> storageInfo;
   private int nettyPort = -1;
+  private int jettyPort = -1;
 
   public ServerNode(String id) {
     this(id, "", 0, 0, 0, 0, 0, Sets.newHashSet(), ServerStatus.EXCLUDED);
@@ -115,6 +116,7 @@ public class ServerNode implements Comparable<ServerNode> {
         tags,
         status,
         storageInfoMap,
+        -1,
         -1);
   }
 
@@ -130,6 +132,34 @@ public class ServerNode implements Comparable<ServerNode> {
       ServerStatus status,
       Map<String, StorageInfo> storageInfoMap,
       int nettyPort) {
+    this(
+        id,
+        ip,
+        grpcPort,
+        usedMemory,
+        preAllocatedMemory,
+        availableMemory,
+        eventNumInFlush,
+        tags,
+        status,
+        storageInfoMap,
+        nettyPort,
+        -1);
+  }
+
+  public ServerNode(
+      String id,
+      String ip,
+      int grpcPort,
+      long usedMemory,
+      long preAllocatedMemory,
+      long availableMemory,
+      int eventNumInFlush,
+      Set<String> tags,
+      ServerStatus status,
+      Map<String, StorageInfo> storageInfoMap,
+      int nettyPort,
+      int jettyPort) {
     this.id = id;
     this.ip = ip;
     this.grpcPort = grpcPort;
@@ -145,6 +175,9 @@ public class ServerNode implements Comparable<ServerNode> {
     if (nettyPort > 0) {
       this.nettyPort = nettyPort;
     }
+    if (jettyPort > 0) {
+      this.jettyPort = jettyPort;
+    }
   }
 
   public ShuffleServerId convertToGrpcProto() {
@@ -153,6 +186,7 @@ public class ServerNode implements Comparable<ServerNode> {
         .setIp(ip)
         .setPort(grpcPort)
         .setNettyPort(nettyPort)
+        .setJettyPort(jettyPort)
         .build();
   }
 
@@ -214,6 +248,8 @@ public class ServerNode implements Comparable<ServerNode> {
         + grpcPort
         + "], netty port["
         + nettyPort
+        + "], jettyPort["
+        + jettyPort
         + "], usedMemory["
         + usedMemory
         + "], preAllocatedMemory["
@@ -276,5 +312,9 @@ public class ServerNode implements Comparable<ServerNode> {
 
   public int getNettyPort() {
     return nettyPort;
+  }
+
+  public int getJettyPort() {
+    return jettyPort;
   }
 }

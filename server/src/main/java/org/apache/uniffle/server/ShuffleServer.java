@@ -237,7 +237,9 @@ public class ShuffleServer {
     jettyServer = new JettyServer(shuffleServerConf);
     registerMetrics();
     // register packages and instances for jersey
-    jettyServer.addResourcePackages("org.apache.uniffle.common.web.resource");
+    jettyServer.addResourcePackages(
+        "org.apache.uniffle.server.web.resource", "org.apache.uniffle.common.web.resource");
+    jettyServer.registerInstance(ShuffleServer.class, this);
     jettyServer.registerInstance(
         CollectorRegistry.class.getCanonicalName() + "#server",
         ShuffleServerMetrics.getCollectorRegistry());
@@ -532,6 +534,10 @@ public class ShuffleServer {
     return nettyPort;
   }
 
+  public int getJettyPort() {
+    return jettyServer.getHttpPort();
+  }
+
   public String getEncodedTags() {
     return StringUtils.join(tags, ",");
   }
@@ -550,6 +556,7 @@ public class ShuffleServer {
         shuffleServer.getTags(),
         shuffleServer.getServerStatus(),
         shuffleServer.getStorageManager().getStorageInfo(),
-        shuffleServer.getNettyPort());
+        shuffleServer.getNettyPort(),
+        shuffleServer.getJettyPort());
   }
 }

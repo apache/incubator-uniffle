@@ -74,19 +74,50 @@
           <el-table-column prop="argumentValue" label="Value" min-width="380" />
         </el-table>
       </el-collapse-item>
+      <el-collapse-item title="Coordinator Metrics" name="3">
+        <el-link @click="getCoordinatorMetrics" target="_blank">
+          <el-icon :style="iconStyle">
+            <Link />
+          </el-icon>
+          metrics
+        </el-link>
+      </el-collapse-item>
+      <el-collapse-item title="Coordinator Prometheus Metrics" name="4">
+        <el-link @click="getCoordinatorPrometheusMetrics" target="_blank">
+          <el-icon :style="iconStyle">
+            <Link />
+          </el-icon>
+          prometheus metrics
+        </el-link>
+      </el-collapse-item>
+      <el-collapse-item title="Coordinator Stacks" name="5">
+        <el-link @click="getCoordinatorStacks" target="_blank">
+          <el-icon :style="iconStyle">
+            <Link />
+          </el-icon>
+          stacks
+        </el-link>
+      </el-collapse-item>
     </el-collapse>
   </div>
 </template>
 
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { getCoordinatorConf, getCoordinatorServerInfo } from '@/api/api'
+import {
+  getCoordinatorConf,
+  getCoordinatorMetrics,
+  getCoordinatorPrometheusMetrics,
+  getCoordinatorServerInfo,
+  getCoordinatorStacks
+} from '@/api/api'
 import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 export default {
+  methods: {getCoordinatorMetrics, getCoordinatorPrometheusMetrics, getCoordinatorStacks},
   setup() {
     const pageData = reactive({
-      activeNames: ['1', '2'],
+      activeNames: ['1', '2', '3', '4', '5'],
       tableData: [],
       serverInfo: {}
     })

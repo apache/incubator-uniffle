@@ -21,13 +21,14 @@ import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 const http = {
   get(url, params, headers, fontBackFlag) {
     if (fontBackFlag === 0) {
-      // The system obtains the address of the Coordinator to be accessed from global variables.
-      const currentServerStore = useCurrentServerStore()
       if (typeof headers !== 'undefined') {
-        headers.targetAddress = currentServerStore.currentServer
+        headers.serverType = 'server'
       } else {
+        // The system obtains the address of the Coordinator to be accessed from global variables.
+        const currentServerStore = useCurrentServerStore()
         headers = {}
         headers.targetAddress = currentServerStore.currentServer
+        headers.serverType = 'coordinator'
       }
       return request.getBackEndAxiosInstance().get(url, { params, headers })
     } else {
