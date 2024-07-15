@@ -19,6 +19,7 @@ package org.apache.uniffle.common.config;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.StorageType;
@@ -279,11 +280,15 @@ public class RssBaseConf extends RssConf {
           .withDescription("start server service max retry");
 
   public boolean loadConfFromFile(String fileName, List<ConfigOption<Object>> configOptions) {
-    Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);
-
-    if (properties == null) {
+    Map<String, String> properties =
+        System.getProperties().stringPropertyNames().stream()
+            .collect(
+                Collectors.toMap(propName -> propName, propName -> System.getProperty(propName)));
+    Map<String, String> propertiesFromFile = RssUtils.getPropertiesFromFile(fileName);
+    if (propertiesFromFile == null) {
       return false;
     }
+    properties.putAll(propertiesFromFile);
     return loadCommonConf(properties) && loadConf(properties, configOptions, true);
   }
 
