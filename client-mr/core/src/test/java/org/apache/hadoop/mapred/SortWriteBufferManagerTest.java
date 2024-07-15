@@ -518,7 +518,12 @@ public class SortWriteBufferManagerTest {
         RemoteStorageInfo remoteStorage,
         ShuffleDataDistributionType distributionType,
         int maxConcurrencyPerPartitionToWrite,
-        int stageAttemptNumber) {}
+        int stageAttemptNumber,
+        String keyClassName,
+        String valueClassName,
+        String comparatorClassName,
+        int mergedBlockSize,
+        String mergeClassLoader) {}
 
     @Override
     public boolean sendCommit(
@@ -611,6 +616,14 @@ public class SortWriteBufferManagerTest {
 
     @Override
     public void unregisterShuffle(String appId) {}
+
+    @Override
+    public void reportUniqueBlocks(
+        Set<ShuffleServerInfo> serverInfos,
+        String appId,
+        int shuffleId,
+        int partitionId,
+        Roaring64NavigableMap expectedTaskIds) {}
   }
 
   static class Reduce extends MapReduceBase

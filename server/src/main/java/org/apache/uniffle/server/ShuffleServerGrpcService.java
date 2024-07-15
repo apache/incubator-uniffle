@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.NoBufferException;
 import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
+import org.apache.uniffle.common.merger.MergeState;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ByteBufUtils;
@@ -87,9 +89,12 @@ import org.apache.uniffle.proto.RssProtos.ShuffleRegisterRequest;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerImplBase;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
+import org.apache.uniffle.server.merge.MergeStatus;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
+
+import static org.apache.uniffle.server.merge.ShuffleMergeManager.MERGE_APP_SUFFIX;
 
 public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
@@ -110,7 +115,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String responseMessage = "OK";
     try {
       shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId);
-
+      if (shuffleServer.isRemoteMergeEnable()) {
+        shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId + MERGE_APP_SUFFIX);
+      }
     } catch (Exception e) {
       result = StatusCode.INTERNAL_ERROR;
     }
@@ -238,6 +245,35 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 shuffleDataDistributionType,
                 maxConcurrencyPerPartitionToWrite);
 
+    if (StatusCode.SUCCESS == result
+        && shuffleServer.isRemoteMergeEnable()
+        && StringUtils.isNotBlank(req.getKeyClass())) {
+      result =
+          shuffleServer
+              .getShuffleTaskManager()
+              .registerShuffle(
+                  appId + MERGE_APP_SUFFIX,
+                  shuffleId,
+                  partitionRanges,
+                  new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
+                  user,
+                  shuffleDataDistributionType,
+                  maxConcurrencyPerPartitionToWrite);
+      if (result == StatusCode.SUCCESS) {
+        result =
+            shuffleServer
+                .getShuffleMergeManager()
+                .registerShuffle(
+                    appId,
+                    shuffleId,
+                    req.getKeyClass(),
+                    req.getValueClass(),
+                    req.getComparatorClass(),
+                    req.getMergedBlockSize(),
+                    req.getMergeClassLoader());
+      }
+    }
+
     reply = ShuffleRegisterResponse.newBuilder().setStatus(result.toProto()).build();
     responseObserver.onNext(reply);
     responseObserver.onCompleted();
@@ -338,6 +374,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             hasFailureOccurred = true;
             break;
           } else {
+            if (shuffleServer.isRemoteMergeEnable()) {
+              shuffleServer.getShuffleMergeManager().cacheBlock(appId, shuffleId, spd);
+            }
             long toReleasedSize = spd.getTotalBlockSize();
             // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
             manager.releasePreAllocatedSize(toReleasedSize);
@@ -529,6 +568,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       AppHeartBeatRequest request, StreamObserver<AppHeartBeatResponse> responseObserver) {
     String appId = request.getAppId();
     shuffleServer.getShuffleTaskManager().refreshAppId(appId);
+    if (shuffleServer.isRemoteMergeEnable()) {
+      shuffleServer.getShuffleMergeManager().refreshAppId(appId);
+    }
     AppHeartBeatResponse response =
         AppHeartBeatResponse.newBuilder()
             .setRetMsg("")
@@ -1009,6 +1051,207 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               .build();
     }
 
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void reportUniqueBlocks(
+      RssProtos.ReportUniqueBlocksRequest request,
+      StreamObserver<RssProtos.ReportUniqueBlocksResponse> responseObserver) {
+    String appId = request.getAppId();
+    int shuffleId = request.getShuffleId();
+    int partitionId = request.getPartitionId();
+    StatusCode status = StatusCode.SUCCESS;
+    String msg = "OK";
+    RssProtos.ReportUniqueBlocksResponse reply;
+    String requestInfo =
+        "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId[" + partitionId + "]";
+    try {
+      Roaring64NavigableMap expectedBlockIdMap =
+          RssUtils.deserializeBitMap(request.getUniqueBlocksBitmap().toByteArray());
+      LOG.info(
+          "Report "
+              + expectedBlockIdMap.getLongCardinality()
+              + " unique blocks for "
+              + requestInfo);
+      if (shuffleServer.isRemoteMergeEnable()) {
+        shuffleServer
+            .getShuffleMergeManager()
+            .reportUniqueBlockIds(appId, shuffleId, partitionId, expectedBlockIdMap);
+      } else {
+        status = StatusCode.INTERNAL_ERROR;
+        msg = "Remote merge is disabled, can not report reportUniqueBlocks!";
+      }
+    } catch (IOException e) {
+      status = StatusCode.INTERNAL_ERROR;
+      msg = e.getMessage();
+      LOG.error("Error happened when report unique blocks for {}, {}", requestInfo, e);
+    }
+    reply =
+        RssProtos.ReportUniqueBlocksResponse.newBuilder()
+            .setStatus(status.toProto())
+            .setRetMsg(msg)
+            .build();
+    responseObserver.onNext(reply);
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void getSortedShuffleData(
+      RssProtos.GetSortedShuffleDataRequest request,
+      StreamObserver<RssProtos.GetSortedShuffleDataResponse> responseObserver) {
+    String appId = request.getAppId();
+    int shuffleId = request.getShuffleId();
+    int partitionId = request.getPartitionId();
+    long blockId = request.getBlockId();
+    long timestamp = request.getTimestamp();
+    if (timestamp > 0) {
+      long transportTime = System.currentTimeMillis() - timestamp;
+      if (transportTime > 0) {
+        shuffleServer
+            .getGrpcMetrics()
+            .recordTransportTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, transportTime);
+      }
+    }
+    StatusCode status = StatusCode.SUCCESS;
+    String msg = "OK";
+    RssProtos.GetSortedShuffleDataResponse reply = null;
+    ShuffleDataResult sdr = null;
+    String requestInfo =
+        "appId["
+            + appId
+            + "], shuffleId["
+            + shuffleId
+            + "], partitionId["
+            + partitionId
+            + "]"
+            + "blockId["
+            + blockId
+            + "]";
+
+    if (!shuffleServer.isRemoteMergeEnable()) {
+      msg = "Remote merge is disabled";
+      status = StatusCode.INTERNAL_ERROR;
+      reply =
+          RssProtos.GetSortedShuffleDataResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(msg)
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+      return;
+    }
+
+    MergeStatus mergeStatus =
+        shuffleServer.getShuffleMergeManager().tryGetBlock(appId, shuffleId, partitionId, blockId);
+    MergeState mergeState = mergeStatus.getState();
+    long blockSize = mergeStatus.getSize();
+    if (mergeState == MergeState.INITED) {
+      msg = MergeState.INITED.name();
+      reply =
+          RssProtos.GetSortedShuffleDataResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(msg)
+              .setMState(mergeState.code())
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+    } else if (mergeState == MergeState.MERGING && blockSize == -1) {
+      // Notify the client that all merged data has been read, but there may be data that has not
+      // yet been merged.
+      msg = MergeState.MERGING.name();
+      reply =
+          RssProtos.GetSortedShuffleDataResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setNextBlockId(-1)
+              .setRetMsg(msg)
+              .setMState(mergeState.code())
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+      return;
+    } else if (mergeState == MergeState.DONE && blockSize == -1) {
+      // Notify the client that all data has been read
+      msg = MergeState.DONE.name();
+      reply =
+          RssProtos.GetSortedShuffleDataResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setNextBlockId(-1)
+              .setRetMsg(msg)
+              .setMState(mergeState.code())
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+      return;
+    } else if (mergeState == MergeState.INTERNAL_ERROR) {
+      msg = MergeState.INTERNAL_ERROR.name();
+      status = StatusCode.INTERNAL_ERROR;
+      reply =
+          RssProtos.GetSortedShuffleDataResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(msg)
+              .setMState(mergeState.code())
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+      return;
+    }
+
+    if (shuffleServer.getShuffleBufferManager().requireReadMemory(blockSize)) {
+      try {
+        long start = System.currentTimeMillis();
+        sdr =
+            shuffleServer
+                .getShuffleMergeManager()
+                .getShuffleData(appId, shuffleId, partitionId, blockId);
+        long readTime = System.currentTimeMillis() - start;
+        ShuffleServerMetrics.counterTotalReadTime.inc(readTime);
+        ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getDataLength());
+        ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getDataLength());
+        shuffleServer
+            .getGrpcMetrics()
+            .recordProcessTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, readTime);
+        LOG.info(
+            "Successfully getSortedShuffleData cost {} ms for shuffle"
+                + " data with {}, length is {}, state is {}",
+            readTime,
+            requestInfo,
+            sdr.getDataLength(),
+            mergeState);
+        reply =
+            RssProtos.GetSortedShuffleDataResponse.newBuilder()
+                .setNextBlockId(blockId + 1) // next block id
+                .setMState(mergeState.code())
+                .setStatus(status.toProto())
+                .setRetMsg(msg)
+                .setData(UnsafeByteOperations.unsafeWrap(sdr.getData()))
+                .build();
+      } catch (Exception e) {
+        status = StatusCode.INTERNAL_ERROR;
+        msg = "Error happened when get shuffle data for " + requestInfo + ", " + e.getMessage();
+        LOG.error(msg, e);
+        reply =
+            RssProtos.GetSortedShuffleDataResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(msg)
+                .build();
+      } finally {
+        if (sdr != null) {
+          sdr.release();
+        }
+        shuffleServer.getShuffleBufferManager().releaseReadMemory(blockSize);
+      }
+    } else {
+      status = StatusCode.INTERNAL_ERROR;
+      msg = "Can't require memory to get shuffle data";
+      LOG.error(msg + " for " + requestInfo);
+      reply =
+          RssProtos.GetSortedShuffleDataResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(msg)
+              .build();
+    }
     responseObserver.onNext(reply);
     responseObserver.onCompleted();
   }
