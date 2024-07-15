@@ -23,17 +23,17 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.apache.uniffle.common.storage.ApplicationStorageInfo;
-import org.apache.uniffle.common.util.JavaUtils;
-import org.apache.uniffle.server.event.PurgeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.storage.ApplicationStorageInfo;
+import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
+import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageWriteMetrics;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -46,7 +46,8 @@ public abstract class SingleStorageManager implements StorageManager {
   private final long eventSizeThresholdL1;
   private final long eventSizeThresholdL2;
   private final long eventSizeThresholdL3;
-  protected final Map<String, ApplicationStorageInfo> appStorageInfoMap = JavaUtils.newConcurrentMap();
+  protected final Map<String, ApplicationStorageInfo> appStorageInfoMap =
+      JavaUtils.newConcurrentMap();
 
   public SingleStorageManager(ShuffleServerConf conf) {
     writeSlowThreshold = conf.getSizeAsBytes(ShuffleServerConf.SERVER_WRITE_SLOW_THRESHOLD);
@@ -98,14 +99,14 @@ public abstract class SingleStorageManager implements StorageManager {
         ShuffleServerMetrics.counterEventSizeThresholdLevel4.inc();
       }
       String appId = event.getAppId();
-      ApplicationStorageInfo appStorage = appStorageInfoMap.computeIfAbsent(appId,
-          id -> new ApplicationStorageInfo(appId));
+      ApplicationStorageInfo appStorage =
+          appStorageInfoMap.computeIfAbsent(appId, id -> new ApplicationStorageInfo(appId));
       appStorage.incUsedBytes(event.getSize());
       ShuffleServerMetrics.gaugeStorageUsedBytes.inc(event.getSize());
       if (event.getUnderStorage().containsWriteHandler(appId)) {
         appStorage.incFileNum(1);
-        ShuffleServerMetrics.gaugeFlushFileNum.inc(1);
-        ShuffleServerMetrics.counterTotalFlushFileNum.inc(1);
+        ShuffleServerMetrics.gaugeFlushFileNum.inc();
+        ShuffleServerMetrics.counterTotalFlushFileNum.inc();
       }
       Storage storage = event.getUnderStorage();
       if (storage != null) {
