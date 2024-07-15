@@ -152,7 +152,7 @@ When enabling Netty, we should also consider memory related configurations.
 - Reserve about `15%` of the machine's memory space (reserved space for OS slab, reserved, cache, buffer, kernel stack, etc.)
 - Recommended ratio for heap memory : off-heap memory is `1 : 9`
 - `rss.server.buffer.capacity` + `rss.server.read.buffer.capacity` + reserved = maximum off-heap memory
-- Recommended ratio for capacity configurations: `rss.server.read.buffer.capacity` : `rss.server.buffer.capacity` = 1 : 18
+- Recommended ratio for capacity configurations: `rss.server.read.buffer.capacity` : `rss.server.buffer.capacity` = `1 : 18`
 
 Note: The reserved memory can be adjusted according to the actual situation, if the memory is relatively small, configuring 1g is completely sufficient.
 
@@ -212,4 +212,16 @@ rss.server.single.buffer.flush.threshold 129m
 rss.server.max.concurrency.of.per-partition.write 30
 rss.server.huge-partition.size.threshold 20g
 rss.server.huge-partition.memory.limit.ratio 0.2
+```
+
+#### Malloc Recommendation
+
+We recommend using [mimalloc 2.x](https://github.com/microsoft/mimalloc). Through our tests, we found that when the off-heap memory is large (>= 300g) and the server is under high concurrent pressure, mimalloc performs better than glibc (the default malloc for most Linux systems), jemalloc, and TCmalloc. It has the lowest peak value of RSS (Resident Set Size) memory, can return memory to the operating system faster, and reduce memory fragmentation. This helps avoid issues of the server being killed by the operating system due to abnormal growth of RSS memory.
+
+If you still find that your server's RSS memory is growing too fast and returning memory to the operating system is slow after using mimalloc, congratulations! This means your server is fully utilized and the request pressure is quite high. 
+
+In this case, you can set the following parameters to allow mimalloc to return memory to the operating system at the fastest speed:
+
+```
+export MIMALLOC_PURGE_DELAY=0
 ```
