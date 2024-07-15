@@ -80,27 +80,20 @@ public class ServerResource extends BaseResource {
     } else if (ServerStatus.EXCLUDED.name().equalsIgnoreCase(status)) {
       serverList =
           clusterManager.getExcludeNodes().stream()
-              .map(excludeNodeStr -> new ServerNode(excludeNodeStr))
+              .map(ServerNode::new)
               .collect(Collectors.toList());
     } else {
       List<ServerNode> serverAllList = clusterManager.list();
-      List<ServerNode> serverExcludeList =
-          clusterManager.getExcludeNodes().stream()
-              .map(excludeNodeStr -> new ServerNode(excludeNodeStr))
-              .collect(Collectors.toList());
       serverList =
           serverAllList.stream()
-              .filter(node -> !serverExcludeList.contains(node))
+              .filter(node -> !clusterManager.getExcludeNodes().contains(node.getId()))
               .collect(Collectors.toList());
     }
     serverList =
         serverList.stream()
             .filter(
                 server -> {
-                  if (status != null && !server.getStatus().name().equalsIgnoreCase(status)) {
-                    return false;
-                  }
-                  return true;
+                  return status == null || server.getStatus().name().equalsIgnoreCase(status);
                 })
             .collect(Collectors.toList());
     serverList.sort(Comparator.comparing(ServerNode::getId));
@@ -198,13 +191,13 @@ public class ServerResource extends BaseResource {
           List<ServerNode> serverAllList = clusterManager.list();
           List<ServerNode> excludeNodes =
               clusterManager.getExcludeNodes().stream()
-                  .map(exclude -> new ServerNode(exclude))
+                  .map(ServerNode::new)
                   .collect(Collectors.toList());
           List<ServerNode> activeServerList =
               serverAllList.stream()
                   .filter(node -> !excludeNodes.contains(node))
                   .collect(Collectors.toList());
-          Map<String, Integer> stringIntegerHash =
+          Map<String, Integer> serverStatusNum =
               Stream.of(
                       activeServerList,
                       clusterManager.getLostServerList(),
@@ -215,7 +208,7 @@ public class ServerResource extends BaseResource {
                   .collect(
                       Collectors.groupingBy(
                           n -> n.getStatus().name(), Collectors.reducing(0, n -> 1, Integer::sum)));
-          return stringIntegerHash;
+          return serverStatusNum;
         });
   }
 

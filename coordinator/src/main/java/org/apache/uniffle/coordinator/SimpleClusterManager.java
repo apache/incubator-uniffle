@@ -22,9 +22,8 @@ import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +39,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -227,23 +227,18 @@ public class SimpleClusterManager implements ClusterManager {
 
   private void putInExcludeNodesFile(List<String> excludeNodes) throws IOException {
     StringBuilder appendExecludeNodes = new StringBuilder();
-    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-    String currentDate = simpleDateFormat.format(System.currentTimeMillis());
-    appendExecludeNodes.append("# Header " + currentDate + ":blacklist node added from the page.");
-    appendExecludeNodes.append("\n");
+    String currentDate = DateFormatUtils.format(new Date(), "yyyy/MM/dd HH:mm:ss");
+    appendExecludeNodes.append(
+        "# Header " + currentDate + ":blacklist node added from the page.\\n");
     for (String excludeNode : excludeNodes) {
-      appendExecludeNodes.append(excludeNode);
-      appendExecludeNodes.append("\n");
+      appendExecludeNodes.append(excludeNode + "\\n");
     }
-    appendExecludeNodes.append("# End " + currentDate + ":blacklist node added from the page.");
-    appendExecludeNodes.append("\n");
+    appendExecludeNodes.append("# End " + currentDate + ":blacklist node added from the page.\\n");
     Path hadoopPath = new Path(excludeNodesPath);
     FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
     if (fileStatus != null && fileStatus.isFile()) {
-      FSDataOutputStream append = hadoopFileSystem.append(hadoopPath);
-      try (OutputStreamWriter outputStreamWriter =
-          new OutputStreamWriter(append, StandardCharsets.UTF_8)) {
-        outputStreamWriter.append(appendExecludeNodes);
+      try (FSDataOutputStream os = hadoopFileSystem.append(hadoopPath)) {
+        os.write(appendExecludeNodes.toString().getBytes(StandardCharsets.UTF_8));
       }
     }
   }
@@ -347,16 +342,14 @@ public class SimpleClusterManager implements ClusterManager {
 
   @Override
   public boolean addExcludeNodes(List<String> excludeNodeIds) {
-    boolean addFlag;
     try {
       putInExcludeNodesFile(excludeNodeIds);
       excludeNodes.addAll(excludeNodeIds);
-      addFlag = true;
+      return true;
     } catch (IOException e) {
-      addFlag = false;
       LOG.warn("Because {}, failed to add blacklist.", e.getMessage());
+      return false;
     }
-    return addFlag;
   }
 
   @VisibleForTesting

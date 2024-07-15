@@ -30,7 +30,11 @@
       >
         <el-table-column prop="id" label="ExcludeNodeId" min-width="180" :sortable="true" />
       </el-table>
-      <el-dialog v-model="dialogFormVisible" title="Please enter Server:" class="dialog-wrapper">
+      <el-dialog
+        v-model="dialogFormVisible"
+        title="Please enter the exclude server id list:"
+        class="dialog-wrapper"
+      >
         <el-form>
           <el-form-item :label-width="formLabelWidth">
             <el-input
@@ -86,15 +90,19 @@ export default {
     async function addShuffleExcludeNodesPage() {
       try {
         const excludeNodes = textarea.value.split('\n').map((item) => item.trim())
-        const excludeNodesObj = { excludeNodes: excludeNodes }
+        const excludeNodesObj = { excludeNodes }
         const res = await addShuffleExcludeNodes(excludeNodesObj)
-        if (res.data.data === 'success') {
-          ElMessage.success('add successfully...')
-        } else {
-          ElMessage.error('add failure...')
+        if (res.status >= 200 && res.status < 300) {
+          if (res.data.data === 'success') {
+            ElMessage.success('Add successfully.')
+          } else {
+            ElMessage.error('Add failed.')
+          }
+        } else if (res.status === 500) {
+          ElMessage.error('Failed to add due to server bad.')
         }
       } catch (err) {
-        ElMessage.error('failed to add timeout...')
+        ElMessage.error('Failed to add due to network exception.')
       }
     }
 
