@@ -21,11 +21,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Lists;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,6 +107,69 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     long timestamp = req.getTimestamp();
     int stageAttemptNumber = req.getStageAttemptNumber();
     ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
+    ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
+    // info is null, means pre-allocated buffer has been removed by preAllocatedBufferCheck thread,
+    // otherwise we need to release the required size.
+    PreAllocatedBufferInfo info =
+        shuffleTaskManager.getAndRemovePreAllocatedBuffer(requireBufferId);
+    int requireSize = info == null ? 0 : info.getRequireSize();
+    int requireBlocksSize =
+        requireSize - req.encodedLength() < 0 ? 0 : requireSize - req.encodedLength();
+
+    boolean isPreAllocated = info != null;
+
+    if (taskInfo == null) {
+      // TODO(baoloongmao): fix this to grpc server mode too.
+      rpcResponse =
+          new RpcResponse(
+              req.getRequestId(), StatusCode.APP_NOT_FOUND, "appId: " + appId + " not found");
+      String errorMsg =
+          "APP_NOT_FOUND error, requireBufferId["
+              + requireBufferId
+              + "] for appId["
+              + appId
+              + "], shuffleId["
+              + shuffleId
+              + "]";
+      LOG.error(errorMsg);
+      ShuffleServerMetrics.counterAppNotFound.inc();
+      if (isPreAllocated) {
+        shuffleBufferManager.releaseMemory(info.getRequireSize(), false, true);
+      }
+      if (MapUtils.isNotEmpty(req.getPartitionToBlocks())) {
+        AtomicLong counter = new AtomicLong(0);
+        // release memory
+        req.getPartitionToBlocks().values().stream()
+            .flatMap(Collection::stream)
+            .forEach(
+                block -> {
+                  block.getData().release();
+                  counter.getAndAdd(block.getData().readableBytes());
+                });
+        ShuffleServerMetrics.counterTotalReceivedDataSize.inc(counter.get());
+        if (counter.get() != requireBlocksSize) {
+          LOG.error(
+              "The size of the released memory is not equal to the required size, released size: {}, required size: {}",
+              counter.get(),
+              requireBlocksSize);
+        }
+      } else {
+        LOG.error(
+            "Failed to handle send shuffle data request, no blocks this request. appId: {}, shuffleId: {}, requireBufferId: {}",
+            appId,
+            shuffleId,
+            requireBufferId);
+      }
+      LOG.warn(
+          "Failed to handle send shuffle data request, release all buffers. appId: {}, shuffleId: {}, requireBufferId: {}, isPreAllocated: {}",
+          appId,
+          shuffleId,
+          requireBufferId,
+          isPreAllocated);
+      client.getChannel().writeAndFlush(rpcResponse);
+      return;
+    }
     Integer latestStageAttemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
     // The Stage retry occurred, and the task before StageNumber was simply ignored and not
     // processed if the task was being sent.
@@ -113,6 +178,17 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       rpcResponse =
           new RpcResponse(req.getRequestId(), StatusCode.STAGE_RETRY_IGNORE, responseMessage);
       client.getChannel().writeAndFlush(rpcResponse);
+      // TODO(baoloongmao): release memory and buffer.
+      LOG.warn(
+          "Stage retry occurred, appId["
+              + appId
+              + "], shuffleId["
+              + shuffleId
+              + "], stageAttemptNumber["
+              + stageAttemptNumber
+              + "], latestStageAttemptNumber["
+              + latestStageAttemptNumber
+              + "]");
       return;
     }
     if (timestamp > 0) {
@@ -130,17 +206,11 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             .recordTransportTime(SendShuffleDataRequest.class.getName(), transportTime);
       }
     }
-    int requireSize = shuffleServer.getShuffleTaskManager().getRequireBufferSize(requireBufferId);
-    int requireBlocksSize =
-        requireSize - req.encodedLength() < 0 ? 0 : requireSize - req.encodedLength();
 
     StatusCode ret = StatusCode.SUCCESS;
     String responseMessage = "OK";
     if (req.getPartitionToBlocks().size() > 0) {
       ShuffleServerMetrics.counterTotalReceivedDataSize.inc(requireBlocksSize);
-      ShuffleTaskManager manager = shuffleServer.getShuffleTaskManager();
-      PreAllocatedBufferInfo info = manager.getAndRemovePreAllocatedBuffer(requireBufferId);
-      boolean isPreAllocated = info != null;
       if (!isPreAllocated) {
         req.getPartitionToBlocks().values().stream()
             .flatMap(Collection::stream)
@@ -160,10 +230,11 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         LOG.warn(errorMsg);
         rpcResponse = new RpcResponse(req.getRequestId(), StatusCode.INTERNAL_ERROR, errorMsg);
         client.getChannel().writeAndFlush(rpcResponse);
+        // TODO(baolonogmao): Metrics ExpiredPreAllocatedBufferNum.
+        // FIXME(baoloongmao): release encodedLength memory, data bytebuf memory?
         return;
       }
       final long start = System.currentTimeMillis();
-      ShuffleBufferManager shuffleBufferManager = shuffleServer.getShuffleBufferManager();
       shuffleBufferManager.releaseMemory(req.encodedLength(), false, true);
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
       long alreadyReleasedSize = 0;
@@ -181,7 +252,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           if (hasFailureOccurred) {
             continue;
           }
-          ret = manager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
+          ret = shuffleTaskManager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
           if (ret != StatusCode.SUCCESS) {
             String errorMsg =
                 "Error happened when shuffleEngine.write for "
@@ -194,9 +265,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           } else {
             long toReleasedSize = spd.getTotalBlockSize();
             // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
-            manager.releasePreAllocatedSize(toReleasedSize);
+            shuffleTaskManager.releasePreAllocatedSize(toReleasedSize);
             alreadyReleasedSize += toReleasedSize;
-            manager.updateCachedBlockIds(
+            shuffleTaskManager.updateCachedBlockIds(
                 appId, shuffleId, spd.getPartitionId(), spd.getBlockList());
           }
         } catch (Exception e) {
@@ -223,7 +294,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       // removed, then after
       // cacheShuffleData finishes, the preAllocatedSize should be updated accordingly.
       if (requireBlocksSize > alreadyReleasedSize) {
-        manager.releasePreAllocatedSize(requireBlocksSize - alreadyReleasedSize);
+        shuffleTaskManager.releasePreAllocatedSize(requireBlocksSize - alreadyReleasedSize);
       }
       rpcResponse = new RpcResponse(req.getRequestId(), ret, responseMessage);
       long costTime = System.currentTimeMillis() - start;
