@@ -25,55 +25,60 @@ import java.util.Random;
 import java.util.Set;
 
 import com.google.common.collect.Lists;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.Tool;
+import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.dag.api.TezConfiguration;
-import org.apache.tez.examples.SimpleSessionExample;
+import org.apache.tez.examples.OrderedWordCount;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.server.ShuffleServerConf;
 
-public class TezSimpleSessionExampleTest extends TezIntegrationTestBase {
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_ENABLE;
 
-  private String inputPath = "simple_session_input";
-  private String outputPath = "simple_session_output";
+public class RMTezOrderedWordCountTest extends TezIntegrationTestBase {
+
+  private String inputPath = "rm_ordered_word_count_input";
+  private String outputPath = "rm_ordered_word_count_output";
   private List<String> wordTable =
       Lists.newArrayList(
           "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
 
   @BeforeAll
   public static void setupServers() throws Exception {
-    TezIntegrationTestBase.setupServers(null);
+    ShuffleServerConf serverConf = new ShuffleServerConf();
+    serverConf.set(SERVER_MERGE_ENABLE, true);
+    TezIntegrationTestBase.setupServers(serverConf);
   }
 
   @Test
-  public void simpleSessionExampleTest() throws Exception {
+  public void orderedWordCountTest() throws Exception {
     generateInputFile();
     run();
   }
 
-  @Override
-  public void updateCommonConfiguration(Configuration appConf) throws Exception {
-    super.updateCommonConfiguration(appConf);
-    appConf.setBoolean(TezConfiguration.TEZ_AM_SESSION_MODE, true);
-  }
+  public void run() throws Exception {
+    // 1 Run Tez examples based on rss when remote merge is enabled
+    TezConfiguration appConf = new TezConfiguration(miniTezCluster.getConfig());
+    updateRssConfiguration(appConf);
+    appendAndUploadRssJars(appConf);
+    appConf.setBoolean(RssTezConfig.RSS_REMOTE_MERGE_ENABLE, true);
+    runTezApp(appConf, getTestTool(), getTestArgs("rss"));
+    final String rssPath = getOutputDir("rss");
 
-  @Override
-  public void updateRssConfiguration(Configuration appConf) throws Exception {
-    super.updateRssConfiguration(appConf);
-    appConf.setBoolean(TezConfiguration.TEZ_AM_SESSION_MODE, true);
+    // 2 Run original Tez examples
+    appConf = new TezConfiguration(miniTezCluster.getConfig());
+    updateCommonConfiguration(appConf);
+    runTezApp(appConf, getTestTool(), getTestArgs("origin"));
+    final String originPath = getOutputDir("origin");
+
+    // 3 verify the results
+    verifyResults(originPath, rssPath);
   }
 
   private void generateInputFile() throws Exception {
-    for (int i = 0; i < 3; i++) {
-      generateInputFile(inputPath + "." + i);
-    }
-  }
-
-  private void generateInputFile(String inputPath) throws Exception {
     // For ordered word count, the key of last ordered sorter is the summation of word, the value is
     // the word. So it means this key may not be unique. Because Sorter can only make sure key is
     // sorted, so the second column (word column) may be not sorted.
@@ -103,58 +108,16 @@ public class TezSimpleSessionExampleTest extends TezIntegrationTestBase {
 
   @Override
   public Tool getTestTool() {
-    return new SimpleSessionExample();
+    return new OrderedWordCount();
   }
 
   @Override
   public String[] getTestArgs(String uniqueOutputName) {
-    return new String[] {
-      inputPath + ".0," + inputPath + ".1," + inputPath + ".2",
-      outputPath
-          + "/"
-          + uniqueOutputName
-          + ".0"
-          + ","
-          + outputPath
-          + "/"
-          + uniqueOutputName
-          + ".1"
-          + ","
-          + outputPath
-          + "/"
-          + uniqueOutputName
-          + ".2",
-      "2"
-    };
+    return new String[] {inputPath, outputPath + "/" + uniqueOutputName, "2"};
   }
 
   @Override
   public String getOutputDir(String uniqueOutputName) {
-    return outputPath
-        + "/"
-        + uniqueOutputName
-        + ".0"
-        + ","
-        + outputPath
-        + "/"
-        + uniqueOutputName
-        + ".1"
-        + ","
-        + outputPath
-        + "/"
-        + uniqueOutputName
-        + ".2";
-  }
-
-  @Override
-  public void verifyResults(String originPath, String rssPath) throws Exception {
-    String[] originPaths = originPath.split(",");
-    String[] rssPaths = rssPath.split(",");
-    if (originPaths.length != rssPaths.length) {
-      throw new RssException("The length of paths is mismatched!");
-    }
-    for (int i = 0; i < originPaths.length; i++) {
-      verifyResultEqual(originPaths[i], rssPaths[i]);
-    }
+    return outputPath + "/" + uniqueOutputName;
   }
 }
