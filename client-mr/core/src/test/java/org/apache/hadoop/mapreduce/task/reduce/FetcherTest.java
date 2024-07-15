@@ -37,7 +37,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.compress.BZip2Codec;
 import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.IFile;
 import org.apache.hadoop.mapred.InputSplit;
@@ -339,7 +338,6 @@ public class FetcherTest {
 
   private static byte[] writeMapOutputRss(Configuration conf, Map<String, String> keysToValues)
       throws IOException, InterruptedException {
-    SerializationFactory serializationFactory = new SerializationFactory(jobConf);
     MockShuffleWriteClient client = new MockShuffleWriteClient();
     client.setMode(2);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers = JavaUtils.newConcurrentMap();
@@ -353,8 +351,9 @@ public class FetcherTest {
             10240,
             1,
             10,
-            serializationFactory.getSerializer(Text.class),
-            serializationFactory.getSerializer(Text.class),
+            Text.class,
+            Text.class,
+            jobConf,
             WritableComparator.get(Text.class),
             0.9,
             "test",
@@ -374,7 +373,8 @@ public class FetcherTest {
             0.2f,
             1024000L,
             new RssConf(),
-            null);
+            null,
+            false);
 
     for (String key : keysToValues.keySet()) {
       String value = keysToValues.get(key);
