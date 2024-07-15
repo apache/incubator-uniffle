@@ -62,6 +62,7 @@ import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
 import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
+import org.apache.uniffle.client.request.RssReportUniqueBlocksRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.request.RssUnregisterShuffleByAppIdRequest;
@@ -76,6 +77,7 @@ import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
 import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
+import org.apache.uniffle.client.response.RssReportUniqueBlocksResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleByAppIdResponse;
@@ -562,7 +564,12 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       RemoteStorageInfo remoteStorage,
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
-      int stageAttemptNumber) {
+      int stageAttemptNumber,
+      String keyClassName,
+      String valueClassName,
+      String comparatorClassName,
+      int mergedBlockSize,
+      String mergeClassLoader) {
     String user = null;
     try {
       user = UserGroupInformation.getCurrentUser().getShortUserName();
@@ -579,7 +586,12 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             user,
             dataDistributionType,
             maxConcurrencyPerPartitionToWrite,
-            stageAttemptNumber);
+            stageAttemptNumber,
+            keyClassName,
+            valueClassName,
+            comparatorClassName,
+            mergedBlockSize,
+            mergeClassLoader);
     RssRegisterShuffleResponse response =
         getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 
@@ -1106,6 +1118,57 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         executorService.shutdownNow();
       }
       shuffleServerInfoMap.remove(appId);
+    }
+  }
+
+  @Override
+  public void reportUniqueBlocks(
+      Set<ShuffleServerInfo> serverInfos,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      Roaring64NavigableMap expectedBlockIds) {
+    RssReportUniqueBlocksRequest request =
+        new RssReportUniqueBlocksRequest(appId, shuffleId, partitionId, expectedBlockIds);
+    boolean atLeastOneSucceeful = false;
+    for (ShuffleServerInfo ssi : serverInfos) {
+      RssReportUniqueBlocksResponse response =
+          getShuffleServerClient(ssi).reportUniqueBlocks(request);
+      if (response.getStatusCode() == StatusCode.SUCCESS) {
+        atLeastOneSucceeful = true;
+        LOG.info(
+            "Report unique blocks to "
+                + ssi
+                + " for appId["
+                + appId
+                + "], shuffleId["
+                + shuffleId
+                + "], partitionIds["
+                + partitionId
+                + "] successfully");
+      } else {
+        LOG.warn(
+            "Report unique blocks to "
+                + ssi
+                + " for appId["
+                + appId
+                + "], shuffleId["
+                + shuffleId
+                + "], partitionIds["
+                + partitionId
+                + "] failed with "
+                + response.getStatusCode());
+      }
+    }
+    if (!atLeastOneSucceeful) {
+      throw new RssFetchFailedException(
+          "Report Unique Blocks failed for appId["
+              + appId
+              + "], shuffleId["
+              + shuffleId
+              + "], partitionIds["
+              + partitionId
+              + "]");
     }
   }
 

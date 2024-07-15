@@ -38,6 +38,8 @@ service ShuffleServer {
   rpc finishShuffle (FinishShuffleRequest) returns (FinishShuffleResponse);
   rpc requireBuffer (RequireBufferRequest) returns (RequireBufferResponse);
   rpc appHeartbeat(AppHeartBeatRequest) returns (AppHeartBeatResponse);
+  rpc reportUniqueBlocks (ReportUniqueBlocksRequest) returns (ReportUniqueBlocksResponse);
+  rpc getSortedShuffleData (GetSortedShuffleDataRequest) returns (GetSortedShuffleDataResponse);
 }
 
 message FinishShuffleRequest {
@@ -186,6 +188,11 @@ message ShuffleRegisterRequest {
   DataDistribution shuffleDataDistribution = 6;
   int32 maxConcurrencyPerPartitionToWrite = 7;
   int32 stageAttemptNumber = 8;
+  string keyClass = 9;
+  string valueClass = 10;
+  string comparatorClass = 11;
+  int32 mergedBlockSize = 12;
+  string mergeClassLoader = 13;
 }
 
 enum DataDistribution {
@@ -662,4 +669,31 @@ message ReassignOnBlockSendFailureResponse {
   MutableShuffleHandleInfo handle = 3;
 }
 
+message ReportUniqueBlocksRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+  int32 partitionId = 3;
+  bytes uniqueBlocksBitmap = 4;
+}
 
+message ReportUniqueBlocksResponse {
+  StatusCode status = 1;
+  string retMsg = 2;
+}
+
+message GetSortedShuffleDataRequest {
+  string appId = 1;
+  int32 shuffleId = 2;
+  int32 partitionId = 3;
+  int64 blockId = 4;
+  int32 length = 5;
+  int64 timestamp = 6;
+}
+
+message GetSortedShuffleDataResponse {
+  bytes data = 1;
+  StatusCode status = 2;
+  string retMsg = 3;
+  int64 nextBlockId = 4;
+  int32 mState = 5;
+}
