@@ -280,15 +280,15 @@ public class RssBaseConf extends RssConf {
           .withDescription("start server service max retry");
 
   public boolean loadConfFromFile(String fileName, List<ConfigOption<Object>> configOptions) {
-    Map<String, String> properties =
+    Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);
+    if (properties == null) {
+      return false;
+    }
+    Map<String, String> systemProperties =
         System.getProperties().stringPropertyNames().stream()
             .collect(
                 Collectors.toMap(propName -> propName, propName -> System.getProperty(propName)));
-    Map<String, String> propertiesFromFile = RssUtils.getPropertiesFromFile(fileName);
-    if (propertiesFromFile == null) {
-      return false;
-    }
-    properties.putAll(propertiesFromFile);
+    properties.putAll(systemProperties);
     return loadCommonConf(properties) && loadConf(properties, configOptions, true);
   }
 
