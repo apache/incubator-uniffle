@@ -19,7 +19,11 @@
   <div>
     <el-row :gutter="20">
       <el-col :span="4">
-        <router-link to="/shuffleserverpage/activeNodeList">
+        <router-link
+          class="router-link-active"
+          to="/shuffleserverpage/activeNodeList"
+          @click.native="routerHandler"
+        >
           <el-card class="box-card" shadow="hover">
             <template #header>
               <div class="card-header">
@@ -31,7 +35,11 @@
         </router-link>
       </el-col>
       <el-col :span="4">
-        <router-link to="/shuffleserverpage/decommissioningNodeList">
+        <router-link
+          class="router-link-active"
+          to="/shuffleserverpage/decommissioningNodeList"
+          @click.native="routerHandler"
+        >
           <el-card class="box-card" shadow="hover">
             <template #header>
               <div class="card-header">
@@ -45,7 +53,11 @@
         </router-link>
       </el-col>
       <el-col :span="4">
-        <router-link to="/shuffleserverpage/decommissionedNodeList">
+        <router-link
+          class="router-link-active"
+          to="/shuffleserverpage/decommissionedNodeList"
+          @click.native="routerHandler"
+        >
           <el-card class="box-card" shadow="hover">
             <template #header>
               <div class="card-header">
@@ -59,7 +71,12 @@
         </router-link>
       </el-col>
       <el-col :span="4">
-        <router-link to="/shuffleserverpage/lostNodeList">
+        <router-link
+          class="router-link-active"
+          to="/shuffleserverpage/lostNodeList"
+          @click.native="routerHandler"
+          :updateTotalPage="updateTotalPage"
+        >
           <el-card class="box-card" shadow="hover">
             <template #header>
               <div class="card-header">
@@ -71,7 +88,11 @@
         </router-link>
       </el-col>
       <el-col :span="4">
-        <router-link to="/shuffleserverpage/unhealthyNodeList">
+        <router-link
+          class="router-link-active"
+          to="/shuffleserverpage/unhealthyNodeList"
+          @click.native="routerHandler"
+        >
           <el-card class="box-card" shadow="hover">
             <template #header>
               <div class="card-header">
@@ -83,7 +104,11 @@
         </router-link>
       </el-col>
       <el-col :span="4">
-        <router-link to="/shuffleserverpage/excludeNodeList">
+        <router-link
+          class="router-link-active"
+          to="/shuffleserverpage/excludeNodeList"
+          @click.native="routerHandler"
+        >
           <el-card class="box-card" shadow="hover">
             <template #header>
               <div class="card-header">
@@ -105,7 +130,7 @@
 </template>
 
 <script>
-import { onMounted, reactive } from 'vue'
+import { onMounted, reactive, provide } from 'vue'
 import { getShufflegetStatusTotal } from '@/api/api'
 import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
@@ -121,9 +146,9 @@ export default {
         UNHEALTHY: 0
       }
     })
-    const currentServerStore = useCurrentServerStore()
 
-    async function getShufflegetStatusTotalPage() {
+    const currentServerStore = useCurrentServerStore()
+    async function getShuffleStatusTotalPage() {
       const res = await getShufflegetStatusTotal()
       dataList.allshuffleServerSize = res.data.data
     }
@@ -131,17 +156,28 @@ export default {
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
     currentServerStore.$subscribe((mutable, state) => {
       if (state.currentServer) {
-        getShufflegetStatusTotalPage()
+        getShuffleStatusTotalPage()
       }
     })
 
     onMounted(() => {
       // If the coordinator address to request is not found in the global variable, the request is not initiated.
       if (currentServerStore.currentServer) {
-        getShufflegetStatusTotalPage()
+        getShuffleStatusTotalPage()
       }
     })
-    return { dataList }
+
+    const routerHandler = () => {
+      getShuffleStatusTotalPage()
+    }
+    /**
+     * After the missing server list is removed, the number of callbacks is reduced.
+     */
+    provide('updateTotalPage', () => {
+      getShuffleStatusTotalPage()
+    })
+
+    return { dataList, routerHandler }
   }
 }
 </script>
@@ -151,13 +187,17 @@ export default {
   font-size: larger;
 }
 
+/* Remove the underscore from the route label. */
+.router-link-active {
+  text-decoration: none;
+}
+
 .activenode {
   font-family: 'Lantinghei SC';
   font-style: normal;
   font-weight: bolder;
   font-size: 30px;
   color: green;
-  text-decoration: none;
 }
 
 .decommissioningnode {
@@ -166,7 +206,6 @@ export default {
   font-weight: bolder;
   font-size: 30px;
   color: #00c4ff;
-  text-decoration: none;
 }
 
 .decommissionednode {
@@ -175,7 +214,6 @@ export default {
   font-weight: bolder;
   font-size: 30px;
   color: blue;
-  text-decoration: none;
 }
 
 .lostnode {
@@ -184,7 +222,6 @@ export default {
   font-weight: bolder;
   font-size: 30px;
   color: red;
-  text-decoration: none;
 }
 
 .unhealthynode {
@@ -193,7 +230,6 @@ export default {
   font-weight: bolder;
   font-size: 30px;
   color: #ff8800;
-  text-decoration: none;
 }
 
 .excludesnode {
@@ -201,6 +237,5 @@ export default {
   font-style: normal;
   font-weight: bolder;
   font-size: 30px;
-  text-decoration: none;
 }
 </style>

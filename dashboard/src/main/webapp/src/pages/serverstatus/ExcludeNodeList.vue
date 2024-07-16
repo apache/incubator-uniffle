@@ -17,8 +17,14 @@
 
 <template>
   <div>
-    <el-table :data="pageData.tableData" height="550" style="width: 100%">
-      <el-table-column prop="id" label="ExcludeNodeId" min-width="180" />
+    <el-table
+      :data="pageData.tableData"
+      height="550"
+      style="width: 100%"
+      :default-sort="sortColumn"
+      @sort-change="sortChangeEvent"
+    >
+      <el-table-column prop="id" label="ExcludeNodeId" min-width="180" :sortable="true" />
     </el-table>
   </div>
 </template>
@@ -57,7 +63,15 @@ export default {
       }
     })
 
-    return { pageData }
+    const sortColumn = reactive({})
+    const sortChangeEvent = (sortInfo) => {
+      for (const sortColumnKey in sortColumn) {
+        delete sortColumn[sortColumnKey]
+      }
+      sortColumn[sortInfo.prop] = sortInfo.order
+    }
+
+    return { pageData, sortColumn, sortChangeEvent }
   }
 }
 </script>

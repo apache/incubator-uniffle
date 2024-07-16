@@ -80,3 +80,8 @@ export function getTotalForUser(params, headers) {
 export function getAllCoordinatorAddrees(params, headers) {
   return http.get('/coordinator/coordinatorServers', params, headers, 1)
 }
+
+// Delete the list of servers that are confirmed lost
+export function deleteConfirmedLostServer(params, headers) {
+  return http.delete('/server/deleteServer', params, headers, 0)
+}

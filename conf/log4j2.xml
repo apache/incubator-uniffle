@@ -27,6 +27,13 @@
       </Policies>
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
+    <RollingFile name="auditAppender" fileName="${sys:audit.log.path}" filePattern="${sys:audit.log.path}.%i">
+      <PatternLayout pattern="%m%n"/>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="2GB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
   </Appenders>
   <Loggers>
     <Root level="info">
@@ -44,6 +51,9 @@
     <Logger name="org.eclipse.jetty" level="info" additivity="false">
       <AppenderRef ref="console"/>
       <AppenderRef ref="RollingAppender"/>
+    </Logger>
+    <Logger name="audit" level="INFO" additivity="false">
+      <AppenderRef ref="auditAppender"/>
     </Logger>
   </Loggers>
 </Configuration>

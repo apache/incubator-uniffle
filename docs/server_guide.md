@@ -145,20 +145,47 @@ Finally, to improve the speed of writing to HDFS for a single partition, the val
 ### Netty
 In version 0.8.0, we introduced Netty. Enabling Netty on ShuffleServer can significantly reduce GC time in high-throughput scenarios. We can enable Netty through the parameters `rss.server.netty.port` and `rss.rpc.server.type`. Note: After setting the parameter `rss.rpc.server.type` to `GRPC_NETTY`, ShuffleServer will be tagged with `GRPC_NETTY`, that is, the node can only be assigned to clients with `spark.rss.client.type=GRPC_NETTY`.
 
-When enabling Netty, we should also consider memory related configurations, the following is an example.
+When enabling Netty, we should also consider memory related configurations.
 
-#### rss-env.sh
+#### Memory Configuration Principles
+
+- Reserve about `15%` of the machine's memory space (reserved space for OS slab, reserved, cache, buffer, kernel stack, etc.)
+- Recommended ratio for heap memory : off-heap memory is `1 : 9`
+- `rss.server.buffer.capacity` + `rss.server.read.buffer.capacity` + reserved = maximum off-heap memory
+- Recommended ratio for capacity configurations: `rss.server.read.buffer.capacity` : `rss.server.buffer.capacity` = `1 : 18`
+
+Note: The reserved memory can be adjusted according to the actual situation, if the memory is relatively small, configuring 1g is completely sufficient.
+
+##### rss-env.sh
+
+Assuming the machine has 470g of memory.
+The machine reserves 15% of memory space, about 70g, following the above principle (heap:off-heap=1:9):
+
 ```
-XMX_SIZE=20g
-MAX_DIRECT_MEMORY_SIZE=120g
-```
-#### server.conf
-```
-rss.server.buffer.capacity 110g
-rss.server.read.buffer.capacity 5g
+heap = (470 - 70) * 1 / 10 = 40g
+off-heap = (470 - 70) * 9 / 10 = 360g 
+heap + off-heap = 400g
 ```
 
-#### Example of server conf
+So, `rss-env.sh` will be:
+
+```
+XMX_SIZE=40g 
+MAX_DIRECT_MEMORY_SIZE=360g
+```
+
+##### server.conf
+
+Generally, `rss.server.read.buffer.capacity` of 20g is enough, you can pay more attention to the metric `read_used_buffer_size`. 
+
+If we reserve 10g, and the remaining off-heap memory is for `rss.server.buffer.capacity`, also assuming the machine has 470g of memory, the configs will be:
+
+```
+rss.server.buffer.capacity 330g
+rss.server.read.buffer.capacity 20g
+```
+
+##### Example of server conf
 ```
 rss.rpc.server.port 19999
 rss.jetty.http.port 19998
@@ -169,8 +196,8 @@ rss.storage.type MEMORY_LOCALFILE_HDFS
 rss.coordinator.quorum <coordinatorIp1>:19999,<coordinatorIp2>:19999
 rss.storage.basePath /data1/rssdata,/data2/rssdata....
 rss.server.flush.thread.alive 10
-rss.server.buffer.capacity 110g
-rss.server.read.buffer.capacity 5g
+rss.server.buffer.capacity 330g
+rss.server.read.buffer.capacity 20g
 rss.server.heartbeat.interval 10000
 rss.rpc.message.max.size 1073741824
 rss.server.preAllocation.expired 120000
@@ -185,4 +212,16 @@ rss.server.single.buffer.flush.threshold 129m
 rss.server.max.concurrency.of.per-partition.write 30
 rss.server.huge-partition.size.threshold 20g
 rss.server.huge-partition.memory.limit.ratio 0.2
+```
+
+#### Malloc Recommendation
+
+We recommend using [mimalloc 2.x](https://github.com/microsoft/mimalloc). Through our tests, we found that when the off-heap memory is large (>= 300g) and the server is under high concurrent pressure, mimalloc performs better than glibc (the default malloc for most Linux systems), jemalloc, and TCmalloc. It has the lowest peak value of RSS (Resident Set Size) memory, can return memory to the operating system faster, and reduce memory fragmentation. This helps avoid issues of the server being killed by the operating system due to abnormal growth of RSS memory.
+
+If you still find that your server's RSS memory is growing too fast and returning memory to the operating system is slow after using mimalloc, congratulations! This means your server is fully utilized and the request pressure is quite high. 
+
+In this case, you can set the following parameters to allow mimalloc to return memory to the operating system at the fastest speed:
+
+```
+export MIMALLOC_PURGE_DELAY=0
 ```

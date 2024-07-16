@@ -26,11 +26,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.AuditType;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.config.RssBaseConf;
@@ -50,6 +52,8 @@ import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY
 public class ShuffleFlushManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleFlushManager.class);
+  private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger("audit");
+  private static final String AUDIT_DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
   public static final AtomicLong ATOMIC_EVENT_ID = new AtomicLong(0);
   private final ShuffleServer shuffleServer;
   private final List<String> storageBasePaths;
@@ -65,6 +69,7 @@ public class ShuffleFlushManager {
   private final StorageManager storageManager;
   private final long pendingEventTimeoutSec;
   private FlushEventHandler eventHandler;
+  private final boolean isAuditLogEnabled;
   private boolean writeError = false;
 
   public ShuffleFlushManager(
@@ -84,6 +89,8 @@ public class ShuffleFlushManager {
     eventHandler =
         new DefaultFlushEventHandler(
             shuffleServerConf, storageManager, shuffleServer, this::processFlushEvent);
+    isAuditLogEnabled =
+        this.shuffleServerConf.getBoolean(ShuffleServerConf.SERVER_AUDIT_LOG_ENABLED);
   }
 
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
@@ -166,20 +173,34 @@ public class ShuffleFlushManager {
       boolean writeSuccess = false;
       try {
         ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
+        long startTime = System.currentTimeMillis();
         writeSuccess = storageManager.write(storage, handler, event);
       } catch (Exception e) {
         LOG.error("storageManager write error.", e);
         writeError = true;
       }
-
-      if (!writeSuccess) {
-        throw new EventRetryException();
-      }
+      
+      long endTime = System.currentTimeMillis();
 
       // update some metrics for shuffle task
       updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
       ShuffleTaskInfo shuffleTaskInfo =
           shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
+      if (isAuditLogEnabled) {
+        AUDIT_LOGGER.info(
+            String.format(
+                "%s|%s|%d|%s|%s|%s|%d|%s|%s|%d",
+                AuditType.WRITE.getValue(),
+                event.getAppId(),
+                event.getShuffleId(),
+                event.getStartPartition() + "_" + event.getEndPartition(),
+                event.getUnderStorage().getStorageHost(),
+                event.getUnderStorage().getStoragePath(),
+                event.getSize(),
+                DateFormatUtils.format(startTime, AUDIT_DATE_PATTERN),
+                DateFormatUtils.format(endTime, AUDIT_DATE_PATTERN),
+                endTime - startTime));
+      }
       if (null != shuffleTaskInfo) {
         String storageHost = event.getUnderStorage().getStorageHost();
         if (LocalStorage.STORAGE_HOST.equals(storageHost)) {
