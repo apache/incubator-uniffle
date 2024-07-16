@@ -195,7 +195,7 @@ public class ServerResource extends BaseResource {
                   .collect(Collectors.toList());
           List<ServerNode> activeServerList =
               serverAllList.stream()
-                  .filter(node -> !excludeNodes.contains(node))
+                  .filter(node -> !clusterManager.getExcludeNodes().contains(node.getId()))
                   .collect(Collectors.toList());
           Map<String, Integer> serverStatusNum =
               Stream.of(

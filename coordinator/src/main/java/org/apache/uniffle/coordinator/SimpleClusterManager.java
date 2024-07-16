@@ -63,6 +63,7 @@ import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 public class SimpleClusterManager implements ClusterManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(SimpleClusterManager.class);
+  private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
   private final Map<String, ServerNode> servers = JavaUtils.newConcurrentMap();
   private final Cache<ServerNode, ShuffleServerInternalGrpcClient> clientCache;
@@ -227,7 +228,7 @@ public class SimpleClusterManager implements ClusterManager {
 
   private void putInExcludeNodesFile(List<String> excludeNodes) throws IOException {
     StringBuilder appendExecludeNodes = new StringBuilder();
-    String currentDate = DateFormatUtils.format(new Date(), "yyyy/MM/dd HH:mm:ss");
+    String currentDate = DateFormatUtils.format(new Date(), DATE_PATTERN);
     appendExecludeNodes
         .append("# Header ")
         .append(currentDate)
