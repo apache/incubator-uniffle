@@ -170,20 +170,19 @@ public class ShuffleFlushManager {
               user,
               maxConcurrencyPerPartitionToWrite);
 
-      boolean writeSuccess = false;
       long startTime = 0L;
       try {
         ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
         startTime = System.currentTimeMillis();
-        writeSuccess = storageManager.write(storage, handler, event);
+        boolean writeSuccess = storageManager.write(storage, handler, event);
+        if (!writeSuccess) {
+          writeError = true;
+        }
       } catch (Exception e) {
         LOG.error("storageManager write error.", e);
         writeError = true;
       }
 
-      if (!writeSuccess) {
-        throw new EventRetryException();
-      }
       long endTime = System.currentTimeMillis();
 
       // update some metrics for shuffle task
