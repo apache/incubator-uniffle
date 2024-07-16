@@ -171,9 +171,10 @@ public class ShuffleFlushManager {
               maxConcurrencyPerPartitionToWrite);
 
       boolean writeSuccess = false;
+      long startTime = 0L;
       try {
         ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
-        long startTime = System.currentTimeMillis();
+        startTime = System.currentTimeMillis();
         writeSuccess = storageManager.write(storage, handler, event);
       } catch (Exception e) {
         LOG.error("storageManager write error.", e);
