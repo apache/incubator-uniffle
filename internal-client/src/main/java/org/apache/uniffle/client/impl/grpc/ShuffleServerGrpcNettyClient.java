@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.client.impl.grpc;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -148,11 +148,13 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
       int shuffleId = stb.getKey();
       int size = 0;
       int blockNum = 0;
+      List<Integer> partitionIds = new ArrayList<>();
       for (Map.Entry<Integer, List<ShuffleBlockInfo>> ptb : stb.getValue().entrySet()) {
         for (ShuffleBlockInfo sbi : ptb.getValue()) {
           size += sbi.getSize();
           blockNum++;
         }
+        partitionIds.add(ptb.getKey());
       }
 
       SendShuffleDataRequest sendShuffleDataRequest =
@@ -173,8 +175,8 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
               long requireId =
                   requirePreAllocation(
                       request.getAppId(),
-                      0,
-                      Collections.emptyList(),
+                      shuffleId,
+                      partitionIds,
                       allocateSize,
                       request.getRetryMax(),
                       request.getRetryIntervalMax(),
