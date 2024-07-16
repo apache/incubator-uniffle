@@ -180,7 +180,10 @@ public class ShuffleFlushManager {
         LOG.error("storageManager write error.", e);
         writeError = true;
       }
-      
+
+      if (!writeSuccess) {
+        throw new EventRetryException();
+      }
       long endTime = System.currentTimeMillis();
 
       // update some metrics for shuffle task
