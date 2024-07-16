@@ -65,6 +65,7 @@ public class ShuffleFlushManager {
   private final StorageManager storageManager;
   private final long pendingEventTimeoutSec;
   private FlushEventHandler eventHandler;
+  private boolean writeError = false;
 
   public ShuffleFlushManager(
       ShuffleServerConf shuffleServerConf,
@@ -161,21 +162,22 @@ public class ShuffleFlushManager {
               storageDataReplica,
               user,
               maxConcurrencyPerPartitionToWrite);
-      ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
+
       boolean writeSuccess = false;
       try {
+        ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
         writeSuccess = storageManager.write(storage, handler, event);
-      } catch(Exception e) {
-        // do nothing, log exception and proceed
+      } catch (Exception e) {
         LOG.error("storageManager write error.", e);
+        writeError = true;
       }
-
-      // update some metrics for shuffle task
-      updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
 
       if (!writeSuccess) {
         throw new EventRetryException();
       }
+
+      // update some metrics for shuffle task
+      updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
       ShuffleTaskInfo shuffleTaskInfo =
           shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
       if (null != shuffleTaskInfo) {
@@ -226,7 +228,11 @@ public class ShuffleFlushManager {
     }
   }
 
-  public Roaring64NavigableMap getCommittedBlockIds(String appId, Integer shuffleId) {
+  public Roaring64NavigableMap getCommittedBlockIds(String appId, Integer shuffleId) throws EventDiscardException {
+    if (writeError) {
+      throw new EventDiscardException();
+    }
+
     Map<Integer, Roaring64NavigableMap> shuffleIdToBlockIds = committedBlockIds.get(appId);
     if (shuffleIdToBlockIds == null) {
       LOG.warn("Unexpected value when getCommittedBlockIds for appId[" + appId + "]");
