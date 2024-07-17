@@ -24,12 +24,12 @@ import scala.Option;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.spark.SparkConf;
-import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ClientType;
+import org.apache.uniffle.spark.shuffle.RssSparkConfig;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -112,9 +112,9 @@ public abstract class SparkIntegrationTestBase extends IntegrationTestBase {
   }
 
   public void updateSparkConfWithRssGrpc(SparkConf sparkConf) {
-    sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
+    sparkConf.set("spark.shuffle.manager", "org.apache.uniffle.spark.shuffle.RssShuffleManager");
     sparkConf.set(
-        "spark.shuffle.sort.io.plugin.class", "org.apache.spark.shuffle.RssShuffleDataIo");
+        "spark.shuffle.sort.io.plugin.class", "org.apache.uniffle.spark.shuffle.RssShuffleDataIo");
     sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
     sparkConf.set(RssSparkConfig.RSS_WRITER_BUFFER_SIZE.key(), "4m");
     sparkConf.set(RssSparkConfig.RSS_WRITER_BUFFER_SPILL_SIZE.key(), "32m");

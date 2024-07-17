@@ -29,7 +29,6 @@ import com.google.common.collect.Maps;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -38,6 +37,7 @@ import org.apache.uniffle.common.StorageType;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.spark.shuffle.RssSparkConfig;
 import org.apache.uniffle.test.listener.WriteAndReadMetricsSparkListener;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

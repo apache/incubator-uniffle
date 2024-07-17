@@ -43,10 +43,6 @@ import org.apache.spark.memory.TaskMemoryManager;
 import org.apache.spark.metrics.source.Source;
 import org.apache.spark.resource.ResourceInformation;
 import org.apache.spark.shuffle.FetchFailedException;
-import org.apache.spark.shuffle.RssShuffleHandle;
-import org.apache.spark.shuffle.RssShuffleManager;
-import org.apache.spark.shuffle.RssSparkConfig;
-import org.apache.spark.shuffle.reader.RssShuffleReader;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.util.AccumulatorV2;
 import org.apache.spark.util.TaskCompletionListener;
@@ -58,6 +54,10 @@ import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.spark.shuffle.RssShuffleHandle;
+import org.apache.uniffle.spark.shuffle.RssShuffleManager;
+import org.apache.uniffle.spark.shuffle.RssSparkConfig;
+import org.apache.uniffle.spark.shuffle.reader.RssShuffleReader;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -69,9 +69,9 @@ public class GetReaderTest extends IntegrationTestBase {
   @Test
   public void test() throws Exception {
     SparkConf sparkConf = new SparkConf();
-    sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
+    sparkConf.set("spark.shuffle.manager", "org.apache.uniffle.spark.shuffle.RssShuffleManager");
     sparkConf.set(
-        "spark.shuffle.sort.io.plugin.class", "org.apache.spark.shuffle.RssShuffleDataIo");
+        "spark.shuffle.sort.io.plugin.class", "org.apache.uniffle.spark.shuffle.RssShuffleDataIo");
     sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
     sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.setMaster("local[4]");

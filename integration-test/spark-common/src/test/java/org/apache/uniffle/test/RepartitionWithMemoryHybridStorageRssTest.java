@@ -23,13 +23,13 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 import org.apache.spark.SparkConf;
-import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.spark.shuffle.RssSparkConfig;
 import org.apache.uniffle.storage.util.StorageType;
 
 public class RepartitionWithMemoryHybridStorageRssTest extends RepartitionTest {

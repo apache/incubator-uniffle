@@ -25,11 +25,11 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
-import org.apache.spark.shuffle.RssShuffleManager;
-import org.apache.spark.shuffle.RssSparkConfig;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.spark.shuffle.RssShuffleManager;
+import org.apache.uniffle.spark.shuffle.RssSparkConfig;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,7 +41,7 @@ public class DynamicFetchClientConfTest extends IntegrationTestBase {
   @Test
   public void test() throws Exception {
     SparkConf sparkConf = new SparkConf();
-    sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
+    sparkConf.set("spark.shuffle.manager", "org.apache.uniffle.spark.shuffle.RssShuffleManager");
     sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.set("spark.mock.2", "no-overwrite-conf");
     sparkConf.set("spark.shuffle.service.enabled", "true");
@@ -94,7 +94,7 @@ public class DynamicFetchClientConfTest extends IntegrationTestBase {
     fs.delete(path, true);
     shutdownServers();
     sparkConf = new SparkConf();
-    sparkConf.set("spark.shuffle.manager", "org.apache.spark.shuffle.RssShuffleManager");
+    sparkConf.set("spark.shuffle.manager", "org.apache.uniffle.spark.shuffle.RssShuffleManager");
     sparkConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), COORDINATOR_QUORUM);
     sparkConf.set("spark.mock.2", "no-overwrite-conf");
     sparkConf.set("spark.shuffle.service.enabled", "true");

@@ -82,7 +82,7 @@ Start a Spark shell on the cluster:
 docker exec -it rss-spark-master-1 /opt/spark/bin/spark-shell \
   --master spark://rss-spark-master-1:7077 \
   --conf spark.serializer=org.apache.spark.serializer.KryoSerializer \
-  --conf spark.shuffle.manager=org.apache.spark.shuffle.RssShuffleManager \
+  --conf spark.shuffle.manager=org.apache.uniffle.spark.shuffle.RssShuffleManager \
   --conf spark.rss.coordinator.quorum=rss-coordinator-1:19999,rss-coordinator-2:19999 \
   --conf spark.rss.storage.type=MEMORY_LOCALFILE \
   --conf spark.speculation=true

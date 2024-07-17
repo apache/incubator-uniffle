@@ -31,7 +31,7 @@
   spark.executor.cores 4
   spark.executor.memory 9g
   spark.executor.memoryOverhead 1024
-  spark.shuffle.manager org.apache.spark.shuffle.RssShuffleManager
+  spark.shuffle.manager org.apache.uniffle.spark.shuffle.RssShuffleManager
   spark.rss.storage.type MEMORY_LOCALFILE
   ````
   Shuffle Server's configuration

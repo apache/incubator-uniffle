@@ -44,7 +44,7 @@ Spark's configuration:
   spark.executor.cores 2
   spark.executor.memory 20g
   spark.executor.memoryOverhead 1024
-  spark.shuffle.manager org.apache.spark.shuffle.RssShuffleManager
+  spark.shuffle.manager org.apache.uniffle.spark.shuffle.RssShuffleManager
   spark.sql.shuffle.partitions 20000
   spark.sql.files.maxPartitionBytes 107374182
   spark.rss.storage.type MEMORY_LOCALFILE

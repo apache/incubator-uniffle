@@ -252,7 +252,7 @@ Deploy Steps:
    # Uniffle transmits serialized shuffle data over network, therefore a serializer that supports relocation of
    # serialized object should be used. 
    spark.serializer org.apache.spark.serializer.KryoSerializer # this could also be in the spark-defaults.conf
-   spark.shuffle.manager org.apache.spark.shuffle.RssShuffleManager
+   spark.shuffle.manager org.apache.uniffle.spark.shuffle.RssShuffleManager
    spark.rss.coordinator.quorum <coordinatorIp1>:19999,<coordinatorIp2>:19999
    # Note: For Spark2, spark.sql.adaptive.enabled should be false because Spark2 doesn't support AQE.
    ```
@@ -269,7 +269,7 @@ After apply the patch and rebuild spark, add following configuration in spark co
   ```
 For spark3.5 or above just add one more configuration:
   ```
-  spark.shuffle.sort.io.plugin.class org.apache.spark.shuffle.RssShuffleDataIo
+  spark.shuffle.sort.io.plugin.class org.apache.uniffle.spark.shuffle.RssShuffleDataIo
   ```
 
 ### Deploy MapReduce Client

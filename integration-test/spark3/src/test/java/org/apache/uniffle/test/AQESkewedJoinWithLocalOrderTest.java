@@ -18,10 +18,10 @@
 package org.apache.uniffle.test;
 
 import org.apache.spark.SparkConf;
-import org.apache.spark.shuffle.RssSparkConfig;
 
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.spark.shuffle.RssSparkConfig;
 import org.apache.uniffle.storage.util.StorageType;
 
 public class AQESkewedJoinWithLocalOrderTest extends AQESkewedJoinTest {

@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Maps;
 import org.apache.spark.TaskContext;
 import org.apache.spark.api.java.function.MapPartitionsFunction;
-import org.apache.spark.shuffle.RssSparkConfig;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SparkSession;
@@ -34,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.spark.shuffle.RssSparkConfig;
 import org.apache.uniffle.storage.util.StorageType;
 
 // This test has all tasks fail twice, the third attempt succeeds.

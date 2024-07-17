@@ -34,7 +34,7 @@ license: |
    # Uniffle transmits serialized shuffle data over network, therefore a serializer that supports relocation of
    # serialized object should be used. 
    spark.serializer org.apache.spark.serializer.KryoSerializer # this could also be in the spark-defaults.conf
-   spark.shuffle.manager org.apache.spark.shuffle.RssShuffleManager
+   spark.shuffle.manager org.apache.uniffle.spark.shuffle.RssShuffleManager
    spark.rss.coordinator.quorum <coordinatorIp1>:19999,<coordinatorIp2>:19999
    # Note: For Spark2, spark.sql.adaptive.enabled should be false because Spark2 doesn't support AQE.
    ```
@@ -138,7 +138,7 @@ To select build-in shuffle or remote shuffle in a smart manner, Uniffle support 
 The client should use `DelegationRssShuffleManager` and provide its unique <access_id> so that the coordinator could distinguish whether it should enable remote shuffle.
 
 ```
-spark.shuffle.manager org.apache.spark.shuffle.DelegationRssShuffleManager
+spark.shuffle.manager org.apache.uniffle.spark.shuffle.DelegationRssShuffleManager
 spark.rss.access.id=<access_id> 
 ```
 

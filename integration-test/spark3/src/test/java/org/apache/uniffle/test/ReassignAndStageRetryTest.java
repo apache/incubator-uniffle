@@ -23,11 +23,11 @@ import org.apache.uniffle.server.MockedGrpcServer;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 
-import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES;
 import static org.apache.uniffle.client.util.RssClientConfig.RSS_CLIENT_ASSIGNMENT_SHUFFLE_SERVER_NUMBER;
 import static org.apache.uniffle.client.util.RssClientConfig.RSS_CLIENT_RETRY_MAX;
 import static org.apache.uniffle.client.util.RssClientConfig.RSS_RESUBMIT_STAGE;
 import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_REASSIGN_ENABLED;
+import static org.apache.uniffle.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES;
 
 /**
  * This class is to test the compatibility of reassign and stage retry mechanism that were enabled
