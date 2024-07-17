@@ -19,7 +19,6 @@ package org.apache.uniffle.common.config;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.StorageType;
@@ -284,9 +283,11 @@ public class RssBaseConf extends RssConf {
     if (properties == null) {
       return false;
     }
-    System.getProperties().stringPropertyNames().stream().forEach(propName -> {
-      properties.put(propName, System.getProperty(propName));
-    });
+    System.getProperties().stringPropertyNames().stream()
+        .forEach(
+            propName -> {
+              properties.put(propName, System.getProperty(propName));
+            });
     return loadCommonConf(properties) && loadConf(properties, configOptions, true);
   }
 
