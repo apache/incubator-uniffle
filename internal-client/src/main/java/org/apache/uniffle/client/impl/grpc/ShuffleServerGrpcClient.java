@@ -130,6 +130,9 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   protected Random random = new Random();
 
   protected static final int BACK_OFF_BASE = 2000;
+  static final List<StatusCode> NOT_RETRY_STATUS_CODES =
+      Lists.newArrayList(
+          StatusCode.NO_REGISTER, StatusCode.APP_NOT_FOUND, StatusCode.INTERNAL_NOT_RETRY_ERROR);
 
   @VisibleForTesting
   public ShuffleServerGrpcClient(String host, int port) {
@@ -534,7 +537,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                         + ", errorMsg:"
                         + response.getRetMsg();
                 failedStatusCode.set(StatusCode.fromCode(response.getStatus().getNumber()));
-                if (response.getStatus() == RssProtos.StatusCode.NO_REGISTER) {
+                if (NOT_RETRY_STATUS_CODES.contains(failedStatusCode.get())) {
                   throw new NotRetryException(msg);
                 } else {
                   throw new RssException(msg);
@@ -545,7 +548,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             null,
             request.getRetryIntervalMax(),
             maxRetryAttempts,
-            t -> !(t instanceof OutOfMemoryError));
+            t -> !(t instanceof OutOfMemoryError) && !(t instanceof NotRetryException));
       } catch (Throwable throwable) {
         LOG.warn("Failed to send shuffle data due to ", throwable);
         isSuccessful = false;

@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import org.apache.uniffle.server.ShuffleTaskInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +102,24 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     int shuffleId = req.getShuffleId();
     long requireBufferId = req.getRequireId();
     long timestamp = req.getTimestamp();
+    ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
+    if (taskInfo == null) {
+      rpcResponse =
+          new RpcResponse(
+              req.getRequestId(), StatusCode.APP_NOT_FOUND, "appId: " + appId + " not found");
+      String errorMsg =
+          "APP_NOT_FOUND error, requireBufferId["
+              + requireBufferId
+              + "] for appId["
+              + appId
+              + "], shuffleId["
+              + shuffleId
+              + "]";
+      LOG.error(errorMsg);
+      ShuffleServerMetrics.counterAppNotFound.inc();
+      client.getChannel().writeAndFlush(rpcResponse);
+      return;
+    }
     if (timestamp > 0) {
       /*
        * Here we record the transport time, but we don't consider the impact of data size on transport time.

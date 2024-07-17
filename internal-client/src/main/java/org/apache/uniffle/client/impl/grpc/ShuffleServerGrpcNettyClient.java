@@ -180,7 +180,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
                         + rpcResponse.getStatusCode()
                         + ", errorMsg:"
                         + rpcResponse.getRetMessage();
-                if (rpcResponse.getStatusCode() == StatusCode.NO_REGISTER) {
+                if (NOT_RETRY_STATUS_CODES.contains(rpcResponse.getStatusCode())) {
                   throw new NotRetryException(msg);
                 } else {
                   throw new RssException(msg);
@@ -191,7 +191,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
             null,
             request.getRetryIntervalMax(),
             maxRetryAttempts,
-            t -> !(t instanceof OutOfMemoryError));
+            t -> !(t instanceof OutOfMemoryError) && !(t instanceof NotRetryException));
       } catch (Throwable throwable) {
         LOG.warn("Failed to send shuffle data due to ", throwable);
         isSuccessful = false;

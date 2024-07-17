@@ -35,6 +35,9 @@ public enum StatusCode {
   ACCESS_DENIED(8),
   INVALID_REQUEST(9),
   NO_BUFFER_FOR_HUGE_PARTITION(10),
+  STAGE_RETRY_IGNORE(11),
+  APP_NOT_FOUND(13),
+  INTERNAL_NOT_RETRY_ERROR(14),
   UNKNOWN(-1);
 
   static final Map<Integer, StatusCode> VALUE_MAP =

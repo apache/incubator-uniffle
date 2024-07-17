@@ -210,6 +210,27 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     int shuffleId = req.getShuffleId();
     long requireBufferId = req.getRequireBufferId();
     long timestamp = req.getTimestamp();
+    ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
+    if (taskInfo == null) {
+      String errorMsg =
+          "APP_NOT_FOUND error, requireBufferId["
+              + requireBufferId
+              + "] for appId["
+              + appId
+              + "], shuffleId["
+              + shuffleId
+              + "]";
+      LOG.error(errorMsg);
+      ShuffleServerMetrics.counterAppNotFound.inc();
+      reply =
+          SendShuffleDataResponse.newBuilder()
+              .setStatus(StatusCode.APP_NOT_FOUND.toProto())
+              .setRetMsg(errorMsg)
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+      return;
+    }
     if (timestamp > 0) {
       /*
        * Here we record the transport time, but we don't consider the impact of data size on transport time.
