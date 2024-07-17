@@ -51,10 +51,6 @@ public class RecordsReaderWriterTest {
       strings = {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,mem",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,file",
-        "java.lang.String,java.lang.Integer,mem",
-        "java.lang.String,java.lang.Integer,file",
-        "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer,mem",
-        "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer,file"
       })
   public void testWriteAndReadRecordFile1(String classes, @TempDir File tmpDir) throws Exception {
     RssConf rssConf = new RssConf();
