@@ -284,7 +284,7 @@ public class RssBaseConf extends RssConf {
       ConfigOptions.key("rss.io.serializations")
           .stringType()
           .defaultValue(WritableSerializer.class.getName())
-          .withDescription("A series of Serializations are used for creative Serializers and Deserializers");
+          .withDescription("Serializations are used for creative Serializers and Deserializers");
 
   public boolean loadConfFromFile(String fileName, List<ConfigOption<Object>> configOptions) {
     Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);
