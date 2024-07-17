@@ -284,11 +284,9 @@ public class RssBaseConf extends RssConf {
     if (properties == null) {
       return false;
     }
-    Map<String, String> systemProperties =
-        System.getProperties().stringPropertyNames().stream()
-            .collect(
-                Collectors.toMap(propName -> propName, propName -> System.getProperty(propName)));
-    properties.putAll(systemProperties);
+    System.getProperties().stringPropertyNames().stream().forEach(propName -> {
+      properties.put(propName, System.getProperty(propName));
+    });
     return loadCommonConf(properties) && loadConf(properties, configOptions, true);
   }
 
