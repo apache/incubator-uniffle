@@ -134,6 +134,7 @@ public class ShuffleServerMetrics {
 
   private static final String TOTAL_EXPIRED_PRE_ALLOCATED_BUFFER_NUM =
       "total_expired_preAllocated_buffer_num";
+  private static final String TOTAL_APP_NOT_FOUND_NUM = "total_app_not_found_num";
 
   private static final String TOTAL_REMOVE_RESOURCE_TIME = "total_remove_resource_time";
   private static final String TOTAL_REMOVE_RESOURCE_BY_SHUFFLE_IDS_TIME =
@@ -237,6 +238,7 @@ public class ShuffleServerMetrics {
   public static Counter counterLocalFileEventFlush;
   public static Counter counterHadoopEventFlush;
   public static Counter counterPreAllocatedBufferExpired;
+  public static Counter counterAppNotFound;
 
   private static MetricsManager metricsManager;
   private static boolean isRegister = false;
@@ -461,6 +463,8 @@ public class ShuffleServerMetrics {
 
     counterPreAllocatedBufferExpired =
         metricsManager.addCounter(TOTAL_EXPIRED_PRE_ALLOCATED_BUFFER_NUM);
+
+    counterAppNotFound = metricsManager.addCounter(TOTAL_APP_NOT_FOUND_NUM);
 
     summaryTotalRemoveResourceTime = metricsManager.addSummary(TOTAL_REMOVE_RESOURCE_TIME);
     summaryTotalRemoveResourceByShuffleIdsTime =
