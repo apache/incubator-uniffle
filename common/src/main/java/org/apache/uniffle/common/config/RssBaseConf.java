@@ -280,10 +280,14 @@ public class RssBaseConf extends RssConf {
 
   public boolean loadConfFromFile(String fileName, List<ConfigOption<Object>> configOptions) {
     Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);
-
     if (properties == null) {
       return false;
     }
+    System.getProperties().stringPropertyNames().stream()
+        .forEach(
+            propName -> {
+              properties.put(propName, System.getProperty(propName));
+            });
     return loadCommonConf(properties) && loadConf(properties, configOptions, true);
   }
 
