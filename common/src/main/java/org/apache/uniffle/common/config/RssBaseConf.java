@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.StorageType;
 import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.common.serializer.writable.WritableSerializer;
 import org.apache.uniffle.common.util.RssUtils;
 
 public class RssBaseConf extends RssConf {
@@ -277,6 +278,13 @@ public class RssBaseConf extends RssConf {
           .intType()
           .defaultValue(16)
           .withDescription("start server service max retry");
+
+  /* Serialization */
+  public static final ConfigOption<String> RSS_IO_SERIALIZATIONS =
+      ConfigOptions.key("rss.io.serializations")
+          .stringType()
+          .defaultValue(WritableSerializer.class.getName())
+          .withDescription("Serializations are used for creative Serializers and Deserializers");
 
   public boolean loadConfFromFile(String fileName, List<ConfigOption<Object>> configOptions) {
     Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);
