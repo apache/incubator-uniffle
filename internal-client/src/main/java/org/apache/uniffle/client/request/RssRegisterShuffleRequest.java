@@ -36,6 +36,11 @@ public class RssRegisterShuffleRequest {
   private ShuffleDataDistributionType dataDistributionType;
   private int maxConcurrencyPerPartitionToWrite;
   private int stageAttemptNumber;
+  private String keyClassName;
+  private String valueClassName;
+  private String comparatorClassName;
+  private int mergedBlockSize;
+  private String mergeClassLoader;
 
   public RssRegisterShuffleRequest(
       String appId,
@@ -53,7 +58,12 @@ public class RssRegisterShuffleRequest {
         user,
         dataDistributionType,
         maxConcurrencyPerPartitionToWrite,
-        0);
+        0,
+        null,
+        null,
+        null,
+        -1,
+        null);
   }
 
   public RssRegisterShuffleRequest(
@@ -64,7 +74,12 @@ public class RssRegisterShuffleRequest {
       String user,
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
-      int stageAttemptNumber) {
+      int stageAttemptNumber,
+      String keyClassName,
+      String valueClassName,
+      String comparatorClassName,
+      int mergedBlockSize,
+      String mergeClassLoader) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionRanges = partitionRanges;
@@ -73,6 +88,11 @@ public class RssRegisterShuffleRequest {
     this.dataDistributionType = dataDistributionType;
     this.maxConcurrencyPerPartitionToWrite = maxConcurrencyPerPartitionToWrite;
     this.stageAttemptNumber = stageAttemptNumber;
+    this.keyClassName = keyClassName;
+    this.valueClassName = valueClassName;
+    this.comparatorClassName = comparatorClassName;
+    this.mergedBlockSize = mergedBlockSize;
+    this.mergeClassLoader = mergeClassLoader;
   }
 
   public RssRegisterShuffleRequest(
@@ -90,7 +110,12 @@ public class RssRegisterShuffleRequest {
         user,
         dataDistributionType,
         RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue(),
-        0);
+        0,
+        null,
+        null,
+        null,
+        -1,
+        null);
   }
 
   public RssRegisterShuffleRequest(
@@ -103,7 +128,12 @@ public class RssRegisterShuffleRequest {
         StringUtils.EMPTY,
         ShuffleDataDistributionType.NORMAL,
         RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue(),
-        0);
+        0,
+        null,
+        null,
+        null,
+        -1,
+        null);
   }
 
   public String getAppId() {
@@ -136,5 +166,25 @@ public class RssRegisterShuffleRequest {
 
   public int getStageAttemptNumber() {
     return stageAttemptNumber;
+  }
+
+  public String getKeyClassName() {
+    return keyClassName;
+  }
+
+  public String getValueClassName() {
+    return valueClassName;
+  }
+
+  public String getComparatorClassName() {
+    return comparatorClassName;
+  }
+
+  public int getMergedBlockSize() {
+    return mergedBlockSize;
+  }
+
+  public String getMergeClassLoader() {
+    return mergeClassLoader;
   }
 }

@@ -196,6 +196,16 @@ public class RssMRConfig {
   public static final String RSS_TEST_MODE_ENABLE =
       MR_CONFIG_PREFIX + RssClientConfig.RSS_TEST_MODE_ENABLE;
 
+  public static final String RSS_REMOTE_MERGE_ENABLE =
+      MR_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_MERGE_ENABLE;
+  public static final boolean RSS_REMOTE_MERGE_ENABLE_DEFAULT = false;
+  public static final String RSS_MERGED_BLOCK_SZIE =
+      MR_CONFIG_PREFIX + RssClientConfig.RSS_MERGED_BLOCK_SZIE;
+  public static final int RSS_MERGED_BLOCK_SZIE_DEFAULT =
+      RssClientConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT;
+  public static final String RSS_REMOTE_MERGE_CLASS_LOADER =
+      MR_CONFIG_PREFIX + RssClientConfig.RSS_REMOTE_MERGE_CLASS_LOADER;
+
   public static RssConf toRssConf(Configuration jobConf) {
     RssConf rssConf = new RssConf();
     for (Map.Entry<String, String> entry : jobConf) {

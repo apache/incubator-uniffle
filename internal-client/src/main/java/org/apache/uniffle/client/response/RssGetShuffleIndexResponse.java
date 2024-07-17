@@ -26,7 +26,7 @@ public class RssGetShuffleIndexResponse extends ClientResponse {
 
   public RssGetShuffleIndexResponse(StatusCode statusCode, ManagedBuffer data, long dataFileLen) {
     super(statusCode);
-    this.shuffleIndexResult = new ShuffleIndexResult(data, dataFileLen);
+    this.shuffleIndexResult = new ShuffleIndexResult(data, dataFileLen, null);
   }
 
   public ShuffleIndexResult getShuffleIndexResult() {

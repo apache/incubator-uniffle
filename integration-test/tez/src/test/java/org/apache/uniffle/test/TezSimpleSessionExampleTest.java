@@ -31,6 +31,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.Tool;
 import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.examples.SimpleSessionExample;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.exception.RssException;
@@ -42,6 +43,11 @@ public class TezSimpleSessionExampleTest extends TezIntegrationTestBase {
   private List<String> wordTable =
       Lists.newArrayList(
           "apple", "banana", "fruit", "cherry", "Chinese", "America", "Japan", "tomato");
+
+  @BeforeAll
+  public static void setupServers() throws Exception {
+    TezIntegrationTestBase.setupServers(null);
+  }
 
   @Test
   public void simpleSessionExampleTest() throws Exception {

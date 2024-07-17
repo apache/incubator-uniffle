@@ -1003,7 +1003,12 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                   remoteStorage,
                   ShuffleDataDistributionType.NORMAL,
                   maxConcurrencyPerPartitionToWrite,
-                  stageAttemptNumber);
+                  stageAttemptNumber,
+                  null,
+                  null,
+                  null,
+                  -1,
+                  null);
             });
     LOG.info(
         "Finish register shuffleId {} with {} ms", shuffleId, (System.currentTimeMillis() - start));

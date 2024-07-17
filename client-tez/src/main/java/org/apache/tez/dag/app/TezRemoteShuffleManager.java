@@ -189,7 +189,13 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
           if (shuffleIdToShuffleAssignsInfo.containsKey(shuffleId)) {
             shuffleAssignmentsInfo = shuffleIdToShuffleAssignsInfo.get(shuffleId);
           } else {
-            shuffleAssignmentsInfo = getShuffleWorks(request.getPartitionNum(), shuffleId);
+            shuffleAssignmentsInfo =
+                getShuffleWorks(
+                    request.getPartitionNum(),
+                    shuffleId,
+                    request.getKeyClassName(),
+                    request.getValueClassName(),
+                    request.getComparatorClassName());
           }
 
           if (shuffleAssignmentsInfo == null) {
@@ -220,7 +226,12 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
     }
   }
 
-  private ShuffleAssignmentsInfo getShuffleWorks(int partitionNum, int shuffleId) {
+  private ShuffleAssignmentsInfo getShuffleWorks(
+      int partitionNum,
+      int shuffleId,
+      String keyClassName,
+      String valueClassName,
+      String comparatorClassName) {
     ShuffleAssignmentsInfo shuffleAssignmentsInfo;
     int requiredAssignmentShuffleServersNum =
         RssTezUtils.getRequiredShuffleServerNumber(conf, 200, partitionNum);
@@ -287,7 +298,15 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
                                           remoteStorage,
                                           ShuffleDataDistributionType.NORMAL,
                                           RssTezConfig.toRssConf(conf)
-                                              .get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE)));
+                                              .get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE),
+                                          0,
+                                          keyClassName,
+                                          valueClassName,
+                                          comparatorClassName,
+                                          conf.getInt(
+                                              RssTezConfig.RSS_MERGED_BLOCK_SZIE,
+                                              RssTezConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT),
+                                          conf.get(RssTezConfig.RSS_REMOTE_MERGE_CLASS_LOADER)));
                           LOG.info(
                               "Finish register shuffle with "
                                   + (System.currentTimeMillis() - start)

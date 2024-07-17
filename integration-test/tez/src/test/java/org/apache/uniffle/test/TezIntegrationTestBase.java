@@ -75,7 +75,10 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
       miniTezCluster.init(conf);
       miniTezCluster.start();
     }
-    LOG.info("Starting corrdinators and shuffer servers");
+  }
+
+  protected static void setupServers(ShuffleServerConf serverConf) throws Exception {
+    LOG.info("Starting coordinators and shuffer servers");
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = new HashMap();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
@@ -83,6 +86,9 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+    if (serverConf != null) {
+      shuffleServerConf.addAll(serverConf);
+    }
     createShuffleServer(shuffleServerConf);
     startServers();
   }

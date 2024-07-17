@@ -52,6 +52,7 @@ import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.hadoop.mapreduce.RssMRConfig.RSS_REMOTE_MERGE_ENABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -116,6 +117,21 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     verifyResults(originPath, rssRemoteSpillPath);
   }
 
+  public void runWithRemoteMerge() throws Exception {
+    // 1. run application when remote merge is enable
+    JobConf appConf = new JobConf(mrYarnCluster.getConfig());
+    updateCommonConfiguration(appConf);
+    runRssApp(appConf, true);
+    final String rssPath1 = appConf.get("mapreduce.output.fileoutputformat.outputdir");
+
+    // 2 run original application
+    appConf = new JobConf(mrYarnCluster.getConfig());
+    updateCommonConfiguration(appConf);
+    runOriginApp(appConf);
+    final String originPath = appConf.get("mapreduce.output.fileoutputformat.outputdir");
+    verifyResults(originPath, rssPath1);
+  }
+
   private void updateCommonConfiguration(Configuration jobConf) {
     long mapMb = MRJobConfig.DEFAULT_MAP_MEMORY_MB;
     jobConf.set(MRJobConfig.MAP_JAVA_OPTS, "-Xmx" + mapMb + "m");
@@ -127,6 +143,10 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
   }
 
   private void runRssApp(Configuration jobConf) throws Exception {
+    runRssApp(jobConf, false);
+  }
+
+  private void runRssApp(Configuration jobConf, boolean remoteMerge) throws Exception {
     URL url = MRIntegrationTestBase.class.getResource("/");
     final String parentPath =
         new Path(url.getPath()).getParent().getParent().getParent().getParent().toString();
@@ -144,8 +164,14 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     jobConf.set(
         MRJobConfig.MAP_OUTPUT_COLLECTOR_CLASS_ATTR,
         "org.apache.hadoop.mapred.RssMapOutputCollector");
-    jobConf.set(
-        MRConfig.SHUFFLE_CONSUMER_PLUGIN, "org.apache.hadoop.mapreduce.task.reduce.RssShuffle");
+    if (remoteMerge) {
+      jobConf.setBoolean(RSS_REMOTE_MERGE_ENABLE, true);
+      jobConf.set(
+          MRConfig.SHUFFLE_CONSUMER_PLUGIN, "org.apache.hadoop.mapreduce.task.reduce.RMRssShuffle");
+    } else {
+      jobConf.set(
+          MRConfig.SHUFFLE_CONSUMER_PLUGIN, "org.apache.hadoop.mapreduce.task.reduce.RssShuffle");
+    }
     jobConf.set(RssMRConfig.RSS_REDUCE_REMOTE_SPILL_ENABLED, "true");
 
     File file = new File(parentPath, "client-mr/core/target/shaded");
@@ -191,10 +217,18 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
   }
 
   protected static void setupServers(Map<String, String> dynamicConf) throws Exception {
+    setupServers(dynamicConf, null);
+  }
+
+  protected static void setupServers(Map<String, String> dynamicConf, ShuffleServerConf serverConf)
+      throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+    if (serverConf != null) {
+      shuffleServerConf.addAll(serverConf);
+    }
     createShuffleServer(shuffleServerConf);
     startServers();
   }
