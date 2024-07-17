@@ -214,7 +214,7 @@ public class ServerResource extends BaseResource {
 
   @DELETE
   @Path("/deleteServer")
-  public Response<String> handleDeleteLostedServerRequest(@QueryParam("serverId") String serverId) {
+  public Response<String> handleDeleteLostServerRequest(@QueryParam("serverId") String serverId) {
     ClusterManager clusterManager = getClusterManager();
     if (clusterManager.deleteLostServerById(serverId)) {
       return Response.success("success");

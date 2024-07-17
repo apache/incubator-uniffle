@@ -226,7 +226,7 @@ public class SimpleClusterManager implements ClusterManager {
         "Updated exclude nodes and {} nodes were marked as exclude nodes", excludeNodes.size());
   }
 
-  private void putInExcludeNodesFile(List<String> excludeNodes) throws IOException {
+  private boolean putInExcludeNodesFile(List<String> excludeNodes) throws IOException {
     StringBuilder appendExecludeNodes = new StringBuilder();
     String currentDate = DateFormatUtils.format(new Date(), DATE_PATTERN);
     appendExecludeNodes
@@ -243,12 +243,16 @@ public class SimpleClusterManager implements ClusterManager {
         .append(":blacklist node added from the page.")
         .append("\n");
     Path hadoopPath = new Path(excludeNodesPath);
-    FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
-    if (fileStatus != null && fileStatus.isFile()) {
-      try (FSDataOutputStream os = hadoopFileSystem.append(hadoopPath)) {
-        os.write(appendExecludeNodes.toString().getBytes(StandardCharsets.UTF_8));
+    if (hadoopFileSystem != null) {
+      FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
+      if (fileStatus != null && fileStatus.isFile()) {
+        try (FSDataOutputStream os = hadoopFileSystem.append(hadoopPath)) {
+          os.write(appendExecludeNodes.toString().getBytes(StandardCharsets.UTF_8));
+        }
       }
+      return true;
     }
+    return false;
   }
 
   @Override
@@ -351,9 +355,9 @@ public class SimpleClusterManager implements ClusterManager {
   @Override
   public boolean addExcludeNodes(List<String> excludeNodeIds) {
     try {
-      putInExcludeNodesFile(excludeNodeIds);
+      boolean successFlag = putInExcludeNodesFile(excludeNodeIds);
       excludeNodes.addAll(excludeNodeIds);
-      return true;
+      return successFlag;
     } catch (IOException e) {
       LOG.warn("Because {}, failed to add blacklist.", e.getMessage());
       return false;
