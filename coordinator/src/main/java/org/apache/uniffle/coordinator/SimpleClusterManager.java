@@ -227,23 +227,23 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   private boolean putInExcludeNodesFile(List<String> excludeNodes) throws IOException {
-    StringBuilder appendExecludeNodes = new StringBuilder();
-    String currentDate = DateFormatUtils.format(new Date(), DATE_PATTERN);
-    appendExecludeNodes
-        .append("# Header ")
-        .append(currentDate)
-        .append(":blacklist node added from the page.")
-        .append("\n");
-    for (String excludeNode : excludeNodes) {
-      appendExecludeNodes.append(excludeNode).append("\n");
-    }
-    appendExecludeNodes
-        .append("# End ")
-        .append(currentDate)
-        .append(":blacklist node added from the page.")
-        .append("\n");
-    Path hadoopPath = new Path(excludeNodesPath);
     if (hadoopFileSystem != null) {
+      StringBuilder appendExecludeNodes = new StringBuilder();
+      String currentDate = DateFormatUtils.format(new Date(), DATE_PATTERN);
+      appendExecludeNodes
+          .append("# Header ")
+          .append(currentDate)
+          .append(":blacklist node added from the page.")
+          .append("\n");
+      for (String excludeNode : excludeNodes) {
+        appendExecludeNodes.append(excludeNode).append("\n");
+      }
+      appendExecludeNodes
+          .append("# End ")
+          .append(currentDate)
+          .append(":blacklist node added from the page.")
+          .append("\n");
+      Path hadoopPath = new Path(excludeNodesPath);
       FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
       if (fileStatus != null && fileStatus.isFile()) {
         try (FSDataOutputStream os = hadoopFileSystem.append(hadoopPath)) {
