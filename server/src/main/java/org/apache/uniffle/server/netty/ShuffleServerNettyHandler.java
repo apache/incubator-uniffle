@@ -152,7 +152,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       } else {
         LOG.error(
             "Failed to handle send shuffle data request, no blocks this request. appId: {}, shuffleId: {}, requireBufferId: {}",
-            appId, shuffleId, requireBufferId);
+            appId,
+            shuffleId,
+            requireBufferId);
       }
       client.getChannel().writeAndFlush(rpcResponse);
       return;
