@@ -35,6 +35,8 @@ public interface Storage {
   ShuffleWriteHandler getOrCreateWriteHandler(CreateShuffleWriteHandlerRequest request)
       throws IOException;
 
+  boolean containsWriteHandler(String appId);
+
   ServerReadHandler getOrCreateReadHandler(CreateShuffleReadHandlerRequest request);
 
   void removeHandlers(String appId);

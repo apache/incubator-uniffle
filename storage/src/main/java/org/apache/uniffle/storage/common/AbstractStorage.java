@@ -68,6 +68,11 @@ public abstract class AbstractStorage implements Storage {
 
   protected abstract ServerReadHandler newReadHandler(CreateShuffleReadHandlerRequest request);
 
+  @Override
+  public boolean containsWriteHandler(String appId) {
+    return writerHandlers.containsKey(appId);
+  }
+
   public boolean containsWriteHandler(String appId, int shuffleId, int partition) {
     Map<String, ShuffleWriteHandler> map = writerHandlers.get(appId);
     if (map == null || map.isEmpty()) {

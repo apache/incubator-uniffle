@@ -326,6 +326,7 @@ public class LocalStorageManager extends SingleStorageManager {
             .collect(Collectors.toList());
 
     deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user);
+    removeAppStorageInfo(event);
   }
 
   private void cleanupStorageSelectionCache(PurgeEvent event) {
