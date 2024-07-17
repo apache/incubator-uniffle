@@ -170,10 +170,6 @@
       <groupId>org.apache.hbase.thirdparty</groupId>
       <artifactId>hbase-shaded-jersey</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.esotericsoftware</groupId>
-      <artifactId>kryo-shaded</artifactId>
-    </dependency>
   </dependencies>
 
   <build>

@@ -105,7 +105,6 @@
     <skipITs>${skipTests}</skipITs>
     <skipBuildImage>true</skipBuildImage>
     <snakeyaml.version>2.2</snakeyaml.version>
-    <kryo.version>4.0.2</kryo.version>
   </properties>
 
   <repositories>
@@ -779,17 +778,6 @@
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-core</artifactId>
         <version>${log4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.esotericsoftware</groupId>
-        <artifactId>kryo-shaded</artifactId>
-        <version>${kryo.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.objenesis</groupId>
-            <artifactId>objenesis</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <!-- end -->
     </dependencies>
