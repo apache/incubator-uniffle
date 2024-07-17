@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Lists;
 import io.netty.buffer.Unpooled;
@@ -135,8 +134,15 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               + "]";
       LOG.error(errorMsg);
       ShuffleServerMetrics.counterAppNotFound.inc();
-      releaseBufferMemoryAndMetrics(
-          req, appId, shuffleId, requireBufferId, shuffleBufferManager, info, isPreAllocated);
+      releaseNettyBufferAndMetrics(
+          req,
+          appId,
+          shuffleId,
+          requireBufferId,
+          requireBlocksSize,
+          shuffleBufferManager,
+          info,
+          isPreAllocated);
       client.getChannel().writeAndFlush(rpcResponse);
       return;
     }
@@ -157,8 +163,15 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               + "], latestStageAttemptNumber["
               + latestStageAttemptNumber
               + "]");
-      releaseBufferMemoryAndMetrics(
-          req, appId, shuffleId, requireBufferId, shuffleBufferManager, info, isPreAllocated);
+      releaseNettyBufferAndMetrics(
+          req,
+          appId,
+          shuffleId,
+          requireBufferId,
+          requireBlocksSize,
+          shuffleBufferManager,
+          info,
+          isPreAllocated);
       client.getChannel().writeAndFlush(rpcResponse);
       return;
     }
@@ -292,11 +305,12 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     client.getChannel().writeAndFlush(rpcResponse);
   }
 
-  private static void releaseBufferMemoryAndMetrics(
+  private static void releaseNettyBufferAndMetrics(
       SendShuffleDataRequest req,
       String appId,
       int shuffleId,
       long requireBufferId,
+      long requireBlocksSize,
       ShuffleBufferManager shuffleBufferManager,
       PreAllocatedBufferInfo info,
       boolean isPreAllocated) {
@@ -304,19 +318,14 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       shuffleBufferManager.releaseMemory(info.getRequireSize(), false, true);
     }
     if (MapUtils.isNotEmpty(req.getPartitionToBlocks())) {
-      AtomicLong counter = new AtomicLong(0);
       // release memory
       req.getPartitionToBlocks().values().stream()
           .flatMap(Collection::stream)
-          .forEach(
-              block -> {
-                block.getData().release();
-                counter.getAndAdd(block.getData().readableBytes());
-              });
-      ShuffleServerMetrics.counterTotalReceivedDataSize.inc(counter.get());
+          .forEach(block -> block.getData().release());
+      ShuffleServerMetrics.counterTotalReceivedDataSize.inc(requireBlocksSize);
     } else {
       LOG.error(
-          "Failed to handle send shuffle data request, no blocks this request. appId: {}, shuffleId: {}, requireBufferId: {}",
+          "Failed to handle send shuffle data request, no blocks found in this request. appId: {}, shuffleId: {}, requireBufferId: {}",
           appId,
           shuffleId,
           requireBufferId);
