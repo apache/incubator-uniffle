@@ -513,23 +513,32 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     if (blockFailSentRetryEnabled) {
       collectFailedBlocksToResend();
     } else {
-      if (hasAnyBlockFailure()) {
-        throw new RssSendFailedException("Fail to send the block");
+      String errorMsg = getFirstBlockFailure();
+      if (errorMsg != null) {
+        throw new RssSendFailedException("Fail to send the block. Error: " + errorMsg);
       }
     }
   }
 
-  private boolean hasAnyBlockFailure() {
+  private String getFirstBlockFailure() {
     Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
     if (!failedBlockIds.isEmpty()) {
+      List<TrackingBlockStatus> trackingBlockStatues =
+          shuffleManager
+              .getBlockIdsFailedSendTracker(taskId)
+              .getFailedBlockStatus(failedBlockIds.iterator().next());
+      String errorMsg = "Default Error Message";
+      if (CollectionUtils.isNotEmpty(trackingBlockStatues)) {
+        errorMsg = trackingBlockStatues.get(0).getStatusCode().name();
+      }
       LOG.error(
           "Errors on sending blocks for task[{}]. {} blocks can't be sent to remote servers: {}",
           taskId,
           failedBlockIds.size(),
           shuffleManager.getBlockIdsFailedSendTracker(taskId).getFaultyShuffleServers());
-      return true;
+      return errorMsg;
     }
-    return false;
+    return null;
   }
 
   private void collectFailedBlocksToResend() {
