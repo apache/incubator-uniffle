@@ -101,6 +101,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleWriter.class);
   private static final String DUMMY_HOST = "dummy_host";
   private static final int DUMMY_PORT = 99999;
+  public static final String DEFAULT_ERROR_MESSAGE = "Default Error Message";
 
   private final String appId;
   private final int shuffleId;
@@ -527,7 +528,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
           shuffleManager
               .getBlockIdsFailedSendTracker(taskId)
               .getFailedBlockStatus(failedBlockIds.iterator().next());
-      String errorMsg = "Default Error Message";
+      String errorMsg = DEFAULT_ERROR_MESSAGE;
       if (CollectionUtils.isNotEmpty(trackingBlockStatues)) {
         errorMsg = trackingBlockStatues.get(0).getStatusCode().name();
       }
