@@ -530,14 +530,21 @@ public class ShuffleTaskManager {
   }
 
   public long requireBuffer(
-      String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
+      String appId,
+      int shuffleId,
+      List<Integer> partitionIds,
+      List<Integer> partitionRequireSizes,
+      int requireSize) {
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
     if (null == shuffleTaskInfo) {
       LOG.error("No such app is registered. appId: {}, shuffleId: {}", appId, shuffleId);
       throw new NoRegisterException("No such app is registered. appId: " + appId);
     }
-    for (int partitionId : partitionIds) {
-      long partitionUsedDataSize = getPartitionDataSize(appId, shuffleId, partitionId);
+    for (int i = 0; i < partitionIds.size(); i++) {
+      int partitionId = partitionIds.get(i);
+      int partitionRequireSize = partitionRequireSizes.get(i);
+      long partitionUsedDataSize =
+          getPartitionDataSize(appId, shuffleId, partitionId) + partitionRequireSize;
       if (shuffleBufferManager.limitHugePartition(
           appId, shuffleId, partitionId, partitionUsedDataSize)) {
         String errorMessage =
@@ -546,6 +553,17 @@ public class ShuffleTaskManager {
                 appId, shuffleId, partitionIds, partitionUsedDataSize);
         LOG.error(errorMessage);
         throw new NoBufferForHugePartitionException(errorMessage);
+      }
+      if (shuffleBufferManager.hasPartitionExceededHugeHardLimit(partitionUsedDataSize)) {
+        throw new ExceedHugePartitionHardLimitException(
+            "Current partition ["
+                + partitionId
+                + "] size: "
+                + partitionUsedDataSize
+                + " exceeded the max size: "
+                + shuffleBufferManager.getHugePartitionSizeHardLimit()
+                + " if cache this shuffle data with size: "
+                + partitionRequireSize);
       }
     }
     return requireBuffer(appId, requireSize);

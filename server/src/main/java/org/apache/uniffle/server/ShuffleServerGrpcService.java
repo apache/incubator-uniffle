@@ -634,6 +634,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         return;
       }
       long requireBufferId = -1;
+      String responseMessage = "";
+      String shuffleDataInfo = "appId[" + appId + "], shuffleId[" + request.getShuffleId() + "]";
       try {
         if (StringUtils.isEmpty(appId)) {
           // To be compatible with older client version
@@ -647,25 +649,40 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                       appId,
                       request.getShuffleId(),
                       request.getPartitionIdsList(),
+                      request.getPartitionRequireSizesList(),
                       request.getRequireSize());
         }
       } catch (NoBufferException e) {
+        responseMessage = e.getMessage();
         status = StatusCode.NO_BUFFER;
         ShuffleServerMetrics.counterTotalRequireBufferFailedForRegularPartition.inc();
         ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
       } catch (NoBufferForHugePartitionException e) {
+        responseMessage = e.getMessage();
         status = StatusCode.NO_BUFFER_FOR_HUGE_PARTITION;
         ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.inc();
         ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
       } catch (NoRegisterException e) {
+        responseMessage = e.getMessage();
         status = StatusCode.NO_REGISTER;
         ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
+      } catch (ExceedHugePartitionHardLimitException e) {
+        status = StatusCode.EXCEED_HUGE_PARTITION_HARD_LIMIT;
+        ShuffleServerMetrics.counterTotalHugePartitionExceedHardLimitNum.inc();
+        ShuffleServerMetrics.counterTotalRequireBufferFailed.inc();
+        responseMessage =
+            "ExceedHugePartitionHardLimitException Error happened when requireBuffer for "
+                + shuffleDataInfo
+                + ": "
+                + e.getMessage();
+        LOG.error(responseMessage);
       }
       auditContext.setStatusCode(status);
       RequireBufferResponse response =
           RequireBufferResponse.newBuilder()
               .setStatus(status.toProto())
               .setRequireBufferId(requireBufferId)
+              .setRetMsg(responseMessage)
               .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();

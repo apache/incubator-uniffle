@@ -55,6 +55,7 @@ message RequireBufferRequest {
   string appId = 2;
   int32 shuffleId = 3;
   repeated int32 partitionIds = 4;
+  repeated int32 partitionRequireSizes = 5;
 }
 
 message RequireBufferResponse {

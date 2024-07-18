@@ -193,7 +193,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
 
     // case1, expect NoRegisterException
     try {
-      shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+      shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), Arrays.asList(500), 500);
       fail("Should thow NoRegisterException");
     } catch (Exception e) {
       assertTrue(e instanceof NoRegisterException);
@@ -208,7 +208,8 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
 
     // case2
     try {
-      long requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+      long requiredId =
+          shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), Arrays.asList(500), 500);
       assertNotEquals(-1, requiredId);
     } catch (Exception e) {
       fail("Should not throw Exception");
@@ -219,7 +220,8 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData0);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
     try {
-      long requiredId = shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+      long requiredId =
+          shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), Arrays.asList(500), 500);
       assertNotEquals(-1, requiredId);
     } catch (Exception e) {
       fail("Should not throw Exception");
@@ -230,7 +232,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData0);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
     try {
-      shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), 500);
+      shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), Arrays.asList(500), 500);
       fail("Should throw NoBufferForHugePartitionException");
     } catch (Exception e) {
       assertTrue(e instanceof NoBufferForHugePartitionException);
@@ -1263,7 +1265,8 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     Thread.sleep(2000);
 
     // The NO_REGISTER status code should not appear.
-    assertTrue(shuffleTaskManager.requireBuffer(appId, 2, Arrays.asList(1), 35) != -4);
+    assertTrue(
+        shuffleTaskManager.requireBuffer(appId, 2, Arrays.asList(1), Arrays.asList(35), 35) != -4);
     shuffleTaskManager.removeResources(appId, false);
   }
 }
