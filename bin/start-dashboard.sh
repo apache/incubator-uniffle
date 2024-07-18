@@ -88,7 +88,7 @@ else
   GC_ARGS=$GC_LOG_ARGS_NEW
 fi
 
-$RUNNER $ARGS $JVM_ARGS $GC_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$DASHBOARD_CONF_FILE" $@ &
+$RUNNER ${UNIFFLE_DASHBOARD_JAVA_OPTS:-""} $ARGS $JVM_ARGS $GC_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$DASHBOARD_CONF_FILE" $@ &
 
 get_pid_file_name dashboard
 echo $! >${RSS_PID_DIR}/${pid_file}

@@ -39,6 +39,11 @@ public class ShuffleServerMetrics {
 
   private static final String TOTAL_RECEIVED_DATA = "total_received_data";
   private static final String TOTAL_WRITE_DATA = "total_write_data";
+  private static final String TOTAL_DELETE_DATA = "total_delete_data";
+  private static final String TOTAL_FLUSH_FILE_NUM = "total_flush_file_num";
+  private static final String TOTAL_DELETE_FILE_NUM = "total_delete_file_num";
+  private static final String STORAGE_USED_BYTES = "storage_used_bytes";
+  private static final String FLUSH_FILE_NUM = "flush_file_num";
   private static final String TOTAL_WRITE_BLOCK = "total_write_block";
   private static final String WRITE_BLOCK_SIZE = "write_block_size";
   private static final String TOTAL_WRITE_TIME = "total_write_time";
@@ -134,6 +139,7 @@ public class ShuffleServerMetrics {
 
   private static final String TOTAL_EXPIRED_PRE_ALLOCATED_BUFFER_NUM =
       "total_expired_preAllocated_buffer_num";
+  private static final String TOTAL_APP_NOT_FOUND_NUM = "total_app_not_found_num";
 
   private static final String TOTAL_REMOVE_RESOURCE_TIME = "total_remove_resource_time";
   private static final String TOTAL_REMOVE_RESOURCE_BY_SHUFFLE_IDS_TIME =
@@ -154,6 +160,11 @@ public class ShuffleServerMetrics {
 
   public static Counter.Child counterTotalReceivedDataSize;
   public static Counter.Child counterTotalWriteDataSize;
+  public static Counter.Child counterTotalDeleteDataSize;
+  public static Counter.Child counterTotalFlushFileNum;
+  public static Counter.Child counterTotalDeleteFileNum;
+  public static Gauge.Child gaugeStorageUsedBytes;
+  public static Gauge.Child gaugeFlushFileNum;
   public static Counter.Child counterTotalWriteBlockSize;
   public static Histogram appHistogramWriteBlockSize;
   public static Counter.Child counterTotalWriteTime;
@@ -237,6 +248,7 @@ public class ShuffleServerMetrics {
   public static Counter counterLocalFileEventFlush;
   public static Counter counterHadoopEventFlush;
   public static Counter counterPreAllocatedBufferExpired;
+  public static Counter counterAppNotFound;
 
   private static MetricsManager metricsManager;
   private static boolean isRegister = false;
@@ -335,6 +347,11 @@ public class ShuffleServerMetrics {
   private static void setUpMetrics(ShuffleServerConf serverConf) {
     counterTotalReceivedDataSize = metricsManager.addLabeledCounter(TOTAL_RECEIVED_DATA);
     counterTotalWriteDataSize = metricsManager.addLabeledCounter(TOTAL_WRITE_DATA);
+    counterTotalDeleteDataSize = metricsManager.addLabeledCounter(TOTAL_DELETE_DATA);
+    counterTotalFlushFileNum = metricsManager.addLabeledCounter(TOTAL_FLUSH_FILE_NUM);
+    counterTotalDeleteFileNum = metricsManager.addLabeledCounter(TOTAL_DELETE_FILE_NUM);
+    gaugeStorageUsedBytes = metricsManager.addLabeledGauge(STORAGE_USED_BYTES);
+    gaugeFlushFileNum = metricsManager.addLabeledGauge(FLUSH_FILE_NUM);
     counterTotalWriteBlockSize = metricsManager.addLabeledCounter(TOTAL_WRITE_BLOCK);
     appHistogramWriteBlockSize =
         metricsManager.addHistogram(
@@ -461,6 +478,8 @@ public class ShuffleServerMetrics {
 
     counterPreAllocatedBufferExpired =
         metricsManager.addCounter(TOTAL_EXPIRED_PRE_ALLOCATED_BUFFER_NUM);
+
+    counterAppNotFound = metricsManager.addCounter(TOTAL_APP_NOT_FOUND_NUM);
 
     summaryTotalRemoveResourceTime = metricsManager.addSummary(TOTAL_REMOVE_RESOURCE_TIME);
     summaryTotalRemoveResourceByShuffleIdsTime =

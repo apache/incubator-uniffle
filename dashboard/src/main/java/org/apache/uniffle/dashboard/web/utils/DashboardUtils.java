@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ public class DashboardUtils {
   private static final Logger LOG = LoggerFactory.getLogger(DashboardUtils.class);
 
   public static Map<String, String> convertAddressesStrToMap(String coordinatorAddressesStr) {
+    Preconditions.checkNotNull(coordinatorAddressesStr, "Coordinator web address is null");
     HashMap<String, String> coordinatorAddressMap = Maps.newHashMap();
     String[] coordinators = coordinatorAddressesStr.split(",");
     for (String coordinator : coordinators) {

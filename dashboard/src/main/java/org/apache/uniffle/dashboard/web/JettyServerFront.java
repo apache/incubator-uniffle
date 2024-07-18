@@ -23,6 +23,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Preconditions;
 import org.apache.hbase.thirdparty.org.glassfish.jersey.server.ServerProperties;
 import org.apache.hbase.thirdparty.org.glassfish.jersey.servlet.ServletContainer;
 import org.eclipse.jetty.server.Handler;
@@ -92,6 +93,7 @@ public class JettyServerFront {
     HandlerList handlers = new HandlerList();
     ResourceHandler resourceHandler = addResourceHandler();
     String coordinatorWebAddress = conf.getString(DashboardConf.COORDINATOR_WEB_ADDRESS);
+    Preconditions.checkNotNull(coordinatorWebAddress, "Coordinator web address is null");
     Map<String, String> stringStringMap =
         DashboardUtils.convertAddressesStrToMap(coordinatorWebAddress);
 

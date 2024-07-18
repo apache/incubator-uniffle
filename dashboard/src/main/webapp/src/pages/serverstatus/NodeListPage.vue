@@ -57,6 +57,7 @@
         label="RegistrationTime"
         min-width="120"
         :formatter="dateFormatter"
+        sortable
       />
       <el-table-column
         prop="timestamp"
@@ -106,25 +107,34 @@
         </template>
       </el-table-column>
       <el-table-column prop="tags" label="Tags" min-width="140" />
+      <el-table-column v-if="isShowRemove" label="Operations">
+        <template v-slot:default="scope">
+          <el-button size="small" type="danger" @click="showDeleteConfirm(scope.row)">
+            Remove
+          </el-button>
+        </template>
+      </el-table-column>
     </el-table>
   </div>
 </template>
 <script>
-import { onMounted, reactive, watch } from 'vue'
+import { onMounted, reactive, watch, ref, inject } from 'vue'
 import { memFormatter, dateFormatter } from '@/utils/common'
+import { useRouter } from 'vue-router'
+import { useCurrentServerStore } from '@/store/useCurrentServerStore'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   getShuffleActiveNodes,
   getShuffleDecommissionedList,
   getShuffleDecommissioningList,
   getShuffleLostList,
   getShuffleUnhealthyList,
+  deleteConfirmedLostServer,
   getShuffleServerConf,
   getShuffleServerMetrics,
   getShuffleServerPrometheusMetrics,
   getShuffleServerStacks
 } from '@/api/api'
-import { useRouter } from 'vue-router'
-import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 export default {
   methods: {getShuffleServerConf, getShuffleServerMetrics, getShuffleServerPrometheusMetrics, getShuffleServerStacks},
@@ -151,6 +161,21 @@ export default {
         }
       ]
     })
+    const isShowRemove = ref(false)
+    async function deleteLostServer(row) {
+      try {
+        const params = { serverId: row.id }
+        const res = await deleteConfirmedLostServer(params, {})
+        // Invoke the interface to delete the lost server, prompting a message based on the result returned.
+        if (res.data.data === 'success') {
+          ElMessage.success('remove ' + row.id + ' sucess...')
+        } else {
+          ElMessage.error('remove ' + row.id + ' fail...')
+        }
+      } catch (err) {
+        ElMessage.error('remove ' + row.id + ' request timeout...')
+      }
+    }
 
     async function getShuffleActiveNodesPage() {
       const res = await getShuffleActiveNodes()
@@ -178,6 +203,24 @@ export default {
     }
 
     const loadPageData = () => {
+      isShowRemove.value = false
+      listPageData.tableData = [
+        {
+          id: '',
+          ip: '',
+          grpcPort: 0,
+          nettyPort: 0,
+          usedMemory: 0,
+          preAllocatedMemory: 0,
+          availableMemory: 0,
+          eventNumInFlush: 0,
+          tags: '',
+          status: '',
+          registrationTime: '',
+          timestamp: '',
+          jettyPort: 0
+        }
+      ]
       if (router.currentRoute.value.name === 'activeNodeList') {
         getShuffleActiveNodesPage()
       } else if (router.currentRoute.value.name === 'decommissioningNodeList') {
@@ -187,6 +230,7 @@ export default {
       } else if (router.currentRoute.value.name === 'unhealthyNodeList') {
         getShuffleUnhealthyListPage()
       } else if (router.currentRoute.value.name === 'lostNodeList') {
+        isShowRemove.value = true
         getShuffleLostListPage()
       }
     }
@@ -210,7 +254,36 @@ export default {
       }
       sortColumn[sortInfo.prop] = sortInfo.order
     }
-    return { listPageData, sortColumn, sortChangeEvent, memFormatter, dateFormatter }
+    /**
+     * Get the callback method of the parent page and update the number of servers on the page.
+     */
+    const updateTotalPage = inject('updateTotalPage')
+    const showDeleteConfirm = (row) => {
+      ElMessageBox.confirm(`Are you sure to remove ${row.id}?`, 'Confirmation', {
+        confirmButtonText: 'Remove',
+        cancelButtonText: 'Cancel',
+        type: 'warning'
+      })
+        .then(() => {
+          // Perform deletion logic here.
+          deleteLostServer(row)
+          // Reload the lost server information
+          getShuffleLostListPage()
+          updateTotalPage()
+        })
+        .catch(() => {
+          // Cancelled
+        })
+    }
+    return {
+      listPageData,
+      sortColumn,
+      isShowRemove,
+      showDeleteConfirm,
+      sortChangeEvent,
+      memFormatter,
+      dateFormatter
+    }
   }
 }
 </script>
