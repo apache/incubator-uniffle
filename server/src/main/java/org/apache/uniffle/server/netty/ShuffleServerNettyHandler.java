@@ -101,12 +101,6 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
   public void handleSendShuffleDataRequest(TransportClient client, SendShuffleDataRequest req) {
     RpcResponse rpcResponse;
     String appId = req.getAppId();
-    StatusCode status = verifyRequest(appId);
-    if (status != StatusCode.SUCCESS) {
-      rpcResponse = new RpcResponse(req.getRequestId(), status, status.toString());
-      client.getChannel().writeAndFlush(rpcResponse);
-      return;
-    }
     int shuffleId = req.getShuffleId();
     long requireBufferId = req.getRequireId();
     long timestamp = req.getTimestamp();
