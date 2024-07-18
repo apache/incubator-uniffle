@@ -262,9 +262,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void sendShuffleData(
       SendShuffleDataRequest req, StreamObserver<SendShuffleDataResponse> responseObserver) {
     String appId = req.getAppId();
+    SendShuffleDataResponse reply;
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
-      SendShuffleDataResponse reply =
+      reply =
           SendShuffleDataResponse.newBuilder().setStatus(status.toProto()).build();
       responseObserver.onNext(reply);
       responseObserver.onCompleted();
@@ -300,7 +301,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     // processed if the task was being sent.
     if (stageAttemptNumber < latestStageAttemptNumber) {
       String responseMessage = "A retry has occurred at the Stage, sending data is invalid.";
-      SendShuffleDataResponse reply =
+      reply =
           SendShuffleDataResponse.newBuilder()
               .setStatus(StatusCode.STAGE_RETRY_IGNORE.toProto())
               .setRetMsg(responseMessage)
@@ -328,7 +329,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
     StatusCode ret = StatusCode.SUCCESS;
     String responseMessage = "OK";
-    SendShuffleDataResponse reply;
     if (req.getShuffleDataCount() > 0) {
       ShuffleServerMetrics.counterTotalReceivedDataSize.inc(requireSize);
       ShuffleTaskManager manager = shuffleServer.getShuffleTaskManager();
