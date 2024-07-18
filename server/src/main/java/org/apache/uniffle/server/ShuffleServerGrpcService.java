@@ -110,6 +110,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       RssProtos.ShuffleUnregisterByAppIdResponse reply =
           RssProtos.ShuffleUnregisterByAppIdResponse.newBuilder()
               .setStatus(status.toProto())
+              .setRetMsg(status.toString())
               .build();
       responseStreamObserver.onNext(reply);
       responseStreamObserver.onCompleted();
@@ -140,7 +141,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
       RssProtos.ShuffleUnregisterResponse reply =
-          RssProtos.ShuffleUnregisterResponse.newBuilder().setStatus(status.toProto()).build();
+          RssProtos.ShuffleUnregisterResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(status.toString())
+              .build();
       responseStreamObserver.onNext(reply);
       responseStreamObserver.onCompleted();
       return;
@@ -265,7 +269,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     SendShuffleDataResponse reply;
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
-      reply = SendShuffleDataResponse.newBuilder().setStatus(status.toProto()).build();
+      reply =
+          SendShuffleDataResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(status.toString())
+              .build();
       responseObserver.onNext(reply);
       responseObserver.onCompleted();
       return;
@@ -455,7 +463,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
       ShuffleCommitResponse response =
-          ShuffleCommitResponse.newBuilder().setStatus(status.toProto()).build();
+          ShuffleCommitResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(status.toString())
+              .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
       return;
@@ -503,7 +514,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
       FinishShuffleResponse response =
-          FinishShuffleResponse.newBuilder().setStatus(status.toProto()).build();
+          FinishShuffleResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(status.toString())
+              .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
       return;
@@ -542,7 +556,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
       RequireBufferResponse response =
-          RequireBufferResponse.newBuilder().setStatus(status.toProto()).build();
+          RequireBufferResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(status.toString())
+              .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
       return;
@@ -591,7 +608,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
       AppHeartBeatResponse response =
-          AppHeartBeatResponse.newBuilder().setStatus(status.toProto()).build();
+          AppHeartBeatResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(status.toString())
+              .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
       return;
@@ -623,7 +643,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
       ReportShuffleResultResponse response =
-          ReportShuffleResultResponse.newBuilder().setStatus(status.toProto()).build();
+          ReportShuffleResultResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(status.toString())
+              .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
       return;
@@ -675,7 +698,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
       GetShuffleResultResponse response =
-          GetShuffleResultResponse.newBuilder().setStatus(status.toProto()).build();
+          GetShuffleResultResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(status.toString())
+              .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
       return;
@@ -730,7 +756,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
       GetShuffleResultForMultiPartResponse response =
-          GetShuffleResultForMultiPartResponse.newBuilder().setStatus(status.toProto()).build();
+          GetShuffleResultForMultiPartResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(status.toString())
+              .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
       return;
@@ -787,7 +816,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
       GetLocalShuffleDataResponse response =
-          GetLocalShuffleDataResponse.newBuilder().setStatus(status.toProto()).build();
+          GetLocalShuffleDataResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(status.toString())
+              .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
       return;
@@ -910,7 +942,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
       GetLocalShuffleIndexResponse reply =
-          GetLocalShuffleIndexResponse.newBuilder().setStatus(status.toProto()).build();
+          GetLocalShuffleIndexResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(status.toString())
+              .build();
       responseObserver.onNext(reply);
       responseObserver.onCompleted();
       return;
@@ -1014,7 +1049,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
       GetMemoryShuffleDataResponse reply =
-          GetMemoryShuffleDataResponse.newBuilder().setStatus(status.toProto()).build();
+          GetMemoryShuffleDataResponse.newBuilder()
+              .setStatus(status.toProto())
+              .setRetMsg(status.toString())
+              .build();
       responseObserver.onNext(reply);
       responseObserver.onCompleted();
       return;

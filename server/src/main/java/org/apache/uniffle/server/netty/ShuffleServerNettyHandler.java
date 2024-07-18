@@ -29,7 +29,6 @@ import io.netty.channel.ChannelFutureListener;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +103,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     String appId = req.getAppId();
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
-      rpcResponse = new RpcResponse(req.getRequestId(), status, Strings.EMPTY);
+      rpcResponse = new RpcResponse(req.getRequestId(), status, status.toString());
       client.getChannel().writeAndFlush(rpcResponse);
       return;
     }
@@ -348,7 +347,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           new GetMemoryShuffleDataResponse(
               req.getRequestId(),
               status,
-              Strings.EMPTY,
+              status.toString(),
               Lists.newArrayList(),
               Unpooled.EMPTY_BUFFER);
       client.getChannel().writeAndFlush(response);
@@ -439,7 +438,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     if (status != StatusCode.SUCCESS) {
       GetLocalShuffleIndexResponse response =
           new GetLocalShuffleIndexResponse(
-              req.getRequestId(), status, Strings.EMPTY, Unpooled.EMPTY_BUFFER, 0L);
+              req.getRequestId(), status, status.toString(), Unpooled.EMPTY_BUFFER, 0L);
       client.getChannel().writeAndFlush(response);
       return;
     }
@@ -534,7 +533,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           new GetLocalShuffleDataResponse(
               req.getRequestId(),
               status,
-              Strings.EMPTY,
+              status.toString(),
               new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
       client.getChannel().writeAndFlush(response);
       return;
