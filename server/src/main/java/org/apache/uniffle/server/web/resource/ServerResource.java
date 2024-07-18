@@ -17,18 +17,18 @@
 
 package org.apache.uniffle.server.web.resource;
 
-import org.apache.hbase.thirdparty.javax.ws.rs.GET;
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
-import org.apache.uniffle.common.util.ThreadUtils;
-import org.apache.uniffle.common.web.resource.BaseResource;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.servlet.ServletContext;
 
+import org.apache.hbase.thirdparty.javax.ws.rs.GET;
+import org.apache.hbase.thirdparty.javax.ws.rs.Path;
+import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
+
+import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.common.web.resource.BaseResource;
 import org.apache.uniffle.common.web.resource.MetricResource;
 import org.apache.uniffle.common.web.resource.PrometheusMetricResource;
 import org.apache.uniffle.common.web.resource.Response;
@@ -38,8 +38,7 @@ import org.apache.uniffle.server.web.vo.ServerConfVO;
 
 @Path("/api/shuffleServer")
 public class ServerResource extends BaseResource {
-  @Context
-  protected ServletContext servletContext;
+  @Context protected ServletContext servletContext;
 
   @GET
   @Path("/conf")
@@ -78,7 +77,6 @@ public class ServerResource extends BaseResource {
   }
 
   private ShuffleServer getShuffleServer() {
-    return (ShuffleServer)
-        servletContext.getAttribute(ShuffleServer.class.getCanonicalName());
+    return (ShuffleServer) servletContext.getAttribute(ShuffleServer.class.getCanonicalName());
   }
 }
