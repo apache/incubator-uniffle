@@ -148,6 +148,7 @@ public class HadoopStorageManager extends SingleStorageManager {
         }
       }
       deleteHandler.delete(deletePaths.toArray(new String[0]), appId, event.getUser());
+      removeAppStorageInfo(event);
     } else {
       LOG.warn("Storage gotten is null when removing resources for event: {}", event);
     }

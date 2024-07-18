@@ -101,6 +101,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private static final Logger LOG = LoggerFactory.getLogger(RssShuffleWriter.class);
   private static final String DUMMY_HOST = "dummy_host";
   private static final int DUMMY_PORT = 99999;
+  public static final String DEFAULT_ERROR_MESSAGE = "Default Error Message";
 
   private final String appId;
   private final int shuffleId;
@@ -513,23 +514,32 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     if (blockFailSentRetryEnabled) {
       collectFailedBlocksToResend();
     } else {
-      if (hasAnyBlockFailure()) {
-        throw new RssSendFailedException("Fail to send the block");
+      String errorMsg = getFirstBlockFailure();
+      if (errorMsg != null) {
+        throw new RssSendFailedException("Fail to send the block. Error: " + errorMsg);
       }
     }
   }
 
-  private boolean hasAnyBlockFailure() {
+  private String getFirstBlockFailure() {
     Set<Long> failedBlockIds = shuffleManager.getFailedBlockIds(taskId);
     if (!failedBlockIds.isEmpty()) {
+      List<TrackingBlockStatus> trackingBlockStatues =
+          shuffleManager
+              .getBlockIdsFailedSendTracker(taskId)
+              .getFailedBlockStatus(failedBlockIds.iterator().next());
+      String errorMsg = DEFAULT_ERROR_MESSAGE;
+      if (CollectionUtils.isNotEmpty(trackingBlockStatues)) {
+        errorMsg = trackingBlockStatues.get(0).getStatusCode().name();
+      }
       LOG.error(
           "Errors on sending blocks for task[{}]. {} blocks can't be sent to remote servers: {}",
           taskId,
           failedBlockIds.size(),
           shuffleManager.getBlockIdsFailedSendTracker(taskId).getFaultyShuffleServers());
-      return true;
+      return errorMsg;
     }
-    return false;
+    return null;
   }
 
   private void collectFailedBlocksToResend() {

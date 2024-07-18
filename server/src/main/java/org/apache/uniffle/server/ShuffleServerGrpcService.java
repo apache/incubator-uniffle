@@ -275,6 +275,26 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     long timestamp = req.getTimestamp();
     int stageAttemptNumber = req.getStageAttemptNumber();
     ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
+    if (taskInfo == null) {
+      String errorMsg =
+          "APP_NOT_FOUND error, requireBufferId["
+              + requireBufferId
+              + "] for appId["
+              + appId
+              + "], shuffleId["
+              + shuffleId
+              + "]";
+      LOG.error(errorMsg);
+      ShuffleServerMetrics.counterAppNotFound.inc();
+      reply =
+          SendShuffleDataResponse.newBuilder()
+              .setStatus(StatusCode.APP_NOT_FOUND.toProto())
+              .setRetMsg(errorMsg)
+              .build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+      return;
+    }
     Integer latestStageAttemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
     // The Stage retry occurred, and the task before StageNumber was simply ignored and not
     // processed if the task was being sent.
