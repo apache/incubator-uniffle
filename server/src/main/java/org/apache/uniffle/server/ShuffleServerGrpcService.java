@@ -265,8 +265,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     SendShuffleDataResponse reply;
     StatusCode status = verifyRequest(appId);
     if (status != StatusCode.SUCCESS) {
-      reply =
-          SendShuffleDataResponse.newBuilder().setStatus(status.toProto()).build();
+      reply = SendShuffleDataResponse.newBuilder().setStatus(status.toProto()).build();
       responseObserver.onNext(reply);
       responseObserver.onCompleted();
       return;
