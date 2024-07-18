@@ -275,6 +275,8 @@ message ShuffleServerHeartBeatRequest {
   google.protobuf.BoolValue isHealthy = 7;
   optional ServerStatus status = 8;
   map<string, StorageInfo> storageInfo = 21; // mount point to storage info mapping.
+  optional string version = 22;
+  optional string gitCommitId = 23;
   optional int64 startTimeMs = 24;
 }
 
@@ -392,6 +394,8 @@ message AppHeartBeatResponse {
 message ApplicationInfoRequest {
   string appId = 1;
   string user = 2;
+  optional string version = 3;
+  optional string gitCommitId = 4;
 }
 
 message ApplicationInfoResponse {

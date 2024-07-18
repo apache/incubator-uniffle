@@ -80,6 +80,28 @@
                 <el-button type="info" @click="handlerStacks">Stacks</el-button>
               </div>
             </el-descriptions-item>
+            <el-descriptions-item>
+              <template #label>
+                <div class="cell-item">
+                  <el-icon :style="iconStyle">
+                    <Wallet />
+                  </el-icon>
+                  Version
+                </div>
+              </template>
+              {{ pageData.serverInfo.version}}
+            </el-descriptions-item>
+            <el-descriptions-item>
+              <template #label>
+                <div class="cell-item">
+                  <el-icon :style="iconStyle">
+                    <Wallet />
+                  </el-icon>
+                  Git CommitId
+                </div>
+              </template>
+              {{ pageData.serverInfo.gitCommitId}}
+            </el-descriptions-item>
           </el-descriptions>
         </div>
       </el-collapse-item>
