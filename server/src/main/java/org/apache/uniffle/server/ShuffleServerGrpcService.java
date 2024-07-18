@@ -265,19 +265,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void sendShuffleData(
       SendShuffleDataRequest req, StreamObserver<SendShuffleDataResponse> responseObserver) {
-    String appId = req.getAppId();
+
     SendShuffleDataResponse reply;
-    StatusCode status = verifyRequest(appId);
-    if (status != StatusCode.SUCCESS) {
-      reply =
-          SendShuffleDataResponse.newBuilder()
-              .setStatus(status.toProto())
-              .setRetMsg(status.toString())
-              .build();
-      responseObserver.onNext(reply);
-      responseObserver.onCompleted();
-      return;
-    }
+    String appId = req.getAppId();
     int shuffleId = req.getShuffleId();
     long requireBufferId = req.getRequireBufferId();
     long timestamp = req.getTimestamp();
