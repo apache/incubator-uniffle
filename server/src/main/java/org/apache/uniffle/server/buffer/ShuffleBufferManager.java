@@ -715,9 +715,10 @@ public class ShuffleBufferManager {
       Collection<ShuffleBuffer> buffers = bufferRangeMap.asMapOfRanges().values();
       if (buffers != null) {
         for (ShuffleBuffer buffer : buffers) {
-          buffer.release();
+          // the actual release size by this thread
+          long releaseSize = buffer.release();
           ShuffleServerMetrics.gaugeTotalPartitionNum.dec();
-          releaseMemory(buffer.getSize(), false, false);
+          releaseMemory(releaseSize, false, false);
         }
       }
       if (shuffleIdToSizeMap != null) {
