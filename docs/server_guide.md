@@ -174,6 +174,14 @@ XMX_SIZE=40g
 MAX_DIRECT_MEMORY_SIZE=360g
 ```
 
+Besides, you can add extra jvm arguments for shuffle server by specific `UNIFFLE_SHUFFLE_SERVER_JAVA_OPTS` in `rss-env.sh`
+
+Something like:
+
+```
+UNIFFLE_SHUFFLE_SERVER_JAVA_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005 -Drss.jetty.http.port=19978"
+```
+
 ##### server.conf
 
 Generally, `rss.server.read.buffer.capacity` of 20g is enough, you can pay more attention to the metric `read_used_buffer_size`. 
