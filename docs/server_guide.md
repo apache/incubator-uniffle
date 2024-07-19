@@ -176,7 +176,7 @@ MAX_DIRECT_MEMORY_SIZE=360g
 
 Besides, you can add extra jvm arguments for shuffle server by specific `UNIFFLE_SHUFFLE_SERVER_JAVA_OPTS` in `rss-env.sh`
 
-Something like:
+For example:
 
 ```
 UNIFFLE_SHUFFLE_SERVER_JAVA_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005 -Drss.jetty.http.port=19978"
