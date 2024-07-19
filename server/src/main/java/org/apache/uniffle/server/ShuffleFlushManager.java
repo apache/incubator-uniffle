@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -64,13 +65,14 @@ public class ShuffleFlushManager {
   // appId -> shuffleId -> committed shuffle blockIds
   private Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds =
       JavaUtils.newConcurrentMap();
+  private  List<Integer> shuffleIdsWithWriteError = new CopyOnWriteArrayList<>();
   private final int retryMax;
 
   private final StorageManager storageManager;
   private final long pendingEventTimeoutSec;
   private FlushEventHandler eventHandler;
   private final boolean isAuditLogEnabled;
-  private boolean writeError = false;
+
 
   public ShuffleFlushManager(
       ShuffleServerConf shuffleServerConf,
@@ -176,11 +178,11 @@ public class ShuffleFlushManager {
         startTime = System.currentTimeMillis();
         boolean writeSuccess = storageManager.write(storage, handler, event);
         if (!writeSuccess) {
-          writeError = true;
+          shuffleIdsWithWriteError.add(event.getShuffleId());
         }
       } catch (Exception e) {
         LOG.error("storageManager write error.", e);
-        writeError = true;
+        shuffleIdsWithWriteError.add(event.getShuffleId());
       }
 
       long endTime = System.currentTimeMillis();
@@ -253,7 +255,7 @@ public class ShuffleFlushManager {
   }
 
   public Roaring64NavigableMap getCommittedBlockIds(String appId, Integer shuffleId) throws EventDiscardException {
-    if (writeError) {
+    if (shuffleIdsWithWriteError.contains(shuffleId)) {
       throw new EventDiscardException();
     }
 
