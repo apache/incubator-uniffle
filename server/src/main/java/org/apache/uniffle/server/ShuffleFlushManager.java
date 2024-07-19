@@ -314,4 +314,9 @@ public class ShuffleFlushManager {
   public FlushEventHandler getEventHandler() {
     return eventHandler;
   }
+
+  @VisibleForTesting
+  public void setShuffleIdsWithWriteError(int shuffleId) {
+    shuffleIdsWithWriteError.add(shuffleId);
+  }
 }
