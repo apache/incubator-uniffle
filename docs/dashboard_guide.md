@@ -33,8 +33,8 @@ coordinator.web.address http://coordinator.hostname:19998/
 ```
 
 ### Configure related JVM parameters
-you can add extra jvm arguments for shuffle server by specific `UNIFFLE_DASHBOARD_JAVA_OPTS` in `RSS_HOME/bin/rss-env.sh`
-Something like:
+You can add extra JVM arguments for the Uniffle dashboard by specifying `UNIFFLE_DASHBOARD_JAVA_OPTS` in `RSS_HOME/bin/rss-env.sh`
+Example:
 ```
 UNIFFLE_DASHBOARD_JAVA_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5004 -Drss.jetty.http.port=19997"
 ```
