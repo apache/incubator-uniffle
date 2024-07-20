@@ -31,6 +31,7 @@ JAR_DIR="${RSS_HOME}/jars"
 LOG_CONF_FILE="${RSS_CONF_DIR}/log4j2.xml"
 LOG_PATH="${RSS_LOG_DIR}/shuffle_server.log"
 AUDIT_LOG_PATH="${RSS_LOG_DIR}/audit.log"
+RPC_AUDIT_LOG_PATH="${RSS_LOG_DIR}/shuffle_server_audit.log"
 
 if [ -z "${XMX_SIZE:-}" ]; then
   echo "No env XMX_SIZE."
@@ -132,7 +133,7 @@ GC_LOG_ARGS_NEW=" -XX:+IgnoreUnrecognizedVMOptions \
 ARGS=""
 
 if [ -f ${LOG_CONF_FILE} ]; then
-  ARGS="$ARGS -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH} -Daudit.log.path=${AUDIT_LOG_PATH}"
+  ARGS="$ARGS -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH} -Daudit.log.path=${AUDIT_LOG_PATH} -Drpc.audit.log.path=${RPC_AUDIT_LOG_PATH}"
 else
   echo "Exit with error: ${LOG_CONF_FILE} file doesn't exist."
   exit 1
