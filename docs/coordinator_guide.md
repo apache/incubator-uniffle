@@ -36,8 +36,8 @@ This document will introduce how to deploy Uniffle coordinators.
      HADOOP_HOME=<hadoop home>
      XMX_SIZE="16g"
    ```
-   Besides, you can add extra jvm arguments for shuffle server by specific `UNIFFLE_COORDINATOR_JAVA_OPTS` in `rss-env.sh`
-   Something like:
+   You can add extra JVM arguments for the Uniffle coordinator by specifying `UNIFFLE_COORDINATOR_JAVA_OPTS` in `rss-env.sh`.
+   Example:
    ```
    UNIFFLE_COORDINATOR_JAVA_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5006 -Drss.jetty.http.port=19998"
    ```
