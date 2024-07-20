@@ -174,7 +174,7 @@ XMX_SIZE=40g
 MAX_DIRECT_MEMORY_SIZE=360g
 ```
 
-Besides, you can add extra jvm arguments for shuffle server by specific `UNIFFLE_SHUFFLE_SERVER_JAVA_OPTS` in `rss-env.sh`
+You can add extra JVM arguments for the Uniffle server by specifying `UNIFFLE_SHUFFLE_SERVER_JAVA_OPTS` in `rss-env.sh`.
 
 For example:
 
