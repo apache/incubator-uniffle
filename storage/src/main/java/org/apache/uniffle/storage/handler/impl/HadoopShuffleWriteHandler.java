@@ -32,12 +32,10 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
-import org.apache.uniffle.common.util.ByteBufUtils;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
-public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
+public class HadoopShuffleWriteHandler extends ShuffleWriteHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(HadoopShuffleWriteHandler.class);
 
@@ -113,7 +111,6 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
     final long start = System.currentTimeMillis();
     writeLock.lock();
     try {
-      final long ss = System.currentTimeMillis();
       // Write to HDFS will be failed with lease problem, and can't write the same file again
       // change the prefix of file name if write failed before
       String dataFileName =
@@ -122,28 +119,7 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
           ShuffleStorageUtils.generateIndexFileName(fileNamePrefix + "_" + failTimes);
       try (HadoopFileWriter dataWriter = createWriter(dataFileName);
           HadoopFileWriter indexWriter = createWriter(indexFileName)) {
-        for (ShufflePartitionedBlock block : shuffleBlocks) {
-          long blockId = block.getBlockId();
-          long crc = block.getCrc();
-          long startOffset = dataWriter.nextOffset();
-          dataWriter.writeData(ByteBufUtils.readBytes(block.getData()));
-
-          FileBasedShuffleSegment segment =
-              new FileBasedShuffleSegment(
-                  blockId,
-                  startOffset,
-                  block.getLength(),
-                  block.getUncompressLength(),
-                  crc,
-                  block.getTaskAttemptId());
-          indexWriter.writeIndex(segment);
-        }
-        if (LOG.isDebugEnabled()) {
-          LOG.debug(
-              "Write handler inside cost {} ms for {}",
-              (System.currentTimeMillis() - ss),
-              fileNamePrefix);
-        }
+        writeBlocks(shuffleBlocks, dataWriter, indexWriter);
       } catch (IOException e) {
         LOG.warn(
             "Write failed with "

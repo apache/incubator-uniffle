@@ -18,7 +18,6 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.io.BufferedOutputStream;
-import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -27,7 +26,7 @@ import java.io.IOException;
 import org.apache.uniffle.storage.api.FileWriter;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
-public class LocalFileWriter implements FileWriter, Closeable {
+public class LocalFileWriter implements FileWriter {
 
   private DataOutputStream dataOutputStream;
   private FileOutputStream fileOutputStream;
@@ -54,6 +53,10 @@ public class LocalFileWriter implements FileWriter, Closeable {
     dataOutputStream.writeLong(segment.getCrc());
     dataOutputStream.writeLong(segment.getBlockId());
     dataOutputStream.writeLong(segment.getTaskAttemptId());
+  }
+
+  public void flush() throws IOException {
+    dataOutputStream.flush();
   }
 
   public long nextOffset() {

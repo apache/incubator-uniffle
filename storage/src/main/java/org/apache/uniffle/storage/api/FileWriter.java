@@ -21,9 +21,15 @@ import java.io.IOException;
 
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
-public interface FileWriter {
+public interface FileWriter extends AutoCloseable {
 
   void writeData(byte[] data) throws IOException;
 
   void writeIndex(FileBasedShuffleSegment segment) throws IOException;
+
+  void flush() throws IOException;
+
+  long nextOffset();
+
+  void close() throws IOException;
 }

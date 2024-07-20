@@ -28,12 +28,10 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.util.ByteBufUtils;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
-public class LocalFileWriteHandler implements ShuffleWriteHandler {
+public class LocalFileWriteHandler extends ShuffleWriteHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(LocalFileWriteHandler.class);
 
@@ -82,7 +80,6 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
 
   @Override
   public synchronized void write(List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
-
     // Ignore this write, if the shuffle directory is deleted after being uploaded in multi mode
     // or after its app heartbeat times out.
     File baseFolder = new File(basePath);
@@ -97,30 +94,7 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
 
     try (LocalFileWriter dataWriter = createWriter(dataFileName);
         LocalFileWriter indexWriter = createWriter(indexFileName)) {
-
-      long startTime = System.currentTimeMillis();
-      for (ShufflePartitionedBlock block : shuffleBlocks) {
-        long blockId = block.getBlockId();
-        long crc = block.getCrc();
-        long startOffset = dataWriter.nextOffset();
-        dataWriter.writeData(ByteBufUtils.readBytes(block.getData()));
-
-        FileBasedShuffleSegment segment =
-            new FileBasedShuffleSegment(
-                blockId,
-                startOffset,
-                block.getLength(),
-                block.getUncompressLength(),
-                crc,
-                block.getTaskAttemptId());
-        indexWriter.writeIndex(segment);
-      }
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(
-            "Write handler write {} blocks cost {} ms without file open close",
-            shuffleBlocks.size(),
-            (System.currentTimeMillis() - startTime));
-      }
+      writeBlocks(shuffleBlocks, dataWriter, indexWriter);
     }
     if (LOG.isDebugEnabled()) {
       LOG.debug(
