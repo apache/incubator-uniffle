@@ -31,12 +31,12 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.RssException;
@@ -381,7 +381,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           ShuffleServerMetrics.gaugeReadMemoryDataBufferSize.inc(readBufferSize);
         }
         response =
-            new GetMemoryShuffleDataResponse(req.getRequestId(), status, msg, shuffleSegments, data);
+            new GetMemoryShuffleDataResponse(
+                req.getRequestId(), status, msg, shuffleSegments, data);
         ReleaseMemoryAndRecordReadTimeListener listener =
             new ReleaseMemoryAndRecordReadTimeListener(
                 start, readBufferSize, data.size(), requestInfo, req, response, client);

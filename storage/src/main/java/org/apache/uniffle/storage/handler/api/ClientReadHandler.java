@@ -17,8 +17,8 @@
 
 package org.apache.uniffle.storage.handler.api;
 
-import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShuffleSegment;
 
 public interface ClientReadHandler {
 

@@ -29,9 +29,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.storage.HadoopTestBase;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
@@ -88,8 +88,7 @@ public class HadoopClientReadHandlerTest extends HadoopTestBase {
             hadoopConf);
     try {
       ShuffleIndexResult indexResult = indexReader.readShuffleIndex();
-      assertEquals(
-          0, indexResult.getIndexData().remaining() % ShuffleSegment.SEGMENT_SIZE);
+      assertEquals(0, indexResult.getIndexData().remaining() % ShuffleSegment.SEGMENT_SIZE);
     } catch (Exception e) {
       fail();
     }

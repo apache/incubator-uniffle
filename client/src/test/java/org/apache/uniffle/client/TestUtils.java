@@ -24,8 +24,8 @@ import java.util.Map;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
-import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShuffleSegment;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,7 +76,8 @@ public class TestUtils {
     }
   }
 
-  private static ShuffleSegment findBufferSegment(long blockId, List<ShuffleSegment> shuffleSegments) {
+  private static ShuffleSegment findBufferSegment(
+      long blockId, List<ShuffleSegment> shuffleSegments) {
     for (ShuffleSegment bs : shuffleSegments) {
       if (bs.getBlockId() == blockId) {
         return bs;

@@ -27,9 +27,9 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.exception.RssException;
 
 /**
@@ -122,7 +122,8 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
         boolean conditionOfLimitedBufferSize = bufferOffset >= readBufferSize;
 
         if (conditionOfDiscontinuousBlocks || conditionOfLimitedBufferSize) {
-          ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, shuffleSegments);
+          ShuffleDataSegment sds =
+              new ShuffleDataSegment(fileOffset, bufferOffset, shuffleSegments);
           dataFileSegments.add(sds);
           shuffleSegments = Lists.newArrayList();
           bufferOffset = 0;

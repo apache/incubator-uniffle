@@ -30,9 +30,9 @@ import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.storage.HadoopTestBase;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;

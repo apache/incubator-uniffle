@@ -35,8 +35,7 @@ public class ShuffleStorageUtilsTest {
 
   @Test
   public void mergeSegmentsTest() {
-    List<ShuffleSegment> segments =
-        Lists.newArrayList(new ShuffleSegment(1, 0, 40, 0, 0, 0));
+    List<ShuffleSegment> segments = Lists.newArrayList(new ShuffleSegment(1, 0, 40, 0, 0, 0));
     List<DataFileSegment> fileSegments = ShuffleStorageUtils.mergeSegments("path", segments, 100);
     assertEquals(1, fileSegments.size());
     for (DataFileSegment seg : fileSegments) {

@@ -70,8 +70,7 @@ public class HadoopFileReaderTest extends HadoopTestBase {
     try (HadoopFileWriter writer = new HadoopFileWriter(fs, path, conf)) {
       writer.writeData(data);
     }
-    ShuffleSegment segment =
-        new ShuffleSegment(23, offset, length, length, 0xdeadbeef, 1);
+    ShuffleSegment segment = new ShuffleSegment(23, offset, length, length, 0xdeadbeef, 1);
     try (HadoopFileReader reader = new HadoopFileReader(path, conf)) {
       byte[] actual = reader.read(segment.getOffset(), segment.getLength());
       long crc22 = ChecksumUtils.getCrc32(actual);

@@ -28,7 +28,8 @@ public class DataFileSegment extends FileSegment {
 
   private List<ShuffleSegment> shuffleSegments;
 
-  public DataFileSegment(String path, long offset, int length, List<ShuffleSegment> shuffleSegments) {
+  public DataFileSegment(
+      String path, long offset, int length, List<ShuffleSegment> shuffleSegments) {
     super(path, offset, length);
     this.shuffleSegments = shuffleSegments;
   }
