@@ -19,11 +19,11 @@ package org.apache.uniffle.storage.api;
 
 import java.io.IOException;
 
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 
 public interface FileWriter {
 
   void writeData(byte[] data) throws IOException;
 
-  void writeIndex(FileBasedShuffleSegment segment) throws IOException;
+  void writeIndex(ShuffleSegment segment) throws IOException;
 }

@@ -22,7 +22,7 @@ import java.util.List;
 
 import io.netty.buffer.Unpooled;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -30,17 +30,17 @@ import org.apache.uniffle.common.rpc.StatusCode;
 public class RssGetInMemoryShuffleDataResponse extends ClientResponse {
 
   private final ManagedBuffer data;
-  private final List<BufferSegment> bufferSegments;
+  private final List<ShuffleSegment> shuffleSegments;
 
   public RssGetInMemoryShuffleDataResponse(
-      StatusCode statusCode, ByteBuffer data, List<BufferSegment> bufferSegments) {
-    this(statusCode, new NettyManagedBuffer(Unpooled.wrappedBuffer(data)), bufferSegments);
+      StatusCode statusCode, ByteBuffer data, List<ShuffleSegment> shuffleSegments) {
+    this(statusCode, new NettyManagedBuffer(Unpooled.wrappedBuffer(data)), shuffleSegments);
   }
 
   public RssGetInMemoryShuffleDataResponse(
-      StatusCode statusCode, ManagedBuffer data, List<BufferSegment> bufferSegments) {
+      StatusCode statusCode, ManagedBuffer data, List<ShuffleSegment> shuffleSegments) {
     super(statusCode);
-    this.bufferSegments = bufferSegments;
+    this.shuffleSegments = shuffleSegments;
     this.data = data;
   }
 
@@ -48,7 +48,7 @@ public class RssGetInMemoryShuffleDataResponse extends ClientResponse {
     return data;
   }
 
-  public List<BufferSegment> getBufferSegments() {
-    return bufferSegments;
+  public List<ShuffleSegment> getBufferSegments() {
+    return shuffleSegments;
   }
 }

@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -65,10 +65,10 @@ public class TestUtils {
 
   public static void validateResult(Map<Long, byte[]> expectedData, ShuffleDataResult sdr) {
     byte[] buffer = sdr.getData();
-    List<BufferSegment> bufferSegments = sdr.getBufferSegments();
-    assertEquals(expectedData.size(), bufferSegments.size());
+    List<ShuffleSegment> shuffleSegments = sdr.getBufferSegments();
+    assertEquals(expectedData.size(), shuffleSegments.size());
     for (Map.Entry<Long, byte[]> entry : expectedData.entrySet()) {
-      BufferSegment bs = findBufferSegment(entry.getKey(), bufferSegments);
+      ShuffleSegment bs = findBufferSegment(entry.getKey(), shuffleSegments);
       assertNotNull(bs);
       byte[] data = new byte[bs.getLength()];
       System.arraycopy(buffer, bs.getOffset(), data, 0, bs.getLength());
@@ -76,8 +76,8 @@ public class TestUtils {
     }
   }
 
-  private static BufferSegment findBufferSegment(long blockId, List<BufferSegment> bufferSegments) {
-    for (BufferSegment bs : bufferSegments) {
+  private static ShuffleSegment findBufferSegment(long blockId, List<ShuffleSegment> shuffleSegments) {
+    for (ShuffleSegment bs : shuffleSegments) {
       if (bs.getBlockId() == blockId) {
         return bs;
       }

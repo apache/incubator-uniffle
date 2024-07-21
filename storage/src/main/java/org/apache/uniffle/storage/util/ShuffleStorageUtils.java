@@ -32,10 +32,9 @@ import org.apache.hadoop.util.hash.MurmurHash;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.impl.DataFileSegment;
 import org.apache.uniffle.storage.handler.impl.HadoopFileWriter;
 
@@ -56,13 +55,13 @@ public class ShuffleStorageUtils {
   }
 
   public static List<DataFileSegment> mergeSegments(
-      String path, List<FileBasedShuffleSegment> segments, int readBufferSize) {
+      String path, List<ShuffleSegment> segments, int readBufferSize) {
     List<DataFileSegment> dataFileSegments = Lists.newArrayList();
     if (segments != null && !segments.isEmpty()) {
       if (segments.size() == 1) {
-        List<BufferSegment> bufferSegments = Lists.newArrayList();
-        bufferSegments.add(
-            new BufferSegment(
+        List<ShuffleSegment> shuffleSegments = Lists.newArrayList();
+        shuffleSegments.add(
+            new ShuffleSegment(
                 segments.get(0).getBlockId(),
                 0,
                 segments.get(0).getLength(),
@@ -71,30 +70,30 @@ public class ShuffleStorageUtils {
                 segments.get(0).getTaskAttemptId()));
         dataFileSegments.add(
             new DataFileSegment(
-                path, segments.get(0).getOffset(), segments.get(0).getLength(), bufferSegments));
+                path, segments.get(0).getOffset(), segments.get(0).getLength(), shuffleSegments));
       } else {
         Collections.sort(segments);
         long start = -1;
         long latestPosition = -1;
         long skipThreshold = readBufferSize / 2;
         long lastPosition = Long.MAX_VALUE;
-        List<BufferSegment> bufferSegments = Lists.newArrayList();
-        for (FileBasedShuffleSegment segment : segments) {
+        List<ShuffleSegment> shuffleSegments = Lists.newArrayList();
+        for (ShuffleSegment segment : segments) {
           // check if there has expected skip range, eg, [20, 100], [1000, 1001] and the skip range
           // is [101, 999]
           if (start > -1 && segment.getOffset() - lastPosition > skipThreshold) {
             dataFileSegments.add(
-                new DataFileSegment(path, start, (int) (lastPosition - start), bufferSegments));
+                new DataFileSegment(path, start, (int) (lastPosition - start), shuffleSegments));
             start = -1;
           }
-          // previous FileBasedShuffleSegment are merged, start new merge process
+          // previous ShuffleSegment are merged, start new merge process
           if (start == -1) {
-            bufferSegments = Lists.newArrayList();
+            shuffleSegments = Lists.newArrayList();
             start = segment.getOffset();
           }
           latestPosition = segment.getOffset() + segment.getLength();
-          bufferSegments.add(
-              new BufferSegment(
+          shuffleSegments.add(
+              new ShuffleSegment(
                   segment.getBlockId(),
                   segment.getOffset() - start,
                   segment.getLength(),
@@ -103,14 +102,14 @@ public class ShuffleStorageUtils {
                   segment.getTaskAttemptId()));
           if (latestPosition - start >= readBufferSize) {
             dataFileSegments.add(
-                new DataFileSegment(path, start, (int) (latestPosition - start), bufferSegments));
+                new DataFileSegment(path, start, (int) (latestPosition - start), shuffleSegments));
             start = -1;
           }
           lastPosition = latestPosition;
         }
         if (start > -1) {
           dataFileSegments.add(
-              new DataFileSegment(path, start, (int) (lastPosition - start), bufferSegments));
+              new DataFileSegment(path, start, (int) (lastPosition - start), shuffleSegments));
         }
       }
     }

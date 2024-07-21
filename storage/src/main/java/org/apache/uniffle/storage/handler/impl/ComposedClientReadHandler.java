@@ -29,7 +29,7 @@ import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
@@ -143,7 +143,7 @@ public class ComposedClientReadHandler extends AbstractClientReadHandler {
   }
 
   @Override
-  public void updateConsumedBlockInfo(BufferSegment bs, boolean isSkippedMetrics) {
+  public void updateConsumedBlockInfo(ShuffleSegment bs, boolean isSkippedMetrics) {
     if (bs == null) {
       return;
     }

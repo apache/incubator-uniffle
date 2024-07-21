@@ -47,7 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
@@ -693,16 +693,16 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     ShuffleDataResult sdr = null;
     int matchNum = 0;
     sdr = handler.readShuffleData();
-    List<BufferSegment> bufferSegments = sdr.getBufferSegments();
+    List<ShuffleSegment> shuffleSegments = sdr.getBufferSegments();
     for (ShufflePartitionedBlock block : blocks) {
-      for (BufferSegment bs : bufferSegments) {
+      for (ShuffleSegment bs : shuffleSegments) {
         if (bs.getBlockId() == block.getBlockId()) {
           matchNum++;
           break;
         }
       }
     }
-    for (BufferSegment bs : bufferSegments) {
+    for (ShuffleSegment bs : shuffleSegments) {
       remainIds.remove(bs.getBlockId());
     }
     assertEquals(blocks.size(), matchNum);

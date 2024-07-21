@@ -31,7 +31,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 /**
@@ -112,8 +112,8 @@ public class HadoopShuffleReadHandler extends DataSkippableReadHandler {
         indexData = ByteBuffer.wrap(indexReader.read());
       }
       int indexDataLength = indexData.limit() - indexData.position();
-      int segmentNumber = indexDataLength / FileBasedShuffleSegment.SEGMENT_SIZE;
-      int expectedLen = segmentNumber * FileBasedShuffleSegment.SEGMENT_SIZE;
+      int segmentNumber = indexDataLength / ShuffleSegment.SEGMENT_SIZE;
+      int expectedLen = segmentNumber * ShuffleSegment.SEGMENT_SIZE;
       if (indexDataLength != expectedLen) {
         LOG.warn(
             "Maybe the index file: {} is being written due to the shuffle-buffer flushing.",

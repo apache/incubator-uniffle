@@ -40,7 +40,7 @@ import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -168,7 +168,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
         });
     ShuffleDataResult sdr = clientReadHandler.readShuffleData();
     TestUtils.validateResult(expectedData, sdr);
-    for (BufferSegment bs : sdr.getBufferSegments()) {
+    for (ShuffleSegment bs : sdr.getBufferSegments()) {
       clientReadHandler.updateConsumedBlockInfo(bs, false);
     }
     ClientReadHandlerMetric exceptMetric = mock(ClientReadHandlerMetric.class);
@@ -203,7 +203,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
           expectedData.put(block.getBlockId(), ByteBufUtils.readBytes(block.getData()));
         });
     TestUtils.validateResult(expectedData, sdr);
-    for (BufferSegment bs : sdr.getBufferSegments()) {
+    for (ShuffleSegment bs : sdr.getBufferSegments()) {
       clientReadHandler.updateConsumedBlockInfo(bs, false);
     }
     readHandlerMetric = clientReadHandler.getReadHandlerMetric();
@@ -237,7 +237,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
             ShuffleHandlerFactory.getInstance().createShuffleReadHandler(request);
     sdr = clientReadHandler.readShuffleData();
     TestUtils.validateResult(expectedData, sdr);
-    for (BufferSegment bs : sdr.getBufferSegments()) {
+    for (ShuffleSegment bs : sdr.getBufferSegments()) {
       clientReadHandler.updateConsumedBlockInfo(bs, false);
     }
     readHandlerMetric = clientReadHandler.getReadHandlerMetric();

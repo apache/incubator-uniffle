@@ -21,7 +21,12 @@ import java.util.Objects;
 
 import org.apache.uniffle.common.exception.RssException;
 
-public class BufferSegment {
+/**
+ * The metadata for a segment, it can be a memory segment or a file segment.
+ */
+public class ShuffleSegment implements java.io.Serializable, Comparable<ShuffleSegment> {
+
+  public static final int SEGMENT_SIZE = 4 * Long.BYTES + 2 * Integer.BYTES;
 
   private long blockId;
   private long offset;
@@ -30,7 +35,7 @@ public class BufferSegment {
   private long crc;
   private long taskAttemptId;
 
-  public BufferSegment(
+  public ShuffleSegment(
       long blockId, long offset, int length, int uncompressLength, long crc, long taskAttemptId) {
     this.blockId = blockId;
     this.offset = offset;
@@ -42,13 +47,13 @@ public class BufferSegment {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof BufferSegment) {
-      return blockId == ((BufferSegment) obj).getBlockId()
-          && offset == ((BufferSegment) obj).getOffset()
-          && length == ((BufferSegment) obj).getLength()
-          && uncompressLength == ((BufferSegment) obj).getUncompressLength()
-          && crc == ((BufferSegment) obj).getCrc()
-          && taskAttemptId == ((BufferSegment) obj).getTaskAttemptId();
+    if (obj instanceof ShuffleSegment) {
+      return blockId == ((ShuffleSegment) obj).getBlockId()
+          && offset == ((ShuffleSegment) obj).getOffset()
+          && length == ((ShuffleSegment) obj).getLength()
+          && uncompressLength == ((ShuffleSegment) obj).getUncompressLength()
+          && crc == ((ShuffleSegment) obj).getCrc()
+          && taskAttemptId == ((ShuffleSegment) obj).getTaskAttemptId();
     }
     return false;
   }
@@ -100,5 +105,15 @@ public class BufferSegment {
 
   public long getTaskAttemptId() {
     return taskAttemptId;
+  }
+
+  @Override
+  public int compareTo(ShuffleSegment s) {
+    if (this.offset > s.getOffset()) {
+      return 1;
+    } else if (this.offset < s.getOffset()) {
+      return -1;
+    }
+    return 0;
   }
 }

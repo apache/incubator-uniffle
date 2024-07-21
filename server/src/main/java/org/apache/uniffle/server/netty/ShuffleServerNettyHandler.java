@@ -31,7 +31,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -371,17 +371,17 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                     readBufferSize,
                     req.getExpectedTaskIdsBitmap());
         ManagedBuffer data = NettyManagedBuffer.EMPTY_BUFFER;
-        List<BufferSegment> bufferSegments = Lists.newArrayList();
+        List<ShuffleSegment> shuffleSegments = Lists.newArrayList();
         if (shuffleDataResult != null) {
           data = shuffleDataResult.getManagedBuffer();
-          bufferSegments = shuffleDataResult.getBufferSegments();
+          shuffleSegments = shuffleDataResult.getBufferSegments();
           ShuffleServerMetrics.counterTotalReadDataSize.inc(data.size());
           ShuffleServerMetrics.counterTotalReadMemoryDataSize.inc(data.size());
           ShuffleServerMetrics.gaugeReadMemoryDataThreadNum.inc();
           ShuffleServerMetrics.gaugeReadMemoryDataBufferSize.inc(readBufferSize);
         }
         response =
-            new GetMemoryShuffleDataResponse(req.getRequestId(), status, msg, bufferSegments, data);
+            new GetMemoryShuffleDataResponse(req.getRequestId(), status, msg, shuffleSegments, data);
         ReleaseMemoryAndRecordReadTimeListener listener =
             new ReleaseMemoryAndRecordReadTimeListener(
                 start, readBufferSize, data.size(), requestInfo, req, response, client);

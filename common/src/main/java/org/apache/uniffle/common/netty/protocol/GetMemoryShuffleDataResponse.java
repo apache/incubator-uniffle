@@ -22,71 +22,71 @@ import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
 
 public class GetMemoryShuffleDataResponse extends RpcResponse {
-  private List<BufferSegment> bufferSegments;
+  private List<ShuffleSegment> shuffleSegments;
 
   public GetMemoryShuffleDataResponse(
-      long requestId, StatusCode statusCode, List<BufferSegment> bufferSegments, byte[] data) {
-    this(requestId, statusCode, null, bufferSegments, data);
+      long requestId, StatusCode statusCode, List<ShuffleSegment> shuffleSegments, byte[] data) {
+    this(requestId, statusCode, null, shuffleSegments, data);
   }
 
   public GetMemoryShuffleDataResponse(
       long requestId,
       StatusCode statusCode,
       String retMessage,
-      List<BufferSegment> bufferSegments,
+      List<ShuffleSegment> shuffleSegments,
       byte[] data) {
-    this(requestId, statusCode, retMessage, bufferSegments, Unpooled.wrappedBuffer(data));
+    this(requestId, statusCode, retMessage, shuffleSegments, Unpooled.wrappedBuffer(data));
   }
 
   public GetMemoryShuffleDataResponse(
       long requestId,
       StatusCode statusCode,
       String retMessage,
-      List<BufferSegment> bufferSegments,
+      List<ShuffleSegment> shuffleSegments,
       ByteBuf data) {
-    this(requestId, statusCode, retMessage, bufferSegments, new NettyManagedBuffer(data));
+    this(requestId, statusCode, retMessage, shuffleSegments, new NettyManagedBuffer(data));
   }
 
   public GetMemoryShuffleDataResponse(
       long requestId,
       StatusCode statusCode,
       String retMessage,
-      List<BufferSegment> bufferSegments,
+      List<ShuffleSegment> shuffleSegments,
       ManagedBuffer managedBuffer) {
     super(requestId, statusCode, retMessage, managedBuffer);
-    this.bufferSegments = bufferSegments;
+    this.shuffleSegments = shuffleSegments;
   }
 
   @Override
   public int encodedLength() {
-    return super.encodedLength() + Encoders.encodeLengthOfBufferSegments(bufferSegments);
+    return super.encodedLength() + Encoders.encodeLengthOfBufferSegments(shuffleSegments);
   }
 
   @Override
   public void encode(ByteBuf buf) {
     super.encode(buf);
-    Encoders.encodeBufferSegments(bufferSegments, buf);
+    Encoders.encodeBufferSegments(shuffleSegments, buf);
   }
 
   public static GetMemoryShuffleDataResponse decode(ByteBuf byteBuf, boolean decodeBody) {
     long requestId = byteBuf.readLong();
     StatusCode statusCode = StatusCode.fromCode(byteBuf.readInt());
     String retMessage = ByteBufUtils.readLengthAndString(byteBuf);
-    List<BufferSegment> bufferSegments = Decoders.decodeBufferSegments(byteBuf);
+    List<ShuffleSegment> shuffleSegments = Decoders.decodeBufferSegments(byteBuf);
     if (decodeBody) {
       NettyManagedBuffer nettyManagedBuffer = new NettyManagedBuffer(byteBuf);
       return new GetMemoryShuffleDataResponse(
-          requestId, statusCode, retMessage, bufferSegments, nettyManagedBuffer);
+          requestId, statusCode, retMessage, shuffleSegments, nettyManagedBuffer);
     } else {
       return new GetMemoryShuffleDataResponse(
-          requestId, statusCode, retMessage, bufferSegments, NettyManagedBuffer.EMPTY_BUFFER);
+          requestId, statusCode, retMessage, shuffleSegments, NettyManagedBuffer.EMPTY_BUFFER);
     }
   }
 
@@ -95,7 +95,7 @@ public class GetMemoryShuffleDataResponse extends RpcResponse {
     return Type.GET_MEMORY_SHUFFLE_DATA_RESPONSE;
   }
 
-  public List<BufferSegment> getBufferSegments() {
-    return bufferSegments;
+  public List<ShuffleSegment> getBufferSegments() {
+    return shuffleSegments;
   }
 }

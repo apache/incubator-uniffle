@@ -27,9 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ByteBufUtils;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
@@ -105,8 +105,8 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
         long startOffset = dataWriter.nextOffset();
         dataWriter.writeData(ByteBufUtils.readBytes(block.getData()));
 
-        FileBasedShuffleSegment segment =
-            new FileBasedShuffleSegment(
+        ShuffleSegment segment =
+            new ShuffleSegment(
                 blockId,
                 startOffset,
                 block.getLength(),

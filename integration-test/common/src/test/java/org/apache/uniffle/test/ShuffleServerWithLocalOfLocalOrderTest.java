@@ -47,7 +47,7 @@ import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.util.DefaultIdHelper;
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -333,9 +333,9 @@ public class ShuffleServerWithLocalOfLocalOrderTest extends ShuffleReadWriteBase
       Map<Long, byte[]> expectedData,
       Set<Long> expectedTaskAttemptIds) {
     byte[] buffer = sdr.getData();
-    List<BufferSegment> bufferSegments = sdr.getBufferSegments();
+    List<ShuffleSegment> shuffleSegments = sdr.getBufferSegments();
     int matched = 0;
-    for (BufferSegment bs : bufferSegments) {
+    for (ShuffleSegment bs : shuffleSegments) {
       if (expectedBlockIds.contains(bs.getBlockId())) {
         byte[] data = new byte[bs.getLength()];
         System.arraycopy(buffer, bs.getOffset(), data, 0, bs.getLength());

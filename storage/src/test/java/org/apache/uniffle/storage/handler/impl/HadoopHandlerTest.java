@@ -30,11 +30,10 @@ import org.apache.hadoop.fs.Path;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.storage.HadoopTestBase;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -56,7 +55,7 @@ public class HadoopHandlerTest extends HadoopTestBase {
     List<ShufflePartitionedBlock> blocks = new LinkedList<>();
     List<Long> expectedBlockId = new LinkedList<>();
     List<byte[]> expectedData = new LinkedList<>();
-    List<FileBasedShuffleSegment> expectedIndex = new LinkedList<>();
+    List<ShuffleSegment> expectedIndex = new LinkedList<>();
 
     int pos = 0;
     for (int i = 1; i < 13; ++i) {
@@ -65,7 +64,7 @@ public class HadoopHandlerTest extends HadoopTestBase {
       expectedData.add(buf);
       blocks.add(new ShufflePartitionedBlock(i * 8, i * 8, i, i, 0, buf));
       expectedBlockId.add(Long.valueOf(i));
-      expectedIndex.add(new FileBasedShuffleSegment(i, pos, i * 8, i * 8, i, 0));
+      expectedIndex.add(new ShuffleSegment(i, pos, i * 8, i * 8, i, 0));
       pos += i * 8;
     }
     writeHandler.write(blocks);
@@ -80,7 +79,7 @@ public class HadoopHandlerTest extends HadoopTestBase {
       expectedData.add(buf);
       expectedBlockId.add(Long.valueOf(i));
       blocksAppend.add(new ShufflePartitionedBlock(i * 8, i * 8, i, i, i, buf));
-      expectedIndex.add(new FileBasedShuffleSegment(i, pos, i * 8, i * 8, i, i));
+      expectedIndex.add(new ShuffleSegment(i, pos, i * 8, i * 8, i, i));
       pos += i * 8;
     }
     writeHandler = new HadoopShuffleWriteHandler("appId", 1, 1, 1, basePath, "test", conf);
@@ -127,9 +126,9 @@ public class HadoopHandlerTest extends HadoopTestBase {
   private List<ByteBuffer> readData(HadoopClientReadHandler handler, Set<Long> blockIds)
       throws IllegalStateException {
     ShuffleDataResult sdr = handler.readShuffleData();
-    List<BufferSegment> bufferSegments = sdr.getBufferSegments();
+    List<ShuffleSegment> shuffleSegments = sdr.getBufferSegments();
     List<ByteBuffer> result = Lists.newArrayList();
-    for (BufferSegment bs : bufferSegments) {
+    for (ShuffleSegment bs : shuffleSegments) {
       byte[] data = new byte[bs.getLength()];
       System.arraycopy(sdr.getData(), bs.getOffset(), data, 0, bs.getLength());
       result.add(ByteBuffer.wrap(data));

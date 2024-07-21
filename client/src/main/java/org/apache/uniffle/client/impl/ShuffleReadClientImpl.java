@@ -35,7 +35,7 @@ import org.apache.uniffle.client.api.ShuffleReadClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.response.CompressedShuffleBlock;
 import org.apache.uniffle.client.util.DefaultIdHelper;
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -62,7 +62,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
   private Roaring64NavigableMap taskIdBitmap;
   private Roaring64NavigableMap pendingBlockIds;
   private Roaring64NavigableMap processedBlockIds = Roaring64NavigableMap.bitmapOf();
-  private Queue<BufferSegment> bufferSegmentQueue = Queues.newLinkedBlockingQueue();
+  private Queue<ShuffleSegment> shuffleSegmentQueue = Queues.newLinkedBlockingQueue();
   private AtomicLong readDataTime = new AtomicLong(0);
   private AtomicLong copyTime = new AtomicLong(0);
   private AtomicLong crcCheckTime = new AtomicLong(0);
@@ -212,19 +212,19 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
       }
 
       // if client need request new data from shuffle server
-      if (bufferSegmentQueue.isEmpty()) {
+      if (shuffleSegmentQueue.isEmpty()) {
         if (read() <= 0) {
           return null;
         }
       }
 
       // get next buffer segment
-      BufferSegment bs = null;
+      ShuffleSegment bs = null;
 
       // blocks in bufferSegmentQueue may be from different partition in range partition mode,
       // or may be from speculation task, filter them and just read the necessary block
       while (true) {
-        bs = bufferSegmentQueue.poll();
+        bs = shuffleSegmentQueue.poll();
         if (bs == null) {
           break;
         }
@@ -317,7 +317,7 @@ public class ShuffleReadClientImpl implements ShuffleReadClient {
     if (readBuffer == null || readBuffer.capacity() == 0) {
       return 0;
     }
-    bufferSegmentQueue.addAll(sdr.getBufferSegments());
+    shuffleSegmentQueue.addAll(sdr.getBufferSegments());
     return sdr.getBufferSegments().size();
   }
 

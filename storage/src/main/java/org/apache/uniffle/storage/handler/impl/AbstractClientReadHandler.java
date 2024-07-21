@@ -20,7 +20,7 @@ package org.apache.uniffle.storage.handler.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.storage.handler.ClientReadHandlerMetric;
 import org.apache.uniffle.storage.handler.api.ClientReadHandler;
@@ -42,7 +42,7 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
   public void close() {}
 
   @Override
-  public void updateConsumedBlockInfo(BufferSegment bs, boolean isSkippedMetrics) {
+  public void updateConsumedBlockInfo(ShuffleSegment bs, boolean isSkippedMetrics) {
     if (bs == null) {
       return;
     }
@@ -70,7 +70,7 @@ public abstract class AbstractClientReadHandler implements ClientReadHandler {
   }
 
   protected void updateBlockMetric(
-      ClientReadHandlerMetric metric, BufferSegment bs, boolean isSkippedMetrics) {
+      ClientReadHandlerMetric metric, ShuffleSegment bs, boolean isSkippedMetrics) {
     if (isSkippedMetrics) {
       metric.incSkippedReadBlockNum();
       metric.incSkippedReadLength(bs.getLength());

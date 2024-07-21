@@ -28,7 +28,7 @@ import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
@@ -271,12 +271,12 @@ public class NettyProtocolTest {
   @Test
   public void testGetMemoryShuffleDataResponse() {
     byte[] data = new byte[] {1, 2, 3, 4, 5};
-    List<BufferSegment> bufferSegments =
+    List<ShuffleSegment> shuffleSegments =
         Lists.newArrayList(
-            new BufferSegment(1, 0, 5, 10, 123, 1), new BufferSegment(1, 0, 5, 10, 345, 1));
+            new ShuffleSegment(1, 0, 5, 10, 123, 1), new ShuffleSegment(1, 0, 5, 10, 345, 1));
     GetMemoryShuffleDataResponse getMemoryShuffleDataResponse =
         new GetMemoryShuffleDataResponse(
-            1, StatusCode.SUCCESS, "", bufferSegments, Unpooled.wrappedBuffer(data).retain());
+            1, StatusCode.SUCCESS, "", shuffleSegments, Unpooled.wrappedBuffer(data).retain());
     int encodeLength = getMemoryShuffleDataResponse.encodedLength();
     ByteBuf byteBuf = Unpooled.buffer(encodeLength, encodeLength);
     getMemoryShuffleDataResponse.encode(byteBuf);

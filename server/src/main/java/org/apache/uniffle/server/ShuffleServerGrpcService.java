@@ -37,7 +37,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
@@ -967,10 +967,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 .getInMemoryShuffleData(
                     appId, shuffleId, partitionId, blockId, readBufferSize, expectedTaskIds);
         byte[] data = new byte[] {};
-        List<BufferSegment> bufferSegments = Lists.newArrayList();
+        List<ShuffleSegment> shuffleSegments = Lists.newArrayList();
         if (shuffleDataResult != null) {
           data = shuffleDataResult.getData();
-          bufferSegments = shuffleDataResult.getBufferSegments();
+          shuffleSegments = shuffleDataResult.getBufferSegments();
           ShuffleServerMetrics.counterTotalReadDataSize.inc(data.length);
           ShuffleServerMetrics.counterTotalReadMemoryDataSize.inc(data.length);
           ShuffleServerMetrics.gaugeReadMemoryDataThreadNum.inc();
@@ -991,7 +991,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 .setStatus(status.toProto())
                 .setRetMsg(msg)
                 .setData(UnsafeByteOperations.unsafeWrap(data))
-                .addAllShuffleDataBlockSegments(toShuffleDataBlockSegments(bufferSegments))
+                .addAllShuffleDataBlockSegments(toShuffleDataBlockSegments(shuffleSegments))
                 .build();
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
@@ -1091,10 +1091,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   }
 
   private List<ShuffleDataBlockSegment> toShuffleDataBlockSegments(
-      List<BufferSegment> bufferSegments) {
+      List<ShuffleSegment> shuffleSegments) {
     List<ShuffleDataBlockSegment> shuffleDataBlockSegments = Lists.newArrayList();
-    if (bufferSegments != null) {
-      for (BufferSegment bs : bufferSegments) {
+    if (shuffleSegments != null) {
+      for (ShuffleSegment bs : shuffleSegments) {
         shuffleDataBlockSegments.add(
             ShuffleDataBlockSegment.newBuilder()
                 .setBlockId(bs.getBlockId())

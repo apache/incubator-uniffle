@@ -29,11 +29,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.storage.HadoopTestBase;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 import static org.apache.uniffle.storage.HadoopShuffleHandlerTestBase.calcExpectedSegmentNum;
@@ -90,7 +89,7 @@ public class HadoopClientReadHandlerTest extends HadoopTestBase {
     try {
       ShuffleIndexResult indexResult = indexReader.readShuffleIndex();
       assertEquals(
-          0, indexResult.getIndexData().remaining() % FileBasedShuffleSegment.SEGMENT_SIZE);
+          0, indexResult.getIndexData().remaining() % ShuffleSegment.SEGMENT_SIZE);
     } catch (Exception e) {
       fail();
     }
@@ -114,8 +113,8 @@ public class HadoopClientReadHandlerTest extends HadoopTestBase {
       ShuffleDataResult shuffleDataResult = handler.readShuffleData();
       totalBlockNum += shuffleDataResult.getBufferSegments().size();
       checkData(shuffleDataResult, expectedData);
-      for (BufferSegment bufferSegment : shuffleDataResult.getBufferSegments()) {
-        actualBlockIds.add(bufferSegment.getBlockId());
+      for (ShuffleSegment shuffleSegment : shuffleDataResult.getBufferSegments()) {
+        actualBlockIds.add(shuffleSegment.getBlockId());
       }
     }
 

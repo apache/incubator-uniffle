@@ -26,7 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 
@@ -62,22 +62,22 @@ public class LocalOrderSegmentSplitterTest {
     assertEquals(2, dataSegments1.get(0).getBufferSegments().size());
     assertEquals(3, dataSegments1.get(1).getBufferSegments().size());
 
-    BufferSegment bufferSegment = dataSegments1.get(0).getBufferSegments().get(0);
-    assertEquals(0, bufferSegment.getOffset());
-    assertEquals(8, bufferSegment.getLength());
-    bufferSegment = dataSegments1.get(0).getBufferSegments().get(1);
-    assertEquals(8, bufferSegment.getOffset());
-    assertEquals(8, bufferSegment.getLength());
+    ShuffleSegment shuffleSegment = dataSegments1.get(0).getBufferSegments().get(0);
+    assertEquals(0, shuffleSegment.getOffset());
+    assertEquals(8, shuffleSegment.getLength());
+    shuffleSegment = dataSegments1.get(0).getBufferSegments().get(1);
+    assertEquals(8, shuffleSegment.getOffset());
+    assertEquals(8, shuffleSegment.getLength());
 
-    bufferSegment = dataSegments1.get(1).getBufferSegments().get(0);
-    assertEquals(0, bufferSegment.getOffset());
-    assertEquals(8, bufferSegment.getLength());
-    bufferSegment = dataSegments1.get(1).getBufferSegments().get(1);
-    assertEquals(8, bufferSegment.getOffset());
-    assertEquals(8, bufferSegment.getLength());
-    bufferSegment = dataSegments1.get(1).getBufferSegments().get(2);
-    assertEquals(16, bufferSegment.getOffset());
-    assertEquals(8, bufferSegment.getLength());
+    shuffleSegment = dataSegments1.get(1).getBufferSegments().get(0);
+    assertEquals(0, shuffleSegment.getOffset());
+    assertEquals(8, shuffleSegment.getLength());
+    shuffleSegment = dataSegments1.get(1).getBufferSegments().get(1);
+    assertEquals(8, shuffleSegment.getOffset());
+    assertEquals(8, shuffleSegment.getLength());
+    shuffleSegment = dataSegments1.get(1).getBufferSegments().get(2);
+    assertEquals(16, shuffleSegment.getOffset());
+    assertEquals(8, shuffleSegment.getLength());
 
     // case2
     taskIds = Roaring64NavigableMap.bitmapOf(1, 2, 4);
@@ -174,14 +174,14 @@ public class LocalOrderSegmentSplitterTest {
       assertEquals(segment1.getLength(), segment2.getLength());
       assertEquals(segment1.getOffset(), segment2.getOffset());
 
-      List<BufferSegment> bufferSegments1 = segment1.getBufferSegments();
-      List<BufferSegment> bufferSegments2 = segment2.getBufferSegments();
+      List<ShuffleSegment> shuffleSegments1 = segment1.getBufferSegments();
+      List<ShuffleSegment> shuffleSegments2 = segment2.getBufferSegments();
 
-      assertEquals(bufferSegments1.size(), bufferSegments2.size());
+      assertEquals(shuffleSegments1.size(), shuffleSegments2.size());
 
-      for (int j = 0; j < bufferSegments1.size(); j++) {
-        BufferSegment bs1 = bufferSegments1.get(j);
-        BufferSegment bs2 = bufferSegments2.get(j);
+      for (int j = 0; j < shuffleSegments1.size(); j++) {
+        ShuffleSegment bs1 = shuffleSegments1.get(j);
+        ShuffleSegment bs2 = shuffleSegments2.get(j);
         assertEquals(bs1.getLength(), bs2.getLength());
         assertEquals(bs1.getOffset(), bs2.getOffset());
         assertEquals(bs1.getBlockId(), bs2.getBlockId());
@@ -218,28 +218,28 @@ public class LocalOrderSegmentSplitterTest {
     assertEquals(32, dataSegments.get(0).getOffset());
     assertEquals(56, dataSegments.get(0).getLength());
 
-    List<BufferSegment> bufferSegments = dataSegments.get(0).getBufferSegments();
-    assertEquals(0, bufferSegments.get(0).getOffset());
-    assertEquals(16, bufferSegments.get(0).getLength());
+    List<ShuffleSegment> shuffleSegments = dataSegments.get(0).getBufferSegments();
+    assertEquals(0, shuffleSegments.get(0).getOffset());
+    assertEquals(16, shuffleSegments.get(0).getLength());
 
-    assertEquals(16, bufferSegments.get(1).getOffset());
-    assertEquals(10, bufferSegments.get(1).getLength());
+    assertEquals(16, shuffleSegments.get(1).getOffset());
+    assertEquals(10, shuffleSegments.get(1).getLength());
 
-    assertEquals(26, bufferSegments.get(2).getOffset());
-    assertEquals(16, bufferSegments.get(2).getLength());
+    assertEquals(26, shuffleSegments.get(2).getOffset());
+    assertEquals(16, shuffleSegments.get(2).getLength());
 
-    assertEquals(42, bufferSegments.get(3).getOffset());
-    assertEquals(6, bufferSegments.get(3).getLength());
+    assertEquals(42, shuffleSegments.get(3).getOffset());
+    assertEquals(6, shuffleSegments.get(3).getLength());
 
-    assertEquals(48, bufferSegments.get(4).getOffset());
-    assertEquals(8, bufferSegments.get(4).getLength());
+    assertEquals(48, shuffleSegments.get(4).getOffset());
+    assertEquals(8, shuffleSegments.get(4).getLength());
 
     assertEquals(98, dataSegments.get(1).getOffset());
     assertEquals(9, dataSegments.get(1).getLength());
-    bufferSegments = dataSegments.get(1).getBufferSegments();
-    assertEquals(1, bufferSegments.size());
-    assertEquals(0, bufferSegments.get(0).getOffset());
-    assertEquals(9, bufferSegments.get(0).getLength());
+    shuffleSegments = dataSegments.get(1).getBufferSegments();
+    assertEquals(1, shuffleSegments.size());
+    assertEquals(0, shuffleSegments.get(0).getOffset());
+    assertEquals(9, shuffleSegments.get(0).getLength());
 
     /**
      * case2: (16, 1) (16, 2) (6, 1)

@@ -61,7 +61,7 @@ import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleByAppIdResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -1145,11 +1145,11 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     return ret;
   }
 
-  protected List<BufferSegment> toBufferSegments(List<ShuffleDataBlockSegment> blockSegments) {
-    List<BufferSegment> ret = Lists.newArrayList();
+  protected List<ShuffleSegment> toBufferSegments(List<ShuffleDataBlockSegment> blockSegments) {
+    List<ShuffleSegment> ret = Lists.newArrayList();
     for (ShuffleDataBlockSegment sdbs : blockSegments) {
       ret.add(
-          new BufferSegment(
+          new ShuffleSegment(
               sdbs.getBlockId(),
               sdbs.getOffset(),
               sdbs.getLength(),

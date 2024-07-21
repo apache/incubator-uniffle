@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Lists;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
@@ -130,7 +130,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   protected void updateBufferSegmentsAndResultBlocks(
       long lastBlockId,
       long readBufferSize,
-      List<BufferSegment> bufferSegments,
+      List<ShuffleSegment> shuffleSegments,
       List<ShufflePartitionedBlock> resultBlocks,
       Roaring64NavigableMap expectedTaskIds) {
     long nextBlockId = lastBlockId;
@@ -150,7 +150,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
                 inFlushBlockMap.get(eventId),
                 readBufferSize,
                 nextBlockId,
-                bufferSegments,
+                shuffleSegments,
                 resultBlocks,
                 expectedTaskIds);
         // if last blockId is found, read from begin with next cached blocks
@@ -158,8 +158,8 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
           // reset blockId to read from begin in next cached blocks
           nextBlockId = Constants.INVALID_BLOCK_ID;
         }
-        if (!bufferSegments.isEmpty()) {
-          offset = calculateDataLength(bufferSegments);
+        if (!shuffleSegments.isEmpty()) {
+          offset = calculateDataLength(shuffleSegments);
         }
         if (offset >= readBufferSize) {
           break;
@@ -174,7 +174,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
               blocksMap,
               readBufferSize,
               nextBlockId,
-              bufferSegments,
+              shuffleSegments,
               resultBlocks,
               expectedTaskIds);
     }
@@ -185,7 +185,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
       updateBufferSegmentsAndResultBlocks(
           Constants.INVALID_BLOCK_ID,
           readBufferSize,
-          bufferSegments,
+          shuffleSegments,
           resultBlocks,
           expectedTaskIds);
     }
@@ -196,7 +196,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
       ConcurrentSkipListMap<Long, ShufflePartitionedBlock> cachedBlocks,
       long readBufferSize,
       long lastBlockId,
-      List<BufferSegment> bufferSegments,
+      List<ShuffleSegment> shuffleSegments,
       List<ShufflePartitionedBlock> readBlocks,
       Roaring64NavigableMap expectedTaskIds) {
     int currentOffset = offset;
@@ -217,8 +217,8 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
         continue;
       }
       // add bufferSegment with block
-      bufferSegments.add(
-          new BufferSegment(
+      shuffleSegments.add(
+          new ShuffleSegment(
               block.getBlockId(),
               currentOffset,
               block.getLength(),
