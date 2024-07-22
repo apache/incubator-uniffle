@@ -42,6 +42,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
+import org.apache.uniffle.common.netty.MessageEncoder;
 import org.apache.uniffle.common.netty.client.TransportClient;
 import org.apache.uniffle.common.netty.client.TransportClientFactory;
 import org.apache.uniffle.common.netty.client.TransportConf;
@@ -146,14 +147,10 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     for (Map.Entry<Integer, Map<Integer, List<ShuffleBlockInfo>>> stb :
         shuffleIdToBlocks.entrySet()) {
       int shuffleId = stb.getKey();
-      int size = 0;
       int blockNum = 0;
       List<Integer> partitionIds = new ArrayList<>();
       for (Map.Entry<Integer, List<ShuffleBlockInfo>> ptb : stb.getValue().entrySet()) {
-        for (ShuffleBlockInfo sbi : ptb.getValue()) {
-          size += sbi.getSize();
-          blockNum++;
-        }
+        blockNum += ptb.getValue().size();
         partitionIds.add(ptb.getKey());
       }
 
@@ -166,15 +163,11 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
               0L,
               stb.getValue(),
               System.currentTimeMillis());
-      // headerEncodedLength = messageEncodedLength + messageTypeEncodedLength + bodyLength +
+      // allocateSize = messageEncodedLength + messageTypeEncodedLength + bodyLength +
       // messageEncodedLength
       // {@link org.apache.uniffle.common.netty.MessageEncoder#encode}
-      int headerEncodedLength =
-          Integer.BYTES
-              + sendShuffleDataRequest.type().encodedLength()
-              + Integer.BYTES
-              + sendShuffleDataRequest.encodedLength();
-      int allocateSize = headerEncodedLength + size;
+      int allocateSize =
+          MessageEncoder.MESSAGE_HEADER_SIZE + sendShuffleDataRequest.encodedLength();
       int finalBlockNum = blockNum;
       try {
         RetryUtils.retryWithCondition(
