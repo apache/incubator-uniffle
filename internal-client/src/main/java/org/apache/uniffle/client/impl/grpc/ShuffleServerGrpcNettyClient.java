@@ -166,7 +166,15 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
               0L,
               stb.getValue(),
               System.currentTimeMillis());
-      int allocateSize = size + sendShuffleDataRequest.encodedLength();
+      // headerEncodedLength = messageEncodedLength + messageTypeEncodedLength + bodyLength +
+      // messageEncodedLength
+      // {@link org.apache.uniffle.common.netty.MessageEncoder#encode}
+      int headerEncodedLength =
+          Integer.BYTES
+              + sendShuffleDataRequest.type().encodedLength()
+              + Integer.BYTES
+              + sendShuffleDataRequest.encodedLength();
+      int allocateSize = headerEncodedLength + size;
       int finalBlockNum = blockNum;
       try {
         RetryUtils.retryWithCondition(
