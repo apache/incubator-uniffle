@@ -42,6 +42,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
+import org.apache.uniffle.common.netty.MessageEncoder;
 import org.apache.uniffle.common.netty.client.TransportClient;
 import org.apache.uniffle.common.netty.client.TransportClientFactory;
 import org.apache.uniffle.common.netty.client.TransportConf;
@@ -170,7 +171,14 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
               0L,
               stb.getValue(),
               System.currentTimeMillis());
-      int allocateSize = size + sendShuffleDataRequest.encodedLength();
+      // allocateSize = MESSAGE_HEADER_SIZE + requestMessage encodedLength + data size
+      // {@link org.apache.uniffle.common.netty.MessageEncoder#encode}
+      // We calculated the size again, even though sendShuffleDataRequest.encodedLength()
+      // already included the data size, because there is a brief moment when decoding
+      // sendShuffleDataRequest at the shuffle server, where there are two copies of data
+      // in direct memory.
+      int allocateSize =
+          MessageEncoder.MESSAGE_HEADER_SIZE + sendShuffleDataRequest.encodedLength() + size;
       int finalBlockNum = blockNum;
       try {
         RetryUtils.retryWithCondition(

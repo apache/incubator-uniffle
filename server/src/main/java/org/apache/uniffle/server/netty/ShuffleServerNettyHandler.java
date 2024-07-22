@@ -45,6 +45,7 @@ import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.ExceedHugePartitionHardLimitException;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.netty.MessageEncoder;
 import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.netty.client.TransportClient;
@@ -135,8 +136,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       PreAllocatedBufferInfo info =
           shuffleTaskManager.getAndRemovePreAllocatedBuffer(requireBufferId);
       int requireSize = info == null ? 0 : info.getRequireSize();
-      int requireBlocksSize =
-          requireSize - req.encodedLength() < 0 ? 0 : requireSize - req.encodedLength();
+      int encodedLength = req.encodedLength() + MessageEncoder.MESSAGE_HEADER_SIZE;
+      int requireBlocksSize = requireSize - encodedLength < 0 ? 0 : requireSize - encodedLength;
 
       boolean isPreAllocated = info != null;
 

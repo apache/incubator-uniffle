@@ -23,7 +23,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 
 public abstract class Message implements Encodable {
-
+  public static final byte TYPE_ENCODED_LENGTH = 1;
   private ManagedBuffer body;
 
   protected Message() {
@@ -79,7 +79,7 @@ public abstract class Message implements Encodable {
 
     @Override
     public int encodedLength() {
-      return 1;
+      return TYPE_ENCODED_LENGTH;
     }
 
     @Override
