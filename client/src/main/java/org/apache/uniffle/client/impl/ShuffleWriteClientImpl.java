@@ -915,8 +915,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @Override
-  public void sendAppHeartbeat(String appId, long timeoutMs) {
-    RssAppHeartBeatRequest request = new RssAppHeartBeatRequest(appId, timeoutMs);
+  public void sendAppHeartbeat(String appId, String user, long timeoutMs) {
+    RssAppHeartBeatRequest request = new RssAppHeartBeatRequest(appId, user, timeoutMs);
     Set<ShuffleServerInfo> allShuffleServers = getAllShuffleServers(appId);
 
     ThreadUtils.executeTasks(

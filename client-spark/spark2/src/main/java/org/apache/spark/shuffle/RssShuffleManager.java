@@ -385,7 +385,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       heartBeatScheduledExecutorService.scheduleAtFixedRate(
           () -> {
             try {
-              shuffleWriteClient.sendAppHeartbeat(appId, heartbeatTimeout);
+              shuffleWriteClient.sendAppHeartbeat(appId, user, heartbeatTimeout);
               LOG.info("Finish send heartbeat to coordinator and servers");
             } catch (Exception e) {
               LOG.warn("Fail to send heartbeat to coordinator and servers", e);

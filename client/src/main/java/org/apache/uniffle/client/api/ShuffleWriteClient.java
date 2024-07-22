@@ -51,7 +51,7 @@ public interface ShuffleWriteClient {
       List<ShuffleBlockInfo> shuffleBlockInfoList,
       Supplier<Boolean> needCancelRequest);
 
-  void sendAppHeartbeat(String appId, long timeoutMs);
+  void sendAppHeartbeat(String appId, String user, long timeoutMs);
 
   void registerApplicationInfo(String appId, long timeoutMs, String user);
 

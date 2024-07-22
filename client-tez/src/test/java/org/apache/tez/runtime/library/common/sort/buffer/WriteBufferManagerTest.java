@@ -575,7 +575,7 @@ public class WriteBufferManagerTest {
     }
 
     @Override
-    public void sendAppHeartbeat(String appId, long timeoutMs) {}
+    public void sendAppHeartbeat(String appId, String user, long timeoutMs) {}
 
     @Override
     public void registerApplicationInfo(String appId, long timeoutMs, String user) {}
