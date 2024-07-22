@@ -85,7 +85,8 @@ public class RegisterHeartBeat {
                 shuffleServer.getTags(),
                 shuffleServer.getServerStatus(),
                 shuffleServer.getStorageManager().getStorageInfo(),
-                shuffleServer.getNettyPort());
+                shuffleServer.getNettyPort(),
+                shuffleServer.getJettyPort());
           } catch (Exception e) {
             LOG.warn("Error happened when send heart beat to coordinator");
           }
@@ -106,7 +107,8 @@ public class RegisterHeartBeat {
       Set<String> tags,
       ServerStatus serverStatus,
       Map<String, StorageInfo> localStorageInfo,
-      int nettyPort) {
+      int nettyPort,
+      int jettyPort) {
     AtomicBoolean sendSuccessfully = new AtomicBoolean(false);
     // use `rss.server.heartbeat.interval` as the timeout option
     RssSendHeartBeatRequest request =
@@ -122,7 +124,8 @@ public class RegisterHeartBeat {
             tags,
             serverStatus,
             localStorageInfo,
-            nettyPort);
+            nettyPort,
+            jettyPort);
 
     ThreadUtils.executeTasks(
         heartBeatExecutorService,

@@ -28,6 +28,7 @@
       <el-table-column prop="ip" label="IP" min-width="80" sortable />
       <el-table-column prop="grpcPort" label="Port" min-width="80" />
       <el-table-column prop="nettyPort" label="NettyPort" min-width="80" />
+      <el-table-column prop="jettyPort" label="JettyPort" min-width="80" />
       <el-table-column
         prop="usedMemory"
         label="UsedMem"
@@ -65,6 +66,46 @@
         :formatter="dateFormatter"
         sortable
       />
+      <el-table-column label="Conf">
+        <template v-slot="{ row }">
+          <el-link @click="getShuffleServerConf('http://' + row.ip + ':' + row.jettyPort)" target="_blank">
+            <el-icon :style="iconStyle">
+              <Link />
+            </el-icon>
+            conf
+          </el-link>
+        </template>
+      </el-table-column>
+      <el-table-column label="Metrics">
+        <template v-slot="{ row }">
+          <el-link @click="getShuffleServerMetrics('http://' + row.ip + ':' + row.jettyPort)" target="_blank">
+            <el-icon :style="iconStyle">
+              <Link />
+            </el-icon>
+            metrics
+          </el-link>
+        </template>
+      </el-table-column>
+      <el-table-column label="PrometheusMetrics" min-width="150">
+        <template v-slot="{ row }">
+          <el-link @click="getShuffleServerPrometheusMetrics('http://' + row.ip + ':' + row.jettyPort)" target="_blank">
+            <el-icon :style="iconStyle">
+              <Link />
+            </el-icon>
+            prometheus metrics
+          </el-link>
+        </template>
+      </el-table-column>
+      <el-table-column label="Stacks">
+        <template v-slot="{ row }">
+          <el-link @click="getShuffleServerStacks('http://' + row.ip + ':' + row.jettyPort)" target="_blank">
+            <el-icon :style="iconStyle">
+              <Link />
+            </el-icon>
+            stacks
+          </el-link>
+        </template>
+      </el-table-column>
       <el-table-column prop="tags" label="Tags" min-width="140" />
       <el-table-column v-if="isShowRemove" label="Operations">
         <template v-slot:default="scope">
@@ -88,10 +129,15 @@ import {
   getShuffleDecommissioningList,
   getShuffleLostList,
   getShuffleUnhealthyList,
-  deleteConfirmedLostServer
+  deleteConfirmedLostServer,
+  getShuffleServerConf,
+  getShuffleServerMetrics,
+  getShuffleServerPrometheusMetrics,
+  getShuffleServerStacks
 } from '@/api/api'
 
 export default {
+  methods: {getShuffleServerConf, getShuffleServerMetrics, getShuffleServerPrometheusMetrics, getShuffleServerStacks},
   setup() {
     const router = useRouter()
     const currentServerStore = useCurrentServerStore()
@@ -110,7 +156,8 @@ export default {
           tags: '',
           status: '',
           registrationTime: '',
-          timestamp: ''
+          timestamp: '',
+          jettyPort: 0
         }
       ]
     })
@@ -170,7 +217,8 @@ export default {
           tags: '',
           status: '',
           registrationTime: '',
-          timestamp: ''
+          timestamp: '',
+          jettyPort: 0
         }
       ]
       if (router.currentRoute.value.name === 'activeNodeList') {
