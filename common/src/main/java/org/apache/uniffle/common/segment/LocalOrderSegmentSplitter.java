@@ -27,9 +27,9 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.exception.RssException;
 
 /**
@@ -66,7 +66,7 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
     ByteBuffer indexData = shuffleIndexResult.getIndexData();
     long dataFileLen = shuffleIndexResult.getDataFileLen();
 
-    List<BufferSegment> bufferSegments = Lists.newArrayList();
+    List<ShuffleSegment> shuffleSegments = Lists.newArrayList();
 
     List<ShuffleDataSegment> dataFileSegments = Lists.newArrayList();
     int bufferOffset = 0;
@@ -115,16 +115,17 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
 
         boolean conditionOfDiscontinuousBlocks =
             lastExpectedBlockIndex != -1
-                && bufferSegments.size() > 0
+                && shuffleSegments.size() > 0
                 && expectTaskIds.contains(taskAttemptId)
                 && index - lastExpectedBlockIndex != 1;
 
         boolean conditionOfLimitedBufferSize = bufferOffset >= readBufferSize;
 
         if (conditionOfDiscontinuousBlocks || conditionOfLimitedBufferSize) {
-          ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
+          ShuffleDataSegment sds =
+              new ShuffleDataSegment(fileOffset, bufferOffset, shuffleSegments);
           dataFileSegments.add(sds);
-          bufferSegments = Lists.newArrayList();
+          shuffleSegments = Lists.newArrayList();
           bufferOffset = 0;
           fileOffset = -1;
         }
@@ -133,8 +134,8 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
           if (fileOffset == -1) {
             fileOffset = offset;
           }
-          bufferSegments.add(
-              new BufferSegment(
+          shuffleSegments.add(
+              new ShuffleSegment(
                   blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
           bufferOffset += length;
           lastExpectedBlockIndex = index;
@@ -146,7 +147,7 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
     }
 
     if (bufferOffset > 0) {
-      ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
+      ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, shuffleSegments);
       dataFileSegments.add(sds);
     }
 

@@ -44,10 +44,10 @@ import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ChecksumUtils;
@@ -191,9 +191,9 @@ public class ShuffleServerWithLocalTest extends ShuffleReadWriteBase {
       Map<Long, byte[]> expectedData,
       long expectedTaskAttemptId) {
     byte[] buffer = sdr.getData();
-    List<BufferSegment> bufferSegments = sdr.getBufferSegments();
+    List<ShuffleSegment> shuffleSegments = sdr.getBufferSegments();
     int matched = 0;
-    for (BufferSegment bs : bufferSegments) {
+    for (ShuffleSegment bs : shuffleSegments) {
       if (expectedBlockIds.contains(bs.getBlockId())) {
         byte[] data = new byte[bs.getLength()];
         System.arraycopy(buffer, bs.getOffset(), data, 0, bs.getLength());

@@ -24,8 +24,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.netty.buffer.ByteBuf;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.NettyUtils;
@@ -84,8 +84,8 @@ public class Decoders {
     return partitionToBlockIds;
   }
 
-  public static List<BufferSegment> decodeBufferSegments(ByteBuf byteBuf) {
-    List<BufferSegment> bufferSegments = Lists.newArrayList();
+  public static List<ShuffleSegment> decodeBufferSegments(ByteBuf byteBuf) {
+    List<ShuffleSegment> shuffleSegments = Lists.newArrayList();
     int size = byteBuf.readInt();
     for (int i = 0; i < size; i++) {
       long blockId = byteBuf.readLong();
@@ -94,10 +94,10 @@ public class Decoders {
       int uncompressLength = byteBuf.readInt();
       long crc = byteBuf.readLong();
       long taskAttemptId = byteBuf.readLong();
-      BufferSegment bufferSegment =
-          new BufferSegment(blockId, offset, length, uncompressLength, crc, taskAttemptId);
-      bufferSegments.add(bufferSegment);
+      ShuffleSegment shuffleSegment =
+          new ShuffleSegment(blockId, offset, length, uncompressLength, crc, taskAttemptId);
+      shuffleSegments.add(shuffleSegment);
     }
-    return bufferSegments;
+    return shuffleSegments;
   }
 }

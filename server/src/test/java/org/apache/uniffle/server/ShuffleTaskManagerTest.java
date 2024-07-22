@@ -43,12 +43,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
@@ -1123,10 +1123,10 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
             new Configuration());
 
     ShuffleDataResult sdr = handler.readShuffleData();
-    List<BufferSegment> bufferSegments = sdr.getBufferSegments();
+    List<ShuffleSegment> shuffleSegments = sdr.getBufferSegments();
     int matchNum = 0;
     for (ShufflePartitionedBlock block : blocks) {
-      for (BufferSegment bs : bufferSegments) {
+      for (ShuffleSegment bs : shuffleSegments) {
         if (bs.getBlockId() == block.getBlockId()) {
           assertEquals(block.getLength(), bs.getLength());
           assertEquals(block.getCrc(), bs.getCrc());

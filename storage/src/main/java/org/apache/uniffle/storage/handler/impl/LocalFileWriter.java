@@ -24,8 +24,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.storage.api.FileWriter;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
 public class LocalFileWriter implements FileWriter, Closeable {
 
@@ -47,7 +47,7 @@ public class LocalFileWriter implements FileWriter, Closeable {
     }
   }
 
-  public void writeIndex(FileBasedShuffleSegment segment) throws IOException {
+  public void writeIndex(ShuffleSegment segment) throws IOException {
     dataOutputStream.writeLong(segment.getOffset());
     dataOutputStream.writeInt(segment.getLength());
     dataOutputStream.writeInt(segment.getUncompressLength());

@@ -29,7 +29,7 @@ public class ShuffleDataResultTest {
 
   @Test
   public void testEmpty() {
-    List<BufferSegment> segments = Collections.singletonList(new BufferSegment(1, 2, 3, 4, 5, 6));
+    List<ShuffleSegment> segments = Collections.singletonList(new ShuffleSegment(1, 2, 3, 4, 5, 6));
     byte[] bytes = null;
     assertTrue(new ShuffleDataResult().isEmpty());
     assertTrue(new ShuffleDataResult(new byte[1]).isEmpty());

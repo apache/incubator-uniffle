@@ -42,10 +42,10 @@ import org.apache.uniffle.client.impl.grpc.ShuffleServerGrpcNettyClient;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -355,18 +355,18 @@ public class ShuffleServerWithMemLocalHadoopTest extends ShuffleReadWriteBase {
 
   protected void validateResult(Map<Long, byte[]> expectedData, ShuffleDataResult sdr) {
     byte[] buffer = sdr.getData();
-    List<BufferSegment> bufferSegments = sdr.getBufferSegments();
-    assertEquals(expectedData.size(), bufferSegments.size());
+    List<ShuffleSegment> shuffleSegments = sdr.getBufferSegments();
+    assertEquals(expectedData.size(), shuffleSegments.size());
     for (Map.Entry<Long, byte[]> entry : expectedData.entrySet()) {
-      BufferSegment bs = findBufferSegment(entry.getKey(), bufferSegments);
+      ShuffleSegment bs = findBufferSegment(entry.getKey(), shuffleSegments);
       assertNotNull(bs);
       byte[] data = new byte[bs.getLength()];
       System.arraycopy(buffer, bs.getOffset(), data, 0, bs.getLength());
     }
   }
 
-  private BufferSegment findBufferSegment(long blockId, List<BufferSegment> bufferSegments) {
-    for (BufferSegment bs : bufferSegments) {
+  private ShuffleSegment findBufferSegment(long blockId, List<ShuffleSegment> shuffleSegments) {
+    for (ShuffleSegment bs : shuffleSegments) {
       if (bs.getBlockId() == blockId) {
         return bs;
       }

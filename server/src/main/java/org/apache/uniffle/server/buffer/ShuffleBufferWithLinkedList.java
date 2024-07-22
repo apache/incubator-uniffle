@@ -26,10 +26,10 @@ import java.util.function.Supplier;
 import com.google.common.collect.Lists;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
@@ -128,7 +128,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
   protected void updateBufferSegmentsAndResultBlocks(
       long lastBlockId,
       long readBufferSize,
-      List<BufferSegment> bufferSegments,
+      List<ShuffleSegment> shuffleSegments,
       List<ShufflePartitionedBlock> resultBlocks,
       Roaring64NavigableMap expectedTaskIds) {
     long nextBlockId = lastBlockId;
@@ -148,7 +148,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
               offset,
               inFlushBlockMap.get(eventId),
               readBufferSize,
-              bufferSegments,
+              shuffleSegments,
               resultBlocks,
               expectedTaskIds);
           hasLastBlockId = true;
@@ -159,7 +159,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
                   inFlushBlockMap.get(eventId),
                   readBufferSize,
                   nextBlockId,
-                  bufferSegments,
+                  shuffleSegments,
                   resultBlocks,
                   expectedTaskIds);
           // if last blockId is found, read from begin with next cached blocks
@@ -168,8 +168,8 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
             nextBlockId = Constants.INVALID_BLOCK_ID;
           }
         }
-        if (!bufferSegments.isEmpty()) {
-          offset = calculateDataLength(bufferSegments);
+        if (!shuffleSegments.isEmpty()) {
+          offset = calculateDataLength(shuffleSegments);
         }
         if (offset >= readBufferSize) {
           break;
@@ -180,7 +180,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
     if (blocks.size() > 0 && offset < readBufferSize) {
       if (nextBlockId == Constants.INVALID_BLOCK_ID) {
         updateSegmentsWithoutBlockId(
-            offset, blocks, readBufferSize, bufferSegments, resultBlocks, expectedTaskIds);
+            offset, blocks, readBufferSize, shuffleSegments, resultBlocks, expectedTaskIds);
         hasLastBlockId = true;
       } else {
         hasLastBlockId =
@@ -189,7 +189,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
                 blocks,
                 readBufferSize,
                 nextBlockId,
-                bufferSegments,
+                shuffleSegments,
                 resultBlocks,
                 expectedTaskIds);
       }
@@ -201,7 +201,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
       updateBufferSegmentsAndResultBlocks(
           Constants.INVALID_BLOCK_ID,
           readBufferSize,
-          bufferSegments,
+          shuffleSegments,
           resultBlocks,
           expectedTaskIds);
     }
@@ -212,7 +212,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
       List<ShufflePartitionedBlock> cachedBlocks,
       long readBufferSize,
       long lastBlockId,
-      List<BufferSegment> bufferSegments,
+      List<ShuffleSegment> shuffleSegments,
       List<ShufflePartitionedBlock> readBlocks,
       Roaring64NavigableMap expectedTaskIds) {
     int currentOffset = offset;
@@ -230,8 +230,8 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
         continue;
       }
       // add bufferSegment with block
-      bufferSegments.add(
-          new BufferSegment(
+      shuffleSegments.add(
+          new ShuffleSegment(
               block.getBlockId(),
               currentOffset,
               block.getLength(),

@@ -36,9 +36,9 @@ import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleIndexResponse;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -61,8 +61,8 @@ public class LocalFileServerReadHandlerTest {
         shuffleBlocks -> {
           int offset = 0;
           for (ShufflePartitionedBlock block : shuffleBlocks) {
-            FileBasedShuffleSegment segment =
-                new FileBasedShuffleSegment(
+            ShuffleSegment segment =
+                new ShuffleSegment(
                     block.getBlockId(),
                     offset,
                     block.getLength(),

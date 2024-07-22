@@ -25,12 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class BufferSegmentTest {
+public class ShuffleSegmentTest {
 
   @Test
   public void testEquals() {
-    BufferSegment segment1 = new BufferSegment(0, 1, 2, 3, 4, 5);
-    BufferSegment segment2 = new BufferSegment(0, 1, 2, 3, 4, 5);
+    ShuffleSegment segment1 = new ShuffleSegment(0, 1, 2, 3, 4, 5);
+    ShuffleSegment segment2 = new ShuffleSegment(0, 1, 2, 3, 4, 5);
     assertEquals(segment1, segment2);
     assertEquals(segment1.hashCode(), segment2.hashCode());
     assertNotEquals(segment1, null);
@@ -48,15 +48,15 @@ public class BufferSegmentTest {
   })
   public void testNotEquals(
       long blockId, long offset, int length, int uncompressLength, long crc, long taskAttemptId) {
-    BufferSegment segment1 = new BufferSegment(0, 1, 2, 3, 4, 5);
-    BufferSegment segment2 =
-        new BufferSegment(blockId, offset, length, uncompressLength, crc, taskAttemptId);
+    ShuffleSegment segment1 = new ShuffleSegment(0, 1, 2, 3, 4, 5);
+    ShuffleSegment segment2 =
+        new ShuffleSegment(blockId, offset, length, uncompressLength, crc, taskAttemptId);
     assertNotEquals(segment1, segment2);
   }
 
   @Test
   public void testToString() {
-    BufferSegment segment = new BufferSegment(0, 1, 2, 3, 4, 5);
+    ShuffleSegment segment = new ShuffleSegment(0, 1, 2, 3, 4, 5);
     assertEquals(
         "BufferSegment{blockId[0], taskAttemptId[5], offset[1], length[2], crc[4], uncompressLength[3]}",
         segment.toString());
@@ -64,9 +64,9 @@ public class BufferSegmentTest {
 
   @Test
   public void testGetOffset() {
-    BufferSegment segment1 = new BufferSegment(0, Integer.MAX_VALUE, 2, 3, 4, 5);
+    ShuffleSegment segment1 = new ShuffleSegment(0, Integer.MAX_VALUE, 2, 3, 4, 5);
     assertEquals(Integer.MAX_VALUE, segment1.getOffset());
-    BufferSegment segment2 = new BufferSegment(0, (long) Integer.MAX_VALUE + 1, 2, 3, 4, 5);
+    ShuffleSegment segment2 = new ShuffleSegment(0, (long) Integer.MAX_VALUE + 1, 2, 3, 4, 5);
     assertThrows(RuntimeException.class, segment2::getOffset);
   }
 }

@@ -33,14 +33,13 @@ import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.storage.HadoopShuffleHandlerTestBase;
 import org.apache.uniffle.storage.HadoopTestBase;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -81,8 +80,8 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
       ShuffleDataResult shuffleDataResult = handler.readShuffleData();
       totalBlockNum += shuffleDataResult.getBufferSegments().size();
       HadoopShuffleHandlerTestBase.checkData(shuffleDataResult, expectedData);
-      for (BufferSegment bufferSegment : shuffleDataResult.getBufferSegments()) {
-        actualBlockIds.add(bufferSegment.getBlockId());
+      for (ShuffleSegment shuffleSegment : shuffleDataResult.getBufferSegments()) {
+        actualBlockIds.add(shuffleSegment.getBlockId());
       }
     }
 
@@ -145,8 +144,8 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
       ShuffleDataResult shuffleDataResult = handler.readShuffleData();
       totalBlockNum += shuffleDataResult.getBufferSegments().size();
       HadoopShuffleHandlerTestBase.checkData(shuffleDataResult, expectedData);
-      for (BufferSegment bufferSegment : shuffleDataResult.getBufferSegments()) {
-        actualBlockIds.add(bufferSegment.getBlockId());
+      for (ShuffleSegment shuffleSegment : shuffleDataResult.getBufferSegments()) {
+        actualBlockIds.add(shuffleSegment.getBlockId());
       }
     }
 
@@ -208,8 +207,8 @@ public class HadoopShuffleReadHandlerTest extends HadoopTestBase {
             long crc = block.getCrc();
             long startOffset = indexWriter.nextOffset();
 
-            FileBasedShuffleSegment segment =
-                new FileBasedShuffleSegment(
+            ShuffleSegment segment =
+                new ShuffleSegment(
                     blockId,
                     startOffset,
                     block.getLength(),

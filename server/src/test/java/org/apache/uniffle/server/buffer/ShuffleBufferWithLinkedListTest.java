@@ -24,11 +24,11 @@ import com.google.common.collect.Lists;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
@@ -98,7 +98,7 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
     ShuffleDataResult result =
         shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 1000, expectedTasks);
     assertEquals(3, result.getBufferSegments().size());
-    for (BufferSegment segment : result.getBufferSegments()) {
+    for (ShuffleSegment segment : result.getBufferSegments()) {
       assertTrue(expectedTasks.contains(segment.getTaskAttemptId()));
     }
     assertEquals(0, result.getBufferSegments().get(0).getOffset());
@@ -140,7 +140,7 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
         shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null, ShuffleDataDistributionType.LOCAL_ORDER);
     result = shuffleBuffer.getShuffleData(Constants.INVALID_BLOCK_ID, 1000, expectedTasks);
     assertEquals(3, result.getBufferSegments().size());
-    for (BufferSegment segment : result.getBufferSegments()) {
+    for (ShuffleSegment segment : result.getBufferSegments()) {
       assertTrue(expectedTasks.contains(segment.getTaskAttemptId()));
     }
     assertEquals(0, result.getBufferSegments().get(0).getOffset());
@@ -578,15 +578,15 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
 
   private void compareBufferSegment(
       List<ShufflePartitionedBlock> blocks,
-      List<BufferSegment> bufferSegments,
+      List<ShuffleSegment> shuffleSegments,
       int startBlockIndex,
       int expectedBlockNum) {
     int segmentIndex = 0;
     int offset = 0;
-    assertEquals(expectedBlockNum, bufferSegments.size());
+    assertEquals(expectedBlockNum, shuffleSegments.size());
     for (int i = startBlockIndex; i < startBlockIndex + expectedBlockNum; i++) {
       ShufflePartitionedBlock spb = blocks.get(i);
-      BufferSegment segment = bufferSegments.get(segmentIndex);
+      ShuffleSegment segment = shuffleSegments.get(segmentIndex);
       assertEquals(spb.getBlockId(), segment.getBlockId());
       assertEquals(spb.getLength(), segment.getLength());
       assertEquals(spb.getCrc(), segment.getCrc());

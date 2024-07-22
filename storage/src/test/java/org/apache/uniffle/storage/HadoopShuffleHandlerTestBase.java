@@ -27,13 +27,12 @@ import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.impl.HadoopFileReader;
 import org.apache.uniffle.storage.handler.impl.HadoopFileWriter;
 import org.apache.uniffle.storage.handler.impl.HadoopShuffleWriteHandler;
@@ -74,12 +73,12 @@ public class HadoopShuffleHandlerTestBase {
       long taskAttemptId,
       Map<Long, byte[]> expectedData,
       Map<Integer, List<ShufflePartitionedBlock>> expectedBlocks,
-      Map<Integer, List<FileBasedShuffleSegment>> expectedIndexSegments,
+      Map<Integer, List<ShuffleSegment>> expectedIndexSegments,
       boolean doWrite)
       throws Exception {
     BlockIdLayout layout = BlockIdLayout.DEFAULT;
     List<ShufflePartitionedBlock> blocks = Lists.newArrayList();
-    List<FileBasedShuffleSegment> segments = Lists.newArrayList();
+    List<ShuffleSegment> segments = Lists.newArrayList();
     for (int i = 0; i < num; i++) {
       byte[] buf = new byte[length];
       new Random().nextBytes(buf);
@@ -92,8 +91,8 @@ public class HadoopShuffleHandlerTestBase {
     expectedBlocks.put(partitionId, blocks);
     long offset = 0;
     for (ShufflePartitionedBlock spb : blocks) {
-      FileBasedShuffleSegment segment =
-          new FileBasedShuffleSegment(
+      ShuffleSegment segment =
+          new ShuffleSegment(
               spb.getBlockId(),
               offset,
               spb.getLength(),
@@ -138,9 +137,9 @@ public class HadoopShuffleHandlerTestBase {
       ShuffleDataResult shuffleDataResult, Map<Long, byte[]> expectedData) {
 
     byte[] buffer = shuffleDataResult.getData();
-    List<BufferSegment> bufferSegments = shuffleDataResult.getBufferSegments();
+    List<ShuffleSegment> shuffleSegments = shuffleDataResult.getBufferSegments();
 
-    for (BufferSegment bs : bufferSegments) {
+    for (ShuffleSegment bs : shuffleSegments) {
       byte[] data = new byte[bs.getLength()];
       System.arraycopy(buffer, bs.getOffset(), data, 0, bs.getLength());
       assertEquals(bs.getCrc(), ChecksumUtils.getCrc32(data));

@@ -31,7 +31,7 @@ import org.apache.uniffle.common.util.ByteBufUtils;
 public class ShuffleDataResult {
 
   private final ManagedBuffer buffer;
-  private final List<BufferSegment> bufferSegments;
+  private final List<ShuffleSegment> shuffleSegments;
 
   public ShuffleDataResult() {
     this(new byte[0]);
@@ -43,26 +43,26 @@ public class ShuffleDataResult {
 
   public ShuffleDataResult(ManagedBuffer buffer) {
     this.buffer = buffer;
-    this.bufferSegments = Lists.newArrayList();
+    this.shuffleSegments = Lists.newArrayList();
   }
 
-  public ShuffleDataResult(ByteBuffer data, List<BufferSegment> bufferSegments) {
+  public ShuffleDataResult(ByteBuffer data, List<ShuffleSegment> shuffleSegments) {
     this.buffer =
         new NettyManagedBuffer(data != null ? Unpooled.wrappedBuffer(data) : Unpooled.EMPTY_BUFFER);
-    this.bufferSegments = bufferSegments;
+    this.shuffleSegments = shuffleSegments;
   }
 
-  public ShuffleDataResult(ByteBuf data, List<BufferSegment> bufferSegments) {
-    this(new NettyManagedBuffer(data), bufferSegments);
+  public ShuffleDataResult(ByteBuf data, List<ShuffleSegment> shuffleSegments) {
+    this(new NettyManagedBuffer(data), shuffleSegments);
   }
 
-  public ShuffleDataResult(byte[] data, List<BufferSegment> bufferSegments) {
-    this(data != null ? ByteBuffer.wrap(data) : null, bufferSegments);
+  public ShuffleDataResult(byte[] data, List<ShuffleSegment> shuffleSegments) {
+    this(data != null ? ByteBuffer.wrap(data) : null, shuffleSegments);
   }
 
-  public ShuffleDataResult(ManagedBuffer data, List<BufferSegment> bufferSegments) {
+  public ShuffleDataResult(ManagedBuffer data, List<ShuffleSegment> shuffleSegments) {
     this.buffer = data;
-    this.bufferSegments = bufferSegments;
+    this.shuffleSegments = shuffleSegments;
   }
 
   public byte[] getData() {
@@ -94,13 +94,13 @@ public class ShuffleDataResult {
     return buffer;
   }
 
-  public List<BufferSegment> getBufferSegments() {
-    return bufferSegments;
+  public List<ShuffleSegment> getBufferSegments() {
+    return shuffleSegments;
   }
 
   public boolean isEmpty() {
-    return bufferSegments == null
-        || bufferSegments.isEmpty()
+    return shuffleSegments == null
+        || shuffleSegments.isEmpty()
         || buffer == null
         || buffer.size() == 0;
   }

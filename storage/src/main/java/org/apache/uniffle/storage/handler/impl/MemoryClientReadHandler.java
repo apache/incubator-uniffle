@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleServerClient;
 import org.apache.uniffle.client.request.RssGetInMemoryShuffleDataRequest;
 import org.apache.uniffle.client.response.RssGetInMemoryShuffleDataResponse;
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.util.Constants;
 
@@ -100,8 +100,8 @@ public class MemoryClientReadHandler extends AbstractClientReadHandler {
 
     // update lastBlockId for next rpc call
     if (!result.isEmpty()) {
-      List<BufferSegment> bufferSegments = result.getBufferSegments();
-      lastBlockId = bufferSegments.get(bufferSegments.size() - 1).getBlockId();
+      List<ShuffleSegment> shuffleSegments = result.getBufferSegments();
+      lastBlockId = shuffleSegments.get(shuffleSegments.size() - 1).getBlockId();
     }
 
     return result;

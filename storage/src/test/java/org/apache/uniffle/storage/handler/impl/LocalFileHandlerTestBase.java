@@ -27,16 +27,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.segment.FixedSizeSegmentSplitter;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.ChecksumUtils;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 
@@ -80,9 +79,9 @@ public class LocalFileHandlerTestBase {
     Set<Long> actualBlockIds = Sets.newHashSet();
     for (ShuffleDataResult sdr : shuffleDataResults) {
       byte[] buffer = sdr.getData();
-      List<BufferSegment> bufferSegments = sdr.getBufferSegments();
+      List<ShuffleSegment> shuffleSegments = sdr.getBufferSegments();
 
-      for (BufferSegment bs : bufferSegments) {
+      for (ShuffleSegment bs : shuffleSegments) {
         byte[] data = new byte[bs.getLength()];
         System.arraycopy(buffer, bs.getOffset(), data, 0, bs.getLength());
         assertEquals(bs.getCrc(), ChecksumUtils.getCrc32(data));
@@ -129,9 +128,9 @@ public class LocalFileHandlerTestBase {
   public static void checkData(
       ShuffleDataResult shuffleDataResult, Map<Long, byte[]> expectedData) {
     byte[] buffer = shuffleDataResult.getData();
-    List<BufferSegment> bufferSegments = shuffleDataResult.getBufferSegments();
+    List<ShuffleSegment> shuffleSegments = shuffleDataResult.getBufferSegments();
 
-    for (BufferSegment bs : bufferSegments) {
+    for (ShuffleSegment bs : shuffleSegments) {
       byte[] data = new byte[bs.getLength()];
       System.arraycopy(buffer, bs.getOffset(), data, 0, bs.getLength());
       assertEquals(bs.getCrc(), ChecksumUtils.getCrc32(data));
@@ -139,7 +138,7 @@ public class LocalFileHandlerTestBase {
     }
   }
 
-  public static void writeIndex(ByteBuffer byteBuffer, FileBasedShuffleSegment segment) {
+  public static void writeIndex(ByteBuffer byteBuffer, ShuffleSegment segment) {
     byteBuffer.putLong(segment.getOffset());
     byteBuffer.putInt(segment.getLength());
     byteBuffer.putInt(segment.getUncompressLength());

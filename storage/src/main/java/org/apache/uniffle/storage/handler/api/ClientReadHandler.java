@@ -17,8 +17,8 @@
 
 package org.apache.uniffle.storage.handler.api;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShuffleSegment;
 
 public interface ClientReadHandler {
 
@@ -30,7 +30,7 @@ public interface ClientReadHandler {
   // but does not know the actually consumed blocks,
   // so the consumer should let the handler update statistics.
   // Each type of handler can design their rules.
-  void updateConsumedBlockInfo(BufferSegment bs, boolean isSkippedMetrics);
+  void updateConsumedBlockInfo(ShuffleSegment bs, boolean isSkippedMetrics);
 
   // Display the statistics of consumed blocks
   void logConsumedBlockInfo();

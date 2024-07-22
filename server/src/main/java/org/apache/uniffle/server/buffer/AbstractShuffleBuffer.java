@@ -27,10 +27,10 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
@@ -79,11 +79,11 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
   public synchronized ShuffleDataResult getShuffleData(
       long lastBlockId, int readBufferSize, Roaring64NavigableMap expectedTaskIds) {
     try {
-      List<BufferSegment> bufferSegments = Lists.newArrayList();
+      List<ShuffleSegment> shuffleSegments = Lists.newArrayList();
       List<ShufflePartitionedBlock> readBlocks = Lists.newArrayList();
       updateBufferSegmentsAndResultBlocks(
-          lastBlockId, readBufferSize, bufferSegments, readBlocks, expectedTaskIds);
-      if (!bufferSegments.isEmpty()) {
+          lastBlockId, readBufferSize, shuffleSegments, readBlocks, expectedTaskIds);
+      if (!shuffleSegments.isEmpty()) {
         CompositeByteBuf byteBuf =
             new CompositeByteBuf(
                 NettyUtils.getSharedUnpooledByteBufAllocator(true),
@@ -91,7 +91,7 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
                 Constants.COMPOSITE_BYTE_BUF_MAX_COMPONENTS);
         // copy result data
         updateShuffleData(readBlocks, byteBuf);
-        return new ShuffleDataResult(byteBuf, bufferSegments);
+        return new ShuffleDataResult(byteBuf, shuffleSegments);
       }
     } catch (Exception e) {
       LOG.error("Exception happened when getShuffleData in buffer", e);
@@ -105,13 +105,13 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
   protected abstract void updateBufferSegmentsAndResultBlocks(
       long lastBlockId,
       long readBufferSize,
-      List<BufferSegment> bufferSegments,
+      List<ShuffleSegment> shuffleSegments,
       List<ShufflePartitionedBlock> resultBlocks,
       Roaring64NavigableMap expectedTaskIds);
 
-  protected int calculateDataLength(List<BufferSegment> bufferSegments) {
-    BufferSegment bufferSegment = bufferSegments.get(bufferSegments.size() - 1);
-    return bufferSegment.getOffset() + bufferSegment.getLength();
+  protected int calculateDataLength(List<ShuffleSegment> shuffleSegments) {
+    ShuffleSegment shuffleSegment = shuffleSegments.get(shuffleSegments.size() - 1);
+    return shuffleSegment.getOffset() + shuffleSegment.getLength();
   }
 
   private void updateShuffleData(List<ShufflePartitionedBlock> readBlocks, CompositeByteBuf data) {
@@ -151,7 +151,7 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
       int offset,
       Collection<ShufflePartitionedBlock> cachedBlocks,
       long readBufferSize,
-      List<BufferSegment> bufferSegments,
+      List<ShuffleSegment> shuffleSegments,
       List<ShufflePartitionedBlock> readBlocks,
       Roaring64NavigableMap expectedTaskIds) {
     int currentOffset = offset;
@@ -161,8 +161,8 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
         continue;
       }
       // add bufferSegment with block
-      bufferSegments.add(
-          new BufferSegment(
+      shuffleSegments.add(
+          new ShuffleSegment(
               block.getBlockId(),
               currentOffset,
               block.getLength(),

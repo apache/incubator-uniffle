@@ -23,8 +23,8 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataResult;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.RssUtils;
@@ -87,7 +87,7 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
   }
 
   @Override
-  public void updateConsumedBlockInfo(BufferSegment bs, boolean isSkippedMetrics) {
+  public void updateConsumedBlockInfo(ShuffleSegment bs, boolean isSkippedMetrics) {
     super.updateConsumedBlockInfo(bs, isSkippedMetrics);
     handlers
         .get(Math.min(readHandlerIndex, handlers.size() - 1))

@@ -25,11 +25,11 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.buffer.FileSegmentManagedBuffer;
 import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
@@ -140,8 +140,8 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
   public ShuffleIndexResult getShuffleIndex() {
     File indexFile = new File(indexFileName);
     long indexFileSize = indexFile.length();
-    int indexNum = (int) (indexFileSize / FileBasedShuffleSegment.SEGMENT_SIZE);
-    int len = indexNum * FileBasedShuffleSegment.SEGMENT_SIZE;
+    int indexNum = (int) (indexFileSize / ShuffleSegment.SEGMENT_SIZE);
+    int len = indexNum * ShuffleSegment.SEGMENT_SIZE;
     if (indexFileSize != len) {
       LOG.warn(
           "Maybe the index file: {} is being written due to the shuffle-buffer flushing.",

@@ -25,9 +25,9 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.exception.RssException;
 
 public class FixedSizeSegmentSplitter implements SegmentSplitter {
@@ -52,7 +52,7 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
 
   private static List<ShuffleDataSegment> transIndexDataToSegments(
       ByteBuffer indexData, int readBufferSize, long dataFileLen) {
-    List<BufferSegment> bufferSegments = Lists.newArrayList();
+    List<ShuffleSegment> shuffleSegments = Lists.newArrayList();
     List<ShuffleDataSegment> dataFileSegments = Lists.newArrayList();
     int bufferOffset = 0;
     long fileOffset = -1;
@@ -91,14 +91,16 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
           break;
         }
 
-        bufferSegments.add(
-            new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
+        shuffleSegments.add(
+            new ShuffleSegment(
+                blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
         bufferOffset += length;
 
         if (bufferOffset >= readBufferSize) {
-          ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
+          ShuffleDataSegment sds =
+              new ShuffleDataSegment(fileOffset, bufferOffset, shuffleSegments);
           dataFileSegments.add(sds);
-          bufferSegments = Lists.newArrayList();
+          shuffleSegments = Lists.newArrayList();
           bufferOffset = 0;
           fileOffset = -1;
         }
@@ -108,7 +110,7 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
     }
 
     if (bufferOffset > 0) {
-      ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
+      ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, shuffleSegments);
       dataFileSegments.add(sds);
     }
 

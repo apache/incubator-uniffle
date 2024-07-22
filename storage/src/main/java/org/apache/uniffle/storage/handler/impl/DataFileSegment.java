@@ -22,24 +22,25 @@ import java.util.Set;
 
 import com.google.common.collect.Sets;
 
-import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ShuffleSegment;
 
 public class DataFileSegment extends FileSegment {
 
-  private List<BufferSegment> bufferSegments;
+  private List<ShuffleSegment> shuffleSegments;
 
-  public DataFileSegment(String path, long offset, int length, List<BufferSegment> bufferSegments) {
+  public DataFileSegment(
+      String path, long offset, int length, List<ShuffleSegment> shuffleSegments) {
     super(path, offset, length);
-    this.bufferSegments = bufferSegments;
+    this.shuffleSegments = shuffleSegments;
   }
 
-  public List<BufferSegment> getBufferSegments() {
-    return bufferSegments;
+  public List<ShuffleSegment> getBufferSegments() {
+    return shuffleSegments;
   }
 
   public Set<Long> getBlockIds() {
     Set<Long> blockIds = Sets.newHashSet();
-    for (BufferSegment bs : bufferSegments) {
+    for (ShuffleSegment bs : shuffleSegments) {
       blockIds.add(bs.getBlockId());
     }
     return blockIds;

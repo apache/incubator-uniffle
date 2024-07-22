@@ -21,9 +21,9 @@ import java.util.List;
 
 import io.netty.buffer.ByteBuf;
 
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.ByteBufUtils;
 
@@ -80,19 +80,19 @@ public class Encoders {
     }
   }
 
-  public static void encodeBufferSegments(List<BufferSegment> bufferSegments, ByteBuf byteBuf) {
-    byteBuf.writeInt(bufferSegments.size());
-    for (BufferSegment bufferSegment : bufferSegments) {
-      byteBuf.writeLong(bufferSegment.getBlockId());
-      byteBuf.writeInt(bufferSegment.getOffset());
-      byteBuf.writeInt(bufferSegment.getLength());
-      byteBuf.writeInt(bufferSegment.getUncompressLength());
-      byteBuf.writeLong(bufferSegment.getCrc());
-      byteBuf.writeLong(bufferSegment.getTaskAttemptId());
+  public static void encodeBufferSegments(List<ShuffleSegment> shuffleSegments, ByteBuf byteBuf) {
+    byteBuf.writeInt(shuffleSegments.size());
+    for (ShuffleSegment shuffleSegment : shuffleSegments) {
+      byteBuf.writeLong(shuffleSegment.getBlockId());
+      byteBuf.writeInt(shuffleSegment.getOffset());
+      byteBuf.writeInt(shuffleSegment.getLength());
+      byteBuf.writeInt(shuffleSegment.getUncompressLength());
+      byteBuf.writeLong(shuffleSegment.getCrc());
+      byteBuf.writeLong(shuffleSegment.getTaskAttemptId());
     }
   }
 
-  public static int encodeLengthOfBufferSegments(List<BufferSegment> bufferSegments) {
-    return Integer.BYTES + bufferSegments.size() * (3 * Long.BYTES + 3 * Integer.BYTES);
+  public static int encodeLengthOfBufferSegments(List<ShuffleSegment> shuffleSegments) {
+    return Integer.BYTES + shuffleSegments.size() * (3 * Long.BYTES + 3 * Integer.BYTES);
   }
 }

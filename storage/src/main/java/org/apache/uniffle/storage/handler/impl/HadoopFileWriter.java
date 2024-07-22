@@ -30,8 +30,8 @@ import org.apache.hadoop.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ShuffleSegment;
 import org.apache.uniffle.storage.api.FileWriter;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
 public class HadoopFileWriter implements FileWriter, Closeable {
 
@@ -94,7 +94,7 @@ public class HadoopFileWriter implements FileWriter, Closeable {
     nextOffset = fsDataOutputStream.getPos();
   }
 
-  public void writeIndex(FileBasedShuffleSegment segment) throws IOException {
+  public void writeIndex(ShuffleSegment segment) throws IOException {
     fsDataOutputStream.writeLong(segment.getOffset());
     fsDataOutputStream.writeInt(segment.getLength());
     fsDataOutputStream.writeInt(segment.getUncompressLength());
