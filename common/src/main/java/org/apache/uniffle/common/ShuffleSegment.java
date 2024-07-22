@@ -21,9 +21,6 @@ import java.util.Objects;
 
 import org.apache.uniffle.common.exception.RssException;
 
-/**
- * The metadata for a segment, it can be a memory segment or a file segment.
- */
 public class ShuffleSegment implements java.io.Serializable, Comparable<ShuffleSegment> {
 
   public static final int SEGMENT_SIZE = 4 * Long.BYTES + 2 * Integer.BYTES;
