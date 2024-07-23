@@ -302,14 +302,18 @@ public class ShuffleServer {
     shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, this, storageManager);
     shuffleBufferManager =
         new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager, nettyServerEnabled);
-    shuffleTaskManager =
-        new ShuffleTaskManager(
-            shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
-    shuffleTaskManager.start();
     remoteMergeEnable = shuffleServerConf.get(ShuffleServerConf.SERVER_MERGE_ENABLE);
     if (remoteMergeEnable) {
-      shuffleMergeManager = new ShuffleMergeManager(shuffleServerConf, shuffleTaskManager);
+      shuffleMergeManager = new ShuffleMergeManager(shuffleServerConf, this);
     }
+    shuffleTaskManager =
+        new ShuffleTaskManager(
+            shuffleServerConf,
+            shuffleFlushManager,
+            shuffleBufferManager,
+            storageManager,
+            shuffleMergeManager);
+    shuffleTaskManager.start();
 
     setServer();
   }

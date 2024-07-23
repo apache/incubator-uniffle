@@ -19,7 +19,6 @@ package org.apache.uniffle.server.merge;
 
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -29,7 +28,7 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.JavaUtils;
-import org.apache.uniffle.server.ShuffleTaskManager;
+import org.apache.uniffle.server.ShuffleServer;
 
 public class ShuffleEntity<K, V> {
 
@@ -40,8 +39,7 @@ public class ShuffleEntity<K, V> {
   final Class<V> vClass;
   final Comparator<K> comparator;
   final MergeEventHandler eventHandler;
-  final ShuffleTaskManager taskManager;
-  final List<String> localDirs;
+  final ShuffleServer shuffleServer;
   // partition --> PartitionEntity
   private final Map<Integer, PartitionEntity<K, V>> entities = JavaUtils.newConcurrentMap();
   final int mergedBlockSize;
@@ -50,8 +48,7 @@ public class ShuffleEntity<K, V> {
   public ShuffleEntity(
       RssConf rssConf,
       MergeEventHandler eventHandler,
-      ShuffleTaskManager taskManager,
-      List<String> localDirs,
+      ShuffleServer shuffleServer,
       String appId,
       int shuffleId,
       Class<K> kClass,
@@ -61,8 +58,7 @@ public class ShuffleEntity<K, V> {
       ClassLoader classLoader) {
     this.serverConf = rssConf;
     this.eventHandler = eventHandler;
-    this.taskManager = taskManager;
-    this.localDirs = localDirs;
+    this.shuffleServer = shuffleServer;
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.kClass = kClass;

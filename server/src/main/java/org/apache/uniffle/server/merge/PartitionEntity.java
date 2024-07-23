@@ -257,11 +257,18 @@ public class PartitionEntity<K, V> {
     ShufflePartitionedData spd =
         new ShufflePartitionedData(partitionId, new ShufflePartitionedBlock[] {spb});
     while (true) {
-      StatusCode ret = shuffle.taskManager.cacheShuffleData(appId, shuffle.shuffleId, false, spd);
+      StatusCode ret =
+          shuffle
+              .shuffleServer
+              .getShuffleTaskManager()
+              .cacheShuffleData(appId, shuffle.shuffleId, false, spd);
       if (ret == StatusCode.SUCCESS) {
         mergedBlockMap.put(blockId, spb);
-        shuffle.taskManager.updateCachedBlockIds(
-            appId, shuffle.shuffleId, spd.getPartitionId(), spd.getBlockList());
+        shuffle
+            .shuffleServer
+            .getShuffleTaskManager()
+            .updateCachedBlockIds(
+                appId, shuffle.shuffleId, spd.getPartitionId(), spd.getBlockList());
         sleepTime = initSleepTime;
         break;
       } else if (ret == StatusCode.NO_BUFFER) {
@@ -311,7 +318,7 @@ public class PartitionEntity<K, V> {
     return new ShuffleDataResult(managedBuffer);
   }
 
-  public NettyManagedBuffer getMergedBlockBufferInMemory(long blockId) {
+  private NettyManagedBuffer getMergedBlockBufferInMemory(long blockId) {
     try {
       ShufflePartitionedBlock block = this.mergedBlockMap.get(blockId);
       // We must make sure refCnt > 0, it means the ByteBuf is not released by flush cleanup
@@ -328,7 +335,7 @@ public class PartitionEntity<K, V> {
     }
   }
 
-  public synchronized ManagedBuffer getMergedBlockBufferInFile(RssConf rssConf, long blockId) {
+  private synchronized ManagedBuffer getMergedBlockBufferInFile(RssConf rssConf, long blockId) {
     String appId = shuffle.appId + MERGE_APP_SUFFIX;
     if (!shuffleMeta.getSegments().containsKey(blockId)) {
       reloadShuffleMeta(rssConf, appId);
@@ -342,7 +349,7 @@ public class PartitionEntity<K, V> {
   }
 
   // The index file is constantly growing and needs to be reloaded when necessary.
-  public synchronized void reloadShuffleMeta(RssConf rssConf, String appId) {
+  private synchronized void reloadShuffleMeta(RssConf rssConf, String appId) {
     ShuffleIndexResult indexResult = loadShuffleIndexResult(rssConf, appId);
     shuffleMeta.setDataFileName(indexResult.getDataFileName());
     ByteBuffer indexData = indexResult.getIndexData();
@@ -371,7 +378,7 @@ public class PartitionEntity<K, V> {
     request.setRssBaseConf((RssBaseConf) rssConf);
     Storage storage =
         shuffle
-            .taskManager
+            .shuffleServer
             .getStorageManager()
             .selectStorage(
                 new ShuffleDataReadEvent(appId, shuffle.shuffleId, partitionId, partitionId));
@@ -393,7 +400,7 @@ public class PartitionEntity<K, V> {
     request.setRssBaseConf((RssBaseConf) rssConf);
     Storage storage =
         shuffle
-            .taskManager
+            .shuffleServer
             .getStorageManager()
             .selectStorage(
                 new ShuffleDataReadEvent(appId, shuffle.shuffleId, partitionId, partitionId));
@@ -410,6 +417,7 @@ public class PartitionEntity<K, V> {
       }
       cachedblockMap.clear();
       mergedBlockMap.clear();
+      shuffleMeta.clear();
     } catch (Exception e) {
       LOG.warn("Partition {} clean up failed, caused by {}", this, e);
     }
@@ -464,6 +472,10 @@ public class PartitionEntity<K, V> {
 
     public Map<Long, Segment> getSegments() {
       return segments;
+    }
+
+    public void clear() {
+      this.segments.clear();
     }
   }
 }

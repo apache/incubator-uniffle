@@ -142,6 +142,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String responseMessage = "OK";
     try {
       shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId, shuffleId);
+      if (shuffleServer.isRemoteMergeEnable()) {
+        shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId + MERGE_APP_SUFFIX);
+      }
     } catch (Exception e) {
       result = StatusCode.INTERNAL_ERROR;
     }

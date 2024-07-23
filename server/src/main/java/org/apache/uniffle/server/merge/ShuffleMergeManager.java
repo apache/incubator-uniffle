@@ -44,10 +44,9 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.merger.Segment;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.server.ShuffleTaskManager;
 
-import static org.apache.uniffle.common.util.RssUtils.getConfiguredLocalDirs;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_CLASS_LOADER_JARS_PATH;
 
 public class ShuffleMergeManager {
@@ -56,11 +55,10 @@ public class ShuffleMergeManager {
   public static final String MERGE_APP_SUFFIX = "@RemoteMerge";
 
   private ShuffleServerConf serverConf;
-  private ShuffleTaskManager taskManager;
+  private final ShuffleServer shuffleServer;
   // appId -> shuffleid -> ShuffleEntity
   private final Map<String, Map<Integer, ShuffleEntity>> entities = JavaUtils.newConcurrentMap();
   private final MergeEventHandler eventHandler;
-  private final List<String> localDirs;
   private final Map<String, ClassLoader> cachedClassLoader = new HashMap<>();
 
   // If comparator is not set, will use hashCode to compare. It is used for shuffle that does not
@@ -76,12 +74,11 @@ public class ShuffleMergeManager {
         }
       };
 
-  public ShuffleMergeManager(ShuffleServerConf serverConf, ShuffleTaskManager taskManager)
+  public ShuffleMergeManager(ShuffleServerConf serverConf, ShuffleServer shuffleServer)
       throws Exception {
     this.serverConf = serverConf;
-    this.taskManager = taskManager;
+    this.shuffleServer = shuffleServer;
     this.eventHandler = new DefaultMergeEventHandler(this.serverConf, this::processEvent);
-    this.localDirs = getConfiguredLocalDirs(this.serverConf);
     initCacheClassLoader();
   }
 
@@ -178,8 +175,7 @@ public class ShuffleMergeManager {
               new ShuffleEntity(
                   serverConf,
                   eventHandler,
-                  taskManager,
-                  localDirs,
+                  shuffleServer,
                   appId,
                   shuffleId,
                   kClass,
@@ -193,13 +189,29 @@ public class ShuffleMergeManager {
         | NoSuchMethodException
         | InvocationTargetException e) {
       LOG.info("Cant register shuffle, caused by ", e);
-      unRegisterShuffle(appId, shuffleId);
+      removeBuffer(appId, shuffleId);
       return StatusCode.INTERNAL_ERROR;
     }
     return StatusCode.SUCCESS;
   }
 
-  public void unRegisterShuffle(String appId, int shuffleId) {
+  public void removeBuffer(String appId) {
+    if (this.entities.containsKey(appId)) {
+      for (Integer shuffleId : this.entities.get(appId).keySet()) {
+        removeBuffer(appId, shuffleId);
+      }
+    }
+  }
+
+  public void removeBuffer(String appId, List<Integer> shuffleIds) {
+    if (this.entities.containsKey(appId)) {
+      for (Integer shuffleId : shuffleIds) {
+        removeBuffer(appId, shuffleId);
+      }
+    }
+  }
+
+  public void removeBuffer(String appId, int shuffleId) {
     if (this.entities.containsKey(appId)) {
       if (this.entities.get(appId).containsKey(shuffleId)) {
         this.entities.get(appId).get(shuffleId).cleanup();
@@ -276,6 +288,6 @@ public class ShuffleMergeManager {
   }
 
   public void refreshAppId(String appId) {
-    taskManager.refreshAppId(appId + MERGE_APP_SUFFIX);
+    shuffleServer.getShuffleTaskManager().refreshAppId(appId + MERGE_APP_SUFFIX);
   }
 }
