@@ -365,6 +365,18 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       TransportClient client, GetMemoryShuffleDataRequest req) {
     try (ServerRPCAuditContext auditContext = createAuditContext("getMemoryShuffleData")) {
       String appId = req.getAppId();
+      int shuffleId = req.getShuffleId();
+      int partitionId = req.getPartitionId();
+      long blockId = req.getLastBlockId();
+      int readBufferSize = req.getReadBufferSize();
+      auditContext.setAppId(appId).setShuffleId(shuffleId);
+      auditContext.setArgs(
+          "partitionId="
+              + partitionId
+              + ", blockId="
+              + blockId
+              + ", readBufferSize="
+              + readBufferSize);
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
         auditContext.setStatusCode(status);
@@ -378,18 +390,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         client.getChannel().writeAndFlush(response);
         return;
       }
-      int shuffleId = req.getShuffleId();
-      int partitionId = req.getPartitionId();
-      long blockId = req.getLastBlockId();
-      int readBufferSize = req.getReadBufferSize();
-      auditContext.setAppId(appId).setShuffleId(shuffleId);
-      auditContext.setArgs(
-          "partitionId="
-              + partitionId
-              + ", blockId="
-              + blockId
-              + ", readBufferSize="
-              + readBufferSize);
+
       long timestamp = req.getTimestamp();
       if (timestamp > 0) {
         long transportTime = System.currentTimeMillis() - timestamp;
@@ -471,21 +472,10 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       TransportClient client, GetLocalShuffleIndexRequest req) {
     try (ServerRPCAuditContext auditContext = createAuditContext("getLocalShuffleIndex")) {
       String appId = req.getAppId();
-      StatusCode status = verifyRequest(appId);
-      if (status != StatusCode.SUCCESS) {
-        auditContext.setStatusCode(status);
-        GetLocalShuffleIndexResponse response =
-            new GetLocalShuffleIndexResponse(
-                req.getRequestId(), status, status.toString(), Unpooled.EMPTY_BUFFER, 0L);
-        client.getChannel().writeAndFlush(response);
-        return;
-      }
       int shuffleId = req.getShuffleId();
       int partitionId = req.getPartitionId();
       int partitionNumPerRange = req.getPartitionNumPerRange();
       int partitionNum = req.getPartitionNum();
-      String msg = "OK";
-      GetLocalShuffleIndexResponse response;
       String requestInfo =
           "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId[" + partitionId + "]";
       auditContext.setAppId(appId);
@@ -497,6 +487,18 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               + partitionNumPerRange
               + ", partitionNum="
               + partitionNum);
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        GetLocalShuffleIndexResponse response =
+            new GetLocalShuffleIndexResponse(
+                req.getRequestId(), status, status.toString(), Unpooled.EMPTY_BUFFER, 0L);
+        client.getChannel().writeAndFlush(response);
+        return;
+      }
+
+      String msg = "OK";
+      GetLocalShuffleIndexResponse response;
       int[] range =
           ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
       Storage storage =
@@ -578,18 +580,6 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     try (ServerRPCAuditContext auditContext = createAuditContext("getLocalShuffleData")) {
       GetLocalShuffleDataResponse response;
       String appId = req.getAppId();
-      StatusCode status = verifyRequest(appId);
-      if (status != StatusCode.SUCCESS) {
-        auditContext.setStatusCode(status);
-        response =
-            new GetLocalShuffleDataResponse(
-                req.getRequestId(),
-                status,
-                status.toString(),
-                new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
-        client.getChannel().writeAndFlush(response);
-        return;
-      }
       int shuffleId = req.getShuffleId();
       int partitionId = req.getPartitionId();
       int partitionNumPerRange = req.getPartitionNumPerRange();
@@ -609,6 +599,18 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               + offset
               + ", length="
               + length);
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        response =
+            new GetLocalShuffleDataResponse(
+                req.getRequestId(),
+                status,
+                status.toString(),
+                new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
+        client.getChannel().writeAndFlush(response);
+        return;
+      }
       long timestamp = req.getTimestamp();
       if (timestamp > 0) {
         long transportTime = System.currentTimeMillis() - timestamp;
