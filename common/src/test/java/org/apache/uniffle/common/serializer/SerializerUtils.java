@@ -17,11 +17,21 @@
 
 package org.apache.uniffle.common.serializer;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Comparator;
 
 import com.google.common.base.Objects;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
+
+import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.merger.Segment;
+import org.apache.uniffle.common.merger.StreamedSegment;
+import org.apache.uniffle.common.records.RecordsWriter;
 
 public class SerializerUtils {
 
@@ -124,5 +134,98 @@ public class SerializerUtils {
       };
     }
     return null;
+  }
+
+  public static byte[] genSortedRecordBytes(
+      RssConf rssConf,
+      Class keyClass,
+      Class valueClass,
+      int start,
+      int interval,
+      int length,
+      int replica)
+      throws IOException {
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    genSortedRecord(rssConf, keyClass, valueClass, start, interval, length, output, replica);
+    return output.toByteArray();
+  }
+
+  public static Segment genMemorySegment(
+      RssConf rssConf,
+      Class keyClass,
+      Class valueClass,
+      long blockId,
+      int start,
+      int interval,
+      int length)
+      throws IOException {
+    return genMemorySegment(rssConf, keyClass, valueClass, blockId, start, interval, length, false);
+  }
+
+  public static Segment genMemorySegment(
+      RssConf rssConf,
+      Class keyClass,
+      Class valueClass,
+      long blockId,
+      int start,
+      int interval,
+      int length,
+      boolean raw)
+      throws IOException {
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    genSortedRecord(rssConf, keyClass, valueClass, start, interval, length, output, 1);
+    return new StreamedSegment(rssConf, output.toByteArray(), blockId, keyClass, valueClass, raw);
+  }
+
+  public static Segment genFileSegment(
+      RssConf rssConf,
+      Class keyClass,
+      Class valueClass,
+      long blockId,
+      int start,
+      int interval,
+      int length,
+      File tmpDir)
+      throws IOException {
+    return genFileSegment(
+        rssConf, keyClass, valueClass, blockId, start, interval, length, tmpDir, false);
+  }
+
+  public static Segment genFileSegment(
+      RssConf rssConf,
+      Class keyClass,
+      Class valueClass,
+      long blockId,
+      int start,
+      int interval,
+      int length,
+      File tmpDir,
+      boolean raw)
+      throws IOException {
+    File file = new File(tmpDir, "data." + start);
+    genSortedRecord(
+        rssConf, keyClass, valueClass, start, interval, length, new FileOutputStream(file), 1);
+    return new StreamedSegment(rssConf, file, 0, file.length(), blockId, keyClass, valueClass, raw);
+  }
+
+  private static void genSortedRecord(
+      RssConf rssConf,
+      Class keyClass,
+      Class valueClass,
+      int start,
+      int interval,
+      int length,
+      OutputStream output,
+      int replica)
+      throws IOException {
+    RecordsWriter writer = new RecordsWriter(rssConf, output, keyClass, valueClass, false);
+    for (int i = 0; i < length; i++) {
+      for (int j = 0; j < replica; j++) {
+        writer.append(
+            SerializerUtils.genData(keyClass, start + i * interval),
+            SerializerUtils.genData(valueClass, start + i * interval));
+      }
+    }
+    writer.close();
   }
 }

@@ -115,9 +115,19 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       StreamObserver<RssProtos.ShuffleUnregisterByAppIdResponse> responseStreamObserver) {
     try (ServerRPCAuditContext auditContext = createAuditContext("unregisterShuffleByAppId")) {
       String appId = request.getAppId();
-
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(result);
+        RssProtos.ShuffleUnregisterByAppIdResponse reply =
+            RssProtos.ShuffleUnregisterByAppIdResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(status.toString())
+                .build();
+        responseStreamObserver.onNext(reply);
+        responseStreamObserver.onCompleted();
+        return;
+      }
       auditContext.setAppId(appId);
-      StatusCode result = StatusCode.SUCCESS;
       String responseMessage = "OK";
       try {
         shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId);
@@ -142,10 +152,21 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       RssProtos.ShuffleUnregisterRequest request,
       StreamObserver<RssProtos.ShuffleUnregisterResponse> responseStreamObserver) {
     try (ServerRPCAuditContext auditContext = createAuditContext("unregisterShuffle")) {
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(result);
+        RssProtos.ShuffleUnregisterResponse reply =
+            RssProtos.ShuffleUnregisterResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(status.toString())
+                .build();
+        responseStreamObserver.onNext(reply);
+        responseStreamObserver.onCompleted();
+        return;
+      }
       String appId = request.getAppId();
       int shuffleId = request.getShuffleId();
       auditContext.setAppId(appId).setShuffleId(shuffleId);
-      StatusCode result = StatusCode.SUCCESS;
       String responseMessage = "OK";
       try {
         shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId, shuffleId);
@@ -477,8 +498,19 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       ShuffleCommitRequest req, StreamObserver<ShuffleCommitResponse> responseObserver) {
     try (ServerRPCAuditContext auditContext = createAuditContext("commitShuffleTask")) {
       String appId = req.getAppId();
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        ShuffleCommitResponse response =
+            ShuffleCommitResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(status.toString())
+                .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+        return;
+      }
       int shuffleId = req.getShuffleId();
-      StatusCode status = StatusCode.SUCCESS;
       String msg = "OK";
       int commitCount = 0;
 
@@ -522,9 +554,20 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       FinishShuffleRequest req, StreamObserver<FinishShuffleResponse> responseObserver) {
     try (ServerRPCAuditContext auditContext = createAuditContext("finishShuffle")) {
       String appId = req.getAppId();
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        FinishShuffleResponse response =
+            FinishShuffleResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(status.toString())
+                .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+        return;
+      }
       int shuffleId = req.getShuffleId();
       auditContext.setAppId(appId).setShuffleId(shuffleId);
-      StatusCode status;
       String msg = "OK";
       String errorMsg =
           "Fail to finish shuffle for appId["
@@ -559,6 +602,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       RequireBufferRequest request, StreamObserver<RequireBufferResponse> responseObserver) {
     try (ServerRPCAuditContext auditContext = createAuditContext("requireBuffer")) {
       String appId = request.getAppId();
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        RequireBufferResponse response =
+            RequireBufferResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(status.toString())
+                .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+        return;
+      }
       auditContext.setAppId(appId).setShuffleId(request.getShuffleId());
       String auditArgs = "requireSize=" + request.getRequireSize();
       if (request.getPartitionIdsList() != null) {
@@ -566,7 +621,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
       auditContext.setArgs(auditArgs);
       long requireBufferId = -1;
-      StatusCode status = StatusCode.SUCCESS;
       try {
         if (StringUtils.isEmpty(appId)) {
           // To be compatible with older client version
@@ -610,8 +664,25 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       AppHeartBeatRequest request, StreamObserver<AppHeartBeatResponse> responseObserver) {
     try (ServerRPCAuditContext auditContext = createAuditContext("appHeartbeat")) {
       String appId = request.getAppId();
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        AppHeartBeatResponse response =
+            AppHeartBeatResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(status.toString())
+                .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+        return;
+      }
       auditContext.setAppId(appId);
       shuffleServer.getShuffleTaskManager().refreshAppId(appId);
+      AppHeartBeatResponse response =
+          AppHeartBeatResponse.newBuilder()
+              .setRetMsg("")
+              .setStatus(StatusCode.SUCCESS.toProto())
+              .build();
 
       if (Context.current().isCancelled()) {
         auditContext.setStatusCode("CANCELLED");
@@ -639,6 +710,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       StreamObserver<ReportShuffleResultResponse> responseObserver) {
     try (ServerRPCAuditContext auditContext = createAuditContext("reportShuffleResult")) {
       String appId = request.getAppId();
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        ReportShuffleResultResponse response =
+            ReportShuffleResultResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(status.toString())
+                .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+        return;
+      }
       int shuffleId = request.getShuffleId();
       long taskAttemptId = request.getTaskAttemptId();
       int bitmapNum = request.getBitmapNum();
@@ -654,7 +737,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               + ", partitionToBlockIdsSize="
               + partitionToBlockIds.size());
 
-      StatusCode status = StatusCode.SUCCESS;
       String msg = "OK";
       ReportShuffleResultResponse reply;
       String requestInfo =
@@ -707,6 +789,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       GetShuffleResultRequest request, StreamObserver<GetShuffleResultResponse> responseObserver) {
     try (ServerRPCAuditContext auditContext = createAuditContext("getShuffleResult")) {
       String appId = request.getAppId();
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        GetShuffleResultResponse response =
+            GetShuffleResultResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(status.toString())
+                .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+        return;
+      }
       int shuffleId = request.getShuffleId();
       int partitionId = request.getPartitionId();
       BlockIdLayout blockIdLayout =
@@ -718,7 +812,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       auditContext.setAppId(appId).setShuffleId(shuffleId);
       auditContext.setArgs("partitionId=" + partitionId + ", blockIdLayout=" + blockIdLayout);
 
-      StatusCode status = StatusCode.SUCCESS;
       String msg = "OK";
       GetShuffleResultResponse reply;
       byte[] serializedBlockIds = null;
@@ -762,6 +855,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       StreamObserver<GetShuffleResultForMultiPartResponse> responseObserver) {
     try (ServerRPCAuditContext auditContext = createAuditContext("getShuffleResultForMultiPart")) {
       String appId = request.getAppId();
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        GetShuffleResultForMultiPartResponse response =
+            GetShuffleResultForMultiPartResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(status.toString())
+                .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+        return;
+      }
       int shuffleId = request.getShuffleId();
       List<Integer> partitionsList = request.getPartitionsList();
 
@@ -775,7 +880,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       auditContext.setArgs(
           "partitionsListSize=" + partitionsList.size() + ", blockIdLayout=" + blockIdLayout);
 
-      StatusCode status = StatusCode.SUCCESS;
       String msg = "OK";
       GetShuffleResultForMultiPartResponse reply;
       byte[] serializedBlockIds = null;
@@ -820,6 +924,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       StreamObserver<GetLocalShuffleDataResponse> responseObserver) {
     try (ServerRPCAuditContext auditContext = createAuditContext("getLocalShuffleData")) {
       String appId = request.getAppId();
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        GetLocalShuffleDataResponse response =
+            GetLocalShuffleDataResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(status.toString())
+                .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+        return;
+      }
       int shuffleId = request.getShuffleId();
       int partitionId = request.getPartitionId();
       int partitionNumPerRange = request.getPartitionNumPerRange();
@@ -851,7 +967,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
       String storageType =
           shuffleServer.getShuffleServerConf().get(RssBaseConf.RSS_STORAGE_TYPE).name();
-      StatusCode status = StatusCode.SUCCESS;
       String msg = "OK";
       GetLocalShuffleDataResponse reply = null;
       ShuffleDataResult sdr = null;
@@ -953,12 +1068,23 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       StreamObserver<GetLocalShuffleIndexResponse> responseObserver) {
     try (ServerRPCAuditContext auditContext = createAuditContext("getLocalShuffleIndex")) {
       String appId = request.getAppId();
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        GetLocalShuffleIndexResponse reply =
+            GetLocalShuffleIndexResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(status.toString())
+                .build();
+        responseObserver.onNext(reply);
+        responseObserver.onCompleted();
+        return;
+      }
       int shuffleId = request.getShuffleId();
       int partitionId = request.getPartitionId();
       int partitionNumPerRange = request.getPartitionNumPerRange();
       int partitionNum = request.getPartitionNum();
-      auditContext.setAppId(appId);
-      auditContext.setShuffleId(shuffleId);
+      auditContext.setAppId(appId).setShuffleId(shuffleId);
       auditContext.setArgs(
           "partitionId="
               + partitionId
@@ -967,7 +1093,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               + ", partitionNum="
               + partitionNum);
 
-      StatusCode status = StatusCode.SUCCESS;
       String msg = "OK";
       GetLocalShuffleIndexResponse reply;
       String requestInfo =
@@ -1065,6 +1190,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       StreamObserver<GetMemoryShuffleDataResponse> responseObserver) {
     try (ServerRPCAuditContext auditContext = createAuditContext("getMemoryShuffleData")) {
       String appId = request.getAppId();
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        GetMemoryShuffleDataResponse reply =
+            GetMemoryShuffleDataResponse.newBuilder()
+                .setStatus(status.toProto())
+                .setRetMsg(status.toString())
+                .build();
+        responseObserver.onNext(reply);
+        responseObserver.onCompleted();
+        return;
+      }
       int shuffleId = request.getShuffleId();
       int partitionId = request.getPartitionId();
       long blockId = request.getLastBlockId();
@@ -1088,7 +1225,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                   ShuffleServerGrpcMetrics.GET_MEMORY_SHUFFLE_DATA_METHOD, transportTime);
         }
       }
-      StatusCode status = StatusCode.SUCCESS;
       String msg = "OK";
       GetMemoryShuffleDataResponse reply;
       String requestInfo =
@@ -1253,6 +1389,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
     }
     return shuffleDataBlockSegments;
+  }
+
+  private StatusCode verifyRequest(String appId) {
+    if (StringUtils.isNotBlank(appId)
+        && shuffleServer.getShuffleTaskManager().isAppExpired(appId)) {
+      return StatusCode.NO_REGISTER;
+    }
+    return StatusCode.SUCCESS;
   }
 
   /**

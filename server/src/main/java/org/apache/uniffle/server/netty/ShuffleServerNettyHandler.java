@@ -28,6 +28,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -364,6 +365,19 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       TransportClient client, GetMemoryShuffleDataRequest req) {
     try (ServerRPCAuditContext auditContext = createAuditContext("getMemoryShuffleData")) {
       String appId = req.getAppId();
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        GetMemoryShuffleDataResponse response =
+            new GetMemoryShuffleDataResponse(
+                req.getRequestId(),
+                status,
+                status.toString(),
+                Lists.newArrayList(),
+                Unpooled.EMPTY_BUFFER);
+        client.getChannel().writeAndFlush(response);
+        return;
+      }
       int shuffleId = req.getShuffleId();
       int partitionId = req.getPartitionId();
       long blockId = req.getLastBlockId();
@@ -385,7 +399,6 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               .recordTransportTime(GetMemoryShuffleDataRequest.class.getName(), transportTime);
         }
       }
-      StatusCode status = StatusCode.SUCCESS;
       String msg = "OK";
       GetMemoryShuffleDataResponse response;
       String requestInfo =
@@ -458,11 +471,19 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       TransportClient client, GetLocalShuffleIndexRequest req) {
     try (ServerRPCAuditContext auditContext = createAuditContext("getLocalShuffleIndex")) {
       String appId = req.getAppId();
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        GetLocalShuffleIndexResponse response =
+            new GetLocalShuffleIndexResponse(
+                req.getRequestId(), status, status.toString(), Unpooled.EMPTY_BUFFER, 0L);
+        client.getChannel().writeAndFlush(response);
+        return;
+      }
       int shuffleId = req.getShuffleId();
       int partitionId = req.getPartitionId();
       int partitionNumPerRange = req.getPartitionNumPerRange();
       int partitionNum = req.getPartitionNum();
-      StatusCode status = StatusCode.SUCCESS;
       String msg = "OK";
       GetLocalShuffleIndexResponse response;
       String requestInfo =
@@ -486,8 +507,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
       }
       // Index file is expected small size and won't cause oom problem with the assumed size. An
-      // index
-      // segment is 40B,
+      // index segment is 40B,
       // with the default size - 2MB, it can support 50k blocks for shuffle data.
       long assumedFileSize =
           shuffleServer
@@ -556,7 +576,20 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
 
   public void handleGetLocalShuffleData(TransportClient client, GetLocalShuffleDataRequest req) {
     try (ServerRPCAuditContext auditContext = createAuditContext("getLocalShuffleData")) {
+      GetLocalShuffleDataResponse response;
       String appId = req.getAppId();
+      StatusCode status = verifyRequest(appId);
+      if (status != StatusCode.SUCCESS) {
+        auditContext.setStatusCode(status);
+        response =
+            new GetLocalShuffleDataResponse(
+                req.getRequestId(),
+                status,
+                status.toString(),
+                new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
+        client.getChannel().writeAndFlush(response);
+        return;
+      }
       int shuffleId = req.getShuffleId();
       int partitionId = req.getPartitionId();
       int partitionNumPerRange = req.getPartitionNumPerRange();
@@ -587,9 +620,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       }
       String storageType =
           shuffleServer.getShuffleServerConf().get(RssBaseConf.RSS_STORAGE_TYPE).name();
-      StatusCode status = StatusCode.SUCCESS;
       String msg = "OK";
-      GetLocalShuffleDataResponse response;
       String requestInfo =
           "appId["
               + appId
@@ -662,8 +693,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             new GetLocalShuffleDataResponse(
                 req.getRequestId(), status, msg, new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
       }
-      client.getChannel().writeAndFlush(response);
       auditContext.setStatusCode(response.getStatusCode());
+      client.getChannel().writeAndFlush(response);
     }
   }
 
@@ -694,6 +725,14 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       i++;
     }
     return ret;
+  }
+
+  private StatusCode verifyRequest(String appId) {
+    if (StringUtils.isNotBlank(appId)
+        && shuffleServer.getShuffleTaskManager().isAppExpired(appId)) {
+      return StatusCode.NO_REGISTER;
+    }
+    return StatusCode.SUCCESS;
   }
 
   class ReleaseMemoryAndRecordReadTimeListener implements ChannelFutureListener {
