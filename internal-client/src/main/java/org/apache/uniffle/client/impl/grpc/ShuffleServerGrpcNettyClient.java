@@ -174,9 +174,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
       // sendShuffleDataRequest at the shuffle server, where there are two copies of data
       // in direct memory.
       int allocateSize =
-          MessageEncoder.MESSAGE_HEADER_SIZE
-              + sendShuffleDataRequest.encodedLength()
-              + size;
+          MessageEncoder.MESSAGE_HEADER_SIZE + sendShuffleDataRequest.encodedLength() + size;
       int finalBlockNum = blockNum;
       try {
         RetryUtils.retryWithCondition(

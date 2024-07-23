@@ -96,9 +96,10 @@ public class ShuffleBlockInfo {
   }
 
   /**
-   * Calculate the data size for this block in memory including metadata which are
-   * partitionId, blockId, crc, taskAttemptId, uncompressLength and data length.
-   * This should be consistent with {@link ShufflePartitionedBlock#getSize()}.
+   * Calculate the data size for this block in memory including metadata which are partitionId,
+   * blockId, crc, taskAttemptId, uncompressLength and data length. This should be consistent with
+   * {@link ShufflePartitionedBlock#getSize()}.
+   *
    * @return the encoded size of this object in memory
    */
   public int getSize() {

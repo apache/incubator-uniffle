@@ -28,7 +28,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.uniffle.common.netty.MessageEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +40,7 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.netty.MessageEncoder;
 import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.netty.client.TransportClient;
@@ -115,8 +115,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         shuffleTaskManager.getAndRemovePreAllocatedBuffer(requireBufferId);
     int encodedLength = req.encodedLength() + MessageEncoder.MESSAGE_HEADER_SIZE;
     int requireSize = info == null ? 0 : info.getRequireSize();
-    int requireBlocksSize =
-        requireSize - encodedLength < 0 ? 0 : requireSize - encodedLength;
+    int requireBlocksSize = requireSize - encodedLength < 0 ? 0 : requireSize - encodedLength;
 
     boolean isPreAllocated = info != null;
 
