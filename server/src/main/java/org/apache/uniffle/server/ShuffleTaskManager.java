@@ -540,30 +540,33 @@ public class ShuffleTaskManager {
       LOG.error("No such app is registered. appId: {}, shuffleId: {}", appId, shuffleId);
       throw new NoRegisterException("No such app is registered. appId: " + appId);
     }
-    for (int i = 0; i < partitionIds.size(); i++) {
-      int partitionId = partitionIds.get(i);
-      int partitionRequireSize = partitionRequireSizes.get(i);
-      long partitionUsedDataSize =
-          getPartitionDataSize(appId, shuffleId, partitionId) + partitionRequireSize;
-      if (shuffleBufferManager.limitHugePartition(
-          appId, shuffleId, partitionId, partitionUsedDataSize)) {
-        String errorMessage =
-            String.format(
-                "Huge partition is limited to writing. appId: %s, shuffleId: %s, partitionIds: %s, partitionUsedDataSize: %s",
-                appId, shuffleId, partitionIds, partitionUsedDataSize);
-        LOG.error(errorMessage);
-        throw new NoBufferForHugePartitionException(errorMessage);
-      }
-      if (shuffleBufferManager.hasPartitionExceededHugeHardLimit(partitionUsedDataSize)) {
-        throw new ExceedHugePartitionHardLimitException(
-            "Current partition ["
-                + partitionId
-                + "] size: "
-                + partitionUsedDataSize
-                + " exceeded the max size: "
-                + shuffleBufferManager.getHugePartitionSizeHardLimit()
-                + " if cache this shuffle data with size: "
-                + partitionRequireSize);
+    // adapt to legacy client which have empty partitionRequireSizes
+    if (partitionIds.size() == partitionRequireSizes.size()) {
+      for (int i = 0; i < partitionIds.size(); i++) {
+        int partitionId = partitionIds.get(i);
+        int partitionRequireSize = partitionRequireSizes.get(i);
+        long partitionUsedDataSize =
+            getPartitionDataSize(appId, shuffleId, partitionId) + partitionRequireSize;
+        if (shuffleBufferManager.limitHugePartition(
+            appId, shuffleId, partitionId, partitionUsedDataSize)) {
+          String errorMessage =
+              String.format(
+                  "Huge partition is limited to writing. appId: %s, shuffleId: %s, partitionIds: %s, partitionUsedDataSize: %s",
+                  appId, shuffleId, partitionIds, partitionUsedDataSize);
+          LOG.error(errorMessage);
+          throw new NoBufferForHugePartitionException(errorMessage);
+        }
+        if (shuffleBufferManager.hasPartitionExceededHugeHardLimit(partitionUsedDataSize)) {
+          throw new ExceedHugePartitionHardLimitException(
+              "Current partition ["
+                  + partitionId
+                  + "] size: "
+                  + partitionUsedDataSize
+                  + " exceeded the max size: "
+                  + shuffleBufferManager.getHugePartitionSizeHardLimit()
+                  + " if cache this shuffle data with size: "
+                  + partitionRequireSize);
+        }
       }
     }
     return requireBuffer(appId, requireSize);
