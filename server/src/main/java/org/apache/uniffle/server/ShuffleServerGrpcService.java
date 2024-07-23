@@ -91,6 +91,8 @@ import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
+import static org.apache.uniffle.server.merge.ShuffleMergeManager.MERGE_APP_SUFFIX;
+
 public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcService.class);
@@ -154,6 +156,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     String responseMessage = "OK";
     try {
       shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId, shuffleId);
+      if (shuffleServer.isRemoteMergeEnable()) {
+        shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId + MERGE_APP_SUFFIX);
+      }
     } catch (Exception e) {
       status = StatusCode.INTERNAL_ERROR;
     }

@@ -220,6 +220,6 @@ public class ShuffleMergeManagerTest {
     assertEquals(RECORDS_NUMBER * 4, index);
 
     // 8 cleanup
-    mergeManager.unRegisterShuffle(APP_ID, SHUFFLE_ID);
+    mergeManager.removeBuffer(APP_ID, SHUFFLE_ID);
   }
 }
