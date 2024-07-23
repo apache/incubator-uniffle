@@ -158,8 +158,8 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(10000L)
           .withDescription("Threshold for write slow defined");
 
-  public static final ConfigOption<Boolean> SERVER_AUDIT_LOG_ENABLED =
-      ConfigOptions.key("rss.server.audit.log.enabled")
+  public static final ConfigOption<Boolean> SERVER_STORAGE_AUDIT_LOG_ENABLED =
+      ConfigOptions.key("rss.server.storage.audit.log.enabled")
           .booleanType()
           .defaultValue(false)
           .withDescription(
@@ -168,6 +168,13 @@ public class ShuffleServerConf extends RssBaseConf {
                   + "removing all associated files and recording the deletion of the entire application ID or shuffle ID. "
                   + "For a write operation, it includes the size of the data written, the storage type and the specific disk to which it is written "
                   + "(for instance, in scenarios where multiple local disks are mounted).");
+  public static final ConfigOption<Boolean> SERVER_RPC_AUDIT_LOG_ENABLED =
+      ConfigOptions.key("rss.server.rpc.audit.log.enabled")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription(
+              "When set to true, for auditing purposes, the server will log audit records for every rpc request operation. "
+                  + "Each file write is logged.");
 
   public static final ConfigOption<Long> SERVER_EVENT_SIZE_THRESHOLD_L1 =
       ConfigOptions.key("rss.server.event.size.threshold.l1")
