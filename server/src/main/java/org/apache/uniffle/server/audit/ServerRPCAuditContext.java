@@ -25,8 +25,6 @@ import org.apache.uniffle.common.rpc.StatusCode;
 /** An audit context for shuffle server rpc. */
 public class ServerRPCAuditContext implements AuditContext {
   private final Logger log;
-  private boolean allowed;
-  private boolean succeeded;
   private String command;
   private String statusCode;
   private long creationTimeNs;
@@ -42,7 +40,6 @@ public class ServerRPCAuditContext implements AuditContext {
    */
   public ServerRPCAuditContext(Logger log) {
     this.log = log;
-    allowed = true;
   }
 
   /**
@@ -76,9 +73,6 @@ public class ServerRPCAuditContext implements AuditContext {
    */
   public ServerRPCAuditContext setStatusCode(StatusCode statusCode) {
     this.statusCode = statusCode.name();
-    if (statusCode == StatusCode.SUCCESS) {
-      setSucceeded(true);
-    }
     return this;
   }
 
@@ -94,18 +88,6 @@ public class ServerRPCAuditContext implements AuditContext {
   }
 
   @Override
-  public ServerRPCAuditContext setAllowed(boolean allowed) {
-    this.allowed = allowed;
-    return this;
-  }
-
-  @Override
-  public ServerRPCAuditContext setSucceeded(boolean succeeded) {
-    this.succeeded = succeeded;
-    return this;
-  }
-
-  @Override
   public void close() {
     if (log == null) {
       return;
@@ -116,10 +98,14 @@ public class ServerRPCAuditContext implements AuditContext {
 
   @Override
   public String toString() {
-    return String.format(
-        "succeeded=%b\tallowed=%b\tcmd=%s\t"
-            + "statusCode=%s\tappId=%s\tshuffleId=%s\texecutionTimeUs=%d\targs{%s}",
-        succeeded, allowed, command, statusCode, appId, shuffleId, executionTimeNs / 1000, args);
+    String line =
+        String.format(
+            "cmd=%s\tstatusCode=%s\tappId=%s\tshuffleId=%s\texecutionTimeUs=%d\t",
+            command, statusCode, appId, shuffleId, executionTimeNs / 1000);
+    if (args != null) {
+      line += String.format("args{%s}", args);
+    }
+    return line;
   }
 
   public ServerRPCAuditContext setAppId(String appId) {

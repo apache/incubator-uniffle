@@ -816,7 +816,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     }
     ServerRPCAuditContext auditContext = new ServerRPCAuditContext(auditLogger);
     if (auditLogger != null) {
-      auditContext.setCommand(command).setAllowed(true).setCreationTimeNs(System.nanoTime());
+      auditContext.setCommand(command).setCreationTimeNs(System.nanoTime());
     }
     return auditContext;
   }

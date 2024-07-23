@@ -21,25 +21,6 @@ import java.io.Closeable;
 
 /** Context for audit logging. */
 public interface AuditContext extends Closeable {
-
-  /**
-   * Set to true if the operation associated with this {@link AuditContext} is allowed, false
-   * otherwise.
-   *
-   * @param allowed true if operation is allowed, false otherwise
-   * @return {@link AuditContext} instance itself
-   */
-  AuditContext setAllowed(boolean allowed);
-
-  /**
-   * Set to true if the operration associated with this {@link AuditContext} is allowed and
-   * succeeds.
-   *
-   * @param succeeded true if the operation has succeeded, false otherwise
-   * @return {@link AuditContext} instance itself
-   */
-  AuditContext setSucceeded(boolean succeeded);
-
   @Override
   void close();
 }
