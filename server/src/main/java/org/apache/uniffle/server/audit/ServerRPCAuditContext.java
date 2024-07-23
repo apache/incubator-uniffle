@@ -22,8 +22,8 @@ import org.slf4j.Logger;
 import org.apache.uniffle.common.audit.AuditContext;
 import org.apache.uniffle.common.rpc.StatusCode;
 
-/** An audit context for s3 rest service. */
-public class ServerAuditContext implements AuditContext {
+/** An audit context for shuffle server rpc. */
+public class ServerRPCAuditContext implements AuditContext {
   private final Logger log;
   private boolean allowed;
   private boolean succeeded;
@@ -36,11 +36,11 @@ public class ServerAuditContext implements AuditContext {
   private String args;
 
   /**
-   * Constructor of {@link ServerAuditContext}.
+   * Constructor of {@link ServerRPCAuditContext}.
    *
    * @param log the logger to log the audit information
    */
-  public ServerAuditContext(Logger log) {
+  public ServerRPCAuditContext(Logger log) {
     this.log = log;
     allowed = true;
   }
@@ -48,22 +48,22 @@ public class ServerAuditContext implements AuditContext {
   /**
    * Sets mCommand field.
    *
-   * @param command the command associated with S3 rest service
+   * @param command the command associated with shuffle server rpc
    * @return this {@link AuditContext} instance
    */
-  public ServerAuditContext setCommand(String command) {
+  public ServerRPCAuditContext setCommand(String command) {
     this.command = command;
     return this;
   }
 
   /**
-   * Sets mCreationTimeNs field.
+   * Sets creationTimeNs field.
    *
    * @param creationTimeNs the System.nanoTime() when this operation create, it only can be used to
    *     compute operation mExecutionTime
    * @return this {@link AuditContext} instance
    */
-  public ServerAuditContext setCreationTimeNs(long creationTimeNs) {
+  public ServerRPCAuditContext setCreationTimeNs(long creationTimeNs) {
     this.creationTimeNs = creationTimeNs;
     return this;
   }
@@ -74,7 +74,7 @@ public class ServerAuditContext implements AuditContext {
    * @param statusCode the status code
    * @return this {@link AuditContext} instance
    */
-  public ServerAuditContext setStatusCode(StatusCode statusCode) {
+  public ServerRPCAuditContext setStatusCode(StatusCode statusCode) {
     this.statusCode = statusCode.name();
     if (statusCode == StatusCode.SUCCESS) {
       setSucceeded(true);
@@ -88,19 +88,19 @@ public class ServerAuditContext implements AuditContext {
    * @param statusCode the status code
    * @return this {@link AuditContext} instance
    */
-  public ServerAuditContext setStatusCode(String statusCode) {
+  public ServerRPCAuditContext setStatusCode(String statusCode) {
     this.statusCode = statusCode;
     return this;
   }
 
   @Override
-  public ServerAuditContext setAllowed(boolean allowed) {
+  public ServerRPCAuditContext setAllowed(boolean allowed) {
     this.allowed = allowed;
     return this;
   }
 
   @Override
-  public ServerAuditContext setSucceeded(boolean succeeded) {
+  public ServerRPCAuditContext setSucceeded(boolean succeeded) {
     this.succeeded = succeeded;
     return this;
   }
@@ -122,17 +122,17 @@ public class ServerAuditContext implements AuditContext {
         succeeded, allowed, command, statusCode, appId, shuffleId, executionTimeNs / 1000, args);
   }
 
-  public ServerAuditContext setAppId(String appId) {
+  public ServerRPCAuditContext setAppId(String appId) {
     this.appId = appId;
     return this;
   }
 
-  public ServerAuditContext setShuffleId(int shuffleId) {
+  public ServerRPCAuditContext setShuffleId(int shuffleId) {
     this.shuffleId = shuffleId;
     return this;
   }
 
-  public ServerAuditContext setArgs(String args) {
+  public ServerRPCAuditContext setArgs(String args) {
     this.args = args;
     return this;
   }

@@ -158,8 +158,8 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(10000L)
           .withDescription("Threshold for write slow defined");
 
-  public static final ConfigOption<Boolean> SERVER_AUDIT_LOG_ENABLED =
-      ConfigOptions.key("rss.server.audit.log.enabled")
+  public static final ConfigOption<Boolean> SERVER_STORAGE_AUDIT_LOG_ENABLED =
+      ConfigOptions.key("rss.server.storage.audit.log.enabled")
           .booleanType()
           .defaultValue(false)
           .withDescription(

@@ -78,7 +78,8 @@ import static org.apache.uniffle.server.ShuffleServerConf.LOCAL_STORAGE_INITIALI
 
 public class LocalStorageManager extends SingleStorageManager {
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorageManager.class);
-  private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger("audit");
+  private static final Logger AUDIT_LOGGER =
+      LoggerFactory.getLogger("SHUFFLE_SERVER_STORAGE_AUDIT_LOG");
   private static final String UNKNOWN_USER_NAME = "unknown";
 
   private final List<LocalStorage> localStorages;
@@ -88,7 +89,7 @@ public class LocalStorageManager extends SingleStorageManager {
   private final ConcurrentSkipListMap<String, LocalStorage> sortedPartitionsOfStorageMap;
   private final List<StorageMediaProvider> typeProviders = Lists.newArrayList();
 
-  private final boolean isAuditLogEnabled;
+  private final boolean isStorageAuditLogEnabled;
 
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
@@ -173,7 +174,7 @@ public class LocalStorageManager extends SingleStorageManager {
         StringUtils.join(
             localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList())));
     this.checker = new LocalStorageChecker(conf, localStorages);
-    isAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_AUDIT_LOG_ENABLED);
+    isStorageAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED);
   }
 
   private StorageMedia getStorageTypeForBasePath(String basePath) {
@@ -300,7 +301,7 @@ public class LocalStorageManager extends SingleStorageManager {
                           ShuffleStorageUtils.getFullShuffleDataFolder(
                               basicPath, String.valueOf(shuffleId)));
                     }
-                    if (isAuditLogEnabled) {
+                    if (isStorageAuditLogEnabled) {
                       AUDIT_LOGGER.info(
                           String.format(
                               "%s|%s|%s|%s|%s",
@@ -314,7 +315,7 @@ public class LocalStorageManager extends SingleStorageManager {
                     }
                     return paths.stream();
                   } else {
-                    if (isAuditLogEnabled) {
+                    if (isStorageAuditLogEnabled) {
                       AUDIT_LOGGER.info(
                           String.format(
                               "%s|%s|%s|%s",

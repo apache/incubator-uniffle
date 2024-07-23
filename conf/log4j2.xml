@@ -27,14 +27,14 @@
       </Policies>
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
-    <RollingFile name="auditAppender" fileName="${sys:audit.log.path}" filePattern="${sys:audit.log.path}.%i">
+    <RollingFile name="shuffleServerStorageAuditAppender" fileName="${sys:shuffle.server.storage.audit.log.path}" filePattern="${sys:shuffle.server.storage.audit.log.path}.%i">
       <PatternLayout pattern="%m%n"/>
       <Policies>
         <SizeBasedTriggeringPolicy size="2GB"/>
       </Policies>
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
-    <RollingFile name="rpcAuditAppender" fileName="${sys:rpc.audit.log.path}" filePattern="${sys:rpc.audit.log.path}.%i">
+    <RollingFile name="shuffleServerRpcAuditAppender" fileName="${sys:shuffle.server.rpc.audit.log.path}" filePattern="${sys:shuffle.server.rpc.audit.log.path}.%i">
       <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] %m%n"/>
       <Policies>
         <SizeBasedTriggeringPolicy size="2GB"/>
@@ -59,11 +59,11 @@
       <AppenderRef ref="console"/>
       <AppenderRef ref="RollingAppender"/>
     </Logger>
-    <Logger name="audit" level="INFO" additivity="false">
-      <AppenderRef ref="auditAppender"/>
+    <Logger name="SHUFFLE_SERVER_STORAGE_AUDIT_LOG" level="INFO" additivity="false">
+      <AppenderRef ref="shuffleServerStorageAuditAppender"/>
     </Logger>
     <Logger name="SHUFFLE_SERVER_RPC_AUDIT_LOG" level="INFO" additivity="false">
-      <AppenderRef ref="rpcAuditAppender"/>
+      <AppenderRef ref="shuffleServerRpcAuditAppender"/>
     </Logger>
   </Loggers>
 </Configuration>

@@ -87,7 +87,7 @@ import org.apache.uniffle.proto.RssProtos.ShufflePartitionRange;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterRequest;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerImplBase;
-import org.apache.uniffle.server.audit.ServerAuditContext;
+import org.apache.uniffle.server.audit.ServerRPCAuditContext;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
@@ -113,7 +113,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void unregisterShuffleByAppId(
       RssProtos.ShuffleUnregisterByAppIdRequest request,
       StreamObserver<RssProtos.ShuffleUnregisterByAppIdResponse> responseStreamObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("unregisterShuffleByAppId")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("unregisterShuffleByAppId")) {
       String appId = request.getAppId();
 
       auditContext.setAppId(appId);
@@ -141,7 +141,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void unregisterShuffle(
       RssProtos.ShuffleUnregisterRequest request,
       StreamObserver<RssProtos.ShuffleUnregisterResponse> responseStreamObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("unregisterShuffle")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("unregisterShuffle")) {
       String appId = request.getAppId();
       int shuffleId = request.getShuffleId();
       auditContext.setAppId(appId).setShuffleId(shuffleId);
@@ -167,7 +167,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void registerShuffle(
       ShuffleRegisterRequest req, StreamObserver<ShuffleRegisterResponse> responseObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("registerShuffle")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("registerShuffle")) {
       ShuffleRegisterResponse reply;
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
@@ -273,7 +273,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void sendShuffleData(
       SendShuffleDataRequest req, StreamObserver<SendShuffleDataResponse> responseObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("sendShuffleData")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("sendShuffleData")) {
       SendShuffleDataResponse reply;
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
@@ -475,7 +475,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void commitShuffleTask(
       ShuffleCommitRequest req, StreamObserver<ShuffleCommitResponse> responseObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("commitShuffleTask")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("commitShuffleTask")) {
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
       StatusCode status = StatusCode.SUCCESS;
@@ -520,7 +520,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void finishShuffle(
       FinishShuffleRequest req, StreamObserver<FinishShuffleResponse> responseObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("finishShuffle")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("finishShuffle")) {
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
       auditContext.setAppId(appId).setShuffleId(shuffleId);
@@ -557,7 +557,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void requireBuffer(
       RequireBufferRequest request, StreamObserver<RequireBufferResponse> responseObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("requireBuffer")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("requireBuffer")) {
       String appId = request.getAppId();
       auditContext.setAppId(appId).setShuffleId(request.getShuffleId());
       String auditArgs = "requireSize=" + request.getRequireSize();
@@ -608,7 +608,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void appHeartbeat(
       AppHeartBeatRequest request, StreamObserver<AppHeartBeatResponse> responseObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("appHeartbeat")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("appHeartbeat")) {
       String appId = request.getAppId();
       auditContext.setAppId(appId);
       shuffleServer.getShuffleTaskManager().refreshAppId(appId);
@@ -637,7 +637,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void reportShuffleResult(
       ReportShuffleResultRequest request,
       StreamObserver<ReportShuffleResultResponse> responseObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("reportShuffleResult")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("reportShuffleResult")) {
       String appId = request.getAppId();
       int shuffleId = request.getShuffleId();
       long taskAttemptId = request.getTaskAttemptId();
@@ -705,7 +705,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void getShuffleResult(
       GetShuffleResultRequest request, StreamObserver<GetShuffleResultResponse> responseObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("getShuffleResult")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("getShuffleResult")) {
       String appId = request.getAppId();
       int shuffleId = request.getShuffleId();
       int partitionId = request.getPartitionId();
@@ -760,7 +760,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void getShuffleResultForMultiPart(
       GetShuffleResultForMultiPartRequest request,
       StreamObserver<GetShuffleResultForMultiPartResponse> responseObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("getShuffleResultForMultiPart")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("getShuffleResultForMultiPart")) {
       String appId = request.getAppId();
       int shuffleId = request.getShuffleId();
       List<Integer> partitionsList = request.getPartitionsList();
@@ -818,7 +818,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void getLocalShuffleData(
       GetLocalShuffleDataRequest request,
       StreamObserver<GetLocalShuffleDataResponse> responseObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("getLocalShuffleData")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("getLocalShuffleData")) {
       String appId = request.getAppId();
       int shuffleId = request.getShuffleId();
       int partitionId = request.getPartitionId();
@@ -951,7 +951,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void getLocalShuffleIndex(
       GetLocalShuffleIndexRequest request,
       StreamObserver<GetLocalShuffleIndexResponse> responseObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("getLocalShuffleIndex")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("getLocalShuffleIndex")) {
       String appId = request.getAppId();
       int shuffleId = request.getShuffleId();
       int partitionId = request.getPartitionId();
@@ -1063,7 +1063,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void getMemoryShuffleData(
       GetMemoryShuffleDataRequest request,
       StreamObserver<GetMemoryShuffleDataResponse> responseObserver) {
-    try (ServerAuditContext auditContext = createAuditContext("getMemoryShuffleData")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("getMemoryShuffleData")) {
       String appId = request.getAppId();
       int shuffleId = request.getShuffleId();
       int partitionId = request.getPartitionId();
@@ -1256,18 +1256,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   }
 
   /**
-   * Creates a {@link ServerAuditContext} instance.
+   * Creates a {@link ServerRPCAuditContext} instance.
    *
    * @param command the command to be logged by this {@link AuditContext}
-   * @return newly-created {@link ServerAuditContext} instance
+   * @return newly-created {@link ServerRPCAuditContext} instance
    */
-  private ServerAuditContext createAuditContext(String command) {
+  private ServerRPCAuditContext createAuditContext(String command) {
     // Audit log may be enabled during runtime
     Logger auditLogger = null;
     if (isRpcAuditLogEnabled) {
       auditLogger = AUDIT_LOGGER;
     }
-    ServerAuditContext auditContext = new ServerAuditContext(auditLogger);
+    ServerRPCAuditContext auditContext = new ServerRPCAuditContext(auditLogger);
     if (auditLogger != null) {
       auditContext.setCommand(command).setAllowed(true).setCreationTimeNs(System.nanoTime());
     }

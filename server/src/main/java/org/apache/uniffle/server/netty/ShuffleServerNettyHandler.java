@@ -61,7 +61,7 @@ import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.ShuffleTaskInfo;
 import org.apache.uniffle.server.ShuffleTaskManager;
-import org.apache.uniffle.server.audit.ServerAuditContext;
+import org.apache.uniffle.server.audit.ServerRPCAuditContext;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.storage.common.Storage;
@@ -108,7 +108,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
   }
 
   public void handleSendShuffleDataRequest(TransportClient client, SendShuffleDataRequest req) {
-    try (ServerAuditContext auditContext = createAuditContext("sendShuffleData")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("sendShuffleData")) {
       RpcResponse rpcResponse;
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
@@ -362,7 +362,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
 
   public void handleGetMemoryShuffleDataRequest(
       TransportClient client, GetMemoryShuffleDataRequest req) {
-    try (ServerAuditContext auditContext = createAuditContext("getMemoryShuffleData")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("getMemoryShuffleData")) {
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
       int partitionId = req.getPartitionId();
@@ -456,7 +456,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
 
   public void handleGetLocalShuffleIndexRequest(
       TransportClient client, GetLocalShuffleIndexRequest req) {
-    try (ServerAuditContext auditContext = createAuditContext("getLocalShuffleIndex")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("getLocalShuffleIndex")) {
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
       int partitionId = req.getPartitionId();
@@ -555,7 +555,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
   }
 
   public void handleGetLocalShuffleData(TransportClient client, GetLocalShuffleDataRequest req) {
-    try (ServerAuditContext auditContext = createAuditContext("getLocalShuffleData")) {
+    try (ServerRPCAuditContext auditContext = createAuditContext("getLocalShuffleData")) {
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
       int partitionId = req.getPartitionId();
@@ -803,18 +803,18 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
   }
 
   /**
-   * Creates a {@link ServerAuditContext} instance.
+   * Creates a {@link ServerRPCAuditContext} instance.
    *
    * @param command the command to be logged by this {@link AuditContext}
-   * @return newly-created {@link ServerAuditContext} instance
+   * @return newly-created {@link ServerRPCAuditContext} instance
    */
-  private ServerAuditContext createAuditContext(String command) {
+  private ServerRPCAuditContext createAuditContext(String command) {
     // Audit log may be enabled during runtime
     Logger auditLogger = null;
     if (isRpcAuditLogEnabled) {
       auditLogger = AUDIT_LOGGER;
     }
-    ServerAuditContext auditContext = new ServerAuditContext(auditLogger);
+    ServerRPCAuditContext auditContext = new ServerRPCAuditContext(auditLogger);
     if (auditLogger != null) {
       auditContext.setCommand(command).setAllowed(true).setCreationTimeNs(System.nanoTime());
     }
