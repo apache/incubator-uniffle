@@ -677,12 +677,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         responseObserver.onCompleted();
         return;
       }
-      shuffleServer.getShuffleTaskManager().refreshAppId(appId);
-      AppHeartBeatResponse response =
-          AppHeartBeatResponse.newBuilder()
-              .setRetMsg("")
-              .setStatus(StatusCode.SUCCESS.toProto())
-              .build();
 
       if (Context.current().isCancelled()) {
         auditContext.setStatusCode("CANCELLED");
@@ -694,6 +688,12 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
       LOG.info("Get heartbeat from {}", appId);
       auditContext.setStatusCode(StatusCode.SUCCESS);
+      shuffleServer.getShuffleTaskManager().refreshAppId(appId);
+      AppHeartBeatResponse response =
+          AppHeartBeatResponse.newBuilder()
+              .setRetMsg("")
+              .setStatus(StatusCode.SUCCESS.toProto())
+              .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     }
