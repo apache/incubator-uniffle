@@ -61,7 +61,7 @@ public interface ClusterManager extends Closeable {
    */
   List<ServerNode> getUnhealthyServerList();
 
-  Set<String> getExcludeNodes();
+  Set<String> getExcludedNodes();
 
   /** @return number of server nodes in the cluster */
   int getNodesNum();
@@ -82,5 +82,6 @@ public interface ClusterManager extends Closeable {
 
   void cancelDecommission(String serverId);
 
-  boolean addExcludeNodes(List<String> excludeNodeIds);
+  /** Add blacklist. */
+  boolean addExcludedNodes(List<String> excludedNodeIds);
 }

@@ -98,7 +98,7 @@ export default {
           } else {
             ElMessage.error('Add failed.')
           }
-        } else if (res.status === 500) {
+        } else {
           ElMessage.error('Failed to add due to server bad.')
         }
       } catch (err) {

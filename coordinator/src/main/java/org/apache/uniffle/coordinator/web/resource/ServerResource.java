@@ -79,14 +79,14 @@ public class ServerResource extends BaseResource {
       serverList = clusterManager.getLostServerList();
     } else if (ServerStatus.EXCLUDED.name().equalsIgnoreCase(status)) {
       serverList =
-          clusterManager.getExcludeNodes().stream()
+          clusterManager.getExcludedNodes().stream()
               .map(ServerNode::new)
               .collect(Collectors.toList());
     } else {
       List<ServerNode> serverAllList = clusterManager.list();
       serverList =
           serverAllList.stream()
-              .filter(node -> !clusterManager.getExcludeNodes().contains(node.getId()))
+              .filter(node -> !clusterManager.getExcludedNodes().contains(node.getId()))
               .collect(Collectors.toList());
     }
     serverList =
@@ -190,12 +190,12 @@ public class ServerResource extends BaseResource {
           ClusterManager clusterManager = getClusterManager();
           List<ServerNode> serverAllList = clusterManager.list();
           List<ServerNode> excludeNodes =
-              clusterManager.getExcludeNodes().stream()
+              clusterManager.getExcludedNodes().stream()
                   .map(ServerNode::new)
                   .collect(Collectors.toList());
           List<ServerNode> activeServerList =
               serverAllList.stream()
-                  .filter(node -> !clusterManager.getExcludeNodes().contains(node.getId()))
+                  .filter(node -> !clusterManager.getExcludedNodes().contains(node.getId()))
                   .collect(Collectors.toList());
           Map<String, Integer> serverStatusNum =
               Stream.of(
@@ -227,7 +227,7 @@ public class ServerResource extends BaseResource {
   @Consumes(MediaType.APPLICATION_JSON)
   public Response<String> handleAddExcludeNodesRequest(Map<String, List<String>> excludeNodes) {
     ClusterManager clusterManager = getClusterManager();
-    if (clusterManager.addExcludeNodes(excludeNodes.get("excludeNodes"))) {
+    if (clusterManager.addExcludedNodes(excludeNodes.get("excludeNodes"))) {
       return Response.success("success");
     }
     return Response.fail("fail");

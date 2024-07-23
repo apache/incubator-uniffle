@@ -68,7 +68,7 @@ public class SimpleClusterManager implements ClusterManager {
 
   private final Map<String, ServerNode> servers = JavaUtils.newConcurrentMap();
   private final Cache<ServerNode, ShuffleServerInternalGrpcClient> clientCache;
-  private Set<String> excludeNodes = Sets.newConcurrentHashSet();
+  private Set<String> excludedNodes = Sets.newConcurrentHashSet();
   /** ServerNode whose heartbeat is lost */
   Set<ServerNode> lostNodes = Sets.newHashSet();
   /** Unhealthy ServerNode */
@@ -89,7 +89,7 @@ public class SimpleClusterManager implements ClusterManager {
   private boolean startupSilentPeriodEnabled;
   private long startupSilentPeriodDurationMs;
   private boolean readyForServe = false;
-  private String excludeNodesPath;
+  private String excludedNodesPath;
 
   public SimpleClusterManager(CoordinatorConf conf, Configuration hadoopConf) throws Exception {
     this.shuffleNodesMax =
@@ -110,16 +110,17 @@ public class SimpleClusterManager implements ClusterManager {
     scheduledExecutorService.scheduleAtFixedRate(
         this::nodesCheck, heartbeatTimeout / 3, heartbeatTimeout / 3, TimeUnit.MILLISECONDS);
 
-    this.excludeNodesPath = conf.getString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, "");
-    if (!StringUtils.isEmpty(excludeNodesPath)) {
+    this.excludedNodesPath =
+        conf.getString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, "");
+    if (!StringUtils.isEmpty(excludedNodesPath)) {
       this.hadoopFileSystem =
-          HadoopFilesystemProvider.getFilesystem(new Path(excludeNodesPath), hadoopConf);
+          HadoopFilesystemProvider.getFilesystem(new Path(excludedNodesPath), hadoopConf);
       long updateNodesInterval =
           conf.getLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL);
       checkNodesExecutorService =
           ThreadUtils.getDaemonSingleThreadScheduledExecutor("UpdateExcludeNodes");
       checkNodesExecutorService.scheduleAtFixedRate(
-          () -> updateExcludeNodes(excludeNodesPath),
+          () -> updateExcludeNodes(excludedNodesPath),
           0,
           updateNodesInterval,
           TimeUnit.MILLISECONDS);
@@ -185,44 +186,46 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   private synchronized void updateExcludeNodes(String path) {
-    int originalExcludeNodesNumber = excludeNodes.size();
+    int originalExcludeNodesNumber = excludedNodes.size();
     try {
       Path hadoopPath = new Path(path);
       FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
       if (fileStatus != null && fileStatus.isFile()) {
         long latestModificationTime = fileStatus.getModificationTime();
         if (excludeLastModify.get() != latestModificationTime) {
-          excludeNodes = parseExcludeNodesFile(hadoopFileSystem.open(hadoopPath), true);
+          excludedNodes = parseExcludedNodesFile(hadoopFileSystem.open(hadoopPath), true);
           LOG.info(
               "Updated exclude nodes and {} nodes were marked as exclude nodes",
-              excludeNodes.size());
+              excludedNodes.size());
           // update exclude nodes and last modify time
           excludeLastModify.set(latestModificationTime);
         }
       } else {
-        excludeNodes = Sets.newConcurrentHashSet();
+        excludedNodes = Sets.newConcurrentHashSet();
       }
     } catch (FileNotFoundException fileNotFoundException) {
-      excludeNodes = Sets.newConcurrentHashSet();
+      excludedNodes = Sets.newConcurrentHashSet();
     } catch (Exception e) {
       LOG.warn("Error when updating exclude nodes, the exclude nodes file path: {}.", path, e);
     }
-    int newlyExcludeNodesNumber = excludeNodes.size();
+    int newlyExcludeNodesNumber = excludedNodes.size();
     if (newlyExcludeNodesNumber != originalExcludeNodesNumber) {
-      LOG.info("Exclude nodes number: {}, nodes list: {}", newlyExcludeNodesNumber, excludeNodes);
+      LOG.info("Exclude nodes number: {}, nodes list: {}", newlyExcludeNodesNumber, excludedNodes);
     }
-    CoordinatorMetrics.gaugeExcludeServerNum.set(excludeNodes.size());
+    CoordinatorMetrics.gaugeExcludeServerNum.set(excludedNodes.size());
   }
 
-  private Set<String> parseExcludeNodesFile(
+  private Set<String> parseExcludedNodesFile(
       DataInputStream fsDataInputStream, boolean notNeedComment) throws IOException {
     Set<String> nodes = Sets.newConcurrentHashSet();
     try (BufferedReader br =
         new BufferedReader(new InputStreamReader(fsDataInputStream, StandardCharsets.UTF_8))) {
       String line;
       while ((line = br.readLine()) != null) {
-        if (notNeedComment && !StringUtils.isEmpty(line) && !line.trim().startsWith("#")) {
-          nodes.add(line.trim());
+        if (notNeedComment) {
+          if (!StringUtils.isEmpty(line) && !line.trim().startsWith("#")) {
+            nodes.add(line.trim());
+          }
         } else {
           nodes.add(line.trim());
         }
@@ -231,13 +234,14 @@ public class SimpleClusterManager implements ClusterManager {
     return nodes;
   }
 
-  private synchronized boolean putInExcludeNodesFile(List<String> excludeNodes) throws IOException {
+  private synchronized boolean putInExcludedNodesFile(List<String> excludedNodes)
+      throws IOException {
     if (hadoopFileSystem != null) {
-      Path hadoopPath = new Path(excludeNodesPath);
+      Path hadoopPath = new Path(excludedNodesPath);
       FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
       if (fileStatus != null && fileStatus.isFile()) {
-        String tempExcludeNodesPath = excludeNodesPath.concat("_temp");
-        Path tmpHadoopPath = new Path(tempExcludeNodesPath);
+        String tempExcludedNodesPath = excludedNodesPath.concat("_tmp");
+        Path tmpHadoopPath = new Path(tempExcludedNodesPath);
         if (!hadoopFileSystem.exists(tmpHadoopPath)) {
           hadoopFileSystem.create(tmpHadoopPath);
         }
@@ -245,33 +249,33 @@ public class SimpleClusterManager implements ClusterManager {
             new BufferedWriter(
                 new OutputStreamWriter(
                     hadoopFileSystem.create(tmpHadoopPath, true), StandardCharsets.UTF_8))) {
-          Set<String> alreadyExistExcludeNodes =
-              parseExcludeNodesFile(hadoopFileSystem.open(hadoopPath), false);
-          List<String> newAddExcludeNodes =
-              excludeNodes.stream()
-                  .filter(node -> !alreadyExistExcludeNodes.contains(node))
+          Set<String> alreadyExistExcludedNodes =
+              parseExcludedNodesFile(hadoopFileSystem.open(hadoopPath), false);
+          List<String> newAddExcludedNodes =
+              excludedNodes.stream()
+                  .filter(node -> !alreadyExistExcludedNodes.contains(node))
                   .collect(Collectors.toList());
-          for (String alreadyExistExcludeNode : alreadyExistExcludeNodes) {
-            bufferedWriter.write(alreadyExistExcludeNode);
+          for (String alreadyExistExcludedNode : alreadyExistExcludedNodes) {
+            bufferedWriter.write(alreadyExistExcludedNode);
             bufferedWriter.newLine();
           }
-          if (!newAddExcludeNodes.isEmpty()) {
-            StringBuilder appendExecludeNodes = new StringBuilder();
+          if (!newAddExcludedNodes.isEmpty()) {
+            StringBuilder appendExecludedNodes = new StringBuilder();
             String currentDate = DateFormatUtils.format(new Date(), DATE_PATTERN);
-            appendExecludeNodes
+            appendExecludedNodes
                 .append("# Header ")
                 .append(currentDate)
                 .append(":blacklist node added from the page.")
                 .append("\n");
-            for (String excludeNode : newAddExcludeNodes) {
-              appendExecludeNodes.append(excludeNode).append("\n");
+            for (String excludeNode : newAddExcludedNodes) {
+              appendExecludedNodes.append(excludeNode).append("\n");
             }
-            appendExecludeNodes
+            appendExecludedNodes
                 .append("# End ")
                 .append(currentDate)
                 .append(":blacklist node added from the page.")
                 .append("\n");
-            bufferedWriter.write(appendExecludeNodes.toString());
+            bufferedWriter.write(appendExecludedNodes.toString());
           }
         }
         hadoopFileSystem.delete(hadoopPath);
@@ -313,7 +317,7 @@ public class SimpleClusterManager implements ClusterManager {
       if (!ServerStatus.ACTIVE.equals(node.getStatus())) {
         continue;
       }
-      if (!excludeNodes.contains(node.getId()) && node.getTags().containsAll(requiredTags)) {
+      if (!excludedNodes.contains(node.getId()) && node.getTags().containsAll(requiredTags)) {
         availableNodes.add(node);
       }
     }
@@ -339,7 +343,7 @@ public class SimpleClusterManager implements ClusterManager {
     if (faultyServerIds != null && faultyServerIds.contains(node.getId())) {
       return false;
     }
-    return !excludeNodes.contains(node.getId()) && node.getTags().containsAll(requiredTags);
+    return !excludedNodes.contains(node.getId()) && node.getTags().containsAll(requiredTags);
   }
 
   @Override
@@ -353,8 +357,8 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   @Override
-  public Set<String> getExcludeNodes() {
-    return excludeNodes;
+  public Set<String> getExcludedNodes() {
+    return excludedNodes;
   }
 
   public Map<String, Set<ServerNode>> getTagToNodes() {
@@ -380,10 +384,10 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   @Override
-  public boolean addExcludeNodes(List<String> excludeNodeIds) {
+  public boolean addExcludedNodes(List<String> excludedNodeIds) {
     try {
-      boolean successFlag = putInExcludeNodesFile(excludeNodeIds);
-      excludeNodes.addAll(excludeNodeIds);
+      boolean successFlag = putInExcludedNodesFile(excludedNodeIds);
+      excludedNodes.addAll(excludedNodeIds);
       return successFlag;
     } catch (IOException e) {
       LOG.warn("Because {}, failed to add blacklist.", e.getMessage());
