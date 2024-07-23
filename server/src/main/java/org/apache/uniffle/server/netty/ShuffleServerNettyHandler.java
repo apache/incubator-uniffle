@@ -28,6 +28,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.uniffle.common.netty.MessageEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,9 +113,10 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     // otherwise we need to release the required size.
     PreAllocatedBufferInfo info =
         shuffleTaskManager.getAndRemovePreAllocatedBuffer(requireBufferId);
+    int encodedLength = req.encodedLength() + MessageEncoder.MESSAGE_HEADER_SIZE;
     int requireSize = info == null ? 0 : info.getRequireSize();
     int requireBlocksSize =
-        requireSize - req.encodedLength() < 0 ? 0 : requireSize - req.encodedLength();
+        requireSize - encodedLength < 0 ? 0 : requireSize - encodedLength;
 
     boolean isPreAllocated = info != null;
 
@@ -217,7 +219,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         return;
       }
       final long start = System.currentTimeMillis();
-      shuffleBufferManager.releaseMemory(req.encodedLength(), false, true);
+      shuffleBufferManager.releaseMemory(encodedLength, false, true);
       List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
       long alreadyReleasedSize = 0;
       boolean hasFailureOccurred = false;

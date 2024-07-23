@@ -147,10 +147,14 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     for (Map.Entry<Integer, Map<Integer, List<ShuffleBlockInfo>>> stb :
         shuffleIdToBlocks.entrySet()) {
       int shuffleId = stb.getKey();
+      int size = 0;
       int blockNum = 0;
       List<Integer> partitionIds = new ArrayList<>();
       for (Map.Entry<Integer, List<ShuffleBlockInfo>> ptb : stb.getValue().entrySet()) {
-        blockNum += ptb.getValue().size();
+        for (ShuffleBlockInfo sbi : ptb.getValue()) {
+          size += sbi.getSize();
+          blockNum++;
+        }
         partitionIds.add(ptb.getKey());
       }
 
@@ -163,11 +167,16 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
               0L,
               stb.getValue(),
               System.currentTimeMillis());
-      // allocateSize = messageEncodedLength + messageTypeEncodedLength + bodyLength +
-      // messageEncodedLength
+      // allocateSize = MESSAGE_HEADER_SIZE + requestMessage encodedLength + data size
       // {@link org.apache.uniffle.common.netty.MessageEncoder#encode}
+      // We calculated the size again, even though sendShuffleDataRequest.encodedLength()
+      // already included the data size, because there is a brief moment when decoding
+      // sendShuffleDataRequest at the shuffle server, where there are two copies of data
+      // in direct memory.
       int allocateSize =
-          MessageEncoder.MESSAGE_HEADER_SIZE + sendShuffleDataRequest.encodedLength();
+          MessageEncoder.MESSAGE_HEADER_SIZE
+              + sendShuffleDataRequest.encodedLength()
+              + size;
       int finalBlockNum = blockNum;
       try {
         RetryUtils.retryWithCondition(
