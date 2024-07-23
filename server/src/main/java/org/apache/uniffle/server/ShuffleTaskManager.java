@@ -725,12 +725,12 @@ public class ShuffleTaskManager {
     }
   }
 
-  private boolean isAppExpired(String appId) {
-    if (shuffleTaskInfos.get(appId) == null) {
+  public boolean isAppExpired(String appId) {
+    ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
+    if (shuffleTaskInfo == null) {
       return true;
     }
-    return System.currentTimeMillis() - shuffleTaskInfos.get(appId).getCurrentTimes()
-        > appExpiredWithoutHB;
+    return System.currentTimeMillis() - shuffleTaskInfo.getCurrentTimes() > appExpiredWithoutHB;
   }
 
   /**

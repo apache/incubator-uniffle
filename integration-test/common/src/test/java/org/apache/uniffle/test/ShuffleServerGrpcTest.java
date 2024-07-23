@@ -259,7 +259,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
       grpcShuffleServerClient.reportShuffleResult(request);
       fail("Exception should be thrown");
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains("error happened when report shuffle result"));
+      assertTrue(e.getMessage().contains("NO_REGISTER"));
     }
 
     RssGetShuffleResultRequest req =
@@ -268,7 +268,7 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
       grpcShuffleServerClient.getShuffleResult(req);
       fail("Exception should be thrown");
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Can't get shuffle result"));
+      assertTrue(e.getMessage().contains("NO_REGISTER"));
     }
 
     RssRegisterShuffleRequest rrsr =
