@@ -45,17 +45,15 @@ public class TestUtils {
     return httpPost(urlString, postData, null);
   }
 
-  public static String httpPost(
-      String urlString,
-      String postData,
-      Map<String, String> headers) throws IOException {
+  public static String httpPost(String urlString, String postData, Map<String, String> headers)
+      throws IOException {
     URL url = new URL(urlString);
     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
     conn.setDoOutput(true);
     conn.setRequestMethod("POST");
     conn.setRequestProperty("Content-type", "application/json");
     if (headers != null) {
-      for (Map.Entry<String, String> entry: headers.entrySet()) {
+      for (Map.Entry<String, String> entry : headers.entrySet()) {
         conn.setRequestProperty(entry.getKey(), entry.getValue());
       }
     }
@@ -69,8 +67,8 @@ public class TestUtils {
 
   private static String getResponseStr(HttpURLConnection conn) throws IOException {
     StringBuilder responseContent = new StringBuilder();
-    InputStream inputStream = conn.getResponseCode() == 200
-        ? conn.getInputStream() : conn.getErrorStream();
+    InputStream inputStream =
+        conn.getResponseCode() == 200 ? conn.getInputStream() : conn.getErrorStream();
     try (BufferedReader in = new BufferedReader(new InputStreamReader(inputStream))) {
       String inputLine;
       while ((inputLine = in.readLine()) != null) {
@@ -79,5 +77,4 @@ public class TestUtils {
     }
     return responseContent.toString();
   }
-
 }

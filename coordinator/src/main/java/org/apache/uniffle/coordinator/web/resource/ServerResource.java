@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import javax.servlet.ServletContext;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.hbase.thirdparty.javax.ws.rs.DELETE;
 import org.apache.hbase.thirdparty.javax.ws.rs.GET;
 import org.apache.hbase.thirdparty.javax.ws.rs.POST;
 import org.apache.hbase.thirdparty.javax.ws.rs.Path;
@@ -39,7 +40,10 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
 import org.apache.uniffle.common.Application;
 import org.apache.uniffle.common.ServerStatus;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.web.resource.Authorization;
+import org.apache.uniffle.common.web.resource.BaseResource;
+import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.ApplicationManager;
 import org.apache.uniffle.coordinator.ClusterManager;
 import org.apache.uniffle.coordinator.ServerNode;

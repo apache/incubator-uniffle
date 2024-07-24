@@ -30,25 +30,27 @@ import org.apache.hbase.thirdparty.javax.ws.rs.ext.Provider;
 
 import org.apache.uniffle.common.config.RssBaseConf;
 
-
 @Provider
 @Authorization
 public class AuthorizationRequestFilter implements ContainerRequestFilter {
-  @Context
-  protected ServletContext servletContext;
+  @Context protected ServletContext servletContext;
 
   @Override
   public void filter(ContainerRequestContext requestContext) throws IOException {
-    Object credentials = servletContext.getAttribute(
-        RssBaseConf.COORDINATOR_AUTHORIZATION_CREDENTIALS.key());
+    Object credentials =
+        servletContext.getAttribute(RssBaseConf.REST_AUTHORIZATION_CREDENTIALS.key());
     if (credentials == null) {
       return;
     }
     String authorization = requestContext.getHeaderString("Authorization");
-    if (StringUtils.isBlank(authorization) || !authorization.startsWith("Basic ")
+    if (StringUtils.isBlank(authorization)
+        || !authorization.startsWith("Basic ")
         || !authorization.substring(6).equals(credentials)) {
-      requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("Authentication Failed")
-          .type(MediaType.TEXT_PLAIN).build());
+      requestContext.abortWith(
+          Response.status(Response.Status.UNAUTHORIZED)
+              .entity("Authentication Failed")
+              .type(MediaType.TEXT_PLAIN)
+              .build());
     }
   }
 }

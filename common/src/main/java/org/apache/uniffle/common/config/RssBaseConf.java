@@ -279,7 +279,14 @@ public class RssBaseConf extends RssConf {
           .defaultValue(16)
           .withDescription("start server service max retry");
 
-  public static final ConfigOption<String> COORDINATOR_AUTHORIZATION_CREDENTIALS =
+  /* Serialization */
+  public static final ConfigOption<String> RSS_IO_SERIALIZATIONS =
+      ConfigOptions.key("rss.io.serializations")
+          .stringType()
+          .defaultValue(WritableSerializer.class.getName())
+          .withDescription("Serializations are used for creative Serializers and Deserializers");
+
+  public static final ConfigOption<String> REST_AUTHORIZATION_CREDENTIALS =
       ConfigOptions.key("rss.rest.authorization.credentials")
           .stringType()
           .noDefaultValue()
