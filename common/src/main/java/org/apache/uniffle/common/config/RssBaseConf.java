@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.common.config;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -291,16 +292,13 @@ public class RssBaseConf extends RssConf {
     if (properties == null) {
       return false;
     }
+    Map<String, String> propertiesFromSystem = new HashMap<>();
     System.getProperties().stringPropertyNames().stream()
         .forEach(
             propName -> {
-              properties.put(propName, System.getProperty(propName));
+              propertiesFromSystem.put(propName, System.getProperty(propName));
             });
-    return loadCommonConf(properties) && loadConf(properties, configOptions, true);
-  }
-
-  public boolean loadCommonConf(Map<String, String> properties) {
-    List<ConfigOption<Object>> configOptions = ConfigUtils.getAllConfigOptions(RssBaseConf.class);
-    return loadConf(properties, configOptions, false);
+    return loadConf(properties, configOptions, true)
+        && loadConf(propertiesFromSystem, configOptions, false);
   }
 }
