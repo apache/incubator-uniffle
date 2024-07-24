@@ -20,7 +20,6 @@ package org.apache.uniffle.common.web.resource;
 import java.io.IOException;
 import javax.servlet.ServletContext;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.hbase.thirdparty.javax.ws.rs.container.ContainerRequestContext;
 import org.apache.hbase.thirdparty.javax.ws.rs.container.ContainerRequestFilter;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
@@ -28,6 +27,7 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Response;
 import org.apache.hbase.thirdparty.javax.ws.rs.ext.Provider;
 
+import org.apache.logging.log4j.util.Strings;
 import org.apache.uniffle.common.config.RssBaseConf;
 
 @Provider
@@ -43,7 +43,7 @@ public class AuthorizationRequestFilter implements ContainerRequestFilter {
       return;
     }
     String authorization = requestContext.getHeaderString("Authorization");
-    if (StringUtils.isBlank(authorization)
+    if (authorization == null
         || !authorization.startsWith("Basic ")
         || !authorization.substring(6).equals(credentials)) {
       requestContext.abortWith(
