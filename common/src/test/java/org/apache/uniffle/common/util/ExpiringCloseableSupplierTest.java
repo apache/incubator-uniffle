@@ -18,13 +18,20 @@
 package org.apache.uniffle.common.util;
 
 import java.io.IOException;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Uninterruptibles;
+import org.apache.commons.lang3.SerializationUtils;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -35,7 +42,7 @@ class ExpiringCloseableSupplierTest {
   @Test
   void testCacheable() {
     Supplier<MockClient> cf = () -> new MockClient(false);
-    ExpiringCloseableSupplier<MockClient> mockClientSupplier = new ExpiringCloseableSupplier<>(cf);
+    ExpiringCloseableSupplier<MockClient> mockClientSupplier = ExpiringCloseableSupplier.of(cf);
 
     MockClient mockClient = mockClientSupplier.get();
     MockClient mockClient2 = mockClientSupplier.get();
@@ -47,8 +54,7 @@ class ExpiringCloseableSupplierTest {
   @Test
   void testAutoCloseable() {
     Supplier<MockClient> cf = () -> new MockClient(true);
-    ExpiringCloseableSupplier<MockClient> mockClientSupplier =
-        new ExpiringCloseableSupplier<>(cf, 10);
+    ExpiringCloseableSupplier<MockClient> mockClientSupplier = ExpiringCloseableSupplier.of(cf, 10);
     MockClient mockClient1 = mockClientSupplier.get();
     assertNotNull(mockClient1);
     Uninterruptibles.sleepUninterruptibly(30, TimeUnit.MILLISECONDS);
@@ -61,7 +67,7 @@ class ExpiringCloseableSupplierTest {
   @Test
   void testRenew() {
     Supplier<MockClient> cf = () -> new MockClient(true);
-    ExpiringCloseableSupplier<MockClient> mockClientSupplier = new ExpiringCloseableSupplier<>(cf);
+    ExpiringCloseableSupplier<MockClient> mockClientSupplier = ExpiringCloseableSupplier.of(cf);
     MockClient mockClient = mockClientSupplier.get();
     mockClientSupplier.close();
     MockClient mockClient2 = mockClientSupplier.get();
@@ -71,7 +77,7 @@ class ExpiringCloseableSupplierTest {
   @Test
   void testReClose() {
     Supplier<MockClient> cf = () -> new MockClient(true);
-    ExpiringCloseableSupplier<MockClient> mockClientSupplier = new ExpiringCloseableSupplier<>(cf);
+    ExpiringCloseableSupplier<MockClient> mockClientSupplier = ExpiringCloseableSupplier.of(cf);
     mockClientSupplier.get();
     mockClientSupplier.close();
     mockClientSupplier.close();
@@ -80,7 +86,7 @@ class ExpiringCloseableSupplierTest {
   @Test
   void testDelegateExtendClose() throws IOException {
     Supplier<MockClient> cf = () -> new MockClient(false);
-    ExpiringCloseableSupplier<MockClient> mockClientSupplier = new ExpiringCloseableSupplier<>(cf);
+    ExpiringCloseableSupplier<MockClient> mockClientSupplier = ExpiringCloseableSupplier.of(cf);
     MockClient mockClient = mockClientSupplier.get();
     mockClient.close();
     assertTrue(mockClient.isClosed());
@@ -92,7 +98,57 @@ class ExpiringCloseableSupplierTest {
     mockClientSupplier.close();
   }
 
-  static class MockClient implements CloseStateful {
+  @Test
+  public void testSerialization() {
+    Supplier<MockClient> cf = (Supplier<MockClient> & Serializable) () -> new MockClient(true);
+    ExpiringCloseableSupplier<MockClient> mockClientSupplier = ExpiringCloseableSupplier.of(cf, 10);
+    MockClient mockClient = mockClientSupplier.get();
+
+    ExpiringCloseableSupplier<MockClient> mockClientSupplier2 =
+        SerializationUtils.roundtrip(mockClientSupplier);
+    MockClient mockClient2 = mockClientSupplier2.get();
+    assertFalse(mockClient2.isClosed());
+    assertNotSame(mockClient, mockClient2);
+    Uninterruptibles.sleepUninterruptibly(30, TimeUnit.MILLISECONDS);
+    assertTrue(mockClient.isClosed());
+    assertTrue(mockClient2.isClosed());
+  }
+
+  @Test
+  public void testMultipleSupplierShouldNotInterfere() {
+    Supplier<MockClient> cf = () -> new MockClient(true);
+    ExpiringCloseableSupplier<MockClient> mockClientSupplier = ExpiringCloseableSupplier.of(cf, 10);
+    ExpiringCloseableSupplier<MockClient> mockClientSupplier2 =
+        ExpiringCloseableSupplier.of(cf, 10);
+    MockClient mockClient = mockClientSupplier.get();
+    MockClient mockClient2 = mockClientSupplier2.get();
+    Uninterruptibles.sleepUninterruptibly(30, TimeUnit.MILLISECONDS);
+    assertTrue(mockClient.isClosed());
+    assertTrue(mockClient2.isClosed());
+    mockClientSupplier.close();
+    mockClientSupplier.close();
+    mockClientSupplier2.close();
+    mockClientSupplier2.close();
+  }
+
+  @Test
+  public void stressingTestManySuppliers() {
+    int num = 100000; // this should be sufficient for most production use cases
+    Supplier<MockClient> cf = () -> new MockClient(true);
+    List<MockClient> clients = Lists.newArrayList();
+    Random random = new Random(42);
+    for (int i = 0; i < num; i++) {
+      int delayCloseInterval = random.nextInt(1000) + 1;
+      ExpiringCloseableSupplier<MockClient> mockClientSupplier =
+          ExpiringCloseableSupplier.of(cf, delayCloseInterval);
+      MockClient mockClient = mockClientSupplier.get();
+      clients.add(mockClient);
+    }
+    Awaitility.waitAtMost(5, TimeUnit.SECONDS)
+        .until(() -> clients.stream().allMatch(MockClient::isClosed));
+  }
+
+  private static class MockClient implements CloseStateful, Serializable {
     boolean withException;
     AtomicBoolean closed = new AtomicBoolean(false);
 
