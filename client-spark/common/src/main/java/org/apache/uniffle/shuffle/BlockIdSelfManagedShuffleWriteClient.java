@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -35,14 +36,13 @@ import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.BlockIdLayout;
-import org.apache.uniffle.common.util.ExpireCloseableSupplier;
 
 /**
  * This class delegates the blockIds reporting/getting operations from shuffleServer side to Spark
  * driver side.
  */
 public class BlockIdSelfManagedShuffleWriteClient extends ShuffleWriteClientImpl {
-  private ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier;
+  private Supplier<ShuffleManagerClient> managerClientSupplier;
 
   public BlockIdSelfManagedShuffleWriteClient(
       RssShuffleClientFactory.ExtendWriteClientBuilder builder) {

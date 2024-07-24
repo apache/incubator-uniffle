@@ -17,8 +17,8 @@
 
 package org.apache.spark.shuffle.reader;
 
-import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import scala.Product2;
 import scala.collection.AbstractIterator;
@@ -34,7 +34,6 @@ import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
-import org.apache.uniffle.common.util.ExpireCloseableSupplier;
 
 public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C>> {
   private static final Logger LOG = LoggerFactory.getLogger(RssFetchFailedIterator.class);
@@ -51,7 +50,7 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
     private int shuffleId;
     private int partitionId;
     private int stageAttemptId;
-    private ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier;
+    private Supplier<ShuffleManagerClient> managerClientSupplier;
 
     private Builder() {}
 
@@ -75,8 +74,7 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
       return this;
     }
 
-    Builder managerClientSupplier(
-        ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier) {
+    Builder managerClientSupplier(Supplier<ShuffleManagerClient> managerClientSupplier) {
       this.managerClientSupplier = managerClientSupplier;
       return this;
     }
@@ -92,25 +90,22 @@ public class RssFetchFailedIterator<K, C> extends AbstractIterator<Product2<K, C
   }
 
   private RssException generateFetchFailedIfNecessary(RssFetchFailedException e) {
-    try (ShuffleManagerClient client = builder.managerClientSupplier.get()) {
-      RssReportShuffleFetchFailureRequest req =
-          new RssReportShuffleFetchFailureRequest(
-              builder.appId,
-              builder.shuffleId,
-              builder.stageAttemptId,
-              builder.partitionId,
-              e.getMessage());
-      RssReportShuffleFetchFailureResponse response = client.reportShuffleFetchFailure(req);
-      if (response.getReSubmitWholeStage()) {
-        // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1 is
-        // provided.
-        FetchFailedException ffe =
-            RssSparkShuffleUtils.createFetchFailedException(
-                builder.shuffleId, -1, builder.partitionId, e);
-        return new RssException(ffe);
-      }
-    } catch (IOException ioe) {
-      LOG.info("Error closing shuffle manager client with error:", ioe);
+    ShuffleManagerClient client = builder.managerClientSupplier.get();
+    RssReportShuffleFetchFailureRequest req =
+        new RssReportShuffleFetchFailureRequest(
+            builder.appId,
+            builder.shuffleId,
+            builder.stageAttemptId,
+            builder.partitionId,
+            e.getMessage());
+    RssReportShuffleFetchFailureResponse response = client.reportShuffleFetchFailure(req);
+    if (response.getReSubmitWholeStage()) {
+      // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1 is
+      // provided.
+      FetchFailedException ffe =
+          RssSparkShuffleUtils.createFetchFailedException(
+              builder.shuffleId, -1, builder.partitionId, e);
+      return new RssException(ffe);
     }
     return e;
   }

@@ -55,7 +55,7 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.util.ExpireCloseableSupplier;
+import org.apache.uniffle.common.util.ExpiringCloseableSupplier;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -127,7 +127,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpireCloseableSupplier<>(() -> mockShuffleManagerClient),
+            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -304,7 +304,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpireCloseableSupplier<>(() -> mockShuffleManagerClient),
+            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -418,7 +418,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockWriteClient,
-            new ExpireCloseableSupplier<>(() -> mockShuffleManagerClient),
+            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);

@@ -35,6 +35,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import scala.Function1;
@@ -85,7 +86,6 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssSendFailedException;
 import org.apache.uniffle.common.exception.RssWaitFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.util.ExpireCloseableSupplier;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_BLOCK_RETRY_MAX_TIMES;
@@ -135,7 +135,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private static final Set<StatusCode> STATUS_CODE_WITHOUT_BLOCK_RESEND =
       Sets.newHashSet(StatusCode.NO_REGISTER);
 
-  private ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier;
+  private final Supplier<ShuffleManagerClient> managerClientSupplier;
 
   // Only for tests
   @VisibleForTesting
@@ -149,7 +149,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
-      ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier,
+      Supplier<ShuffleManagerClient> managerClientSupplier,
       RssShuffleHandle<K, V, C> rssHandle,
       ShuffleHandleInfo shuffleHandleInfo,
       TaskContext context) {
@@ -180,7 +180,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
-      ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier,
+      Supplier<ShuffleManagerClient> managerClientSupplier,
       RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback,
       ShuffleHandleInfo shuffleHandleInfo,
@@ -232,7 +232,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       RssShuffleManager shuffleManager,
       SparkConf sparkConf,
       ShuffleWriteClient shuffleWriteClient,
-      ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier,
+      Supplier<ShuffleManagerClient> managerClientSupplier,
       RssShuffleHandle<K, V, C> rssHandle,
       Function<String, Boolean> taskFailureCallback,
       TaskContext context,

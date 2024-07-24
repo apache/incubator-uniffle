@@ -239,7 +239,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       }
     }
     if (shuffleManagerRpcServiceEnabled) {
-      getOrCreateShuffleManagerClientWrapper();
+      getOrCreateShuffleManagerClientSupplier();
     }
     int unregisterThreadPoolSize =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);

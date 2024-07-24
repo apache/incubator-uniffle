@@ -17,11 +17,12 @@
 
 package org.apache.uniffle.shuffle;
 
+import java.util.function.Supplier;
+
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
-import org.apache.uniffle.common.util.ExpireCloseableSupplier;
 
 public class RssShuffleClientFactory extends ShuffleClientFactory {
 
@@ -42,18 +43,17 @@ public class RssShuffleClientFactory extends ShuffleClientFactory {
   public static class ExtendWriteClientBuilder<T extends ExtendWriteClientBuilder<T>>
       extends WriteClientBuilder<T> {
     private boolean blockIdSelfManagedEnabled;
-    private ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier;
+    private Supplier<ShuffleManagerClient> managerClientSupplier;
 
     public boolean isBlockIdSelfManagedEnabled() {
       return blockIdSelfManagedEnabled;
     }
 
-    public ExpireCloseableSupplier<ShuffleManagerClient> getManagerClientSupplier() {
+    public Supplier<ShuffleManagerClient> getManagerClientSupplier() {
       return managerClientSupplier;
     }
 
-    public T managerClientSupplier(
-        ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier) {
+    public T managerClientSupplier(Supplier<ShuffleManagerClient> managerClientSupplier) {
       this.managerClientSupplier = managerClientSupplier;
       return self();
     }

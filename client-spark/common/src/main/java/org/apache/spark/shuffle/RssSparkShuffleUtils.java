@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import scala.Option;
 import scala.reflect.ClassTag;
@@ -52,7 +53,6 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.util.Constants;
-import org.apache.uniffle.common.util.ExpireCloseableSupplier;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
 
@@ -343,7 +343,7 @@ public class RssSparkShuffleUtils {
   }
 
   public static RssException reportRssFetchFailedException(
-      ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier,
+      Supplier<ShuffleManagerClient> managerClientSupplier,
       RssFetchFailedException rssFetchFailedException,
       SparkConf sparkConf,
       String appId,

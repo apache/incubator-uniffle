@@ -215,7 +215,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         }
       }
       if (shuffleManagerRpcServiceEnabled) {
-        getOrCreateShuffleManagerClientWrapper();
+        getOrCreateShuffleManagerClientSupplier();
       }
       this.shuffleWriteClient =
           RssShuffleClientFactory.getInstance()

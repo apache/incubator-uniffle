@@ -19,6 +19,7 @@ package org.apache.spark.shuffle.reader;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import scala.Function0;
 import scala.Function1;
@@ -57,7 +58,6 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.util.ExpireCloseableSupplier;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
 
@@ -84,7 +84,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private ShuffleReadMetrics readMetrics;
   private RssConf rssConf;
   private ShuffleDataDistributionType dataDistributionType;
-  private ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier;
+  private Supplier<ShuffleManagerClient> managerClientSupplier;
 
   public RssShuffleReader(
       int startPartition,
@@ -99,7 +99,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       Map<Integer, Roaring64NavigableMap> partitionToExpectBlocks,
       Roaring64NavigableMap taskIdBitmap,
       ShuffleReadMetrics readMetrics,
-      ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier,
+      Supplier<ShuffleManagerClient> managerClientSupplier,
       RssConf rssConf,
       ShuffleDataDistributionType dataDistributionType,
       Map<Integer, List<ShuffleServerInfo>> allPartitionToServers) {

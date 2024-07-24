@@ -39,7 +39,7 @@ import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.util.ExpireCloseableSupplier;
+import org.apache.uniffle.common.util.ExpiringCloseableSupplier;
 import org.apache.uniffle.storage.handler.impl.HadoopShuffleWriteHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -103,7 +103,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 taskIdBitmap,
                 rssConf,
                 partitionToServers,
-                new ExpireCloseableSupplier<>(() -> mockShuffleManagerClient)));
+                new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient)));
 
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
   }

@@ -17,59 +17,84 @@
 
 package org.apache.uniffle.common.util;
 
-import java.io.Closeable;
 import java.io.Serializable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ExpireCloseableSupplier<T extends Closeable> implements Supplier<T>, Serializable {
+/**
+ * A Supplier for T cacheable and autocloseable with delay By using ExpiringCloseableSupplier to
+ * obtain an object, manual closure may not be necessary.
+ */
+public class ExpiringCloseableSupplier<T extends CloseStateful>
+    implements Supplier<T>, Serializable {
   private static final long serialVersionUID = 0;
-  private static final Logger LOG = LoggerFactory.getLogger(ExpireCloseableSupplier.class);
-  private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+  private static final Logger LOG = LoggerFactory.getLogger(ExpiringCloseableSupplier.class);
+  private static final int DEFAULT_DELAY_CLOSE_INTERVAL = 60000;
+  private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+  private ScheduledFuture<?> future;
   private volatile T t;
   private final Supplier<T> delegate;
   private transient volatile long freshTime;
   private final long delayCloseInterval;
 
-  public ExpireCloseableSupplier(Supplier<T> delegate) {
-    this(delegate, 10000);
+  public ExpiringCloseableSupplier(Supplier<T> delegate) {
+    this(delegate, DEFAULT_DELAY_CLOSE_INTERVAL);
   }
 
-  public ExpireCloseableSupplier(Supplier<T> delegate, long delayCloseInterval) {
+  public ExpiringCloseableSupplier(Supplier<T> delegate, long delayCloseInterval) {
     this.delegate = delegate;
     this.delayCloseInterval = delayCloseInterval;
   }
 
   public synchronized T get() {
     freshTime = System.currentTimeMillis();
-    if (t == null) {
+    if (t == null || t.isClosed()) {
       t = delegate.get();
+      startDelayCloseScheduler();
     }
-    executor.schedule(this::close, delayCloseInterval, TimeUnit.MILLISECONDS);
     return t;
   }
 
-  public synchronized void forceClose() {
+  public synchronized void close() {
     try {
-      if (t != null) {
+      if (t != null && !t.isClosed()) {
         t.close();
       }
     } catch (Exception e) {
       LOG.warn("Failed to close {} the resource", t.getClass().getName(), e);
     } finally {
       t = null;
+      freshTime = 0;
+      shutdownDelayCloseScheduler();
     }
   }
 
-  public synchronized void close() {
+  public void tryClose() {
     if (System.currentTimeMillis() - freshTime > delayCloseInterval) {
-      this.forceClose();
-      freshTime = 0;
+      this.close();
+    }
+  }
+
+  private void startDelayCloseScheduler() {
+    shutdownDelayCloseScheduler();
+    executor = Executors.newSingleThreadScheduledExecutor();
+    future =
+        executor.scheduleAtFixedRate(
+            this::tryClose, delayCloseInterval, delayCloseInterval, TimeUnit.MILLISECONDS);
+  }
+
+  private void shutdownDelayCloseScheduler() {
+    if (future != null && !future.isDone()) {
+      future.cancel(false);
+    }
+    if (executor != null && !executor.isShutdown()) {
+      executor.shutdown();
     }
   }
 }

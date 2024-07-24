@@ -62,7 +62,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.util.ExpireCloseableSupplier;
+import org.apache.uniffle.common.util.ExpiringCloseableSupplier;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -182,7 +182,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpireCloseableSupplier<>(() -> mockShuffleManagerClient),
+            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
             mockHandle,
             shuffleHandle,
             contextMock);
@@ -455,7 +455,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpireCloseableSupplier<>(() -> mockShuffleManagerClient),
+            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
             mockHandle,
             shuffleHandleInfo,
             contextMock);
@@ -594,7 +594,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpireCloseableSupplier<>(() -> mockShuffleManagerClient),
+            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -743,7 +743,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpireCloseableSupplier<>(() -> mockShuffleManagerClient),
+            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -868,7 +868,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpireCloseableSupplier<>(() -> mockShuffleManagerClient),
+            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -984,7 +984,7 @@ public class RssShuffleWriterTest {
             mockShuffleManager,
             conf,
             mockWriteClient,
-            new ExpireCloseableSupplier<>(() -> mockShuffleManagerClient),
+            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);

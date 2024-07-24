@@ -168,4 +168,9 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
         getBlockingStub().reportShuffleResult(request.toProto());
     return RssReportShuffleResultResponse.fromProto(response);
   }
+
+  @Override
+  public boolean isClosed() {
+    return channel.isShutdown() || channel.isTerminated();
+  }
 }

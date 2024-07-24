@@ -19,6 +19,7 @@ package org.apache.spark.shuffle.reader;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import scala.Function0;
 import scala.Function2;
@@ -54,7 +55,6 @@ import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.util.ExpireCloseableSupplier;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED;
 
@@ -79,7 +79,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
   private List<ShuffleServerInfo> shuffleServerInfoList;
   private Configuration hadoopConf;
   private RssConf rssConf;
-  private ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier;
+  private Supplier<ShuffleManagerClient> managerClientSupplier;
 
   public RssShuffleReader(
       int startPartition,
@@ -94,7 +94,7 @@ public class RssShuffleReader<K, C> implements ShuffleReader<K, C> {
       Roaring64NavigableMap taskIdBitmap,
       RssConf rssConf,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
-      ExpireCloseableSupplier<ShuffleManagerClient> managerClientSupplier) {
+      Supplier<ShuffleManagerClient> managerClientSupplier) {
     this.appId = rssShuffleHandle.getAppId();
     this.startPartition = startPartition;
     this.endPartition = endPartition;

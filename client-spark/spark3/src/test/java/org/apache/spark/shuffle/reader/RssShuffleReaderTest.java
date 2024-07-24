@@ -41,7 +41,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.util.ExpireCloseableSupplier;
+import org.apache.uniffle.common.util.ExpiringCloseableSupplier;
 import org.apache.uniffle.storage.handler.impl.HadoopShuffleWriteHandler;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -111,7 +111,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 partitionToExpectBlocks,
                 taskIdBitmap,
                 new ShuffleReadMetrics(),
-                new ExpireCloseableSupplier<>(() -> mockShuffleManagerClient),
+                new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
                 rssConf,
                 ShuffleDataDistributionType.NORMAL,
                 partitionToServers));
@@ -135,7 +135,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 partitionToExpectBlocks,
                 taskIdBitmap,
                 new ShuffleReadMetrics(),
-                new ExpireCloseableSupplier<>(() -> mockShuffleManagerClient),
+                new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
                 rssConf,
                 ShuffleDataDistributionType.NORMAL,
                 partitionToServers));
@@ -156,7 +156,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 partitionToExpectBlocks,
                 Roaring64NavigableMap.bitmapOf(),
                 new ShuffleReadMetrics(),
-                new ExpireCloseableSupplier<>(() -> mockShuffleManagerClient),
+                new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
                 rssConf,
                 ShuffleDataDistributionType.NORMAL,
                 partitionToServers));
