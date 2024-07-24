@@ -279,12 +279,15 @@ public class RssBaseConf extends RssConf {
           .defaultValue(16)
           .withDescription("start server service max retry");
 
-  /* Serialization */
-  public static final ConfigOption<String> RSS_IO_SERIALIZATIONS =
-      ConfigOptions.key("rss.io.serializations")
+  public static final ConfigOption<String> COORDINATOR_AUTHORIZATION_CREDENTIALS =
+      ConfigOptions.key("rss.rest.authorization.credentials")
           .stringType()
-          .defaultValue(WritableSerializer.class.getName())
-          .withDescription("Serializations are used for creative Serializers and Deserializers");
+          .noDefaultValue()
+          .withDescription(
+              "Authorization credentials for the rest interface. "
+                  + "For Basic authentication the credentials are constructed by"
+                  + " first combining the username and the password with a colon (uniffle:uniffle123)"
+                  + ", and then by encoding the resulting string in base64 (dW5pZmZsZTp1bmlmZmxlMTIz).");
 
   public boolean loadConfFromFile(String fileName, List<ConfigOption<Object>> configOptions) {
     Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);
