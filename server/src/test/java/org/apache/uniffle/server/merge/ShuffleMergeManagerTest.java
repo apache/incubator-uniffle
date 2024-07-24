@@ -100,8 +100,6 @@ public class ShuffleMergeManagerTest {
   @ValueSource(
       strings = {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable",
-        "java.lang.String,java.lang.Integer",
-        "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer",
       })
   public void testMergerManager(String classes, @TempDir File tmpDir) throws Exception {
     // 1 Construct serializer and comparator

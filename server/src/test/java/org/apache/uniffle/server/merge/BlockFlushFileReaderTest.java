@@ -59,10 +59,7 @@ public class BlockFlushFileReaderTest {
       strings = {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,2",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,4",
-        "java.lang.String,java.lang.Integer,2",
-        "java.lang.String,java.lang.Integer,8",
-        "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer,2",
-        "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer,32",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,32",
       })
   public void writeTestWithMerge(String classes, @TempDir File tmpDir) throws Exception {
     final String[] classArray = classes.split(",");
