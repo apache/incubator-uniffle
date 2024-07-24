@@ -27,7 +27,6 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Response;
 import org.apache.hbase.thirdparty.javax.ws.rs.ext.Provider;
 
-import org.apache.logging.log4j.util.Strings;
 import org.apache.uniffle.common.config.RssBaseConf;
 
 @Provider
