@@ -18,10 +18,24 @@
 <Configuration status="WARN" monitorInterval="30">
   <Appenders>
     <Console name="console" target="SYSTEM_ERR">
-      <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] %c{1}.%M - %m%n%ex"/>
+      <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] %c{1} - %m%n%ex"/>
     </Console>
     <RollingFile name="RollingAppender" fileName="${sys:log.path}" filePattern="${sys:log.path}.%i">
-      <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] %c{1}.%M - %m%n%ex"/>
+      <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] %c{1} - %m%n%ex"/>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="2GB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+    <RollingFile name="shuffleServerStorageAuditAppender" fileName="${sys:shuffle.server.storage.audit.log.path}" filePattern="${sys:shuffle.server.storage.audit.log.path}.%i">
+      <PatternLayout pattern="%m%n"/>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="2GB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+    <RollingFile name="shuffleServerRpcAuditAppender" fileName="${sys:shuffle.server.rpc.audit.log.path}" filePattern="${sys:shuffle.server.rpc.audit.log.path}.%i">
+      <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] %m%n"/>
       <Policies>
         <SizeBasedTriggeringPolicy size="2GB"/>
       </Policies>
@@ -44,6 +58,12 @@
     <Logger name="org.eclipse.jetty" level="info" additivity="false">
       <AppenderRef ref="console"/>
       <AppenderRef ref="RollingAppender"/>
+    </Logger>
+    <Logger name="SHUFFLE_SERVER_STORAGE_AUDIT_LOG" level="INFO" additivity="false">
+      <AppenderRef ref="shuffleServerStorageAuditAppender"/>
+    </Logger>
+    <Logger name="SHUFFLE_SERVER_RPC_AUDIT_LOG" level="INFO" additivity="false">
+      <AppenderRef ref="shuffleServerRpcAuditAppender"/>
     </Logger>
   </Loggers>
 </Configuration>

@@ -52,7 +52,8 @@ import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY
 public class ShuffleFlushManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleFlushManager.class);
-  private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger("audit");
+  private static final Logger AUDIT_LOGGER =
+      LoggerFactory.getLogger("SHUFFLE_SERVER_STORAGE_AUDIT_LOG");
   private static final String AUDIT_DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
   public static final AtomicLong ATOMIC_EVENT_ID = new AtomicLong(0);
   private final ShuffleServer shuffleServer;
@@ -69,7 +70,7 @@ public class ShuffleFlushManager {
   private final StorageManager storageManager;
   private final long pendingEventTimeoutSec;
   private FlushEventHandler eventHandler;
-  private final boolean isAuditLogEnabled;
+  private final boolean isStorageAuditLogEnabled;
 
   public ShuffleFlushManager(
       ShuffleServerConf shuffleServerConf,
@@ -88,8 +89,8 @@ public class ShuffleFlushManager {
     eventHandler =
         new DefaultFlushEventHandler(
             shuffleServerConf, storageManager, shuffleServer, this::processFlushEvent);
-    isAuditLogEnabled =
-        this.shuffleServerConf.getBoolean(ShuffleServerConf.SERVER_AUDIT_LOG_ENABLED);
+    isStorageAuditLogEnabled =
+        this.shuffleServerConf.getBoolean(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED);
   }
 
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
@@ -180,7 +181,7 @@ public class ShuffleFlushManager {
       updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
       ShuffleTaskInfo shuffleTaskInfo =
           shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
-      if (isAuditLogEnabled) {
+      if (isStorageAuditLogEnabled) {
         AUDIT_LOGGER.info(
             String.format(
                 "%s|%s|%d|%s|%s|%s|%d|%s|%s|%d",
