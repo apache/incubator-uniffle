@@ -36,16 +36,12 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.uniffle.common.config.RssBaseConf;
-import org.apache.uniffle.server.event.PurgeEvent;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.Mockito;
-import org.mockito.stubbing.OngoingStubbing;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
@@ -54,6 +50,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
@@ -65,6 +62,7 @@ import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.server.storage.LocalStorageManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.HadoopTestBase;
@@ -85,10 +83,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 public class ShuffleTaskManagerTest extends HadoopTestBase {
 
@@ -1202,10 +1197,13 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     // get the underlying localfile storage manager to simulate hang
     LocalStorageManager storageManager = (LocalStorageManager) shuffleServer.getStorageManager();
     storageManager = spy(storageManager);
-    doAnswer(x -> {
-      Thread.sleep(100000);
-      return null;
-    }).when(storageManager).removeResources(any(PurgeEvent.class));
+    doAnswer(
+            x -> {
+              Thread.sleep(100000);
+              return null;
+            })
+        .when(storageManager)
+        .removeResources(any(PurgeEvent.class));
     shuffleTaskManager.setStorageManager(storageManager);
 
     shuffleTaskManager.removeResources(appId, false);
