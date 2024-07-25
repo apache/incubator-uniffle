@@ -67,7 +67,7 @@ public class ShuffleServerOnRandomPortTest extends CoordinatorTestBase {
     CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
     Thread.sleep(5000);
     int actualPort = nettyShuffleServers.get(0).getNettyPort();
-    assertTrue(actualPort >= 30000 && actualPort < 40000);
+    assertTrue(actualPort >= 30000 && actualPort <= 40000);
     actualPort = nettyShuffleServers.get(1).getNettyPort();
     assertTrue(actualPort >= 30000 && actualPort <= 40000);
 
@@ -87,7 +87,7 @@ public class ShuffleServerOnRandomPortTest extends CoordinatorTestBase {
     CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
     Thread.sleep(5000);
     int actualPort = grpcShuffleServers.get(0).getGrpcPort();
-    assertTrue(actualPort >= 30000 && actualPort < 40000);
+    assertTrue(actualPort >= 30000 && actualPort <= 40000);
     actualPort = grpcShuffleServers.get(1).getGrpcPort();
     assertTrue(actualPort >= 30000 && actualPort <= 40000);
 
