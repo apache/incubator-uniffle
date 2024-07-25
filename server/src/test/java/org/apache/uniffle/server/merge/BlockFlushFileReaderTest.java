@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import org.apache.hadoop.io.RawComparator;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -49,6 +50,7 @@ import org.apache.uniffle.storage.handler.impl.LocalFileServerReadHandler;
 import org.apache.uniffle.storage.handler.impl.LocalFileWriteHandler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class BlockFlushFileReaderTest {
 
@@ -152,5 +154,104 @@ public class BlockFlushFileReaderTest {
     long blockId = layout.getBlockId(ATOMIC_INT.incrementAndGet(), 0, 100);
     blocks.add(new ShufflePartitionedBlock(bytes.length, bytes.length, 0, blockId, 100, bytes));
     return blocks;
+  }
+
+  @Timeout(20)
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,2",
+      })
+  public void writeTestWithMergeWhenInterrupted(String classes, @TempDir File tmpDir)
+      throws Exception {
+    String[] classArray = classes.split(",");
+    Class keyClass = SerializerUtils.getClassByName(classArray[0]);
+    Class valueClass = SerializerUtils.getClassByName(classArray[1]);
+    Comparator comparator = SerializerUtils.getComparator(keyClass);
+    int ringBufferSize = Integer.parseInt(classArray[2]);
+
+    File dataDir = new File(tmpDir, "data");
+    String[] basePaths = new String[] {dataDir.getAbsolutePath()};
+    final LocalFileWriteHandler writeHandler1 =
+        new LocalFileWriteHandler("appId", 0, 1, 1, basePaths[0], "pre");
+
+    RssBaseConf conf = new RssBaseConf();
+    conf.setString("rss.storage.basePath", dataDir.getAbsolutePath());
+    final Set<Long> expectedBlockIds = new HashSet<>();
+    for (int i = 0; i < 10; i++) {
+      writeTestData(
+          generateBlocks(conf, keyClass, valueClass, i, 10, 10090),
+          writeHandler1,
+          expectedBlockIds);
+    }
+
+    File dataOutput = new File(tmpDir, "dataOutput");
+    LocalFileServerReadHandler readHandler =
+        new LocalFileServerReadHandler("appId", 0, 1, 1, 10, dataDir.getAbsolutePath());
+    String dataFileName = readHandler.getDataFileName();
+    String indexFileName = readHandler.getIndexFileName();
+
+    BlockFlushFileReader blockFlushFileReader =
+        new BlockFlushFileReader(dataFileName, indexFileName, ringBufferSize);
+
+    List<Segment> segments = new ArrayList<>();
+    for (Long blockId : expectedBlockIds) {
+      PartialInputStream partialInputStream =
+          blockFlushFileReader.registerBlockInputStream(blockId);
+      segments.add(
+          new MockedStreamedSegment(
+              conf,
+              partialInputStream,
+              blockId,
+              keyClass,
+              valueClass,
+              comparator instanceof RawComparator,
+              blockFlushFileReader));
+    }
+
+    FileOutputStream outputStream = new FileOutputStream(dataOutput);
+    assertThrows(
+        Exception.class,
+        () -> {
+          Merger.merge(
+              conf,
+              outputStream,
+              segments,
+              keyClass,
+              valueClass,
+              comparator,
+              comparator instanceof RawComparator);
+        });
+    outputStream.close();
+  }
+
+  class MockedStreamedSegment extends StreamedSegment {
+
+    BlockFlushFileReader reader;
+    int count;
+
+    MockedStreamedSegment(
+        RssConf rssConf,
+        PartialInputStream inputStream,
+        long blockId,
+        Class keyClass,
+        Class valueClass,
+        boolean raw,
+        BlockFlushFileReader reader) {
+      super(rssConf, inputStream, blockId, keyClass, valueClass, raw);
+      this.reader = reader;
+    }
+
+    public boolean next() throws IOException {
+      boolean ret = super.next();
+      if (this.count++ > 200) {
+        try {
+          this.reader.close();
+        } catch (InterruptedException e) {
+          throw new IOException(e);
+        }
+      }
+      return ret;
+    }
   }
 }

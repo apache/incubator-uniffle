@@ -314,8 +314,8 @@ public class BlockFlushFileReader {
     }
 
     public int read(byte[] bs, int off, int len) throws IOException {
-      if (readThrowable != null) {
-        throw new IOException("Read flush file failed!", readThrowable);
+      if (stop) {
+        throw new IOException("Block flush file reader is closed, caused by " + readThrowable);
       }
       if (bs == null) {
         throw new NullPointerException();
@@ -327,7 +327,7 @@ public class BlockFlushFileReader {
       if (eof) {
         return -1;
       }
-      while (ringBuffer.empty()) {
+      while (ringBuffer.empty() && !stop) {
         if (lock.isHeldByCurrentThread()) {
           lock.unlock();
         }
@@ -347,13 +347,13 @@ public class BlockFlushFileReader {
 
     @Override
     public int read() throws IOException {
-      if (readThrowable != null) {
-        throw new IOException("Read flush file failed!", readThrowable);
+      if (stop) {
+        throw new IOException("Block flush file reader is closed, caused by " + readThrowable);
       }
       if (eof) {
         return -1;
       }
-      while (ringBuffer.empty()) {
+      while (ringBuffer.empty() && !stop) {
         if (lock.isHeldByCurrentThread()) {
           lock.unlock();
         }
