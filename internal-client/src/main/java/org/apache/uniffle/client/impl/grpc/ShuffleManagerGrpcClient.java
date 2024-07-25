@@ -50,10 +50,6 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
   private final long rpcTimeout;
   private ShuffleManagerGrpc.ShuffleManagerBlockingStub blockingStub;
 
-  public ShuffleManagerGrpcClient(String host, int port) {
-    this(host, port, 60 * 1000, 3);
-  }
-
   public ShuffleManagerGrpcClient(String host, int port, long rpcTimeout) {
     this(host, port, rpcTimeout, 3);
   }

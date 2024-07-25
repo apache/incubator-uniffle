@@ -40,13 +40,4 @@ public class ShuffleManagerClientFactory {
       throw new UnsupportedOperationException("Unsupported client type " + clientType);
     }
   }
-
-  public ShuffleManagerGrpcClient createShuffleManagerClient(
-      ClientType clientType, String host, int port) {
-    if (ClientType.GRPC.equals(clientType)) {
-      return new ShuffleManagerGrpcClient(host, port);
-    } else {
-      throw new UnsupportedOperationException("Unsupported client type " + clientType);
-    }
-  }
 }
