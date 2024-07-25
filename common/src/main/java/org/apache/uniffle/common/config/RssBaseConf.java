@@ -287,7 +287,7 @@ public class RssBaseConf extends RssConf {
           .withDescription("Serializations are used for creative Serializers and Deserializers");
 
   public static final ConfigOption<String> REST_AUTHORIZATION_CREDENTIALS =
-      ConfigOptions.key("rss.rest.authorization.credentials")
+      ConfigOptions.key("rss.http.basic.authorizationCredentials")
           .stringType()
           .noDefaultValue()
           .withDescription(

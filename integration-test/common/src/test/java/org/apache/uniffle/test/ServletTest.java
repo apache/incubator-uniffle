@@ -360,4 +360,20 @@ public class ServletTest extends IntegrationTestBase {
     assertEquals(0, response.getCode());
     assertEquals(ServerStatus.ACTIVE, shuffleServer.getServerStatus());
   }
+
+  @Test
+  public void testRequestWithWrongCredentials() throws Exception {
+    DecommissionRequest decommissionRequest = new DecommissionRequest();
+    decommissionRequest.setServerIds(Sets.newHashSet("not_exist_serverId"));
+    String wrongCredentials = "dW5pZmZsZTp1bmlmZmxlMTIz1";
+    String content =
+        TestUtils.httpPost(
+            CANCEL_DECOMMISSION_URL,
+            objectMapper.writeValueAsString(decommissionRequest),
+            ImmutableMap.of("Authorization", "Basic " + wrongCredentials));
+    for (int i = 0; i < 1000; i++) {
+      Thread.sleep(1000);
+    }
+    assertEquals("Authentication Failed", content);
+  }
 }
