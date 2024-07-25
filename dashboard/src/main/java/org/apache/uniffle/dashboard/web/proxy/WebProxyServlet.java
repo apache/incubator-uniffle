@@ -46,14 +46,14 @@ public class WebProxyServlet extends ProxyServlet {
       return null;
     }
     String targetAddress;
-    if (clientRequest.getHeader("serverType").equals("coordinator")) {
+    if ("server".equals(clientRequest.getHeader("serverType"))) {
+      targetAddress = clientRequest.getHeader("targetAddress");
+    } else {
       targetAddress = coordinatorServerAddressesMap.get(clientRequest.getHeader("targetAddress"));
       if (targetAddress == null) {
         // Get random one from coordinatorServerAddressesMap
         targetAddress = coordinatorServerAddressesMap.values().iterator().next();
       }
-    } else {
-      targetAddress = clientRequest.getHeader("targetAddress");
     }
     StringBuilder target = new StringBuilder();
     if (targetAddress.endsWith("/")) {
