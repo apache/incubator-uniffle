@@ -18,6 +18,7 @@
 package org.apache.uniffle.common.util;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -43,12 +44,13 @@ public class ExpiringCloseableSupplier<T extends StatefulCloseable>
   private final long delayCloseInterval;
 
   private transient volatile ScheduledFuture<?> future;
-  private transient volatile long accessTime;
+  private transient volatile Long accessTime;
   private transient volatile T t;
 
   private ExpiringCloseableSupplier(Supplier<T> delegate, long delayCloseInterval) {
     this.delegate = delegate;
     this.delayCloseInterval = delayCloseInterval;
+    this.accessTime = System.currentTimeMillis();
   }
 
   public synchronized T get() {
@@ -102,5 +104,10 @@ public class ExpiringCloseableSupplier<T extends StatefulCloseable>
   public static <T extends StatefulCloseable> ExpiringCloseableSupplier<T> of(
       Supplier<T> delegate, long delayCloseInterval) {
     return new ExpiringCloseableSupplier<>(delegate, delayCloseInterval);
+  }
+
+  private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+    ois.defaultReadObject();
+    this.accessTime = System.currentTimeMillis();
   }
 }
