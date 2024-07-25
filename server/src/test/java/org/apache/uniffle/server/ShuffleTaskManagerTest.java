@@ -36,11 +36,16 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.server.event.PurgeEvent;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mockito;
+import org.mockito.stubbing.OngoingStubbing;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
@@ -68,6 +73,7 @@ import org.apache.uniffle.storage.handler.impl.HadoopClientReadHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.common.StorageType.MEMORY_LOCALFILE;
 import static org.apache.uniffle.server.ShuffleServerConf.CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,6 +83,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 public class ShuffleTaskManagerTest extends HadoopTestBase {
 
@@ -1152,6 +1164,51 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
 
     // case3: client max concurrency exceed 30
     assertEquals(30, ShuffleTaskManager.getMaxConcurrencyWriting(40, conf));
+  }
+
+  @Timeout(10)
+  @Test
+  public void testStorageRemoveResourceHang(@TempDir File tmpDir) throws Exception {
+    String confFile = ClassLoader.getSystemResource("server.conf").getFile();
+    ShuffleServerConf conf = new ShuffleServerConf(confFile);
+    final String storageBasePath = tmpDir.getAbsolutePath() + "rss/testStorageRemoveResourceHang";
+    conf.set(RssBaseConf.RSS_STORAGE_TYPE, MEMORY_LOCALFILE);
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
+    conf.set(ShuffleServerConf.RPC_SERVER_PORT, 1234);
+    conf.set(ShuffleServerConf.RSS_COORDINATOR_QUORUM, "localhost:9527");
+    conf.set(ShuffleServerConf.STORAGE_REMOVE_RESOURCE_OPERATION_TIMEOUT_SEC, 2L);
+
+    shuffleServer = new ShuffleServer(conf);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
+
+    String appId = "appId1";
+    shuffleTaskManager.registerShuffle(
+        appId,
+        1,
+        Lists.newArrayList(new PartitionRange(0, 1)),
+        new RemoteStorageInfo(storageBasePath, Maps.newHashMap()),
+        StringUtils.EMPTY);
+    shuffleTaskManager.refreshAppId(appId);
+    assertEquals(1, shuffleTaskManager.getAppIds().size());
+
+    ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 35);
+    shuffleTaskManager.requireBuffer(35);
+    shuffleTaskManager.cacheShuffleData(appId, 0, false, partitionedData0);
+    shuffleTaskManager.updateCachedBlockIds(appId, 0, partitionedData0.getBlockList());
+    shuffleTaskManager.refreshAppId(appId);
+    shuffleTaskManager.checkResourceStatus();
+    assertEquals(1, shuffleTaskManager.getAppIds().size());
+
+    // get the underlying localfile storage manager to simulate hang
+    LocalStorageManager storageManager = (LocalStorageManager) shuffleServer.getStorageManager();
+    storageManager = spy(storageManager);
+    doAnswer(x -> {
+      Thread.sleep(100000);
+      return null;
+    }).when(storageManager).removeResources(any(PurgeEvent.class));
+    shuffleTaskManager.setStorageManager(storageManager);
+
+    shuffleTaskManager.removeResources(appId, false);
   }
 
   @Test

@@ -290,7 +290,9 @@ public class LocalStorageManager extends SingleStorageManager {
                     StorageType.LOCALFILE.name(), new Configuration()));
 
     List<String> deletePaths =
-        storageBasePaths.stream()
+        localStorages.stream()
+            .filter(x -> !x.isCorrupted())
+            .map(x -> x.getBasePath())
             .flatMap(
                 path -> {
                   String basicPath = ShuffleStorageUtils.getFullShuffleDataFolder(path, appId);
