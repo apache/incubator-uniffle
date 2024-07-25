@@ -222,8 +222,8 @@ public class ServletTest extends IntegrationTestBase {
     ShuffleServer shuffleServer4 = grpcShuffleServers.get(3);
     shuffleServer3.markUnhealthy();
     shuffleServer4.markUnhealthy();
-    Set<String> expectShuffleIds = Sets.newHashSet(
-        (Lists.newArrayList(shuffleServer3.getId(), shuffleServer4.getId())));
+    Set<String> expectShuffleIds =
+        Sets.newHashSet((Lists.newArrayList(shuffleServer3.getId(), shuffleServer4.getId())));
     Set<String> shuffleIds = Sets.newHashSet();
     Awaitility.await()
         .atMost(30, TimeUnit.SECONDS)
