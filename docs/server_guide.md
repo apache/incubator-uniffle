@@ -30,7 +30,7 @@ This document will introduce how to deploy Uniffle shuffle servers.
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
-     XMX_SIZE="80g"
+     UNIFFLE_SHUFFLE_SERVER_XMX_SIZE="80g"
    ```
    
    For the following cases, you don't need to specify `HADOOP_HOME` that will simplify the server deployment.

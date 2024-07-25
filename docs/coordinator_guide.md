@@ -34,7 +34,7 @@ This document will introduce how to deploy Uniffle coordinators.
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
-     XMX_SIZE="16g"
+     UNIFFLE_COORDINATOR_XMX_SIZE="16g"
    ```
    You can add extra JVM arguments for the Uniffle coordinator by specifying `UNIFFLE_COORDINATOR_JAVA_OPTS` in `rss-env.sh`.
    Example:

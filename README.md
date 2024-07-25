@@ -155,7 +155,7 @@ If you have packaged tgz with hadoop jars, the env of `HADOOP_HOME` is needn't s
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
-     XMX_SIZE="16g"
+     UNIFFLE_COORDINATOR_XMX_SIZE="16g"
    ```
 3. update RSS_HOME/conf/coordinator.conf, e.g.,
    ```
@@ -206,7 +206,7 @@ Deploy Steps:
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
-     XMX_SIZE="80g"
+     UNIFFLE_SHUFFLE_SERVER_XMX_SIZE="80g"
    ```
 3. update RSS_HOME/conf/server.conf, e.g.,
    ```

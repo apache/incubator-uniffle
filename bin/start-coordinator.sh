@@ -26,9 +26,9 @@ load_rss_env
 
 cd "$RSS_HOME"
 
-COORDINATOR_CONF_FILE="${RSS_CONF_DIR}/coordinator.conf"
+COORDINATOR_CONF_FILE=${COORDINATOR_CONF_FILE:-"${RSS_CONF_DIR}/coordinator.conf"}
 JAR_DIR="${RSS_HOME}/jars"
-LOG_CONF_FILE="${RSS_CONF_DIR}/log4j2.xml"
+LOG_CONF_FILE=${LOG_CONF_FILE:-"${RSS_CONF_DIR}/log4j2.xml"}
 LOG_PATH="${RSS_LOG_DIR}/coordinator.log"
 
 MAIN_CLASS="org.apache.uniffle.coordinator.CoordinatorServer"
@@ -60,15 +60,16 @@ set -u
 
 echo "class path is $CLASSPATH"
 
-JVM_ARGS=" -server \
-          -Xmx${XMX_SIZE:-8g} \
-          -Xms${XMX_SIZE:-8g} \
+UNIFFLE_COORDINATOR_XMX_SIZE=${UNIFFLE_COORDINATOR_XMX_SIZE:-${XMX_SIZE:-"8g"}}
+UNIFFLE_COORDINATOR_DEFAULT_JVM_ARGS=${UNIFFLE_COORDINATOR_DEFAULT_JVM_ARGS:-" -server \
+          -Xmx${UNIFFLE_COORDINATOR_XMX_SIZE} \
+          -Xms${UNIFFLE_COORDINATOR_XMX_SIZE} \
           -XX:+UseG1GC \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
           -XX:ConcGCThreads=5 \
           -XX:InitiatingHeapOccupancyPercent=45 \
-          -XX:+PrintCommandLineFlags"
+          -XX:+PrintCommandLineFlags"}
 
 GC_LOG_ARGS_LEGACY=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
@@ -91,10 +92,10 @@ GC_LOG_ARGS_NEW=" -XX:+IgnoreUnrecognizedVMOptions \
           -Xlog:gc+start=debug \
           -Xlog:gc*:file=${RSS_LOG_DIR}/gc-%t.log:tags,uptime,time,level"
 
-ARGS=""
+JVM_LOG_ARGS=""
 
 if [ -f ${LOG_CONF_FILE} ]; then
-  ARGS="$ARGS -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH}"
+  JVM_LOG_ARGS=" -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH}"
 else
   echo "Exit with error: ${LOG_CONF_FILE} file doesn't exist."
   exit 1
@@ -102,13 +103,13 @@ fi
 
 version=$($RUNNER -version 2>&1 | awk -F[\".] '/version/ {print $2}')
 if [[ "$version" -lt "9" ]]; then
-  GC_ARGS=$GC_LOG_ARGS_LEGACY
+  JVM_GC_ARGS=${JVM_GC_ARGS:-$GC_LOG_ARGS_LEGACY}
 else
-  GC_ARGS=$GC_LOG_ARGS_NEW
+  JVM_GC_ARGS=${JVM_GC_ARGS:-$GC_LOG_ARGS_NEW}
 fi
 
 UNIFFLE_COORDINATOR_JAVA_OPTS=${UNIFFLE_COORDINATOR_JAVA_OPTS:-""}
-$RUNNER ${UNIFFLE_COORDINATOR_JAVA_OPTS} $ARGS $JVM_ARGS $GC_ARGS -cp $CLASSPATH $MAIN_CLASS --conf "$COORDINATOR_CONF_FILE" $@ &
+$RUNNER ${JVM_LOG_ARGS} ${UNIFFLE_COORDINATOR_DEFAULT_JVM_ARGS} ${JVM_GC_ARGS} ${UNIFFLE_COORDINATOR_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${COORDINATOR_CONF_FILE}" $@ &
 
 get_pid_file_name coordinator
 echo $! >${RSS_PID_DIR}/${pid_file}
