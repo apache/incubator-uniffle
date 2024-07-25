@@ -19,7 +19,7 @@ package org.apache.uniffle.common.util;
 
 import java.io.Closeable;
 
-/** CloseStateful is an interface that utilizes the ExpiringCloseableSupplier delegate. */
-public interface CloseStateful extends Closeable {
+/** StatefulCloseable is an interface that utilizes the ExpiringCloseableSupplier delegate. */
+public interface StatefulCloseable extends Closeable {
   boolean isClosed();
 }

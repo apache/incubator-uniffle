@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * A Supplier for T cacheable and autocloseable with delay by using ExpiringCloseableSupplier to
  * obtain an object, manual closure may not be necessary.
  */
-public class ExpiringCloseableSupplier<T extends CloseStateful>
+public class ExpiringCloseableSupplier<T extends StatefulCloseable>
     implements Supplier<T>, Serializable {
   private static final long serialVersionUID = 0;
   private static final Logger LOG = LoggerFactory.getLogger(ExpiringCloseableSupplier.class);
@@ -94,11 +94,12 @@ public class ExpiringCloseableSupplier<T extends CloseStateful>
     }
   }
 
-  public static <T extends CloseStateful> ExpiringCloseableSupplier<T> of(Supplier<T> delegate) {
+  public static <T extends StatefulCloseable> ExpiringCloseableSupplier<T> of(
+      Supplier<T> delegate) {
     return new ExpiringCloseableSupplier<>(delegate, DEFAULT_DELAY_CLOSE_INTERVAL);
   }
 
-  public static <T extends CloseStateful> ExpiringCloseableSupplier<T> of(
+  public static <T extends StatefulCloseable> ExpiringCloseableSupplier<T> of(
       Supplier<T> delegate, long delayCloseInterval) {
     return new ExpiringCloseableSupplier<>(delegate, delayCloseInterval);
   }

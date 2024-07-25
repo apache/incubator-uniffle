@@ -148,7 +148,7 @@ class ExpiringCloseableSupplierTest {
         .until(() -> clients.stream().allMatch(MockClient::isClosed));
   }
 
-  private static class MockClient implements CloseStateful, Serializable {
+  private static class MockClient implements StatefulCloseable, Serializable {
     boolean withException;
     AtomicBoolean closed = new AtomicBoolean(false);
 

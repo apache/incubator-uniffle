@@ -32,9 +32,9 @@ import org.apache.uniffle.client.response.RssReassignServersResponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
-import org.apache.uniffle.common.util.CloseStateful;
+import org.apache.uniffle.common.util.StatefulCloseable;
 
-public interface ShuffleManagerClient extends CloseStateful {
+public interface ShuffleManagerClient extends StatefulCloseable {
   RssReportShuffleFetchFailureResponse reportShuffleFetchFailure(
       RssReportShuffleFetchFailureRequest request);
 
