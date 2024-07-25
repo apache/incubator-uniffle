@@ -28,6 +28,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 
 public class RssShuffleHandle<K, V, C> extends ShuffleHandle {
+  private static final long serialVersionUID = -5519528926859572710L;
 
   private String appId;
   private int numMaps;
