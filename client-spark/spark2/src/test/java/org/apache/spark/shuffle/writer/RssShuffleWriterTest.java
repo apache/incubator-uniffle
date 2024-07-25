@@ -127,7 +127,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
+            ExpiringCloseableSupplier.of(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -304,7 +304,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
+            ExpiringCloseableSupplier.of(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -418,7 +418,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockWriteClient,
-            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
+            ExpiringCloseableSupplier.of(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);

@@ -103,7 +103,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 taskIdBitmap,
                 rssConf,
                 partitionToServers,
-                new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient)));
+                ExpiringCloseableSupplier.of(() -> mockShuffleManagerClient)));
 
     validateResult(rssShuffleReaderSpy.read(), expectedData, 10);
   }
