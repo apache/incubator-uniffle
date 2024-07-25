@@ -44,13 +44,12 @@ public class ExpiringCloseableSupplier<T extends StatefulCloseable>
   private final long delayCloseInterval;
 
   private transient volatile ScheduledFuture<?> future;
-  private transient volatile Long accessTime;
+  private transient volatile long accessTime = System.currentTimeMillis();
   private transient volatile T t;
 
   private ExpiringCloseableSupplier(Supplier<T> delegate, long delayCloseInterval) {
     this.delegate = delegate;
     this.delayCloseInterval = delayCloseInterval;
-    this.accessTime = System.currentTimeMillis();
   }
 
   public synchronized T get() {
