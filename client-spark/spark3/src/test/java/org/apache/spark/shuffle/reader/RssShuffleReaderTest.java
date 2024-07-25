@@ -111,7 +111,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 partitionToExpectBlocks,
                 taskIdBitmap,
                 new ShuffleReadMetrics(),
-                new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
+                ExpiringCloseableSupplier.of(() -> mockShuffleManagerClient),
                 rssConf,
                 ShuffleDataDistributionType.NORMAL,
                 partitionToServers));
@@ -135,7 +135,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 partitionToExpectBlocks,
                 taskIdBitmap,
                 new ShuffleReadMetrics(),
-                new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
+                ExpiringCloseableSupplier.of(() -> mockShuffleManagerClient),
                 rssConf,
                 ShuffleDataDistributionType.NORMAL,
                 partitionToServers));
@@ -156,7 +156,7 @@ public class RssShuffleReaderTest extends AbstractRssReaderTest {
                 partitionToExpectBlocks,
                 Roaring64NavigableMap.bitmapOf(),
                 new ShuffleReadMetrics(),
-                new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
+                ExpiringCloseableSupplier.of(() -> mockShuffleManagerClient),
                 rssConf,
                 ShuffleDataDistributionType.NORMAL,
                 partitionToServers));

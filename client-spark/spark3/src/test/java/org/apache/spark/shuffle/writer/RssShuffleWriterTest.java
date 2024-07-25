@@ -182,7 +182,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
+            ExpiringCloseableSupplier.of(() -> mockShuffleManagerClient),
             mockHandle,
             shuffleHandle,
             contextMock);
@@ -455,7 +455,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
+            ExpiringCloseableSupplier.of(() -> mockShuffleManagerClient),
             mockHandle,
             shuffleHandleInfo,
             contextMock);
@@ -594,7 +594,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
+            ExpiringCloseableSupplier.of(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -743,7 +743,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
+            ExpiringCloseableSupplier.of(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -868,7 +868,7 @@ public class RssShuffleWriterTest {
             manager,
             conf,
             mockShuffleWriteClient,
-            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
+            ExpiringCloseableSupplier.of(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
@@ -984,7 +984,7 @@ public class RssShuffleWriterTest {
             mockShuffleManager,
             conf,
             mockWriteClient,
-            new ExpiringCloseableSupplier<>(() -> mockShuffleManagerClient),
+            ExpiringCloseableSupplier.of(() -> mockShuffleManagerClient),
             mockHandle,
             mockShuffleHandleInfo,
             contextMock);
