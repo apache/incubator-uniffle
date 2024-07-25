@@ -24,8 +24,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -222,9 +222,7 @@ public class ServletTest extends IntegrationTestBase {
     ShuffleServer shuffleServer4 = grpcShuffleServers.get(3);
     shuffleServer3.markUnhealthy();
     shuffleServer4.markUnhealthy();
-    Set<String> expectShuffleIds =
-        Sets.newHashSet((Lists.newArrayList(shuffleServer3.getId(), shuffleServer4.getId())));
-    Set<String> shuffleIds = Sets.newHashSet();
+    List<String> expectShuffleIds = Arrays.asList(shuffleServer3.getId(), shuffleServer4.getId());
     Awaitility.await()
         .atMost(30, TimeUnit.SECONDS)
         .until(
@@ -234,13 +232,18 @@ public class ServletTest extends IntegrationTestBase {
                       TestUtils.httpGet(UNHEALTHYNODES_URL),
                       new TypeReference<Response<List<HashMap<String, Object>>>>() {});
               List<HashMap<String, Object>> serverList = response.getData();
-              for (HashMap<String, Object> serverInfo : serverList) {
-                String shuffleId = (String) serverInfo.get("id");
-                shuffleIds.add(shuffleId);
+              if (serverList.size() != 2) {
+                return false;
               }
-              return shuffleIds.size() == 2;
+
+              List<String> shuffleIds =
+                  serverList.stream()
+                      .map(serverInfo -> (String) serverInfo.get("id"))
+                      .collect(Collectors.toList());
+
+              assertTrue(CollectionUtils.isEqualCollection(expectShuffleIds, shuffleIds));
+              return true;
             });
-    assertTrue(CollectionUtils.isEqualCollection(expectShuffleIds, shuffleIds));
   }
 
   @Test
