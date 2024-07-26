@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -78,10 +79,12 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.ConfigOption;
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.ExpiringCloseableSupplier;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.shuffle.BlockIdManager;
 
@@ -104,7 +107,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   protected String clientType;
 
   protected SparkConf sparkConf;
-  protected ShuffleManagerClient shuffleManagerClient;
+  protected Supplier<ShuffleManagerClient> managerClientSupplier;
   protected boolean rssStageRetryEnabled;
   protected boolean rssStageRetryForWriteFailureEnabled;
   protected boolean rssStageRetryForFetchFailureEnabled;
@@ -588,7 +591,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
         new RssPartitionToShuffleServerRequest(shuffleId);
     RssReassignOnStageRetryResponse rpcPartitionToShufflerServer =
-        getOrCreateShuffleManagerClient()
+        getOrCreateShuffleManagerClientSupplier()
+            .get()
             .getPartitionToShufflerServerWithStageRetry(rssPartitionToShuffleServerRequest);
     StageAttemptShuffleHandleInfo shuffleHandleInfo =
         StageAttemptShuffleHandleInfo.fromProto(
@@ -607,25 +611,27 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     RssPartitionToShuffleServerRequest rssPartitionToShuffleServerRequest =
         new RssPartitionToShuffleServerRequest(shuffleId);
     RssReassignOnBlockSendFailureResponse rpcPartitionToShufflerServer =
-        getOrCreateShuffleManagerClient()
+        getOrCreateShuffleManagerClientSupplier()
+            .get()
             .getPartitionToShufflerServerWithBlockRetry(rssPartitionToShuffleServerRequest);
     MutableShuffleHandleInfo shuffleHandleInfo =
         MutableShuffleHandleInfo.fromProto(rpcPartitionToShufflerServer.getHandle());
     return shuffleHandleInfo;
   }
 
-  // todo: automatic close client when the client is idle to avoid too much connections for spark
-  // driver.
-  protected ShuffleManagerClient getOrCreateShuffleManagerClient() {
-    if (shuffleManagerClient == null) {
+  protected synchronized Supplier<ShuffleManagerClient> getOrCreateShuffleManagerClientSupplier() {
+    if (managerClientSupplier == null) {
       RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
       String driver = rssConf.getString("driver.host", "");
       int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
-      this.shuffleManagerClient =
-          ShuffleManagerClientFactory.getInstance()
-              .createShuffleManagerClient(ClientType.GRPC, driver, port);
+      long rpcTimeout = rssConf.getLong(RssBaseConf.RSS_CLIENT_TYPE_GRPC_TIMEOUT_MS);
+      this.managerClientSupplier =
+          ExpiringCloseableSupplier.of(
+              () ->
+                  ShuffleManagerClientFactory.getInstance()
+                      .createShuffleManagerClient(ClientType.GRPC, driver, port, rpcTimeout));
     }
-    return shuffleManagerClient;
+    return managerClientSupplier;
   }
 
   @Override
@@ -805,6 +811,14 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           reassignResult);
 
       return internalHandle;
+    }
+  }
+
+  @Override
+  public void stop() {
+    if (managerClientSupplier != null
+        && managerClientSupplier instanceof ExpiringCloseableSupplier) {
+      ((ExpiringCloseableSupplier<ShuffleManagerClient>) managerClientSupplier).close();
     }
   }
 
