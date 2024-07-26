@@ -18,13 +18,13 @@
 package org.apache.uniffle.common.util;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +44,10 @@ public class ExpiringCloseableSupplier<T extends StatefulCloseable>
   private final long delayCloseInterval;
 
   private transient volatile ScheduledFuture<?> future;
+
+  @SuppressFBWarnings("SE_TRANSIENT_FIELD_NOT_RESTORED")
   private transient volatile long accessTime = System.currentTimeMillis();
+
   private transient volatile T t;
 
   private ExpiringCloseableSupplier(Supplier<T> delegate, long delayCloseInterval) {
@@ -103,10 +106,5 @@ public class ExpiringCloseableSupplier<T extends StatefulCloseable>
   public static <T extends StatefulCloseable> ExpiringCloseableSupplier<T> of(
       Supplier<T> delegate, long delayCloseInterval) {
     return new ExpiringCloseableSupplier<>(delegate, delayCloseInterval);
-  }
-
-  private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-    ois.defaultReadObject();
-    this.accessTime = System.currentTimeMillis();
   }
 }
