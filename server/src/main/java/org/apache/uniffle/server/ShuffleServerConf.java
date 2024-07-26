@@ -636,6 +636,12 @@ public class ShuffleServerConf extends RssBaseConf {
               "A comma-separated block size list, where each value"
                   + " can be suffixed with a memory size unit, such as kb or k, mb or m, etc.");
 
+  public static final ConfigOption<Long> STORAGE_REMOVE_RESOURCE_OPERATION_TIMEOUT_SEC =
+      ConfigOptions.key("rss.server.storage.resourceRemoveOperationTimeoutSec")
+          .longType()
+          .defaultValue(10 * 60L)
+          .withDescription("The storage remove resource operation timeout.");
+
   public ShuffleServerConf() {}
 
   public ShuffleServerConf(String fileName) {
