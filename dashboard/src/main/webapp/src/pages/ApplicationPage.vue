@@ -55,7 +55,7 @@
       >
         <el-table-column prop="appId" label="AppId" min-width="180" sortable fixed />
         <el-table-column prop="userName" label="UserName" min-width="180" sortable />
-        <el-table-columnsortable
+        <el-table-column
           prop="registrationTime"
           label="Registration Time"
           min-width="180"
