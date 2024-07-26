@@ -31,13 +31,13 @@ public class WebProxyServlet extends ProxyServlet {
 
   private static final Logger LOG = LoggerFactory.getLogger(WebProxyServlet.class);
   /** The key of the request header. */
-  private static final String TARGETADDRESS = "targetAddress";
+  private static final String HEADER_TARGET_ADDRESS = "targetAddress";
 
-  private static final String REQUESTSERVERTYPE = "requestServerType";
+  private static final String HEADER_REQUEST_SERVER_TYPE = "requestServerType";
   /** The value of the request header. */
-  private static final String COORDINATOR = "coordinator";
+  private static final String REQUEST_SERVER_TYPE_COORDINATOR = "coordinator";
 
-  private static final String SERVER = "server";
+  private static final String REQUEST_SERVER_TYPE_SERVER = "server";
   private Map<String, String> coordinatorServerAddressesMap;
 
   public WebProxyServlet(Map<String, String> coordinatorServerAddressesMap) {
@@ -53,14 +53,16 @@ public class WebProxyServlet extends ProxyServlet {
     }
     String targetAddress;
     String requestServerType =
-        clientRequest.getHeader(REQUESTSERVERTYPE) != null
-                && COORDINATOR.equalsIgnoreCase(clientRequest.getHeader(REQUESTSERVERTYPE))
-            ? COORDINATOR
-            : SERVER;
-    if (requestServerType.equalsIgnoreCase(COORDINATOR)) {
-      targetAddress = coordinatorServerAddressesMap.get(clientRequest.getHeader(TARGETADDRESS));
+        clientRequest.getHeader(HEADER_REQUEST_SERVER_TYPE) != null
+                && REQUEST_SERVER_TYPE_COORDINATOR.equalsIgnoreCase(
+                    clientRequest.getHeader(HEADER_REQUEST_SERVER_TYPE))
+            ? REQUEST_SERVER_TYPE_COORDINATOR
+            : REQUEST_SERVER_TYPE_SERVER;
+    if (requestServerType.equalsIgnoreCase(REQUEST_SERVER_TYPE_COORDINATOR)) {
+      targetAddress =
+          coordinatorServerAddressesMap.get(clientRequest.getHeader(HEADER_TARGET_ADDRESS));
     } else {
-      targetAddress = clientRequest.getHeader(TARGETADDRESS);
+      targetAddress = clientRequest.getHeader(HEADER_TARGET_ADDRESS);
     }
     StringBuilder target = new StringBuilder();
     target.append(targetAddress).append("/api").append(clientRequest.getPathInfo());
