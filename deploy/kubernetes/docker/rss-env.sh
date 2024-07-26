@@ -25,7 +25,17 @@ HADOOP_HOME="/data/rssadmin/hadoop"
 RUNNER="${JAVA_HOME}/bin/java"
 JPS="${JAVA_HOME}/bin/jps"
 
-# RSS_HOME, RSS home directory (Default: parent directory of the script)
+# RSS_HOME, RSS home directory (Default: parent directory of the script).
+# If you want to set it to another place, please make sure the RSS_HOME
+# specified externally is respected, by defining it as follows:
+#
+# RSS_HOME=${RSS_HOME:-{another_rss_home_path}}
+#
+# RSS_CONF_DIR, RSS configuration directory (Default: ${RSS_HOME}/conf)
+# Similar with RSS_HOME, RSS_CONF_DIR should respect external env variable.
+#
+# RSS_CONF_DIR=${RSS_CONF_DIR:-{another_rss_conf_dir}}
+
 # RSS_CONF_DIR, RSS configuration directory (Default: ${RSS_HOME}/conf)
 # HADOOP_CONF_DIR, Hadoop configuration directory (Default: ${HADOOP_HOME}/etc/hadoop)
 # RSS_PID_DIR, Where the pid file is stored (Default: ${RSS_HOME})
