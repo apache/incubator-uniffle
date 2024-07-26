@@ -34,7 +34,6 @@ import org.apache.uniffle.common.ShuffleServerInfo;
  */
 public class SimpleShuffleHandleInfo extends ShuffleHandleInfoBase implements Serializable {
   private static final long serialVersionUID = 0L;
-
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
 
   public SimpleShuffleHandleInfo(
