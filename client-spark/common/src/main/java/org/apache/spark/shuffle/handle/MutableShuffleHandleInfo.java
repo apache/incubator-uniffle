@@ -40,7 +40,7 @@ import org.apache.uniffle.proto.RssProtos;
 
 /** This class holds the dynamic partition assignment for partition reassign mechanism. */
 public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
-  private static final long serialVersionUID = 6093767633402040247L;
+  private static final long serialVersionUID = 0L;
   private static final Logger LOGGER = LoggerFactory.getLogger(MutableShuffleHandleInfo.class);
 
   /**
