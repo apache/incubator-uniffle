@@ -151,7 +151,7 @@ If you have packaged tgz with hadoop jars, the env of `HADOOP_HOME` is needn't s
 ### Deploy Coordinator
 
 1. unzip package to RSS_HOME
-2. update RSS_HOME/bin/rss-env.sh, e.g.,
+2. update RSS_HOME/conf/rss-env.sh, e.g.,
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
@@ -202,7 +202,7 @@ Shuffle Server use GRPC to transfer data)
 
 Deploy Steps:
 1. unzip package to RSS_HOME
-2. update RSS_HOME/bin/rss-env.sh, e.g.,
+2. update RSS_HOME/conf/rss-env.sh, e.g.,
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
