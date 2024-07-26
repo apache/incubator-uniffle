@@ -26,7 +26,7 @@ This document will introduce how to deploy Uniffle shuffle servers.
 
 ### Steps
 1. unzip package to RSS_HOME
-2. update RSS_HOME/bin/rss-env.sh, eg,
+2. update RSS_HOME/conf/rss-env.sh, eg,
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
