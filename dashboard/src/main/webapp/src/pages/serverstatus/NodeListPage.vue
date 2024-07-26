@@ -69,21 +69,21 @@
       <el-table-column label="Conf">
         <template v-slot="{ row }">
           <div class="mb-4">
-            <el-button type="primary" @click="handlerServerConf(row)">conf</el-button>
+            <el-button type="warning" @click="handlerServerConf(row)">conf</el-button>
           </div>
         </template>
       </el-table-column>
       <el-table-column label="Metrics">
         <template v-slot="{ row }">
           <div class="mb-4">
-            <el-button type="success" @click="handlerServerMetrics(row)">metrics</el-button>
+            <el-button type="primary" @click="handlerServerMetrics(row)">metrics</el-button>
           </div>
         </template>
       </el-table-column>
       <el-table-column label="PrometheusMetrics" min-width="150">
         <template v-slot="{ row }">
           <div class="mb-4">
-            <el-button type="info" @click="handlerServerPrometheusMetrics(row)"
+            <el-button type="success" @click="handlerServerPrometheusMetrics(row)"
               >prometheus metrics</el-button
             >
           </div>
@@ -92,7 +92,7 @@
       <el-table-column label="Stacks">
         <template v-slot="{ row }">
           <div class="mb-4">
-            <el-button type="warning" @click="handlerServerStacks(row)">stacks</el-button>
+            <el-button type="info" @click="handlerServerStacks(row)">stacks</el-button>
           </div>
         </template>
       </el-table-column>
