@@ -26,9 +26,9 @@ load_rss_env
 
 cd "$RSS_HOME"
 
-COORDINATOR_CONF_FILE=${COORDINATOR_CONF_FILE:-"${RSS_CONF_DIR}/coordinator.conf"}
+COORDINATOR_CONF_FILE="${RSS_CONF_DIR}/coordinator.conf"
 JAR_DIR="${RSS_HOME}/jars"
-LOG_CONF_FILE=${LOG_CONF_FILE:-"${RSS_CONF_DIR}/log4j2.xml"}
+LOG_CONF_FILE="${RSS_CONF_DIR}/log4j2.xml"
 LOG_PATH="${RSS_LOG_DIR}/coordinator.log"
 
 MAIN_CLASS="org.apache.uniffle.coordinator.CoordinatorServer"

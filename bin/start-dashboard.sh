@@ -84,9 +84,9 @@ fi
 
 version=$($RUNNER -version 2>&1 | awk -F[\".] '/version/ {print $2}')
 if [[ "$version" -lt "9" ]]; then
-  JVM_GC_ARGS=$GC_LOG_ARGS_LEGACY
+  JVM_GC_ARGS=${JVM_GC_ARGS:-$GC_LOG_ARGS_LEGACY}
 else
-  JVM_GC_ARGS=$GC_LOG_ARGS_NEW
+  JVM_GC_ARGS=${JVM_GC_ARGS:-$GC_LOG_ARGS_NEW}
 fi
 
 UNIFFLE_DASHBOARD_JAVA_OPTS=${UNIFFLE_DASHBOARD_JAVA_OPTS:-""}
