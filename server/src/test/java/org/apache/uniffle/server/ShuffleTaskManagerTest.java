@@ -365,7 +365,8 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
         StringUtils.EMPTY);
     final List<ShufflePartitionedBlock> expectedBlocks1 = Lists.newArrayList();
     final List<ShufflePartitionedBlock> expectedBlocks2 = Lists.newArrayList();
-    final Map<Long, PreAllocatedBufferInfo> bufferIds = shuffleTaskManager.getRequireBufferIds();
+    final Map<Long, PreAllocatedBufferInfo> bufferIds =
+        shuffleTaskManager.getRequireBufferIds(appId);
 
     shuffleTaskManager.requireBuffer(10);
     shuffleTaskManager.requireBuffer(10);
@@ -391,7 +392,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     assertEquals(StatusCode.SUCCESS, sc);
     shuffleTaskManager.commitShuffle(appId, shuffleId);
     // manually release the pre allocate buffer
-    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(bufferId);
+    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(appId, bufferId);
 
     ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
     assertEquals(
@@ -404,7 +405,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     sc = shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData1);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, partitionedData1.getBlockList());
     assertEquals(StatusCode.SUCCESS, sc);
-    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(bufferId);
+    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(appId, bufferId);
     waitForFlush(shuffleFlushManager, appId, shuffleId, 2 + 1);
 
     // won't flush for partition 1-1
@@ -421,7 +422,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     bufferId = shuffleTaskManager.requireBuffer(30);
     sc = shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData3);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, partitionedData3.getBlockList());
-    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(bufferId);
+    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(appId, bufferId);
     assertEquals(StatusCode.SUCCESS, sc);
 
     // flush for partition 2-2
@@ -430,7 +431,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     bufferId = shuffleTaskManager.requireBuffer(35);
     sc = shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData4);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, partitionedData4.getBlockList());
-    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(bufferId);
+    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(appId, bufferId);
     assertEquals(StatusCode.SUCCESS, sc);
 
     shuffleTaskManager.commitShuffle(appId, shuffleId);
@@ -444,7 +445,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     bufferId = shuffleTaskManager.requireBuffer(70);
     sc = shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData5);
     assertEquals(StatusCode.SUCCESS, sc);
-    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(bufferId);
+    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(appId, bufferId);
 
     // 2 new blocks should be committed
     waitForFlush(shuffleFlushManager, appId, shuffleId, 2 + 1 + 3 + 2);
@@ -460,7 +461,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     bufferId = shuffleTaskManager.requireBuffer(70);
     sc = shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData7);
     assertEquals(StatusCode.SUCCESS, sc);
-    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(bufferId);
+    shuffleTaskManager.removeAndReleasePreAllocatedBuffer(appId, bufferId);
 
     // 2 new blocks should be committed
     waitForFlush(shuffleFlushManager, appId, shuffleId, 2 + 1 + 3 + 2 + 2);

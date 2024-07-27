@@ -46,6 +46,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -114,7 +115,9 @@ public class ShuffleTaskManager {
   private Map<String, Map<Integer, Roaring64NavigableMap[]>> partitionsToBlockIds;
   private final ShuffleBufferManager shuffleBufferManager;
   private Map<String, ShuffleTaskInfo> shuffleTaskInfos = JavaUtils.newConcurrentMap();
-  private Map<Long, PreAllocatedBufferInfo> requireBufferIds = JavaUtils.newConcurrentMap();
+  // appId -> {requireBufferId -> PreAllocatedBufferInfo}
+  private Map<String, Map<Long, PreAllocatedBufferInfo>> appIdToRequireBufferIdsMap =
+      JavaUtils.newConcurrentMap();
   private Thread clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
   private final Cache<String, ReentrantReadWriteLock> appLocks;
@@ -319,8 +322,12 @@ public class ShuffleTaskManager {
     return shuffleBufferManager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
   }
 
-  public PreAllocatedBufferInfo getAndRemovePreAllocatedBuffer(long requireBufferId) {
-    return requireBufferIds.remove(requireBufferId);
+  public PreAllocatedBufferInfo getAndRemovePreAllocatedBuffer(String appId, long requireBufferId) {
+    Map<Long, PreAllocatedBufferInfo> requireBufferIdMap = appIdToRequireBufferIdsMap.get(appId);
+    if (requireBufferIdMap == null) {
+      return null;
+    }
+    return requireBufferIdMap.remove(requireBufferId);
   }
 
   public void releasePreAllocatedSize(long requireSize) {
@@ -328,8 +335,8 @@ public class ShuffleTaskManager {
   }
 
   @VisibleForTesting
-  void removeAndReleasePreAllocatedBuffer(long requireBufferId) {
-    PreAllocatedBufferInfo info = getAndRemovePreAllocatedBuffer(requireBufferId);
+  void removeAndReleasePreAllocatedBuffer(String appId, long requireBufferId) {
+    PreAllocatedBufferInfo info = getAndRemovePreAllocatedBuffer(appId, requireBufferId);
     if (info != null) {
       releasePreAllocatedSize(info.getRequireSize());
     }
@@ -541,9 +548,18 @@ public class ShuffleTaskManager {
   public long requireBuffer(String appId, int requireSize) {
     if (shuffleBufferManager.requireMemory(requireSize, true)) {
       long requireId = requireBufferId.incrementAndGet();
-      requireBufferIds.put(
-          requireId,
-          new PreAllocatedBufferInfo(appId, requireId, System.currentTimeMillis(), requireSize));
+      ReentrantReadWriteLock.WriteLock appLock = getAppWriteLock(appId);
+      try {
+        // preAllocatedBufferCheck will obtain lock and remove the empty appId
+        appLock.lock();
+        Map<Long, PreAllocatedBufferInfo> requireBufferMaps =
+            appIdToRequireBufferIdsMap.computeIfAbsent(appId, x -> JavaUtils.newConcurrentMap());
+        requireBufferMaps.put(
+            requireId,
+            new PreAllocatedBufferInfo(appId, requireId, System.currentTimeMillis(), requireSize));
+      } finally {
+        appLock.unlock();
+      }
       return requireId;
     } else {
       LOG.warn("Failed to require buffer, require size: {}", requireSize);
@@ -829,6 +845,12 @@ public class ShuffleTaskManager {
       partitionsToBlockIds.remove(appId);
       shuffleBufferManager.removeBuffer(appId);
       shuffleFlushManager.removeResources(appId);
+      Map<Long, PreAllocatedBufferInfo> requireBufferIdsMap = appIdToRequireBufferIdsMap.get(appId);
+      if (requireBufferIdsMap != null) {
+        for (PreAllocatedBufferInfo info : requireBufferIdsMap.values()) {
+          removeAndReleasePreAllocatedBuffer(appId, info.getRequireId());
+        }
+      }
 
       String operationMsg = String.format("removing storage data for appId:%s", appId);
       withTimeoutExecution(
@@ -896,25 +918,51 @@ public class ShuffleTaskManager {
   private void preAllocatedBufferCheck() {
     try {
       long current = System.currentTimeMillis();
-      List<Long> removeIds = Lists.newArrayList();
-      for (PreAllocatedBufferInfo info : requireBufferIds.values()) {
-        if (current - info.getTimestamp() > preAllocationExpired) {
-          removeIds.add(info.getRequireId());
+      for (Map.Entry<String, Map<Long, PreAllocatedBufferInfo>> entry :
+          appIdToRequireBufferIdsMap.entrySet()) {
+        String appId = entry.getKey();
+        if (MapUtils.isEmpty(entry.getValue())) {
+          ReentrantReadWriteLock.WriteLock appLock = getAppWriteLock(appId);
+          try {
+            appLock.lock();
+            // After double check, remove empty map related this appId from
+            // appIdToRequireBufferIdsMap
+            if (MapUtils.isEmpty(entry.getValue())) {
+              // Keep single point remove appId from appIdToRequireBufferIdsMap
+              appIdToRequireBufferIdsMap.remove(appId);
+              continue;
+            }
+          } finally {
+            appLock.unlock();
+          }
         }
-      }
-      for (Long requireId : removeIds) {
-        PreAllocatedBufferInfo info = requireBufferIds.remove(requireId);
-        if (info != null) {
-          // move release memory code down to here as the requiredBuffer could be consumed during
-          // removing processing.
-          shuffleBufferManager.releaseMemory(info.getRequireSize(), false, true);
-          LOG.warn(
-              "Remove expired preAllocatedBuffer[id={}] that required by app: {}",
-              requireId,
-              info.getAppId());
-          ShuffleServerMetrics.counterPreAllocatedBufferExpired.inc();
-        } else {
-          LOG.info("PreAllocatedBuffer[id={}] has already be used", requireId);
+        List<Long> toRemoveIds = Lists.newArrayList();
+        for (PreAllocatedBufferInfo info : entry.getValue().values()) {
+          if (current - info.getTimestamp() > preAllocationExpired) {
+            toRemoveIds.add(info.getRequireId());
+          }
+        }
+        List<Long> removedIds = Lists.newArrayList();
+        List<Long> usedIds = Lists.newArrayList();
+        for (Long requireId : toRemoveIds) {
+          PreAllocatedBufferInfo info = getAndRemovePreAllocatedBuffer(appId, requireId);
+          if (info != null) {
+            // move release memory code down to here as the requiredBuffer could be consumed during
+            // removing processing.
+            shuffleBufferManager.releaseMemory(info.getRequireSize(), false, true);
+            removedIds.add(requireId);
+            ShuffleServerMetrics.counterPreAllocatedBufferExpired.inc();
+          } else {
+            usedIds.add(requireId);
+          }
+          if (removedIds.size() > 0) {
+            LOG.info(
+                "Remove expired preAllocatedBuffer[id={}] for app[{}], removedIds: {}, usedIds: {}",
+                requireId,
+                appId,
+                removedIds,
+                usedIds);
+          }
         }
       }
     } catch (Exception e) {
@@ -922,8 +970,12 @@ public class ShuffleTaskManager {
     }
   }
 
-  public int getRequireBufferSize(long requireId) {
-    PreAllocatedBufferInfo pabi = requireBufferIds.get(requireId);
+  public int getRequireBufferSize(String appId, long requireId) {
+    Map<Long, PreAllocatedBufferInfo> requireBufferIdMap = appIdToRequireBufferIdsMap.get(appId);
+    if (requireBufferIdMap == null) {
+      return 0;
+    }
+    PreAllocatedBufferInfo pabi = requireBufferIdMap.get(requireId);
     if (pabi == null) {
       return 0;
     }
@@ -940,8 +992,8 @@ public class ShuffleTaskManager {
   }
 
   @VisibleForTesting
-  Map<Long, PreAllocatedBufferInfo> getRequireBufferIds() {
-    return requireBufferIds;
+  Map<Long, PreAllocatedBufferInfo> getRequireBufferIds(String appId) {
+    return appIdToRequireBufferIdsMap.get(appId);
   }
 
   @VisibleForTesting

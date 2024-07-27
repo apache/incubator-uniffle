@@ -121,7 +121,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       // thread,
       // otherwise we need to release the required size.
       PreAllocatedBufferInfo info =
-          shuffleTaskManager.getAndRemovePreAllocatedBuffer(requireBufferId);
+          shuffleTaskManager.getAndRemovePreAllocatedBuffer(appId, requireBufferId);
       int requireSize = info == null ? 0 : info.getRequireSize();
       int requireBlocksSize =
           requireSize - req.encodedLength() < 0 ? 0 : requireSize - req.encodedLength();
