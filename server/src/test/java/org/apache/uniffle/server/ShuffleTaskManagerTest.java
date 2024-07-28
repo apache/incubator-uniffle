@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -365,16 +366,17 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
         StringUtils.EMPTY);
     final List<ShufflePartitionedBlock> expectedBlocks1 = Lists.newArrayList();
     final List<ShufflePartitionedBlock> expectedBlocks2 = Lists.newArrayList();
-    final Map<Long, PreAllocatedBufferInfo> bufferIds =
-        shuffleTaskManager.getRequireBufferIds(appId);
+    // Since requireBuffer doesn't specify the appId, "EMPTY" is used instead.
+    final Supplier<Map<Long, PreAllocatedBufferInfo>> bufferIds =
+        shuffleTaskManager.getRequireBufferIdSizeByAppId("EMPTY");
 
     shuffleTaskManager.requireBuffer(10);
     shuffleTaskManager.requireBuffer(10);
     shuffleTaskManager.requireBuffer(10);
-    assertEquals(3, bufferIds.size());
+    assertEquals(3, bufferIds.get().size());
     // required buffer should be clear if it doesn't receive data after timeout
     Thread.sleep(6000);
-    assertEquals(0, bufferIds.size());
+    assertEquals(0, bufferIds.get() == null ? 0 : bufferIds.get().size());
 
     shuffleTaskManager.commitShuffle(appId, shuffleId);
 
@@ -382,13 +384,13 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 35);
     expectedBlocks1.addAll(Lists.newArrayList(partitionedData0.getBlockList()));
     long bufferId = shuffleTaskManager.requireBuffer(35);
-    assertEquals(1, bufferIds.size());
-    PreAllocatedBufferInfo pabi = bufferIds.get(bufferId);
+    assertEquals(1, bufferIds.get().size());
+    PreAllocatedBufferInfo pabi = bufferIds.get().get(bufferId);
     assertEquals(35, pabi.getRequireSize());
     StatusCode sc = shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData0);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, partitionedData0.getBlockList());
     // the required id won't be removed in shuffleTaskManager, it is removed in Grpc service
-    assertEquals(1, bufferIds.size());
+    assertEquals(1, bufferIds.get().size());
     assertEquals(StatusCode.SUCCESS, sc);
     shuffleTaskManager.commitShuffle(appId, shuffleId);
     // manually release the pre allocate buffer

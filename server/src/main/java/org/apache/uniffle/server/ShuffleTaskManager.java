@@ -992,8 +992,8 @@ public class ShuffleTaskManager {
   }
 
   @VisibleForTesting
-  Map<Long, PreAllocatedBufferInfo> getRequireBufferIds(String appId) {
-    return appIdToRequireBufferIdsMap.get(appId);
+  Supplier<Map<Long, PreAllocatedBufferInfo>> getRequireBufferIdSizeByAppId(String appId) {
+    return () -> appIdToRequireBufferIdsMap.get(appId);
   }
 
   @VisibleForTesting
