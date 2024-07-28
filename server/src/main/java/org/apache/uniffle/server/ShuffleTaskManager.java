@@ -832,8 +832,8 @@ public class ShuffleTaskManager {
   public void checkLeakShuffleData() {
     LOG.info("Start check leak shuffle data");
     try {
-      Set<String> appIds = Sets.newHashSet(shuffleTaskInfos.keySet());
-      storageManager.checkAndClearLeakedShuffleData(appIds);
+      storageManager.checkAndClearLeakedShuffleData(
+          () -> Sets.newHashSet(shuffleTaskInfos.keySet()));
       LOG.info("Finish check leak shuffle data");
     } catch (Exception e) {
       LOG.warn("Error happened in checkLeakShuffleData", e);
