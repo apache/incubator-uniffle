@@ -19,6 +19,7 @@ package org.apache.uniffle.server.storage;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.storage.StorageInfo;
@@ -55,7 +56,7 @@ public interface StorageManager {
 
   // todo: add an interface that check storage isHealthy
 
-  void checkAndClearLeakedShuffleData(Collection<String> appIds);
+  void checkAndClearLeakedShuffleData(Supplier<Collection<String>> appIdsSupplier);
 
   /**
    * Report a map of storage mount point -> storage info mapping. For local storages, the mount
