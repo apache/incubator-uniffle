@@ -66,7 +66,7 @@ COORDINATOR_BASE_JVM_ARGS=${COORDINATOR_BASE_JVM_ARGS:-" -server \
           -Xms${COORDINATOR_XMX_SIZE} \
           -XX:+PrintCommandLineFlags"}
 
-JVM_GC_ARGS=$(JVM_GC_ARGS:-" -XX:+UseG1GC \
+DEFAULT_GC_ARGS=" -XX:+UseG1GC \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
           -XX:ConcGCThreads=5 \
@@ -104,13 +104,13 @@ fi
 
 version=$($RUNNER -version 2>&1 | awk -F[\".] '/version/ {print $2}')
 if [[ "$version" -lt "9" ]]; then
-  JVM_GC_ARGS="${JVM_GC_ARGS} ${GC_LOG_ARGS_LEGACY}"
+  COORDINATOR_JVM_GC_ARGS="${COORDINATOR_JVM_GC_ARGS:-${DEFAULT_GC_ARGS} ${GC_LOG_ARGS_LEGACY}}"
 else
-  JVM_GC_ARGS="${JVM_GC_ARGS} ${$GC_LOG_ARGS_NEW}"
+  COORDINATOR_JVM_GC_ARGS="${COORDINATOR_JVM_GC_ARGS:-${DEFAULT_GC_ARGS} ${GC_LOG_ARGS_NEW}}"
 fi
 
 COORDINATOR_JAVA_OPTS=${COORDINATOR_JAVA_OPTS:-""}
-$RUNNER ${JVM_LOG_ARGS} ${COORDINATOR_BASE_JVM_ARGS} ${JVM_GC_ARGS} ${COORDINATOR_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${COORDINATOR_CONF_FILE}" $@ &
+$RUNNER ${COORDINATOR_BASE_JVM_ARGS} ${COORDINATOR_JVM_GC_ARGS} ${JVM_LOG_ARGS} ${COORDINATOR_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${COORDINATOR_CONF_FILE}" $@ &
 
 get_pid_file_name coordinator
 echo $! >${RSS_PID_DIR}/${pid_file}

@@ -53,7 +53,7 @@ DASHBOARD_BASE_JVM_ARGS=${DASHBOARD_BASE_JVM_ARGS:-" -server \
           -Xms${DASHBOARD_XMX_SIZE} \
           -XX:+PrintCommandLineFlags"}
 
-JVM_GC_ARGS=$(JVM_GC_ARGS:-" -XX:+UseG1GC \
+DEFAULT_GC_ARGS=" -XX:+UseG1GC \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
           -XX:ConcGCThreads=5 \
@@ -85,13 +85,13 @@ fi
 
 version=$($RUNNER -version 2>&1 | awk -F[\".] '/version/ {print $2}')
 if [[ "$version" -lt "9" ]]; then
-  JVM_GC_ARGS="${JVM_GC_ARGS} ${GC_LOG_ARGS_LEGACY}"
+  DASHBOARD_JVM_GC_ARGS="${DASHBOARD_JVM_GC_ARGS:-${DEFAULT_GC_ARGS} ${GC_LOG_ARGS_LEGACY}}"
 else
-  JVM_GC_ARGS="${JVM_GC_ARGS} ${$GC_LOG_ARGS_NEW}"
+  DASHBOARD_JVM_GC_ARGS="${DASHBOARD_JVM_GC_ARGS:-${DEFAULT_GC_ARGS} ${GC_LOG_ARGS_NEW}}"
 fi
 
 DASHBOARD_JAVA_OPTS=${DASHBOARD_JAVA_OPTS:-""}
-$RUNNER ${JVM_LOG_ARGS} ${DASHBOARD_BASE_JVM_ARGS} ${JVM_GC_ARGS} ${DASHBOARD_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${DASHBOARD_CONF_FILE}" $@ &
+$RUNNER ${DASHBOARD_BASE_JVM_ARGS} ${DASHBOARD_JVM_GC_ARGS} ${JVM_LOG_ARGS} ${DASHBOARD_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${DASHBOARD_CONF_FILE}" $@ &
 
 get_pid_file_name dashboard
 echo $! >${RSS_PID_DIR}/${pid_file}

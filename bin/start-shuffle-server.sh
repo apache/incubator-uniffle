@@ -103,7 +103,7 @@ SHUFFLE_SERVER_BASE_JVM_ARGS=${SHUFFLE_SERVER_BASE_JVM_ARGS:-" -server \
           -XX:+UnlockExperimentalVMOptions \
           -XX:+PrintCommandLineFlags"}
 
-JVM_GC_ARGS=$(JVM_GC_ARGS:-" -XX:+UseG1GC \
+DEFAULT_GC_ARGS=" -XX:+UseG1GC \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
           -XX:ConcGCThreads=5 \
@@ -143,13 +143,13 @@ fi
 
 version=$($RUNNER -version 2>&1 | awk -F[\".] '/version/ {print $2}')
 if [[ "$version" -lt "9" ]]; then
-  JVM_GC_ARGS="${JVM_GC_ARGS} ${GC_LOG_ARGS_LEGACY}"
+  SHUFFLE_SERVER_JVM_GC_ARGS="${SHUFFLE_SERVER_JVM_GC_ARGS:-${DEFAULT_GC_ARGS} ${GC_LOG_ARGS_LEGACY}}"
 else
-  JVM_GC_ARGS="${JVM_GC_ARGS} ${$GC_LOG_ARGS_NEW}"
+  SHUFFLE_SERVER_JVM_GC_ARGS="${SHUFFLE_SERVER_JVM_GC_ARGS:-${DEFAULT_GC_ARGS} ${GC_LOG_ARGS_NEW}}"
 fi
 
 SHUFFLE_SERVER_JAVA_OPTS=${SHUFFLE_SERVER_JAVA_OPTS:-""}
-$RUNNER ${JVM_LOG_ARGS} ${SHUFFLE_SERVER_BASE_JVM_ARGS} ${JVM_GC_ARGS} ${JAVA_LIB_PATH} ${SHUFFLE_SERVER_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${SHUFFLE_SERVER_CONF_FILE}" $@ &
+$RUNNER ${SHUFFLE_SERVER_BASE_JVM_ARGS} ${SHUFFLE_SERVER_JVM_GC_ARGS} ${JVM_LOG_ARGS} ${JAVA_LIB_PATH} ${SHUFFLE_SERVER_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${SHUFFLE_SERVER_CONF_FILE}" $@ &
 
 get_pid_file_name shuffle-server
 echo $! >${RSS_PID_DIR}/${pid_file}
