@@ -30,7 +30,7 @@ This document will introduce how to deploy Uniffle shuffle servers.
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
-     UNIFFLE_SHUFFLE_SERVER_XMX_SIZE="80g"
+     SHUFFLE_SERVER_XMX_SIZE="80g"
    ```
    
    For the following cases, you don't need to specify `HADOOP_HOME` that will simplify the server deployment.
@@ -176,12 +176,12 @@ XMX_SIZE=40g
 MAX_DIRECT_MEMORY_SIZE=360g
 ```
 
-You can add extra JVM arguments for the Uniffle server by specifying `UNIFFLE_SHUFFLE_SERVER_JAVA_OPTS` in `rss-env.sh`.
+You can add extra JVM arguments for the Uniffle server by specifying `SHUFFLE_SERVER_JAVA_OPTS` in `rss-env.sh`.
 
 For example:
 
 ```
-UNIFFLE_SHUFFLE_SERVER_JAVA_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005 -Drss.jetty.http.port=19978"
+SHUFFLE_SERVER_JAVA_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005 -Drss.jetty.http.port=19978"
 ```
 
 ##### server.conf

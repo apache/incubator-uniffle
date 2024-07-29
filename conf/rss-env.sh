@@ -43,21 +43,21 @@ XMX_SIZE="8g" # Coordinator/ShuffleServer JVM XMX size
 # RSS_LOG_DIR, Where log files are stored (Default: ${RSS_HOME}/logs)
 
 # Variables for the dashboard
-# UNIFFLE_DASHBOARD_JAVA_OPTS, JVM options for the dashboard, will override the default JVM options
-# UNIFFLE_DASHBOARD_DEFAULT_JVM_ARGS, Default JVM options for the dashboard
-# UNIFFLE_DASHBOARD_XMX_SIZE, Dashboard JVM XMX size (Default: ${XMX_SIZE})
+# DASHBOARD_JAVA_OPTS, JVM options for the dashboard, will override the default JVM options
+# DASHBOARD_DEFAULT_JVM_ARGS, Default JVM options for the dashboard
+# DASHBOARD_XMX_SIZE, Dashboard JVM XMX size (Default: ${XMX_SIZE})
 
 # Variables for the coordinator
-# UNIFFLE_COORDINATOR_JAVA_OPTS, JVM options for the coordinator, will override the default JVM options
-# UNIFFLE_COORDINATOR_DEFAULT_JVM_ARGS, Default JVM options for the coordinator
-# UNIFFLE_COORDINATOR_XMX_SIZE, Coordinator JVM XMX size (Default: ${XMX_SIZE})
+# COORDINATOR_JAVA_OPTS, JVM options for the coordinator, will override the default JVM options
+# COORDINATOR_DEFAULT_JVM_ARGS, Default JVM options for the coordinator
+# COORDINATOR_XMX_SIZE, Coordinator JVM XMX size (Default: ${XMX_SIZE})
 
 # Variables for the shuffle server
 # RSS_IP, IP address Shuffle Server binds to on this node (Default: first non-loopback ipv4)
 # MAX_DIRECT_MEMORY_SIZE Shuffle Server JVM off heap memory size (Default: not set)
 # MALLOC_ARENA_MAX, Set the number of memory arenas for Shuffle Server (Default: 4)
-# UNIFFLE_SHUFFLE_SERVER_JAVA_OPTS, JVM options for the shuffle server, will override the default JVM options
-# UNIFFLE_SHUFFLE_SERVER_DEFAULT_JVM_ARGS, Default JVM options for the shuffle server
-# UNIFFLE_SHUFFLE_SERVER_XMX_SIZE, Shuffle Server JVM XMX size (Default: ${XMX_SIZE})
+# SHUFFLE_SERVER_JAVA_OPTS, JVM options for the shuffle server, will override the default JVM options
+# SHUFFLE_SERVER_DEFAULT_JVM_ARGS, Default JVM options for the shuffle server
+# SHUFFLE_SERVER_XMX_SIZE, Shuffle Server JVM XMX size (Default: ${XMX_SIZE})
 # SHUFFLE_SERVER_STORAGE_AUDIT_LOG_PATH, Shuffle Server storage audit log path (Default: ${RSS_LOG_DIR}/shuffle_server_storage_audit.log)
 # SHUFFLE_SERVER_RPC_AUDIT_LOG_PATH, Shuffle Server RPC audit log path (Default: ${RSS_LOG_DIR}/shuffle_server_rpc_audit.log)
