@@ -24,7 +24,7 @@ set -o errexit   # exit the script if any statement returns a non-true return va
 # JAVA_HOME=<java_home_dir>
 # HADOOP_HOME=<hadoop_home_dir>
 XMX_SIZE="8g" # Coordinator/Dashboard JVM XMX size
-SHUFFLE_SERVER_XMX_SIZE="00g" # ShuffleServer JVM XMX size
+SHUFFLE_SERVER_XMX_SIZE="80g" # ShuffleServer JVM XMX size
 
 # Variables for the all components
 # RSS_HOME, RSS home directory (Default: parent directory of the script).
