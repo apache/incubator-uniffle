@@ -214,16 +214,15 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           }
         }
       }
-
       if (shuffleManagerRpcServiceEnabled) {
-        this.shuffleManagerClient = getOrCreateShuffleManagerClient();
+        getOrCreateShuffleManagerClientSupplier();
       }
       this.shuffleWriteClient =
           RssShuffleClientFactory.getInstance()
               .createShuffleWriteClient(
                   RssShuffleClientFactory.newWriteBuilder()
                       .blockIdSelfManagedEnabled(blockIdSelfManagedEnabled)
-                      .shuffleManagerClient(shuffleManagerClient)
+                      .managerClientSupplier(managerClientSupplier)
                       .clientType(clientType)
                       .retryMax(retryMax)
                       .retryIntervalMax(retryIntervalMax)
@@ -434,6 +433,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           this,
           sparkConf,
           shuffleWriteClient,
+          managerClientSupplier,
           rssHandle,
           this::markFailedTask,
           context);
@@ -537,7 +537,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           blockIdBitmap,
           taskIdBitmap,
           RssSparkConfig.toRssConf(sparkConf),
-          partitionToServers);
+          partitionToServers,
+          managerClientSupplier);
     } else {
       throw new RssException("Unexpected ShuffleHandle:" + handle.getClass().getName());
     }
@@ -573,6 +574,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
   @Override
   public void stop() {
+    super.stop();
     if (heartBeatScheduledExecutorService != null) {
       heartBeatScheduledExecutorService.shutdownNow();
     }
@@ -719,7 +721,13 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           clientType, shuffleServerInfoSet, appId, shuffleId, partitionId);
     } catch (RssFetchFailedException e) {
       throw RssSparkShuffleUtils.reportRssFetchFailedException(
-          e, sparkConf, appId, shuffleId, stageAttemptId, Sets.newHashSet(partitionId));
+          managerClientSupplier,
+          e,
+          sparkConf,
+          appId,
+          shuffleId,
+          stageAttemptId,
+          Sets.newHashSet(partitionId));
     }
   }
 

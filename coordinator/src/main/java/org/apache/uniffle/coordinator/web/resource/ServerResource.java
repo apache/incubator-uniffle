@@ -41,6 +41,7 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 import org.apache.uniffle.common.Application;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.web.resource.Authorization;
 import org.apache.uniffle.common.web.resource.BaseResource;
 import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.ApplicationManager;
@@ -97,6 +98,7 @@ public class ServerResource extends BaseResource {
     return Response.success(serverList);
   }
 
+  @Authorization
   @POST
   @Path("/cancelDecommission")
   public Response<Object> cancelDecommission(CancelDecommissionRequest params) {
@@ -110,6 +112,7 @@ public class ServerResource extends BaseResource {
         });
   }
 
+  @Authorization
   @POST
   @Path("/{id}/cancelDecommission")
   public Response<Object> cancelDecommission(@PathParam("id") String serverId) {
@@ -120,6 +123,7 @@ public class ServerResource extends BaseResource {
         });
   }
 
+  @Authorization
   @POST
   @Path("/decommission")
   public Response<Object> decommission(DecommissionRequest params) {
@@ -133,6 +137,7 @@ public class ServerResource extends BaseResource {
         });
   }
 
+  @Authorization
   @POST
   @Path("/{id}/decommission")
   @Produces({MediaType.APPLICATION_JSON})

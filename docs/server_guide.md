@@ -26,7 +26,7 @@ This document will introduce how to deploy Uniffle shuffle servers.
 
 ### Steps
 1. unzip package to RSS_HOME
-2. update RSS_HOME/bin/rss-env.sh, eg,
+2. update RSS_HOME/conf/rss-env.sh, eg,
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
@@ -174,6 +174,14 @@ So, `rss-env.sh` will be:
 ```
 XMX_SIZE=40g 
 MAX_DIRECT_MEMORY_SIZE=360g
+```
+
+You can add extra JVM arguments for the Uniffle server by specifying `UNIFFLE_SHUFFLE_SERVER_JAVA_OPTS` in `rss-env.sh`.
+
+For example:
+
+```
+UNIFFLE_SHUFFLE_SERVER_JAVA_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005 -Drss.jetty.http.port=19978"
 ```
 
 ##### server.conf

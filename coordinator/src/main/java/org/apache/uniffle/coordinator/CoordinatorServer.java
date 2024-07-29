@@ -27,6 +27,7 @@ import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
 import org.apache.uniffle.common.ReconfigurableConfManager;
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.metrics.GRPCMetrics;
 import org.apache.uniffle.common.metrics.JvmMetrics;
@@ -195,6 +196,9 @@ public class CoordinatorServer {
     CoordinatorFactory coordinatorFactory = new CoordinatorFactory(this);
     server = coordinatorFactory.getServer();
     jettyServer = new JettyServer(coordinatorConf);
+    jettyServer.registerInstance(
+        RssBaseConf.REST_AUTHORIZATION_CREDENTIALS.key(),
+        coordinatorConf.getString(RssBaseConf.REST_AUTHORIZATION_CREDENTIALS));
     // register packages and instances for jersey
     jettyServer.addResourcePackages(
         "org.apache.uniffle.coordinator.web.resource", "org.apache.uniffle.common.web.resource");

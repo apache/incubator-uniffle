@@ -239,7 +239,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       }
     }
     if (shuffleManagerRpcServiceEnabled) {
-      this.shuffleManagerClient = getOrCreateShuffleManagerClient();
+      getOrCreateShuffleManagerClientSupplier();
     }
     int unregisterThreadPoolSize =
         sparkConf.get(RssSparkConfig.RSS_CLIENT_UNREGISTER_THREAD_POOL_SIZE);
@@ -253,7 +253,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             .createShuffleWriteClient(
                 RssShuffleClientFactory.newWriteBuilder()
                     .blockIdSelfManagedEnabled(blockIdSelfManagedEnabled)
-                    .shuffleManagerClient(shuffleManagerClient)
+                    .managerClientSupplier(managerClientSupplier)
                     .clientType(clientType)
                     .retryMax(retryMax)
                     .retryIntervalMax(retryIntervalMax)
@@ -523,6 +523,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         this,
         sparkConf,
         shuffleWriteClient,
+        managerClientSupplier,
         rssHandle,
         this::markFailedTask,
         context);
@@ -696,6 +697,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             blockIdBitmap, startPartition, endPartition, blockIdLayout),
         taskIdBitmap,
         readMetrics,
+        managerClientSupplier,
         RssSparkConfig.toRssConf(sparkConf),
         dataDistributionType,
         shuffleHandleInfo.getAllPartitionServersForReader());
@@ -853,6 +855,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
   @Override
   public void stop() {
+    super.stop();
     if (heartBeatScheduledExecutorService != null) {
       heartBeatScheduledExecutorService.shutdownNow();
     }
@@ -1031,7 +1034,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
           replicaRequirementTracking);
     } catch (RssFetchFailedException e) {
       throw RssSparkShuffleUtils.reportRssFetchFailedException(
-          e, sparkConf, appId, shuffleId, stageAttemptId, failedPartitions);
+          managerClientSupplier, e, sparkConf, appId, shuffleId, stageAttemptId, failedPartitions);
     }
   }
 

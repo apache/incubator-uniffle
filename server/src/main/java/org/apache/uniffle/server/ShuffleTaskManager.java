@@ -26,13 +26,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
@@ -61,6 +65,7 @@ import org.apache.uniffle.common.exception.NoBufferException;
 import org.apache.uniffle.common.exception.NoBufferForHugePartitionException;
 import org.apache.uniffle.common.exception.NoRegisterException;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.future.CompletableFutureExtension;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.Constants;
@@ -93,7 +98,7 @@ public class ShuffleTaskManager {
   private final ScheduledExecutorService leakShuffleDataCheckExecutorService;
   private ScheduledExecutorService triggerFlushExecutorService;
   private final TopNShuffleDataSizeOfAppCalcTask topNShuffleDataSizeOfAppCalcTask;
-  private final StorageManager storageManager;
+  private StorageManager storageManager;
   private AtomicLong requireBufferId = new AtomicLong(0);
   private ShuffleServerConf conf;
   private long appExpiredWithoutHB;
@@ -114,6 +119,7 @@ public class ShuffleTaskManager {
   private Thread clearResourceThread;
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
   private final Cache<String, ReentrantReadWriteLock> appLocks;
+  private final long storageRemoveOperationTimeoutSec;
   private ShuffleMergeManager shuffleMergeManager;
 
   public ShuffleTaskManager(
@@ -139,6 +145,8 @@ public class ShuffleTaskManager {
     this.appExpiredWithoutHB = conf.getLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT);
     this.commitCheckIntervalMax = conf.getLong(ShuffleServerConf.SERVER_COMMIT_CHECK_INTERVAL_MAX);
     this.preAllocationExpired = conf.getLong(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED);
+    this.storageRemoveOperationTimeoutSec =
+        conf.getLong(ShuffleServerConf.STORAGE_REMOVE_RESOURCE_OPERATION_TIMEOUT_SEC);
     this.leakShuffleDataCheckInterval =
         conf.getLong(ShuffleServerConf.SERVER_LEAK_SHUFFLE_DATA_CHECK_INTERVAL);
     this.triggerFlushInterval = conf.getLong(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL);
@@ -778,11 +786,19 @@ public class ShuffleTaskManager {
               });
       shuffleBufferManager.removeBufferByShuffleId(appId, shuffleIds);
       shuffleFlushManager.removeResourcesOfShuffleId(appId, shuffleIds);
-      storageManager.removeResources(
-          new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds));
-      if (shuffleMergeManager != null) {
-        shuffleMergeManager.removeBuffer(appId, shuffleIds);
-      }
+      String operationMsg =
+          String.format("removing storage data for appId:%s, shuffleIds:%s", appId, shuffleIds);
+      withTimeoutExecution(
+          () -> {
+            storageManager.removeResources(
+                new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds));
+            if (shuffleMergeManager != null) {
+              shuffleMergeManager.removeBuffer(appId, shuffleIds);
+            }
+            return null;
+          },
+          storageRemoveOperationTimeoutSec,
+          operationMsg);
       LOG.info(
           "Finish remove resource for appId[{}], shuffleIds[{}], cost[{}]",
           appId,
@@ -826,15 +842,24 @@ public class ShuffleTaskManager {
       partitionsToBlockIds.remove(appId);
       shuffleBufferManager.removeBuffer(appId);
       shuffleFlushManager.removeResources(appId);
-      if (shuffleMergeManager != null) {
-        shuffleMergeManager.removeBuffer(appId);
-      }
-      storageManager.removeResources(
-          new AppPurgeEvent(
-              appId,
-              shuffleTaskInfo.getUser(),
-              new ArrayList<>(shuffleTaskInfo.getShuffleIds()),
-              checkAppExpired));
+
+      String operationMsg = String.format("removing storage data for appId:%s", appId);
+      withTimeoutExecution(
+          () -> {
+            storageManager.removeResources(
+                new AppPurgeEvent(
+                    appId,
+                    shuffleTaskInfo.getUser(),
+                    new ArrayList<>(shuffleTaskInfo.getShuffleIds()),
+                    checkAppExpired));
+            if (shuffleMergeManager != null) {
+              shuffleMergeManager.removeBuffer(appId);
+            }
+            return null;
+          },
+          storageRemoveOperationTimeoutSec,
+          operationMsg);
+
       if (shuffleTaskInfo.hasHugePartition()) {
         ShuffleServerMetrics.gaugeAppWithHugePartitionNum.dec();
         ShuffleServerMetrics.gaugeHugePartitionNum.dec();
@@ -847,6 +872,28 @@ public class ShuffleTaskManager {
               + " ms");
     } finally {
       lock.unlock();
+    }
+  }
+
+  private void withTimeoutExecution(
+      Supplier supplier, long timeoutSec, String operationDetailedMsg) {
+    CompletableFuture<Void> future =
+        CompletableFuture.supplyAsync(supplier, Executors.newSingleThreadExecutor());
+    CompletableFuture extended =
+        CompletableFutureExtension.orTimeout(future, timeoutSec, TimeUnit.SECONDS);
+    try {
+      extended.get();
+    } catch (Exception e) {
+      if (e instanceof ExecutionException) {
+        if (e.getCause() instanceof TimeoutException) {
+          LOG.error(
+              "Errors on finishing operation of [{}] in the {}(sec). This should not happen!",
+              operationDetailedMsg,
+              timeoutSec);
+          return;
+        }
+        throw new RssException(e);
+      }
     }
   }
 
@@ -957,5 +1004,11 @@ public class ShuffleTaskManager {
 
   public void start() {
     clearResourceThread.start();
+  }
+
+  // only for tests
+  @VisibleForTesting
+  protected void setStorageManager(StorageManager storageManager) {
+    this.storageManager = storageManager;
   }
 }

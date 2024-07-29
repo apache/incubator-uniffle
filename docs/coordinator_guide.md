@@ -30,11 +30,16 @@ This document will introduce how to deploy Uniffle coordinators.
 
 ### Steps
 1. unzip package to RSS_HOME
-2. update RSS_HOME/bin/rss-env.sh, eg,
+2. update RSS_HOME/conf/rss-env.sh, eg,
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
      XMX_SIZE="16g"
+   ```
+   You can add extra JVM arguments for the Uniffle coordinator by specifying `UNIFFLE_COORDINATOR_JAVA_OPTS` in `rss-env.sh`.
+   Example:
+   ```
+   UNIFFLE_COORDINATOR_JAVA_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5006 -Drss.jetty.http.port=19998"
    ```
 3. update RSS_HOME/conf/coordinator.conf, eg,
    ```
@@ -129,6 +134,16 @@ AccessQuotaChecker is a checker when the number of concurrent tasks submitted by
 
 
 ## RESTful API
+
+### Enable Authorization
+The RESTful API supports Basic authorization. we can enable it by setting `rss.http.basic.authorizationCredentials` to a not empty string.
+After enabling Basic authorization, you need to add credentials to the header when requesting some of the interfaces, such as the decommissioning interface.
+For Basic authentication the credentials are constructed by first combining the username and the password with
+a colon (uniffle:uniffle123) , and then by encoding the resulting string in base64 (dW5pZmZsZTp1bmlmZmxlMTIz).
+#### Example cURL:
+>```bash
+>curl -X POST -H 'Authorization: Basic dW5pZmZsZTp1bmlmZmxlMTIz' -H "Content-Type: application/json" http://localhost:19998/api/server/decommission  -d '{"serverIds": ["127.0.0.1-19999"]}'
+>```
 
 ### Fetch single shuffle server
 

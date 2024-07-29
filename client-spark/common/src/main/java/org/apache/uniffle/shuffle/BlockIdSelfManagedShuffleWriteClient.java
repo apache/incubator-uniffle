@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -41,16 +42,16 @@ import org.apache.uniffle.common.util.BlockIdLayout;
  * driver side.
  */
 public class BlockIdSelfManagedShuffleWriteClient extends ShuffleWriteClientImpl {
-  private ShuffleManagerClient shuffleManagerClient;
+  private Supplier<ShuffleManagerClient> managerClientSupplier;
 
   public BlockIdSelfManagedShuffleWriteClient(
       RssShuffleClientFactory.ExtendWriteClientBuilder builder) {
     super(builder);
 
-    if (builder.getShuffleManagerClient() == null) {
+    if (builder.getManagerClientSupplier() == null) {
       throw new RssException("Illegal empty shuffleManagerClient. This should not happen");
     }
-    this.shuffleManagerClient = builder.getShuffleManagerClient();
+    this.managerClientSupplier = builder.getManagerClientSupplier();
   }
 
   @Override
@@ -73,7 +74,7 @@ public class BlockIdSelfManagedShuffleWriteClient extends ShuffleWriteClientImpl
     RssReportShuffleResultRequest request =
         new RssReportShuffleResultRequest(
             appId, shuffleId, taskAttemptId, partitionToBlockIds, bitmapNum);
-    shuffleManagerClient.reportShuffleResult(request);
+    managerClientSupplier.get().reportShuffleResult(request);
   }
 
   @Override
@@ -85,7 +86,7 @@ public class BlockIdSelfManagedShuffleWriteClient extends ShuffleWriteClientImpl
       int partitionId) {
     RssGetShuffleResultRequest request =
         new RssGetShuffleResultRequest(appId, shuffleId, partitionId, BlockIdLayout.DEFAULT);
-    return shuffleManagerClient.getShuffleResult(request).getBlockIdBitmap();
+    return managerClientSupplier.get().getShuffleResult(request).getBlockIdBitmap();
   }
 
   @Override
@@ -101,6 +102,6 @@ public class BlockIdSelfManagedShuffleWriteClient extends ShuffleWriteClientImpl
     RssGetShuffleResultForMultiPartRequest request =
         new RssGetShuffleResultForMultiPartRequest(
             appId, shuffleId, partitionIds, BlockIdLayout.DEFAULT);
-    return shuffleManagerClient.getShuffleResultForMultiPart(request).getBlockIdBitmap();
+    return managerClientSupplier.get().getShuffleResultForMultiPart(request).getBlockIdBitmap();
   }
 }
