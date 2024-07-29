@@ -61,15 +61,16 @@ set -u
 echo "class path is $CLASSPATH"
 
 COORDINATOR_XMX_SIZE=${COORDINATOR_XMX_SIZE:-${XMX_SIZE:-"8g"}}
-COORDINATOR_DEFAULT_JVM_ARGS=${COORDINATOR_DEFAULT_JVM_ARGS:-" -server \
+COORDINATOR_BASE_JVM_ARGS=${COORDINATOR_BASE_JVM_ARGS:-" -server \
           -Xmx${COORDINATOR_XMX_SIZE} \
           -Xms${COORDINATOR_XMX_SIZE} \
-          -XX:+UseG1GC \
+          -XX:+PrintCommandLineFlags"}
+
+JVM_GC_ARGS=$(JVM_GC_ARGS:-" -XX:+UseG1GC \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
           -XX:ConcGCThreads=5 \
-          -XX:InitiatingHeapOccupancyPercent=45 \
-          -XX:+PrintCommandLineFlags"}
+          -XX:InitiatingHeapOccupancyPercent=45"
 
 GC_LOG_ARGS_LEGACY=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
@@ -103,13 +104,13 @@ fi
 
 version=$($RUNNER -version 2>&1 | awk -F[\".] '/version/ {print $2}')
 if [[ "$version" -lt "9" ]]; then
-  JVM_GC_ARGS=${JVM_GC_ARGS:-$GC_LOG_ARGS_LEGACY}
+  JVM_GC_ARGS="${JVM_GC_ARGS} ${GC_LOG_ARGS_LEGACY}"
 else
-  JVM_GC_ARGS=${JVM_GC_ARGS:-$GC_LOG_ARGS_NEW}
+  JVM_GC_ARGS="${JVM_GC_ARGS} ${$GC_LOG_ARGS_NEW}"
 fi
 
 COORDINATOR_JAVA_OPTS=${COORDINATOR_JAVA_OPTS:-""}
-$RUNNER ${JVM_LOG_ARGS} ${COORDINATOR_DEFAULT_JVM_ARGS} ${JVM_GC_ARGS} ${COORDINATOR_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${COORDINATOR_CONF_FILE}" $@ &
+$RUNNER ${JVM_LOG_ARGS} ${COORDINATOR_BASE_JVM_ARGS} ${JVM_GC_ARGS} ${COORDINATOR_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${COORDINATOR_CONF_FILE}" $@ &
 
 get_pid_file_name coordinator
 echo $! >${RSS_PID_DIR}/${pid_file}

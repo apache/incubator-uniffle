@@ -155,7 +155,9 @@ If you have packaged tgz with hadoop jars, the env of `HADOOP_HOME` is needn't s
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
-     UNIFFLE_COORDINATOR_XMX_SIZE="16g"
+     COORDINATOR_XMX_SIZE="16g"
+     # You can set coordinator memory size by `XMX_SIZE` too, but it affects all components.
+     # XMX_SIZE="16g"
    ```
 3. update RSS_HOME/conf/coordinator.conf, e.g.,
    ```
@@ -206,7 +208,9 @@ Deploy Steps:
    ```
      JAVA_HOME=<java_home>
      HADOOP_HOME=<hadoop home>
-     UNIFFLE_SHUFFLE_SERVER_XMX_SIZE="80g"
+     SHUFFLE_SERVER_XMX_SIZE="80g"
+     # You can set shuffle server memory size by `XMX_SIZE` too, but it affects all components.
+     # XMX_SIZE="80g"
    ```
 3. update RSS_HOME/conf/server.conf, e.g.,
    ```

@@ -26,9 +26,9 @@ load_rss_env 0
 
 cd "$RSS_HOME"
 
-DASHBOARD_CONF_FILE=${DASHBOARD_CONF_FILE:-"${RSS_CONF_DIR}/dashboard.conf"}
+DASHBOARD_CONF_FILE="${RSS_CONF_DIR}/dashboard.conf"
 JAR_DIR="${RSS_HOME}/jars"
-LOG_CONF_FILE=${LOG_CONF_FILE:-"${RSS_CONF_DIR}/log4j2.xml"}
+LOG_CONF_FILE="${RSS_CONF_DIR}/log4j2.xml"
 LOG_PATH="${RSS_LOG_DIR}/dashboard.log"
 
 MAIN_CLASS="org.apache.uniffle.dashboard.web.JettyServerFront"
@@ -48,15 +48,16 @@ mkdir -p "${RSS_PID_DIR}"
 echo "class path is $CLASSPATH"
 
 DASHBOARD_XMX_SIZE=${DASHBOARD_XMX_SIZE:-${XMX_SIZE:-"8g"}}
-DASHBOARD_DEFAULT_JVM_ARGS=${DASHBOARD_DEFAULT_JVM_ARGS:-" -server \
+DASHBOARD_BASE_JVM_ARGS=${DASHBOARD_BASE_JVM_ARGS:-" -server \
           -Xmx${DASHBOARD_XMX_SIZE} \
           -Xms${DASHBOARD_XMX_SIZE} \
-          -XX:+UseG1GC \
+          -XX:+PrintCommandLineFlags"}
+
+JVM_GC_ARGS=$(JVM_GC_ARGS:-" -XX:+UseG1GC \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
           -XX:ConcGCThreads=5 \
-          -XX:InitiatingHeapOccupancyPercent=45 \
-          -XX:+PrintCommandLineFlags"}
+          -XX:InitiatingHeapOccupancyPercent=45"
 
 GC_LOG_ARGS_LEGACY=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
@@ -84,13 +85,13 @@ fi
 
 version=$($RUNNER -version 2>&1 | awk -F[\".] '/version/ {print $2}')
 if [[ "$version" -lt "9" ]]; then
-  JVM_GC_ARGS=${JVM_GC_ARGS:-$GC_LOG_ARGS_LEGACY}
+  JVM_GC_ARGS="${JVM_GC_ARGS} ${GC_LOG_ARGS_LEGACY}"
 else
-  JVM_GC_ARGS=${JVM_GC_ARGS:-$GC_LOG_ARGS_NEW}
+  JVM_GC_ARGS="${JVM_GC_ARGS} ${$GC_LOG_ARGS_NEW}"
 fi
 
 DASHBOARD_JAVA_OPTS=${DASHBOARD_JAVA_OPTS:-""}
-$RUNNER ${JVM_LOG_ARGS} ${DASHBOARD_DEFAULT_JVM_ARGS} ${JVM_GC_ARGS} ${DASHBOARD_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${DASHBOARD_CONF_FILE}" $@ &
+$RUNNER ${JVM_LOG_ARGS} ${DASHBOARD_BASE_JVM_ARGS} ${JVM_GC_ARGS} ${DASHBOARD_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${DASHBOARD_CONF_FILE}" $@ &
 
 get_pid_file_name dashboard
 echo $! >${RSS_PID_DIR}/${pid_file}
