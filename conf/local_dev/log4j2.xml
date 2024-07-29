@@ -41,6 +41,13 @@
       </Policies>
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
+    <RollingFile name="coordinatorRpcAuditAppender" fileName="${sys:coordinator.rpc.audit.log.path}" filePattern="${sys:coordinator.rpc.audit.log.path}.%i">
+      <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] %m%n"/>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="2GB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
   </Appenders>
   <Loggers>
     <Root level="info">
@@ -64,6 +71,9 @@
     </Logger>
     <Logger name="SHUFFLE_SERVER_RPC_AUDIT_LOG" level="INFO" additivity="false">
       <AppenderRef ref="shuffleServerRpcAuditAppender"/>
+    </Logger>
+    <Logger name="COORDINATOR_RPC_AUDIT_LOG" level="INFO" additivity="false">
+      <AppenderRef ref="coordinatorRpcAuditAppender"/>
     </Logger>
   </Loggers>
 </Configuration>
