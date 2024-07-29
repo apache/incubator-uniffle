@@ -1171,7 +1171,7 @@
         <configuration>
           <excludes>
             <exclude>LICENSE</exclude>
-            <exclude>DISCLAIMER-WIP</exclude>
+            <exclude>DISCLAIMER</exclude>
             <exclude>NOTICE</exclude>
             <exclude>**/target/**</exclude>
             <exclude>**/src/main/resources/META-INF/services/*</exclude>
