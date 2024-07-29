@@ -434,6 +434,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         serverStatus,
         StorageInfoUtils.fromProto(request.getStorageInfoMap()),
         request.getServerId().getNettyPort(),
-        request.getServerId().getJettyPort());
+        request.getServerId().getJettyPort(),
+        request.getStartTimeMs());
   }
 }

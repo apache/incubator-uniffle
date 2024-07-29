@@ -275,6 +275,7 @@ message ShuffleServerHeartBeatRequest {
   google.protobuf.BoolValue isHealthy = 7;
   optional ServerStatus status = 8;
   map<string, StorageInfo> storageInfo = 21; // mount point to storage info mapping.
+  optional int64 startTimeMs = 24;
 }
 
 message ShuffleServerHeartBeatResponse {
