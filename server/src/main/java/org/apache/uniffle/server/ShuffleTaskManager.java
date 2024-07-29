@@ -786,19 +786,20 @@ public class ShuffleTaskManager {
               });
       shuffleBufferManager.removeBufferByShuffleId(appId, shuffleIds);
       shuffleFlushManager.removeResourcesOfShuffleId(appId, shuffleIds);
+
       String operationMsg =
           String.format("removing storage data for appId:%s, shuffleIds:%s", appId, shuffleIds);
       withTimeoutExecution(
           () -> {
             storageManager.removeResources(
                 new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds));
-            if (shuffleMergeManager != null) {
-              shuffleMergeManager.removeBuffer(appId, shuffleIds);
-            }
             return null;
           },
           storageRemoveOperationTimeoutSec,
           operationMsg);
+      if (shuffleMergeManager != null) {
+        shuffleMergeManager.removeBuffer(appId, shuffleIds);
+      }
       LOG.info(
           "Finish remove resource for appId[{}], shuffleIds[{}], cost[{}]",
           appId,
@@ -852,14 +853,13 @@ public class ShuffleTaskManager {
                     shuffleTaskInfo.getUser(),
                     new ArrayList<>(shuffleTaskInfo.getShuffleIds()),
                     checkAppExpired));
-            if (shuffleMergeManager != null) {
-              shuffleMergeManager.removeBuffer(appId);
-            }
             return null;
           },
           storageRemoveOperationTimeoutSec,
           operationMsg);
-
+      if (shuffleMergeManager != null) {
+        shuffleMergeManager.removeBuffer(appId);
+      }
       if (shuffleTaskInfo.hasHugePartition()) {
         ShuffleServerMetrics.gaugeAppWithHugePartitionNum.dec();
         ShuffleServerMetrics.gaugeHugePartitionNum.dec();
