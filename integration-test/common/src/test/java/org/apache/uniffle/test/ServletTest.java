@@ -376,9 +376,6 @@ public class ServletTest extends IntegrationTestBase {
             CANCEL_DECOMMISSION_URL,
             objectMapper.writeValueAsString(decommissionRequest),
             ImmutableMap.of("Authorization", "Basic " + wrongCredentials));
-    for (int i = 0; i < 1000; i++) {
-      Thread.sleep(1000);
-    }
     assertEquals("Authentication Failed", content);
   }
 }
