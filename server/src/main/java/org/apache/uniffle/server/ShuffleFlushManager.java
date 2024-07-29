@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -65,12 +66,14 @@ public class ShuffleFlushManager {
   // appId -> shuffleId -> committed shuffle blockIds
   private Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds =
       JavaUtils.newConcurrentMap();
+  private  List<Integer> shuffleIdsWithWriteError = new CopyOnWriteArrayList<>();
   private final int retryMax;
 
   private final StorageManager storageManager;
   private final long pendingEventTimeoutSec;
   private FlushEventHandler eventHandler;
   private final boolean isStorageAuditLogEnabled;
+
 
   public ShuffleFlushManager(
       ShuffleServerConf shuffleServerConf,
@@ -169,12 +172,20 @@ public class ShuffleFlushManager {
               storageDataReplica,
               user,
               maxConcurrencyPerPartitionToWrite);
-      ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
-      long startTime = System.currentTimeMillis();
-      boolean writeSuccess = storageManager.write(storage, handler, event);
-      if (!writeSuccess) {
-        throw new EventRetryException();
+
+      long startTime = 0L;
+      try {
+        ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
+        startTime = System.currentTimeMillis();
+        boolean writeSuccess = storageManager.write(storage, handler, event);
+        if (!writeSuccess) {
+          shuffleIdsWithWriteError.add(event.getShuffleId());
+        }
+      } catch (Exception e) {
+        LOG.error("storageManager write error.", e);
+        shuffleIdsWithWriteError.add(event.getShuffleId());
       }
+
       long endTime = System.currentTimeMillis();
 
       // update some metrics for shuffle task
@@ -244,7 +255,11 @@ public class ShuffleFlushManager {
     }
   }
 
-  public Roaring64NavigableMap getCommittedBlockIds(String appId, Integer shuffleId) {
+  public Roaring64NavigableMap getCommittedBlockIds(String appId, Integer shuffleId) throws EventDiscardException {
+    if (shuffleIdsWithWriteError.contains(shuffleId)) {
+      throw new EventDiscardException();
+    }
+
     Map<Integer, Roaring64NavigableMap> shuffleIdToBlockIds = committedBlockIds.get(appId);
     if (shuffleIdToBlockIds == null) {
       LOG.warn("Unexpected value when getCommittedBlockIds for appId[" + appId + "]");
@@ -299,5 +314,10 @@ public class ShuffleFlushManager {
   @VisibleForTesting
   public FlushEventHandler getEventHandler() {
     return eventHandler;
+  }
+
+  @VisibleForTesting
+  public void setShuffleIdsWithWriteError(int shuffleId) {
+    shuffleIdsWithWriteError.add(shuffleId);
   }
 }
