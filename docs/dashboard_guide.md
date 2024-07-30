@@ -40,3 +40,4 @@ sh start-dashboard.sh
 
 ## Close dashboard
 sh stop-dashboard.sh
+```
