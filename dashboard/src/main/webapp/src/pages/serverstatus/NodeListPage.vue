@@ -53,6 +53,13 @@
       <el-table-column prop="eventNumInFlush" label="FlushNum" min-width="80" sortable />
       <el-table-column prop="status" label="Status" min-width="80" sortable />
       <el-table-column
+        prop="startTime"
+        label="StartTime"
+        min-width="120"
+        :formatter="dateFormatter"
+        sortable
+      />
+      <el-table-column
         prop="registrationTime"
         label="RegistrationTime"
         min-width="120"
