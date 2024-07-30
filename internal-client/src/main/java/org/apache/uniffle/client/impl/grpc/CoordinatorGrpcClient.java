@@ -125,7 +125,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       ServerStatus serverStatus,
       Map<String, StorageInfo> storageInfo,
       int nettyPort,
-      int jettyPort) {
+      int jettyPort,
+      long startTimeMs) {
     ShuffleServerId serverId =
         ShuffleServerId.newBuilder()
             .setId(id)
@@ -144,6 +145,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             .addAllTags(tags)
             .setStatusValue(serverStatus.ordinal())
             .putAllStorageInfo(StorageInfoUtils.toProto(storageInfo))
+            .setStartTimeMs(startTimeMs)
             .build();
 
     RssProtos.StatusCode status;
@@ -219,7 +221,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             request.getServerStatus(),
             request.getStorageInfo(),
             request.getNettyPort(),
-            request.getJettyPort());
+            request.getJettyPort(),
+            request.getStartTimeMs());
 
     RssSendHeartBeatResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
