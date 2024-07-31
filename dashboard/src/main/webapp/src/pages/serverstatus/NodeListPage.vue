@@ -68,42 +68,32 @@
       />
       <el-table-column label="Conf">
         <template v-slot="{ row }">
-          <el-link @click="getShuffleServerConf('http://' + row.ip + ':' + row.jettyPort)" target="_blank">
-            <el-icon :style="iconStyle">
-              <Link />
-            </el-icon>
-            conf
-          </el-link>
+          <div class="mb-4">
+            <el-button type="warning" @click="handlerServerConf(row)">conf</el-button>
+          </div>
         </template>
       </el-table-column>
       <el-table-column label="Metrics">
         <template v-slot="{ row }">
-          <el-link @click="getShuffleServerMetrics('http://' + row.ip + ':' + row.jettyPort)" target="_blank">
-            <el-icon :style="iconStyle">
-              <Link />
-            </el-icon>
-            metrics
-          </el-link>
+          <div class="mb-4">
+            <el-button type="primary" @click="handlerServerMetrics(row)">metrics</el-button>
+          </div>
         </template>
       </el-table-column>
       <el-table-column label="PrometheusMetrics" min-width="150">
         <template v-slot="{ row }">
-          <el-link @click="getShuffleServerPrometheusMetrics('http://' + row.ip + ':' + row.jettyPort)" target="_blank">
-            <el-icon :style="iconStyle">
-              <Link />
-            </el-icon>
-            prometheus metrics
-          </el-link>
+          <div class="mb-4">
+            <el-button type="success" @click="handlerServerPrometheusMetrics(row)"
+              >prometheus metrics</el-button
+            >
+          </div>
         </template>
       </el-table-column>
       <el-table-column label="Stacks">
         <template v-slot="{ row }">
-          <el-link @click="getShuffleServerStacks('http://' + row.ip + ':' + row.jettyPort)" target="_blank">
-            <el-icon :style="iconStyle">
-              <Link />
-            </el-icon>
-            stacks
-          </el-link>
+          <div class="mb-4">
+            <el-button type="info" @click="handlerServerStacks(row)">stacks</el-button>
+          </div>
         </template>
       </el-table-column>
       <el-table-column prop="tags" label="Tags" min-width="140" />
@@ -137,7 +127,6 @@ import {
 } from '@/api/api'
 
 export default {
-  methods: {getShuffleServerConf, getShuffleServerMetrics, getShuffleServerPrometheusMetrics, getShuffleServerStacks},
   setup() {
     const router = useRouter()
     const currentServerStore = useCurrentServerStore()
@@ -165,7 +154,7 @@ export default {
     async function deleteLostServer(row) {
       try {
         const params = { serverId: row.id }
-        const res = await deleteConfirmedLostServer(params, {})
+        const res = await deleteConfirmedLostServer(params)
         // Invoke the interface to delete the lost server, prompting a message based on the result returned.
         if (res.data.data === 'success') {
           ElMessage.success('remove ' + row.id + ' sucess...')
@@ -200,6 +189,94 @@ export default {
     async function getShuffleUnhealthyListPage() {
       const res = await getShuffleUnhealthyList()
       listPageData.tableData = res.data.data
+    }
+
+    function combinedRequestAddress(serverRow) {
+      return 'http://' + serverRow.ip + ':' + serverRow.jettyPort
+    }
+
+    async function handlerServerConf(serverRow) {
+      try {
+        const headers = {}
+        headers.targetAddress = combinedRequestAddress(serverRow)
+        const response = await getShuffleServerConf({}, headers)
+        if (response.status >= 200 && response.status < 300) {
+          const newWindow = window.open('', '_blank')
+          let tableHTML = `
+                          <style>
+                            table {
+                              width: 100%;
+                            }
+                            th, td {
+                              padding: 0 20px;
+                              text-align: left;
+                            }
+                          </style>
+                          <table>
+                            <tr>
+                              <th>Key</th>
+                              <th>Value</th>
+                            </tr>
+                        `
+          for (const item of response.data.data) {
+            tableHTML += `<tr><td>${item.argumentKey}</td><td>${item.argumentValue}</td></tr>`
+          }
+          tableHTML += '</table>'
+          newWindow.document.write(tableHTML)
+        } else {
+          ElMessage.error('Request failed.')
+        }
+      } catch (err) {
+        ElMessage.error('Internal error.')
+      }
+    }
+
+    async function handlerServerMetrics(serverRow) {
+      try {
+        const headers = {}
+        headers.targetAddress = combinedRequestAddress(serverRow)
+        const response = await getShuffleServerMetrics({}, headers)
+        if (response.status >= 200 && response.status < 300) {
+          const newWindow = window.open('', '_blank')
+          newWindow.document.write('<pre>' + JSON.stringify(response.data, null, 2) + '</pre>')
+        } else {
+          ElMessage.error('Request failed.')
+        }
+      } catch (err) {
+        ElMessage.error('Internal error.')
+      }
+    }
+
+    async function handlerServerPrometheusMetrics(serverRow) {
+      try {
+        const headers = {}
+        headers.targetAddress = combinedRequestAddress(serverRow)
+        const response = await getShuffleServerPrometheusMetrics({}, headers)
+        if (response.status >= 200 && response.status < 300) {
+          const newWindow = window.open('', '_blank')
+          newWindow.document.write('<pre>' + response.data + '</pre>')
+        } else {
+          ElMessage.error('Request failed.')
+        }
+      } catch (err) {
+        ElMessage.error('Internal error.')
+      }
+    }
+
+    async function handlerServerStacks(serverRow) {
+      try {
+        const headers = {}
+        headers.targetAddress = combinedRequestAddress(serverRow)
+        const response = await getShuffleServerStacks({}, headers)
+        if (response.status >= 200 && response.status < 300) {
+          const newWindow = window.open('', '_blank')
+          newWindow.document.write('<pre>' + response.data + '</pre>')
+        } else {
+          ElMessage.error('Request failed.')
+        }
+      } catch (err) {
+        ElMessage.error('Internal error.')
+      }
     }
 
     const loadPageData = () => {
@@ -281,6 +358,10 @@ export default {
       isShowRemove,
       showDeleteConfirm,
       sortChangeEvent,
+      handlerServerConf,
+      handlerServerPrometheusMetrics,
+      handlerServerMetrics,
+      handlerServerStacks,
       memFormatter,
       dateFormatter
     }
