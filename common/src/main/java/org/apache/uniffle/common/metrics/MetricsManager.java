@@ -19,15 +19,20 @@ package org.apache.uniffle.common.metrics;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.CachedGauge;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Summary;
+import io.prometheus.client.dropwizard.DropwizardExports;
 
 public class MetricsManager {
+  private final MetricRegistry metricRegistry;
   private final CollectorRegistry collectorRegistry;
   private final String[] defaultLabelNames;
   private final String[] defaultLabelValues;
@@ -44,6 +49,8 @@ public class MetricsManager {
     } else {
       this.collectorRegistry = collectorRegistry;
     }
+    this.metricRegistry = new MetricRegistry();
+    this.collectorRegistry.register(new DropwizardExports(metricRegistry));
     this.defaultLabelNames = defaultLabels.keySet().toArray(new String[0]);
     this.defaultLabelValues =
         Arrays.stream(defaultLabelNames).map(defaultLabels::get).toArray(String[]::new);
@@ -72,6 +79,32 @@ public class MetricsManager {
 
   public Gauge addGauge(String name, String help, String[] labels) {
     return Gauge.build().name(name).labelNames(labels).help(help).register(collectorRegistry);
+  }
+
+  public synchronized <T> void registerGaugeIfAbsent(
+      String name, com.codahale.metrics.Gauge<T> metric) {
+    if (!metricRegistry.getMetrics().containsKey(name)) {
+      metricRegistry.register(name, metric);
+    }
+  }
+
+  public synchronized <T> void registerCachedGaugeIfAbsent(
+      String name, com.codahale.metrics.Gauge<T> metric) {
+    registerCachedGaugeIfAbsent(name, metric, 10, TimeUnit.MINUTES);
+  }
+
+  public synchronized <T> void registerCachedGaugeIfAbsent(
+      String name, com.codahale.metrics.Gauge<T> metric, long timeout, TimeUnit unit) {
+    if (!metricRegistry.getMetrics().containsKey(name)) {
+      metricRegistry.register(
+          name,
+          new CachedGauge<T>(timeout, unit) {
+            @Override
+            protected T loadValue() {
+              return metric.getValue();
+            }
+          });
+    }
   }
 
   public Gauge.Child addLabeledGauge(String name) {
@@ -111,5 +144,9 @@ public class MetricsManager {
       builder = builder.quantile(QUANTILES[i], QUANTILE_ERROR);
     }
     return builder.register(collectorRegistry).labels(defaultLabelValues);
+  }
+
+  public com.codahale.metrics.Gauge getGauge(String name) {
+    return metricRegistry.getGauges().get(name);
   }
 }
