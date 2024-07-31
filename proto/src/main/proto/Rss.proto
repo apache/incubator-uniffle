@@ -266,6 +266,17 @@ enum ServerStatus {
   // todo: more status, such as UPGRADING
 }
 
+message ApplicationInfo {
+  string appId = 1;
+  int64 partitionNum = 2;
+  int64 memorySize = 3;
+  int64 localFileNum = 4;
+  int64 localTotalSize = 5;
+  int64 hadoopFileNum = 6;
+  int64 hadoopTotalSize = 7;
+  int64 totalSize = 8;
+}
+
 message ShuffleServerHeartBeatRequest {
   ShuffleServerId serverId = 1;
   int64 usedMemory = 2;
@@ -279,6 +290,7 @@ message ShuffleServerHeartBeatRequest {
   optional string version = 22;
   optional string gitCommitId = 23;
   optional int64 startTimeMs = 24;
+  repeated ApplicationInfo appInfos = 25;
 }
 
 message ShuffleServerHeartBeatResponse {

@@ -42,6 +42,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ import org.apache.uniffle.common.AuditType;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.UnionKey;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.storage.ApplicationStorageInfo;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
 import org.apache.uniffle.common.storage.StorageStatus;
@@ -426,6 +428,14 @@ public class LocalStorageManager extends SingleStorageManager {
 
   public List<LocalStorage> getStorages() {
     return localStorages;
+  }
+
+  @Override
+  public Pair<ApplicationStorageInfo, ApplicationStorageInfo> getApplicationStorageInfos(
+      String appId) {
+    Pair<ApplicationStorageInfo, ApplicationStorageInfo> pair =
+        super.getApplicationStorageInfos(appId);
+    return Pair.of(pair.getLeft(), null);
   }
 
   // Only for test.

@@ -18,6 +18,9 @@
 package org.apache.uniffle.storage.common;
 
 import java.io.IOException;
+import java.util.Collection;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -32,8 +35,8 @@ public interface Storage {
 
   void updateReadMetrics(StorageReadMetrics metrics);
 
-  ShuffleWriteHandler getOrCreateWriteHandler(CreateShuffleWriteHandlerRequest request)
-      throws IOException;
+  Pair<ShuffleWriteHandler, Boolean> getOrCreateWriteHandler(
+      CreateShuffleWriteHandlerRequest request) throws IOException;
 
   boolean containsWriteHandler(String appId);
 
@@ -46,4 +49,6 @@ public interface Storage {
   String getStoragePath();
 
   String getStorageHost();
+
+  Collection<ShuffleWriteHandler> getWriteHandlerByAppId(String appId);
 }

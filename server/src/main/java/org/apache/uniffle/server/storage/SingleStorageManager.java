@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Uninterruptibles;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,6 +165,16 @@ public abstract class SingleStorageManager implements StorageManager {
   @Override
   public void stop() {
     // do nothing
+  }
+
+  @Override
+  public Pair<ApplicationStorageInfo, ApplicationStorageInfo> getApplicationStorageInfos(
+      String appId) {
+    ApplicationStorageInfo app = appStorageInfoMap.get(appId);
+    if (app != null) {
+      return Pair.of(app, null);
+    }
+    return Pair.of(null, null);
   }
 
   public void removeAppStorageInfo(PurgeEvent event) {

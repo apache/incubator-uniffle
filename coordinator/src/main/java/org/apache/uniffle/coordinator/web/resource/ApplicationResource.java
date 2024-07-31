@@ -36,6 +36,7 @@ import org.apache.uniffle.common.web.resource.BaseResource;
 import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.AppInfo;
 import org.apache.uniffle.coordinator.ApplicationManager;
+import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.web.vo.AppInfoVO;
 import org.apache.uniffle.coordinator.web.vo.UserAppNumVO;
@@ -65,10 +66,24 @@ public class ApplicationResource extends BaseResource {
           Map<String, Map<String, AppInfo>> currentUserAndApp =
               getApplicationManager().getCurrentUserAndApp();
           List<UserAppNumVO> usercnt = new ArrayList<>();
+          Map<String, Integer> userAppNumMap = Maps.newHashMap();
+          int currentUserAppNum = 0;
           for (Map.Entry<String, Map<String, AppInfo>> stringMapEntry :
               currentUserAndApp.entrySet()) {
-            String userName = stringMapEntry.getKey();
-            usercnt.add(new UserAppNumVO(userName, stringMapEntry.getValue().size()));
+            currentUserAppNum += stringMapEntry.getValue().size();
+            userAppNumMap.put(stringMapEntry.getKey(), stringMapEntry.getValue().size());
+          }
+          getApplicationManager()
+              .getCachedAppInfos(currentUserAppNum)
+              .forEach(
+                  appInfoVO -> {
+                    userAppNumMap.computeIfAbsent(appInfoVO.getUserName(), k -> 0);
+                    userAppNumMap.put(
+                        appInfoVO.getUserName(), userAppNumMap.get(appInfoVO.getUserName()) + 1);
+                  });
+          for (Map.Entry<String, Integer> stringIntegerEntry : userAppNumMap.entrySet()) {
+            String userName = stringIntegerEntry.getKey();
+            usercnt.add(new UserAppNumVO(userName, stringIntegerEntry.getValue()));
           }
           // Display inverted by the number of user applications.
           usercnt.sort(Comparator.reverseOrder());
@@ -89,20 +104,21 @@ public class ApplicationResource extends BaseResource {
             for (Map.Entry<String, AppInfo> appIdTimestampMap :
                 userAppIdTimestampMap.getValue().entrySet()) {
               AppInfo appInfo = appIdTimestampMap.getValue();
-              userToAppList.add(
-                  new AppInfoVO(
-                      userAppIdTimestampMap.getKey(),
-                      appInfo.getAppId(),
-                      appInfo.getUpdateTime(),
-                      appInfo.getRegistrationTime(),
-                      appInfo.getVersion(),
-                      appInfo.getGitCommitId()));
+              AppInfoVO appInfoVO =
+                  getCoordinatorServer().getAppInfoV0(userAppIdTimestampMap.getKey(), appInfo);
+              userToAppList.add(appInfoVO);
             }
           }
+          userToAppList.addAll(getApplicationManager().getCachedAppInfos(userToAppList.size()));
           // Display is inverted by the submission time of the application.
           userToAppList.sort(Comparator.reverseOrder());
           return userToAppList;
         });
+  }
+
+  private CoordinatorServer getCoordinatorServer() {
+    return (CoordinatorServer)
+        servletContext.getAttribute(CoordinatorServer.class.getCanonicalName());
   }
 
   private ApplicationManager getApplicationManager() {

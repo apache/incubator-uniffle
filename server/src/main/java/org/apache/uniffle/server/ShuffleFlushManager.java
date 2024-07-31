@@ -27,6 +27,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -169,9 +170,9 @@ public class ShuffleFlushManager {
               storageDataReplica,
               user,
               maxConcurrencyPerPartitionToWrite);
-      ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
+      Pair<ShuffleWriteHandler, Boolean> pair = storage.getOrCreateWriteHandler(request);
       long startTime = System.currentTimeMillis();
-      boolean writeSuccess = storageManager.write(storage, handler, event);
+      boolean writeSuccess = storageManager.write(storage, pair.getLeft(), event);
       if (!writeSuccess) {
         throw new EventRetryException();
       }
@@ -199,9 +200,9 @@ public class ShuffleFlushManager {
       if (null != shuffleTaskInfo) {
         String storageHost = event.getUnderStorage().getStorageHost();
         if (LocalStorage.STORAGE_HOST.equals(storageHost)) {
-          shuffleTaskInfo.addOnLocalFileDataSize(event.getSize());
+          shuffleTaskInfo.addOnLocalFileDataSize(event.getSize(), pair.getRight());
         } else {
-          shuffleTaskInfo.addOnHadoopDataSize(event.getSize());
+          shuffleTaskInfo.addOnHadoopDataSize(event.getSize(), pair.getRight());
         }
       }
     } finally {

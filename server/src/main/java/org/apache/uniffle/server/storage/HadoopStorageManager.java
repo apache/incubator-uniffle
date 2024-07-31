@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -35,6 +36,7 @@ import org.apache.uniffle.common.AuditType;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
+import org.apache.uniffle.common.storage.ApplicationStorageInfo;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
@@ -213,6 +215,14 @@ public class HadoopStorageManager extends SingleStorageManager {
       }
     }
     return appIdToStorages.get(appId);
+  }
+
+  @Override
+  public Pair<ApplicationStorageInfo, ApplicationStorageInfo> getApplicationStorageInfos(
+      String appId) {
+    Pair<ApplicationStorageInfo, ApplicationStorageInfo> pair =
+        super.getApplicationStorageInfos(appId);
+    return Pair.of(pair.getLeft(), null);
   }
 
   @VisibleForTesting
