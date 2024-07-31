@@ -44,7 +44,7 @@ import org.apache.uniffle.server.flush.EventRetryException;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
-import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
+import org.apache.uniffle.storage.handler.api.ShuffleWriteHandlerWrapper;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
@@ -169,16 +169,16 @@ public class ShuffleFlushManager {
               storageDataReplica,
               user,
               maxConcurrencyPerPartitionToWrite);
-      ShuffleWriteHandler handler;
+      ShuffleWriteHandlerWrapper handlerWrapper;
       try {
-        handler = storage.getOrCreateWriteHandler(request);
+        handlerWrapper = storage.getOrCreateWriteHandler(request);
       } catch (Exception e) {
         LOG.warn("Failed to create write handler for event: {}", event, e);
         throw new EventRetryException(e);
       }
 
       long startTime = System.currentTimeMillis();
-      boolean writeSuccess = storageManager.write(storage, handler, event);
+      boolean writeSuccess = storageManager.write(storage, handlerWrapper.getHandler(), event);
       if (!writeSuccess) {
         throw new EventRetryException();
       }
@@ -206,9 +206,9 @@ public class ShuffleFlushManager {
       if (null != shuffleTaskInfo) {
         String storageHost = event.getUnderStorage().getStorageHost();
         if (LocalStorage.STORAGE_HOST.equals(storageHost)) {
-          shuffleTaskInfo.addOnLocalFileDataSize(event.getSize());
+          shuffleTaskInfo.addOnLocalFileDataSize(event.getSize(), handlerWrapper.isNewlyCreated());
         } else {
-          shuffleTaskInfo.addOnHadoopDataSize(event.getSize());
+          shuffleTaskInfo.addOnHadoopDataSize(event.getSize(), handlerWrapper.isNewlyCreated());
         }
       }
     } finally {

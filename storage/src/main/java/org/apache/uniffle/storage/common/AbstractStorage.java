@@ -25,6 +25,7 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
+import org.apache.uniffle.storage.handler.api.ShuffleWriteHandlerWrapper;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -40,17 +41,22 @@ public abstract class AbstractStorage implements Storage {
   abstract ShuffleWriteHandler newWriteHandler(CreateShuffleWriteHandlerRequest request);
 
   @Override
-  public ShuffleWriteHandler getOrCreateWriteHandler(CreateShuffleWriteHandlerRequest request) {
+  public ShuffleWriteHandlerWrapper getOrCreateWriteHandler(
+      CreateShuffleWriteHandlerRequest request) {
     writerHandlers.computeIfAbsent(request.getAppId(), key -> JavaUtils.newConcurrentMap());
     requests.computeIfAbsent(request.getAppId(), key -> JavaUtils.newConcurrentMap());
     Map<String, ShuffleWriteHandler> map = writerHandlers.get(request.getAppId());
     String partitionKey =
         RssUtils.generatePartitionKey(
             request.getAppId(), request.getShuffleId(), request.getStartPartition());
+    boolean isCreate = false;
+    if (!map.containsKey(partitionKey)) {
+      isCreate = true;
+    }
     map.computeIfAbsent(partitionKey, key -> newWriteHandler(request));
     Map<String, CreateShuffleWriteHandlerRequest> requestMap = requests.get(request.getAppId());
     requestMap.putIfAbsent(partitionKey, request);
-    return map.get(partitionKey);
+    return new ShuffleWriteHandlerWrapper(map.get(partitionKey), isCreate);
   }
 
   @Override

@@ -371,9 +371,6 @@ public class SimpleClusterManager implements ClusterManager {
 
   @Override
   public List<ServerNode> list() {
-    for (Map.Entry<String, ServerNode> entry : servers.entrySet()) {
-      ServerNode server = entry.getValue();
-    }
     return Lists.newArrayList(servers.values());
   }
 

@@ -110,6 +110,7 @@ public class ApplicationManager implements Closeable {
         break;
       }
     }
+
     // the thread for checking application status
     checkAppScheduler = ThreadUtils.getDaemonSingleThreadScheduledExecutor("ApplicationManager");
     checkAppScheduler.scheduleAtFixedRate(
