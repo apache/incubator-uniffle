@@ -234,8 +234,8 @@ public class SimpleClusterManager implements ClusterManager {
     if (fileStatus != null && fileStatus.isFile()) {
       String tempExcludedNodesPath = excludedNodesPath.concat("_tmp");
       Path tmpHadoopPath = new Path(tempExcludedNodesPath);
-      if (!hadoopFileSystem.exists(tmpHadoopPath)) {
-        hadoopFileSystem.create(tmpHadoopPath);
+      if (hadoopFileSystem.exists(tmpHadoopPath)) {
+        hadoopFileSystem.delete(tmpHadoopPath);
       }
       try (BufferedWriter bufferedWriter =
           new BufferedWriter(
@@ -367,6 +367,7 @@ public class SimpleClusterManager implements ClusterManager {
     return false;
   }
 
+  /** Add blacklist. */
   @Override
   public boolean addExcludedNodes(List<String> excludedNodeIds) {
     try {
