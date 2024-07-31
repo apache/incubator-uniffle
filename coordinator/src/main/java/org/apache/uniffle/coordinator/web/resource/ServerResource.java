@@ -225,7 +225,7 @@ public class ServerResource extends BaseResource {
   @POST
   @Path("/addExcludeNodes")
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response<String> handleAddExcludeNodesRequest(Map<String, List<String>> excludeNodes) {
+  public Response<String> handleAddExcludedNodesRequest(Map<String, List<String>> excludeNodes) {
     ClusterManager clusterManager = getClusterManager();
     if (clusterManager.addExcludedNodes(excludeNodes.get("excludeNodes"))) {
       return Response.success("success");
