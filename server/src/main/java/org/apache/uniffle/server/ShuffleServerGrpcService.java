@@ -366,14 +366,16 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                   ShuffleServerGrpcMetrics.SEND_SHUFFLE_DATA_METHOD, transportTime);
         }
       }
-      int requireSize = shuffleServer.getShuffleTaskManager().getRequireBufferSize(requireBufferId);
+      int requireSize =
+          shuffleServer.getShuffleTaskManager().getRequireBufferSize(appId, requireBufferId);
 
       StatusCode ret = StatusCode.SUCCESS;
       String responseMessage = "OK";
       if (req.getShuffleDataCount() > 0) {
         ShuffleServerMetrics.counterTotalReceivedDataSize.inc(requireSize);
         ShuffleTaskManager manager = shuffleServer.getShuffleTaskManager();
-        PreAllocatedBufferInfo info = manager.getAndRemovePreAllocatedBuffer(requireBufferId);
+        PreAllocatedBufferInfo info =
+            manager.getAndRemovePreAllocatedBuffer(appId, requireBufferId);
         boolean isPreAllocated = info != null;
         if (!isPreAllocated) {
           String errorMsg =
