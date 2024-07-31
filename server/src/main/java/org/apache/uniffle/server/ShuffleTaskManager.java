@@ -59,7 +59,6 @@ import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssBaseConf;
-import org.apache.uniffle.common.exception.ExceedHugePartitionHardLimitException;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.InvalidRequestException;
 import org.apache.uniffle.common.exception.NoBufferException;
@@ -320,15 +319,11 @@ public class ShuffleTaskManager {
     long partitionSize = getPartitionDataSize(appId, shuffleId, spd.getPartitionId());
     long deltaSize = spd.getTotalBlockSize();
     partitionSize += deltaSize;
-    if (shuffleBufferManager.hasPartitionExceededHugeHardLimit(partitionSize)) {
-      throw new ExceedHugePartitionHardLimitException(
-          "Current partition size: "
-              + partitionSize
-              + " exceeded the huge hard limit size: "
-              + shuffleBufferManager.getHugePartitionSizeHardLimit()
-              + " if cache this shuffle data with size: "
-              + deltaSize);
-    }
+    // We do not need to check the huge partition size here, after old client upgraded to this
+    // version,
+    // since huge partition size is limited when requireBuffer is called.
+    HugePartitionUtils.checkExceedPartitionHardLimit(
+        "cacheShuffleData", shuffleBufferManager, partitionSize, deltaSize);
     return shuffleBufferManager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
   }
 
@@ -500,9 +495,8 @@ public class ShuffleTaskManager {
       }
     }
     long partitionSize = shuffleTaskInfo.addPartitionDataSize(shuffleId, partitionId, size);
-    if (shuffleBufferManager.isHugePartition(partitionSize)) {
-      shuffleTaskInfo.markHugePartition(shuffleId, partitionId);
-    }
+    HugePartitionUtils.markHugePartition(
+        shuffleBufferManager, shuffleTaskInfo, shuffleId, partitionId, partitionSize);
   }
 
   public Roaring64NavigableMap getCachedBlockIds(String appId, int shuffleId) {
@@ -547,8 +541,8 @@ public class ShuffleTaskManager {
         int partitionRequireSize = partitionRequireSizes.get(i);
         long partitionUsedDataSize =
             getPartitionDataSize(appId, shuffleId, partitionId) + partitionRequireSize;
-        if (shuffleBufferManager.limitHugePartition(
-            appId, shuffleId, partitionId, partitionUsedDataSize)) {
+        if (HugePartitionUtils.limitHugePartition(
+            shuffleBufferManager, appId, shuffleId, partitionId, partitionUsedDataSize)) {
           String errorMessage =
               String.format(
                   "Huge partition is limited to writing. appId: %s, shuffleId: %s, partitionIds: %s, partitionUsedDataSize: %s",
@@ -556,17 +550,8 @@ public class ShuffleTaskManager {
           LOG.error(errorMessage);
           throw new NoBufferForHugePartitionException(errorMessage);
         }
-        if (shuffleBufferManager.hasPartitionExceededHugeHardLimit(partitionUsedDataSize)) {
-          throw new ExceedHugePartitionHardLimitException(
-              "Current partition ["
-                  + partitionId
-                  + "] size: "
-                  + partitionUsedDataSize
-                  + " exceeded the max size: "
-                  + shuffleBufferManager.getHugePartitionSizeHardLimit()
-                  + " if cache this shuffle data with size: "
-                  + partitionRequireSize);
-        }
+        HugePartitionUtils.checkExceedPartitionHardLimit(
+            "requireBuffer", shuffleBufferManager, partitionUsedDataSize, partitionRequireSize);
       }
     }
     return requireBuffer(appId, requireSize);

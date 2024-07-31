@@ -47,6 +47,7 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.server.HugePartitionUtils;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleFlushManager;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -274,7 +275,8 @@ public class ShuffleBufferManager {
       int partitionId,
       int startPartition,
       int endPartition) {
-    boolean isHugePartition = isHugePartition(appId, shuffleId, partitionId);
+    boolean isHugePartition =
+        HugePartitionUtils.isHugePartition(shuffleTaskManager, appId, shuffleId, partitionId);
     // When we use multi storage and trigger single buffer flush, the buffer size should be bigger
     // than rss.server.flush.cold.storage.threshold.size, otherwise cold storage will be useless.
     if ((isHugePartition || this.bufferFlushEnabled)
@@ -319,7 +321,8 @@ public class ShuffleBufferManager {
           shuffleId,
           range.lowerEndpoint(),
           range.upperEndpoint(),
-          isHugePartition(appId, shuffleId, range.lowerEndpoint()));
+          HugePartitionUtils.isHugePartition(
+              shuffleTaskManager, appId, shuffleId, range.lowerEndpoint()));
     }
   }
 
@@ -534,7 +537,8 @@ public class ShuffleBufferManager {
                   shuffleId,
                   range.lowerEndpoint(),
                   range.upperEndpoint(),
-                  isHugePartition(appId, shuffleId, range.lowerEndpoint()));
+                  HugePartitionUtils.isHugePartition(
+                      shuffleTaskManager, appId, shuffleId, range.lowerEndpoint()));
               if (pickedFlushSize > expectedFlushSize) {
                 LOG.info("Already picked enough buffers to flush {} bytes", pickedFlushSize);
                 return;
@@ -729,40 +733,16 @@ public class ShuffleBufferManager {
     }
   }
 
-  boolean isHugePartition(String appId, int shuffleId, int partitionId) {
-    return shuffleTaskManager != null
-        && shuffleTaskManager.getShuffleTaskInfo(appId) != null
-        && shuffleTaskManager.getShuffleTaskInfo(appId).isHugePartition(shuffleId, partitionId);
-  }
-
-  public boolean isHugePartition(long usedPartitionDataSize) {
-    return usedPartitionDataSize > hugePartitionSizeThresholdRef.getSizeAsBytes();
-  }
-
-  public boolean hasPartitionExceededHugeHardLimit(long usedPartitionDataSize) {
-    return usedPartitionDataSize > hugePartitionSizeHardLimitRef.getSizeAsBytes();
-  }
-
   public long getHugePartitionSizeHardLimit() {
     return hugePartitionSizeHardLimitRef.getSizeAsBytes();
   }
 
-  public boolean limitHugePartition(
-      String appId, int shuffleId, int partitionId, long usedPartitionDataSize) {
-    if (usedPartitionDataSize > hugePartitionSizeThresholdRef.getSizeAsBytes()) {
-      long memoryUsed = getShuffleBufferEntry(appId, shuffleId, partitionId).getValue().getSize();
-      if (memoryUsed > hugePartitionMemoryLimitSize) {
-        LOG.warn(
-            "AppId: {}, shuffleId: {}, partitionId: {}, memory used: {}, "
-                + "huge partition triggered memory limitation.",
-            appId,
-            shuffleId,
-            partitionId,
-            memoryUsed);
-        return true;
-      }
-    }
-    return false;
+  public long getHugePartitionSizeThreshold() {
+    return hugePartitionSizeThresholdRef.getSizeAsBytes();
+  }
+
+  public long getHugePartitionMemoryLimitSize() {
+    return hugePartitionMemoryLimitSize;
   }
 
   public void setUsedMemory(long usedMemory) {
