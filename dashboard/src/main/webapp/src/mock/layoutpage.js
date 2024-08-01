@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-import App from './App.vue'
-import ElementPlus from 'element-plus'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import 'element-plus/dist/index.css'
-import router from '@/router'
-// import '@/mock'  // With this annotation turned on, you can use the front-end mock data without requesting a background interface.
+import Mock from 'mockjs'
 
-const app = createApp(App)
-const pinia = createPinia()
-Object.keys(ElementPlusIconsVue).forEach((key) => {
-  app.component(key, ElementPlusIconsVue[key])
+Mock.mock(/\/web\/coordinator\/coordinatorServers/, 'get', function (options) {
+  return {
+    code: 0,
+    data: {
+      'sports.sina.com.cn': 'http://sports.sina.com.cn:29998',
+      'sports.faceback.com.cn': 'http://sports.faceback.com.cn:29998',
+      'sports.twiter.com.cn': 'http://sports.twiter.com.cn:29998'
+    },
+    errMsg: 'success'
+  }
 })
-app.use(router).use(pinia).use(ElementPlus).mount('#app')
+export default Mock

@@ -48,3 +48,11 @@ sh start-dashboard.sh
 ## Close dashboard
 sh stop-dashboard.sh
 ```
+
+### Dashboard front-end development
+
+In the main.js file, open the import '@/mock' comment and you can use the front-end mock data for interface development.
+
+```js
+import '@/mock' 
+```
