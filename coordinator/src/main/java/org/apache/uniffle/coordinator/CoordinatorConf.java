@@ -244,6 +244,12 @@ public class CoordinatorConf extends RssBaseConf {
           .defaultValue(1000)
           .withDescription(
               "The max number of clients that communicating with nodes and storing in the cache.");
+  public static final ConfigOption<Boolean> COORDINATOR_RPC_AUDIT_LOG_ENABLED =
+      ConfigOptions.key("rss.coordinator.rpc.audit.log.enabled")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription(
+              "When set to true, for auditing purposes, the coordinator will log audit records for every rpc request operation. ");
 
   public CoordinatorConf() {}
 
