@@ -312,7 +312,7 @@ public class ServerNode implements Comparable<ServerNode> {
         + "], version["
         + version
         + "], gitCommitId["
-        + storageInfo.size()
+        + gitCommitId
         + "]";
   }
 
@@ -366,6 +366,10 @@ public class ServerNode implements Comparable<ServerNode> {
 
   public long getStartTimeMs() {
     return startTimeMs;
+  }
+
+  public String getVersion() {
+    return version;
   }
 
   public String getGitCommitId() {
