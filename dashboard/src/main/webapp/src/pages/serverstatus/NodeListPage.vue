@@ -108,7 +108,7 @@
   </div>
 </template>
 <script>
-import { onMounted, reactive, watch, ref, inject } from 'vue'
+import { onMounted, reactive, watch, ref, inject, watchEffect } from 'vue'
 import { memFormatter, dateFormatter } from '@/utils/common'
 import { useRouter } from 'vue-router'
 import { useCurrentServerStore } from '@/store/useCurrentServerStore'
@@ -313,10 +313,12 @@ export default {
     }
 
     onMounted(() => {
-      // If the coordinator address to request is not found in the global variable, the request is not initiated.
-      if (currentServerStore.currentServer) {
-        loadPageData()
-      }
+      watchEffect(() => {
+        // If the coordinator address to request is not found in the global variable, the request is not initiated.
+        if (currentServerStore.currentServer) {
+          loadPageData()
+        }
+      })
     })
 
     watch(router.currentRoute, () => {
