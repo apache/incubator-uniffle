@@ -97,6 +97,8 @@
         </template>
       </el-table-column>
       <el-table-column prop="tags" label="Tags" min-width="140" />
+      <el-table-column prop="version" label="Version" min-width="140" />
+      <el-table-column prop="gitCommitId" label="GitCommitId" min-width="140" />
       <el-table-column v-if="isShowRemove" label="Operations">
         <template v-slot:default="scope">
           <el-button size="small" type="danger" @click="showDeleteConfirm(scope.row)">

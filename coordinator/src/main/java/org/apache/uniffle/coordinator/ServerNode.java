@@ -44,6 +44,8 @@ public class ServerNode implements Comparable<ServerNode> {
   private int nettyPort = -1;
   private int jettyPort = -1;
   private long startTimeMs = -1;
+  private String version;
+  private String gitCommitId;
 
   public ServerNode(String id) {
     this(id, "", 0, 0, 0, 0, 0, Sets.newHashSet(), ServerStatus.EXCLUDED);
@@ -164,6 +166,40 @@ public class ServerNode implements Comparable<ServerNode> {
       int nettyPort,
       int jettyPort,
       long startTimeMs) {
+    this(
+        id,
+        ip,
+        grpcPort,
+        usedMemory,
+        preAllocatedMemory,
+        availableMemory,
+        eventNumInFlush,
+        tags,
+        status,
+        storageInfoMap,
+        nettyPort,
+        jettyPort,
+        startTimeMs,
+        "",
+        "");
+  }
+
+  public ServerNode(
+      String id,
+      String ip,
+      int grpcPort,
+      long usedMemory,
+      long preAllocatedMemory,
+      long availableMemory,
+      int eventNumInFlush,
+      Set<String> tags,
+      ServerStatus status,
+      Map<String, StorageInfo> storageInfoMap,
+      int nettyPort,
+      int jettyPort,
+      long startTimeMs,
+      String version,
+      String gitCommitId) {
     this.id = id;
     this.ip = ip;
     this.grpcPort = grpcPort;
@@ -183,6 +219,8 @@ public class ServerNode implements Comparable<ServerNode> {
       this.jettyPort = jettyPort;
     }
     this.startTimeMs = startTimeMs;
+    this.version = version;
+    this.gitCommitId = gitCommitId;
   }
 
   public ShuffleServerId convertToGrpcProto() {
@@ -265,12 +303,15 @@ public class ServerNode implements Comparable<ServerNode> {
         + eventNumInFlush
         + "], timestamp["
         + timestamp
-        + "], tags"
+        + "], tags["
         + tags.toString()
-        + ""
-        + ", status["
+        + "], status["
         + status
         + "], storages[num="
+        + storageInfo.size()
+        + "], version["
+        + version
+        + "], gitCommitId["
         + storageInfo.size()
         + "]";
   }
@@ -325,5 +366,9 @@ public class ServerNode implements Comparable<ServerNode> {
 
   public long getStartTimeMs() {
     return startTimeMs;
+  }
+
+  public String getGitCommitId() {
+    return gitCommitId;
   }
 }
