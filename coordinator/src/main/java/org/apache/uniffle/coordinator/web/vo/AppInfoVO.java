@@ -36,5 +36,4 @@ public class AppInfoVO implements Comparable<AppInfoVO> {
   public int compareTo(AppInfoVO appInfoVO) {
     return Long.compare(registrationTime, appInfoVO.getRegistrationTime());
   }
-
 }
