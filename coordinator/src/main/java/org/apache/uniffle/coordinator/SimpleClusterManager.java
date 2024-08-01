@@ -18,10 +18,12 @@
 package org.apache.uniffle.coordinator;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -60,10 +62,9 @@ import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 public class SimpleClusterManager implements ClusterManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(SimpleClusterManager.class);
-
   private final Map<String, ServerNode> servers = JavaUtils.newConcurrentMap();
   private final Cache<ServerNode, ShuffleServerInternalGrpcClient> clientCache;
-  private Set<String> excludeNodes = Sets.newConcurrentHashSet();
+  private Set<String> excludedNodes = Sets.newConcurrentHashSet();
   /** ServerNode whose heartbeat is lost */
   Set<ServerNode> lostNodes = Sets.newHashSet();
   /** Unhealthy ServerNode */
@@ -84,6 +85,7 @@ public class SimpleClusterManager implements ClusterManager {
   private boolean startupSilentPeriodEnabled;
   private long startupSilentPeriodDurationMs;
   private boolean readyForServe = false;
+  private String excludedNodesPath;
 
   public SimpleClusterManager(CoordinatorConf conf, Configuration hadoopConf) throws Exception {
     this.shuffleNodesMax =
@@ -104,17 +106,17 @@ public class SimpleClusterManager implements ClusterManager {
     scheduledExecutorService.scheduleAtFixedRate(
         this::nodesCheck, heartbeatTimeout / 3, heartbeatTimeout / 3, TimeUnit.MILLISECONDS);
 
-    String excludeNodesPath =
+    this.excludedNodesPath =
         conf.getString(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_FILE_PATH, "");
-    if (!StringUtils.isEmpty(excludeNodesPath)) {
+    if (!StringUtils.isEmpty(excludedNodesPath)) {
       this.hadoopFileSystem =
-          HadoopFilesystemProvider.getFilesystem(new Path(excludeNodesPath), hadoopConf);
+          HadoopFilesystemProvider.getFilesystem(new Path(excludedNodesPath), hadoopConf);
       long updateNodesInterval =
           conf.getLong(CoordinatorConf.COORDINATOR_EXCLUDE_NODES_CHECK_INTERVAL);
       checkNodesExecutorService =
-          ThreadUtils.getDaemonSingleThreadScheduledExecutor("UpdateExcludeNodes");
+          ThreadUtils.getDaemonSingleThreadScheduledExecutor("UpdateExcludedNodes");
       checkNodesExecutorService.scheduleAtFixedRate(
-          () -> updateExcludeNodes(excludeNodesPath),
+          () -> updateExcludedNodes(excludedNodesPath),
           0,
           updateNodesInterval,
           TimeUnit.MILLISECONDS);
@@ -179,33 +181,37 @@ public class SimpleClusterManager implements ClusterManager {
     nodesCheck();
   }
 
-  private void updateExcludeNodes(String path) {
-    int originalExcludeNodesNumber = excludeNodes.size();
+  private synchronized void updateExcludedNodes(String path) {
+    int originalExcludedNodesNumber = excludedNodes.size();
     try {
       Path hadoopPath = new Path(path);
       FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
       if (fileStatus != null && fileStatus.isFile()) {
         long latestModificationTime = fileStatus.getModificationTime();
         if (excludeLastModify.get() != latestModificationTime) {
-          parseExcludeNodesFile(hadoopFileSystem.open(hadoopPath));
+          excludedNodes = parseExcludedNodesFile(hadoopFileSystem.open(hadoopPath));
+          LOG.info(
+              "Updated exclude nodes and {} nodes were marked as excluded nodes",
+              excludedNodes.size());
+          // update exclude nodes and last modify time
           excludeLastModify.set(latestModificationTime);
         }
       } else {
-        excludeNodes = Sets.newConcurrentHashSet();
+        excludedNodes = Sets.newConcurrentHashSet();
       }
     } catch (FileNotFoundException fileNotFoundException) {
-      excludeNodes = Sets.newConcurrentHashSet();
+      excludedNodes = Sets.newConcurrentHashSet();
     } catch (Exception e) {
       LOG.warn("Error when updating exclude nodes, the exclude nodes file path: {}.", path, e);
     }
-    int newlyExcludeNodesNumber = excludeNodes.size();
-    if (newlyExcludeNodesNumber != originalExcludeNodesNumber) {
-      LOG.info("Exclude nodes number: {}, nodes list: {}", newlyExcludeNodesNumber, excludeNodes);
+    int newlyExcludedNodesNumber = excludedNodes.size();
+    if (newlyExcludedNodesNumber != originalExcludedNodesNumber) {
+      LOG.info("Exclude nodes number: {}, nodes list: {}", newlyExcludedNodesNumber, excludedNodes);
     }
-    CoordinatorMetrics.gaugeExcludeServerNum.set(excludeNodes.size());
+    CoordinatorMetrics.gaugeExcludeServerNum.set(excludedNodes.size());
   }
 
-  private void parseExcludeNodesFile(DataInputStream fsDataInputStream) throws IOException {
+  private Set<String> parseExcludedNodesFile(DataInputStream fsDataInputStream) throws IOException {
     Set<String> nodes = Sets.newConcurrentHashSet();
     try (BufferedReader br =
         new BufferedReader(new InputStreamReader(fsDataInputStream, StandardCharsets.UTF_8))) {
@@ -216,10 +222,52 @@ public class SimpleClusterManager implements ClusterManager {
         }
       }
     }
-    // update exclude nodes and last modify time
-    excludeNodes = nodes;
-    LOG.info(
-        "Updated exclude nodes and {} nodes were marked as exclude nodes", excludeNodes.size());
+    return nodes;
+  }
+
+  private void writeExcludedNodes2File(List<String> excludedNodes) throws IOException {
+    if (hadoopFileSystem == null) {
+      return;
+    }
+    Path hadoopPath = new Path(excludedNodesPath);
+    FileStatus fileStatus = hadoopFileSystem.getFileStatus(hadoopPath);
+    if (fileStatus != null && fileStatus.isFile()) {
+      String tempExcludedNodesPath = excludedNodesPath.concat("_tmp");
+      Path tmpHadoopPath = new Path(tempExcludedNodesPath);
+      if (hadoopFileSystem.exists(tmpHadoopPath)) {
+        hadoopFileSystem.delete(tmpHadoopPath);
+      }
+      try (BufferedWriter bufferedWriter =
+          new BufferedWriter(
+              new OutputStreamWriter(
+                  hadoopFileSystem.create(tmpHadoopPath, true), StandardCharsets.UTF_8))) {
+        for (String excludedNode : excludedNodes) {
+          bufferedWriter.write(excludedNode);
+          bufferedWriter.newLine();
+        }
+      }
+      hadoopFileSystem.delete(hadoopPath);
+      hadoopFileSystem.rename(tmpHadoopPath, hadoopPath);
+    }
+  }
+
+  private synchronized boolean putInExcludedNodesFile(List<String> excludedNodes)
+      throws IOException {
+    if (hadoopFileSystem == null) {
+      return false;
+    }
+    Path hadoopPath = new Path(excludedNodesPath);
+    // Obtains the existing excluded node.
+    Set<String> alreadyExistExcludedNodes =
+        parseExcludedNodesFile(hadoopFileSystem.open(hadoopPath));
+    List<String> newAddExcludedNodes =
+        excludedNodes.stream()
+            .filter(node -> !alreadyExistExcludedNodes.contains(node))
+            .collect(Collectors.toList());
+    newAddExcludedNodes.addAll(alreadyExistExcludedNodes);
+    // Writes to the new excluded node.
+    writeExcludedNodes2File(newAddExcludedNodes);
+    return true;
   }
 
   @Override
@@ -253,7 +301,7 @@ public class SimpleClusterManager implements ClusterManager {
       if (!ServerStatus.ACTIVE.equals(node.getStatus())) {
         continue;
       }
-      if (!excludeNodes.contains(node.getId()) && node.getTags().containsAll(requiredTags)) {
+      if (!excludedNodes.contains(node.getId()) && node.getTags().containsAll(requiredTags)) {
         availableNodes.add(node);
       }
     }
@@ -279,7 +327,7 @@ public class SimpleClusterManager implements ClusterManager {
     if (faultyServerIds != null && faultyServerIds.contains(node.getId())) {
       return false;
     }
-    return !excludeNodes.contains(node.getId()) && node.getTags().containsAll(requiredTags);
+    return !excludedNodes.contains(node.getId()) && node.getTags().containsAll(requiredTags);
   }
 
   @Override
@@ -293,8 +341,8 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   @Override
-  public Set<String> getExcludeNodes() {
-    return excludeNodes;
+  public Set<String> getExcludedNodes() {
+    return excludedNodes;
   }
 
   public Map<String, Set<ServerNode>> getTagToNodes() {
@@ -317,6 +365,19 @@ public class SimpleClusterManager implements ClusterManager {
       return lostNodes.remove(new ServerNode(serverId));
     }
     return false;
+  }
+
+  /** Add blacklist. */
+  @Override
+  public boolean addExcludedNodes(List<String> excludedNodeIds) {
+    try {
+      boolean successFlag = putInExcludedNodesFile(excludedNodeIds);
+      excludedNodes.addAll(excludedNodeIds);
+      return successFlag;
+    } catch (IOException e) {
+      LOG.warn("Because {}, failed to add blacklist.", e.getMessage());
+      return false;
+    }
   }
 
   @VisibleForTesting

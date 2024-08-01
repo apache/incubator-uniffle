@@ -17,21 +17,50 @@
 
 <template>
   <div>
-    <el-table
-      :data="pageData.tableData"
-      height="550"
-      style="width: 100%"
-      :default-sort="sortColumn"
-      @sort-change="sortChangeEvent"
-    >
-      <el-table-column prop="id" label="ExcludeNodeId" min-width="180" :sortable="true" />
-    </el-table>
+    <div style="text-align: right">
+      <el-button type="primary" @click="dialogFormVisible = true"> Add Node </el-button>
+    </div>
+    <div>
+      <el-table
+        :data="pageData.tableData"
+        height="550"
+        style="width: 100%"
+        :default-sort="sortColumn"
+        @sort-change="sortChangeEvent"
+      >
+        <el-table-column prop="id" label="ExcludeNodeId" min-width="180" :sortable="true" />
+      </el-table>
+      <el-dialog
+        v-model="dialogFormVisible"
+        title="Please enter the server id list to be excluded:"
+        class="dialog-wrapper"
+      >
+        <el-form>
+          <el-form-item :label-width="formLabelWidth">
+            <el-input
+              v-model="textarea"
+              class="textarea-wrapper"
+              :rows="10"
+              type="textarea"
+              placeholder="Please input"
+            />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <div class="dialog-footer">
+            <el-button @click="dialogFormVisible = false">Cancel</el-button>
+            <el-button type="primary" @click="confirmAddHandler"> Confirm </el-button>
+          </div>
+        </template>
+      </el-dialog>
+    </div>
   </div>
 </template>
 <script>
-import { onMounted, reactive } from 'vue'
-import { getShuffleExcludeNodes } from '@/api/api'
+import { onMounted, reactive, ref, inject } from 'vue'
+import { addShuffleExcludeNodes, getShuffleExcludeNodes } from '@/api/api'
 import { useCurrentServerStore } from '@/store/useCurrentServerStore'
+import { ElMessage } from 'element-plus'
 
 export default {
   setup() {
@@ -44,9 +73,37 @@ export default {
     })
     const currentServerStore = useCurrentServerStore()
 
+    const dialogFormVisible = ref(false)
+    const formLabelWidth = '10%'
+    const textarea = ref('')
+
+    /**
+     * Get the callback method of the parent page and update the number of servers on the page.
+     */
+    const updateTotalPage = inject('updateTotalPage')
+
     async function getShuffleExcludeNodesPage() {
       const res = await getShuffleExcludeNodes()
       pageData.tableData = res.data.data
+    }
+
+    async function addShuffleExcludeNodesPage() {
+      try {
+        const excludeNodes = textarea.value.split('\n').map((item) => item.trim())
+        const excludeNodesObj = { excludeNodes }
+        const res = await addShuffleExcludeNodes(excludeNodesObj)
+        if (res.status >= 200 && res.status < 300) {
+          if (res.data.data === 'success') {
+            ElMessage.success('Add successfully.')
+          } else {
+            ElMessage.error('Add failed.')
+          }
+        } else {
+          ElMessage.error('Failed to add due to server bad.')
+        }
+      } catch (err) {
+        ElMessage.error('Failed to add due to network exception.')
+      }
     }
 
     // The system obtains data from global variables and requests the interface to obtain new data after data changes.
@@ -70,8 +127,33 @@ export default {
       }
       sortColumn[sortInfo.prop] = sortInfo.order
     }
+    const confirmAddHandler = () => {
+      dialogFormVisible.value = false
+      addShuffleExcludeNodesPage()
+      // Refreshing the number of blacklists.
+      updateTotalPage()
+      // Refreshing the Blacklist list.
+      getShuffleExcludeNodesPage()
+    }
 
-    return { pageData, sortColumn, sortChangeEvent }
+    return {
+      pageData,
+      sortColumn,
+      sortChangeEvent,
+      confirmAddHandler,
+      dialogFormVisible,
+      formLabelWidth,
+      textarea
+    }
   }
 }
 </script>
+
+<style>
+.textarea-wrapper {
+  width: 90%;
+}
+.dialog-wrapper {
+  width: 50%;
+}
+</style>

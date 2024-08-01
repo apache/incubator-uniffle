@@ -131,25 +131,7 @@ export default {
     const router = useRouter()
     const currentServerStore = useCurrentServerStore()
     const sortColumn = reactive({})
-    const listPageData = reactive({
-      tableData: [
-        {
-          id: '',
-          ip: '',
-          grpcPort: 0,
-          nettyPort: 0,
-          usedMemory: 0,
-          preAllocatedMemory: 0,
-          availableMemory: 0,
-          eventNumInFlush: 0,
-          tags: '',
-          status: '',
-          registrationTime: '',
-          timestamp: '',
-          jettyPort: 0
-        }
-      ]
-    })
+    const listPageData = reactive({ tableData: [] })
     const isShowRemove = ref(false)
     async function deleteLostServer(row) {
       try {
@@ -281,23 +263,7 @@ export default {
 
     const loadPageData = () => {
       isShowRemove.value = false
-      listPageData.tableData = [
-        {
-          id: '',
-          ip: '',
-          grpcPort: 0,
-          nettyPort: 0,
-          usedMemory: 0,
-          preAllocatedMemory: 0,
-          availableMemory: 0,
-          eventNumInFlush: 0,
-          tags: '',
-          status: '',
-          registrationTime: '',
-          timestamp: '',
-          jettyPort: 0
-        }
-      ]
+      listPageData.tableData = []
       if (router.currentRoute.value.name === 'activeNodeList') {
         getShuffleActiveNodesPage()
       } else if (router.currentRoute.value.name === 'decommissioningNodeList') {
