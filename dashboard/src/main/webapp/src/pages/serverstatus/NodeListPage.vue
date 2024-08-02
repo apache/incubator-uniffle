@@ -25,10 +25,13 @@
       @sort-change="sortChangeEvent"
     >
       <el-table-column prop="id" label="Id" min-width="140" sortable fixed />
-      <el-table-column prop="ip" label="IP" min-width="80" sortable />
-      <el-table-column prop="grpcPort" label="Port" min-width="80" />
-      <el-table-column prop="nettyPort" label="NettyPort" min-width="80" />
-      <el-table-column prop="jettyPort" label="JettyPort" min-width="80" />
+      <el-table-column label="NodeInfo(ip:jetty/grpc/netty)" min-width="140" >
+        <template v-slot="{ row }">
+          <div class="mb-4">
+            {{ row.ip }}:{{ row.jettyPort }}/{{ row.grpcPort }}/{{ row.nettyPort }}
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column
         prop="usedMemory"
         label="UsedMem"
@@ -46,7 +49,7 @@
       <el-table-column
         prop="availableMemory"
         label="AvailableMem"
-        min-width="80"
+        min-width="100"
         :formatter="memFormatter"
         sortable
       />
@@ -73,40 +76,25 @@
         :formatter="dateFormatter"
         sortable
       />
-      <el-table-column label="Conf">
+      <el-table-column label="Operations" min-width="240">
         <template v-slot="{ row }">
           <div class="mb-4">
             <el-button type="warning" @click="handlerServerConf(row)">conf</el-button>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column label="Metrics">
-        <template v-slot="{ row }">
-          <div class="mb-4">
             <el-button type="primary" @click="handlerServerMetrics(row)">metrics</el-button>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column label="PrometheusMetrics" min-width="150">
-        <template v-slot="{ row }">
-          <div class="mb-4">
-            <el-button type="success" @click="handlerServerPrometheusMetrics(row)"
-              >prometheus metrics</el-button
-            >
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column label="Stacks">
-        <template v-slot="{ row }">
-          <div class="mb-4">
+            <el-button type="success" @click="handlerServerPrometheusMetrics(row)">metrics(prom)</el-button>
             <el-button type="info" @click="handlerServerStacks(row)">stacks</el-button>
           </div>
         </template>
       </el-table-column>
       <el-table-column prop="tags" label="Tags" min-width="140" />
-      <el-table-column prop="version" label="Version" min-width="140" />
-      <el-table-column prop="gitCommitId" label="GitCommitId" min-width="140" />
-      <el-table-column v-if="isShowRemove" label="Operations">
+      <el-table-column label="Version" min-width="140">
+        <template v-slot="{ row }">
+          <div class="mb-4">
+            {{ row.version }}_{{ row.gitCommitId }}
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column v-if="isShowRemove" label="Operations(admin)">
         <template v-slot:default="scope">
           <el-button size="small" type="danger" @click="showDeleteConfirm(scope.row)">
             Remove
@@ -148,7 +136,7 @@ export default {
         const res = await deleteConfirmedLostServer(params)
         // Invoke the interface to delete the lost server, prompting a message based on the result returned.
         if (res.data.data === 'success') {
-          ElMessage.success('remove ' + row.id + ' sucess...')
+          ElMessage.success('remove ' + row.id + ' success...')
         } else {
           ElMessage.error('remove ' + row.id + ' fail...')
         }
