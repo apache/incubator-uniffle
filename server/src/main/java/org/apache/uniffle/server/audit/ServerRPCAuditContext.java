@@ -32,6 +32,7 @@ public class ServerRPCAuditContext implements AuditContext {
   private String appId = "N/A";
   private int shuffleId = -1;
   private String args;
+  private String returnValue;
 
   /**
    * Constructor of {@link ServerRPCAuditContext}.
@@ -100,10 +101,13 @@ public class ServerRPCAuditContext implements AuditContext {
   public String toString() {
     String line =
         String.format(
-            "cmd=%s\tstatusCode=%s\tappId=%s\tshuffleId=%s\texecutionTimeUs=%d\t",
+            "cmd=%s\tstatusCode=%s\tappId=%s\tshuffleId=%s\texecutionTimeUs=%d",
             command, statusCode, appId, shuffleId, executionTimeNs / 1000);
     if (args != null) {
-      line += String.format("args{%s}", args);
+      line += String.format("\targs{%s}", args);
+    }
+    if (returnValue != null) {
+      line += String.format("\treturn{%s}", returnValue);
     }
     return line;
   }
@@ -120,6 +124,11 @@ public class ServerRPCAuditContext implements AuditContext {
 
   public ServerRPCAuditContext setArgs(String args) {
     this.args = args;
+    return this;
+  }
+
+  public ServerRPCAuditContext setReturnValue(String returnValue) {
+    this.returnValue = returnValue;
     return this;
   }
 }
