@@ -401,13 +401,14 @@ public class SimpleClusterManager implements ClusterManager {
   @Override
   public boolean removeExcludedNodesFromFile(List<String> excludedNodeIds) {
     try {
-      boolean successFlag = removeExcludedNodesFile(excludedNodeIds);
-      excludedNodes.removeAll(excludedNodeIds);
-      return successFlag;
+      if (removeExcludedNodesFile(excludedNodeIds)) {
+        excludedNodes.removeAll(excludedNodeIds);
+        return true;
+      }
     } catch (IOException e) {
       LOG.warn("Because {}, failed to add blacklist.", e.getMessage());
-      return false;
     }
+    return false;
   }
 
   @VisibleForTesting
