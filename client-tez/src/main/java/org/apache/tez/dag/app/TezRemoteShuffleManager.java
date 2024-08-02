@@ -56,6 +56,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.util.ClientUtils;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleAssignmentsInfo;
@@ -243,6 +244,10 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
       assignmentTags.addAll(Arrays.asList(rawTags.split(",")));
     }
     assignmentTags.add(Constants.SHUFFLE_SERVER_VERSION);
+    String clientType =
+        conf.get(RssTezConfig.RSS_CLIENT_TYPE, RssTezConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
+    ClientUtils.validateClientType(clientType);
+    assignmentTags.add(clientType);
 
     try {
       shuffleAssignmentsInfo =
