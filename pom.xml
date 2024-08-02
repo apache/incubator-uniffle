@@ -79,6 +79,7 @@
     <junit.platform.version>1.8.2</junit.platform.version>
     <system.stubs.version>2.0.1</system.stubs.version>
     <log4j.version>2.23.0</log4j.version>
+    <lombok.version>1.18.34</lombok.version>
     <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -780,6 +781,12 @@
         <version>${log4j.version}</version>
       </dependency>
       <!-- end -->
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>${lombok.version}</version>
+        <scope>provided</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
