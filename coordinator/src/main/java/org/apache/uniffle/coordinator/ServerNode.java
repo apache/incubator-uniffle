@@ -36,7 +36,6 @@ public class ServerNode implements Comparable<ServerNode> {
   private long preAllocatedMemory;
   private long availableMemory;
   private int eventNumInFlush;
-  private long registrationTime;
   private long timestamp;
   private Set<String> tags;
   private ServerStatus status;
@@ -207,8 +206,7 @@ public class ServerNode implements Comparable<ServerNode> {
     this.preAllocatedMemory = preAllocatedMemory;
     this.availableMemory = availableMemory;
     this.eventNumInFlush = eventNumInFlush;
-    this.registrationTime = System.currentTimeMillis();
-    this.timestamp = registrationTime;
+    this.timestamp = System.currentTimeMillis();
     this.tags = tags;
     this.status = status;
     this.storageInfo = storageInfoMap;
@@ -319,14 +317,6 @@ public class ServerNode implements Comparable<ServerNode> {
   /** Only for test case */
   public void setTimestamp(long timestamp) {
     this.timestamp = timestamp;
-  }
-
-  void setRegistrationTime(long registrationTime) {
-    this.registrationTime = registrationTime;
-  }
-
-  public long getRegistrationTime() {
-    return registrationTime;
   }
 
   @Override

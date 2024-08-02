@@ -275,10 +275,6 @@ public class SimpleClusterManager implements ClusterManager {
     ServerNode pre = servers.get(node.getId());
     if (pre == null) {
       LOG.info("Newly registering node: {}", node.getId());
-    } else {
-      long regTime = pre.getRegistrationTime();
-      // inherit registration time
-      node.setRegistrationTime(regTime);
     }
     servers.put(node.getId(), node);
 

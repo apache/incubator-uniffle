@@ -63,13 +63,6 @@
         sortable
       />
       <el-table-column
-        prop="registrationTime"
-        label="RegistrationTime"
-        min-width="120"
-        :formatter="dateFormatter"
-        sortable
-      />
-      <el-table-column
         prop="timestamp"
         label="HeartbeatTime"
         min-width="120"
