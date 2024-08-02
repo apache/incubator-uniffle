@@ -279,12 +279,9 @@ public class SimpleClusterManager implements ClusterManager {
     // Obtains the existing excluded node.
     Set<String> alreadyExistExcludedNodes =
         parseExcludedNodesFile(hadoopFileSystem.open(hadoopPath));
-    List<String> removedAddExcludedNodes =
-        excludedNodes.stream()
-            .filter(node -> !alreadyExistExcludedNodes.contains(node))
-            .collect(Collectors.toList());
     // Writes to the new excluded node.
-    writeExcludedNodes2File(removedAddExcludedNodes);
+    alreadyExistExcludedNodes.removeAll(excludedNodes);
+    writeExcludedNodes2File(Lists.newArrayList(alreadyExistExcludedNodes));
     return true;
   }
 
@@ -402,7 +399,7 @@ public class SimpleClusterManager implements ClusterManager {
   }
 
   @Override
-  public boolean remoteExcludedNodes(List<String> excludedNodeIds) {
+  public boolean removeExcludedNodesFromFile(List<String> excludedNodeIds) {
     try {
       boolean successFlag = removeExcludedNodesFile(excludedNodeIds);
       excludedNodes.removeAll(excludedNodeIds);

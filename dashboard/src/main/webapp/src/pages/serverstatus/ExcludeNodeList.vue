@@ -19,7 +19,7 @@
   <div>
     <div class="button-wrapper">
       <el-button type="success" @click="dialogFormVisible = true"> Add Node </el-button>
-      <el-button type="danger" @click="handlerDeleteNode">Delete({{ selectItemNum }})</el-button>
+      <el-button type="danger" @click="handleDeleteNode">Delete({{ selectItemNum }})</el-button>
     </div>
     <el-divider />
     <div>
@@ -164,7 +164,7 @@ export default {
       selectedRows.value = selection
       selectItemNum.value = selectedRows.value.length
     }
-    function handlerDeleteNode() {
+    function handleDeleteNode() {
       ElMessageBox.confirm('Are you sure about removing these nodes?', 'Warning', {
         confirmButtonText: 'OK',
         cancelButtonText: 'Cancel',
@@ -179,7 +179,7 @@ export default {
           } else {
             const selectedIds = selectedRows.value.map((row) => row[rowKey])
             // pageData.tableData = pageData.tableData.filter(row => !selectedIds.includes(row[rowKey]));
-            deleteShuffleExcludeNodesPage(selectedIds)
+            deleteShuffleExcludedNodes(selectedIds)
             // Refreshing the number of blacklists.
             updateTotalPage()
             // Refreshing the Blacklist list.
@@ -198,7 +198,7 @@ export default {
         })
     }
 
-    async function deleteShuffleExcludeNodesPage(excludeNodes) {
+    async function deleteShuffleExcludedNodes(excludeNodes) {
       try {
         const excludeNodesObj = { excludeNodes }
         const res = await removeShuffleExcludeNodes(excludeNodesObj)
@@ -236,7 +236,7 @@ export default {
       selectItemNum,
       sortChangeEvent,
       handleConfirmAddHandler,
-      handlerDeleteNode,
+      handleDeleteNode,
       handlerSelectionChange,
       dialogFormVisible,
       formLabelWidth,

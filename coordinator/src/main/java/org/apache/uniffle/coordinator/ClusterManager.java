@@ -85,5 +85,5 @@ public interface ClusterManager extends Closeable {
   /** Add blacklist. */
   boolean addExcludedNodes(List<String> excludedNodeIds);
 
-  boolean remoteExcludedNodes(List<String> excludedNodeIds);
+  boolean removeExcludedNodesFromFile(List<String> excludedNodeIds);
 }

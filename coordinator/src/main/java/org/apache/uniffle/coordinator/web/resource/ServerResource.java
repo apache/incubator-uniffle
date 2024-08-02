@@ -238,7 +238,7 @@ public class ServerResource extends BaseResource {
   @Consumes(MediaType.APPLICATION_JSON)
   public Response<String> handleDeleteExcludeNodesRequest(Map<String, List<String>> excludeNodes) {
     ClusterManager clusterManager = getClusterManager();
-    if (clusterManager.remoteExcludedNodes(excludeNodes.get("excludeNodes"))) {
+    if (clusterManager.removeExcludedNodesFromFile(excludeNodes.get("excludeNodes"))) {
       return Response.success("success");
     }
     return Response.fail("fail");
