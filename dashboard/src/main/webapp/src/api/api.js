@@ -94,6 +94,11 @@ export function addShuffleExcludeNodes(params, headers) {
   return http.post('/server/addExcludeNodes', params, headers, 0)
 }
 
+//  Create an interface for remove blacklist
+export function removeShuffleExcludeNodes(params, headers) {
+  return http.post('/server/removeExcludeNodes', params, headers, 0)
+}
+
 // Total number of interfaces for new App
 export function getAppTotal(params, headers) {
   return http.get('/app/total', params, headers, 0)

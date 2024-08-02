@@ -233,6 +233,17 @@ public class ServerResource extends BaseResource {
     return Response.fail("fail");
   }
 
+  @POST
+  @Path("/removeExcludeNodes")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response<String> handleDeleteExcludeNodesRequest(Map<String, List<String>> excludeNodes) {
+    ClusterManager clusterManager = getClusterManager();
+    if (clusterManager.removeExcludedNodesFromFile(excludeNodes.get("excludeNodes"))) {
+      return Response.success("success");
+    }
+    return Response.fail("fail");
+  }
+
   private ClusterManager getClusterManager() {
     return (ClusterManager) servletContext.getAttribute(ClusterManager.class.getCanonicalName());
   }

@@ -270,6 +270,21 @@ public class SimpleClusterManager implements ClusterManager {
     return true;
   }
 
+  private synchronized boolean removeExcludedNodesFile(List<String> excludedNodes)
+      throws IOException {
+    if (hadoopFileSystem == null) {
+      return false;
+    }
+    Path hadoopPath = new Path(excludedNodesPath);
+    // Obtains the existing excluded node.
+    Set<String> alreadyExistExcludedNodes =
+        parseExcludedNodesFile(hadoopFileSystem.open(hadoopPath));
+    // Writes to the new excluded node.
+    alreadyExistExcludedNodes.removeAll(excludedNodes);
+    writeExcludedNodes2File(Lists.newArrayList(alreadyExistExcludedNodes));
+    return true;
+  }
+
   @Override
   public void add(ServerNode node) {
     ServerNode pre = servers.get(node.getId());
@@ -381,6 +396,19 @@ public class SimpleClusterManager implements ClusterManager {
       LOG.warn("Because {}, failed to add blacklist.", e.getMessage());
       return false;
     }
+  }
+
+  @Override
+  public boolean removeExcludedNodesFromFile(List<String> excludedNodeIds) {
+    try {
+      if (removeExcludedNodesFile(excludedNodeIds)) {
+        excludedNodes.removeAll(excludedNodeIds);
+        return true;
+      }
+    } catch (IOException e) {
+      LOG.warn("Because {}, failed to add blacklist.", e.getMessage());
+    }
+    return false;
   }
 
   @VisibleForTesting

@@ -22,7 +22,7 @@ import ElementPlus from 'element-plus'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import 'element-plus/dist/index.css'
 import router from '@/router'
-// import '@/mock'  // With this annotation turned on, you can use the front-end mock data without requesting a background interface.
+// import '@/mock' // With this annotation turned on, you can use the front-end mock data without requesting a background interface.
 
 const app = createApp(App)
 const pinia = createPinia()
