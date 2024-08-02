@@ -79,7 +79,6 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.ConfigOption;
-import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
@@ -624,7 +623,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
       RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
       String driver = rssConf.getString("driver.host", "");
       int port = rssConf.get(RssClientConf.SHUFFLE_MANAGER_GRPC_PORT);
-      long rpcTimeout = rssConf.getLong(RssBaseConf.RSS_CLIENT_TYPE_GRPC_TIMEOUT_MS);
+      long rpcTimeout = rssConf.getLong(RssClientConf.RPC_TIMEOUT_MS);
       this.managerClientSupplier =
           ExpiringCloseableSupplier.of(
               () ->

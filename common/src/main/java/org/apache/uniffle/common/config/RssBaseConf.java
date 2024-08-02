@@ -157,14 +157,6 @@ public class RssBaseConf extends RssConf {
           .defaultValue(ClientType.GRPC)
           .withDescription("client type for rss");
 
-  public static final ConfigOption<Long> RSS_CLIENT_TYPE_GRPC_TIMEOUT_MS =
-      ConfigOptions.key("rss.rpc.client.type.grpc.timeout")
-          .longType()
-          .checkValue(
-              ConfigUtils.POSITIVE_LONG_VALIDATOR, "The grpc timeout must be positive integer")
-          .defaultValue(60 * 1000L)
-          .withDescription("Remote shuffle service client type grpc timeout (ms)");
-
   public static final ConfigOption<StorageType> RSS_STORAGE_TYPE =
       ConfigOptions.key("rss.storage.type")
           .enumType(StorageType.class)
