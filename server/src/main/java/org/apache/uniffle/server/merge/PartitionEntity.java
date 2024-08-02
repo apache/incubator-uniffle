@@ -111,9 +111,8 @@ public class PartitionEntity<K, V> {
     }
   }
 
-  // reportUniqueBlockIds is used to trigger to merger
-  synchronized void reportUniqueBlockIds(Roaring64NavigableMap expectedBlockIdMap)
-      throws IOException {
+  // startSortMerge is used to trigger to merger
+  synchronized void startSortMerge(Roaring64NavigableMap expectedBlockIdMap) throws IOException {
     if (getState() != INITED) {
       LOG.warn(
           "Partition is already merging, so ignore duplicate reports, partition entity is {}",

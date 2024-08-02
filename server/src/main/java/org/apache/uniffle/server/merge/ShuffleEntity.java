@@ -68,10 +68,10 @@ public class ShuffleEntity<K, V> {
     this.classLoader = classLoader;
   }
 
-  public void reportUniqueBlockIds(int partitionId, Roaring64NavigableMap expectedBlockIdMap)
+  public void startSortMerge(int partitionId, Roaring64NavigableMap expectedBlockIdMap)
       throws IOException {
     this.entities.putIfAbsent(partitionId, new PartitionEntity<K, V>(this, partitionId));
-    this.entities.get(partitionId).reportUniqueBlockIds(expectedBlockIdMap);
+    this.entities.get(partitionId).startSortMerge(expectedBlockIdMap);
   }
 
   void cleanup() {

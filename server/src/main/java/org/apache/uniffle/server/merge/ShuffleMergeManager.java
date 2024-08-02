@@ -223,14 +223,14 @@ public class ShuffleMergeManager {
     }
   }
 
-  public void reportUniqueBlockIds(
+  public void startSortMerge(
       String appId, int shuffleId, int partitionId, Roaring64NavigableMap expectedBlockIdMap)
       throws IOException {
     Map<Integer, ShuffleEntity> entityMap = this.entities.get(appId);
     if (entityMap != null) {
       ShuffleEntity shuffleEntity = entityMap.get(shuffleId);
       if (shuffleEntity != null) {
-        shuffleEntity.reportUniqueBlockIds(partitionId, expectedBlockIdMap);
+        shuffleEntity.startSortMerge(partitionId, expectedBlockIdMap);
       }
     }
   }

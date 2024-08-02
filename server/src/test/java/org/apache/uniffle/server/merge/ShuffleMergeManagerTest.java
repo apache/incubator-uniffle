@@ -163,7 +163,7 @@ public class ShuffleMergeManagerTest {
     // 4.3 report unique blockIds
     Roaring64NavigableMap blockIdMap = Roaring64NavigableMap.bitmapOf();
     blockIdMap.add(blocks);
-    mergeManager.reportUniqueBlockIds(APP_ID, SHUFFLE_ID, PARTITION_ID, blockIdMap);
+    mergeManager.startSortMerge(APP_ID, SHUFFLE_ID, PARTITION_ID, blockIdMap);
 
     // 4 wait for drain event
     Awaitility.await()
