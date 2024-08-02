@@ -108,7 +108,7 @@
       <el-collapse-item title="Coordinator Properties" name="2">
         <el-table :data="pageData.tableData" stripe style="width: 100%">
           <el-table-column prop="argumentKey" label="Name" min-width="380" />
-          <el-table-column prop="argumentValue" label="Value" min-width="380" />
+          <el-table-column prop="argumentValue" label="Value" min-width="380" :show-overflow-tooltip="true" />
         </el-table>
       </el-collapse-item>
     </el-collapse>
