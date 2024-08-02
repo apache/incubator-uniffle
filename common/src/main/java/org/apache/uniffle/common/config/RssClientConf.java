@@ -101,7 +101,7 @@ public class RssClientConf {
           .longType()
           .defaultValue(60 * 1000L)
           .withDescription(
-              "The timeout value in milliseconds for gRPC and Netty Type RPC Clients, including ShuffleServerClient and ShuffleManageClient.");
+              "The timeout value in milliseconds for gRPC and Netty Type RPC Clients, including ShuffleServerClient and ShuffleManagerClient.");
 
   public static final ConfigOption<Integer> RPC_MAX_ATTEMPTS =
       ConfigOptions.key("rss.client.rpc.maxAttempts")
