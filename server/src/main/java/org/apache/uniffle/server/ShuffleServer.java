@@ -91,6 +91,8 @@ public class ShuffleServer {
   private ShuffleFlushManager shuffleFlushManager;
   private ShuffleBufferManager shuffleBufferManager;
   private StorageManager storageManager;
+  private boolean remoteMergeEnable;
+  private ShuffleMergeManager shuffleMergeManager;
   private HealthCheck healthCheck;
   private Set<String> tags = Sets.newHashSet();
   private GRPCMetrics grpcMetrics;
@@ -105,11 +107,11 @@ public class ShuffleServer {
   private StreamServer streamServer;
   private JvmPauseMonitor jvmPauseMonitor;
 
-  private boolean remoteMergeEnable;
-  private ShuffleMergeManager shuffleMergeManager;
+  private final long startTimeMs;
 
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
+    this.startTimeMs = System.currentTimeMillis();
     try {
       initialization();
     } catch (Exception e) {
@@ -554,6 +556,10 @@ public class ShuffleServer {
     return StringUtils.join(tags, ",");
   }
 
+  public long getStartTimeMs() {
+    return startTimeMs;
+  }
+
   @VisibleForTesting
   public void sendHeartbeat() {
     ShuffleServer shuffleServer = this;
@@ -569,7 +575,8 @@ public class ShuffleServer {
         shuffleServer.getServerStatus(),
         shuffleServer.getStorageManager().getStorageInfo(),
         shuffleServer.getNettyPort(),
-        shuffleServer.getJettyPort());
+        shuffleServer.getJettyPort(),
+        shuffleServer.getStartTimeMs());
   }
 
   public ShuffleMergeManager getShuffleMergeManager() {
