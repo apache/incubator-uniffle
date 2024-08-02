@@ -43,7 +43,7 @@ public class ServerNode implements Comparable<ServerNode> {
   private Map<String, StorageInfo> storageInfo;
   private int nettyPort = -1;
   private int jettyPort = -1;
-  private long startTimeMs = -1;
+  private long startTime = -1;
   private String version;
   private String gitCommitId;
 
@@ -165,7 +165,7 @@ public class ServerNode implements Comparable<ServerNode> {
       Map<String, StorageInfo> storageInfoMap,
       int nettyPort,
       int jettyPort,
-      long startTimeMs) {
+      long startTime) {
     this(
         id,
         ip,
@@ -179,7 +179,7 @@ public class ServerNode implements Comparable<ServerNode> {
         storageInfoMap,
         nettyPort,
         jettyPort,
-        startTimeMs,
+        startTime,
         "",
         "");
   }
@@ -197,7 +197,7 @@ public class ServerNode implements Comparable<ServerNode> {
       Map<String, StorageInfo> storageInfoMap,
       int nettyPort,
       int jettyPort,
-      long startTimeMs,
+      long startTime,
       String version,
       String gitCommitId) {
     this.id = id;
@@ -218,7 +218,7 @@ public class ServerNode implements Comparable<ServerNode> {
     if (jettyPort > 0) {
       this.jettyPort = jettyPort;
     }
-    this.startTimeMs = startTimeMs;
+    this.startTime = startTime;
     this.version = version;
     this.gitCommitId = gitCommitId;
   }
@@ -364,8 +364,8 @@ public class ServerNode implements Comparable<ServerNode> {
     return jettyPort;
   }
 
-  public long getStartTimeMs() {
-    return startTimeMs;
+  public long getStartTime() {
+    return startTime;
   }
 
   public String getVersion() {
