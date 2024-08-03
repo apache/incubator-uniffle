@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import org.apache.uniffle.common.Arguments;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.dashboard.web.config.DashboardConf;
@@ -146,6 +147,8 @@ public class Dashboard {
   }
 
   public void start() {
+    LOG.info(
+        "{} version: {}", this.getClass().getSimpleName(), Constants.VERSION_AND_REVISION_SHORT);
     try {
       server.start();
       server.join();
