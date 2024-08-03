@@ -106,9 +106,14 @@
         </div>
       </el-collapse-item>
       <el-collapse-item title="Coordinator Properties" name="2">
-        <el-table :data="pageData.tableData" stripe style="width: 100%">
+        <el-table :data="filteredTableData" stripe style="width: 100%">
           <el-table-column prop="argumentKey" label="Name" min-width="380" />
           <el-table-column prop="argumentValue" label="Value" min-width="380" :show-overflow-tooltip="true" />
+          <el-table-column align="right">
+            <template #header>
+              <el-input v-model="searchKeyword" size="small" placeholder="Type to search" />
+            </template>
+          </el-table-column>
         </el-table>
       </el-collapse-item>
     </el-collapse>
@@ -225,6 +230,21 @@ export default {
       }
     })
 
+    /**
+     * The following describes how to handle blacklist select events.
+     */
+    const searchKeyword = ref('')
+    const filteredTableData = computed(() => {
+      const keyword = searchKeyword.value.trim()
+      if (!keyword) {
+        return pageData.tableData
+      } else {
+        return pageData.tableData.filter((row) => {
+          return row.argumentValue.includes(keyword) || row.argumentKey.includes(keyword)
+        })
+      }
+    })
+
     return {
       pageData,
       iconStyle,
@@ -232,7 +252,9 @@ export default {
       size,
       handlerMetrics,
       handlerPromMetrics,
-      handlerStacks
+      handlerStacks,
+      filteredTableData,
+      searchKeyword
     }
   }
 }
