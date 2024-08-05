@@ -125,7 +125,7 @@ This document will introduce how to deploy Uniffle shuffle servers.
 | rss.server.health.checker.script.execute.timeout | 5000    | Timeout for `HealthScriptChecker` execute health script.(ms)                                                                                                                                |
 
 ### Huge Partition Optimization
-A huge partition is a common problem for Spark/MR and so on, caused by data skew. And it can cause the shuffle server to become unstable. To solve this, we introduce some mechanisms to limit the writing of huge partitions to avoid affecting regular partitions, and introduce a hard limit config to reject extreme huge partition, more details can be found in [ISSUE-378](https://github.com/apache/incubator-uniffle/issues/378). The basic rules for limiting large partitions are memory usage limits and flushing individual buffers directly to persistent storage.
+A huge partition is a common problem for Spark/MR and so on, caused by data skew. And it can cause the shuffle server to become unstable. To solve this, we introduce some mechanisms to limit the writing of huge partitions to avoid affecting regular partitions, and introduce a hard limit config to reject extremely huge partition, more details can be found in [ISSUE-378](https://github.com/apache/incubator-uniffle/issues/378). The basic rules for limiting large partitions are memory usage limits and flushing individual buffers directly to persistent storage.
 
 #### Memory usage limit
 To do this, we introduce the extra configs
@@ -145,7 +145,9 @@ For HADOOP FS, the conf value of `rss.server.single.buffer.flush.threshold` shou
 Finally, to improve the speed of writing to HDFS for a single partition, the value of `rss.server.max.concurrency.of.per-partition.write` and `rss.server.flush.hdfs.threadPool.size` could be increased to 50 or 100.
 
 #### Hard limit
-Once the huge partition reach the hard limit size, the conf is `rss.server.huge-partition.size.hard.limit`, server reject the sendShuffleData request and do not retry for client, so that client can fail fast and user can modify their sql or job to avoid the reach the partition hard limit.
+Once the huge partition reaches the hard limit size, which is set by the configuration `rss.server.huge-partition.size.hard.limit`, the server will reject the `sendShuffleData` request and the client will not retry. This allows the client to fail fast and enables the user to modify their SQLs or jobs to avoid reaching the partition hard limit.
+
+For example, if the hard limit is set to 50g, the server will reject the request if the partition size is greater than 50g, causing the job to eventually fail.
 
 E.g. If the hard limit is set to `50g`, the server will reject the request if the partition size is greater than 50g, and the job will fail eventually.
 

@@ -534,7 +534,7 @@ public class ShuffleTaskManager {
       LOG.error("No such app is registered. appId: {}, shuffleId: {}", appId, shuffleId);
       throw new NoRegisterException("No such app is registered. appId: " + appId);
     }
-    // adapt to legacy client which have empty partitionRequireSizes
+    // To be compatible with legacy clients which have empty partitionRequireSizes
     if (partitionIds.size() == partitionRequireSizes.size()) {
       for (int i = 0; i < partitionIds.size(); i++) {
         int partitionId = partitionIds.get(i);
