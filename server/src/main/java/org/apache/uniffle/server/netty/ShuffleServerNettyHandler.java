@@ -29,6 +29,7 @@ import io.netty.channel.ChannelFutureListener;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,7 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.audit.AuditContext;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.exception.ExceedHugePartitionHardLimitException;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
@@ -280,6 +282,17 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               shuffleTaskManager.updateCachedBlockIds(
                   appId, shuffleId, spd.getPartitionId(), spd.getBlockList());
             }
+          } catch (ExceedHugePartitionHardLimitException e) {
+            String errorMsg =
+                "ExceedHugePartitionHardLimitException Error happened when shuffleEngine.write for "
+                    + shuffleDataInfo
+                    + ": "
+                    + e.getMessage();
+            ShuffleServerMetrics.counterTotalHugePartitionExceedHardLimitNum.inc();
+            ret = StatusCode.EXCEED_HUGE_PARTITION_HARD_LIMIT;
+            responseMessage = errorMsg;
+            LOG.error(errorMsg);
+            hasFailureOccurred = true;
           } catch (Exception e) {
             String errorMsg =
                 "Error happened when shuffleEngine.write for "
@@ -709,11 +722,12 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     return ret;
   }
 
-  private ShufflePartitionedBlock[] toPartitionedBlock(List<ShuffleBlockInfo> blocks) {
+  private Pair<Long, ShufflePartitionedBlock[]> toPartitionedBlock(List<ShuffleBlockInfo> blocks) {
     if (blocks == null || blocks.size() == 0) {
-      return new ShufflePartitionedBlock[] {};
+      return Pair.of(0L, new ShufflePartitionedBlock[] {});
     }
     ShufflePartitionedBlock[] ret = new ShufflePartitionedBlock[blocks.size()];
+    long size = 0L;
     int i = 0;
     for (ShuffleBlockInfo block : blocks) {
       ret[i] =
@@ -724,9 +738,10 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               block.getBlockId(),
               block.getTaskAttemptId(),
               block.getData());
+      size += ret[i].getSize();
       i++;
     }
-    return ret;
+    return Pair.of(size, ret);
   }
 
   private StatusCode verifyRequest(String appId) {

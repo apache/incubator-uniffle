@@ -499,6 +499,17 @@ public class ShuffleServerConf extends RssBaseConf {
                   + HUGE_PARTITION_SIZE_THRESHOLD.key()
                   + "'");
 
+  public static final ConfigOption<Long> HUGE_PARTITION_SIZE_HARD_LIMIT =
+      ConfigOptions.key("rss.server.huge-partition.size.hard.limit")
+          .longType()
+          .defaultValue(Long.MAX_VALUE)
+          .withDescription(
+              "This option sets the maximum allowable partition size threshold. "
+                  + "If the partition size exceeds this threshold, the client will "
+                  + "receive an error message and the transmission of shuffle data "
+                  + "will be terminated. This helps to significantly improve the "
+                  + "stability of the cluster by preventing partitions from becoming too large.");
+
   public static final ConfigOption<Long> SERVER_DECOMMISSION_CHECK_INTERVAL =
       ConfigOptions.key("rss.server.decommission.check.interval")
           .longType()

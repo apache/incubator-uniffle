@@ -45,6 +45,7 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.server.DefaultFlushEventHandler;
+import org.apache.uniffle.server.HugePartitionUtils;
 import org.apache.uniffle.server.ShuffleFlushManager;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
@@ -508,8 +509,12 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     long usedSize = shuffleTaskManager.getPartitionDataSize(appId, shuffleId, 0);
     assertEquals(1 + 32, usedSize);
     assertFalse(
-        shuffleBufferManager.limitHugePartition(
-            appId, shuffleId, 0, shuffleTaskManager.getPartitionDataSize(appId, shuffleId, 0)));
+        HugePartitionUtils.limitHugePartition(
+            shuffleBufferManager,
+            appId,
+            shuffleId,
+            0,
+            shuffleTaskManager.getPartitionDataSize(appId, shuffleId, 0)));
 
     // case2: its partition is huge partition, its buffer will be flushed to DISK directly
     partitionedData = createData(0, 36);
@@ -517,8 +522,12 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 0, partitionedData.getBlockList());
     assertEquals(33 + 36 + 32, shuffleBufferManager.getUsedMemory());
     assertTrue(
-        shuffleBufferManager.limitHugePartition(
-            appId, shuffleId, 0, shuffleTaskManager.getPartitionDataSize(appId, shuffleId, 0)));
+        HugePartitionUtils.limitHugePartition(
+            shuffleBufferManager,
+            appId,
+            shuffleId,
+            0,
+            shuffleTaskManager.getPartitionDataSize(appId, shuffleId, 0)));
     partitionedData = createData(0, 1);
     shuffleTaskManager.cacheShuffleData(appId, shuffleId, false, partitionedData);
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 0, partitionedData.getBlockList());
