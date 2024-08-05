@@ -15,40 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.coordinator.audit;
+package org.apache.uniffle.common.audit;
+
+import java.io.Closeable;
 
 import org.slf4j.Logger;
 
-import org.apache.uniffle.common.audit.AuditContext;
 import org.apache.uniffle.common.rpc.StatusCode;
 
-/** An audit context for coordinator rpc. */
-public class CoordinatorRPCAuditContext implements AuditContext {
+/** Context for rpc audit logging. */
+public abstract class RpcAuditContext implements Closeable {
   private final Logger log;
   private String command;
   private String statusCode;
-  private long creationTimeNs;
-  private long executionTimeNs;
-  private String appId = "N/A";
-  private int shuffleId = -1;
   private String args;
+  private String returnValue;
+  private String from;
+  private long creationTimeNs;
+  protected long executionTimeNs;
 
-  /**
-   * Constructor of {@link CoordinatorRPCAuditContext}.
-   *
-   * @param log the logger to log the audit information
-   */
-  public CoordinatorRPCAuditContext(Logger log) {
+  public RpcAuditContext(Logger log) {
     this.log = log;
   }
+
+  protected abstract String content();
 
   /**
    * Sets mCommand field.
    *
    * @param command the command associated with shuffle server rpc
-   * @return this {@link AuditContext} instance
+   * @return this {@link RpcAuditContext} instance
    */
-  public CoordinatorRPCAuditContext withCommand(String command) {
+  public RpcAuditContext withCommand(String command) {
     this.command = command;
     return this;
   }
@@ -58,9 +56,9 @@ public class CoordinatorRPCAuditContext implements AuditContext {
    *
    * @param creationTimeNs the System.nanoTime() when this operation create, it only can be used to
    *     compute operation mExecutionTime
-   * @return this {@link AuditContext} instance
+   * @return this {@link RpcAuditContext} instance
    */
-  public CoordinatorRPCAuditContext withCreationTimeNs(long creationTimeNs) {
+  public RpcAuditContext withCreationTimeNs(long creationTimeNs) {
     this.creationTimeNs = creationTimeNs;
     return this;
   }
@@ -69,9 +67,9 @@ public class CoordinatorRPCAuditContext implements AuditContext {
    * Sets status code field.
    *
    * @param statusCode the status code
-   * @return this {@link AuditContext} instance
+   * @return this {@link RpcAuditContext} instance
    */
-  public CoordinatorRPCAuditContext withStatusCode(StatusCode statusCode) {
+  public RpcAuditContext withStatusCode(StatusCode statusCode) {
     if (statusCode == null) {
       this.statusCode = "UNKNOWN";
     } else {
@@ -84,10 +82,9 @@ public class CoordinatorRPCAuditContext implements AuditContext {
    * Sets status code field.
    *
    * @param statusCode the status code
-   * @return this {@link AuditContext} instance
+   * @return this {@link RpcAuditContext} instance
    */
-  public CoordinatorRPCAuditContext withStatusCode(
-      org.apache.uniffle.proto.RssProtos.StatusCode statusCode) {
+  public RpcAuditContext withStatusCode(org.apache.uniffle.proto.RssProtos.StatusCode statusCode) {
     if (statusCode == null) {
       this.statusCode = "UNKNOWN";
     } else {
@@ -100,10 +97,25 @@ public class CoordinatorRPCAuditContext implements AuditContext {
    * Sets status code field.
    *
    * @param statusCode the status code
-   * @return this {@link AuditContext} instance
+   * @return this {@link RpcAuditContext} instance
    */
-  public CoordinatorRPCAuditContext withStatusCode(String statusCode) {
+  public RpcAuditContext withStatusCode(String statusCode) {
     this.statusCode = statusCode;
+    return this;
+  }
+
+  public RpcAuditContext withArgs(String args) {
+    this.args = args;
+    return this;
+  }
+
+  public RpcAuditContext withReturnValue(String returnValue) {
+    this.returnValue = returnValue;
+    return this;
+  }
+
+  public RpcAuditContext withFrom(String from) {
+    this.from = from;
     return this;
   }
 
@@ -120,26 +132,14 @@ public class CoordinatorRPCAuditContext implements AuditContext {
   public String toString() {
     String line =
         String.format(
-            "cmd=%s\tstatusCode=%s\tappId=%s\tshuffleId=%s\texecutionTimeUs=%d\t",
-            command, statusCode, appId, shuffleId, executionTimeNs / 1000);
+            "cmd=%s\tstatusCode=%s\tfrom=%s\texecutionTimeUs=%d\t%s",
+            command, statusCode, from, executionTimeNs / 1000, content());
     if (args != null) {
-      line += String.format("args{%s}", args);
+      line += String.format("\targs{%s}", args);
+    }
+    if (returnValue != null) {
+      line += String.format("\treturn{%s}", returnValue);
     }
     return line;
-  }
-
-  public CoordinatorRPCAuditContext withAppId(String appId) {
-    this.appId = appId;
-    return this;
-  }
-
-  public CoordinatorRPCAuditContext withShuffleId(int shuffleId) {
-    this.shuffleId = shuffleId;
-    return this;
-  }
-
-  public CoordinatorRPCAuditContext withArgs(String args) {
-    this.args = args;
-    return this;
   }
 }
