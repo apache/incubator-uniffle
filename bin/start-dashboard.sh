@@ -31,7 +31,7 @@ JAR_DIR="${RSS_HOME}/jars"
 LOG_CONF_FILE="${RSS_CONF_DIR}/log4j2.xml"
 LOG_PATH="${RSS_LOG_DIR}/dashboard.log"
 
-MAIN_CLASS="org.apache.uniffle.dashboard.web.JettyServerFront"
+MAIN_CLASS="org.apache.uniffle.dashboard.web.Dashboard"
 
 echo "Check process existence"
 is_jvm_process_running "$JPS" $MAIN_CLASS

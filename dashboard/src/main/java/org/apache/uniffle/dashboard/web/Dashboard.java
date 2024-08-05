@@ -49,9 +49,9 @@ import org.apache.uniffle.dashboard.web.config.DashboardConf;
 import org.apache.uniffle.dashboard.web.proxy.WebProxyServlet;
 import org.apache.uniffle.dashboard.web.utils.DashboardUtils;
 
-public class JettyServerFront {
+public class Dashboard {
 
-  private static final Logger LOG = LoggerFactory.getLogger(JettyServerFront.class);
+  private static final Logger LOG = LoggerFactory.getLogger(Dashboard.class);
 
   private DashboardConf conf;
   // Jetty Server
@@ -59,7 +59,7 @@ public class JettyServerFront {
   // FrontEnd Port
   private int httpPort;
 
-  public JettyServerFront(DashboardConf coordinatorConf) {
+  public Dashboard(DashboardConf coordinatorConf) {
     this.conf = coordinatorConf;
     initialization();
   }
@@ -73,8 +73,8 @@ public class JettyServerFront {
 
     // Load configuration from config files
     final DashboardConf coodConf = new DashboardConf(configFile);
-    JettyServerFront jettyServerFront = new JettyServerFront(coodConf);
-    jettyServerFront.start();
+    Dashboard dashboard = new Dashboard(coodConf);
+    dashboard.start();
   }
 
   private void initialization() {
@@ -106,7 +106,7 @@ public class JettyServerFront {
     ResourceHandler resourceHandler = new ResourceHandler();
     resourceHandler.setDirectoriesListed(true);
     resourceHandler.setBaseResource(
-        Resource.newResource(JettyServerFront.class.getClassLoader().getResource("static")));
+        Resource.newResource(Dashboard.class.getClassLoader().getResource("static")));
     resourceHandler.setWelcomeFiles(new String[] {"index.html"});
     return resourceHandler;
   }
