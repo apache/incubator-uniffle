@@ -39,7 +39,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
-import org.apache.uniffle.common.audit.AuditContext;
+import org.apache.uniffle.common.audit.RpcAuditContext;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.ExceedHugePartitionHardLimitException;
 import org.apache.uniffle.common.exception.FileNotFoundException;
@@ -64,7 +64,7 @@ import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.ShuffleTaskInfo;
 import org.apache.uniffle.server.ShuffleTaskManager;
-import org.apache.uniffle.server.audit.ServerRPCAuditContext;
+import org.apache.uniffle.server.audit.ServerRpcAuditContext;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.storage.common.Storage;
@@ -111,7 +111,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
   }
 
   public void handleSendShuffleDataRequest(TransportClient client, SendShuffleDataRequest req) {
-    try (ServerRPCAuditContext auditContext = createAuditContext("sendShuffleData")) {
+    try (ServerRpcAuditContext auditContext = createAuditContext("sendShuffleData", client)) {
       RpcResponse rpcResponse;
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
@@ -376,7 +376,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
 
   public void handleGetMemoryShuffleDataRequest(
       TransportClient client, GetMemoryShuffleDataRequest req) {
-    try (ServerRPCAuditContext auditContext = createAuditContext("getMemoryShuffleData")) {
+    try (ServerRpcAuditContext auditContext = createAuditContext("getMemoryShuffleData", client)) {
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
       int partitionId = req.getPartitionId();
@@ -483,7 +483,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
 
   public void handleGetLocalShuffleIndexRequest(
       TransportClient client, GetLocalShuffleIndexRequest req) {
-    try (ServerRPCAuditContext auditContext = createAuditContext("getLocalShuffleIndex")) {
+    try (ServerRpcAuditContext auditContext = createAuditContext("getLocalShuffleIndex", client)) {
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
       int partitionId = req.getPartitionId();
@@ -590,7 +590,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
   }
 
   public void handleGetLocalShuffleData(TransportClient client, GetLocalShuffleDataRequest req) {
-    try (ServerRPCAuditContext auditContext = createAuditContext("getLocalShuffleData")) {
+    try (ServerRpcAuditContext auditContext = createAuditContext("getLocalShuffleData", client)) {
       GetLocalShuffleDataResponse response;
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
@@ -859,20 +859,24 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
   }
 
   /**
-   * Creates a {@link ServerRPCAuditContext} instance.
+   * Creates a {@link ServerRpcAuditContext} instance.
    *
-   * @param command the command to be logged by this {@link AuditContext}
-   * @return newly-created {@link ServerRPCAuditContext} instance
+   * @param command the command to be logged by this {@link RpcAuditContext}
+   * @return newly-created {@link ServerRpcAuditContext} instance
    */
-  private ServerRPCAuditContext createAuditContext(String command) {
+  private ServerRpcAuditContext createAuditContext(
+      String command, TransportClient transportClient) {
     // Audit log may be enabled during runtime
     Logger auditLogger = null;
     if (isRpcAuditLogEnabled) {
       auditLogger = AUDIT_LOGGER;
     }
-    ServerRPCAuditContext auditContext = new ServerRPCAuditContext(auditLogger);
+    ServerRpcAuditContext auditContext = new ServerRpcAuditContext(auditLogger);
     if (auditLogger != null) {
-      auditContext.setCommand(command).setCreationTimeNs(System.nanoTime());
+      auditContext
+          .setCommand(command)
+          .setFrom(transportClient.getSocketAddress().toString())
+          .setCreationTimeNs(System.nanoTime());
     }
     return auditContext;
   }

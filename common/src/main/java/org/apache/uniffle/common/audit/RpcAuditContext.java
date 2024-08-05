@@ -15,40 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.server.audit;
+package org.apache.uniffle.common.audit;
+
+import java.io.Closeable;
 
 import org.slf4j.Logger;
 
-import org.apache.uniffle.common.audit.AuditContext;
 import org.apache.uniffle.common.rpc.StatusCode;
 
-/** An audit context for shuffle server rpc. */
-public class ServerRPCAuditContext implements AuditContext {
+/** Context for rpc audit logging. */
+public abstract class RpcAuditContext implements Closeable {
   private final Logger log;
   private String command;
   private String statusCode;
-  private long creationTimeNs;
-  private long executionTimeNs;
-  private String appId = "N/A";
-  private int shuffleId = -1;
   private String args;
+  private String from;
+  private long creationTimeNs;
+  protected long executionTimeNs;
 
-  /**
-   * Constructor of {@link ServerRPCAuditContext}.
-   *
-   * @param log the logger to log the audit information
-   */
-  public ServerRPCAuditContext(Logger log) {
+  public RpcAuditContext(Logger log) {
     this.log = log;
   }
+
+  protected abstract String content();
 
   /**
    * Sets mCommand field.
    *
    * @param command the command associated with shuffle server rpc
-   * @return this {@link AuditContext} instance
+   * @return this {@link RpcAuditContext} instance
    */
-  public ServerRPCAuditContext setCommand(String command) {
+  public RpcAuditContext setCommand(String command) {
     this.command = command;
     return this;
   }
@@ -58,9 +55,9 @@ public class ServerRPCAuditContext implements AuditContext {
    *
    * @param creationTimeNs the System.nanoTime() when this operation create, it only can be used to
    *     compute operation mExecutionTime
-   * @return this {@link AuditContext} instance
+   * @return this {@link RpcAuditContext} instance
    */
-  public ServerRPCAuditContext setCreationTimeNs(long creationTimeNs) {
+  public RpcAuditContext setCreationTimeNs(long creationTimeNs) {
     this.creationTimeNs = creationTimeNs;
     return this;
   }
@@ -69,10 +66,14 @@ public class ServerRPCAuditContext implements AuditContext {
    * Sets status code field.
    *
    * @param statusCode the status code
-   * @return this {@link AuditContext} instance
+   * @return this {@link RpcAuditContext} instance
    */
-  public ServerRPCAuditContext setStatusCode(StatusCode statusCode) {
-    this.statusCode = statusCode.name();
+  public RpcAuditContext setStatusCode(StatusCode statusCode) {
+    if (statusCode == null) {
+      this.statusCode = "UNKNOWN";
+    } else {
+      this.statusCode = statusCode.name();
+    }
     return this;
   }
 
@@ -80,10 +81,35 @@ public class ServerRPCAuditContext implements AuditContext {
    * Sets status code field.
    *
    * @param statusCode the status code
-   * @return this {@link AuditContext} instance
+   * @return this {@link RpcAuditContext} instance
    */
-  public ServerRPCAuditContext setStatusCode(String statusCode) {
+  public RpcAuditContext setStatusCode(org.apache.uniffle.proto.RssProtos.StatusCode statusCode) {
+    if (statusCode == null) {
+      this.statusCode = "UNKNOWN";
+    } else {
+      this.statusCode = statusCode.name();
+    }
+    return this;
+  }
+
+  /**
+   * Sets status code field.
+   *
+   * @param statusCode the status code
+   * @return this {@link RpcAuditContext} instance
+   */
+  public RpcAuditContext setStatusCode(String statusCode) {
     this.statusCode = statusCode;
+    return this;
+  }
+
+  public RpcAuditContext setArgs(String args) {
+    this.args = args;
+    return this;
+  }
+
+  public RpcAuditContext setFrom(String from) {
+    this.from = from;
     return this;
   }
 
@@ -100,26 +126,11 @@ public class ServerRPCAuditContext implements AuditContext {
   public String toString() {
     String line =
         String.format(
-            "cmd=%s\tstatusCode=%s\tappId=%s\tshuffleId=%s\texecutionTimeUs=%d\t",
-            command, statusCode, appId, shuffleId, executionTimeNs / 1000);
+            "cmd=%s\tstatusCode=%s\tfrom=%s\texecutionTimeUs=%d\t%s",
+            command, statusCode, from, executionTimeNs / 1000, content());
     if (args != null) {
-      line += String.format("args{%s}", args);
+      line += String.format("\targs{%s}", args);
     }
     return line;
-  }
-
-  public ServerRPCAuditContext setAppId(String appId) {
-    this.appId = appId;
-    return this;
-  }
-
-  public ServerRPCAuditContext setShuffleId(int shuffleId) {
-    this.shuffleId = shuffleId;
-    return this;
-  }
-
-  public ServerRPCAuditContext setArgs(String args) {
-    this.args = args;
-    return this;
   }
 }

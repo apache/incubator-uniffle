@@ -118,6 +118,7 @@ public class GrpcServer implements ServerInterface {
     servicesWithInterceptors.forEach(
         (serviceWithInterceptors) -> {
           List<ServerInterceptor> interceptors = serviceWithInterceptors.getRight();
+          interceptors.add(new ClientContextServerInterceptor());
           if (isMetricsEnabled) {
             MonitoringServerInterceptor monitoringInterceptor =
                 new MonitoringServerInterceptor(grpcMetrics);
