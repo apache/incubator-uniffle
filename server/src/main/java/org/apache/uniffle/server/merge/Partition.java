@@ -67,11 +67,11 @@ import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_CACHE_MER
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_CACHE_MERGED_BLOCK_MAX_SLEEP_MS;
 import static org.apache.uniffle.server.merge.ShuffleMergeManager.MERGE_APP_SUFFIX;
 
-public class PartitionEntity<K, V> {
+public class Partition<K, V> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(PartitionEntity.class);
+  private static final Logger LOG = LoggerFactory.getLogger(Partition.class);
 
-  private final ShuffleEntity shuffle;
+  private final Shuffle shuffle;
   private final int partitionId;
   // Inserting or deleting ShuffleBuffer::blocks while traversing blocks may cause an
   // ConcurrentModificationException.
@@ -93,7 +93,7 @@ public class PartitionEntity<K, V> {
   private int ringBufferSize;
   private BlockFlushFileReader reader = null;
 
-  public PartitionEntity(ShuffleEntity shuffle, int partitionId) throws IOException {
+  public Partition(Shuffle shuffle, int partitionId) throws IOException {
     this.shuffle = shuffle;
     this.partitionId = partitionId;
     this.result =
@@ -114,9 +114,7 @@ public class PartitionEntity<K, V> {
   // startSortMerge is used to trigger to merger
   synchronized void startSortMerge(Roaring64NavigableMap expectedBlockIdMap) throws IOException {
     if (getState() != INITED) {
-      LOG.warn(
-          "Partition is already merging, so ignore duplicate reports, partition entity is {}",
-          this);
+      LOG.warn("Partition is already merging, so ignore duplicate reports, partition is {}", this);
     } else {
       if (!expectedBlockIdMap.isEmpty()) {
         setState(MERGING);
@@ -306,7 +304,7 @@ public class PartitionEntity<K, V> {
     // 1 Get result in memory
     // For merged block, we read and merge at the same time. Blocks may be added during the
     // traversal of blocks,
-    // then may throw ConcurrentModificationException. So use cache block in PartitonEntity.
+    // then may throw ConcurrentModificationException. So use cache block in Partition.
     ManagedBuffer managedBuffer = this.getMergedBlockBufferInMemory(blockId);
     if (managedBuffer != null) {
       return new ShuffleDataResult(managedBuffer);
@@ -424,7 +422,7 @@ public class PartitionEntity<K, V> {
 
   @Override
   public String toString() {
-    return "PartitionEntity{"
+    return "Partition{"
         + "appId="
         + shuffle.appId
         + ", shuffle="

@@ -56,8 +56,8 @@ public class ShuffleMergeManager {
 
   private ShuffleServerConf serverConf;
   private final ShuffleServer shuffleServer;
-  // appId -> shuffleid -> ShuffleEntity
-  private final Map<String, Map<Integer, ShuffleEntity>> entities = JavaUtils.newConcurrentMap();
+  // appId -> shuffleid -> Shuffle
+  private final Map<String, Map<Integer, Shuffle>> shuffles = JavaUtils.newConcurrentMap();
   private final MergeEventHandler eventHandler;
   private final Map<String, ClassLoader> cachedClassLoader = new HashMap<>();
 
@@ -167,12 +167,12 @@ public class ShuffleMergeManager {
       } else {
         comparator = defaultComparator;
       }
-      this.entities.putIfAbsent(appId, JavaUtils.newConcurrentMap());
-      this.entities
+      this.shuffles.putIfAbsent(appId, JavaUtils.newConcurrentMap());
+      this.shuffles
           .get(appId)
           .putIfAbsent(
               shuffleId,
-              new ShuffleEntity(
+              new Shuffle(
                   serverConf,
                   eventHandler,
                   shuffleServer,
@@ -196,15 +196,15 @@ public class ShuffleMergeManager {
   }
 
   public void removeBuffer(String appId) {
-    if (this.entities.containsKey(appId)) {
-      for (Integer shuffleId : this.entities.get(appId).keySet()) {
+    if (this.shuffles.containsKey(appId)) {
+      for (Integer shuffleId : this.shuffles.get(appId).keySet()) {
         removeBuffer(appId, shuffleId);
       }
     }
   }
 
   public void removeBuffer(String appId, List<Integer> shuffleIds) {
-    if (this.entities.containsKey(appId)) {
+    if (this.shuffles.containsKey(appId)) {
       for (Integer shuffleId : shuffleIds) {
         removeBuffer(appId, shuffleId);
       }
@@ -212,13 +212,13 @@ public class ShuffleMergeManager {
   }
 
   public void removeBuffer(String appId, int shuffleId) {
-    if (this.entities.containsKey(appId)) {
-      if (this.entities.get(appId).containsKey(shuffleId)) {
-        this.entities.get(appId).get(shuffleId).cleanup();
-        this.entities.get(appId).remove(shuffleId);
+    if (this.shuffles.containsKey(appId)) {
+      if (this.shuffles.get(appId).containsKey(shuffleId)) {
+        this.shuffles.get(appId).get(shuffleId).cleanup();
+        this.shuffles.get(appId).remove(shuffleId);
       }
-      if (this.entities.get(appId).size() == 0) {
-        this.entities.remove(appId);
+      if (this.shuffles.get(appId).size() == 0) {
+        this.shuffles.remove(appId);
       }
     }
   }
@@ -226,11 +226,11 @@ public class ShuffleMergeManager {
   public void startSortMerge(
       String appId, int shuffleId, int partitionId, Roaring64NavigableMap expectedBlockIdMap)
       throws IOException {
-    Map<Integer, ShuffleEntity> entityMap = this.entities.get(appId);
-    if (entityMap != null) {
-      ShuffleEntity shuffleEntity = entityMap.get(shuffleId);
-      if (shuffleEntity != null) {
-        shuffleEntity.startSortMerge(partitionId, expectedBlockIdMap);
+    Map<Integer, Shuffle> shuffleMap = this.shuffles.get(appId);
+    if (shuffleMap != null) {
+      Shuffle shuffle = shuffleMap.get(shuffleId);
+      if (shuffle != null) {
+        shuffle.startSortMerge(partitionId, expectedBlockIdMap);
       }
     }
   }
@@ -240,15 +240,15 @@ public class ShuffleMergeManager {
       ClassLoader original = Thread.currentThread().getContextClassLoader();
       Thread.currentThread()
           .setContextClassLoader(
-              this.getShuffleEntity(event.getAppId(), event.getShuffleId()).getClassLoader());
+              this.getShuffle(event.getAppId(), event.getShuffleId()).getClassLoader());
       List<Segment> segments =
-          this.getPartitionEntity(event.getAppId(), event.getShuffleId(), event.getPartitionId())
+          this.getPartition(event.getAppId(), event.getShuffleId(), event.getPartitionId())
               .getSegments(
                   serverConf,
                   event.getExpectedBlockIdMap().iterator(),
                   event.getKeyClass(),
                   event.getValueClass());
-      this.getPartitionEntity(event.getAppId(), event.getShuffleId(), event.getPartitionId())
+      this.getPartition(event.getAppId(), event.getShuffleId(), event.getPartitionId())
           .merge(segments);
       Thread.currentThread().setContextClassLoader(original);
     } catch (Exception e) {
@@ -259,18 +259,18 @@ public class ShuffleMergeManager {
 
   public ShuffleDataResult getShuffleData(
       String appId, int shuffleId, int partitionId, long blockId) throws IOException {
-    return this.getPartitionEntity(appId, shuffleId, partitionId).getShuffleData(blockId);
+    return this.getPartition(appId, shuffleId, partitionId).getShuffleData(blockId);
   }
 
   public void cacheBlock(String appId, int shuffleId, ShufflePartitionedData spd)
       throws IOException {
-    if (this.entities.containsKey(appId) && this.entities.get(appId).containsKey(shuffleId)) {
-      this.getShuffleEntity(appId, shuffleId).cacheBlock(spd);
+    if (this.shuffles.containsKey(appId) && this.shuffles.get(appId).containsKey(shuffleId)) {
+      this.getShuffle(appId, shuffleId).cacheBlock(spd);
     }
   }
 
   public MergeStatus tryGetBlock(String appId, int shuffleId, int partitionId, long blockId) {
-    return this.getPartitionEntity(appId, shuffleId, partitionId).tryGetBlock(blockId);
+    return this.getPartition(appId, shuffleId, partitionId).tryGetBlock(blockId);
   }
 
   @VisibleForTesting
@@ -278,13 +278,13 @@ public class ShuffleMergeManager {
     return eventHandler;
   }
 
-  ShuffleEntity getShuffleEntity(String appId, int shuffleId) {
-    return this.entities.get(appId).get(shuffleId);
+  Shuffle getShuffle(String appId, int shuffleId) {
+    return this.shuffles.get(appId).get(shuffleId);
   }
 
   @VisibleForTesting
-  PartitionEntity getPartitionEntity(String appId, int shuffleId, int partitionId) {
-    return this.entities.get(appId).get(shuffleId).getPartitionEntity(partitionId);
+  Partition getPartition(String appId, int shuffleId, int partitionId) {
+    return this.shuffles.get(appId).get(shuffleId).getPartition(partitionId);
   }
 
   public void refreshAppId(String appId) {

@@ -30,7 +30,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.server.ShuffleServer;
 
-public class ShuffleEntity<K, V> {
+public class Shuffle<K, V> {
 
   final RssConf serverConf;
   final String appId;
@@ -40,12 +40,12 @@ public class ShuffleEntity<K, V> {
   final Comparator<K> comparator;
   final MergeEventHandler eventHandler;
   final ShuffleServer shuffleServer;
-  // partition --> PartitionEntity
-  private final Map<Integer, PartitionEntity<K, V>> entities = JavaUtils.newConcurrentMap();
+  // partition id --> Partition
+  private final Map<Integer, Partition<K, V>> partitions = JavaUtils.newConcurrentMap();
   final int mergedBlockSize;
   final ClassLoader classLoader;
 
-  public ShuffleEntity(
+  public Shuffle(
       RssConf rssConf,
       MergeEventHandler eventHandler,
       ShuffleServer shuffleServer,
@@ -70,22 +70,22 @@ public class ShuffleEntity<K, V> {
 
   public void startSortMerge(int partitionId, Roaring64NavigableMap expectedBlockIdMap)
       throws IOException {
-    this.entities.putIfAbsent(partitionId, new PartitionEntity<K, V>(this, partitionId));
-    this.entities.get(partitionId).startSortMerge(expectedBlockIdMap);
+    this.partitions.putIfAbsent(partitionId, new Partition<K, V>(this, partitionId));
+    this.partitions.get(partitionId).startSortMerge(expectedBlockIdMap);
   }
 
   void cleanup() {
-    for (PartitionEntity entity : this.entities.values()) {
-      entity.cleanup();
+    for (Partition partition : this.partitions.values()) {
+      partition.cleanup();
     }
-    this.entities.clear();
+    this.partitions.clear();
   }
 
   public void cacheBlock(ShufflePartitionedData spd) throws IOException {
     int partitionId = spd.getPartitionId();
-    this.entities.putIfAbsent(partitionId, new PartitionEntity<K, V>(this, partitionId));
+    this.partitions.putIfAbsent(partitionId, new Partition<K, V>(this, partitionId));
     for (ShufflePartitionedBlock block : spd.getBlockList()) {
-      this.entities.get(partitionId).cacheBlock(block);
+      this.partitions.get(partitionId).cacheBlock(block);
     }
   }
 
@@ -94,7 +94,7 @@ public class ShuffleEntity<K, V> {
   }
 
   @VisibleForTesting
-  PartitionEntity getPartitionEntity(int partition) {
-    return this.entities.get(partition);
+  Partition getPartition(int partition) {
+    return this.partitions.get(partition);
   }
 }

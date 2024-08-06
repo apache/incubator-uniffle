@@ -173,7 +173,7 @@ public class ShuffleMergeManagerTest {
         .atMost(10, TimeUnit.SECONDS)
         .until(
             () ->
-                mergeManager.getPartitionEntity(APP_ID, SHUFFLE_ID, PARTITION_ID).getState()
+                mergeManager.getPartition(APP_ID, SHUFFLE_ID, PARTITION_ID).getState()
                     == MergeState.DONE);
 
     // 5 read and check result
