@@ -176,7 +176,7 @@ public class ShuffleServerConf extends RssBaseConf {
               "When set to true, for auditing purposes, the server will log audit records for every rpc request operation. "
                   + "Each file write is logged.");
   public static final ConfigOption<List<String>> SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST =
-      ConfigOptions.key("rss.server.rpc.audit.log.exclude.list")
+      ConfigOptions.key("rss.server.rpc.audit.log.excludeList")
           .stringType()
           .asList()
           .defaultValues("appHeartbeat")
