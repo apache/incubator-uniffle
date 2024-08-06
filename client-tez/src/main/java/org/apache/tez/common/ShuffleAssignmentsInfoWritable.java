@@ -149,11 +149,7 @@ public class ShuffleAssignmentsInfoWritable implements Writable {
     String host = dataInput.readUTF();
     int grpcPort = dataInput.readInt();
     int nettyPort = dataInput.readInt();
-    if (nettyPort != -1) {
-      shuffleServerInfo = new ShuffleServerInfo(id, host, grpcPort, nettyPort);
-    } else {
-      shuffleServerInfo = new ShuffleServerInfo(id, host, grpcPort);
-    }
+    shuffleServerInfo = new ShuffleServerInfo(id, host, grpcPort, nettyPort);
     return shuffleServerInfo;
   }
 
@@ -162,11 +158,7 @@ public class ShuffleAssignmentsInfoWritable implements Writable {
     dataOutput.writeUTF(shuffleServerInfo.getId());
     dataOutput.writeUTF(shuffleServerInfo.getHost());
     dataOutput.writeInt(shuffleServerInfo.getGrpcPort());
-    if (shuffleServerInfo.getNettyPort() > 0) {
-      dataOutput.writeInt(shuffleServerInfo.getNettyPort());
-    } else {
-      dataOutput.writeInt(-1);
-    }
+    dataOutput.writeInt(shuffleServerInfo.getNettyPort());
   }
 
   public ShuffleAssignmentsInfo getShuffleAssignmentsInfo() {
