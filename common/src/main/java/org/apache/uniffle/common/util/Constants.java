@@ -17,9 +17,20 @@
 
 package org.apache.uniffle.common.util;
 
+import org.apache.uniffle.common.ProjectConstants;
+
 public final class Constants {
 
   private Constants() {}
+
+  /** The version of this Uniffle instance. */
+  public static final String VERSION = ProjectConstants.VERSION;
+
+  public static final String REVISION_SHORT =
+      ProjectConstants.REVISION.length() > 8
+          ? ProjectConstants.REVISION.substring(0, 8)
+          : ProjectConstants.REVISION;
+  public static final String VERSION_AND_REVISION_SHORT = VERSION + "-" + REVISION_SHORT;
 
   // the value is used for client/server compatible, eg, online upgrade
   public static final String SHUFFLE_SERVER_VERSION = "ss_v5";

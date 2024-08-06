@@ -135,6 +135,8 @@ public class ShuffleServer {
   }
 
   public void start() throws Exception {
+    LOG.info(
+        "{} version: {}", this.getClass().getSimpleName(), Constants.VERSION_AND_REVISION_SHORT);
     jettyServer.start();
     grpcPort = server.start();
     if (nettyServerEnabled) {

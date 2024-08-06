@@ -48,7 +48,6 @@ import org.apache.uniffle.client.response.RssFetchRemoteStorageResponse;
 import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
 import org.apache.uniffle.client.response.RssSendHeartBeatResponse;
 import org.apache.uniffle.common.PartitionRange;
-import org.apache.uniffle.common.ProjectConstants;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -56,6 +55,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageInfoUtils;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
 import org.apache.uniffle.proto.CoordinatorServerGrpc.CoordinatorServerBlockingStub;
 import org.apache.uniffle.proto.RssProtos;
@@ -147,8 +147,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             .setStatusValue(serverStatus.ordinal())
             .putAllStorageInfo(StorageInfoUtils.toProto(storageInfo))
             .setStartTimeMs(startTimeMs)
-            .setVersion(ProjectConstants.VERSION)
-            .setGitCommitId(ProjectConstants.getGitCommitId())
+            .setVersion(Constants.VERSION)
+            .setGitCommitId(Constants.REVISION_SHORT)
             .build();
 
     RssProtos.StatusCode status;
@@ -268,8 +268,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         ApplicationInfoRequest.newBuilder()
             .setAppId(request.getAppId())
             .setUser(request.getUser())
-            .setVersion(ProjectConstants.VERSION)
-            .setGitCommitId(ProjectConstants.getGitCommitId())
+            .setVersion(Constants.VERSION)
+            .setGitCommitId(Constants.REVISION_SHORT)
             .build();
     ApplicationInfoResponse rpcResponse =
         blockingStub

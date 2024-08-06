@@ -83,6 +83,7 @@ import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.ExpiringCloseableSupplier;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.shuffle.BlockIdManager;
@@ -125,6 +126,11 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   protected boolean partitionReassignEnabled;
 
   protected boolean shuffleManagerRpcServiceEnabled;
+
+  public RssShuffleManagerBase() {
+    LOG.info(
+        "Uniffle {} version: {}", this.getClass().getName(), Constants.VERSION_AND_REVISION_SHORT);
+  }
 
   public BlockIdManager getBlockIdManager() {
     if (blockIdManager == null) {
