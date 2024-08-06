@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -181,7 +182,7 @@ public class HadoopStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void checkAndClearLeakedShuffleData(Collection<String> appIds) {}
+  public void checkAndClearLeakedShuffleData(Supplier<Collection<String>> appIdsSupplier) {}
 
   @Override
   public Map<String, StorageInfo> getStorageInfo() {

@@ -20,6 +20,7 @@ package org.apache.uniffle.server.storage;
 import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,8 +146,8 @@ public class HybridStorageManager implements StorageManager {
   }
 
   @Override
-  public void checkAndClearLeakedShuffleData(Collection<String> appIds) {
-    warmStorageManager.checkAndClearLeakedShuffleData(appIds);
+  public void checkAndClearLeakedShuffleData(Supplier<Collection<String>> appIdsSupplier) {
+    warmStorageManager.checkAndClearLeakedShuffleData(appIdsSupplier);
   }
 
   @Override
