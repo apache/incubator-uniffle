@@ -19,6 +19,7 @@ package org.apache.uniffle.server.netty;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -79,6 +80,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
   private static final int RPC_TIMEOUT = 60000;
   private final ShuffleServer shuffleServer;
   private final boolean isRpcAuditLogEnabled;
+  private final List<String> rpcAuditExcludeOpList;
 
   public ShuffleServerNettyHandler(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
@@ -86,6 +88,14 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         shuffleServer
             .getShuffleServerConf()
             .getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED);
+    if (isRpcAuditLogEnabled) {
+      rpcAuditExcludeOpList =
+          shuffleServer
+              .getShuffleServerConf()
+              .get(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST);
+    } else {
+      rpcAuditExcludeOpList = Collections.emptyList();
+    }
   }
 
   @Override
@@ -867,7 +877,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
   private ServerRPCAuditContext createAuditContext(String command) {
     // Audit log may be enabled during runtime
     Logger auditLogger = null;
-    if (isRpcAuditLogEnabled) {
+    if (isRpcAuditLogEnabled && !rpcAuditExcludeOpList.contains(command)) {
       auditLogger = AUDIT_LOGGER;
     }
     ServerRPCAuditContext auditContext = new ServerRPCAuditContext(auditLogger);

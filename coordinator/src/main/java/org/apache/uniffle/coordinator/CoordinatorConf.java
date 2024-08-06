@@ -250,6 +250,12 @@ public class CoordinatorConf extends RssBaseConf {
           .defaultValue(true)
           .withDescription(
               "When set to true, for auditing purposes, the coordinator will log audit records for every rpc request operation. ");
+  public static final ConfigOption<List<String>> COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST =
+      ConfigOptions.key("rss.coordinator.rpc.audit.log.exclude.list")
+          .stringType()
+          .asList()
+          .defaultValues("appHeartbeat", "heartbeat")
+          .withDescription("Exclude record rpc audit operation list, separated by ','");
 
   public CoordinatorConf() {}
 

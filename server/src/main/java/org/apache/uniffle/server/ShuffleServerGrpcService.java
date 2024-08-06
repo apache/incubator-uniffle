@@ -18,6 +18,7 @@
 package org.apache.uniffle.server;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -102,6 +103,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       LoggerFactory.getLogger("SHUFFLE_SERVER_RPC_AUDIT_LOG");
   private final ShuffleServer shuffleServer;
   private final boolean isRpcAuditLogEnabled;
+  private final List<String> rpcAuditExcludeOpList;
 
   public ShuffleServerGrpcService(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
@@ -109,6 +111,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         shuffleServer
             .getShuffleServerConf()
             .getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED);
+    if (isRpcAuditLogEnabled) {
+      rpcAuditExcludeOpList =
+          shuffleServer
+              .getShuffleServerConf()
+              .get(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST);
+    } else {
+      rpcAuditExcludeOpList = Collections.emptyList();
+    }
   }
 
   @Override
@@ -1442,7 +1452,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   private ServerRPCAuditContext createAuditContext(String command) {
     // Audit log may be enabled during runtime
     Logger auditLogger = null;
-    if (isRpcAuditLogEnabled) {
+    if (isRpcAuditLogEnabled && !rpcAuditExcludeOpList.contains(command)) {
       auditLogger = AUDIT_LOGGER;
     }
     ServerRPCAuditContext auditContext = new ServerRPCAuditContext(auditLogger);
