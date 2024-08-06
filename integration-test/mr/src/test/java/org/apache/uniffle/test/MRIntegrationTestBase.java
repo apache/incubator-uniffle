@@ -24,6 +24,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
@@ -45,6 +46,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.provider.Arguments;
 
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.rpc.ServerType;
@@ -74,6 +76,10 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
   private static final String OUTPUT_ROOT_DIR = "/tmp/" + TestMRJobs.class.getSimpleName();
   private static final Path TEST_RESOURCES_DIR = new Path(TEST_ROOT_DIR, "localizedResources");
 
+  static Stream<Arguments> clientTypeProvider() {
+    return Stream.of(Arguments.of(ClientType.GRPC), Arguments.of(ClientType.GRPC_NETTY));
+  }
+
   @BeforeAll
   public static void setUpMRYarn() throws IOException {
     mrYarnCluster = new MiniMRYarnCluster("test");
@@ -98,20 +104,20 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     }
   }
 
-  public void run() throws Exception {
+  public void run(ClientType clientType) throws Exception {
     JobConf appConf = new JobConf(mrYarnCluster.getConfig());
     updateCommonConfiguration(appConf);
     runOriginApp(appConf);
     final String originPath = appConf.get("mapreduce.output.fileoutputformat.outputdir");
     appConf = new JobConf(mrYarnCluster.getConfig());
     updateCommonConfiguration(appConf);
-    runRssApp(appConf);
+    runRssApp(appConf, clientType);
     String rssPath = appConf.get("mapreduce.output.fileoutputformat.outputdir");
     verifyResults(originPath, rssPath);
 
     appConf = new JobConf(mrYarnCluster.getConfig());
     appConf.set("mapreduce.rss.reduce.remote.spill.enable", "true");
-    runRssApp(appConf);
+    runRssApp(appConf, clientType);
     String rssRemoteSpillPath = appConf.get("mapreduce.output.fileoutputformat.outputdir");
     verifyResults(originPath, rssRemoteSpillPath);
   }
@@ -126,7 +132,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     runMRApp(jobConf, getTestTool(), getTestArgs());
   }
 
-  private void runRssApp(Configuration jobConf) throws Exception {
+  private void runRssApp(Configuration jobConf, ClientType clientType) throws Exception {
     URL url = MRIntegrationTestBase.class.getResource("/");
     final String parentPath =
         new Path(url.getPath()).getParent().getParent().getParent().getParent().toString();
@@ -159,19 +165,19 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     }
     assertNotNull(localFile);
     String props = System.getProperty("java.class.path");
-    String newProps = "";
+    StringBuilder newProps = new StringBuilder();
     String[] splittedProps = props.split(":");
     for (String prop : splittedProps) {
       if (!prop.contains("classes")
           && !prop.contains("grpc")
           && !prop.contains("rss-")
           && !prop.contains("shuffle-storage")) {
-        newProps = newProps + ":" + prop;
+        newProps.append(":").append(prop);
       } else if (prop.contains("mr") && prop.contains("integration-test")) {
-        newProps = newProps + ":" + prop;
+        newProps.append(":").append(prop);
       }
     }
-    System.setProperty("java.class.path", newProps);
+    System.setProperty("java.class.path", newProps.toString());
     Path newPath = new Path(HDFS_URI + "/rss.jar");
     FileUtil.copy(file, fs, newPath, false, jobConf);
     DistributedCache.addFileToClassPath(new Path(newPath.toUri().getPath()), jobConf, fs);
@@ -182,8 +188,9 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
             + ","
             + MRJobConfig.DEFAULT_MAPREDUCE_APPLICATION_CLASSPATH);
     jobConf.set(RssMRConfig.RSS_COORDINATOR_QUORUM, COORDINATOR_QUORUM);
-    updateRssConfiguration(jobConf);
+    updateRssConfiguration(jobConf, clientType);
     runMRApp(jobConf, getTestTool(), getTestArgs());
+    fs.delete(newPath, true);
   }
 
   protected String[] getTestArgs() {
@@ -194,8 +201,10 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
-    createShuffleServer(shuffleServerConf);
+    ShuffleServerConf grpcShuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+    createShuffleServer(grpcShuffleServerConf);
+    ShuffleServerConf nettyShuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
+    createShuffleServer(nettyShuffleServerConf);
     startServers();
   }
 
@@ -206,8 +215,8 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     return dynamicConf;
   }
 
-  protected void updateRssConfiguration(Configuration jobConf) {
-    jobConf.set(RssMRConfig.RSS_CLIENT_TYPE, ClientType.GRPC.name());
+  protected void updateRssConfiguration(Configuration jobConf, ClientType clientType) {
+    jobConf.set(RssMRConfig.RSS_CLIENT_TYPE, clientType.name());
   }
 
   private void runMRApp(Configuration conf, Tool tool, String[] args) throws Exception {
