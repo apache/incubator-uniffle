@@ -718,6 +718,14 @@ public class ShuffleBufferManager {
           // the actual release size by this thread
           long releaseSize = buffer.release();
           ShuffleServerMetrics.gaugeTotalPartitionNum.dec();
+          if (releaseSize != buffer.getSize()) {
+            LOG.warn(
+                "Release shuffle buffer size {} is not equal to buffer size {}, appId: {}, shuffleId: {}",
+                releaseSize,
+                buffer.getSize(),
+                appId,
+                shuffleId);
+          }
           releaseMemory(releaseSize, false, false);
         }
       }
