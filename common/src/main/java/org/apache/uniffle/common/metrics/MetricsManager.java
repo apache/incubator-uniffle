@@ -19,6 +19,7 @@ package org.apache.uniffle.common.metrics;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import com.google.common.collect.Maps;
 import io.prometheus.client.CollectorRegistry;
@@ -74,9 +75,20 @@ public class MetricsManager {
     return Gauge.build().name(name).labelNames(labels).help(help).register(collectorRegistry);
   }
 
+  public org.apache.uniffle.common.metrics.Gauge addGauge(String name, String help,
+      Supplier supplier, String[] labelNames, String[] labelValues) {
+    return new org.apache.uniffle.common.metrics.Gauge(name, help, supplier, labelNames,
+        labelValues).register(collectorRegistry);
+  }
+
   public Gauge.Child addLabeledGauge(String name) {
     Gauge c = addGauge(name, this.defaultLabelNames);
     return c.labels(this.defaultLabelValues);
+  }
+
+  public org.apache.uniffle.common.metrics.Gauge addLabeldGauge(String name, Supplier supplier) {
+    return new org.apache.uniffle.common.metrics.Gauge(name, "Gauge " + name, supplier,
+        defaultLabelNames, defaultLabelValues).register(collectorRegistry);
   }
 
   public Histogram addHistogram(String name, double[] buckets, String... labels) {

@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.server;
 
+import static org.apache.uniffle.server.ShuffleServerMetrics.EVENT_QUEUE_SIZE;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -77,8 +79,6 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       // We need to release the memory when discarding the event
       event.doCleanup();
       ShuffleServerMetrics.counterTotalDroppedEventNum.inc();
-    } else {
-      ShuffleServerMetrics.gaugeEventQueueSize.inc();
     }
   }
 
@@ -160,8 +160,6 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       } else {
         ShuffleServerMetrics.gaugeFallbackFlushThreadPoolQueueSize.dec();
       }
-
-      ShuffleServerMetrics.gaugeEventQueueSize.dec();
     }
   }
 
@@ -178,6 +176,8 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       hadoopThreadPoolExecutor = createFlushEventExecutor(poolSize, "HadoopFlushEventThreadPool");
     }
     fallbackThreadPoolExecutor = createFlushEventExecutor(5, "FallBackFlushEventThreadPool");
+    ShuffleServerMetrics.gaugeEventQueueSize =
+        ShuffleServerMetrics.addLabeledGauge(EVENT_QUEUE_SIZE, flushQueue::size);
     startEventProcessor();
   }
 
@@ -248,7 +248,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
 
   @Override
   public int getEventNumInFlush() {
-    return (int) ShuffleServerMetrics.gaugeEventQueueSize.get();
+    return flushQueue.size();
   }
 
   @Override
