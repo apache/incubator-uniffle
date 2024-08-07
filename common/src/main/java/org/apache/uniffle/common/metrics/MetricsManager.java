@@ -75,10 +75,11 @@ public class MetricsManager {
     return Gauge.build().name(name).labelNames(labels).help(help).register(collectorRegistry);
   }
 
-  public org.apache.uniffle.common.metrics.Gauge addGauge(String name, String help,
-      Supplier supplier, String[] labelNames, String[] labelValues) {
-    return new org.apache.uniffle.common.metrics.Gauge(name, help, supplier, labelNames,
-        labelValues).register(collectorRegistry);
+  public org.apache.uniffle.common.metrics.Gauge addGauge(
+      String name, String help, Supplier supplier, String[] labelNames, String[] labelValues) {
+    return new org.apache.uniffle.common.metrics.Gauge(
+            name, help, supplier, labelNames, labelValues)
+        .register(collectorRegistry);
   }
 
   public Gauge.Child addLabeledGauge(String name) {
@@ -87,8 +88,9 @@ public class MetricsManager {
   }
 
   public org.apache.uniffle.common.metrics.Gauge addLabeldGauge(String name, Supplier supplier) {
-    return new org.apache.uniffle.common.metrics.Gauge(name, "Gauge " + name, supplier,
-        defaultLabelNames, defaultLabelValues).register(collectorRegistry);
+    return new org.apache.uniffle.common.metrics.Gauge(
+            name, "Gauge " + name, supplier, defaultLabelNames, defaultLabelValues)
+        .register(collectorRegistry);
   }
 
   public Histogram addHistogram(String name, double[] buckets, String... labels) {

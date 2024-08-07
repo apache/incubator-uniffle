@@ -17,14 +17,14 @@
 
 package org.apache.uniffle.common.metrics;
 
-import io.prometheus.client.Collector;
-import io.prometheus.client.GaugeMetricFamily;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
+
+import io.prometheus.client.Collector;
+import io.prometheus.client.GaugeMetricFamily;
 
 public class Gauge extends Collector implements Collector.Describable {
   private String name;
@@ -33,7 +33,12 @@ public class Gauge extends Collector implements Collector.Describable {
   private List<String> labelNames;
   private List<String> labelValues;
 
-  Gauge(String name, String help, Supplier supplier, String[] labelNames, String[] labelValues) {
+  Gauge(
+      String name,
+      String help,
+      Supplier<Double> supplier,
+      String[] labelNames,
+      String[] labelValues) {
     this.name = name;
     this.help = help;
     this.supplier = supplier;
@@ -44,7 +49,9 @@ public class Gauge extends Collector implements Collector.Describable {
   @Override
   public List<MetricFamilySamples> collect() {
     List<MetricFamilySamples.Sample> samples = new ArrayList<>();
-    samples.add(new MetricFamilySamples.Sample(this.name, this.labelNames, this.labelValues, this.supplier.get()));
+    samples.add(
+        new MetricFamilySamples.Sample(
+            this.name, this.labelNames, this.labelValues, this.supplier.get()));
     MetricFamilySamples mfs = new MetricFamilySamples(this.name, Type.GAUGE, this.help, samples);
     List<MetricFamilySamples> mfsList = new ArrayList<MetricFamilySamples>(1);
     mfsList.add(mfs);
@@ -53,7 +60,7 @@ public class Gauge extends Collector implements Collector.Describable {
 
   @Override
   public List<MetricFamilySamples> describe() {
-    return Collections.<MetricFamilySamples>singletonList(new GaugeMetricFamily(this.name, this.help, this.labelNames));
+    return Collections.<MetricFamilySamples>singletonList(
+        new GaugeMetricFamily(this.name, this.help, this.labelNames));
   }
 }
-

@@ -307,16 +307,19 @@ public class ShuffleServer {
             shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
     shuffleTaskManager.start();
     ShuffleServerMetrics.addLabeledGauge(
-        USED_DIRECT_MEMORY_SIZE_BY_NETTY, PlatformDependent::usedDirectMemory);
+        USED_DIRECT_MEMORY_SIZE_BY_NETTY, () -> (double) PlatformDependent.usedDirectMemory());
     ShuffleServerMetrics.addLabeledGauge(
         USED_DIRECT_MEMORY_SIZE_BY_GRPC_NETTY,
-        io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent::usedDirectMemory);
+        () ->
+            (double)
+                io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent.usedDirectMemory());
     ShuffleServerMetrics.addLabeledGauge(
         USED_DIRECT_MEMORY_SIZE,
         () ->
-            PlatformDependent.usedDirectMemory()
-                + io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent.usedDirectMemory());
-
+            (double)
+                (PlatformDependent.usedDirectMemory()
+                    + io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent
+                        .usedDirectMemory()));
 
     setServer();
   }

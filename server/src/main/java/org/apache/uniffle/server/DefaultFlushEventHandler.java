@@ -17,8 +17,6 @@
 
 package org.apache.uniffle.server;
 
-import static org.apache.uniffle.server.ShuffleServerMetrics.EVENT_QUEUE_SIZE;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -42,6 +40,8 @@ import org.apache.uniffle.storage.common.HadoopStorage;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.StorageType;
+
+import static org.apache.uniffle.server.ShuffleServerMetrics.EVENT_QUEUE_SIZE;
 
 public class DefaultFlushEventHandler implements FlushEventHandler {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultFlushEventHandler.class);
@@ -177,7 +177,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
     }
     fallbackThreadPoolExecutor = createFlushEventExecutor(5, "FallBackFlushEventThreadPool");
     ShuffleServerMetrics.gaugeEventQueueSize =
-        ShuffleServerMetrics.addLabeledGauge(EVENT_QUEUE_SIZE, flushQueue::size);
+        ShuffleServerMetrics.addLabeledGauge(EVENT_QUEUE_SIZE, () -> (double) flushQueue.size());
     startEventProcessor();
   }
 

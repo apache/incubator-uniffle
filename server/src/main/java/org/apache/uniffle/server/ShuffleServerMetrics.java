@@ -514,13 +514,17 @@ public class ShuffleServerMetrics {
             .register(metricsManager.getCollectorRegistry());
   }
 
-  public static org.apache.uniffle.common.metrics.Gauge addGauge(String name, String help,
-      Supplier supplier, String[] labelNames, String[] labelValues) {
+  public static org.apache.uniffle.common.metrics.Gauge addGauge(
+      String name,
+      String help,
+      Supplier<Double> supplier,
+      String[] labelNames,
+      String[] labelValues) {
     return metricsManager.addGauge(name, help, supplier, labelNames, labelValues);
   }
 
-  public static org.apache.uniffle.common.metrics.Gauge addLabeledGauge(String name,
-      Supplier supplier) {
+  public static org.apache.uniffle.common.metrics.Gauge addLabeledGauge(
+      String name, Supplier<Double> supplier) {
     return metricsManager.addLabeldGauge(name, supplier);
   }
 }
