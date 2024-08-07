@@ -299,12 +299,6 @@ export MAVEN_CMD_LINE_ARGS
 
 WRAPPER_LAUNCHER=org.apache.maven.wrapper.MavenWrapperMain
 
-
-version=$($JAVACMD -version 2>&1 | awk -F[\".] '/version/ {print $2}')
-if [[ "$version" -gt "8" ]]; then
-  MAVEN_OPTS="$MAVEN_OPTS -Dmaven.compiler.release=8"
-fi
-
 # shellcheck disable=SC2086 # safe args
 exec "$JAVACMD" \
   $MAVEN_OPTS \
