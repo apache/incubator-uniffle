@@ -22,7 +22,7 @@
         <el-row>
           <el-col :span="24">
             <el-menu
-              :default-active="activeIndex1"
+              :default-active="currentActive"
               router
               class="el-menu-demo"
               mode="horizontal"
@@ -54,7 +54,7 @@
                   v-for="item in hostNameAndPorts"
                   :key="item.label"
                   index="/nullpage"
-                  @click="changeServer(item.label)"
+                  @click="handleChangeServer(item.label)"
                 >
                   <span>{{ item.label }}</span>
                 </el-menu-item>
@@ -83,7 +83,7 @@ import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 export default {
   setup() {
-    const activeIndex1 = ref('1')
+    const currentActive = ref('0')
     const currentServerStore = useCurrentServerStore()
     const hostNameAndPorts = reactive([
       {
@@ -92,7 +92,20 @@ export default {
       }
     ])
 
-    function changeServer(key) {
+    /**
+     * Troubleshoot the problem that the browser refresh address menu cannot be selected.
+     */
+    function handleSelectMenu() {
+      const urlAddress = window.location.hash.toString().replace(/^#/, '')
+      const shuffleServerPage = '/shuffleserverpage'
+      if (urlAddress.startsWith(shuffleServerPage)) {
+        currentActive.value = shuffleServerPage
+      } else {
+        currentActive.value = urlAddress
+      }
+    }
+
+    function handleChangeServer(key) {
       currentServerStore.currentServer = key
     }
 
@@ -108,13 +121,14 @@ export default {
 
     onMounted(() => {
       getSelectCurrentServer()
+      handleSelectMenu()
     })
 
     return {
-      activeIndex1,
+      currentActive,
       currentServerStore,
       hostNameAndPorts,
-      changeServer
+      handleChangeServer
     }
   }
 }

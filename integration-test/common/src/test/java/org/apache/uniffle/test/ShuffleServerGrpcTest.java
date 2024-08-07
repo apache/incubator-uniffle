@@ -531,7 +531,13 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     // trigger NoBufferForHugePartitionException and get FAILED_REQUIRE_ID
     long requireId =
         shuffleServerClient.requirePreAllocation(
-            appId, shuffleId, Lists.newArrayList(partitionId), hugePartitionDataLength, 3, 100);
+            appId,
+            shuffleId,
+            Lists.newArrayList(partitionId),
+            Lists.newArrayList(hugePartitionDataLength),
+            hugePartitionDataLength,
+            3,
+            100);
     assertEquals(FAILED_REQUIRE_ID, requireId);
 
     // Add NoBufferForHugePartitionException check

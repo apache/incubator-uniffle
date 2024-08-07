@@ -47,7 +47,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleManagerGrpcService.class);
   private final Map<Integer, RssShuffleStatus> shuffleStatus = JavaUtils.newConcurrentMap();
   // The shuffleId mapping records the number of ShuffleServer write failures
-  private final Map<Integer, ShuffleServerFailureRecord> shuffleWrtieStatus =
+  private final Map<Integer, ShuffleServerFailureRecord> shuffleWriteStatus =
       JavaUtils.newConcurrentMap();
   private final RssShuffleManagerInterface shuffleManager;
 
@@ -83,7 +83,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
             shuffleServerInfoIntegerMap.put(shuffleServerInfo.getId(), new AtomicInteger(0));
           });
       ShuffleServerFailureRecord shuffleServerFailureRecord =
-          shuffleWrtieStatus.computeIfAbsent(
+          shuffleWriteStatus.computeIfAbsent(
               shuffleId,
               key ->
                   new ShuffleServerFailureRecord(shuffleServerInfoIntegerMap, stageAttemptNumber));

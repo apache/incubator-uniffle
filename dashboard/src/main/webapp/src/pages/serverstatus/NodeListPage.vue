@@ -25,10 +25,13 @@
       @sort-change="sortChangeEvent"
     >
       <el-table-column prop="id" label="Id" min-width="140" sortable fixed />
-      <el-table-column prop="ip" label="IP" min-width="80" sortable />
-      <el-table-column prop="grpcPort" label="Port" min-width="80" />
-      <el-table-column prop="nettyPort" label="NettyPort" min-width="80" />
-      <el-table-column prop="jettyPort" label="JettyPort" min-width="80" />
+      <el-table-column label="NodeInfo(ip:jetty/grpc/netty)" min-width="140" >
+        <template v-slot="{ row }">
+          <div class="mb-4">
+            {{ row.ip }}:{{ row.jettyPort }}/{{ row.grpcPort }}/{{ row.nettyPort }}
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column
         prop="usedMemory"
         label="UsedMem"
@@ -46,12 +49,19 @@
       <el-table-column
         prop="availableMemory"
         label="AvailableMem"
-        min-width="80"
+        min-width="100"
         :formatter="memFormatter"
         sortable
       />
       <el-table-column prop="eventNumInFlush" label="FlushNum" min-width="80" sortable />
       <el-table-column prop="status" label="Status" min-width="80" sortable />
+      <el-table-column
+        prop="startTime"
+        label="StartTime"
+        min-width="120"
+        :formatter="dateFormatter"
+        sortable
+      />
       <el-table-column
         prop="registrationTime"
         label="RegistrationTime"
@@ -66,48 +76,25 @@
         :formatter="dateFormatter"
         sortable
       />
-      <el-table-column label="Conf">
+      <el-table-column label="Operations" min-width="240">
         <template v-slot="{ row }">
-          <el-link @click="getShuffleServerConf('http://' + row.ip + ':' + row.jettyPort)" target="_blank">
-            <el-icon :style="iconStyle">
-              <Link />
-            </el-icon>
-            conf
-          </el-link>
-        </template>
-      </el-table-column>
-      <el-table-column label="Metrics">
-        <template v-slot="{ row }">
-          <el-link @click="getShuffleServerMetrics('http://' + row.ip + ':' + row.jettyPort)" target="_blank">
-            <el-icon :style="iconStyle">
-              <Link />
-            </el-icon>
-            metrics
-          </el-link>
-        </template>
-      </el-table-column>
-      <el-table-column label="PrometheusMetrics" min-width="150">
-        <template v-slot="{ row }">
-          <el-link @click="getShuffleServerPrometheusMetrics('http://' + row.ip + ':' + row.jettyPort)" target="_blank">
-            <el-icon :style="iconStyle">
-              <Link />
-            </el-icon>
-            prometheus metrics
-          </el-link>
-        </template>
-      </el-table-column>
-      <el-table-column label="Stacks">
-        <template v-slot="{ row }">
-          <el-link @click="getShuffleServerStacks('http://' + row.ip + ':' + row.jettyPort)" target="_blank">
-            <el-icon :style="iconStyle">
-              <Link />
-            </el-icon>
-            stacks
-          </el-link>
+          <div class="mb-4">
+            <el-button type="warning" @click="handlerServerConf(row)">conf</el-button>
+            <el-button type="primary" @click="handlerServerMetrics(row)">metrics</el-button>
+            <el-button type="success" @click="handlerServerPrometheusMetrics(row)">metrics(prom)</el-button>
+            <el-button type="info" @click="handlerServerStacks(row)">stacks</el-button>
+          </div>
         </template>
       </el-table-column>
       <el-table-column prop="tags" label="Tags" min-width="140" />
-      <el-table-column v-if="isShowRemove" label="Operations">
+      <el-table-column label="Version" min-width="140">
+        <template v-slot="{ row }">
+          <div class="mb-4">
+            {{ row.version }}_{{ row.gitCommitId }}
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column v-if="isShowRemove" label="Operations(admin)">
         <template v-slot:default="scope">
           <el-button size="small" type="danger" @click="showDeleteConfirm(scope.row)">
             Remove
@@ -118,7 +105,7 @@
   </div>
 </template>
 <script>
-import { onMounted, reactive, watch, ref, inject } from 'vue'
+import { onMounted, reactive, watch, ref, inject, watchEffect } from 'vue'
 import { memFormatter, dateFormatter } from '@/utils/common'
 import { useRouter } from 'vue-router'
 import { useCurrentServerStore } from '@/store/useCurrentServerStore'
@@ -137,38 +124,19 @@ import {
 } from '@/api/api'
 
 export default {
-  methods: {getShuffleServerConf, getShuffleServerMetrics, getShuffleServerPrometheusMetrics, getShuffleServerStacks},
   setup() {
     const router = useRouter()
     const currentServerStore = useCurrentServerStore()
     const sortColumn = reactive({})
-    const listPageData = reactive({
-      tableData: [
-        {
-          id: '',
-          ip: '',
-          grpcPort: 0,
-          nettyPort: 0,
-          usedMemory: 0,
-          preAllocatedMemory: 0,
-          availableMemory: 0,
-          eventNumInFlush: 0,
-          tags: '',
-          status: '',
-          registrationTime: '',
-          timestamp: '',
-          jettyPort: 0
-        }
-      ]
-    })
+    const listPageData = reactive({ tableData: [] })
     const isShowRemove = ref(false)
     async function deleteLostServer(row) {
       try {
         const params = { serverId: row.id }
-        const res = await deleteConfirmedLostServer(params, {})
+        const res = await deleteConfirmedLostServer(params)
         // Invoke the interface to delete the lost server, prompting a message based on the result returned.
         if (res.data.data === 'success') {
-          ElMessage.success('remove ' + row.id + ' sucess...')
+          ElMessage.success('remove ' + row.id + ' success...')
         } else {
           ElMessage.error('remove ' + row.id + ' fail...')
         }
@@ -202,25 +170,97 @@ export default {
       listPageData.tableData = res.data.data
     }
 
+    function combinedRequestAddress(serverRow) {
+      return 'http://' + serverRow.ip + ':' + serverRow.jettyPort
+    }
+
+    async function handlerServerConf(serverRow) {
+      try {
+        const headers = {}
+        headers.targetAddress = combinedRequestAddress(serverRow)
+        const response = await getShuffleServerConf({}, headers)
+        if (response.status >= 200 && response.status < 300) {
+          const newWindow = window.open('', '_blank')
+          let tableHTML = `
+                          <style>
+                            table {
+                              width: 100%;
+                            }
+                            th, td {
+                              padding: 0 20px;
+                              text-align: left;
+                            }
+                          </style>
+                          <table>
+                            <tr>
+                              <th>Key</th>
+                              <th>Value</th>
+                            </tr>
+                        `
+          for (const item of response.data.data) {
+            tableHTML += `<tr><td>${item.argumentKey}</td><td>${item.argumentValue}</td></tr>`
+          }
+          tableHTML += '</table>'
+          newWindow.document.write(tableHTML)
+        } else {
+          ElMessage.error('Request failed.')
+        }
+      } catch (err) {
+        ElMessage.error('Internal error.')
+      }
+    }
+
+    async function handlerServerMetrics(serverRow) {
+      try {
+        const headers = {}
+        headers.targetAddress = combinedRequestAddress(serverRow)
+        const response = await getShuffleServerMetrics({}, headers)
+        if (response.status >= 200 && response.status < 300) {
+          const newWindow = window.open('', '_blank')
+          newWindow.document.write('<pre>' + JSON.stringify(response.data, null, 2) + '</pre>')
+        } else {
+          ElMessage.error('Request failed.')
+        }
+      } catch (err) {
+        ElMessage.error('Internal error.')
+      }
+    }
+
+    async function handlerServerPrometheusMetrics(serverRow) {
+      try {
+        const headers = {}
+        headers.targetAddress = combinedRequestAddress(serverRow)
+        const response = await getShuffleServerPrometheusMetrics({}, headers)
+        if (response.status >= 200 && response.status < 300) {
+          const newWindow = window.open('', '_blank')
+          newWindow.document.write('<pre>' + response.data + '</pre>')
+        } else {
+          ElMessage.error('Request failed.')
+        }
+      } catch (err) {
+        ElMessage.error('Internal error.')
+      }
+    }
+
+    async function handlerServerStacks(serverRow) {
+      try {
+        const headers = {}
+        headers.targetAddress = combinedRequestAddress(serverRow)
+        const response = await getShuffleServerStacks({}, headers)
+        if (response.status >= 200 && response.status < 300) {
+          const newWindow = window.open('', '_blank')
+          newWindow.document.write('<pre>' + response.data + '</pre>')
+        } else {
+          ElMessage.error('Request failed.')
+        }
+      } catch (err) {
+        ElMessage.error('Internal error.')
+      }
+    }
+
     const loadPageData = () => {
       isShowRemove.value = false
-      listPageData.tableData = [
-        {
-          id: '',
-          ip: '',
-          grpcPort: 0,
-          nettyPort: 0,
-          usedMemory: 0,
-          preAllocatedMemory: 0,
-          availableMemory: 0,
-          eventNumInFlush: 0,
-          tags: '',
-          status: '',
-          registrationTime: '',
-          timestamp: '',
-          jettyPort: 0
-        }
-      ]
+      listPageData.tableData = []
       if (router.currentRoute.value.name === 'activeNodeList') {
         getShuffleActiveNodesPage()
       } else if (router.currentRoute.value.name === 'decommissioningNodeList') {
@@ -236,10 +276,12 @@ export default {
     }
 
     onMounted(() => {
-      // If the coordinator address to request is not found in the global variable, the request is not initiated.
-      if (currentServerStore.currentServer) {
-        loadPageData()
-      }
+      watchEffect(() => {
+        // If the coordinator address to request is not found in the global variable, the request is not initiated.
+        if (currentServerStore.currentServer) {
+          loadPageData()
+        }
+      })
     })
 
     watch(router.currentRoute, () => {
@@ -281,6 +323,10 @@ export default {
       isShowRemove,
       showDeleteConfirm,
       sortChangeEvent,
+      handlerServerConf,
+      handlerServerPrometheusMetrics,
+      handlerServerMetrics,
+      handlerServerStacks,
       memFormatter,
       dateFormatter
     }

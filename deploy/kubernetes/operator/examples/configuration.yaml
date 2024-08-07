@@ -94,3 +94,11 @@ data:
     rss.server.shuffle.expired.timeout.ms 120000
     rss.server.write.retry.max 2
     rss.storage.type MEMORY_LOCALFILE
+  rss-env.sh: |-
+    #!/usr/bin/env bash
+    set -o pipefail
+    set -o nounset   # exit the script if you try to use an uninitialised variable
+    set -o errexit   # exit the script if any statement returns a non-true return value
+    HADOOP_HOME="/data/rssadmin/hadoop"
+    RUNNER="${JAVA_HOME}/bin/java"
+    JPS="${JAVA_HOME}/bin/jps"

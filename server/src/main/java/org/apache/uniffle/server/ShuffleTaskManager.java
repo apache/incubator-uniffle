@@ -316,6 +316,14 @@ public class ShuffleTaskManager {
   public StatusCode cacheShuffleData(
       String appId, int shuffleId, boolean isPreAllocated, ShufflePartitionedData spd) {
     refreshAppId(appId);
+    long partitionSize = getPartitionDataSize(appId, shuffleId, spd.getPartitionId());
+    long deltaSize = spd.getTotalBlockSize();
+    partitionSize += deltaSize;
+    // We do not need to check the huge partition size here, after old client upgraded to this
+    // version,
+    // since huge partition size is limited when requireBuffer is called.
+    HugePartitionUtils.checkExceedPartitionHardLimit(
+        "cacheShuffleData", shuffleBufferManager, partitionSize, deltaSize);
     return shuffleBufferManager.cacheShuffleData(appId, shuffleId, isPreAllocated, spd);
   }
 
@@ -487,9 +495,8 @@ public class ShuffleTaskManager {
       }
     }
     long partitionSize = shuffleTaskInfo.addPartitionDataSize(shuffleId, partitionId, size);
-    if (shuffleBufferManager.isHugePartition(partitionSize)) {
-      shuffleTaskInfo.markHugePartition(shuffleId, partitionId);
-    }
+    HugePartitionUtils.markHugePartition(
+        shuffleBufferManager, shuffleTaskInfo, shuffleId, partitionId, partitionSize);
   }
 
   public Roaring64NavigableMap getCachedBlockIds(String appId, int shuffleId) {
@@ -517,22 +524,34 @@ public class ShuffleTaskManager {
   }
 
   public long requireBuffer(
-      String appId, int shuffleId, List<Integer> partitionIds, int requireSize) {
+      String appId,
+      int shuffleId,
+      List<Integer> partitionIds,
+      List<Integer> partitionRequireSizes,
+      int requireSize) {
     ShuffleTaskInfo shuffleTaskInfo = shuffleTaskInfos.get(appId);
     if (null == shuffleTaskInfo) {
       LOG.error("No such app is registered. appId: {}, shuffleId: {}", appId, shuffleId);
       throw new NoRegisterException("No such app is registered. appId: " + appId);
     }
-    for (int partitionId : partitionIds) {
-      long partitionUsedDataSize = getPartitionDataSize(appId, shuffleId, partitionId);
-      if (shuffleBufferManager.limitHugePartition(
-          appId, shuffleId, partitionId, partitionUsedDataSize)) {
-        String errorMessage =
-            String.format(
-                "Huge partition is limited to writing. appId: %s, shuffleId: %s, partitionIds: %s, partitionUsedDataSize: %s",
-                appId, shuffleId, partitionIds, partitionUsedDataSize);
-        LOG.error(errorMessage);
-        throw new NoBufferForHugePartitionException(errorMessage);
+    // To be compatible with legacy clients which have empty partitionRequireSizes
+    if (partitionIds.size() == partitionRequireSizes.size()) {
+      for (int i = 0; i < partitionIds.size(); i++) {
+        int partitionId = partitionIds.get(i);
+        int partitionRequireSize = partitionRequireSizes.get(i);
+        long partitionUsedDataSize =
+            getPartitionDataSize(appId, shuffleId, partitionId) + partitionRequireSize;
+        if (HugePartitionUtils.limitHugePartition(
+            shuffleBufferManager, appId, shuffleId, partitionId, partitionUsedDataSize)) {
+          String errorMessage =
+              String.format(
+                  "Huge partition is limited to writing. appId: %s, shuffleId: %s, partitionIds: %s, partitionUsedDataSize: %s",
+                  appId, shuffleId, partitionIds, partitionUsedDataSize);
+          LOG.error(errorMessage);
+          throw new NoBufferForHugePartitionException(errorMessage);
+        }
+        HugePartitionUtils.checkExceedPartitionHardLimit(
+            "requireBuffer", shuffleBufferManager, partitionUsedDataSize, partitionRequireSize);
       }
     }
     return requireBuffer(appId, requireSize);

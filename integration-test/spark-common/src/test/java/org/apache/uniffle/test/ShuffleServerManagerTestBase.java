@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.apache.uniffle.client.factory.ShuffleManagerClientFactory;
 import org.apache.uniffle.client.impl.grpc.ShuffleManagerGrpcClient;
 import org.apache.uniffle.common.ClientType;
-import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.GrpcServer;
 import org.apache.uniffle.shuffle.manager.DummyRssShuffleManager;
@@ -63,7 +63,7 @@ public class ShuffleServerManagerTestBase {
     shuffleManagerServer = createShuffleManagerServer();
     shuffleManagerServer.start();
     int port = shuffleManagerServer.getPort();
-    long rpcTimeout = rssConf.getLong(RssBaseConf.RSS_CLIENT_TYPE_GRPC_TIMEOUT_MS);
+    long rpcTimeout = rssConf.getLong(RssClientConf.RPC_TIMEOUT_MS);
     client = factory.createShuffleManagerClient(ClientType.GRPC, LOCALHOST, port, rpcTimeout);
   }
 

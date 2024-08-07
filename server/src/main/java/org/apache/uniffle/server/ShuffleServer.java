@@ -107,8 +107,11 @@ public class ShuffleServer {
   private StreamServer streamServer;
   private JvmPauseMonitor jvmPauseMonitor;
 
+  private final long startTimeMs;
+
   public ShuffleServer(ShuffleServerConf shuffleServerConf) throws Exception {
     this.shuffleServerConf = shuffleServerConf;
+    this.startTimeMs = System.currentTimeMillis();
     try {
       initialization();
     } catch (Exception e) {
@@ -135,6 +138,8 @@ public class ShuffleServer {
   }
 
   public void start() throws Exception {
+    LOG.info(
+        "{} version: {}", this.getClass().getSimpleName(), Constants.VERSION_AND_REVISION_SHORT);
     jettyServer.start();
     grpcPort = server.start();
     if (nettyServerEnabled) {
@@ -550,6 +555,10 @@ public class ShuffleServer {
     return StringUtils.join(tags, ",");
   }
 
+  public long getStartTimeMs() {
+    return startTimeMs;
+  }
+
   @VisibleForTesting
   public void sendHeartbeat() {
     ShuffleServer shuffleServer = this;
@@ -565,6 +574,7 @@ public class ShuffleServer {
         shuffleServer.getServerStatus(),
         shuffleServer.getStorageManager().getStorageInfo(),
         shuffleServer.getNettyPort(),
-        shuffleServer.getJettyPort());
+        shuffleServer.getJettyPort(),
+        shuffleServer.getStartTimeMs());
   }
 }

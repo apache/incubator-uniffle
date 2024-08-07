@@ -55,6 +55,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageInfoUtils;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.proto.CoordinatorServerGrpc;
 import org.apache.uniffle.proto.CoordinatorServerGrpc.CoordinatorServerBlockingStub;
 import org.apache.uniffle.proto.RssProtos;
@@ -125,7 +126,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
       ServerStatus serverStatus,
       Map<String, StorageInfo> storageInfo,
       int nettyPort,
-      int jettyPort) {
+      int jettyPort,
+      long startTimeMs) {
     ShuffleServerId serverId =
         ShuffleServerId.newBuilder()
             .setId(id)
@@ -144,6 +146,9 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             .addAllTags(tags)
             .setStatusValue(serverStatus.ordinal())
             .putAllStorageInfo(StorageInfoUtils.toProto(storageInfo))
+            .setStartTimeMs(startTimeMs)
+            .setVersion(Constants.VERSION)
+            .setGitCommitId(Constants.REVISION_SHORT)
             .build();
 
     RssProtos.StatusCode status;
@@ -219,7 +224,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             request.getServerStatus(),
             request.getStorageInfo(),
             request.getNettyPort(),
-            request.getJettyPort());
+            request.getJettyPort(),
+            request.getStartTimeMs());
 
     RssSendHeartBeatResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
@@ -262,6 +268,8 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
         ApplicationInfoRequest.newBuilder()
             .setAppId(request.getAppId())
             .setUser(request.getUser())
+            .setVersion(Constants.VERSION)
+            .setGitCommitId(Constants.REVISION_SHORT)
             .build();
     ApplicationInfoResponse rpcResponse =
         blockingStub

@@ -26,82 +26,32 @@ export function getCoordinatorConf(params, headers) {
   return http.get('/coordinator/conf', params, headers, 0)
 }
 
-export async function getShuffleServerConf(address, params, headers) {
-  if (typeof headers === 'undefined') {
-    headers = {};
-  }
-  headers.targetAddress = address;
-  const response = await http.get('/shuffleServer/conf', params, headers, 0);
-  const newWindow = window.open('', '_blank');
-  let tableHTML = `
-    <style>
-      table {
-        width: 100%;
-      }
-      th, td {
-        padding: 0 20px;
-        text-align: left;
-      }
-    </style>
-    <table>
-      <tr>
-        <th>Key</th>
-        <th>Value</th>
-      </tr>
-  `;
-  for (const item of response.data.data) {
-    tableHTML += `<tr><td>${item.argumentKey}</td><td>${item.argumentValue}</td></tr>`;
-  }
-  tableHTML += '</table>';
-  newWindow.document.write(tableHTML);
+export function getShuffleServerConf(params, headers) {
+  return http.get('/shuffleServer/conf', params, headers, 0)
 }
 
-export async function getCoordinatorMetrics(params, headers) {
-  const response = await http.get('/coordinator/metrics', params, headers, 0)
-  const newWindow = window.open('', '_blank');
-  newWindow.document.write('<pre>' + JSON.stringify(response.data, null, 2) + '</pre>');
+export function getCoordinatorMetrics(params, headers) {
+  return http.get('/coordinator/metrics', params, headers, 0)
 }
 
-export async function getShuffleServerMetrics(address, params, headers) {
-  if (typeof headers === 'undefined') {
-    headers = {}
-  }
-  headers.targetAddress = address
-  const response = await http.get('/shuffleServer/metrics', params, headers, 0)
-  const newWindow = window.open('', '_blank');
-  newWindow.document.write('<pre>' + JSON.stringify(response.data, null, 2) + '</pre>');
+export function getShuffleServerMetrics(params, headers) {
+  return http.get('/shuffleServer/metrics', params, headers, 0)
 }
 
-export async function getCoordinatorPrometheusMetrics(params, headers) {
-  const response = await http.get('/coordinator/prometheus/metrics/all', params, headers, 0)
-  const newWindow = window.open('', '_blank');
-  newWindow.document.write('<pre>' + response.data + '</pre>');
+export function getCoordinatorPrometheusMetrics(params, headers) {
+  return http.get('/coordinator/prometheus/metrics/all', params, headers, 0)
 }
 
-export async function getShuffleServerPrometheusMetrics(address, params, headers) {
-  if (typeof headers === 'undefined') {
-    headers = {}
-  }
-  headers.targetAddress = address
-  const response = await http.get('/shuffleServer/prometheus/metrics/all', params, headers, 0)
-  const newWindow = window.open('', '_blank');
-  newWindow.document.write('<pre>' + response.data + '</pre>');
+export function getShuffleServerPrometheusMetrics(params, headers) {
+  return http.get('/shuffleServer/prometheus/metrics/all', params, headers, 0)
 }
 
-export async function getCoordinatorStacks(params, headers) {
-  const response = await http.get('/coordinator/stacks', params, headers, 0)
-  const newWindow = window.open('', '_blank');
-  newWindow.document.write('<pre>' + response.data + '</pre>');
+export function getCoordinatorStacks(params, headers) {
+  return http.get('/coordinator/stacks', params, headers, 0)
 }
 
-export async function getShuffleServerStacks(address, params, headers) {
-  if (typeof headers === 'undefined') {
-    headers = {}
-  }
-  headers.targetAddress = address
-  const response = await http.get('/shuffleServer/stacks', params, headers, 0)
-  const newWindow = window.open('', '_blank');
-  newWindow.document.write('<pre>' + response.data + '</pre>');
+export function getShuffleServerStacks(params, headers) {
+  return http.get('/shuffleServer/stacks', params, headers, 0)
 }
 
 // Create an interface for the total number of nodes
@@ -137,6 +87,16 @@ export function getShuffleDecommissionedList(params, headers) {
 // Create an interface for excludeNodes
 export function getShuffleExcludeNodes(params, headers) {
   return http.get('/server/nodes?status=excluded', params, headers, 0)
+}
+
+//  Create an interface for add blacklist
+export function addShuffleExcludeNodes(params, headers) {
+  return http.post('/server/addExcludeNodes', params, headers, 0)
+}
+
+//  Create an interface for remove blacklist
+export function removeShuffleExcludeNodes(params, headers) {
+  return http.post('/server/removeExcludeNodes', params, headers, 0)
 }
 
 // Total number of interfaces for new App

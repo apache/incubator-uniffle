@@ -65,38 +65,56 @@
               </template>
               {{ pageData.serverInfo.serverWebPort }}
             </el-descriptions-item>
+            <el-descriptions-item>
+              <template #label>
+                <div class="cell-item">
+                  <el-icon :style="iconStyle">
+                    <Wallet />
+                  </el-icon>
+                  Monitoring Information
+                </div>
+              </template>
+              <div class="mb-4">
+                <el-button type="primary" @click="handlerMetrics">Metrics</el-button>
+                <el-button type="success" @click="handlerPromMetrics">Prometheus Metrics</el-button>
+                <el-button type="info" @click="handlerStacks">Stacks</el-button>
+              </div>
+            </el-descriptions-item>
+            <el-descriptions-item>
+              <template #label>
+                <div class="cell-item">
+                  <el-icon :style="iconStyle">
+                    <Wallet />
+                  </el-icon>
+                  Version
+                </div>
+              </template>
+              {{ pageData.serverInfo.version}}
+            </el-descriptions-item>
+            <el-descriptions-item>
+              <template #label>
+                <div class="cell-item">
+                  <el-icon :style="iconStyle">
+                    <Wallet />
+                  </el-icon>
+                  Git CommitId
+                </div>
+              </template>
+              {{ pageData.serverInfo.gitCommitId}}
+            </el-descriptions-item>
           </el-descriptions>
         </div>
       </el-collapse-item>
       <el-collapse-item title="Coordinator Properties" name="2">
-        <el-table :data="pageData.tableData" stripe style="width: 100%">
+        <el-table :data="filteredTableData" stripe style="width: 100%">
           <el-table-column prop="argumentKey" label="Name" min-width="380" />
-          <el-table-column prop="argumentValue" label="Value" min-width="380" />
+          <el-table-column prop="argumentValue" label="Value" min-width="380" :show-overflow-tooltip="true" />
+          <el-table-column align="right">
+            <template #header>
+              <el-input v-model="searchKeyword" size="small" placeholder="Type to search" />
+            </template>
+          </el-table-column>
         </el-table>
-      </el-collapse-item>
-      <el-collapse-item title="Coordinator Metrics" name="3">
-        <el-link @click="getCoordinatorMetrics" target="_blank">
-          <el-icon :style="iconStyle">
-            <Link />
-          </el-icon>
-          metrics
-        </el-link>
-      </el-collapse-item>
-      <el-collapse-item title="Coordinator Prometheus Metrics" name="4">
-        <el-link @click="getCoordinatorPrometheusMetrics" target="_blank">
-          <el-icon :style="iconStyle">
-            <Link />
-          </el-icon>
-          prometheus metrics
-        </el-link>
-      </el-collapse-item>
-      <el-collapse-item title="Coordinator Stacks" name="5">
-        <el-link @click="getCoordinatorStacks" target="_blank">
-          <el-icon :style="iconStyle">
-            <Link />
-          </el-icon>
-          stacks
-        </el-link>
       </el-collapse-item>
     </el-collapse>
   </div>
@@ -104,6 +122,7 @@
 
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import {
   getCoordinatorConf,
   getCoordinatorMetrics,
@@ -114,10 +133,9 @@ import {
 import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 export default {
-  methods: {getCoordinatorMetrics, getCoordinatorPrometheusMetrics, getCoordinatorStacks},
   setup() {
     const pageData = reactive({
-      activeNames: ['1', '2', '3', '4', '5'],
+      activeNames: ['1', '2'],
       tableData: [],
       serverInfo: {}
     })
@@ -130,6 +148,46 @@ export default {
     async function getCoorServerInfo() {
       const res = await getCoordinatorServerInfo()
       pageData.serverInfo = res.data.data
+    }
+
+    async function handlerMetrics() {
+      try {
+        const response = await getCoordinatorMetrics()
+        if (response.status >= 200 && response.status < 300) {
+          const newWindow = window.open('', '_blank')
+          newWindow.document.write('<pre>' + JSON.stringify(response.data, null, 2) + '</pre>')
+        } else {
+          ElMessage.error('Request failed.')
+        }
+      } catch (err) {
+        ElMessage.error('Internal error.')
+      }
+    }
+    async function handlerPromMetrics() {
+      try {
+        const response = await getCoordinatorPrometheusMetrics()
+        if (response.status >= 200 && response.status < 300) {
+          const newWindow = window.open('', '_blank')
+          newWindow.document.write('<pre>' + response.data + '</pre>')
+        } else {
+          ElMessage.error('Request failed.')
+        }
+      } catch (err) {
+        ElMessage.error('Internal error.')
+      }
+    }
+    async function handlerStacks() {
+      try {
+        const response = await getCoordinatorStacks()
+        if (response.status >= 200 && response.status < 300) {
+          const newWindow = window.open('', '_blank')
+          newWindow.document.write('<pre>' + response.data + '</pre>')
+        } else {
+          ElMessage.error('Request failed.')
+        }
+      } catch (err) {
+        ElMessage.error('Internal error.')
+      }
     }
 
     /**
@@ -172,11 +230,31 @@ export default {
       }
     })
 
+    /**
+     * The following describes how to handle blacklist select events.
+     */
+    const searchKeyword = ref('')
+    const filteredTableData = computed(() => {
+      const keyword = searchKeyword.value.trim()
+      if (!keyword) {
+        return pageData.tableData
+      } else {
+        return pageData.tableData.filter((row) => {
+          return row.argumentValue.includes(keyword) || row.argumentKey.includes(keyword)
+        })
+      }
+    })
+
     return {
       pageData,
       iconStyle,
       blockMargin,
-      size
+      size,
+      handlerMetrics,
+      handlerPromMetrics,
+      handlerStacks,
+      filteredTableData,
+      searchKeyword
     }
   }
 }

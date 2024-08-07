@@ -23,6 +23,8 @@ import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.examples.JoinDataGen;
 import org.apache.tez.examples.JoinValidate;
 
+import org.apache.uniffle.common.ClientType;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TezJoinIntegrationTestBase extends TezIntegrationTestBase {
@@ -61,14 +63,16 @@ public class TezJoinIntegrationTestBase extends TezIntegrationTestBase {
     assertEquals(0, ToolRunner.run(appConf, validate, args), "JoinValidate failed");
   }
 
-  public void run(String[] overrideArgs) throws Exception {
-    // 1 Run Tez examples based on rss
-    TezConfiguration appConf = new TezConfiguration(miniTezCluster.getConfig());
-    updateRssConfiguration(appConf);
-    appendAndUploadRssJars(appConf);
-    runTezApp(appConf, getTestTool(), overrideArgs);
+  public void run(String path) throws Exception {
+    runForClientType(ClientType.GRPC, path);
+    runForClientType(ClientType.GRPC_NETTY, path + "_netty");
+  }
 
-    // 2 check the result
-    verifyResults(JOIN_EXPECTED_PATH, getOutputDir(""));
+  private void runForClientType(ClientType clientType, String path) throws Exception {
+    TezConfiguration appConf = new TezConfiguration(miniTezCluster.getConfig());
+    updateRssConfiguration(appConf, clientType);
+    appendAndUploadRssJars(appConf);
+    runTezApp(appConf, getTestTool(), getTestArgs(path));
+    verifyResults(JOIN_EXPECTED_PATH, getOutputDir(path));
   }
 }
