@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.netty.util.internal.PlatformDependent;
 import io.prometheus.client.CollectorRegistry;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -73,15 +72,13 @@ import static org.apache.uniffle.common.config.RssBaseConf.RSS_STORAGE_TYPE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_TEST_MODE_ENABLE;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_CHECK_INTERVAL;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_SHUTDOWN;
-import static org.apache.uniffle.server.ShuffleServerMetrics.USED_DIRECT_MEMORY_SIZE;
-import static org.apache.uniffle.server.ShuffleServerMetrics.USED_DIRECT_MEMORY_SIZE_BY_GRPC_NETTY;
-import static org.apache.uniffle.server.ShuffleServerMetrics.USED_DIRECT_MEMORY_SIZE_BY_NETTY;
 
 /** Server that manages startup/shutdown of a {@code Greeter} server. */
 public class ShuffleServer {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServer.class);
   private RegisterHeartBeat registerHeartBeat;
+  private NettyDirectMemoryTracker directMemoryUsageReporter;
   private String id;
   private String ip;
   private int grpcPort;
@@ -151,6 +148,7 @@ public class ShuffleServer {
     initMetricsReporter();
 
     registerHeartBeat.startHeartBeat();
+    directMemoryUsageReporter.start();
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread() {
@@ -177,6 +175,10 @@ public class ShuffleServer {
     if (registerHeartBeat != null) {
       registerHeartBeat.shutdown();
       LOG.info("HeartBeat Stopped!");
+    }
+    if (directMemoryUsageReporter != null) {
+      directMemoryUsageReporter.stop();
+      LOG.info("Direct memory usage tracker Stopped!");
     }
     if (storageManager != null) {
       storageManager.stop();
@@ -294,6 +296,7 @@ public class ShuffleServer {
     }
 
     registerHeartBeat = new RegisterHeartBeat(this);
+    directMemoryUsageReporter = new NettyDirectMemoryTracker(shuffleServerConf);
     shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, this, storageManager);
     shuffleBufferManager =
         new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager, nettyServerEnabled);
@@ -301,16 +304,7 @@ public class ShuffleServer {
         new ShuffleTaskManager(
             shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
     shuffleTaskManager.start();
-    ShuffleServerMetrics.registerGaugeIfAbsent(
-        USED_DIRECT_MEMORY_SIZE_BY_NETTY, PlatformDependent::usedDirectMemory);
-    ShuffleServerMetrics.registerGaugeIfAbsent(
-        USED_DIRECT_MEMORY_SIZE_BY_GRPC_NETTY,
-        io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent::usedDirectMemory);
-    ShuffleServerMetrics.registerGaugeIfAbsent(
-        USED_DIRECT_MEMORY_SIZE,
-        () ->
-            PlatformDependent.usedDirectMemory()
-                + io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent.usedDirectMemory());
+
     setServer();
   }
 

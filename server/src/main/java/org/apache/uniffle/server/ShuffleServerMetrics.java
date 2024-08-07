@@ -57,7 +57,7 @@ public class ShuffleServerMetrics {
   private static final String EVENT_SIZE_THRESHOLD_LEVEL2 = "event_size_threshold_level2";
   private static final String EVENT_SIZE_THRESHOLD_LEVEL3 = "event_size_threshold_level3";
   private static final String EVENT_SIZE_THRESHOLD_LEVEL4 = "event_size_threshold_level4";
-  public static final String EVENT_QUEUE_SIZE = "event_queue_size";
+  private static final String EVENT_QUEUE_SIZE = "event_queue_size";
   private static final String HADOOP_FLUSH_THREAD_POOL_QUEUE_SIZE =
       "hadoop_flush_thread_pool_queue_size";
   private static final String LOCALFILE_FLUSH_THREAD_POOL_QUEUE_SIZE =
@@ -97,9 +97,9 @@ public class ShuffleServerMetrics {
   private static final String IN_FLUSH_BUFFER_SIZE = "in_flush_buffer_size";
   private static final String USED_BUFFER_SIZE = "used_buffer_size";
   private static final String READ_USED_BUFFER_SIZE = "read_used_buffer_size";
-  public static final String USED_DIRECT_MEMORY_SIZE = "used_direct_memory_size";
-  public static final String USED_DIRECT_MEMORY_SIZE_BY_NETTY = "used_direct_memory_size_by_netty";
-  public static final String USED_DIRECT_MEMORY_SIZE_BY_GRPC_NETTY =
+  private static final String USED_DIRECT_MEMORY_SIZE = "used_direct_memory_size";
+  private static final String USED_DIRECT_MEMORY_SIZE_BY_NETTY = "used_direct_memory_size_by_netty";
+  private static final String USED_DIRECT_MEMORY_SIZE_BY_GRPC_NETTY =
       "used_direct_memory_size_by_grpc_netty";
   private static final String TOTAL_FAILED_WRITTEN_EVENT_NUM = "total_failed_written_event_num";
   private static final String TOTAL_DROPPED_EVENT_NUM = "total_dropped_event_num";
@@ -214,7 +214,11 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeInFlushBufferSize;
   public static Gauge.Child gaugeUsedBufferSize;
   public static Gauge.Child gaugeReadBufferUsedSize;
+  public static Gauge.Child gaugeUsedDirectMemorySize;
+  public static Gauge.Child gaugeUsedDirectMemorySizeByNetty;
+  public static Gauge.Child gaugeUsedDirectMemorySizeByGrpcNetty;
   public static Gauge.Child gaugeWriteHandler;
+  public static Gauge.Child gaugeEventQueueSize;
   public static Gauge.Child gaugeHadoopFlushThreadPoolQueueSize;
   public static Gauge.Child gaugeLocalfileFlushThreadPoolQueueSize;
   public static Gauge.Child gaugeFallbackFlushThreadPoolQueueSize;
@@ -438,7 +442,13 @@ public class ShuffleServerMetrics {
     gaugeInFlushBufferSize = metricsManager.addLabeledGauge(IN_FLUSH_BUFFER_SIZE);
     gaugeUsedBufferSize = metricsManager.addLabeledGauge(USED_BUFFER_SIZE);
     gaugeReadBufferUsedSize = metricsManager.addLabeledGauge(READ_USED_BUFFER_SIZE);
+    gaugeUsedDirectMemorySize = metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE);
+    gaugeUsedDirectMemorySizeByNetty =
+        metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE_BY_NETTY);
+    gaugeUsedDirectMemorySizeByGrpcNetty =
+        metricsManager.addLabeledGauge(USED_DIRECT_MEMORY_SIZE_BY_GRPC_NETTY);
     gaugeWriteHandler = metricsManager.addLabeledGauge(TOTAL_WRITE_HANDLER);
+    gaugeEventQueueSize = metricsManager.addLabeledGauge(EVENT_QUEUE_SIZE);
     gaugeHadoopFlushThreadPoolQueueSize =
         metricsManager.addLabeledGauge(HADOOP_FLUSH_THREAD_POOL_QUEUE_SIZE);
     gaugeLocalfileFlushThreadPoolQueueSize =
@@ -502,10 +512,5 @@ public class ShuffleServerMetrics {
             .help("top N of on hadoop shuffle data size for app level")
             .labelNames("app_id")
             .register(metricsManager.getCollectorRegistry());
-  }
-
-  public static synchronized <T> void registerGaugeIfAbsent(
-      String name, com.codahale.metrics.Gauge<T> metric) {
-    metricsManager.registerGaugeIfAbsent(name, metric);
   }
 }

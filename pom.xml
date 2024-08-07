@@ -83,7 +83,7 @@
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <spotless-maven-plugin.version>2.30.0</spotless-maven-plugin.version>
-    <metrics.version>3.1.2</metrics.version>
+    <metrics.version>3.1.0</metrics.version>
     <mockito.version>3.12.4</mockito.version>
     <netty.version>4.1.109.Final</netty.version>
     <picocli.version>4.5.2</picocli.version>
@@ -105,7 +105,6 @@
     <skipITs>${skipTests}</skipITs>
     <skipBuildImage>true</skipBuildImage>
     <snakeyaml.version>2.2</snakeyaml.version>
-    <prometheus.simpleclient.version>0.8.0</prometheus.simpleclient.version>
   </properties>
 
   <repositories>
@@ -779,11 +778,6 @@
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-core</artifactId>
         <version>${log4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient_dropwizard</artifactId>
-        <version>${prometheus.simpleclient.version}</version>
       </dependency>
       <!-- end -->
     </dependencies>

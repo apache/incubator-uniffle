@@ -216,10 +216,6 @@
                   <pattern>picocli</pattern>
                   <shadedPattern>${rss.shade.packageName}.picocli</shadedPattern>
                 </relocation>
-                <relocation>
-                  <pattern>com.codahale.metrics</pattern>
-                  <shadedPattern>${rss.shade.packageName}.com.codahale.metrics</shadedPattern>
-                </relocation>
               </relocations>
             </configuration>
           </execution>

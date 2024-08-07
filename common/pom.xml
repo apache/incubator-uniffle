@@ -170,10 +170,6 @@
       <groupId>org.apache.hbase.thirdparty</groupId>
       <artifactId>hbase-shaded-jersey</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>simpleclient_dropwizard</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
