@@ -31,10 +31,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import org.apache.uniffle.UniffleCliArgsException;
 import org.apache.uniffle.api.AdminRestApi;
 import org.apache.uniffle.common.Application;
-import org.apache.uniffle.common.util.http.RestClientImpl;
 import org.apache.uniffle.common.util.http.UniffleRestClient;
 import org.apache.uniffle.common.web.resource.Response;
 
@@ -44,6 +42,7 @@ public class AdminRestApiTest {
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private UniffleRestClient uniffleRestClient;
+
   @InjectMocks private AdminRestApi adminRestApi;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -66,10 +65,10 @@ public class AdminRestApiTest {
 
   @Test
   public void testGetApplications() throws Exception {
-    List<Application> applications = Lists.newArrayList(new Application.Builder().applicationId("1").build());
+    List<Application> applications =
+        Lists.newArrayList(new Application.Builder().applicationId("1").build());
     Mockito.when(
-            adminRestApi.getClient()
-                .post(Mockito.anyString(), Mockito.anyMap(), Mockito.any()))
+            adminRestApi.getClient().post(Mockito.anyString(), Mockito.anyMap(), Mockito.any()))
         .thenReturn(objectMapper.writeValueAsString(Response.success(applications)));
     List<Application> applicationRes = adminRestApi.getApplications("", "", "", "", "");
     assertTrue(CollectionUtils.isEqualCollection(applications, applicationRes));
