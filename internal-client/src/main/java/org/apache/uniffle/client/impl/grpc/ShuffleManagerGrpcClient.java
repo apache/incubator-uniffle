@@ -27,14 +27,12 @@ import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
 import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
 import org.apache.uniffle.client.request.RssPartitionToShuffleServerRequest;
 import org.apache.uniffle.client.request.RssReassignOnBlockSendFailureRequest;
-import org.apache.uniffle.client.request.RssReassignServersRequest;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
 import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssReassignOnBlockSendFailureResponse;
 import org.apache.uniffle.client.response.RssReassignOnStageRetryResponse;
-import org.apache.uniffle.client.response.RssReassignServersResponse;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
@@ -123,14 +121,6 @@ public class ShuffleManagerGrpcClient extends GrpcClient implements ShuffleManag
       LOG.warn(msg, e);
       throw new RssException(msg, e);
     }
-  }
-
-  @Override
-  public RssReassignServersResponse reassignOnStageResubmit(RssReassignServersRequest req) {
-    RssProtos.ReassignServersRequest reassignServersRequest = req.toProto();
-    RssProtos.ReassignServersResponse reassignServersResponse =
-        getBlockingStub().reassignOnStageResubmit(reassignServersRequest);
-    return RssReassignServersResponse.fromProto(reassignServersResponse);
   }
 
   @Override

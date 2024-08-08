@@ -65,9 +65,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
-import org.apache.uniffle.client.request.RssReassignServersRequest;
 import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
-import org.apache.uniffle.client.response.RssReassignServersResponse;
 import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -208,7 +206,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         managerClientSupplier,
         rssHandle,
         taskFailureCallback,
-        shuffleManager.getShuffleHandleInfo(rssHandle),
+        shuffleManager.getShuffleHandleInfo(
+            context.stageId(), context.stageAttemptNumber(), rssHandle),
         context);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
     final WriteBufferManager bufferManager =
@@ -222,7 +221,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             context.taskMemoryManager(),
             shuffleWriteMetrics,
             RssSparkConfig.toRssConf(sparkConf),
-            this::processShuffleBlockInfos);
+            this::processShuffleBlockInfos,
+            context.stageAttemptNumber());
     this.bufferManager = bufferManager;
   }
 
@@ -542,24 +542,14 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
           new RssReportShuffleWriteFailureRequest(
               appId,
               shuffleId,
+              taskContext.stageId(),
               taskContext.stageAttemptNumber(),
               shuffleServerInfos,
               e.getMessage());
       RssReportShuffleWriteFailureResponse response =
           managerClientSupplier.get().reportShuffleWriteFailure(req);
       if (response.getReSubmitWholeStage()) {
-        // The shuffle server is reassigned.
-        RssReassignServersRequest rssReassignServersRequest =
-            new RssReassignServersRequest(
-                taskContext.stageId(),
-                taskContext.stageAttemptNumber(),
-                shuffleId,
-                partitioner.numPartitions());
-        RssReassignServersResponse rssReassignServersResponse =
-            managerClientSupplier.get().reassignOnStageResubmit(rssReassignServersRequest);
-        LOG.info(
-            "Whether the reassignment is successful: {}",
-            rssReassignServersResponse.isNeedReassign());
+        LOG.warn("Multiple task failures trigger Stage retry.");
         // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
         // is
         // provided.

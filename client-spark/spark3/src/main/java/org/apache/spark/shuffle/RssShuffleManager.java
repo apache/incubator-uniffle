@@ -512,7 +512,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     } else {
       writeMetrics = context.taskMetrics().shuffleWriteMetrics();
     }
-
     String taskId = "" + context.taskAttemptId() + "_" + context.attemptNumber();
     return new RssShuffleWriter<>(
         rssHandle.getAppId(),
@@ -645,7 +644,24 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     RssShuffleHandle<K, ?, C> rssShuffleHandle = (RssShuffleHandle<K, ?, C>) handle;
     final int partitionNum = rssShuffleHandle.getDependency().partitioner().numPartitions();
     int shuffleId = rssShuffleHandle.getShuffleId();
-    ShuffleHandleInfo shuffleHandleInfo = getShuffleHandleInfo(rssShuffleHandle);
+    ShuffleHandleInfo shuffleHandleInfo;
+    if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
+      // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
+      shuffleHandleInfo =
+          getRemoteShuffleHandleInfoWithStageRetry(
+              context.stageId(), context.stageAttemptNumber(), shuffleId, partitionNum);
+    } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
+      // In Block Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
+      shuffleHandleInfo =
+          getRemoteShuffleHandleInfoWithBlockRetry(
+              context.stageId(), context.stageAttemptNumber(), shuffleId, partitionNum);
+    } else {
+      shuffleHandleInfo =
+          new SimpleShuffleHandleInfo(
+              shuffleId,
+              rssShuffleHandle.getPartitionToServers(),
+              rssShuffleHandle.getRemoteStorage());
+    }
     Map<ShuffleServerInfo, Set<Integer>> serverToPartitions =
         getPartitionDataServers(shuffleHandleInfo, startPartition, endPartition);
     long start = System.currentTimeMillis();
