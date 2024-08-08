@@ -218,9 +218,6 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeInFlushBufferSize;
   public static Gauge.Child gaugeUsedBufferSize;
   public static Gauge.Child gaugeReadBufferUsedSize;
-  public static org.apache.uniffle.common.metrics.Gauge gaugeUsedDirectMemorySize;
-  public static org.apache.uniffle.common.metrics.Gauge gaugeUsedDirectMemorySizeByNetty;
-  public static org.apache.uniffle.common.metrics.Gauge gaugeUsedDirectMemorySizeByGrpcNetty;
   public static Gauge.Child gaugeWriteHandler;
   public static org.apache.uniffle.common.metrics.Gauge gaugeEventQueueSize;
   public static Gauge.Child gaugeHadoopFlushThreadPoolQueueSize;

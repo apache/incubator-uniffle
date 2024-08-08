@@ -19,6 +19,7 @@ package org.apache.uniffle.common.metrics;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import com.google.common.collect.Maps;
@@ -34,6 +35,7 @@ public class MetricsManager {
   private final String[] defaultLabelValues;
   private static final double[] QUANTILES = {0.50, 0.75, 0.90, 0.95, 0.99};
   private static final double QUANTILE_ERROR = 0.01;
+  private Map<String, org.apache.uniffle.common.metrics.Gauge> gaugeMap;
 
   public MetricsManager() {
     this(null, Maps.newHashMap());
@@ -48,6 +50,7 @@ public class MetricsManager {
     this.defaultLabelNames = defaultLabels.keySet().toArray(new String[0]);
     this.defaultLabelValues =
         Arrays.stream(defaultLabelNames).map(defaultLabels::get).toArray(String[]::new);
+    this.gaugeMap = new ConcurrentHashMap<>();
   }
 
   public CollectorRegistry getCollectorRegistry() {
@@ -76,10 +79,17 @@ public class MetricsManager {
   }
 
   public org.apache.uniffle.common.metrics.Gauge addGauge(
-      String name, String help, Supplier supplier, String[] labelNames, String[] labelValues) {
-    return new org.apache.uniffle.common.metrics.Gauge(
-            name, help, supplier, labelNames, labelValues)
-        .register(collectorRegistry);
+      String name,
+      String help,
+      Supplier<Double> supplier,
+      String[] labelNames,
+      String[] labelValues) {
+    return gaugeMap.computeIfAbsent(
+        name,
+        i ->
+            new org.apache.uniffle.common.metrics.Gauge(
+                    name, help, supplier, labelNames, labelValues)
+                .register(collectorRegistry));
   }
 
   public Gauge.Child addLabeledGauge(String name) {
@@ -87,10 +97,18 @@ public class MetricsManager {
     return c.labels(this.defaultLabelValues);
   }
 
-  public org.apache.uniffle.common.metrics.Gauge addLabeldGauge(String name, Supplier supplier) {
-    return new org.apache.uniffle.common.metrics.Gauge(
-            name, "Gauge " + name, supplier, defaultLabelNames, defaultLabelValues)
-        .register(collectorRegistry);
+  public org.apache.uniffle.common.metrics.Gauge addLabeldGauge(
+      String name, Supplier<Double> supplier) {
+    return gaugeMap.computeIfAbsent(
+        name,
+        i ->
+            new org.apache.uniffle.common.metrics.Gauge(
+                    name,
+                    "Gauge " + name,
+                    supplier,
+                    this.defaultLabelNames,
+                    this.defaultLabelValues)
+                .register(collectorRegistry));
   }
 
   public Histogram addHistogram(String name, double[] buckets, String... labels) {
