@@ -35,7 +35,7 @@ public class MetricsManager {
   private final String[] defaultLabelValues;
   private static final double[] QUANTILES = {0.50, 0.75, 0.90, 0.95, 0.99};
   private static final double QUANTILE_ERROR = 0.01;
-  private Map<String, org.apache.uniffle.common.metrics.Gauge> gaugeMap;
+  private Map<String, SupplierGauge> gaugeMap;
 
   public MetricsManager() {
     this(null, Maps.newHashMap());
@@ -78,7 +78,7 @@ public class MetricsManager {
     return Gauge.build().name(name).labelNames(labels).help(help).register(collectorRegistry);
   }
 
-  public org.apache.uniffle.common.metrics.Gauge addGauge(
+  public SupplierGauge addGauge(
       String name,
       String help,
       Supplier<Double> supplier,
@@ -86,9 +86,8 @@ public class MetricsManager {
       String[] labelValues) {
     return gaugeMap.computeIfAbsent(
         name,
-        i ->
-            new org.apache.uniffle.common.metrics.Gauge(
-                    name, help, supplier, labelNames, labelValues)
+        metricName ->
+            new SupplierGauge(name, help, supplier, labelNames, labelValues)
                 .register(collectorRegistry));
   }
 
@@ -97,12 +96,11 @@ public class MetricsManager {
     return c.labels(this.defaultLabelValues);
   }
 
-  public org.apache.uniffle.common.metrics.Gauge addLabeldGauge(
-      String name, Supplier<Double> supplier) {
+  public SupplierGauge addLabeledGauge(String name, Supplier<Double> supplier) {
     return gaugeMap.computeIfAbsent(
         name,
-        i ->
-            new org.apache.uniffle.common.metrics.Gauge(
+        metricName ->
+            new SupplierGauge(
                     name,
                     "Gauge " + name,
                     supplier,
@@ -143,5 +141,11 @@ public class MetricsManager {
       builder = builder.quantile(QUANTILES[i], QUANTILE_ERROR);
     }
     return builder.register(collectorRegistry).labels(defaultLabelValues);
+  }
+
+  public void unRegister() {
+    for (SupplierGauge gauge : gaugeMap.values()) {
+      collectorRegistry.unregister(gauge);
+    }
   }
 }

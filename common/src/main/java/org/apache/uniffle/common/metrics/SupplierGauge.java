@@ -26,14 +26,14 @@ import java.util.function.Supplier;
 import io.prometheus.client.Collector;
 import io.prometheus.client.GaugeMetricFamily;
 
-public class Gauge extends Collector implements Collector.Describable {
+public class SupplierGauge extends Collector implements Collector.Describable {
   private String name;
   private String help;
   private Supplier<Double> supplier;
   private List<String> labelNames;
   private List<String> labelValues;
 
-  Gauge(
+  SupplierGauge(
       String name,
       String help,
       Supplier<Double> supplier,

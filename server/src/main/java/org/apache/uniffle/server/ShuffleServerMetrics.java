@@ -31,6 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.metrics.MetricsManager;
+import org.apache.uniffle.common.metrics.SupplierGauge;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.LocalStorage;
 
@@ -219,7 +220,7 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeUsedBufferSize;
   public static Gauge.Child gaugeReadBufferUsedSize;
   public static Gauge.Child gaugeWriteHandler;
-  public static org.apache.uniffle.common.metrics.Gauge gaugeEventQueueSize;
+  public static SupplierGauge gaugeEventQueueSize;
   public static Gauge.Child gaugeHadoopFlushThreadPoolQueueSize;
   public static Gauge.Child gaugeLocalfileFlushThreadPoolQueueSize;
   public static Gauge.Child gaugeFallbackFlushThreadPoolQueueSize;
@@ -511,7 +512,7 @@ public class ShuffleServerMetrics {
             .register(metricsManager.getCollectorRegistry());
   }
 
-  public static org.apache.uniffle.common.metrics.Gauge addGauge(
+  public static SupplierGauge addGauge(
       String name,
       String help,
       Supplier<Double> supplier,
@@ -520,8 +521,7 @@ public class ShuffleServerMetrics {
     return metricsManager.addGauge(name, help, supplier, labelNames, labelValues);
   }
 
-  public static org.apache.uniffle.common.metrics.Gauge addLabeledGauge(
-      String name, Supplier<Double> supplier) {
-    return metricsManager.addLabeldGauge(name, supplier);
+  public static SupplierGauge addLabeledGauge(String name, Supplier<Double> supplier) {
+    return metricsManager.addLabeledGauge(name, supplier);
   }
 }
