@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client;
+package org.apache.uniffle.common.util.http;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 

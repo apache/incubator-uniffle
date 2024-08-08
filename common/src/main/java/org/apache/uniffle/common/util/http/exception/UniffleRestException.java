@@ -15,14 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client;
+package org.apache.uniffle.common.util.http.exception;
 
-import java.util.Map;
+public class UniffleRestException extends RuntimeException {
 
-/** A underlying http client interface for common rest request. */
-public interface RestClient extends AutoCloseable, Cloneable {
-
-  String get(String path, Map<String, Object> params, String authHeader);
-
-  String post(String path, Map<String, Object> params, String authHeader);
+  public UniffleRestException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

@@ -18,7 +18,11 @@
 package org.apache.uniffle.cli;
 
 import java.util.HashMap;
+import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
+import org.apache.commons.collections4.CollectionUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -29,14 +33,19 @@ import org.mockito.MockitoAnnotations;
 
 import org.apache.uniffle.UniffleCliArgsException;
 import org.apache.uniffle.api.AdminRestApi;
-import org.apache.uniffle.client.UniffleRestClient;
+import org.apache.uniffle.common.Application;
+import org.apache.uniffle.common.util.http.RestClientImpl;
+import org.apache.uniffle.common.util.http.UniffleRestClient;
+import org.apache.uniffle.common.web.resource.Response;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AdminRestApiTest {
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private UniffleRestClient uniffleRestClient;
-
   @InjectMocks private AdminRestApi adminRestApi;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
   public void setup() throws Exception {
@@ -44,14 +53,25 @@ public class AdminRestApiTest {
   }
 
   @Test
-  public void testRunRefreshAccessChecker() throws UniffleCliArgsException {
+  public void testRunRefreshAccessChecker() {
     Mockito.when(
             uniffleRestClient
                 .getHttpClient()
-                .get(Mockito.anyString(), Mockito.anyMap(), Mockito.anyString()))
+                .get(Mockito.anyString(), Mockito.anyMap(), Mockito.any()))
         .thenReturn("OK");
-    String result = adminRestApi.refreshAccessChecker();
+    adminRestApi.refreshAccessChecker();
     Mockito.verify(uniffleRestClient.getHttpClient(), Mockito.times(1))
         .get("/api/admin/refreshChecker", new HashMap<>(), null);
+  }
+
+  @Test
+  public void testGetApplications() throws Exception {
+    List<Application> applications = Lists.newArrayList(new Application.Builder().applicationId("1").build());
+    Mockito.when(
+            adminRestApi.getClient()
+                .post(Mockito.anyString(), Mockito.anyMap(), Mockito.any()))
+        .thenReturn(objectMapper.writeValueAsString(Response.success(applications)));
+    List<Application> applicationRes = adminRestApi.getApplications("", "", "", "", "");
+    assertTrue(CollectionUtils.isEqualCollection(applications, applicationRes));
   }
 }

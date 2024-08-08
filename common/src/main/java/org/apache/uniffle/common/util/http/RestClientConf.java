@@ -15,43 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client;
+package org.apache.uniffle.common.util.http;
 
+import lombok.Data;
+
+@Data
 public class RestClientConf {
   private int maxAttempts;
   private int attemptWaitTime;
   private int socketTimeout;
   private int connectTimeout;
-
-  public int getMaxAttempts() {
-    return maxAttempts;
-  }
-
-  public void setMaxAttempts(int maxAttempts) {
-    this.maxAttempts = maxAttempts;
-  }
-
-  public int getAttemptWaitTime() {
-    return attemptWaitTime;
-  }
-
-  public void setAttemptWaitTime(int attemptWaitTime) {
-    this.attemptWaitTime = attemptWaitTime;
-  }
-
-  public int getSocketTimeout() {
-    return socketTimeout;
-  }
-
-  public void setSocketTimeout(int socketTimeout) {
-    this.socketTimeout = socketTimeout;
-  }
-
-  public int getConnectTimeout() {
-    return connectTimeout;
-  }
-
-  public void setConnectTimeout(int connectTimeout) {
-    this.connectTimeout = connectTimeout;
-  }
 }
