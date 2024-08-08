@@ -122,6 +122,8 @@ Build with dashboard
 
     ./mvnw -DskipTests clean package -Pdashboard
 
+> note: currently Uniffle build the project against Java 8. If you want to compile it against other Java versions, you can build the code with `-Dmaven.compiler.release=${release-version}`.
+
 To package the Uniffle, run:
 
     ./build_distribution.sh
