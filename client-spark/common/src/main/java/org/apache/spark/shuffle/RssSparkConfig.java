@@ -296,7 +296,7 @@ public class RssSparkConfig {
       createIntegerBuilder(
               new ConfigBuilder(
                   SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_TRANSFER_POOL_SIZE))
-          .createWithDefault(RssClientConfig.RSS_DATA_TRANFER_POOL_SIZE_DEFAULT_VALUE);
+          .createWithDefault(RssClientConfig.RSS_DATA_TRANSFER_POOL_SIZE_DEFAULT_VALUE);
 
   public static final ConfigEntry<Integer> RSS_DATA_COMMIT_POOL_SIZE =
       createIntegerBuilder(

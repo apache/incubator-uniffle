@@ -58,7 +58,7 @@ public class JettyServer {
   private ServletContextHandler servletContextHandler;
   private int httpPort;
   private ServletHolder servletHolder;
-  private Set<String> reourcePackages = new HashSet<>();
+  private Set<String> resourcePackages = new HashSet<>();
 
   public JettyServer(RssBaseConf conf) throws FileNotFoundException {
     createServer(conf);
@@ -146,9 +146,9 @@ public class JettyServer {
   }
 
   public void addResourcePackages(String... packages) {
-    reourcePackages.addAll(Arrays.asList(packages));
+    resourcePackages.addAll(Arrays.asList(packages));
     servletHolder.setInitParameter(
-        ServerProperties.PROVIDER_PACKAGES, String.join(",", reourcePackages));
+        ServerProperties.PROVIDER_PACKAGES, String.join(",", resourcePackages));
   }
 
   public void registerInstance(Class<?> clazz, Object instance) {

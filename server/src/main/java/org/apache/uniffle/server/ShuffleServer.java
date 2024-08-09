@@ -424,16 +424,16 @@ public class ShuffleServer {
   }
 
   public synchronized void cancelDecommission() {
-    boolean wasDecomissioning =
+    boolean wasDecommissioning =
         serverStatus.compareAndSet(ServerStatus.DECOMMISSIONING, ServerStatus.ACTIVE);
-    boolean wasDecomissioned =
+    boolean wasDecommissioned =
         serverStatus.compareAndSet(ServerStatus.DECOMMISSIONED, ServerStatus.ACTIVE);
-    if (!wasDecomissioning && !wasDecomissioned) {
+    if (!wasDecommissioning && !wasDecommissioned) {
       LOG.info("Shuffle server is not decommissioning. Nothing needs to be done.");
       return;
     }
 
-    if (wasDecomissioning) {
+    if (wasDecommissioning) {
       if (decommissionFuture.cancel(true)) {
         LOG.info("Decommission canceled.");
       } else {
