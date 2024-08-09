@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client;
+package org.apache.uniffle.common.util.http;
 
 import javax.net.ssl.SSLContext;
 
@@ -25,11 +25,12 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.client.exception.UniffleRestException;
+import org.apache.uniffle.common.util.http.exception.UniffleRestException;
 
 public class HttpClientFactory {
   private static final Logger LOG = LoggerFactory.getLogger(HttpClientFactory.class);
@@ -54,6 +55,7 @@ public class HttpClientFactory {
     return HttpClientBuilder.create()
         .setDefaultRequestConfig(requestConfig)
         .setSSLSocketFactory(sslSocketFactory)
+        .setConnectionManager(new PoolingHttpClientConnectionManager())
         .build();
   }
 }

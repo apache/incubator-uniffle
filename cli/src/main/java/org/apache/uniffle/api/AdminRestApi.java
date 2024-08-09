@@ -32,16 +32,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.client.RestClient;
-import org.apache.uniffle.client.UniffleRestClient;
 import org.apache.uniffle.common.Application;
-import org.apache.uniffle.entity.ApplicationResponse;
+import org.apache.uniffle.common.util.http.RestClient;
+import org.apache.uniffle.common.util.http.UniffleRestClient;
+import org.apache.uniffle.common.web.resource.Response;
 
 public class AdminRestApi {
 
   private static final Logger LOG = LoggerFactory.getLogger(AdminRestApi.class);
-
   private UniffleRestClient client;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   private AdminRestApi() {}
 
@@ -66,9 +66,8 @@ public class AdminRestApi {
         getApplicationsJson(
             applications, applicationIdRegex, pageSize, currentPage, heartBeatTimeRange);
     if (StringUtils.isNotBlank(postJson)) {
-      ObjectMapper objectMapper = new ObjectMapper();
-      ApplicationResponse response =
-          objectMapper.readValue(postJson, new TypeReference<ApplicationResponse>() {});
+      Response<List<Application>> response =
+          objectMapper.readValue(postJson, new TypeReference<Response<List<Application>>>() {});
       if (response != null && response.getData() != null) {
         results.addAll(response.getData());
       }
@@ -150,7 +149,7 @@ public class AdminRestApi {
     }
   }
 
-  private RestClient getClient() {
+  public RestClient getClient() {
     return this.client.getHttpClient();
   }
 }

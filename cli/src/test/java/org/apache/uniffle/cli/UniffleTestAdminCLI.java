@@ -25,7 +25,7 @@ import org.mockito.Answers;
 import org.mockito.Mockito;
 
 import org.apache.uniffle.UniffleCliArgsException;
-import org.apache.uniffle.client.UniffleRestClient;
+import org.apache.uniffle.common.util.http.UniffleRestClient;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client;
+package org.apache.uniffle.common.util.http;
 
 import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
@@ -43,12 +43,12 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.client.exception.UniffleRestException;
+import org.apache.uniffle.common.util.http.exception.UniffleRestException;
 
 public class RestClientImpl implements RestClient {
   private static final Logger LOG = LoggerFactory.getLogger(RestClientImpl.class);
-  private CloseableHttpClient httpclient;
-  private String baseUrl;
+  private final CloseableHttpClient httpclient;
+  private final String baseUrl;
   private final ObjectMapper mapper =
       new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
@@ -72,7 +72,7 @@ public class RestClientImpl implements RestClient {
   @Override
   public String post(String path, Map<String, Object> params, String authHeader) {
     RequestBuilder post = RequestBuilder.post();
-    String requestBody = "";
+    String requestBody;
     try {
       requestBody = mapper.writeValueAsString(params);
       StringEntity requestEntity = new StringEntity(requestBody);
@@ -96,7 +96,6 @@ public class RestClientImpl implements RestClient {
         requestBuilder.setHeader(HttpHeaders.AUTHORIZATION, authHeader);
       }
       HttpUriRequest httpRequest = requestBuilder.setUri(uri).build();
-
       if (LOG.isDebugEnabled()) {
         LOG.debug("Executing {} request: {}", httpRequest.getMethod(), uri);
       }
@@ -132,7 +131,13 @@ public class RestClientImpl implements RestClient {
   private URI buildURI(String path, Map<String, Object> params) {
     URI uri;
     try {
-      String url = StringUtils.isNotBlank(path) ? this.baseUrl + "/" + path : this.baseUrl;
+      String url;
+      if (StringUtils.isBlank(this.baseUrl)) {
+        url = path;
+      } else {
+        url = StringUtils.isNotBlank(path) ? this.baseUrl + "/" + path : this.baseUrl;
+      }
+
       URIBuilder builder = new URIBuilder(url);
 
       if (params != null && !params.isEmpty()) {

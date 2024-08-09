@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.AbstractCustomCommandLine;
 import org.apache.uniffle.UniffleCliArgsException;
 import org.apache.uniffle.api.AdminRestApi;
-import org.apache.uniffle.client.UniffleRestClient;
+import org.apache.uniffle.common.util.http.UniffleRestClient;
 
 public class UniffleAdminCLI extends AbstractCustomCommandLine {
 
