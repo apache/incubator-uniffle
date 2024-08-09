@@ -23,11 +23,11 @@ set -o errexit   # exit the script if any statement returns a non-true return va
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 SRC_DIR="$SCRIPT_DIR/runConfs"
-DEST_DIR="$SCRIPT_DIR/../../.idea/runConfigurations/"
+DEST_DIR="$SCRIPT_DIR/../../.idea/runConfigurations1/"
 mkdir -p "$DEST_DIR"
 ls -1 "$SRC_DIR" | xargs -n1 -I FILE cp "$SRC_DIR/FILE" "$DEST_DIR/FILE.xml"
 
-SRC_DIR="$SCRIPT_DIR/../../conf/local_dev"
-DEST_DIR="$SCRIPT_DIR/../../.idea/local_dev/"
+SRC_DIR="$SCRIPT_DIR/../../dev/local_dev_template"
+DEST_DIR="$SCRIPT_DIR/../../.idea/local_dev1/"
 mkdir -p "$DEST_DIR"
 ls -1 "$SRC_DIR" | xargs -n1 -I FILE cp "$SRC_DIR/FILE" "$DEST_DIR"
