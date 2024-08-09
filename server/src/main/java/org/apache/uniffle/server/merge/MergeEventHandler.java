@@ -15,21 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.response;
+package org.apache.uniffle.server.merge;
 
-import org.apache.uniffle.common.ShuffleIndexResult;
-import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
-import org.apache.uniffle.common.rpc.StatusCode;
+public interface MergeEventHandler {
 
-public class RssGetShuffleIndexResponse extends ClientResponse {
-  private final ShuffleIndexResult shuffleIndexResult;
+  void handle(MergeEvent event);
 
-  public RssGetShuffleIndexResponse(StatusCode statusCode, ManagedBuffer data, long dataFileLen) {
-    super(statusCode);
-    this.shuffleIndexResult = new ShuffleIndexResult(data, dataFileLen, null);
-  }
+  int getEventNumInMerge();
 
-  public ShuffleIndexResult getShuffleIndexResult() {
-    return shuffleIndexResult;
-  }
+  void stop();
 }
