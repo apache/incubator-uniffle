@@ -131,9 +131,17 @@ public class MetricsManager {
     return builder.register(collectorRegistry).labels(defaultLabelValues);
   }
 
-  public void unregisterSupplierGauge() {
+  public void unregisterAllSupplierGauge() {
     for (SupplierGauge gauge : supplierGaugeMap.values()) {
       collectorRegistry.unregister(gauge);
+    }
+    supplierGaugeMap.clear();
+  }
+
+  public void unregisterSupplierGauge(String name) {
+    if (supplierGaugeMap.containsKey(name)) {
+      collectorRegistry.unregister(supplierGaugeMap.get(name));
+      supplierGaugeMap.remove(name);
     }
   }
 }
