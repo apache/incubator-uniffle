@@ -19,7 +19,6 @@ package org.apache.uniffle.common.metrics;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import com.google.common.collect.Maps;
@@ -29,13 +28,15 @@ import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Summary;
 
+import org.apache.uniffle.common.util.JavaUtils;
+
 public class MetricsManager {
   private final CollectorRegistry collectorRegistry;
   private final String[] defaultLabelNames;
   private final String[] defaultLabelValues;
   private static final double[] QUANTILES = {0.50, 0.75, 0.90, 0.95, 0.99};
   private static final double QUANTILE_ERROR = 0.01;
-  private Map<String, SupplierGauge> gaugeMap;
+  private Map<String, SupplierGauge> supplierGaugeMap;
 
   public MetricsManager() {
     this(null, Maps.newHashMap());
@@ -50,7 +51,7 @@ public class MetricsManager {
     this.defaultLabelNames = defaultLabels.keySet().toArray(new String[0]);
     this.defaultLabelValues =
         Arrays.stream(defaultLabelNames).map(defaultLabels::get).toArray(String[]::new);
-    this.gaugeMap = new ConcurrentHashMap<>();
+    this.supplierGaugeMap = JavaUtils.newConcurrentMap();
   }
 
   public CollectorRegistry getCollectorRegistry() {
@@ -78,26 +79,13 @@ public class MetricsManager {
     return Gauge.build().name(name).labelNames(labels).help(help).register(collectorRegistry);
   }
 
-  public SupplierGauge addGauge(
-      String name,
-      String help,
-      Supplier<Double> supplier,
-      String[] labelNames,
-      String[] labelValues) {
-    return gaugeMap.computeIfAbsent(
-        name,
-        metricName ->
-            new SupplierGauge(name, help, supplier, labelNames, labelValues)
-                .register(collectorRegistry));
-  }
-
   public Gauge.Child addLabeledGauge(String name) {
     Gauge c = addGauge(name, this.defaultLabelNames);
     return c.labels(this.defaultLabelValues);
   }
 
-  public SupplierGauge addLabeledGauge(String name, Supplier<Double> supplier) {
-    return gaugeMap.computeIfAbsent(
+  public void addLabeledGauge(String name, Supplier<Double> supplier) {
+    supplierGaugeMap.computeIfAbsent(
         name,
         metricName ->
             new SupplierGauge(
@@ -143,8 +131,8 @@ public class MetricsManager {
     return builder.register(collectorRegistry).labels(defaultLabelValues);
   }
 
-  public void unRegister() {
-    for (SupplierGauge gauge : gaugeMap.values()) {
+  public void unregisterSupplierGauge() {
+    for (SupplierGauge gauge : supplierGaugeMap.values()) {
       collectorRegistry.unregister(gauge);
     }
   }

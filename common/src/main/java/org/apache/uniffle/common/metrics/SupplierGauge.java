@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 import io.prometheus.client.Collector;
 import io.prometheus.client.GaugeMetricFamily;
 
-public class SupplierGauge extends Collector implements Collector.Describable {
+class SupplierGauge extends Collector implements Collector.Describable {
   private String name;
   private String help;
   private Supplier<Double> supplier;

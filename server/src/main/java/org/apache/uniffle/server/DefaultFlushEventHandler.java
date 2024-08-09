@@ -176,8 +176,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       hadoopThreadPoolExecutor = createFlushEventExecutor(poolSize, "HadoopFlushEventThreadPool");
     }
     fallbackThreadPoolExecutor = createFlushEventExecutor(5, "FallBackFlushEventThreadPool");
-    ShuffleServerMetrics.gaugeEventQueueSize =
-        ShuffleServerMetrics.addLabeledGauge(EVENT_QUEUE_SIZE, () -> (double) flushQueue.size());
+    ShuffleServerMetrics.addLabeledGauge(EVENT_QUEUE_SIZE, () -> (double) flushQueue.size());
     startEventProcessor();
   }
 
