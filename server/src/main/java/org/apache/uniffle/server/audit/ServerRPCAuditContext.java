@@ -49,7 +49,7 @@ public class ServerRPCAuditContext implements AuditContext {
    * @param command the command associated with shuffle server rpc
    * @return this {@link AuditContext} instance
    */
-  public ServerRPCAuditContext setCommand(String command) {
+  public ServerRPCAuditContext withCommand(String command) {
     this.command = command;
     return this;
   }
@@ -61,7 +61,7 @@ public class ServerRPCAuditContext implements AuditContext {
    *     compute operation mExecutionTime
    * @return this {@link AuditContext} instance
    */
-  public ServerRPCAuditContext setCreationTimeNs(long creationTimeNs) {
+  public ServerRPCAuditContext withCreationTimeNs(long creationTimeNs) {
     this.creationTimeNs = creationTimeNs;
     return this;
   }
@@ -72,7 +72,7 @@ public class ServerRPCAuditContext implements AuditContext {
    * @param statusCode the status code
    * @return this {@link AuditContext} instance
    */
-  public ServerRPCAuditContext setStatusCode(StatusCode statusCode) {
+  public ServerRPCAuditContext withStatusCode(StatusCode statusCode) {
     this.statusCode = statusCode.name();
     return this;
   }
@@ -83,7 +83,7 @@ public class ServerRPCAuditContext implements AuditContext {
    * @param statusCode the status code
    * @return this {@link AuditContext} instance
    */
-  public ServerRPCAuditContext setStatusCode(String statusCode) {
+  public ServerRPCAuditContext withStatusCode(String statusCode) {
     this.statusCode = statusCode;
     return this;
   }
@@ -112,22 +112,22 @@ public class ServerRPCAuditContext implements AuditContext {
     return line;
   }
 
-  public ServerRPCAuditContext setAppId(String appId) {
+  public ServerRPCAuditContext withAppId(String appId) {
     this.appId = appId;
     return this;
   }
 
-  public ServerRPCAuditContext setShuffleId(int shuffleId) {
+  public ServerRPCAuditContext withShuffleId(int shuffleId) {
     this.shuffleId = shuffleId;
     return this;
   }
 
-  public ServerRPCAuditContext setArgs(String args) {
+  public ServerRPCAuditContext withArgs(String args) {
     this.args = args;
     return this;
   }
 
-  public ServerRPCAuditContext setReturnValue(String returnValue) {
+  public ServerRPCAuditContext withReturnValue(String returnValue) {
     this.returnValue = returnValue;
     return this;
   }

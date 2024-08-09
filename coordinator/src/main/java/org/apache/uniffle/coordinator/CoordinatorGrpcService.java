@@ -125,8 +125,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       final int estimateTaskConcurrency = request.getEstimateTaskConcurrency();
       final Set<String> faultyServerIds = new HashSet<>(request.getFaultyServerIdsList());
 
-      auditContext.setAppId(appId).setShuffleId(shuffleId);
-      auditContext.setArgs(
+      auditContext.withAppId(appId).withShuffleId(shuffleId);
+      auditContext.withArgs(
           String.format(
               "partitionNum=%d, partitionNumPerRange=%d, replica=%d, requiredTags=%s, "
                   + "requiredShuffleServerNumber=%d, faultyServerIds=%s, stageId=%d, stageAttemptNumber=%d, isReassign=%b",
@@ -195,7 +195,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         responseObserver.onNext(response);
       } finally {
         if (response != null) {
-          auditContext.setStatusCode(response.getStatus());
+          auditContext.withStatusCode(response.getStatus());
         }
         responseObserver.onCompleted();
       }
@@ -208,7 +208,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       StreamObserver<ShuffleServerHeartBeatResponse> responseObserver) {
     try (CoordinatorRPCAuditContext auditContext = createAuditContext("heartbeat")) {
       final ServerNode serverNode = toServerNode(request);
-      auditContext.setArgs("serverNode=" + serverNode.getId());
+      auditContext.withArgs("serverNode=" + serverNode.getId());
       coordinatorServer.getClusterManager().add(serverNode);
       final ShuffleServerHeartBeatResponse response =
           ShuffleServerHeartBeatResponse.newBuilder()
@@ -218,7 +218,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       if (LOG.isDebugEnabled()) {
         LOG.debug("Got heartbeat from {}", serverNode);
       }
-      auditContext.setStatusCode(response.getStatus());
+      auditContext.withStatusCode(response.getStatus());
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     }
@@ -232,7 +232,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
           CheckServiceAvailableResponse.newBuilder()
               .setAvailable(coordinatorServer.getClusterManager().getNodesNum() > 0)
               .build();
-      auditContext.setStatusCode(StatusCode.SUCCESS);
+      auditContext.withStatusCode(StatusCode.SUCCESS);
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     }
@@ -247,7 +247,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       final int clientPort = request.getClientPort();
       final ShuffleServerId shuffleServer = request.getServer();
       final String operation = request.getOperation();
-      auditContext.setArgs(
+      auditContext.withArgs(
           String.format("%s:%s->%s->%s", clientHost, clientPort, operation, shuffleServer));
 
       LOG.info(clientHost + ":" + clientPort + "->" + operation + "->" + shuffleServer);
@@ -256,7 +256,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
               .setRetMsg("")
               .setStatus(StatusCode.SUCCESS)
               .build();
-      auditContext.setStatusCode(response.getStatus());
+      auditContext.withStatusCode(response.getStatus());
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     }
@@ -267,7 +267,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       AppHeartBeatRequest request, StreamObserver<AppHeartBeatResponse> responseObserver) {
     try (CoordinatorRPCAuditContext auditContext = createAuditContext("appHeartbeat")) {
       String appId = request.getAppId();
-      auditContext.setAppId(appId);
+      auditContext.withAppId(appId);
       coordinatorServer.getApplicationManager().refreshAppId(appId);
       if (LOG.isDebugEnabled()) {
         LOG.debug("Got heartbeat from application: {}", appId);
@@ -278,12 +278,12 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       if (Context.current().isCancelled()) {
         responseObserver.onError(
             Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
-        auditContext.setStatusCode("CANCELLED");
+        auditContext.withStatusCode("CANCELLED");
         LOG.warn("Cancelled by client {} for after deadline.", appId);
         return;
       }
 
-      auditContext.setStatusCode(response.getStatus());
+      auditContext.withStatusCode(response.getStatus());
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     }
@@ -295,7 +295,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     try (CoordinatorRPCAuditContext auditContext = createAuditContext("registerApplicationInfo")) {
       String appId = request.getAppId();
       String user = request.getUser();
-      auditContext.setAppId(appId).setArgs("user=" + user);
+      auditContext.withAppId(appId).withArgs("user=" + user);
       coordinatorServer
           .getApplicationManager()
           .registerApplicationInfo(appId, user, request.getVersion(), request.getGitCommitId());
@@ -308,12 +308,12 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       if (Context.current().isCancelled()) {
         responseObserver.onError(
             Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
-        auditContext.setStatusCode("CANCELLED");
+        auditContext.withStatusCode("CANCELLED");
         LOG.warn("Cancelled by client {} for after deadline.", appId);
         return;
       }
 
-      auditContext.setStatusCode(response.getStatus());
+      auditContext.withStatusCode(response.getStatus());
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     }
@@ -334,7 +334,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
               request.getExtraPropertiesMap(),
               request.getUser());
 
-      auditContext.setArgs("accessInfo=" + accessInfo);
+      auditContext.withArgs("accessInfo=" + accessInfo);
 
       AccessCheckResult result = accessManager.handleAccessRequest(accessInfo);
       if (!result.isSuccess()) {
@@ -351,12 +351,12 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       if (Context.current().isCancelled()) {
         responseObserver.onError(
             Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
-        auditContext.setStatusCode("CANCELLED");
+        auditContext.withStatusCode("CANCELLED");
         LOG.warn("Cancelled by client {} for after deadline.", accessInfo);
         return;
       }
 
-      auditContext.setStatusCode(response.getStatus());
+      auditContext.withStatusCode(response.getStatus());
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     }
@@ -368,7 +368,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       Empty empty, StreamObserver<FetchClientConfResponse> responseObserver) {
     try (CoordinatorRPCAuditContext auditContext = createAuditContext("fetchClientConf")) {
       fetchClientConfImpl(RssClientConfFetchInfo.EMPTY_CLIENT_CONF_FETCH_INFO, responseObserver);
-      auditContext.setStatusCode(StatusCode.SUCCESS);
+      auditContext.withStatusCode(StatusCode.SUCCESS);
     }
   }
 
@@ -377,7 +377,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       FetchClientConfRequest request, StreamObserver<FetchClientConfResponse> responseObserver) {
     try (CoordinatorRPCAuditContext auditContext = createAuditContext("fetchClientConfV2")) {
       fetchClientConfImpl(RssClientConfFetchInfo.fromProto(request), responseObserver);
-      auditContext.setStatusCode(StatusCode.SUCCESS);
+      auditContext.withStatusCode(StatusCode.SUCCESS);
     }
   }
 
@@ -420,7 +420,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       FetchRemoteStorageResponse response;
       StatusCode status = StatusCode.SUCCESS;
       String appId = request.getAppId();
-      auditContext.setAppId(appId);
+      auditContext.withAppId(appId);
       try {
         RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
         RemoteStorageInfo rsInfo =
@@ -451,12 +451,12 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
       if (Context.current().isCancelled()) {
         responseObserver.onError(
             Status.CANCELLED.withDescription("Cancelled by client").asRuntimeException());
-        auditContext.setStatusCode("CANCELLED");
+        auditContext.withStatusCode("CANCELLED");
         LOG.warn("Fetch client conf cancelled by client for after deadline.");
         return;
       }
 
-      auditContext.setStatusCode(response.getStatus());
+      auditContext.withStatusCode(response.getStatus());
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     }
@@ -526,7 +526,7 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     }
     CoordinatorRPCAuditContext auditContext = new CoordinatorRPCAuditContext(auditLogger);
     if (auditLogger != null) {
-      auditContext.setCommand(command).setCreationTimeNs(System.nanoTime());
+      auditContext.withCommand(command).withCreationTimeNs(System.nanoTime());
     }
     return auditContext;
   }

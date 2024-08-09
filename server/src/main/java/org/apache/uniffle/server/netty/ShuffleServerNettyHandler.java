@@ -128,8 +128,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
 
       boolean isPreAllocated = info != null;
 
-      auditContext.setAppId(appId).setShuffleId(shuffleId);
-      auditContext.setArgs(
+      auditContext.withAppId(appId).withShuffleId(shuffleId);
+      auditContext.withArgs(
           "requireBufferId="
               + requireBufferId
               + ", requireSize="
@@ -167,7 +167,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             shuffleBufferManager,
             info,
             isPreAllocated);
-        auditContext.setStatusCode(rpcResponse.getStatusCode());
+        auditContext.withStatusCode(rpcResponse.getStatusCode());
         client.getChannel().writeAndFlush(rpcResponse);
         return;
       }
@@ -197,7 +197,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             shuffleBufferManager,
             info,
             isPreAllocated);
-        auditContext.setStatusCode(rpcResponse.getStatusCode());
+        auditContext.withStatusCode(rpcResponse.getStatusCode());
         client.getChannel().writeAndFlush(rpcResponse);
         return;
       }
@@ -240,7 +240,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                   + " in ShuffleServer's configuration";
           LOG.warn(errorMsg);
           rpcResponse = new RpcResponse(req.getRequestId(), StatusCode.INTERNAL_ERROR, errorMsg);
-          auditContext.setStatusCode(rpcResponse.getStatusCode());
+          auditContext.withStatusCode(rpcResponse.getStatusCode());
           client.getChannel().writeAndFlush(rpcResponse);
           return;
         }
@@ -329,7 +329,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         rpcResponse =
             new RpcResponse(req.getRequestId(), StatusCode.INTERNAL_ERROR, "No data in request");
       }
-      auditContext.setStatusCode(rpcResponse.getStatusCode());
+      auditContext.withStatusCode(rpcResponse.getStatusCode());
       client.getChannel().writeAndFlush(rpcResponse);
     }
   }
@@ -369,8 +369,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       int partitionId = req.getPartitionId();
       long blockId = req.getLastBlockId();
       int readBufferSize = req.getReadBufferSize();
-      auditContext.setAppId(appId).setShuffleId(shuffleId);
-      auditContext.setArgs(
+      auditContext.withAppId(appId).withShuffleId(shuffleId);
+      auditContext.withArgs(
           "requestId="
               + req.getRequestId()
               + ", partitionId="
@@ -381,7 +381,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               + readBufferSize);
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
-        auditContext.setStatusCode(status);
+        auditContext.withStatusCode(status);
         GetMemoryShuffleDataResponse response =
             new GetMemoryShuffleDataResponse(
                 req.getRequestId(),
@@ -432,8 +432,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             ShuffleServerMetrics.gaugeReadMemoryDataThreadNum.inc();
             ShuffleServerMetrics.gaugeReadMemoryDataBufferSize.inc(readBufferSize);
           }
-          auditContext.setStatusCode(status);
-          auditContext.setReturnValue(
+          auditContext.withStatusCode(status);
+          auditContext.withReturnValue(
               "len=" + data.size() + ", bufferSegments=" + bufferSegments.size());
           response =
               new GetMemoryShuffleDataResponse(
@@ -467,7 +467,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             new GetMemoryShuffleDataResponse(
                 req.getRequestId(), status, msg, Lists.newArrayList(), Unpooled.EMPTY_BUFFER);
       }
-      auditContext.setStatusCode(response.getStatusCode());
+      auditContext.withStatusCode(response.getStatusCode());
       client.getChannel().writeAndFlush(response);
     }
   }
@@ -482,9 +482,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       int partitionNum = req.getPartitionNum();
       String requestInfo =
           "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId[" + partitionId + "]";
-      auditContext.setAppId(appId);
-      auditContext.setShuffleId(shuffleId);
-      auditContext.setArgs(
+      auditContext.withAppId(appId);
+      auditContext.withShuffleId(shuffleId);
+      auditContext.withArgs(
           "requestId="
               + req.getRequestId()
               + ", partitionId="
@@ -495,7 +495,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               + partitionNum);
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
-        auditContext.setStatusCode(status);
+        auditContext.withStatusCode(status);
         GetLocalShuffleIndexResponse response =
             new GetLocalShuffleIndexResponse(
                 req.getRequestId(), status, status.toString(), Unpooled.EMPTY_BUFFER, 0L);
@@ -536,8 +536,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           ShuffleServerMetrics.counterTotalReadLocalIndexFileSize.inc(data.size());
           ShuffleServerMetrics.gaugeReadLocalIndexFileThreadNum.inc();
           ShuffleServerMetrics.gaugeReadLocalIndexFileBufferSize.inc(assumedFileSize);
-          auditContext.setStatusCode(status);
-          auditContext.setReturnValue("len=" + data.size());
+          auditContext.withStatusCode(status);
+          auditContext.withReturnValue("len=" + data.size());
           response =
               new GetLocalShuffleIndexResponse(
                   req.getRequestId(), status, msg, data, shuffleIndexResult.getDataFileLen());
@@ -578,7 +578,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             new GetLocalShuffleIndexResponse(
                 req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER, 0L);
       }
-      auditContext.setStatusCode(response.getStatusCode());
+      auditContext.withStatusCode(response.getStatusCode());
       client.getChannel().writeAndFlush(response);
     }
   }
@@ -593,9 +593,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       int partitionNum = req.getPartitionNum();
       long offset = req.getOffset();
       int length = req.getLength();
-      auditContext.setAppId(appId);
-      auditContext.setShuffleId(shuffleId);
-      auditContext.setArgs(
+      auditContext.withAppId(appId);
+      auditContext.withShuffleId(shuffleId);
+      auditContext.withArgs(
           "requestId="
               + req.getRequestId()
               + ", partitionId="
@@ -610,7 +610,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               + length);
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
-        auditContext.setStatusCode(status);
+        auditContext.withStatusCode(status);
         response =
             new GetLocalShuffleDataResponse(
                 req.getRequestId(),
@@ -682,8 +682,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               new ReleaseMemoryAndRecordReadTimeListener(
                   start, length, sdr.getDataLength(), requestInfo, req, response, client);
           client.getChannel().writeAndFlush(response).addListener(listener);
-          auditContext.setStatusCode(response.getStatusCode());
-          auditContext.setReturnValue("len=" + sdr.getDataLength());
+          auditContext.withStatusCode(response.getStatusCode());
+          auditContext.withReturnValue("len=" + sdr.getDataLength());
           return;
         } catch (Exception e) {
           shuffleServer.getShuffleBufferManager().releaseReadMemory(length);
@@ -705,7 +705,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             new GetLocalShuffleDataResponse(
                 req.getRequestId(), status, msg, new NettyManagedBuffer(Unpooled.EMPTY_BUFFER));
       }
-      auditContext.setStatusCode(response.getStatusCode());
+      auditContext.withStatusCode(response.getStatusCode());
       client.getChannel().writeAndFlush(response);
     }
   }
@@ -867,7 +867,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     }
     ServerRPCAuditContext auditContext = new ServerRPCAuditContext(auditLogger);
     if (auditLogger != null) {
-      auditContext.setCommand(command).setCreationTimeNs(System.nanoTime());
+      auditContext.withCommand(command).withCreationTimeNs(System.nanoTime());
     }
     return auditContext;
   }
