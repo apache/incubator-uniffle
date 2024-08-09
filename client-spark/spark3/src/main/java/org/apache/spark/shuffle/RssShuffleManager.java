@@ -183,7 +183,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     taskToSuccessBlockIds = JavaUtils.newConcurrentMap();
     taskToFailedBlockSendTracker = JavaUtils.newConcurrentMap();
 
-    this.rssStageRetryEnabled = rssConf.get(RssClientConf.RSS_CLIENT_REASSIGN_ENABLED);
+    this.rssStageRetryEnabled = rssConf.get(RssSparkConfig.RSS_RESUBMIT_STAGE_ENABLED);
     this.partitionReassignEnabled = rssConf.get(RssClientConf.RSS_CLIENT_REASSIGN_ENABLED);
 
     // stage retry for write/fetch failure
