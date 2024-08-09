@@ -16,17 +16,13 @@
 -->
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="CoordinatorServer" type="Application" factoryName="Application" nameIsGenerated="true">
+    <option name="ALTERNATIVE_JRE_PATH" value="1.8" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
     <option name="INCLUDE_PROVIDED_SCOPE" value="true" />
     <option name="MAIN_CLASS_NAME" value="org.apache.uniffle.coordinator.CoordinatorServer" />
     <module name="coordinator" />
     <option name="PROGRAM_PARAMETERS" value="--conf $PROJECT_DIR$/.idea/local_dev/coordinator.conf" />
-    <option name="VM_PARAMETERS" value="-Dlog4j2.configurationFile=file:$PROJECT_DIR$/.idea/local_dev/log4j2.xml -Dlog.path=$PROJECT_DIR$/logs/coordinator.log" />
-    <extension name="coverage">
-      <pattern>
-        <option name="PATTERN" value="org.apache.uniffle.coordinator.*" />
-        <option name="ENABLED" value="true" />
-      </pattern>
-    </extension>
+    <option name="VM_PARAMETERS" value="-Dlog4j2.configurationFile=file:$PROJECT_DIR$/.idea/local_dev/log4j2.xml -Dlog.dir=$PROJECT_DIR$/logs/ -Dlogger.type=Coordinator" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

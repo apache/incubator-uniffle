@@ -29,7 +29,6 @@ cd "$RSS_HOME"
 DASHBOARD_CONF_FILE="${RSS_CONF_DIR}/dashboard.conf"
 JAR_DIR="${RSS_HOME}/jars"
 LOG_CONF_FILE="${RSS_CONF_DIR}/log4j2.xml"
-LOG_PATH="${RSS_LOG_DIR}/dashboard.log"
 
 MAIN_CLASS="org.apache.uniffle.dashboard.web.Dashboard"
 
@@ -77,7 +76,7 @@ GC_LOG_ARGS_NEW=" -XX:+IgnoreUnrecognizedVMOptions \
 JVM_LOG_ARGS=""
 
 if [ -f ${LOG_CONF_FILE} ]; then
-  JVM_LOG_ARGS=" -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH}"
+  JVM_LOG_ARGS=" -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.dir=${RSS_LOG_DIR} -Dlogger.type=Dashboard"
 else
   echo "Exit with error: ${LOG_CONF_FILE} file doesn't exist."
   exit 1
