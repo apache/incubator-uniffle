@@ -26,7 +26,7 @@ import java.util.List;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.merger.Recordable;
 
-import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DEFAULT_MERGED_BLOCK_SIZE;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_DEFAULT_MERGED_BLOCK_SIZE;
 
 public class MergedResult {
 
@@ -44,8 +44,8 @@ public class MergedResult {
         mergedBlockSize > 0
             ? mergedBlockSize
             : this.rssConf.getSizeAsBytes(
-                SERVER_DEFAULT_MERGED_BLOCK_SIZE.key(),
-                SERVER_DEFAULT_MERGED_BLOCK_SIZE.defaultValue());
+                SERVER_MERGE_DEFAULT_MERGED_BLOCK_SIZE.key(),
+                SERVER_MERGE_DEFAULT_MERGED_BLOCK_SIZE.defaultValue());
     offsets.add(0L);
   }
 

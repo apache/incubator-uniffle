@@ -39,7 +39,7 @@ import org.apache.uniffle.common.records.RecordsReader;
 import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 
-import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DEFAULT_MERGED_BLOCK_SIZE;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_DEFAULT_MERGED_BLOCK_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -61,7 +61,7 @@ public class MergedResultTest {
 
     // 2 Write to merged result
     RssConf rssConf = new RssConf();
-    rssConf.set(SERVER_DEFAULT_MERGED_BLOCK_SIZE, String.valueOf(BYTES_LEN / 10));
+    rssConf.set(SERVER_MERGE_DEFAULT_MERGED_BLOCK_SIZE, String.valueOf(BYTES_LEN / 10));
     MergedResult result = new MergedResult(rssConf, cache, -1);
     OutputStream output = result.getOutputStream();
     for (int i = 0; i < BYTES_LEN; i++) {
