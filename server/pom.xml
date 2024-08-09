@@ -38,6 +38,10 @@
     </dependency>
     <dependency>
       <groupId>org.apache.uniffle</groupId>
+      <artifactId>rss-server-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.uniffle</groupId>
       <artifactId>shuffle-storage</artifactId>
       <type>test-jar</type>
       <scope>test</scope>
