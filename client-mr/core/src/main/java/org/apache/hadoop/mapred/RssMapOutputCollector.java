@@ -100,8 +100,8 @@ public class RssMapOutputCollector<K extends Object, V extends Object>
     ApplicationAttemptId applicationAttemptId = RssMRUtils.getApplicationAttemptId();
     String appId = applicationAttemptId.toString();
     long taskAttemptId =
-        RssMRUtils.convertTaskAttemptIdToLong(
-            mapTask.getTaskID(), applicationAttemptId.getAttemptId());
+        RssMRUtils.createRssTaskAttemptId(
+            mapTask.getTaskID(), applicationAttemptId.getAttemptId(), mrJobConf);
     double sendThreshold =
         RssMRUtils.getDouble(
             rssJobConf,

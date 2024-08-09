@@ -290,7 +290,8 @@ public class FetcherTest {
             null,
             new Progress(),
             new MROutputFiles());
-    TaskAttemptID taskAttemptID = RssMRUtils.createMRTaskAttemptId(new JobID(), TaskType.MAP, 1, 1);
+    TaskAttemptID taskAttemptID =
+        RssMRUtils.createMRTaskAttemptId(new JobID(), TaskType.MAP, 1, 1, 4);
     byte[] buffer = new byte[10];
     MapOutput mapOutput1 = merger.reserve(taskAttemptID, 10, 1);
     RssBypassWriter.write(mapOutput1, buffer);
@@ -349,7 +350,7 @@ public class FetcherTest {
     SortWriteBufferManager<Text, Text> manager =
         new SortWriteBufferManager(
             10240,
-            1L,
+            1,
             10,
             serializationFactory.getSerializer(Text.class),
             serializationFactory.getSerializer(Text.class),

@@ -112,4 +112,21 @@ public class ClientUtils {
           String.format("The value of %s should be one of %s", clientType, types));
     }
   }
+
+  public static int getMaxAttemptNo(int maxFailures, boolean speculation) {
+    // attempt number is zero based: 0, 1, …, maxFailures-1
+    // max maxFailures < 1 is not allowed but for safety, we interpret that as maxFailures == 1
+    int maxAttemptNo = maxFailures < 1 ? 0 : maxFailures - 1;
+
+    // with speculative execution enabled we could observe +1 attempts
+    if (speculation) {
+      maxAttemptNo++;
+    }
+
+    return maxAttemptNo;
+  }
+
+  public static int getNumberOfSignificantBits(int number) {
+    return 32 - Integer.numberOfLeadingZeros(number);
+  }
 }

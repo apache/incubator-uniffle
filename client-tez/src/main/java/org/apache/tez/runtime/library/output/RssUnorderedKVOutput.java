@@ -217,6 +217,7 @@ public class RssUnorderedKVOutput extends AbstractLogicalOutput {
   public void start() throws Exception {
     if (!isStarted.get()) {
       memoryUpdateCallbackHandler.validateUpdateReceived();
+      long rssTaskAttemptId = RssTezUtils.createRssTaskAttemptId(taskAttemptId, conf);
       sorter =
           new RssUnSorter(
               taskAttemptId,
@@ -227,7 +228,8 @@ public class RssUnorderedKVOutput extends AbstractLogicalOutput {
               memoryUpdateCallbackHandler.getMemoryAssigned(),
               shuffleId,
               applicationAttemptId,
-              partitionToServers);
+              partitionToServers,
+              rssTaskAttemptId);
       LOG.info("Initialized RssUnSorter.");
       isStarted.set(true);
     }

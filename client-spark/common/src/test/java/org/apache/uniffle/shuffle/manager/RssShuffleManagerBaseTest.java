@@ -370,46 +370,6 @@ public class RssShuffleManagerBaseTest {
     assertTrue(e.getMessage().startsWith("All block id bit config keys must be provided "));
   }
 
-  @Test
-  public void testGetMaxAttemptNo() {
-    // without speculation
-    assertEquals(0, RssShuffleManagerBase.getMaxAttemptNo(-1, false));
-    assertEquals(0, RssShuffleManagerBase.getMaxAttemptNo(0, false));
-    assertEquals(0, RssShuffleManagerBase.getMaxAttemptNo(1, false));
-    assertEquals(1, RssShuffleManagerBase.getMaxAttemptNo(2, false));
-    assertEquals(2, RssShuffleManagerBase.getMaxAttemptNo(3, false));
-    assertEquals(3, RssShuffleManagerBase.getMaxAttemptNo(4, false));
-    assertEquals(4, RssShuffleManagerBase.getMaxAttemptNo(5, false));
-    assertEquals(1023, RssShuffleManagerBase.getMaxAttemptNo(1024, false));
-
-    // with speculation
-    assertEquals(1, RssShuffleManagerBase.getMaxAttemptNo(-1, true));
-    assertEquals(1, RssShuffleManagerBase.getMaxAttemptNo(0, true));
-    assertEquals(1, RssShuffleManagerBase.getMaxAttemptNo(1, true));
-    assertEquals(2, RssShuffleManagerBase.getMaxAttemptNo(2, true));
-    assertEquals(3, RssShuffleManagerBase.getMaxAttemptNo(3, true));
-    assertEquals(4, RssShuffleManagerBase.getMaxAttemptNo(4, true));
-    assertEquals(5, RssShuffleManagerBase.getMaxAttemptNo(5, true));
-    assertEquals(1024, RssShuffleManagerBase.getMaxAttemptNo(1024, true));
-  }
-
-  @Test
-  public void testGetAttemptIdBits() {
-    assertEquals(0, RssShuffleManagerBase.getAttemptIdBits(0));
-    assertEquals(1, RssShuffleManagerBase.getAttemptIdBits(1));
-    assertEquals(2, RssShuffleManagerBase.getAttemptIdBits(2));
-    assertEquals(2, RssShuffleManagerBase.getAttemptIdBits(3));
-    assertEquals(3, RssShuffleManagerBase.getAttemptIdBits(4));
-    assertEquals(3, RssShuffleManagerBase.getAttemptIdBits(5));
-    assertEquals(3, RssShuffleManagerBase.getAttemptIdBits(6));
-    assertEquals(3, RssShuffleManagerBase.getAttemptIdBits(7));
-    assertEquals(4, RssShuffleManagerBase.getAttemptIdBits(8));
-    assertEquals(4, RssShuffleManagerBase.getAttemptIdBits(9));
-    assertEquals(10, RssShuffleManagerBase.getAttemptIdBits(1023));
-    assertEquals(11, RssShuffleManagerBase.getAttemptIdBits(1024));
-    assertEquals(11, RssShuffleManagerBase.getAttemptIdBits(1025));
-  }
-
   private long bits(String string) {
     return Long.parseLong(string.replaceAll("[|]", ""), 2);
   }

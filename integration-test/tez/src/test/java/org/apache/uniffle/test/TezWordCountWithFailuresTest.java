@@ -362,7 +362,7 @@ public class TezWordCountWithFailuresTest extends IntegrationTestBase {
         // verifyMode is 0: avoid recompute succeeded task is true
         Assertions.assertEquals(0, progressMap.get("Tokenizer").getKilledTaskAttemptCount());
       } else if (verifyMode == 1) {
-        // verifyMode is 1: avoid recompute succeeded task is true
+        // verifyMode is 1: avoid recompute succeeded task is false
         Assertions.assertTrue(progressMap.get("Tokenizer").getKilledTaskAttemptCount() > 0);
       }
       return 0;

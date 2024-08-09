@@ -45,20 +45,21 @@ public class RssMRUtilsTest {
     TaskAttemptID mrTaskAttemptId = new TaskAttemptID(taskId, 3);
     boolean isException = false;
     try {
-      RssMRUtils.convertTaskAttemptIdToLong(mrTaskAttemptId, 1);
+      RssMRUtils.createRssTaskAttemptId(mrTaskAttemptId, 1, 4);
     } catch (RssException e) {
       isException = true;
     }
     assertTrue(isException);
-    taskAttemptId = (1 << 20) + 0x123;
-    mrTaskAttemptId = RssMRUtils.createMRTaskAttemptId(new JobID(), TaskType.MAP, taskAttemptId, 1);
-    long testId = RssMRUtils.convertTaskAttemptIdToLong(mrTaskAttemptId, 1);
+    taskAttemptId = (0x123 << 3) + 1;
+    mrTaskAttemptId =
+        RssMRUtils.createMRTaskAttemptId(new JobID(), TaskType.MAP, taskAttemptId, 1, 4);
+    int testId = RssMRUtils.createRssTaskAttemptId(mrTaskAttemptId, 1, 4);
     assertEquals(taskAttemptId, testId);
-    TaskID taskID = new TaskID(new org.apache.hadoop.mapred.JobID(), TaskType.MAP, (int) (1 << 21));
+    TaskID taskID = new TaskID(new org.apache.hadoop.mapred.JobID(), TaskType.MAP, 1 << 21);
     mrTaskAttemptId = new TaskAttemptID(taskID, 2);
     isException = false;
     try {
-      RssMRUtils.convertTaskAttemptIdToLong(mrTaskAttemptId, 1);
+      RssMRUtils.createRssTaskAttemptId(mrTaskAttemptId, 1, 4);
     } catch (RssException e) {
       isException = true;
     }
@@ -70,7 +71,7 @@ public class RssMRUtilsTest {
     JobID jobID = new JobID();
     TaskID taskId = new TaskID(jobID, TaskType.MAP, 233);
     TaskAttemptID taskAttemptID = new TaskAttemptID(taskId, 1);
-    long taskAttemptId = RssMRUtils.convertTaskAttemptIdToLong(taskAttemptID, 1);
+    long taskAttemptId = RssMRUtils.createRssTaskAttemptId(taskAttemptID, 1, 4);
     long blockId = RssMRUtils.getBlockId(1, taskAttemptId, 0);
     long newTaskAttemptId = RssMRUtils.getTaskAttemptId(blockId);
     assertEquals(taskAttemptId, newTaskAttemptId);
@@ -85,7 +86,7 @@ public class RssMRUtilsTest {
     JobID jobID = new JobID();
     TaskID taskId = new TaskID(jobID, TaskType.MAP, 233);
     TaskAttemptID taskAttemptID = new TaskAttemptID(taskId, 1);
-    long taskAttemptId = RssMRUtils.convertTaskAttemptIdToLong(taskAttemptID, 1);
+    long taskAttemptId = RssMRUtils.createRssTaskAttemptId(taskAttemptID, 1, 4);
     long mask = (1L << layout.partitionIdBits) - 1;
     for (int partitionId = 0; partitionId <= 3000; partitionId++) {
       for (int seqNo = 0; seqNo <= 10; seqNo++) {

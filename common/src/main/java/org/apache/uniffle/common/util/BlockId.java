@@ -32,10 +32,10 @@ public class BlockId {
   public final BlockIdLayout layout;
   public final int sequenceNo;
   public final int partitionId;
-  public final int taskAttemptId;
+  public final long taskAttemptId;
 
   protected BlockId(
-      long blockId, BlockIdLayout layout, int sequenceNo, int partitionId, int taskAttemptId) {
+      long blockId, BlockIdLayout layout, int sequenceNo, int partitionId, long taskAttemptId) {
     this.blockId = blockId;
     this.layout = layout;
     this.sequenceNo = sequenceNo;

@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
+import org.apache.tez.common.RssTezUtils;
 import org.apache.tez.common.TezRuntimeFrameworkConfigs;
 import org.apache.tez.dag.records.TezTaskAttemptID;
 import org.apache.tez.runtime.api.OutputContext;
@@ -82,6 +83,7 @@ public class RssUnSorterTest {
 
     long initialMemoryAvailable = 10240000;
     int shuffleId = 1001;
+    long rssTaskAttemptId = RssTezUtils.createRssTaskAttemptId(tezTaskAttemptID, 3);
 
     RssUnSorter rssSorter =
         new RssUnSorter(
@@ -93,7 +95,8 @@ public class RssUnSorterTest {
             initialMemoryAvailable,
             shuffleId,
             APPATTEMPT_ID,
-            partitionToServers);
+            partitionToServers,
+            rssTaskAttemptId);
 
     rssSorter.collect(new Text("0"), new Text("0"), 0);
     rssSorter.collect(new Text("0"), new Text("1"), 0);
