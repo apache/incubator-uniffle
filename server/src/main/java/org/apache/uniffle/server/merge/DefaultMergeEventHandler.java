@@ -31,7 +31,7 @@ import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
 
-import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_THREAD_ALIVE;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_THREAD_ALIVE_TIME;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_THREAD_POOL_QUEUE_SIZE;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_THREAD_POOL_SIZE;
 
@@ -49,7 +49,7 @@ public class DefaultMergeEventHandler implements MergeEventHandler {
     this.eventConsumer = eventConsumer;
     int poolSize = serverConf.get(SERVER_MERGE_THREAD_POOL_SIZE);
     int queueSize = serverConf.get(SERVER_MERGE_THREAD_POOL_QUEUE_SIZE);
-    int keepAliveTime = serverConf.get(SERVER_MERGE_THREAD_ALIVE);
+    int keepAliveTime = serverConf.get(SERVER_MERGE_THREAD_ALIVE_TIME);
     BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(queueSize);
     threadPoolExecutor =
         new ThreadPoolExecutor(
