@@ -62,6 +62,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.tez.common.CallableWithNdc;
+import org.apache.tez.common.IdUtils;
 import org.apache.tez.common.InputContextUtils;
 import org.apache.tez.common.RssTezConfig;
 import org.apache.tez.common.RssTezUtils;
@@ -74,6 +75,7 @@ import org.apache.tez.common.security.JobTokenSecretManager;
 import org.apache.tez.dag.api.TezConfiguration;
 import org.apache.tez.dag.api.TezException;
 import org.apache.tez.dag.records.TezTaskAttemptID;
+import org.apache.tez.dag.records.TezTaskID;
 import org.apache.tez.http.HttpConnectionParams;
 import org.apache.tez.runtime.api.Event;
 import org.apache.tez.runtime.api.InputContext;
@@ -274,6 +276,7 @@ class RssShuffleScheduler extends ShuffleScheduler {
 
   private final Map<Integer, Set<InputAttemptIdentifier>> partitionIdToSuccessMapTaskAttempts =
       new HashMap<>();
+  final Map<Integer, Set<TezTaskID>> partitionIdToSuccessTezTasks = new HashMap<>();
   private final String storageType;
 
   private final int readBufferSize;
@@ -1143,8 +1146,13 @@ class RssShuffleScheduler extends ShuffleScheduler {
     }
   }
 
+  private boolean allInputTaskAttemptDone() {
+    return this.partitionIdToSuccessTezTasks.values().stream().mapToInt(s -> s.size()).sum()
+        == numInputs;
+  }
+
   private boolean isAllInputFetched() {
-    return allEventsReceived() && (successRssPartitionSet.size() >= allRssPartition.size());
+    return allInputTaskAttemptDone() && (successRssPartitionSet.size() >= allRssPartition.size());
   }
 
   /**
@@ -1293,6 +1301,10 @@ class RssShuffleScheduler extends ShuffleScheduler {
       partitionIdToSuccessMapTaskAttempts.put(partitionId, new HashSet<>());
     }
     partitionIdToSuccessMapTaskAttempts.get(partitionId).add(srcAttempt);
+    String pathComponent = srcAttempt.getPathComponent();
+    TezTaskAttemptID tezTaskAttemptId = IdUtils.convertTezTaskAttemptID(pathComponent);
+    partitionIdToSuccessTezTasks.putIfAbsent(partitionId, new HashSet<>());
+    partitionIdToSuccessTezTasks.get(partitionId).add(tezTaskAttemptId.getTaskID());
 
     uniqueHosts.add(new HostPort(inputHostName, port));
     HostPortPartition identifier = new HostPortPartition(inputHostName, port, partitionId);
@@ -1661,10 +1673,10 @@ class RssShuffleScheduler extends ShuffleScheduler {
     protected Void callInternal()
         throws IOException, InterruptedException, TezException, RssException {
       while (!isShutdown.get() && !isAllInputFetched()) {
-        LOG.info("Now allEventsReceived: " + allEventsReceived());
+        LOG.info("Now allInputTaskAttemptDone: " + allInputTaskAttemptDone());
 
         synchronized (RssShuffleScheduler.this) {
-          while (!allEventsReceived()
+          while (!allInputTaskAttemptDone()
               || ((rssRunningFetchers.size() >= numFetchers || pendingHosts.isEmpty())
                   && !isAllInputFetched())) {
             try {
