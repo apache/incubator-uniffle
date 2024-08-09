@@ -63,7 +63,7 @@ public class RssTezConfig {
   public static final String RSS_DATA_TRANSFER_POOL_SIZE =
       TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_TRANSFER_POOL_SIZE;
   public static final int RSS_DATA_TRANSFER_POOL_SIZE_DEFAULT_VALUE =
-      RssClientConfig.RSS_DATA_TRANFER_POOL_SIZE_DEFAULT_VALUE;
+      RssClientConfig.RSS_DATA_TRANSFER_POOL_SIZE_DEFAULT_VALUE;
   public static final String RSS_DATA_COMMIT_POOL_SIZE =
       TEZ_RSS_CONFIG_PREFIX + RssClientConfig.RSS_DATA_COMMIT_POOL_SIZE;
   public static final int RSS_DATA_COMMIT_POOL_SIZE_DEFAULT_VALUE =

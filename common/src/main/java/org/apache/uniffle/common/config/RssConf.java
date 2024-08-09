@@ -600,7 +600,7 @@ public class RssConf implements Cloneable {
   /**
    * loadConf
    *
-   * @param properties all config items in configration file
+   * @param properties all config items in configuration file
    * @param configOptions the config items defined in base config class
    * @param includeMissingKey if include the keys which not defined in base config class
    * @return true if load successfully, otherwise false
