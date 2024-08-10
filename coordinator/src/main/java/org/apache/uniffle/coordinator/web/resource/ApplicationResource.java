@@ -29,6 +29,7 @@ import org.apache.hbase.thirdparty.javax.ws.rs.Path;
 import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +52,8 @@ public class ApplicationResource extends BaseResource {
         () -> {
           Map<String, Integer> appTotalityMap = Maps.newHashMap();
           appTotalityMap.put("appTotality", getApplicationManager().getAppIds().size());
+          appTotalityMap.put("appCurrent",
+              (int) CoordinatorMetrics.counterTotalAppNum.get());
           return appTotalityMap;
         });
   }
