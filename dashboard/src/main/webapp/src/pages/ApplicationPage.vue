@@ -23,10 +23,18 @@
           <template #header>
             <div class="card-header">
               <span class="cardtile">APPS TOTAL</span>
-              <span class="cardtile">APPS CURRENT TOTAL</span>
             </div>
           </template>
           <div class="appcnt">{{ pageData.apptotal.appTotality }}</div>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
+        <el-card class="box-card" shadow="hover">
+          <template #header>
+            <div class="card-header">
+              <span class="cardtile">APPS CURRENT TOTAL</span>
+            </div>
+          </template>
           <div class="appcnt">{{ pageData.apptotal.appCurrent }}</div>
         </el-card>
       </el-col>
