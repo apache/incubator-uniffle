@@ -29,7 +29,6 @@ import org.apache.hbase.thirdparty.javax.ws.rs.Path;
 import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
-import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +36,7 @@ import org.apache.uniffle.common.web.resource.BaseResource;
 import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.AppInfo;
 import org.apache.uniffle.coordinator.ApplicationManager;
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.web.vo.AppInfoVO;
 import org.apache.uniffle.coordinator.web.vo.UserAppNumVO;
 
@@ -52,8 +52,7 @@ public class ApplicationResource extends BaseResource {
         () -> {
           Map<String, Integer> appTotalityMap = Maps.newHashMap();
           appTotalityMap.put("appTotality", getApplicationManager().getAppIds().size());
-          appTotalityMap.put("appCurrent",
-              (int) CoordinatorMetrics.counterTotalAppNum.get());
+          appTotalityMap.put("appCurrent", (int) CoordinatorMetrics.counterTotalAppNum.get());
           return appTotalityMap;
         });
   }
