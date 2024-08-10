@@ -112,6 +112,8 @@
                     <exclude>META-INF/*.DSA</exclude>
                     <exclude>META-INF/*.RSA</exclude>
                     <exclude>**/*.proto</exclude>
+                    <exclude>**/*.css</exclude>
+                    <exclude>**/*.html</exclude>
                   </excludes>
                 </filter>
               </filters>
@@ -179,18 +181,6 @@
                 <relocation>
                   <pattern>android.annotation</pattern>
                   <shadedPattern>${rss.shade.packageName}.android.annotation</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>javax</pattern>
-                  <shadedPattern>${rss.shade.packageName}.javax</shadedPattern>
-                  <includes>
-                    <include>javax/annotation/**/*</include>
-                    <include>javax/activation/**/*</include>
-                    <include>javax/xml/**/*</include>
-                    <include>javax/inject/**/*</include>
-                    <include>javax/validation/**/*</include>
-                    <include>javax/servlet/**/*</include>
-                  </includes>
                 </relocation>
                 <relocation>
                   <pattern>javassist</pattern>

@@ -181,18 +181,6 @@
                   <shadedPattern>${rss.shade.packageName}.android.annotation</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>javax</pattern>
-                  <shadedPattern>${rss.shade.packageName}.javax</shadedPattern>
-                  <includes>
-                    <include>javax/annotation/**/*</include>
-                    <include>javax/activation/**/*</include>
-                    <include>javax/xml/**/*</include>
-                    <include>javax/inject/**/*</include>
-                    <include>javax/validation/**/*</include>
-                    <include>javax/servlet/**/*</include>
-                  </includes>
-                </relocation>
-                <relocation>
                   <pattern>javassist</pattern>
                   <shadedPattern>${rss.shade.packageName}.javassist</shadedPattern>
                 </relocation>
