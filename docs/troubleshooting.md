@@ -57,20 +57,18 @@ export SHUFFLE_SERVER_JAVA_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,
 
 In general, you can use `<PROCESS>_JAVA_OPTS` to specify how an Uniffle process should be attached to.
 
-suspend={y | n} will decide whether the JVM process waits until the debugger connects or not.
+The `suspend={y | n}` parameter determines whether the JVM process waits until the debugger connects or not.
 
-address determines which port the Uniffle process will use to be attached to by a debugger. If left blank, it will choose an open port by itself.
+The `address` parameter determines which port the Uniffle process will use to be attached to by a debugger. If left blank, it will choose an open port by itself.
 
 After completing this setup, learn how [To attach](#to-attach).
 
 ### To attach
 
-There exists a [comprehensive tutorial on how to attach to and debug a Java process in IntelliJ](https://www.jetbrains.com/help/idea/attaching-to-local-process.html).
+You can find a [comprehensive tutorial on how to attach to and debug a Java process in IntelliJ](https://www.jetbrains.com/help/idea/attaching-to-local-process.html) for more detailed guidance.
 
-Start the process or a shell command of interest, then create a new java remote configuration,
-set the debug server's host and port, and start the debug session. If you set a breakpoint which can be reached, the IDE
-will enter debug mode. You can inspect the current context's variables, call stack, thread list, and expression
-evaluation.
+Start the process or a shell command of interest, then create a new Java remote configuration, set the debug server's host and port, and start the debug session.
+If you set a breakpoint that can be reached, the IDE will enter debug mode. You can inspect the current context's variables, call stack, thread list, and evaluate expressions.
 
 ## Resource Leak Detection
 
@@ -80,4 +78,5 @@ If you are operating your Uniffle cluster it is possible you may notice a messag
 [ERROR] ResourceLeakDetector - LEAK: ByteBuf.release() was not called before it's garbage-collected. See https://netty.io/wiki/reference-counted-objects.html for more information.
 ```
 
-Uniffle has a built-in detection mechanism to help identify potential resource leaks. This message indicates there is a bug in the Uniffle code which is causing a resource leak. If this message appears during cluster operation, please open a GitHub Issue as a bug report and share your log message and any relevant stack traces that are shared with it.
+Uniffle uses Netty's built-in memory leak detection mechanism to help identify potential resource leaks. This message implies that there might be a bug in the Uniffle code, causing a resource leak.
+If this message appears while the cluster is running, please open a GitHub Issue as a bug report and share your log message, along with any relevant stack traces associated with it.
