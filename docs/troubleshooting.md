@@ -23,11 +23,11 @@ license: |
 
 ## Where is the Uniffle log file?
 
-Uniffle logs are stored in the `$RSS_LOG_DIR` directory default to `${RSS_HOME}\logs` directory. The common log files name are `coordinator.log`, `shuffle-server.log`, `dashboard.log`.
+Uniffle logs are stored in the `$RSS_LOG_DIR`, which defaults to `${RSS_HOME}/logs`. The common log file names are `coordinator.log`, `shuffle-server.log`, `dashboard.log`.
 
 ## Audit logs
 
-Uniffle cluster provide audit logs for each process. You can also find audit logs in the log directory, the log files name are `coordinator_rpc_audit.log`, `shuffle_server_rpc_audit.log`, `shuffle_server_storage_audit.log`.
+The Uniffle cluster provides audit logs for each process. You can also find audit logs in the log directory, the log file names are `coordinator_rpc_audit.log`, `shuffle_server_rpc_audit.log`, `shuffle_server_storage_audit.log`.
 
 | Audit log name                   | Configuration                         | Default | Description                                                                 |
 |----------------------------------|---------------------------------------|---------|-----------------------------------------------------------------------------|
@@ -35,7 +35,7 @@ Uniffle cluster provide audit logs for each process. You can also find audit log
 | shuffle server rpc audit log     | rss.server.rpc.audit.log.enabled      | true    | Record shuffle server rpc operation audit.                                  |
 | shuffle server storage audit log | rss.server.storage.audit.log.enabled  | false   | The server will log audit records for every disk write and delete operation |
 
-Base on the above audit logs, you can check the operation details and the operation time cost.
+Based on the above audit logs, you can check the operation details and the operation time cost.
 
 ## Uniffle remote debug
 
@@ -55,7 +55,7 @@ export COORDINATOR_JAVA_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,sus
 export SHUFFLE_SERVER_JAVA_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=*:5005"
 ```
 
-In general, you can use <PROCESS>_JAVA_OPTS to specify how an Uniffle process should be attached to.
+In general, you can use `<PROCESS>_JAVA_OPTS` to specify how an Uniffle process should be attached to.
 
 suspend={y | n} will decide whether the JVM process waits until the debugger connects or not.
 
