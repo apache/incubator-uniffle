@@ -48,7 +48,7 @@ public class CoordinatorRPCAuditContext implements AuditContext {
    * @param command the command associated with shuffle server rpc
    * @return this {@link AuditContext} instance
    */
-  public CoordinatorRPCAuditContext setCommand(String command) {
+  public CoordinatorRPCAuditContext withCommand(String command) {
     this.command = command;
     return this;
   }
@@ -60,7 +60,7 @@ public class CoordinatorRPCAuditContext implements AuditContext {
    *     compute operation mExecutionTime
    * @return this {@link AuditContext} instance
    */
-  public CoordinatorRPCAuditContext setCreationTimeNs(long creationTimeNs) {
+  public CoordinatorRPCAuditContext withCreationTimeNs(long creationTimeNs) {
     this.creationTimeNs = creationTimeNs;
     return this;
   }
@@ -71,7 +71,7 @@ public class CoordinatorRPCAuditContext implements AuditContext {
    * @param statusCode the status code
    * @return this {@link AuditContext} instance
    */
-  public CoordinatorRPCAuditContext setStatusCode(StatusCode statusCode) {
+  public CoordinatorRPCAuditContext withStatusCode(StatusCode statusCode) {
     if (statusCode == null) {
       this.statusCode = "UNKNOWN";
     } else {
@@ -86,7 +86,7 @@ public class CoordinatorRPCAuditContext implements AuditContext {
    * @param statusCode the status code
    * @return this {@link AuditContext} instance
    */
-  public CoordinatorRPCAuditContext setStatusCode(
+  public CoordinatorRPCAuditContext withStatusCode(
       org.apache.uniffle.proto.RssProtos.StatusCode statusCode) {
     if (statusCode == null) {
       this.statusCode = "UNKNOWN";
@@ -102,7 +102,7 @@ public class CoordinatorRPCAuditContext implements AuditContext {
    * @param statusCode the status code
    * @return this {@link AuditContext} instance
    */
-  public CoordinatorRPCAuditContext setStatusCode(String statusCode) {
+  public CoordinatorRPCAuditContext withStatusCode(String statusCode) {
     this.statusCode = statusCode;
     return this;
   }
@@ -128,17 +128,17 @@ public class CoordinatorRPCAuditContext implements AuditContext {
     return line;
   }
 
-  public CoordinatorRPCAuditContext setAppId(String appId) {
+  public CoordinatorRPCAuditContext withAppId(String appId) {
     this.appId = appId;
     return this;
   }
 
-  public CoordinatorRPCAuditContext setShuffleId(int shuffleId) {
+  public CoordinatorRPCAuditContext withShuffleId(int shuffleId) {
     this.shuffleId = shuffleId;
     return this;
   }
 
-  public CoordinatorRPCAuditContext setArgs(String args) {
+  public CoordinatorRPCAuditContext withArgs(String args) {
     this.args = args;
     return this;
   }
