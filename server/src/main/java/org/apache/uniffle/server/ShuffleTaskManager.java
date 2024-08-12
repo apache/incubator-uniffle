@@ -79,6 +79,7 @@ import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.event.AppUnregisterPurgeEvent;
 import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.server.event.ShufflePurgeEvent;
+import org.apache.uniffle.server.merge.ShuffleMergeManager;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
@@ -119,17 +120,28 @@ public class ShuffleTaskManager {
   private BlockingQueue<PurgeEvent> expiredAppIdQueue = Queues.newLinkedBlockingQueue();
   private final Cache<String, ReentrantReadWriteLock> appLocks;
   private final long storageRemoveOperationTimeoutSec;
+  private ShuffleMergeManager shuffleMergeManager;
 
   public ShuffleTaskManager(
       ShuffleServerConf conf,
       ShuffleFlushManager shuffleFlushManager,
       ShuffleBufferManager shuffleBufferManager,
       StorageManager storageManager) {
+    this(conf, shuffleFlushManager, shuffleBufferManager, storageManager, null);
+  }
+
+  public ShuffleTaskManager(
+      ShuffleServerConf conf,
+      ShuffleFlushManager shuffleFlushManager,
+      ShuffleBufferManager shuffleBufferManager,
+      StorageManager storageManager,
+      ShuffleMergeManager shuffleMergeManager) {
     this.conf = conf;
     this.shuffleFlushManager = shuffleFlushManager;
     this.partitionsToBlockIds = JavaUtils.newConcurrentMap();
     this.shuffleBufferManager = shuffleBufferManager;
     this.storageManager = storageManager;
+    this.shuffleMergeManager = shuffleMergeManager;
     this.appExpiredWithoutHB = conf.getLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT);
     this.commitCheckIntervalMax = conf.getLong(ShuffleServerConf.SERVER_COMMIT_CHECK_INTERVAL_MAX);
     this.preAllocationExpired = conf.getLong(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED);
@@ -804,7 +816,9 @@ public class ShuffleTaskManager {
           },
           storageRemoveOperationTimeoutSec,
           operationMsg);
-
+      if (shuffleMergeManager != null) {
+        shuffleMergeManager.removeBuffer(appId, shuffleIds);
+      }
       LOG.info(
           "Finish remove resource for appId[{}], shuffleIds[{}], cost[{}]",
           appId,
@@ -862,7 +876,9 @@ public class ShuffleTaskManager {
           },
           storageRemoveOperationTimeoutSec,
           operationMsg);
-
+      if (shuffleMergeManager != null) {
+        shuffleMergeManager.removeBuffer(appId);
+      }
       if (shuffleTaskInfo.hasHugePartition()) {
         ShuffleServerMetrics.gaugeAppWithHugePartitionNum.dec();
         ShuffleServerMetrics.gaugeHugePartitionNum.dec();

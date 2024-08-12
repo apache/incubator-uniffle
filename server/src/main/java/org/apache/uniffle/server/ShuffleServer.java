@@ -57,6 +57,7 @@ import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.merge.ShuffleMergeManager;
 import org.apache.uniffle.server.netty.StreamServer;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.server.storage.StorageManagerFactory;
@@ -90,6 +91,8 @@ public class ShuffleServer {
   private ShuffleFlushManager shuffleFlushManager;
   private ShuffleBufferManager shuffleBufferManager;
   private StorageManager storageManager;
+  private boolean remoteMergeEnable;
+  private ShuffleMergeManager shuffleMergeManager;
   private HealthCheck healthCheck;
   private Set<String> tags = Sets.newHashSet();
   private GRPCMetrics grpcMetrics;
@@ -305,9 +308,17 @@ public class ShuffleServer {
     shuffleFlushManager = new ShuffleFlushManager(shuffleServerConf, this, storageManager);
     shuffleBufferManager =
         new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager, nettyServerEnabled);
+    remoteMergeEnable = shuffleServerConf.get(ShuffleServerConf.SERVER_MERGE_ENABLE);
+    if (remoteMergeEnable) {
+      shuffleMergeManager = new ShuffleMergeManager(shuffleServerConf, this);
+    }
     shuffleTaskManager =
         new ShuffleTaskManager(
-            shuffleServerConf, shuffleFlushManager, shuffleBufferManager, storageManager);
+            shuffleServerConf,
+            shuffleFlushManager,
+            shuffleBufferManager,
+            storageManager,
+            shuffleMergeManager);
     shuffleTaskManager.start();
 
     setServer();
@@ -568,5 +579,13 @@ public class ShuffleServer {
         shuffleServer.getNettyPort(),
         shuffleServer.getJettyPort(),
         shuffleServer.getStartTimeMs());
+  }
+
+  public ShuffleMergeManager getShuffleMergeManager() {
+    return shuffleMergeManager;
+  }
+
+  public boolean isRemoteMergeEnable() {
+    return remoteMergeEnable;
   }
 }
