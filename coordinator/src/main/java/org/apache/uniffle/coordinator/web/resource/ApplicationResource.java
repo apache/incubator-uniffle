@@ -36,6 +36,7 @@ import org.apache.uniffle.common.web.resource.BaseResource;
 import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.AppInfo;
 import org.apache.uniffle.coordinator.ApplicationManager;
+import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.web.vo.AppInfoVO;
 import org.apache.uniffle.coordinator.web.vo.UserAppNumVO;
 
@@ -51,6 +52,7 @@ public class ApplicationResource extends BaseResource {
         () -> {
           Map<String, Integer> appTotalityMap = Maps.newHashMap();
           appTotalityMap.put("appTotality", getApplicationManager().getAppIds().size());
+          appTotalityMap.put("appCurrent", (int) CoordinatorMetrics.counterTotalAppNum.get());
           return appTotalityMap;
         });
   }

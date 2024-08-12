@@ -18,7 +18,7 @@
 import Mock from 'mockjs'
 
 Mock.mock(/\/app\/total/, 'get', function (options) {
-  return { code: 0, data: { appTotality: 10 }, errMsg: 'success' }
+  return { code: 0, data: { appTotality: 10, appCurrent: 10 }, errMsg: 'success' }
 })
 
 Mock.mock(/\/app\/appInfos/, 'get', function (options) {
