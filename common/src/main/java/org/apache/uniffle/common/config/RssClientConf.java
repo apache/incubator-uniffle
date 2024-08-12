@@ -151,12 +151,6 @@ public class RssClientConf {
           .defaultValue(10 * 60 * 1000)
           .withDescription("connection active timeout");
 
-  public static final ConfigOption<Integer> NETTY_CLIENT_THREADS =
-      ConfigOptions.key("rss.client.netty.client.threads")
-          .intType()
-          .defaultValue(0)
-          .withDescription("Number of threads used in the client thread pool.");
-
   public static final ConfigOption<Boolean> NETTY_CLIENT_PREFER_DIRECT_BUFS =
       ConfigOptions.key("rss.client.netty.client.prefer.direct.bufs")
           .booleanType()
