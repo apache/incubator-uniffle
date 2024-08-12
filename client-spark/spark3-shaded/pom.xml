@@ -35,45 +35,7 @@
       <groupId>org.apache.uniffle</groupId>
       <artifactId>rss-client-spark3</artifactId>
       <version>${project.version}</version>
-      <!-- use the lz4 from spark env -->
-      <exclusions>
-        <exclusion>
-          <artifactId>lz4</artifactId>
-          <groupId>net.jpountz.lz4</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>log4j-slf4j-impl</artifactId>
-          <groupId>org.apache.logging.log4j</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>slf4j-api</artifactId>
-          <groupId>org.slf4j</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
-    <!-- log4j2 -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <!-- Use log4j-slf4j-impl by default -->
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <!-- end -->
   </dependencies>
 
   <build>
@@ -91,7 +53,22 @@
             <configuration>
               <artifactSet>
                 <includes>
-                  <include>*:*</include>
+                  <include>org.apache.uniffle:*</include>
+                  <include>com.google.protobuf:*</include>
+                  <include>com.google.code.gson:gson</include>
+                  <include>io.grpc:*</include>
+                  <include>com.google.android:annotations</include>
+                  <include>io.perfmark:perfmark-api</include>
+                  <include>io.netty:*</include>
+                  <include>com.google.api.grpc:proto-google-common-protos</include>
+                  <include>org.codehaus.mojo:animal-sniffer-annotations</include>
+                  <include>com.google.guava:*</include>
+                  <include>com.fasterxml.jackson.core:jackson-databind</include>
+                  <include>com.fasterxml.jackson.core:jackson-core</include>
+                  <include>com.fasterxml.jackson.core:jackson-annotations</include>
+                  <include>org.roaringbitmap:RoaringBitmap</include>
+                  <include>org.roaringbitmap:shims</include>
+                  <include>org.apache.commons:commons-collections4</include>
                 </includes>
               </artifactSet>
               <finalName>${project.artifactId}-${project.version}</finalName>
@@ -111,14 +88,17 @@
                     <exclude>META-INF/*.SF</exclude>
                     <exclude>META-INF/*.DSA</exclude>
                     <exclude>META-INF/*.RSA</exclude>
-                    <exclude>**/*.proto</exclude>
                   </excludes>
                 </filter>
               </filters>
               <relocations>
                 <relocation>
-                  <pattern>com.google</pattern>
-                  <shadedPattern>${rss.shade.packageName}.com.google</shadedPattern>
+                  <pattern>com.google.protobuf</pattern>
+                  <shadedPattern>${rss.shade.packageName}.com.google.protobuf</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.google.common</pattern>
+                  <shadedPattern>${rss.shade.packageName}.com.google.common</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>google.protobuf</pattern>
@@ -141,80 +121,8 @@
                   <shadedPattern>${rss.shade.packageName}.io.netty</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>io.grpc</pattern>
-                  <shadedPattern>${rss.shade.packageName}.io.grpc</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>io.perfmark</pattern>
-                  <shadedPattern>${rss.shade.packageName}.io.perfmark</shadedPattern>
-                </relocation>
-                <relocation>
                   <pattern>org.roaringbitmap</pattern>
                   <shadedPattern>${rss.shade.packageName}.org.roaringbitmap</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.apache</pattern>
-                  <shadedPattern>${rss.shade.packageName}.org.apache</shadedPattern>
-                  <excludes>
-                    <!-- Exclude the packages belonging to uniffle -->
-                    <exclude>org/apache/uniffle/**/*</exclude>
-                    <exclude>org/apache/hadoop/*</exclude>
-                    <exclude>org/apache/hadoop/**/*</exclude>
-                    <!-- Exclude the logging packages-->
-                    <exclude>**/pom.xml</exclude>
-                    <exclude>org/apache/commons/logging/*</exclude>
-                    <exclude>org/apache/commons/logging/**/*</exclude>
-                    <exclude>org/apache/log4j/*</exclude>
-                    <exclude>org/apache/log4j/**/*</exclude>
-                    <!-- Exclude spark packages -->
-                    <exclude>org/apache/spark/**/*</exclude>
-                    <!-- Exclude commons-io packages -->
-                    <exclude>org/apache/commons/io/**/*</exclude>
-                  </excludes>
-                </relocation>
-                <relocation>
-                  <pattern>org.codehaus</pattern>
-                  <shadedPattern>${rss.shade.packageName}.codehaus</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>android.annotation</pattern>
-                  <shadedPattern>${rss.shade.packageName}.android.annotation</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>javax</pattern>
-                  <shadedPattern>${rss.shade.packageName}.javax</shadedPattern>
-                  <includes>
-                    <include>javax/annotation/**/*</include>
-                    <include>javax/activation/**/*</include>
-                    <include>javax/xml/**/*</include>
-                    <include>javax/inject/**/*</include>
-                    <include>javax/validation/**/*</include>
-                    <include>javax/servlet/**/*</include>
-                  </includes>
-                </relocation>
-                <relocation>
-                  <pattern>javassist</pattern>
-                  <shadedPattern>${rss.shade.packageName}.javassist</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>io.prometheus.client</pattern>
-                  <shadedPattern>${rss.shade.packageName}.io.prometheus.client</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>com.sun.activation</pattern>
-                  <shadedPattern>${rss.shade.packageName}.com.sun.activation</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.checkerframework</pattern>
-                  <shadedPattern>${rss.shade.packageName}.org.checkerframework</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.eclipse</pattern>
-                  <shadedPattern>${rss.shade.packageName}.org.eclipse</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>picocli</pattern>
-                  <shadedPattern>${rss.shade.packageName}.picocli</shadedPattern>
                 </relocation>
               </relocations>
             </configuration>
