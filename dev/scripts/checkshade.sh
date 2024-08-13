@@ -27,10 +27,11 @@ if [ ! -f "${SHADED_JAR_PATH}" ]; then
     exit 1
 fi
 
-UNSHADED_COUNT=`unzip -l $1 | awk 'NR>3 {print \$4}' | grep -vE 'uniffle|shuffle|META-INF|git.properties|/$|\.html$|\.css$|^javax|^$' | wc -l`
-echo "unshaded count = $UNSHADED_COUNT"
-echo "content is :"
-echo `unzip -l $1 | awk 'NR>3 {print \$4}' | grep -vE 'uniffle|shuffle|META-INF|git.properties|/$|\.html$|\.css$|^javax|^$'`
+UNSHADED=$(unzip -l "$1" | awk 'NR>3 {print \$4}' | grep -vE 'uniffle|shuffle|META-INF|git.properties|/$|\.html$|\.css$|^javax|^$')
+UNSHADED_COUNT=$(wc -l <<< "$UNSHADED")
+echo "unshaded count: $UNSHADED_COUNT"
+echo "unshaded content:"
+echo "$UNSHADED"
 if [ $UNSHADED_COUNT -le 1 ]; then
     echo "check success."
 else
