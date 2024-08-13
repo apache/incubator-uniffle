@@ -36,5 +36,5 @@ if [ $UNSHADED_COUNT -le 1 ]; then
     echo "check success."
 else
     echo "check failed."
-    exit -2
+    exit 2
 fi
