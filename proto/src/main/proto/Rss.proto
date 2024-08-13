@@ -686,8 +686,7 @@ message GetSortedShuffleDataRequest {
   int32 shuffleId = 2;
   int32 partitionId = 3;
   int64 blockId = 4;
-  int32 length = 5;
-  int64 timestamp = 6;
+  int64 timestamp = 5;
 }
 
 message GetSortedShuffleDataResponse {
