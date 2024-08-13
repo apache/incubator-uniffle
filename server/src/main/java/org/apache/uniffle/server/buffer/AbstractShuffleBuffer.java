@@ -44,8 +44,12 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
 
   protected AtomicLong inFlushSize = new AtomicLong();
 
+  protected volatile boolean evicted;
+  public static final long BUFFER_EVICTED = -1L;
+
   public AbstractShuffleBuffer() {
     this.size = 0;
+    this.evicted = false;
   }
 
   /** Only for test */

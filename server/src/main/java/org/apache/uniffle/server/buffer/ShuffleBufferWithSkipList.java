@@ -58,8 +58,11 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   }
 
   @Override
-  public long append(ShufflePartitionedData data) {
-    long size = 0;
+  public synchronized long append(ShufflePartitionedData data) {
+    if (evicted) {
+      return BUFFER_EVICTED;
+    }
+    long currentSize = 0;
 
     synchronized (this) {
       for (ShufflePartitionedBlock block : data.getBlockList()) {
@@ -68,15 +71,15 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
         if (!blocksMap.containsKey(block.getBlockId())) {
           blocksMap.put(block.getBlockId(), block);
           blockCount++;
-          size += block.getSize();
+          currentSize += block.getSize();
         } else {
           block.getData().release();
         }
       }
-      this.size += size;
+      this.size += currentSize;
     }
 
-    return size;
+    return currentSize;
   }
 
   @Override
@@ -120,10 +123,11 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   }
 
   @Override
-  public long release() {
+  public synchronized long release() {
     Throwable lastException = null;
     int failedToReleaseSize = 0;
     long releasedSize = 0;
+    evicted = true;
     for (ShufflePartitionedBlock spb : blocksMap.values()) {
       try {
         spb.getData().release();

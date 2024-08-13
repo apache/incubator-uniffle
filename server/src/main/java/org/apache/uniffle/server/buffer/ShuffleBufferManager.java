@@ -219,6 +219,9 @@ public class ShuffleBufferManager {
 
     ShuffleBuffer buffer = entry.getValue();
     long size = buffer.append(spd);
+    if (size == AbstractShuffleBuffer.BUFFER_EVICTED) {
+      return StatusCode.NO_REGISTER;
+    }
     if (!isPreAllocated) {
       updateUsedMemory(size);
     }
