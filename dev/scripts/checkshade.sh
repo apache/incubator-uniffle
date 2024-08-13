@@ -17,6 +17,7 @@
 # limitations under the License.
 #
 
+set -o pipefail
 set -o nounset   # exit the script if you try to use an uninitialised variable
 
 SHADED_JAR_PATH=${1}
