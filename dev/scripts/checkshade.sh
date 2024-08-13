@@ -24,7 +24,7 @@ SHADED_JAR_PATH=${1}
 echo "checkShaded:"${SHADED_JAR_PATH}
 if [ ! -f "${SHADED_JAR_PATH}" ]; then
     echo "check failed, file does not exist."
-    exit -1
+    exit 1
 fi
 
 UNSHADED_COUNT=`unzip -l $1 | awk 'NR>3 {print \$4}' | grep -vE 'uniffle|shuffle|META-INF|git.properties|/$|\.html$|\.css$|^javax|^$' | wc -l`
