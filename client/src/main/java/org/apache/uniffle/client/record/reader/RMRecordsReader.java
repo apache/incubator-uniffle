@@ -185,8 +185,6 @@ public class RMRecordsReader<K, V, C> {
     }
   }
 
-  // For spark shuffle that does not require sorting, the comparator is completed through hashcode.
-  // Therefore, it is necessary to further compare whether the objects are equal.
   private boolean isSameKey(Object k1, Object k2) {
     if (raw) {
       ComparativeOutputBuffer buffer1 = (ComparativeOutputBuffer) k1;
@@ -499,7 +497,9 @@ public class RMRecordsReader<K, V, C> {
   class RecordsCombiner extends Thread {
 
     private int partitionId;
-    // cachedBuffer is used to record the buffer of the last combine.
+    // The RecordBuffer has a capacity limit, records for the same key may be
+    // distributed in different RecordBuffers. So we need a cachedBuffer used
+    // to record the buffer of the last combine.
     private RecordBuffer cached;
     private Queue nextQueue;
 
