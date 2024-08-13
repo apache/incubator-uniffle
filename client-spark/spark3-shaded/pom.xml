@@ -309,7 +309,7 @@
                 <echo message="repackaging netty jar"></echo>
                 <jar destfile="${project.build.directory}/${project.artifactId}-${project.version}.jar"
                      basedir="${project.build.directory}/unpacked"/>
-                <exec executable="sh" failonerror="true" dir="${project.build.directory}/">
+                <exec executable="bash" failonerror="true" dir="${project.build.directory}/">
                   <arg line="${project.basedir}/../../dev/scripts/checkshade.sh ${project.build.directory}/${project.artifactId}-${project.version}.jar"/>
                 </exec>
               </target>
