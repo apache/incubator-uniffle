@@ -100,7 +100,9 @@
                   Start Time
                 </div>
               </template>
-              {{ pageData.serverInfo.startTime }}
+              <template #default>
+                {{ dateFormatter(null, null, pageData.serverInfo.startTime) }}
+              </template>
             </el-descriptions-item>
           </el-descriptions>
         </div>
@@ -131,6 +133,7 @@ import {
   getCoordinatorStacks
 } from '@/api/api'
 import { useCurrentServerStore } from '@/store/useCurrentServerStore'
+import { dateFormatter } from '@/utils/common'
 
 export default {
   setup() {
@@ -254,7 +257,8 @@ export default {
       handlerPromMetrics,
       handlerStacks,
       filteredTableData,
-      searchKeyword
+      searchKeyword,
+      dateFormatter
     }
   }
 }
