@@ -89,7 +89,7 @@
                   Version
                 </div>
               </template>
-              {{ pageData.serverInfo.version}}
+              {{ pageData.serverInfo.version }}_{{ pageData.serverInfo.gitCommitId }}
             </el-descriptions-item>
             <el-descriptions-item>
               <template #label>
@@ -97,10 +97,10 @@
                   <el-icon :style="iconStyle">
                     <Wallet />
                   </el-icon>
-                  Git CommitId
+                  Start Time
                 </div>
               </template>
-              {{ pageData.serverInfo.gitCommitId}}
+              {{ pageData.serverInfo.startTime }}
             </el-descriptions-item>
           </el-descriptions>
         </div>

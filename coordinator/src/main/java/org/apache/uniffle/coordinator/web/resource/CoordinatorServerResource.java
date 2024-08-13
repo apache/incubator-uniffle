@@ -83,6 +83,7 @@ public class CoordinatorServerResource extends BaseResource {
               "serverWebPort", String.valueOf(coordinatorConf.get(JETTY_HTTP_PORT)));
           coordinatorServerInfo.put("version", Constants.VERSION);
           coordinatorServerInfo.put("gitCommitId", Constants.REVISION_SHORT);
+          coordinatorServerInfo.put("startTime", String.valueOf(getCoordinatorServer().getStartTimeMs()));
           return coordinatorServerInfo;
         });
   }
