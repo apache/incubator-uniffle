@@ -27,12 +27,16 @@ if [ ! -f "${SHADED_JAR_PATH}" ]; then
     exit 1
 fi
 
-UNSHADED=$(unzip -l "$1" | awk 'NR>3 {print \$4}' | grep -vE 'uniffle|shuffle|META-INF|git.properties|/$|\.html$|\.css$|^javax|^$')
-UNSHADED_COUNT=$(wc -l <<< "$UNSHADED")
+UNSHADED=$(unzip -l "${SHADED_JAR_PATH}" | awk 'NR>3 {print $4}' | grep -vE 'uniffle|org/apache/spark/shuffle|META-INF|git.properties|/$|\.html$|\.css$|^javax|^$')
+if [ -z "$UNSHADED" ]; then
+    UNSHADED_COUNT=0
+else
+    UNSHADED_COUNT=$(wc -l <<< "$UNSHADED")
+fi
 echo "unshaded count: $UNSHADED_COUNT"
 echo "unshaded content:"
 echo "$UNSHADED"
-if [ $UNSHADED_COUNT -le 1 ]; then
+if [ $UNSHADED_COUNT -eq 0 ]; then
     echo "check success."
 else
     echo "check failed."
