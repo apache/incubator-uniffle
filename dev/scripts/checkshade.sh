@@ -23,7 +23,7 @@ set -o nounset   # exit the script if you try to use an uninitialised variable
 SHADED_JAR_PATH=${1}
 echo "checkShaded:"${SHADED_JAR_PATH}
 if [ ! -f "${SHADED_JAR_PATH}" ]; then
-    echo "check failed, file is not exist."
+    echo "check failed, file does not exist."
     exit -1
 fi
 
