@@ -1421,7 +1421,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       int shuffleId = request.getShuffleId();
       int partitionId = request.getPartitionId();
 
-      auditContext.withAppId(appId)
+      auditContext
+          .withAppId(appId)
           .withShuffleId(shuffleId)
           .withArgs(String.format("partitionId=%d", partitionId));
 
@@ -1471,7 +1472,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       int partitionId = request.getPartitionId();
       long blockId = request.getBlockId();
       long timestamp = request.getTimestamp();
-      auditContext.withAppId(appId)
+      auditContext
+          .withAppId(appId)
           .withShuffleId(shuffleId)
           .withArgs(String.format("partitionId=%d, blockId=%d", partitionId, blockId));
 
@@ -1513,7 +1515,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
 
       MergeStatus mergeStatus =
-          shuffleServer.getShuffleMergeManager().tryGetBlock(appId, shuffleId, partitionId, blockId);
+          shuffleServer
+              .getShuffleMergeManager()
+              .tryGetBlock(appId, shuffleId, partitionId, blockId);
       MergeState mergeState = mergeStatus.getState();
       long blockSize = mergeStatus.getSize();
       if (mergeState == MergeState.INITED) {
