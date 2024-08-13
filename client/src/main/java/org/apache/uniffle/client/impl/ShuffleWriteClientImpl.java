@@ -62,9 +62,9 @@ import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
 import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
-import org.apache.uniffle.client.request.RssReportUniqueBlocksRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.client.request.RssStartSortMergeRequest;
 import org.apache.uniffle.client.request.RssUnregisterShuffleByAppIdRequest;
 import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.ClientResponse;
@@ -77,9 +77,9 @@ import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
 import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
-import org.apache.uniffle.client.response.RssReportUniqueBlocksResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.client.response.RssStartSortMergeResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleByAppIdResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.client.response.SendShuffleDataResult;
@@ -1122,18 +1122,17 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @Override
-  public void reportUniqueBlocks(
+  public void startSortMerge(
       Set<ShuffleServerInfo> serverInfos,
       String appId,
       int shuffleId,
       int partitionId,
       Roaring64NavigableMap expectedBlockIds) {
-    RssReportUniqueBlocksRequest request =
-        new RssReportUniqueBlocksRequest(appId, shuffleId, partitionId, expectedBlockIds);
+    RssStartSortMergeRequest request =
+        new RssStartSortMergeRequest(appId, shuffleId, partitionId, expectedBlockIds);
     boolean atLeastOneSucceeful = false;
     for (ShuffleServerInfo ssi : serverInfos) {
-      RssReportUniqueBlocksResponse response =
-          getShuffleServerClient(ssi).reportUniqueBlocks(request);
+      RssStartSortMergeResponse response = getShuffleServerClient(ssi).startSortMerge(request);
       if (response.getStatusCode() == StatusCode.SUCCESS) {
         atLeastOneSucceeful = true;
         LOG.info(

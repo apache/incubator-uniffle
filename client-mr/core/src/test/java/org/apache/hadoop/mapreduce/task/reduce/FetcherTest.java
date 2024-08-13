@@ -587,7 +587,7 @@ public class FetcherTest {
     public void unregisterShuffle(String appId) {}
 
     @Override
-    public void reportUniqueBlocks(
+    public void startSortMerge(
         Set<ShuffleServerInfo> serverInfos,
         String appId,
         int shuffleId,

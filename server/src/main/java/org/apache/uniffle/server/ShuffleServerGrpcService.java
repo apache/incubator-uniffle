@@ -190,7 +190,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       try {
         shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId, shuffleId);
         if (shuffleServer.isRemoteMergeEnable()) {
-          shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId + MERGE_APP_SUFFIX, shuffleId);
+          shuffleServer
+              .getShuffleTaskManager()
+              .removeShuffleDataAsync(appId + MERGE_APP_SUFFIX, shuffleId);
         }
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
@@ -748,7 +750,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   @Override
   public void appHeartbeat(
       AppHeartBeatRequest request, StreamObserver<AppHeartBeatResponse> responseObserver) {
-<<<<<<< HEAD
     try (ServerRPCAuditContext auditContext = createAuditContext("appHeartbeat")) {
       String appId = request.getAppId();
       auditContext.withAppId(appId);

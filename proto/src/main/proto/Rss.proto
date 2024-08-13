@@ -38,7 +38,7 @@ service ShuffleServer {
   rpc finishShuffle (FinishShuffleRequest) returns (FinishShuffleResponse);
   rpc requireBuffer (RequireBufferRequest) returns (RequireBufferResponse);
   rpc appHeartbeat(AppHeartBeatRequest) returns (AppHeartBeatResponse);
-  rpc reportUniqueBlocks (ReportUniqueBlocksRequest) returns (ReportUniqueBlocksResponse);
+  rpc startSortMerge (StartSortMergeRequest) returns (StartSortMergeResponse);
   rpc getSortedShuffleData (GetSortedShuffleDataRequest) returns (GetSortedShuffleDataResponse);
 }
 
@@ -669,14 +669,14 @@ message ReassignOnBlockSendFailureResponse {
   MutableShuffleHandleInfo handle = 3;
 }
 
-message ReportUniqueBlocksRequest {
+message StartSortMergeRequest {
   string appId = 1;
   int32 shuffleId = 2;
   int32 partitionId = 3;
   bytes uniqueBlocksBitmap = 4;
 }
 
-message ReportUniqueBlocksResponse {
+message StartSortMergeResponse {
   StatusCode status = 1;
   string retMsg = 2;
 }

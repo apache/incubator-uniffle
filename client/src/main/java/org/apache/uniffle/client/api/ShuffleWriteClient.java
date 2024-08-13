@@ -186,7 +186,7 @@ public interface ShuffleWriteClient {
 
   void unregisterShuffle(String appId);
 
-  void reportUniqueBlocks(
+  void startSortMerge(
       Set<ShuffleServerInfo> serverInfos,
       String appId,
       int shuffleId,

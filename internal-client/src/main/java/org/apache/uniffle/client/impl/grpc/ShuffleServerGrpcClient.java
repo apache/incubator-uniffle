@@ -47,9 +47,9 @@ import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
 import org.apache.uniffle.client.request.RssGetSortedShuffleDataRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
-import org.apache.uniffle.client.request.RssReportUniqueBlocksRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.client.request.RssStartSortMergeRequest;
 import org.apache.uniffle.client.request.RssUnregisterShuffleByAppIdRequest;
 import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
@@ -61,9 +61,9 @@ import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
 import org.apache.uniffle.client.response.RssGetSortedShuffleDataResponse;
 import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
-import org.apache.uniffle.client.response.RssReportUniqueBlocksResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.client.response.RssStartSortMergeResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleByAppIdResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.common.BufferSegment;
@@ -1133,7 +1133,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   }
 
   @Override
-  public RssReportUniqueBlocksResponse reportUniqueBlocks(RssReportUniqueBlocksRequest request) {
+  public RssStartSortMergeResponse startSortMerge(RssStartSortMergeRequest request) {
     ByteString serializedBlockIdsBytes = ByteString.EMPTY;
     try {
       if (request.getExpectedTaskIds() != null) {
@@ -1144,16 +1144,15 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       throw new RssException("Errors on serializing task ids bitmap.", e);
     }
 
-    RssProtos.ReportUniqueBlocksRequest rpcRequest =
-        RssProtos.ReportUniqueBlocksRequest.newBuilder()
+    RssProtos.StartSortMergeRequest rpcRequest =
+        RssProtos.StartSortMergeRequest.newBuilder()
             .setAppId(request.getAppId())
             .setShuffleId(request.getShuffleId())
             .setPartitionId(request.getPartitionId())
             .setUniqueBlocksBitmap(serializedBlockIdsBytes)
             .build();
     long start = System.currentTimeMillis();
-    RssProtos.ReportUniqueBlocksResponse rpcResponse =
-        getBlockingStub().reportUniqueBlocks(rpcRequest);
+    RssProtos.StartSortMergeResponse rpcResponse = getBlockingStub().startSortMerge(rpcRequest);
     String requestInfo =
         "appId["
             + request.getAppId()
@@ -1163,16 +1162,16 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             + request.getPartitionId()
             + "]";
     LOG.info(
-        "reportUniqueBlocks to {}:{} for {} cost {} ms",
+        "startSortMerge to {}:{} for {} cost {} ms",
         host,
         port,
         requestInfo,
         (System.currentTimeMillis() - start));
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
-    RssReportUniqueBlocksResponse response;
+    RssStartSortMergeResponse response;
     switch (statusCode) {
       case SUCCESS:
-        response = new RssReportUniqueBlocksResponse(StatusCode.SUCCESS);
+        response = new RssStartSortMergeResponse(StatusCode.SUCCESS);
         break;
       default:
         String msg =

@@ -141,7 +141,7 @@ public class MockedShuffleWriteClient implements ShuffleWriteClient {
   }
 
   @Override
-  public void reportUniqueBlocks(
+  public void startSortMerge(
       Set<ShuffleServerInfo> serverInfos,
       String appId,
       int shuffleId,

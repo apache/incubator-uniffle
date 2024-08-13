@@ -19,9 +19,9 @@ package org.apache.uniffle.client.response;
 
 import org.apache.uniffle.common.rpc.StatusCode;
 
-public class RssReportUniqueBlocksResponse extends ClientResponse {
+public class RssStartSortMergeResponse extends ClientResponse {
 
-  public RssReportUniqueBlocksResponse(StatusCode statusCode) {
+  public RssStartSortMergeResponse(StatusCode statusCode) {
     super(statusCode);
   }
 }

@@ -19,14 +19,14 @@ package org.apache.uniffle.client.request;
 
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-public class RssReportUniqueBlocksRequest {
+public class RssStartSortMergeRequest {
 
   private String appId;
   private int shuffleId;
   private int partitionId;
   private Roaring64NavigableMap expectedBlockIds;
 
-  public RssReportUniqueBlocksRequest(
+  public RssStartSortMergeRequest(
       String appId, int shuffleId, int partitionId, Roaring64NavigableMap expectedBlockIds) {
     this.appId = appId;
     this.shuffleId = shuffleId;

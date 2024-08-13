@@ -85,7 +85,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MERGE_ENABLE, true);
-    shuffleServerConf.set(ShuffleServerConf.SERVER_DEFAULT_MERGED_BLOCK_SIZE, "1k");
+    shuffleServerConf.set(ShuffleServerConf.SERVER_MERGE_DEFAULT_MERGED_BLOCK_SIZE, "1k");
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 10000000);
     File dataDir1 = new File(tmpDir, "data1");
     File dataDir2 = new File(tmpDir, "data2");
@@ -147,8 +147,6 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
       strings = {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,true",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false",
-        "java.lang.String,java.lang.Integer",
-        "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer",
       })
   @Timeout(10)
   public void remoteMergeWriteReadTest(String classes) throws Exception {
@@ -271,7 +269,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     // 5 report unique blocks
     Roaring64NavigableMap uniqueBlockIds = Roaring64NavigableMap.bitmapOf();
     ptb.get(PARTITION_ID).stream().forEach(block -> uniqueBlockIds.add(block));
-    shuffleWriteClientImpl.reportUniqueBlocks(
+    shuffleWriteClientImpl.startSortMerge(
         Sets.newHashSet(shuffleServerInfo), testAppId, SHUFFLE_ID, PARTITION_ID, uniqueBlockIds);
 
     // 6 read result
@@ -308,8 +306,6 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
       strings = {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,true",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false",
-        "java.lang.String,java.lang.Integer",
-        "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer",
       })
   @Timeout(10)
   public void remoteMergeWriteReadTestWithCombine(String classes) throws Exception {
@@ -436,7 +432,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     // 5 report unique blocks
     Roaring64NavigableMap uniqueBlockIds = Roaring64NavigableMap.bitmapOf();
     ptb.get(PARTITION_ID).stream().forEach(block -> uniqueBlockIds.add(block));
-    shuffleWriteClientImpl.reportUniqueBlocks(
+    shuffleWriteClientImpl.startSortMerge(
         Sets.newHashSet(shuffleServerInfo), testAppId, SHUFFLE_ID, PARTITION_ID, uniqueBlockIds);
 
     // 6 read result
@@ -482,8 +478,6 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
       strings = {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,true",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false",
-        "java.lang.String,java.lang.Integer",
-        "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer",
       })
   @Timeout(10)
   public void remoteMergeWriteReadTestMultiPartition(String classes) throws Exception {
@@ -642,7 +636,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     for (int i = PARTITION_ID; i < PARTITION_ID + 3; i++) {
       Roaring64NavigableMap uniqueBlockIds = Roaring64NavigableMap.bitmapOf();
       ptb.get(i).stream().forEach(block -> uniqueBlockIds.add(block));
-      shuffleWriteClientImpl.reportUniqueBlocks(
+      shuffleWriteClientImpl.startSortMerge(
           Sets.newHashSet(shuffleServerInfo), testAppId, SHUFFLE_ID, i, uniqueBlockIds);
     }
 
@@ -686,8 +680,6 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
       strings = {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,true",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false",
-        "java.lang.String,java.lang.Integer",
-        "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer",
       })
   @Timeout(10)
   public void remoteMergeWriteReadTestMultiPartitionWithCombine(String classes) throws Exception {
@@ -850,7 +842,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     for (int i = PARTITION_ID; i < PARTITION_ID + 3; i++) {
       Roaring64NavigableMap uniqueBlockIds = Roaring64NavigableMap.bitmapOf();
       ptb.get(i).stream().forEach(block -> uniqueBlockIds.add(block));
-      shuffleWriteClientImpl.reportUniqueBlocks(
+      shuffleWriteClientImpl.startSortMerge(
           new HashSet<>(partitionToServers.get(i)), testAppId, SHUFFLE_ID, i, uniqueBlockIds);
     }
 
