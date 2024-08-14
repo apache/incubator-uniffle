@@ -58,7 +58,7 @@ public class RegisterHeartBeat {
     CoordinatorClientFactory factory = CoordinatorClientFactory.getInstance();
     this.coordinatorClients =
         factory.createCoordinatorClient(
-            conf.get(ShuffleServerConf.RSS_CLIENT_TYPE), this.coordinatorQuorum);
+            conf.get(ShuffleServerConf.RSS_COORDINATOR_CLIENT_TYPE), this.coordinatorQuorum);
     this.shuffleServer = shuffleServer;
     this.heartBeatExecutorService =
         ThreadUtils.getDaemonFixedThreadPool(
