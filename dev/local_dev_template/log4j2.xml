@@ -51,16 +51,16 @@
   </Appenders>
   <Loggers>
     <Root level="info">
-      <AppenderRef ref="RollingAppender"/>
+      <AppenderRef ref="console"/>
     </Root>
     <Logger name="io.grpc.netty.shaded.io.grpc.netty" level="info" additivity="false">
-      <AppenderRef ref="RollingAppender"/>
+      <AppenderRef ref="console"/>
     </Logger>
     <Logger name="org.apache.hadoop" level="info" additivity="false">
-      <AppenderRef ref="RollingAppender"/>
+      <AppenderRef ref="console"/>
     </Logger>
     <Logger name="org.eclipse.jetty" level="info" additivity="false">
-      <AppenderRef ref="RollingAppender"/>
+      <AppenderRef ref="console"/>
     </Logger>
     <Logger name="SHUFFLE_SERVER_STORAGE_AUDIT_LOG" level="INFO" additivity="false">
       <AppenderRef ref="shuffleServerStorageAuditAppender"/>
