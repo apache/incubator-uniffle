@@ -20,42 +20,23 @@
     <Console name="console" target="SYSTEM_ERR">
       <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] %c{1} - %m%n%ex"/>
     </Console>
-    <RollingFile name="Coordinator" fileName="${sys:log.dir}/coordinator.log" filePattern="${sys:log.dir}/coordinator.log.%i" createOnDemand="true">
+    <RollingFile name="RollingAppender" fileName="${sys:log.path}" filePattern="${sys:log.path}.%i">
       <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] %c{1} - %m%n%ex"/>
       <Policies>
         <SizeBasedTriggeringPolicy size="2GB"/>
       </Policies>
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
-    <RollingFile name="Dashboard" fileName="${sys:log.dir}/dashboard.log" filePattern="${sys:log.dir}/dashboard.log.%i" createOnDemand="true">
-      <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] %c{1} - %m%n%ex"/>
-      <Policies>
-        <SizeBasedTriggeringPolicy size="2GB"/>
-      </Policies>
-      <DefaultRolloverStrategy max="10"/>
-    </RollingFile>
-    <RollingFile name="ShuffleServer" fileName="${sys:log.dir}/shuffle_server.log" filePattern="${sys:log.dir}/shuffle_server.log.%i" createOnDemand="true">
-      <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] %c{1} - %m%n%ex"/>
-      <Policies>
-        <SizeBasedTriggeringPolicy size="2GB"/>
-      </Policies>
-      <DefaultRolloverStrategy max="10"/>
-    </RollingFile>
-    <RollingFile name="CoordinatorRpcAuditAppender" fileName="${sys:log.dir}/coordinator_rpc_audit.log" filePattern="${sys:log.dir}/coordinator_rpc_audit.log.%i" createOnDemand="true">
-      <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] %m%n"/>
-      <Policies>
-        <SizeBasedTriggeringPolicy size="2GB"/>
-      </Policies>
-      <DefaultRolloverStrategy max="10"/>
-    </RollingFile>
-    <RollingFile name="ShuffleServerStorageAuditAppender" fileName="${sys:log.dir}/shuffle_server_storage_audit.log" filePattern="${sys:log.dir}/shuffle_server_storage_audit.log.%i" createOnDemand="true">
+    <RollingFile name="StorageAuditAppender" fileName="${sys:storage.audit.log.path}" filePattern="${sys:storage.audit.log.path}.%i"
+                 createOnDemand="true">
       <PatternLayout pattern="%m%n"/>
       <Policies>
         <SizeBasedTriggeringPolicy size="2GB"/>
       </Policies>
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
-    <RollingFile name="ShuffleServerRpcAuditAppender" fileName="${sys:log.dir}/shuffle_server_rpc_audit.log" filePattern="${sys:log.dir}/shuffle_server_rpc_audit.log.%i" createOnDemand="true">
+    <RollingFile name="RPCAuditAppender" fileName="${sys:rpc.audit.log.path}" filePattern="${sys:rpc.audit.log.path}.%i"
+                 createOnDemand="true">
       <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] %m%n"/>
       <Policies>
         <SizeBasedTriggeringPolicy size="2GB"/>
@@ -66,28 +47,28 @@
   <Loggers>
     <Root level="info">
       <AppenderRef ref="console"/>
-      <AppenderRef ref="${sys:logger.type}"/>
+      <AppenderRef ref="RollingAppender"/>
     </Root>
     <Logger name="io.grpc.netty.shaded.io.grpc.netty" level="info" additivity="false">
       <AppenderRef ref="console"/>
-      <AppenderRef ref="${sys:logger.type}"/>
+      <AppenderRef ref="RollingAppender"/>
     </Logger>
     <Logger name="org.apache.hadoop" level="info" additivity="false">
       <AppenderRef ref="console"/>
-      <AppenderRef ref="${sys:logger.type}"/>
+      <AppenderRef ref="RollingAppender"/>
     </Logger>
     <Logger name="org.eclipse.jetty" level="info" additivity="false">
       <AppenderRef ref="console"/>
-      <AppenderRef ref="${sys:logger.type}"/>
+      <AppenderRef ref="RollingAppender"/>
     </Logger>
     <Logger name="SHUFFLE_SERVER_STORAGE_AUDIT_LOG" level="INFO" additivity="false">
-      <AppenderRef ref="ShuffleServerStorageAuditAppender"/>
+      <AppenderRef ref="StorageAuditAppender"/>
     </Logger>
     <Logger name="SHUFFLE_SERVER_RPC_AUDIT_LOG" level="INFO" additivity="false">
-      <AppenderRef ref="ShuffleServerRpcAuditAppender"/>
+      <AppenderRef ref="RPCAuditAppender"/>
     </Logger>
     <Logger name="COORDINATOR_RPC_AUDIT_LOG" level="INFO" additivity="false">
-      <AppenderRef ref="CoordinatorRpcAuditAppender"/>
+      <AppenderRef ref="RPCAuditAppender"/>
     </Logger>
   </Loggers>
 </Configuration>
