@@ -53,6 +53,7 @@ import org.apache.uniffle.dashboard.web.utils.DashboardUtils;
 public class Dashboard {
 
   private static final Logger LOG = LoggerFactory.getLogger(Dashboard.class);
+  private final long startTimeMs;
 
   private DashboardConf conf;
   // Jetty Server
@@ -62,6 +63,7 @@ public class Dashboard {
 
   public Dashboard(DashboardConf coordinatorConf) {
     this.conf = coordinatorConf;
+    this.startTimeMs = System.currentTimeMillis();
     initialization();
   }
 
@@ -120,6 +122,7 @@ public class Dashboard {
     servletHolder.setInitParameter(
         ServerProperties.PROVIDER_PACKAGES, "org.apache.uniffle.dashboard.web.resource");
     contextHandler.setAttribute("coordinatorServerAddresses", coordinatorServerAddresses);
+    contextHandler.setAttribute(Dashboard.class.getCanonicalName(), this);
     return contextHandler;
   }
 
@@ -158,5 +161,9 @@ public class Dashboard {
       ExitUtils.terminate(1, "Fail to start dashboard http server", e, LOG);
     }
     LOG.info("Dashboard http server started, listening on port {}", httpPort);
+  }
+
+  public long getStartTimeMs() {
+    return startTimeMs;
   }
 }

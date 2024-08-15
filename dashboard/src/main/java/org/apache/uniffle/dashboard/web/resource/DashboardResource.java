@@ -17,20 +17,39 @@
 
 package org.apache.uniffle.dashboard.web.resource;
 
+import java.util.HashMap;
+import java.util.Map;
+import javax.servlet.ServletContext;
+
+import org.apache.hbase.thirdparty.javax.ws.rs.GET;
 import org.apache.hbase.thirdparty.javax.ws.rs.Path;
 import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
+import org.apache.hbase.thirdparty.javax.ws.rs.core.Context;
 import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
-@Path("web")
+import org.apache.uniffle.common.util.Constants;
+import org.apache.uniffle.common.web.resource.BaseResource;
+import org.apache.uniffle.common.web.resource.Response;
+import org.apache.uniffle.dashboard.web.Dashboard;
+
 @Produces({MediaType.APPLICATION_JSON})
-public class WebResource {
-  @Path("coordinator")
-  public Class<CoordinatorResource> getGainCoordinatorsResource() {
-    return CoordinatorResource.class;
+public class DashboardResource extends BaseResource {
+
+  @Context protected ServletContext servletContext;
+
+  @GET
+  @Path("/info")
+  public Response<Map<String, Object>> getDashboardInfo() {
+    return execute(
+        () -> {
+          Map<String, Object> dashboardInfo = new HashMap<>();
+          dashboardInfo.put("version", Constants.VERSION_AND_REVISION_SHORT);
+          dashboardInfo.put("startTime", getDashboard().getStartTimeMs());
+          return dashboardInfo;
+        });
   }
 
-  @Path("dashboard")
-  public Class<DashboardResource> getDashboardResource() {
-    return DashboardResource.class;
+  private Dashboard getDashboard() {
+    return (Dashboard) servletContext.getAttribute(Dashboard.class.getCanonicalName());
   }
 }
