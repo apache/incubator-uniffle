@@ -23,7 +23,7 @@
     <option name="VM_PARAMETERS" value="-Dlog4j2.configurationFile=file:$PROJECT_DIR$/.idea/local_dev/log4j2.xml -Dlog.path=$PROJECT_DIR$/logs/shuffle_server.log -Drpc.audit.log.path=$PROJECT_DIR$/logs/shuffle_server_rpc_audit.log -Dstorage.audit.log.path=$PROJECT_DIR$/logs/shuffle_server_storage_audit.log " />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="org.apache.uniffle.dashboard.web.*" />
+        <option name="PATTERN" value="org.apache.uniffle.server.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
