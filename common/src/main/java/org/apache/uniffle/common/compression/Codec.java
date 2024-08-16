@@ -29,6 +29,8 @@ public abstract class Codec {
   public static Codec newInstance(RssConf rssConf) {
     Type type = rssConf.get(COMPRESSION_TYPE);
     switch (type) {
+      case NONE:
+        return null;
       case ZSTD:
         return ZstdCodec.getInstance(rssConf.get(ZSTD_COMPRESSION_LEVEL));
       case SNAPPY:
@@ -72,5 +74,6 @@ public abstract class Codec {
     ZSTD,
     NOOP,
     SNAPPY,
+    NONE,
   }
 }
