@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -96,7 +97,7 @@ public class SortWriteBufferManager<K, V> {
   private final long maxBufferSize;
   private final ExecutorService sendExecutorService;
   private final RssConf rssConf;
-  private final Codec codec;
+  private final Optional<Codec> codec;
   private final Task.CombinerRunner<K, V> combinerRunner;
 
   public SortWriteBufferManager(
@@ -383,7 +384,7 @@ public class SortWriteBufferManager<K, V> {
     int partitionId = wb.getPartitionId();
     final int uncompressLength = data.length;
     long start = System.currentTimeMillis();
-    final byte[] compressed = codec.compress(data);
+    final byte[] compressed = codec.map(c -> c.compress(data)).orElse(data);
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     compressTime += System.currentTimeMillis() - start;
     final long blockId =

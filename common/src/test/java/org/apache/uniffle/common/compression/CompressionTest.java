@@ -56,7 +56,7 @@ public class CompressionTest {
     conf.set(COMPRESSION_TYPE, type);
 
     // case1: heap bytebuffer
-    Codec codec = Codec.newInstance(conf);
+    Codec codec = Codec.newInstance(conf).get();
     byte[] compressed = codec.compress(data);
 
     ByteBuffer dest = ByteBuffer.allocate(size);
