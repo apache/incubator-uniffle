@@ -97,7 +97,7 @@ GC_LOG_ARGS_NEW=" -XX:+IgnoreUnrecognizedVMOptions \
 JVM_LOG_ARGS=""
 
 if [ -f ${LOG_CONF_FILE} ]; then
-  JVM_LOG_ARGS=" -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH} -Dcoordinator.rpc.audit.log.path=${COORDINATOR_RPC_AUDIT_LOG_PATH}"
+  JVM_LOG_ARGS=" -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH} -Drpc.audit.log.path=${COORDINATOR_RPC_AUDIT_LOG_PATH}"
 else
   echo "Exit with error: ${LOG_CONF_FILE} file doesn't exist."
   exit 1

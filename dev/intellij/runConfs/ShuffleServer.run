@@ -20,7 +20,7 @@
     <option name="MAIN_CLASS_NAME" value="org.apache.uniffle.server.ShuffleServer" />
     <module name="shuffle-server" />
     <option name="PROGRAM_PARAMETERS" value="--conf $PROJECT_DIR$/.idea/local_dev/server.conf" />
-    <option name="VM_PARAMETERS" value="-Dlog4j2.configurationFile=file:$PROJECT_DIR$/.idea/local_dev/log4j2.xml -Dlog.path=$PROJECT_DIR$/logs/shuffle_server.log" />
+    <option name="VM_PARAMETERS" value="-Dlog4j2.configurationFile=file:$PROJECT_DIR$/.idea/local_dev/log4j2.xml -Dlog.path=$PROJECT_DIR$/logs/shuffle_server.log -Drpc.audit.log.path=$PROJECT_DIR$/logs/shuffle_server_rpc_audit.log -Dstorage.audit.log.path=$PROJECT_DIR$/logs/shuffle_server_storage_audit.log " />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="org.apache.uniffle.server.*" />

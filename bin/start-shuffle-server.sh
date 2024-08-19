@@ -135,7 +135,7 @@ GC_LOG_ARGS_NEW=" -XX:+IgnoreUnrecognizedVMOptions \
 JVM_LOG_ARGS=""
 
 if [ -f ${LOG_CONF_FILE} ]; then
-  JVM_LOG_ARGS=" -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH} -Dshuffle.server.storage.audit.log.path=${SHUFFLE_SERVER_STORAGE_AUDIT_LOG_PATH} -Dshuffle.server.rpc.audit.log.path=${SHUFFLE_SERVER_RPC_AUDIT_LOG_PATH}"
+  JVM_LOG_ARGS=" -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH} -Dstorage.audit.log.path=${SHUFFLE_SERVER_STORAGE_AUDIT_LOG_PATH} -Drpc.audit.log.path=${SHUFFLE_SERVER_RPC_AUDIT_LOG_PATH}"
 else
   echo "Exit with error: ${LOG_CONF_FILE} file doesn't exist."
   exit 1
