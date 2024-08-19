@@ -85,32 +85,45 @@ public class QuorumTest extends ShuffleReadWriteBase {
         .readBufferSize(1000);
   }
 
-  public static MockedShuffleServer createServer(int id, File tmpDir) throws Exception {
+  public static MockedShuffleServer createServer(int id, File tmpDir, int coordinatorRpcPort)
+      throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+    shuffleServerConf.setInteger("rss.rpc.server.port", 0);
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 8000);
     shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000);
     File dataDir1 = new File(tmpDir, id + "_1");
     File dataDir2 = new File(tmpDir, id + "_2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     shuffleServerConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE.name());
-    shuffleServerConf.setInteger("rss.jetty.http.port", 19081 + id * 100);
+    shuffleServerConf.setInteger("rss.jetty.http.port", 0);
     shuffleServerConf.setString("rss.storage.basePath", basePath);
+    shuffleServerConf.setString("rss.coordinator.quorum", LOCALHOST + ":" + coordinatorRpcPort);
     return new MockedShuffleServer(shuffleServerConf);
   }
 
   @BeforeEach
   public void initCluster(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
+    coordinatorConf.setInteger(CoordinatorConf.RPC_SERVER_PORT, 0);
+    coordinatorConf.setInteger(CoordinatorConf.JETTY_HTTP_PORT, 0);
     createCoordinatorServer(coordinatorConf);
+
+    for (CoordinatorServer coordinator : coordinators) {
+      coordinator.start();
+    }
 
     ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 8000);
 
-    grpcShuffleServers.add(createServer(0, tmpDir));
-    grpcShuffleServers.add(createServer(1, tmpDir));
-    grpcShuffleServers.add(createServer(2, tmpDir));
-    grpcShuffleServers.add(createServer(3, tmpDir));
-    grpcShuffleServers.add(createServer(4, tmpDir));
+    grpcShuffleServers.add(createServer(0, tmpDir, coordinators.get(0).getRpcListenPort()));
+    grpcShuffleServers.add(createServer(1, tmpDir, coordinators.get(0).getRpcListenPort()));
+    grpcShuffleServers.add(createServer(2, tmpDir, coordinators.get(0).getRpcListenPort()));
+    grpcShuffleServers.add(createServer(3, tmpDir, coordinators.get(0).getRpcListenPort()));
+    grpcShuffleServers.add(createServer(4, tmpDir, coordinators.get(0).getRpcListenPort()));
+
+    for (ShuffleServer shuffleServer : grpcShuffleServers) {
+      shuffleServer.start();
+    }
 
     shuffleServerInfo0 =
         new ShuffleServerInfo(
@@ -137,12 +150,6 @@ public class QuorumTest extends ShuffleReadWriteBase {
             String.format("127.0.0.1-%s", grpcShuffleServers.get(4).getGrpcPort()),
             grpcShuffleServers.get(4).getIp(),
             grpcShuffleServers.get(4).getGrpcPort());
-    for (CoordinatorServer coordinator : coordinators) {
-      coordinator.start();
-    }
-    for (ShuffleServer shuffleServer : grpcShuffleServers) {
-      shuffleServer.start();
-    }
 
     // simulator of failed servers
     fakedShuffleServerInfo0 =
@@ -643,7 +650,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     // when one server is restarted, getShuffleResult should success
     grpcShuffleServers.get(1).stopServer();
-    grpcShuffleServers.set(1, createServer(1, tmpDir));
+    grpcShuffleServers.set(1, createServer(1, tmpDir, coordinators.get(0).getRpcListenPort()));
     grpcShuffleServers.get(1).start();
     report =
         shuffleWriteClientImpl.getShuffleResult(
@@ -656,7 +663,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     // when two servers are restarted, getShuffleResult should fail
     grpcShuffleServers.get(2).stopServer();
-    grpcShuffleServers.set(2, createServer(2, tmpDir));
+    grpcShuffleServers.set(2, createServer(2, tmpDir, coordinators.get(0).getRpcListenPort()));
     grpcShuffleServers.get(2).start();
     try {
       report =
