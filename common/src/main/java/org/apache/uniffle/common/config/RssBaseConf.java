@@ -151,11 +151,11 @@ public class RssBaseConf extends RssConf {
           .defaultValue(1024L * 1024L * 1024L)
           .withDescription("Max size of rpc message (byte)");
 
-  public static final ConfigOption<ClientType> RSS_CLIENT_TYPE =
-      ConfigOptions.key("rss.rpc.client.type")
+  public static final ConfigOption<ClientType> RSS_COORDINATOR_CLIENT_TYPE =
+      ConfigOptions.key("rss.coordinator.rpc.client.type")
           .enumType(ClientType.class)
           .defaultValue(ClientType.GRPC)
-          .withDescription("client type for rss");
+          .withDescription("client type for coordinator rpc client.");
 
   public static final ConfigOption<StorageType> RSS_STORAGE_TYPE =
       ConfigOptions.key("rss.storage.type")
