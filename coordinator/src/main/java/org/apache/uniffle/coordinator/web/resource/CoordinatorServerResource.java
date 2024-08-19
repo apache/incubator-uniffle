@@ -69,11 +69,11 @@ public class CoordinatorServerResource extends BaseResource {
 
   @GET
   @Path("/info")
-  public Response<Map<String, String>> getCoordinatorInfo() {
+  public Response<Map<String, Object>> getCoordinatorInfo() {
     return execute(
         () -> {
           final CoordinatorConf coordinatorConf = getCoordinatorServer().getCoordinatorConf();
-          Map<String, String> coordinatorServerInfo = new HashMap<>();
+          Map<String, Object> coordinatorServerInfo = new HashMap<>();
           coordinatorServerInfo.put(
               "coordinatorId", coordinatorConf.getString(CoordinatorUtils.COORDINATOR_ID, "none"));
           coordinatorServerInfo.put("serverIp", RssUtils.getHostIp());
@@ -83,6 +83,7 @@ public class CoordinatorServerResource extends BaseResource {
               "serverWebPort", String.valueOf(coordinatorConf.get(JETTY_HTTP_PORT)));
           coordinatorServerInfo.put("version", Constants.VERSION);
           coordinatorServerInfo.put("gitCommitId", Constants.REVISION_SHORT);
+          coordinatorServerInfo.put("startTime", getCoordinatorServer().getStartTimeMs());
           return coordinatorServerInfo;
         });
   }
