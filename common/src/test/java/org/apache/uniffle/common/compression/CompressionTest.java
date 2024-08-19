@@ -19,9 +19,11 @@ package org.apache.uniffle.common.compression;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang3.RandomUtils;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -146,5 +148,20 @@ public class CompressionTest {
     byte[] res = new byte[originData.length];
     dest.get(res);
     assertArrayEquals(originData, res);
+  }
+
+  @Test
+  public void testNoop() {
+    byte[] data = RandomUtils.nextBytes(1024);
+
+    Codec codec = NoOpCodec.getInstance();
+    byte[] compressed = codec.compress(data);
+
+    ByteBuffer dest = ByteBuffer.allocate(2048);
+    codec.decompress(ByteBuffer.wrap(compressed), 1024, dest, 0);
+    assertArrayEquals(data, Arrays.copyOfRange(dest.array(), 0, 1024));
+
+    codec.decompress(ByteBuffer.wrap(compressed), 1024, dest, 1024);
+    assertArrayEquals(data, Arrays.copyOfRange(dest.array(), 1024, 2048));
   }
 }
