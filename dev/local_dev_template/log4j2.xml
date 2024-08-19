@@ -52,19 +52,15 @@
   <Loggers>
     <Root level="info">
       <AppenderRef ref="console"/>
-      <AppenderRef ref="RollingAppender"/>
     </Root>
     <Logger name="io.grpc.netty.shaded.io.grpc.netty" level="info" additivity="false">
       <AppenderRef ref="console"/>
-      <AppenderRef ref="RollingAppender"/>
     </Logger>
     <Logger name="org.apache.hadoop" level="info" additivity="false">
       <AppenderRef ref="console"/>
-      <AppenderRef ref="RollingAppender"/>
     </Logger>
     <Logger name="org.eclipse.jetty" level="info" additivity="false">
       <AppenderRef ref="console"/>
-      <AppenderRef ref="RollingAppender"/>
     </Logger>
     <Logger name="SHUFFLE_SERVER_STORAGE_AUDIT_LOG" level="INFO" additivity="false">
       <AppenderRef ref="shuffleServerStorageAuditAppender"/>
