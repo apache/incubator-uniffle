@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -91,7 +92,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private long uncompressedDataLen = 0;
   private long requireMemoryInterval;
   private int requireMemoryRetryMax;
-  private Codec codec;
+  private Optional<Codec> codec;
   private Function<List<ShuffleBlockInfo>, List<CompletableFuture<Long>>> spillFunc;
   private long sendSizeLimit;
   private boolean memorySpillEnabled;
@@ -159,7 +160,7 @@ public class WriteBufferManager extends MemoryConsumer {
             RssSparkConfig.SPARK_SHUFFLE_COMPRESS_KEY.substring(
                 RssSparkConfig.SPARK_RSS_CONFIG_PREFIX.length()),
             RssSparkConfig.SPARK_SHUFFLE_COMPRESS_DEFAULT);
-    this.codec = compress ? Codec.newInstance(rssConf) : null;
+    this.codec = compress ? Codec.newInstance(rssConf) : Optional.empty();
     this.spillFunc = spillFunc;
     this.sendSizeLimit = rssConf.get(RssSparkConfig.RSS_CLIENT_SEND_SIZE_LIMITATION);
     this.memorySpillTimeoutSec = rssConf.get(RssSparkConfig.RSS_MEMORY_SPILL_TIMEOUT);
@@ -384,9 +385,9 @@ public class WriteBufferManager extends MemoryConsumer {
     byte[] data = wb.getData();
     final int uncompressLength = data.length;
     byte[] compressed = data;
-    if (codec != null) {
+    if (codec.isPresent()) {
       long start = System.currentTimeMillis();
-      compressed = codec.compress(data);
+      compressed = codec.get().compress(data);
       compressTime += System.currentTimeMillis() - start;
     }
     final long crc32 = ChecksumUtils.getCrc32(compressed);

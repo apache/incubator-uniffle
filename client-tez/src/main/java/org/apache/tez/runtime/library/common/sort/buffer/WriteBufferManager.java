@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -84,7 +85,7 @@ public class WriteBufferManager<K, V> {
   private final double memoryThreshold;
   private final double sendThreshold;
   private final int batch;
-  private final Codec codec;
+  private final Optional<Codec> codec;
   private final Map<Integer, List<ShuffleServerInfo>> partitionToServers;
   private final Set<Long> allBlockIds = Sets.newConcurrentHashSet();
   // server -> partitionId -> blockIds
@@ -370,7 +371,7 @@ public class WriteBufferManager<K, V> {
     final int uncompressLength = data.length;
     long start = System.currentTimeMillis();
 
-    final byte[] compressed = codec.compress(data);
+    final byte[] compressed = codec.map(c -> c.compress(data)).orElse(data);
     final long crc32 = ChecksumUtils.getCrc32(compressed);
     compressTime += System.currentTimeMillis() - start;
     final long blockId =
