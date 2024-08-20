@@ -19,6 +19,7 @@ package org.apache.uniffle.common;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShuffleIndexResultTest {
@@ -27,5 +28,14 @@ public class ShuffleIndexResultTest {
   public void testEmpty() {
     assertTrue(new ShuffleIndexResult().isEmpty());
     assertTrue(new ShuffleIndexResult((byte[]) null, -1).isEmpty());
+  }
+
+  @Test
+  public void testRelease() {
+    ShuffleIndexResult shuffleIndexResult = new ShuffleIndexResult("test".getBytes(), -1);
+    shuffleIndexResult.release();
+    // Expect no exception when executing release again
+    assertDoesNotThrow(shuffleIndexResult::release);
+    assertTrue(shuffleIndexResult.isEmpty());
   }
 }

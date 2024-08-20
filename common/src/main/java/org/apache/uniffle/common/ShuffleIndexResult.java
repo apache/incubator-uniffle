@@ -26,7 +26,7 @@ import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.util.ByteBufUtils;
 
 public class ShuffleIndexResult {
-  private final ManagedBuffer buffer;
+  private volatile ManagedBuffer buffer;
   private long dataFileLen;
   private String dataFileName;
 
@@ -76,6 +76,7 @@ public class ShuffleIndexResult {
     if (this.buffer != null) {
       this.buffer.release();
     }
+    this.buffer = null;
   }
 
   public ManagedBuffer getManagedBuffer() {
