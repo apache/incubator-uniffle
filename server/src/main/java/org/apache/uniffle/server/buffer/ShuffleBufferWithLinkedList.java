@@ -112,24 +112,24 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
   @Override
   public long release() {
     Throwable lastException = null;
-    int failedReleaseSize = 0;
-    long releaseSize = 0;
+    int failedToReleaseSize = 0;
+    long releasedSize = 0;
     for (ShufflePartitionedBlock spb : blocks) {
       try {
         spb.getData().release();
-        releaseSize += spb.getSize();
+        releasedSize += spb.getSize();
       } catch (Throwable t) {
         lastException = t;
-        failedReleaseSize += spb.getSize();
+        failedToReleaseSize += spb.getSize();
       }
     }
     if (lastException != null) {
       LOG.warn(
           "Failed to release shuffle blocks with size {}. Maybe it has been released by others.",
-          failedReleaseSize,
+          failedToReleaseSize,
           lastException);
     }
-    return releaseSize;
+    return releasedSize;
   }
 
   @Override
