@@ -126,7 +126,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
     }
     if (lastException != null) {
       LOG.warn(
-          "Failed to release shuffle blocks with size (). Maybe it released by others",
+          "Failed to release shuffle blocks with size (). Maybe it has been released by others.",
           failedReleaseSize,
           lastException);
     }
