@@ -21,6 +21,11 @@ export function getDashboardInfo(params, headers) {
   return http.get('/dashboard/info', params, headers, 1)
 }
 
+// Create a dashboard configuration file interface
+export function getDashboardConf(params, headers) {
+  return http.get('/dashboard/conf', params, headers, 1)
+}
+
 // Create a Coordinator information interface
 export function getCoordinatorServerInfo(params, headers) {
   return http.get('/coordinator/info', params, headers, 0)

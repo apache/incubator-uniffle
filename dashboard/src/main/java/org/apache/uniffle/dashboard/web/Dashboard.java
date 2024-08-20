@@ -166,4 +166,8 @@ public class Dashboard {
   public long getStartTimeMs() {
     return startTimeMs;
   }
+
+  public DashboardConf getConf() {
+    return conf;
+  }
 }

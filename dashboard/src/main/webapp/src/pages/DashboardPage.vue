@@ -48,6 +48,17 @@
           </el-descriptions>
         </div>
       </el-collapse-item>
+      <el-collapse-item title="Dashboard Properties" name="2">
+        <el-table :data="filteredTableData" stripe style="width: 100%">
+          <el-table-column prop="argumentKey" label="Name" min-width="380" />
+          <el-table-column prop="argumentValue" label="Value" min-width="380" :show-overflow-tooltip="true" />
+          <el-table-column align="right">
+            <template #header>
+              <el-input v-model="searchKeyword" size="small" placeholder="Type to search" />
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-collapse-item>
     </el-collapse>
   </div>
 </template>
@@ -55,6 +66,7 @@
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
 import {
+  getDashboardConf,
   getDashboardInfo
 } from '@/api/api'
 import { dateFormatter } from '@/utils/common'
@@ -67,12 +79,17 @@ export default {
       dashboardInfo: {}
     })
 
+    async function getDbConfPage() {
+      const res = await getDashboardConf()
+      pageData.tableData = res.data.data
+    }
     async function getDbInfo() {
       const res = await getDashboardInfo()
       pageData.dashboardInfo = res.data.data
     }
 
     onMounted(() => {
+      getDbConfPage()
       getDbInfo()
     })
 
@@ -98,11 +115,28 @@ export default {
       }
     })
 
+    /**
+     * The following describes how to handle blacklist select events.
+     */
+    const searchKeyword = ref('')
+    const filteredTableData = computed(() => {
+      const keyword = searchKeyword.value.trim()
+      if (!keyword) {
+        return pageData.tableData
+      } else {
+        return pageData.tableData.filter((row) => {
+          return row.argumentValue.includes(keyword) || row.argumentKey.includes(keyword)
+        })
+      }
+    })
+
     return {
       pageData,
       iconStyle,
       blockMargin,
       size,
+      filteredTableData,
+      searchKeyword,
       dateFormatter
     }
   }

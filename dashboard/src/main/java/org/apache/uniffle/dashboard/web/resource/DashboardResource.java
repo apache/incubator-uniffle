@@ -17,8 +17,11 @@
 
 package org.apache.uniffle.dashboard.web.resource;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.servlet.ServletContext;
 
 import org.apache.hbase.thirdparty.javax.ws.rs.GET;
@@ -31,11 +34,31 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.web.resource.BaseResource;
 import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.dashboard.web.Dashboard;
+import org.apache.uniffle.dashboard.web.config.DashboardConf;
+import org.apache.uniffle.dashboard.web.vo.DashboardConfVO;
 
 @Produces({MediaType.APPLICATION_JSON})
 public class DashboardResource extends BaseResource {
 
   @Context protected ServletContext servletContext;
+
+  @GET
+  @Path("/conf")
+  public Response<List<DashboardConfVO>> getDashboardConf() {
+    return execute(
+        () -> {
+          DashboardConf conf = getDashboard().getConf();
+          Set<Map.Entry<String, Object>> allEntry = conf.getAll();
+          List<DashboardConfVO> dashboardConfVOs = new ArrayList<>();
+          for (Map.Entry<String, Object> stringObjectEntry : allEntry) {
+            DashboardConfVO result =
+                new DashboardConfVO(
+                    stringObjectEntry.getKey(), String.valueOf(stringObjectEntry.getValue()));
+            dashboardConfVOs.add(result);
+          }
+          return dashboardConfVOs;
+        });
+  }
 
   @GET
   @Path("/info")
