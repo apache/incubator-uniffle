@@ -20,6 +20,7 @@ package org.apache.spark.shuffle;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.mockito.MockedStatic;
@@ -59,8 +60,10 @@ public class RssShuffleManagerTestBase {
     CoordinatorClient mockCoordinatorClient = createCoordinatorClient(status);
     List<CoordinatorClient> coordinatorClients = Lists.newArrayList();
     coordinatorClients.add(mockCoordinatorClient);
+    CoordinatorGrpcRetryClient client =
+        new CoordinatorGrpcRetryClient(coordinatorClients, 0, 1, 1);
     mockedStaticRssShuffleUtils
         .when(() -> RssSparkShuffleUtils.createCoordinatorClients(any()))
-        .thenReturn(coordinatorClients);
+        .thenReturn(client);
   }
 }

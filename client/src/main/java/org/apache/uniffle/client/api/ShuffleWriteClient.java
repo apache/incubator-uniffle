@@ -87,7 +87,12 @@ public interface ShuffleWriteClient {
   boolean sendCommit(
       Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);
 
-  void registerCoordinators(String coordinators);
+  @Deprecated
+  default void registerCoordinators(String coordinators) {
+    registerCoordinators(coordinators, 0, 0);
+  }
+
+  void registerCoordinators(String coordinators, long retryIntervalMs, int retryTimes);
 
   Map<String, String> fetchClientConf(int timeoutMs);
 
@@ -111,7 +116,9 @@ public interface ShuffleWriteClient {
       Set<String> faultyServerIds,
       int stageId,
       int stageAttemptNumber,
-      boolean reassign);
+      boolean reassign,
+      long retryIntervalMs,
+      int retryTimes);
 
   default ShuffleAssignmentsInfo getShuffleAssignments(
       String appId,
@@ -133,7 +140,9 @@ public interface ShuffleWriteClient {
         faultyServerIds,
         -1,
         0,
-        false);
+        false,
+        0,
+        0);
   }
 
   default ShuffleAssignmentsInfo getShuffleAssignments(
