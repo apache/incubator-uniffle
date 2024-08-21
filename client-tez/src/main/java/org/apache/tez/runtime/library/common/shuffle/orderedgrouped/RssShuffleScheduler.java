@@ -1147,7 +1147,8 @@ class RssShuffleScheduler extends ShuffleScheduler {
   }
 
   private boolean allInputTaskAttemptDone() {
-    return this.partitionIdToSuccessTezTasks.values().stream().mapToInt(s -> s.size()).sum()
+    return (this.partitionIdToSuccessTezTasks.values().stream().mapToInt(s -> s.size()).sum()
+            + skippedInputCounter.getValue())
         == numInputs;
   }
 
