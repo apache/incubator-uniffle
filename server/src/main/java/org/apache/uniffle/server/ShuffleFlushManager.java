@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -169,7 +170,14 @@ public class ShuffleFlushManager {
               storageDataReplica,
               user,
               maxConcurrencyPerPartitionToWrite);
-      ShuffleWriteHandler handler = storage.getOrCreateWriteHandler(request);
+      ShuffleWriteHandler handler;
+      try {
+        handler = storage.getOrCreateWriteHandler(request);
+      } catch (IOException e) {
+        LOG.warn("Failed to create write handler for event: {}", event, e);
+        throw new EventRetryException(e);
+      }
+
       long startTime = System.currentTimeMillis();
       boolean writeSuccess = storageManager.write(storage, handler, event);
       if (!writeSuccess) {
