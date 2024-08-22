@@ -722,9 +722,18 @@ public class ShuffleBufferManager {
       Collection<ShuffleBuffer> buffers = bufferRangeMap.asMapOfRanges().values();
       if (buffers != null) {
         for (ShuffleBuffer buffer : buffers) {
-          buffer.release();
+          // the actual released size by this thread
+          long releasedSize = buffer.release();
           ShuffleServerMetrics.gaugeTotalPartitionNum.dec();
-          releaseMemory(buffer.getSize(), false, false);
+          if (releasedSize != buffer.getSize()) {
+            LOG.warn(
+                "Release shuffle buffer size {} is not equal to buffer size {}, appId: {}, shuffleId: {}",
+                releasedSize,
+                buffer.getSize(),
+                appId,
+                shuffleId);
+          }
+          releaseMemory(releasedSize, false, false);
         }
       }
       if (shuffleIdToSizeMap != null) {
