@@ -21,6 +21,9 @@ set -o pipefail
 set -e
 set -x
 
+source "$(dirname "$0")/utils.sh"
+check_use_java8
+
 ASF_USERNAME=${ASF_USERNAME:?"ASF_USERNAME is required"}
 ASF_PASSWORD=${ASF_PASSWORD:?"ASF_PASSWORD is required"}
 

@@ -21,6 +21,9 @@ set -o pipefail
 set -e
 set -x
 
+source "$(dirname "$0")/utils.sh"
+check_use_java8
+
 PROJECT_DIR="$(cd "$(dirname "$0")"/..; pwd)"
 
 ASF_USERNAME=${ASF_USERNAME:?"ASF_USERNAME is required"}

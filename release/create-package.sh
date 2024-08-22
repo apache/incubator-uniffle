@@ -21,6 +21,9 @@ set -o pipefail
 set -e
 set -x
 
+source "$(dirname "$0")/utils.sh"
+check_use_java8
+
 SKIP_GPG=${SKIP_GPG:-false}
 
 exit_with_usage() {
