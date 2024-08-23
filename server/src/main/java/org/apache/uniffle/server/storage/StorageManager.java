@@ -44,6 +44,8 @@ public interface StorageManager {
 
   void removeResources(PurgeEvent event);
 
+  void removeResources(PurgeEvent event, boolean isQuick);
+
   void start();
 
   void stop();

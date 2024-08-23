@@ -18,11 +18,13 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.io.File;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.storage.handler.AsynchronousDeleteEvent;
 import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 
 public class LocalFileDeleteHandler implements ShuffleDeleteHandler {
@@ -47,6 +49,44 @@ public class LocalFileDeleteHandler implements ShuffleDeleteHandler {
                 + " ms");
       } catch (Exception e) {
         LOG.warn("Can't delete shuffle data for appId[" + appId + "] with " + shufflePath, e);
+      }
+    }
+  }
+
+  @Override
+  public void quickDelete(AsynchronousDeleteEvent asynchronousDeleteEvent) {
+
+    for (Map.Entry<String, String> appIdNeedDeletePaths :
+        asynchronousDeleteEvent.getNeedDeletePathAndRenamePath().entrySet()) {
+      String appId = appIdNeedDeletePaths.getKey();
+      String shufflePath = appIdNeedDeletePaths.getKey();
+      String breakdownShufflePath = appIdNeedDeletePaths.getValue();
+      long start = System.currentTimeMillis();
+      try {
+        File baseFolder = new File(shufflePath);
+        File breakdownBaseFolder = new File(breakdownShufflePath);
+        boolean isSuccess = baseFolder.renameTo(breakdownBaseFolder);
+        if (isSuccess) {
+          LOG.info(
+              "Rename shuffle data for appId[{}] with {} to {} cost {} ms",
+              appId,
+              shufflePath,
+              breakdownShufflePath,
+              (System.currentTimeMillis() - start));
+        } else {
+          LOG.warn(
+              "Can't Rename shuffle data for appId[{}] with {} to {}",
+              appId,
+              shufflePath,
+              breakdownShufflePath);
+        }
+      } catch (Exception e) {
+        LOG.error(
+            "Can't Rename shuffle data for appId[{}] with {} to {}",
+            appId,
+            shufflePath,
+            breakdownShufflePath,
+            e);
       }
     }
   }

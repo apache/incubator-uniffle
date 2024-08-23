@@ -227,7 +227,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             taskInfo.refreshLatestStageAttemptNumber(shuffleId, stageAttemptNumber);
             try {
               long start = System.currentTimeMillis();
-              shuffleServer.getShuffleTaskManager().removeShuffleDataSync(appId, shuffleId);
+              shuffleServer.getShuffleTaskManager().quickRemoveShuffleDataSync(appId, shuffleId);
               LOG.info(
                   "Deleted the previous stage attempt data due to stage recomputing for app: {}, "
                       + "shuffleId: {}. It costs {} ms",
