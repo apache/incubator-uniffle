@@ -182,9 +182,8 @@ public class CompressionTest {
         assertEquals(compressed.length, src.limit());
         assertEquals(0, dest.position());
         assertEquals(2048, dest.limit());
-        assertArrayEquals(data, Arrays.copyOfRange(ByteBufferUtils.bufferToArray(dest), 0, 1024));
-
-        dest.clear();
+        assertArrayEquals(
+            data, Arrays.copyOfRange(ByteBufferUtils.bufferToArray(dest.duplicate()), 0, 1024));
 
         codec.decompress(src, 1024, dest, 1024);
         assertEquals(0, src.position());
@@ -192,7 +191,7 @@ public class CompressionTest {
         assertEquals(0, dest.position());
         assertEquals(2048, dest.limit());
         assertArrayEquals(
-            data, Arrays.copyOfRange(ByteBufferUtils.bufferToArray(dest), 1024, 2048));
+            data, Arrays.copyOfRange(ByteBufferUtils.bufferToArray(dest.duplicate()), 1024, 2048));
       }
     }
   }
