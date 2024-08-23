@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.server;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -173,7 +172,7 @@ public class ShuffleFlushManager {
       ShuffleWriteHandler handler;
       try {
         handler = storage.getOrCreateWriteHandler(request);
-      } catch (IOException e) {
+      } catch (Exception e) {
         LOG.warn("Failed to create write handler for event: {}", event, e);
         throw new EventRetryException(e);
       }
