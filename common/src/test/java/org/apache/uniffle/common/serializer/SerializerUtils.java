@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Comparator;
 
 import com.google.common.base.Objects;
@@ -174,7 +175,8 @@ public class SerializerUtils {
       throws IOException {
     ByteArrayOutputStream output = new ByteArrayOutputStream();
     genSortedRecord(rssConf, keyClass, valueClass, start, interval, length, output, 1);
-    return new StreamedSegment(rssConf, output.toByteArray(), blockId, keyClass, valueClass, raw);
+    return new StreamedSegment(
+        rssConf, ByteBuffer.wrap(output.toByteArray()), blockId, keyClass, valueClass, raw);
   }
 
   public static Segment genFileSegment(

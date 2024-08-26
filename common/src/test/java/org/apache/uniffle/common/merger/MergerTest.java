@@ -30,7 +30,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.records.RecordsReader;
-import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
+import org.apache.uniffle.common.serializer.PartialInputStream;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -96,11 +96,7 @@ public class MergerTest {
     // 3 Check the merged file
     RecordsReader reader =
         new RecordsReader(
-            rssConf,
-            PartialInputStreamImpl.newInputStream(mergedFile, 0, mergedFile.length()),
-            keyClass,
-            valueClass,
-            false);
+            rssConf, PartialInputStream.newInputStream(mergedFile), keyClass, valueClass, false);
     int index = 0;
     while (reader.next()) {
       assertEquals(SerializerUtils.genData(keyClass, index), reader.getCurrentKey());

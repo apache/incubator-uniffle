@@ -20,6 +20,7 @@ package org.apache.uniffle.server.merge;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -36,7 +37,7 @@ import org.apache.uniffle.common.merger.Merger;
 import org.apache.uniffle.common.merger.Recordable;
 import org.apache.uniffle.common.merger.Segment;
 import org.apache.uniffle.common.records.RecordsReader;
-import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
+import org.apache.uniffle.common.serializer.PartialInputStream;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_DEFAULT_MERGED_BLOCK_SIZE;
@@ -160,7 +161,7 @@ public class MergedResultTest {
       RecordsReader reader =
           new RecordsReader(
               rssConf,
-              PartialInputStreamImpl.newInputStream(buffer, 0, length),
+              PartialInputStream.newInputStream(ByteBuffer.wrap(buffer)),
               keyClass,
               valueClass,
               false);

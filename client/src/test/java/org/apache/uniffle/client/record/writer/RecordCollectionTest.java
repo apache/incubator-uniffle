@@ -18,6 +18,7 @@
 package org.apache.uniffle.client.record.writer;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +31,7 @@ import org.apache.uniffle.client.record.RecordBuffer;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.records.RecordsReader;
 import org.apache.uniffle.common.records.RecordsWriter;
-import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
+import org.apache.uniffle.common.serializer.PartialInputStream;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,8 +77,7 @@ public class RecordCollectionTest {
     RecordsReader reader =
         new RecordsReader<>(
             rssConf,
-            PartialInputStreamImpl.newInputStream(
-                outputStream.toByteArray(), 0, outputStream.size()),
+            PartialInputStream.newInputStream(ByteBuffer.wrap(outputStream.toByteArray())),
             keyClass,
             valueClass,
             false);
@@ -135,8 +135,7 @@ public class RecordCollectionTest {
     RecordsReader reader =
         new RecordsReader<>(
             rssConf,
-            PartialInputStreamImpl.newInputStream(
-                outputStream.toByteArray(), 0, outputStream.size()),
+            PartialInputStream.newInputStream(ByteBuffer.wrap(outputStream.toByteArray())),
             keyClass,
             valueClass,
             false);

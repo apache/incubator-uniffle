@@ -17,8 +17,12 @@
 
 package org.apache.uniffle.common.serializer;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
 /*
  * PartialInputStream is a configurable partial input stream, which
@@ -32,4 +36,34 @@ public abstract class PartialInputStream extends InputStream {
   public abstract long getStart();
 
   public abstract long getEnd();
+
+  public static PartialInputStream newInputStream(File file, long start, long end)
+      throws IOException {
+    FileInputStream input = new FileInputStream(file);
+    FileChannel fc = input.getChannel();
+    if (fc == null) {
+      throw new NullPointerException("channel is null!");
+    }
+    long size = fc.size();
+    return new PartialInputStreamImpl(
+        fc,
+        start,
+        Math.min(end, size),
+        () -> {
+          input.close();
+        });
+  }
+
+  public static PartialInputStream newInputStream(File file) throws IOException {
+    return PartialInputStream.newInputStream(file, 0, file.length());
+  }
+
+  public static PartialInputStream newInputStream(ByteBuffer byteBuffer, long start, long end)
+      throws IOException {
+    return new BufferPartialInputStreamImpl(byteBuffer, start, Math.min(byteBuffer.limit(), end));
+  }
+
+  public static PartialInputStream newInputStream(ByteBuffer byteBuffer) throws IOException {
+    return new BufferPartialInputStreamImpl(byteBuffer, 0, byteBuffer.limit());
+  }
 }

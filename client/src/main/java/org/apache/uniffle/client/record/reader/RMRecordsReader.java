@@ -50,7 +50,7 @@ import org.apache.uniffle.common.merger.MergeState;
 import org.apache.uniffle.common.merger.Merger;
 import org.apache.uniffle.common.records.RecordsReader;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
+import org.apache.uniffle.common.serializer.PartialInputStream;
 import org.apache.uniffle.common.serializer.Serializer;
 import org.apache.uniffle.common.serializer.SerializerFactory;
 import org.apache.uniffle.common.serializer.SerializerInstance;
@@ -465,8 +465,7 @@ public class RMRecordsReader<K, V, C> {
             RecordsReader<K, V> reader =
                 new RecordsReader(
                     rssConf,
-                    PartialInputStreamImpl.newInputStream(
-                        byteBuffer.array(), 0, byteBuffer.limit()),
+                    PartialInputStream.newInputStream(byteBuffer),
                     keyClass,
                     valueClass,
                     raw);

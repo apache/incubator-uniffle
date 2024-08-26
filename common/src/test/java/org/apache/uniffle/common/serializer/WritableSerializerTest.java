@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 import org.apache.hadoop.io.DataInputBuffer;
@@ -75,12 +76,13 @@ public class WritableSerializerTest {
     // 3 Random read
     for (int i = 0; i < LOOP; i++) {
       long off = offsets[i];
-      PartialInputStreamImpl inputStream =
+      PartialInputStream inputStream =
           isFileMode
-              ? PartialInputStreamImpl.newInputStream(
-                  new File(tmpDir, "tmp.data"), off, Long.MAX_VALUE)
-              : PartialInputStreamImpl.newInputStream(
-                  ((ByteArrayOutputStream) outputStream).toByteArray(), off, Long.MAX_VALUE);
+              ? PartialInputStream.newInputStream(new File(tmpDir, "tmp.data"), off, Long.MAX_VALUE)
+              : PartialInputStream.newInputStream(
+                  ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()),
+                  off,
+                  ((ByteArrayOutputStream) outputStream).size());
       DeserializationStream deserializationStream =
           instance.deserializeStream(inputStream, keyClass, valueClass, false);
       for (int j = i + 1; j < LOOP; j++) {
@@ -124,12 +126,13 @@ public class WritableSerializerTest {
     // 3 Random read
     for (int i = 0; i < LOOP; i++) {
       long off = offsets[i];
-      PartialInputStreamImpl inputStream =
+      PartialInputStream inputStream =
           isFileMode
-              ? PartialInputStreamImpl.newInputStream(
-                  new File(tmpDir, "tmp.data"), off, Long.MAX_VALUE)
-              : PartialInputStreamImpl.newInputStream(
-                  ((ByteArrayOutputStream) outputStream).toByteArray(), off, Long.MAX_VALUE);
+              ? PartialInputStream.newInputStream(new File(tmpDir, "tmp.data"), off, Long.MAX_VALUE)
+              : PartialInputStream.newInputStream(
+                  ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()),
+                  off,
+                  ((ByteArrayOutputStream) outputStream).size());
 
       DeserializationStream deserializationStream =
           instance.deserializeStream(inputStream, keyClass, valueClass, true);
@@ -184,12 +187,13 @@ public class WritableSerializerTest {
     // 3 Random read
     for (int i = 0; i < LOOP; i++) {
       long off = offsets[i];
-      PartialInputStreamImpl inputStream =
+      PartialInputStream inputStream =
           isFileMode
-              ? PartialInputStreamImpl.newInputStream(
-                  new File(tmpDir, "tmp.data"), off, Long.MAX_VALUE)
-              : PartialInputStreamImpl.newInputStream(
-                  ((ByteArrayOutputStream) outputStream).toByteArray(), off, Long.MAX_VALUE);
+              ? PartialInputStream.newInputStream(new File(tmpDir, "tmp.data"), off, Long.MAX_VALUE)
+              : PartialInputStream.newInputStream(
+                  ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()),
+                  off,
+                  ((ByteArrayOutputStream) outputStream).size());
       DeserializationStream deserializationStream =
           instance.deserializeStream(inputStream, keyClass, valueClass, false);
       for (int j = i + 1; j < LOOP; j++) {
@@ -237,12 +241,13 @@ public class WritableSerializerTest {
     // 3 Random read
     for (int i = 0; i < LOOP; i++) {
       long off = offsets[i];
-      PartialInputStreamImpl inputStream =
+      PartialInputStream inputStream =
           isFileMode
-              ? PartialInputStreamImpl.newInputStream(
-                  new File(tmpDir, "tmp.data"), off, Long.MAX_VALUE)
-              : PartialInputStreamImpl.newInputStream(
-                  ((ByteArrayOutputStream) outputStream).toByteArray(), off, Long.MAX_VALUE);
+              ? PartialInputStream.newInputStream(new File(tmpDir, "tmp.data"), off, Long.MAX_VALUE)
+              : PartialInputStream.newInputStream(
+                  ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()),
+                  off,
+                  ((ByteArrayOutputStream) outputStream).size());
 
       DeserializationStream deserializationStream =
           instance.deserializeStream(inputStream, keyClass, valueClass, true);

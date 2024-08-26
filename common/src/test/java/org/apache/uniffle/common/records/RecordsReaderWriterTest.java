@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 import org.apache.hadoop.io.DataInputBuffer;
@@ -30,7 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.uniffle.common.config.RssConf;
-import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
+import org.apache.uniffle.common.serializer.PartialInputStream;
 import org.apache.uniffle.common.serializer.Serializer;
 import org.apache.uniffle.common.serializer.SerializerFactory;
 import org.apache.uniffle.common.serializer.SerializerInstance;
@@ -74,11 +75,11 @@ public class RecordsReaderWriterTest {
 
     // 3 Read
     // 3.1 read from start
-    PartialInputStreamImpl inputStream =
+    PartialInputStream inputStream =
         isFileMode
-            ? PartialInputStreamImpl.newInputStream(tmpFile, 0, tmpFile.length())
-            : PartialInputStreamImpl.newInputStream(
-                ((ByteArrayOutputStream) outputStream).toByteArray(), 0, Long.MAX_VALUE);
+            ? PartialInputStream.newInputStream(tmpFile)
+            : PartialInputStream.newInputStream(
+                ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()));
     RecordsReader reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, false);
     int index = 0;
     while (reader.next()) {
@@ -92,11 +93,11 @@ public class RecordsReaderWriterTest {
     // 3.2 read from end
     inputStream =
         isFileMode
-            ? PartialInputStreamImpl.newInputStream(tmpFile, offsets[RECORDS - 1], tmpFile.length())
-            : PartialInputStreamImpl.newInputStream(
-                ((ByteArrayOutputStream) outputStream).toByteArray(),
+            ? PartialInputStream.newInputStream(tmpFile, offsets[RECORDS - 1], tmpFile.length())
+            : PartialInputStream.newInputStream(
+                ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()),
                 offsets[RECORDS - 1],
-                Long.MAX_VALUE);
+                ((ByteArrayOutputStream) outputStream).size());
     reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, false);
     assertFalse(reader.next());
     reader.close();
@@ -116,9 +117,11 @@ public class RecordsReaderWriterTest {
       long offset = indexAndOffset[1];
       inputStream =
           isFileMode
-              ? PartialInputStreamImpl.newInputStream(tmpFile, offset, tmpFile.length())
-              : PartialInputStreamImpl.newInputStream(
-                  ((ByteArrayOutputStream) outputStream).toByteArray(), offset, Long.MAX_VALUE);
+              ? PartialInputStream.newInputStream(tmpFile, offset, tmpFile.length())
+              : PartialInputStream.newInputStream(
+                  ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()),
+                  offset,
+                  ((ByteArrayOutputStream) outputStream).size());
       reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, false);
       while (reader.next()) {
         assertEquals(SerializerUtils.genData(keyClass, index), reader.getCurrentKey());
@@ -163,11 +166,11 @@ public class RecordsReaderWriterTest {
 
     // 3 Read
     // 3.1 read from start
-    PartialInputStreamImpl inputStream =
+    PartialInputStream inputStream =
         isFileMode
-            ? PartialInputStreamImpl.newInputStream(tmpFile, 0, tmpFile.length())
-            : PartialInputStreamImpl.newInputStream(
-                ((ByteArrayOutputStream) outputStream).toByteArray(), 0, Long.MAX_VALUE);
+            ? PartialInputStream.newInputStream(tmpFile)
+            : PartialInputStream.newInputStream(
+                ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()));
     RecordsReader reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, true);
     int index = 0;
     while (reader.next()) {
@@ -190,11 +193,11 @@ public class RecordsReaderWriterTest {
     // 3.2 read from end
     inputStream =
         isFileMode
-            ? PartialInputStreamImpl.newInputStream(tmpFile, offsets[RECORDS - 1], tmpFile.length())
-            : PartialInputStreamImpl.newInputStream(
-                ((ByteArrayOutputStream) outputStream).toByteArray(),
+            ? PartialInputStream.newInputStream(tmpFile, offsets[RECORDS - 1], tmpFile.length())
+            : PartialInputStream.newInputStream(
+                ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()),
                 offsets[RECORDS - 1],
-                Long.MAX_VALUE);
+                ((ByteArrayOutputStream) outputStream).size());
     reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, true);
     assertFalse(reader.next());
     reader.close();
@@ -214,9 +217,11 @@ public class RecordsReaderWriterTest {
       long offset = indexAndOffset[1];
       inputStream =
           isFileMode
-              ? PartialInputStreamImpl.newInputStream(tmpFile, offset, tmpFile.length())
-              : PartialInputStreamImpl.newInputStream(
-                  ((ByteArrayOutputStream) outputStream).toByteArray(), offset, Long.MAX_VALUE);
+              ? PartialInputStream.newInputStream(tmpFile, offset, tmpFile.length())
+              : PartialInputStream.newInputStream(
+                  ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()),
+                  offset,
+                  ((ByteArrayOutputStream) outputStream).size());
       reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, true);
       while (reader.next()) {
         DataOutputBuffer keyBuffer = (DataOutputBuffer) reader.getCurrentKey();
@@ -275,11 +280,11 @@ public class RecordsReaderWriterTest {
 
     // 3 Read
     // 3.1 read from start
-    PartialInputStreamImpl inputStream =
+    PartialInputStream inputStream =
         isFileMode
-            ? PartialInputStreamImpl.newInputStream(tmpFile, 0, tmpFile.length())
-            : PartialInputStreamImpl.newInputStream(
-                ((ByteArrayOutputStream) outputStream).toByteArray(), 0, Long.MAX_VALUE);
+            ? PartialInputStream.newInputStream(tmpFile)
+            : PartialInputStream.newInputStream(
+                ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()));
     RecordsReader reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, false);
     int index = 0;
     while (reader.next()) {
@@ -293,11 +298,11 @@ public class RecordsReaderWriterTest {
     // 3.2 read from end
     inputStream =
         isFileMode
-            ? PartialInputStreamImpl.newInputStream(tmpFile, offsets[RECORDS - 1], tmpFile.length())
-            : PartialInputStreamImpl.newInputStream(
-                ((ByteArrayOutputStream) outputStream).toByteArray(),
+            ? PartialInputStream.newInputStream(tmpFile, offsets[RECORDS - 1], tmpFile.length())
+            : PartialInputStream.newInputStream(
+                ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()),
                 offsets[RECORDS - 1],
-                Long.MAX_VALUE);
+                ((ByteArrayOutputStream) outputStream).size());
     reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, false);
     assertFalse(reader.next());
     reader.close();
@@ -317,9 +322,11 @@ public class RecordsReaderWriterTest {
       long offset = indexAndOffset[1];
       inputStream =
           isFileMode
-              ? PartialInputStreamImpl.newInputStream(tmpFile, offset, tmpFile.length())
-              : PartialInputStreamImpl.newInputStream(
-                  ((ByteArrayOutputStream) outputStream).toByteArray(), offset, Long.MAX_VALUE);
+              ? PartialInputStream.newInputStream(tmpFile, offset, tmpFile.length())
+              : PartialInputStream.newInputStream(
+                  ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()),
+                  offset,
+                  ((ByteArrayOutputStream) outputStream).size());
       reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, false);
       while (reader.next()) {
         assertEquals(SerializerUtils.genData(keyClass, index), reader.getCurrentKey());
@@ -368,11 +375,11 @@ public class RecordsReaderWriterTest {
 
     // 3 Read
     // 3.1 read from start
-    PartialInputStreamImpl inputStream =
+    PartialInputStream inputStream =
         isFileMode
-            ? PartialInputStreamImpl.newInputStream(tmpFile, 0, tmpFile.length())
-            : PartialInputStreamImpl.newInputStream(
-                ((ByteArrayOutputStream) outputStream).toByteArray(), 0, Long.MAX_VALUE);
+            ? PartialInputStream.newInputStream(tmpFile)
+            : PartialInputStream.newInputStream(
+                ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()));
     RecordsReader reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, true);
     int index = 0;
     while (reader.next()) {
@@ -395,11 +402,11 @@ public class RecordsReaderWriterTest {
     // 3.2 read from end
     inputStream =
         isFileMode
-            ? PartialInputStreamImpl.newInputStream(tmpFile, offsets[RECORDS - 1], tmpFile.length())
-            : PartialInputStreamImpl.newInputStream(
-                ((ByteArrayOutputStream) outputStream).toByteArray(),
+            ? PartialInputStream.newInputStream(tmpFile, offsets[RECORDS - 1], tmpFile.length())
+            : PartialInputStream.newInputStream(
+                ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()),
                 offsets[RECORDS - 1],
-                Long.MAX_VALUE);
+                ((ByteArrayOutputStream) outputStream).size());
     reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, true);
     assertFalse(reader.next());
     reader.close();
@@ -419,9 +426,11 @@ public class RecordsReaderWriterTest {
       long offset = indexAndOffset[1];
       inputStream =
           isFileMode
-              ? PartialInputStreamImpl.newInputStream(tmpFile, offset, tmpFile.length())
-              : PartialInputStreamImpl.newInputStream(
-                  ((ByteArrayOutputStream) outputStream).toByteArray(), offset, Long.MAX_VALUE);
+              ? PartialInputStream.newInputStream(tmpFile, offset, tmpFile.length())
+              : PartialInputStream.newInputStream(
+                  ByteBuffer.wrap(((ByteArrayOutputStream) outputStream).toByteArray()),
+                  offset,
+                  ((ByteArrayOutputStream) outputStream).size());
       reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, true);
       while (reader.next()) {
         DataOutputBuffer keyBuffer = (DataOutputBuffer) reader.getCurrentKey();
