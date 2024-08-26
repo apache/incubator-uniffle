@@ -18,15 +18,14 @@
 name: Rust
 
 on:
-#  As the rust ci is failed all the time, we disable it for now.
-#  push:
-#    branches:
-#      - 'master'
-#      - 'branch-*'
-#    tags:
-#      - '*'
-#  pull_request:
-#  workflow_dispatch:
+  push:
+    branches:
+      - 'master'
+      - 'branch-*'
+    tags:
+      - '*'
+  pull_request:
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
