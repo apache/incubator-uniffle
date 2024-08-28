@@ -58,6 +58,7 @@ import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
+import org.apache.uniffle.common.audit.RpcAuditContext;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.InvalidRequestException;
@@ -641,9 +642,20 @@ public class ShuffleTaskManager {
     Roaring64NavigableMap res = Roaring64NavigableMap.bitmapOf();
     for (Map.Entry<Integer, Set<Integer>> entry : bitmapIndexToPartitions.entrySet()) {
       Set<Integer> requestPartitions = entry.getValue();
-      Roaring64NavigableMap bitmap = blockIds[entry.getKey()];
+      int bitmapIndex = entry.getKey();
+      Roaring64NavigableMap bitmap = blockIds[bitmapIndex];
       getBlockIdsByPartitionId(requestPartitions, bitmap, res, blockIdLayout);
+      RpcAuditContext.getRpcAuditContext()
+          .ifPresent(
+              context ->
+                  context.withContext(
+                      String.format(
+                          "bitmap[%d].<size,byte>=<%d,%d>",
+                          bitmapIndex, bitmap.getLongCardinality(), bitmap.getLongSizeInBytes())));
     }
+    RpcAuditContext.getRpcAuditContext()
+        .ifPresent(
+            context -> context.withContext("partitionBlockCount=" + res.getLongCardinality()));
 
     if (res.getLongCardinality() != expectedBlockNumber) {
       throw new RssException(
