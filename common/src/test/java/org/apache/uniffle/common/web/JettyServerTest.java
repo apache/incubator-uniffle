@@ -24,9 +24,12 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.port.PortRegistry;
 import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.ExitUtils.ExitException;
 
@@ -35,10 +38,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyServerTest {
 
+  int port;
+
+  @BeforeEach
+  public void beforeEach() {
+    port = PortRegistry.reservePort();
+  }
+
+  @AfterEach
+  public void afterEach() {
+    PortRegistry.release(port);
+  }
+
   @Test
   public void jettyServerTest() throws FileNotFoundException {
     RssBaseConf conf = new RssBaseConf();
-    conf.setString("rss.jetty.http.port", "9527");
+    conf.setInteger("rss.jetty.http.port", port);
     JettyServer jettyServer = new JettyServer(conf);
     Server server = jettyServer.getServer();
 
@@ -50,7 +65,7 @@ public class JettyServerTest {
     assertEquals(server, server.getHandler().getServer());
     assertTrue(server.getConnectors()[0] instanceof ServerConnector);
     ServerConnector connector = (ServerConnector) server.getConnectors()[0];
-    assertEquals(9527, connector.getPort());
+    assertEquals(port, connector.getPort());
 
     assertEquals(1, server.getHandlers().length);
     Handler handler = server.getHandler();
@@ -60,7 +75,7 @@ public class JettyServerTest {
   @Test
   public void jettyServerStartTest() throws Exception {
     RssBaseConf conf = new RssBaseConf();
-    conf.setString("rss.jetty.http.port", "9527");
+    conf.setInteger("rss.jetty.http.port", port);
     JettyServer jettyServer1 = new JettyServer(conf);
     JettyServer jettyServer2 = new JettyServer(conf);
     jettyServer1.start();
