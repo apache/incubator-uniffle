@@ -153,7 +153,7 @@ public class CoordinatorGrpcRetryClient {
               }
             }
             if (response.getStatusCode() != StatusCode.SUCCESS) {
-              LOG.info("Failed to get shuffle server assignment");
+              throw new RssException(response.getMessage());
             }
             return response;
           },
@@ -173,14 +173,24 @@ public class CoordinatorGrpcRetryClient {
             for (CoordinatorClient coordinatorClient : this.coordinatorClients) {
               response = coordinatorClient.accessCluster(request);
               if (response.getStatusCode() == StatusCode.SUCCESS) {
-                LOG.info("Success to access cluster from {}", coordinatorClient.getDesc());
+                LOG.warn(
+                    "Success to access cluster {} using {}",
+                    coordinatorClient.getDesc(),
+                    request.getAccessId());
                 break;
               }
             }
-            if (response.getStatusCode() != StatusCode.SUCCESS) {
-              LOG.info("Failed to access cluster");
+            if (response.getStatusCode() == StatusCode.SUCCESS) {
+              return response;
+            } else if (response.getStatusCode() == StatusCode.ACCESS_DENIED) {
+              throw new RssException(
+                  "Request to access cluster is denied using "
+                      + request.getAccessId()
+                      + " for "
+                      + response.getMessage());
+            } else {
+              throw new RssException("Fail to reach cluster for " + response.getMessage());
             }
-            return response;
           },
           retryIntervalMs,
           retryTimes);
@@ -197,19 +207,19 @@ public class CoordinatorGrpcRetryClient {
             for (CoordinatorClient coordinatorClient : this.coordinatorClients) {
               response = coordinatorClient.fetchClientConf(request);
               if (response.getStatusCode() == StatusCode.SUCCESS) {
-                LOG.info("Success to fetch client conf from {}", coordinatorClient.getDesc());
+                LOG.info("Success to get conf from {}", coordinatorClient.getDesc());
                 break;
               }
             }
             if (response.getStatusCode() != StatusCode.SUCCESS) {
-              LOG.info("Failed to fetch client conf");
+              throw new RssException(response.getMessage());
             }
             return response;
           },
           this.retryIntervalMs,
           this.retryTimes);
     } catch (Throwable throwable) {
-      throw new RssException("fetchClientConf failed!", throwable);
+      throw new RssException("Fail to get conf", throwable);
     }
   }
 
@@ -221,19 +231,22 @@ public class CoordinatorGrpcRetryClient {
             for (CoordinatorClient coordinatorClient : this.coordinatorClients) {
               response = coordinatorClient.fetchRemoteStorage(request);
               if (response.getStatusCode() == StatusCode.SUCCESS) {
-                LOG.info("Success to fetch remote storage from {}", coordinatorClient.getDesc());
+                LOG.info(
+                    "Success to get storage {} from {}",
+                    response.getRemoteStorageInfo(),
+                    coordinatorClient.getDesc());
                 break;
               }
             }
             if (response.getStatusCode() != StatusCode.SUCCESS) {
-              LOG.info("Failed to fetch remote storage");
+              throw new RssException(response.getMessage());
             }
             return response.getRemoteStorageInfo();
           },
           this.retryIntervalMs,
           this.retryTimes);
     } catch (Throwable throwable) {
-      throw new RssException("fetchRemoteStorage failed!", throwable);
+      throw new RssException("Fail to get conf", throwable);
     }
   }
 

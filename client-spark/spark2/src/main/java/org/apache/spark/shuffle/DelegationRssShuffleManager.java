@@ -125,26 +125,30 @@ public class DelegationRssShuffleManager implements ShuffleManager {
         ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, String.valueOf(assignmentShuffleNodesNum));
 
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
-    if (coordinatorClients != null) {
-      RssAccessClusterResponse response =
-          coordinatorClients.accessCluster(
-              new RssAccessClusterRequest(
-                  accessId, assignmentTags, accessTimeoutMs, extraProperties, user),
-              retryInterval,
-              retryTimes);
-      if (response.getStatusCode() == StatusCode.SUCCESS) {
-        LOG.warn("Success to access cluster using {}", accessId);
-        uuid = response.getUuid();
-        return true;
-      } else if (response.getStatusCode() == StatusCode.ACCESS_DENIED) {
-        throw new RssException(
-            "Request to access cluster is denied using "
-                + accessId
-                + " for "
-                + response.getMessage());
-      } else {
-        throw new RssException("Fail to reach cluster for " + response.getMessage());
+    try {
+      if (coordinatorClients != null) {
+        RssAccessClusterResponse response =
+            coordinatorClients.accessCluster(
+                new RssAccessClusterRequest(
+                    accessId, assignmentTags, accessTimeoutMs, extraProperties, user),
+                retryInterval,
+                retryTimes);
+        if (response.getStatusCode() == StatusCode.SUCCESS) {
+          LOG.warn("Success to access cluster using {}", accessId);
+          uuid = response.getUuid();
+          return true;
+        } else if (response.getStatusCode() == StatusCode.ACCESS_DENIED) {
+          throw new RssException(
+              "Request to access cluster is denied using "
+                  + accessId
+                  + " for "
+                  + response.getMessage());
+        } else {
+          throw new RssException("Fail to reach cluster for " + response.getMessage());
+        }
       }
+    } catch (Throwable e) {
+      LOG.warn("Fail to access cluster using {} for ", accessId, e);
     }
 
     return false;
@@ -201,7 +205,9 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   @Override
   public void stop() {
     delegate.stop();
-    coordinatorClients.close();
+    if (coordinatorClients != null) {
+      coordinatorClients.close();
+    }
   }
 
   @Override

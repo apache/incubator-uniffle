@@ -609,9 +609,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (coordinatorClients == null) {
       return Maps.newHashMap();
     }
-    return coordinatorClients
-        .fetchClientConf(new RssFetchClientConfRequest(timeoutMs))
-        .getClientConf();
+    try {
+      return coordinatorClients
+          .fetchClientConf(new RssFetchClientConfRequest(timeoutMs))
+          .getClientConf();
+    } catch (RssException e) {
+      return Maps.newHashMap();
+    }
   }
 
   @Override
@@ -619,7 +623,11 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     if (coordinatorClients == null) {
       return new RemoteStorageInfo("");
     }
-    return coordinatorClients.fetchRemoteStorage(new RssFetchRemoteStorageRequest(appId));
+    try {
+      return coordinatorClients.fetchRemoteStorage(new RssFetchRemoteStorageRequest(appId));
+    } catch (RssException e) {
+      return new RemoteStorageInfo("");
+    }
   }
 
   @Override
@@ -652,25 +660,28 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             stageAttemptNumber,
             reassign);
 
-    RssGetShuffleAssignmentsResponse response;
-    if (coordinatorClients == null) {
-      response = new RssGetShuffleAssignmentsResponse(StatusCode.INTERNAL_ERROR);
-    } else {
-      response = coordinatorClients.getShuffleAssignments(request, retryIntervalMs, retryTimes);
+    RssGetShuffleAssignmentsResponse response =
+        new RssGetShuffleAssignmentsResponse(StatusCode.INTERNAL_ERROR);
+    try {
+      if (coordinatorClients != null) {
+        response = coordinatorClients.getShuffleAssignments(request, retryIntervalMs, retryTimes);
+      }
+    } catch (RssException e) {
+      String msg =
+          "Error happened when getShuffleAssignments with appId["
+              + appId
+              + "], shuffleId["
+              + shuffleId
+              + "], numMaps["
+              + partitionNum
+              + "], partitionNumPerRange["
+              + partitionNumPerRange
+              + "] to coordinator. "
+              + "Error message: "
+              + response.getMessage();
+      LOG.error(msg);
+      throw new RssException(msg);
     }
-    String msg =
-        "Error happened when getShuffleAssignments with appId["
-            + appId
-            + "], shuffleId["
-            + shuffleId
-            + "], numMaps["
-            + partitionNum
-            + "], partitionNumPerRange["
-            + partitionNumPerRange
-            + "] to coordinator. "
-            + "Error message: "
-            + response.getMessage();
-    throwExceptionIfNecessary(response, msg);
 
     return new ShuffleAssignmentsInfo(
         response.getPartitionToServers(), response.getServerToPartitionRanges());
