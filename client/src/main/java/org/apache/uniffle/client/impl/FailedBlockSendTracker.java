@@ -49,7 +49,7 @@ public class FailedBlockSendTracker {
       ShuffleServerInfo shuffleServerInfo,
       StatusCode statusCode) {
     trackingBlockStatusMap
-        .computeIfAbsent(shuffleBlockInfo.getBlockId(), s -> Lists.newLinkedList())
+        .computeIfAbsent(shuffleBlockInfo.getBlockId(), s -> Lists.newCopyOnWriteArrayList())
         .add(new TrackingBlockStatus(shuffleBlockInfo, shuffleServerInfo, statusCode));
   }
 
