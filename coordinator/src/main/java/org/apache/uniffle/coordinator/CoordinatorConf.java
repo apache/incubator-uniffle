@@ -19,6 +19,8 @@ package org.apache.uniffle.coordinator;
 
 import java.util.List;
 
+import org.apache.hadoop.conf.Configuration;
+
 import org.apache.uniffle.common.config.ConfigOption;
 import org.apache.uniffle.common.config.ConfigOptions;
 import org.apache.uniffle.common.config.ConfigUtils;
@@ -35,6 +37,8 @@ import static org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrat
  * interval, etc.
  */
 public class CoordinatorConf extends RssBaseConf {
+
+  public static final String PREFIX_HADOOP_CONF = "rss.coordinator.hadoop";
 
   public static final ConfigOption<String> COORDINATOR_CLIENT_CONF_APPLY_STRATEGY =
       ConfigOptions.key("rss.coordinator.client.confApplyStrategy")
@@ -257,6 +261,34 @@ public class CoordinatorConf extends RssBaseConf {
           .defaultValues("appHeartbeat", "heartbeat")
           .withDescription("Exclude record rpc audit operation list, separated by ','");
 
+  public static final ConfigOption<Boolean> COORDINATOR_APP_HISTORY_ENABLE =
+      ConfigOptions.key("rss.coordinator.app.history.enable")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription("Enable app history.");
+
+  public static final ConfigOption<Integer> COORDINATOR_APP_HISTORY_CACHE_MAX_SIZE =
+      ConfigOptions.key("rss.coordinator.app.history.cache.max.size")
+          .intType()
+          .defaultValue(1000)
+          .withDescription("The max size for storing app history info in cache.");
+
+  public static final ConfigOption<String> COORDINATOR_APP_HISTORY_PATH =
+      ConfigOptions.key("rss.coordinator.app.history.persist.path")
+          .stringType()
+          .defaultValue("file://./logs/application_history.txt")
+          .withDescription("The path for storing app history info.");
+  public static final ConfigOption<Integer> COORDINATOR_APP_HISTORY_BATCH_SIZE =
+      ConfigOptions.key("rss.coordinator.app.history.flush.batch.size")
+          .intType()
+          .defaultValue(100)
+          .withDescription("The batch size for flush app history info.");
+  public static final ConfigOption<Long> COORDINATOR_APP_HISTORY_FLUSH_INTERVAL_MS =
+      ConfigOptions.key("rss.coordinator.app.history.flush.interval.ms")
+          .longType()
+          .defaultValue(5000L)
+          .withDescription("The flush interval for storing app history info.");
+
   public CoordinatorConf() {}
 
   public CoordinatorConf(String fileName) {
@@ -265,6 +297,18 @@ public class CoordinatorConf extends RssBaseConf {
     if (!ret) {
       throw new IllegalStateException("Fail to load config file " + fileName);
     }
+  }
+
+  public Configuration getHadoopConf() {
+    Configuration hadoopConf = new Configuration();
+    for (String key : getKeySet()) {
+      if (key.startsWith(CoordinatorConf.PREFIX_HADOOP_CONF)) {
+        String value = getString(key, "");
+        String hadoopKey = key.substring(CoordinatorConf.PREFIX_HADOOP_CONF.length() + 1);
+        hadoopConf.set(hadoopKey, value);
+      }
+    }
+    return hadoopConf;
   }
 
   public boolean loadConfFromFile(String fileName) {

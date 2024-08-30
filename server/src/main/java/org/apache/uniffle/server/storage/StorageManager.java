@@ -21,7 +21,10 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.common.storage.ApplicationStorageInfo;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
@@ -66,4 +69,6 @@ public interface StorageManager {
    * @return a map of storage mount point -> storage info.
    */
   Map<String, StorageInfo> getStorageInfo();
+
+  Pair<ApplicationStorageInfo, ApplicationStorageInfo> getApplicationStorageInfos(String appId);
 }

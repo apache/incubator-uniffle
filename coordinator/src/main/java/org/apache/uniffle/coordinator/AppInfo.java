@@ -23,6 +23,7 @@ public class AppInfo implements Comparable<AppInfo> {
   private String appId;
   private long updateTime;
   private long registrationTime;
+  private long finishTime;
   private String version;
   private String gitCommitId;
 
@@ -65,6 +66,14 @@ public class AppInfo implements Comparable<AppInfo> {
 
   public String getGitCommitId() {
     return gitCommitId;
+  }
+
+  public void setFinishTime(long finishTime) {
+    this.finishTime = finishTime;
+  }
+
+  public long getFinishTime() {
+    return finishTime;
   }
 
   @Override

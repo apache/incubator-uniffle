@@ -22,11 +22,13 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.storage.ApplicationStorageInfo;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.server.Checker;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
@@ -155,6 +157,16 @@ public class HybridStorageManager implements StorageManager {
     Map<String, StorageInfo> localStorageInfo = warmStorageManager.getStorageInfo();
     localStorageInfo.putAll(coldStorageManager.getStorageInfo());
     return localStorageInfo;
+  }
+
+  @Override
+  public Pair<ApplicationStorageInfo, ApplicationStorageInfo> getApplicationStorageInfos(
+      String appId) {
+    Pair<ApplicationStorageInfo, ApplicationStorageInfo> code =
+        coldStorageManager.getApplicationStorageInfos(appId);
+    Pair<ApplicationStorageInfo, ApplicationStorageInfo> warm =
+        warmStorageManager.getApplicationStorageInfos(appId);
+    return Pair.of(code.getLeft(), warm.getLeft());
   }
 
   public void removeResources(PurgeEvent event) {
