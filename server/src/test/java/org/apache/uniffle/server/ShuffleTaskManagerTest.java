@@ -36,6 +36,7 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.uniffle.server.flush.EventDiscardException;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,6 +80,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -1055,6 +1057,53 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     shuffleTaskManager.checkLeakShuffleData();
     assertFalse(file.exists());
     assertTrue(hiddenFile.exists());
+  }
+
+  @Test
+  public void testCommitShuffleFailOnWriteFail() throws Exception {
+    String confFile = ClassLoader.getSystemResource("server.conf").getFile();
+    ShuffleServerConf conf = new ShuffleServerConf(confFile);
+    final String remoteStorage = HDFS_URI + "rss/test";
+    final String appId = "testAppId";
+    final int shuffleId = 1;
+    conf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 128L);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 50.0);
+    conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 0.0);
+    conf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.HDFS.name());
+    conf.set(ShuffleServerConf.RSS_TEST_MODE_ENABLE, true);
+    conf.set(ShuffleServerConf.SERVER_COMMIT_TIMEOUT, 10000L);
+    conf.set(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED, 3000L);
+    conf.set(ShuffleServerConf.HEALTH_CHECK_ENABLE, false);
+    shuffleServer = new ShuffleServer(conf);
+    ShuffleTaskManager shuffleTaskManager = shuffleServer.getShuffleTaskManager();
+    shuffleTaskManager.registerShuffle(
+            appId,
+            shuffleId,
+            Lists.newArrayList(new PartitionRange(1, 1)),
+            new RemoteStorageInfo(remoteStorage),
+            StringUtils.EMPTY);
+    shuffleTaskManager.registerShuffle(
+            appId,
+            shuffleId,
+            Lists.newArrayList(new PartitionRange(2, 2)),
+            new RemoteStorageInfo(remoteStorage),
+            StringUtils.EMPTY);
+    final List<ShufflePartitionedBlock> expectedBlocks1 = Lists.newArrayList();
+    final List<ShufflePartitionedBlock> expectedBlocks2 = Lists.newArrayList();
+    final Map<Long, PreAllocatedBufferInfo> bufferIds = shuffleTaskManager.getRequireBufferIds();
+
+    shuffleTaskManager.requireBuffer(10);
+    shuffleTaskManager.requireBuffer(10);
+    shuffleTaskManager.requireBuffer(10);
+    assertEquals(3, bufferIds.size());
+    // required buffer should be clear if it doesn't receive data after timeout
+    Thread.sleep(6000);
+    assertEquals(0, bufferIds.size());
+
+    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
+    shuffleFlushManager.setShuffleIdsWithWriteError(shuffleId);
+
+    assertThrows(EventDiscardException.class, () -> shuffleTaskManager.commitShuffle(appId, shuffleId));
   }
 
   private Set<String> getAppIdsOnDisk(LocalStorageManager localStorageManager) {
