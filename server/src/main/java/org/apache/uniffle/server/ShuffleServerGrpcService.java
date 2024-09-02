@@ -1417,7 +1417,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void startSortMerge(
       RssProtos.StartSortMergeRequest request,
       StreamObserver<RssProtos.StartSortMergeResponse> responseObserver) {
-    try (ServerRPCAuditContext auditContext = createAuditContext("startSortMerge")) {
+    try (ServerRpcAuditContext auditContext = createAuditContext("startSortMerge")) {
       String appId = request.getAppId();
       int shuffleId = request.getShuffleId();
       int partitionId = request.getPartitionId();
@@ -1467,7 +1467,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   public void getSortedShuffleData(
       RssProtos.GetSortedShuffleDataRequest request,
       StreamObserver<RssProtos.GetSortedShuffleDataResponse> responseObserver) {
-    try (ServerRPCAuditContext auditContext = createAuditContext("getSortedShuffleData")) {
+    try (ServerRpcAuditContext auditContext = createAuditContext("getSortedShuffleData")) {
       String appId = request.getAppId();
       int shuffleId = request.getShuffleId();
       int partitionId = request.getPartitionId();
