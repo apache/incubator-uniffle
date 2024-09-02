@@ -46,25 +46,30 @@ public class FailedBlockSendTrackerTest {
         Lists.newArrayList(shuffleServerInfo3, shuffleServerInfo2);
     ShuffleBlockInfo shuffleBlockInfo2 =
         new ShuffleBlockInfo(0, 0, 2L, 0, 0L, new byte[] {}, shuffleServerInfos2, 0, 0L, 0L);
-    new Thread(() -> {
-      tracker.add(shuffleBlockInfo1, shuffleServerInfo1, StatusCode.INTERNAL_ERROR);
-      tracker.add(shuffleBlockInfo1, shuffleServerInfo2, StatusCode.INTERNAL_ERROR);
-      tracker.add(shuffleBlockInfo2, shuffleServerInfo3, StatusCode.INTERNAL_ERROR);
-      tracker.add(shuffleBlockInfo2, shuffleServerInfo2, StatusCode.INTERNAL_ERROR);
-    }).start();
+    new Thread(
+            () -> {
+              tracker.add(shuffleBlockInfo1, shuffleServerInfo1, StatusCode.INTERNAL_ERROR);
+              tracker.add(shuffleBlockInfo1, shuffleServerInfo2, StatusCode.INTERNAL_ERROR);
+              tracker.add(shuffleBlockInfo2, shuffleServerInfo3, StatusCode.INTERNAL_ERROR);
+              tracker.add(shuffleBlockInfo2, shuffleServerInfo2, StatusCode.INTERNAL_ERROR);
+            })
+        .start();
     List<String> expected =
         Lists.newArrayList(
             shuffleServerInfo1.getId(), shuffleServerInfo2.getId(), shuffleServerInfo3.getId());
-    await().atMost(5, TimeUnit.SECONDS).until(() -> {
-      if (tracker.getFailedBlockIds().size() != 2) {
-        return false;
-      }
-      List<String> actual =
-          tracker.getFaultyShuffleServers().stream()
-              .map(ShuffleServerInfo::getId)
-              .sorted()
-              .collect(Collectors.toList());
-      return CollectionUtils.isEqualCollection(expected, actual);
-    });
+    await()
+        .atMost(5, TimeUnit.SECONDS)
+        .until(
+            () -> {
+              if (tracker.getFailedBlockIds().size() != 2) {
+                return false;
+              }
+              List<String> actual =
+                  tracker.getFaultyShuffleServers().stream()
+                      .map(ShuffleServerInfo::getId)
+                      .sorted()
+                      .collect(Collectors.toList());
+              return CollectionUtils.isEqualCollection(expected, actual);
+            });
   }
 }
