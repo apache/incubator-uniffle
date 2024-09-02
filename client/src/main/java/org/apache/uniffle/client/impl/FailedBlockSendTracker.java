@@ -44,7 +44,7 @@ public class FailedBlockSendTracker {
     this.trackingBlockStatusMap = Maps.newConcurrentMap();
   }
 
-  public void add(
+  public synchronized void add(
       ShuffleBlockInfo shuffleBlockInfo,
       ShuffleServerInfo shuffleServerInfo,
       StatusCode statusCode) {
@@ -61,7 +61,7 @@ public class FailedBlockSendTracker {
     trackingBlockStatusMap.remove(blockId);
   }
 
-  public void clearAndReleaseBlockResources() {
+  public synchronized void clearAndReleaseBlockResources() {
     trackingBlockStatusMap.values().stream()
         .flatMap(x -> x.stream())
         .forEach(x -> x.getShuffleBlockInfo().executeCompletionCallback(true));
@@ -76,7 +76,7 @@ public class FailedBlockSendTracker {
     return trackingBlockStatusMap.get(blockId);
   }
 
-  public Set<ShuffleServerInfo> getFaultyShuffleServers() {
+  public synchronized Set<ShuffleServerInfo> getFaultyShuffleServers() {
     return trackingBlockStatusMap.values().stream()
         .flatMap(Collection::stream)
         .map(s -> s.getShuffleServerInfo())
