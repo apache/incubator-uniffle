@@ -17,12 +17,18 @@
 
 import { createRouter, createWebHashHistory } from 'vue-router'
 import ApplicationPage from '@/pages/ApplicationPage.vue'
+import DashboardPage from '@/pages/DashboardPage.vue'
 import CoordinatorServerPage from '@/pages/CoordinatorServerPage.vue'
 import ShuffleServerPage from '@/pages/ShuffleServerPage.vue'
 import ExcludeNodeList from '@/pages/serverstatus/ExcludeNodeList'
 import NodeListPage from '@/pages/serverstatus/NodeListPage.vue'
 
 const routes = [
+  {
+    path: '/dashboardpage',
+    name: 'dashboardpage',
+    component: DashboardPage
+  },
   {
     path: '/coordinatorserverpage',
     name: 'coordinatorserverpage',

@@ -15,22 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.dashboard.web.resource;
+package org.apache.uniffle.coordinator.audit;
 
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
+import org.slf4j.Logger;
 
-@Path("web")
-@Produces({MediaType.APPLICATION_JSON})
-public class WebResource {
-  @Path("coordinator")
-  public Class<CoordinatorResource> getGainCoordinatorsResource() {
-    return CoordinatorResource.class;
+import org.apache.uniffle.common.audit.RpcAuditContext;
+
+/** An audit context for coordinator rpc. */
+public class CoordinatorRpcAuditContext extends RpcAuditContext {
+  private String appId = "N/A";
+
+  /**
+   * Constructor of {@link CoordinatorRpcAuditContext}.
+   *
+   * @param log the logger to log the audit information
+   */
+  public CoordinatorRpcAuditContext(Logger log) {
+    super(log);
   }
 
-  @Path("dashboard")
-  public Class<DashboardResource> getDashboardResource() {
-    return DashboardResource.class;
+  @Override
+  protected String content() {
+    return String.format("appId=%s", appId);
+  }
+
+  public CoordinatorRpcAuditContext withAppId(String appId) {
+    this.appId = appId;
+    return this;
   }
 }

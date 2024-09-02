@@ -30,6 +30,7 @@ SHUFFLE_SERVER_CONF_FILE="${RSS_CONF_DIR}/server.conf"
 JAR_DIR="${RSS_HOME}/jars"
 LOG_CONF_FILE="${RSS_CONF_DIR}/log4j2.xml"
 LOG_PATH="${RSS_LOG_DIR}/shuffle_server.log"
+LOG_OUT_PATH="${RSS_LOG_DIR}/shuffle_server.out"
 SHUFFLE_SERVER_STORAGE_AUDIT_LOG_PATH=${SHUFFLE_SERVER_STORAGE_AUDIT_LOG_PATH:-"${RSS_LOG_DIR}/shuffle_server_storage_audit.log"}
 SHUFFLE_SERVER_RPC_AUDIT_LOG_PATH=${SHUFFLE_SERVER_RPC_AUDIT_LOG_PATH:-"${RSS_LOG_DIR}/shuffle_server_rpc_audit.log"}
 
@@ -135,7 +136,7 @@ GC_LOG_ARGS_NEW=" -XX:+IgnoreUnrecognizedVMOptions \
 JVM_LOG_ARGS=""
 
 if [ -f ${LOG_CONF_FILE} ]; then
-  JVM_LOG_ARGS=" -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH} -Dshuffle.server.storage.audit.log.path=${SHUFFLE_SERVER_STORAGE_AUDIT_LOG_PATH} -Dshuffle.server.rpc.audit.log.path=${SHUFFLE_SERVER_RPC_AUDIT_LOG_PATH}"
+  JVM_LOG_ARGS=" -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH} -Dstorage.audit.log.path=${SHUFFLE_SERVER_STORAGE_AUDIT_LOG_PATH} -Drpc.audit.log.path=${SHUFFLE_SERVER_RPC_AUDIT_LOG_PATH}"
 else
   echo "Exit with error: ${LOG_CONF_FILE} file doesn't exist."
   exit 1
@@ -149,7 +150,7 @@ else
 fi
 
 SHUFFLE_SERVER_JAVA_OPTS=${SHUFFLE_SERVER_JAVA_OPTS:-""}
-$RUNNER ${SHUFFLE_SERVER_BASE_JVM_ARGS} ${SHUFFLE_SERVER_JVM_GC_ARGS} ${JVM_LOG_ARGS} ${JAVA_LIB_PATH} ${SHUFFLE_SERVER_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${SHUFFLE_SERVER_CONF_FILE}" $@ &
+(nohup $RUNNER ${SHUFFLE_SERVER_BASE_JVM_ARGS} ${SHUFFLE_SERVER_JVM_GC_ARGS} ${JVM_LOG_ARGS} ${JAVA_LIB_PATH} ${SHUFFLE_SERVER_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${SHUFFLE_SERVER_CONF_FILE}" $@ > ${LOG_OUT_PATH} 2>&1) &
 
 get_pid_file_name shuffle-server
 echo $! >${RSS_PID_DIR}/${pid_file}

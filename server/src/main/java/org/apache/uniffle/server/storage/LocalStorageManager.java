@@ -34,6 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -375,7 +376,7 @@ public class LocalStorageManager extends SingleStorageManager {
   }
 
   @Override
-  public void checkAndClearLeakedShuffleData(Collection<String> appIds) {
+  public void checkAndClearLeakedShuffleData(Supplier<Collection<String>> appIdsSupplier) {
     Set<String> appIdsOnStorages = new HashSet<>();
     for (LocalStorage localStorage : localStorages) {
       if (!localStorage.isCorrupted()) {
@@ -384,6 +385,7 @@ public class LocalStorageManager extends SingleStorageManager {
       }
     }
 
+    Collection<String> appIds = appIdsSupplier.get();
     for (String appId : appIdsOnStorages) {
       if (!appIds.contains(appId)) {
         ShuffleDeleteHandler deleteHandler =

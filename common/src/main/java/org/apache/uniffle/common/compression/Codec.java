@@ -18,6 +18,7 @@
 package org.apache.uniffle.common.compression;
 
 import java.nio.ByteBuffer;
+import java.util.Optional;
 
 import org.apache.uniffle.common.config.RssConf;
 
@@ -26,18 +27,20 @@ import static org.apache.uniffle.common.config.RssClientConf.ZSTD_COMPRESSION_LE
 
 public abstract class Codec {
 
-  public static Codec newInstance(RssConf rssConf) {
+  public static Optional<Codec> newInstance(RssConf rssConf) {
     Type type = rssConf.get(COMPRESSION_TYPE);
     switch (type) {
+      case NONE:
+        return Optional.empty();
       case ZSTD:
-        return ZstdCodec.getInstance(rssConf.get(ZSTD_COMPRESSION_LEVEL));
+        return Optional.of(ZstdCodec.getInstance(rssConf.get(ZSTD_COMPRESSION_LEVEL)));
       case SNAPPY:
-        return SnappyCodec.getInstance();
+        return Optional.of(SnappyCodec.getInstance());
       case NOOP:
-        return NoOpCodec.getInstance();
+        return Optional.of(NoOpCodec.getInstance());
       case LZ4:
       default:
-        return Lz4Codec.getInstance();
+        return Optional.of(Lz4Codec.getInstance());
     }
   }
 
@@ -72,5 +75,6 @@ public abstract class Codec {
     ZSTD,
     NOOP,
     SNAPPY,
+    NONE,
   }
 }

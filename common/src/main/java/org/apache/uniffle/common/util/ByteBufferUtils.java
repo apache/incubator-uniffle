@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.dashboard.web.resource;
+package org.apache.uniffle.common.util;
 
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
+import java.nio.ByteBuffer;
 
-@Path("web")
-@Produces({MediaType.APPLICATION_JSON})
-public class WebResource {
-  @Path("coordinator")
-  public Class<CoordinatorResource> getGainCoordinatorsResource() {
-    return CoordinatorResource.class;
-  }
+public class ByteBufferUtils {
 
-  @Path("dashboard")
-  public Class<DashboardResource> getDashboardResource() {
-    return DashboardResource.class;
+  public static byte[] bufferToArray(ByteBuffer buffer) {
+    if (buffer.hasArray()
+        && buffer.arrayOffset() == 0
+        && buffer.array().length == buffer.remaining()) {
+      return buffer.array();
+    } else {
+      byte[] bytes = new byte[buffer.remaining()];
+      buffer.get(bytes);
+      return bytes;
+    }
   }
 }

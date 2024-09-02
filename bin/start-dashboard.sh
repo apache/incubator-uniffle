@@ -30,6 +30,7 @@ DASHBOARD_CONF_FILE="${RSS_CONF_DIR}/dashboard.conf"
 JAR_DIR="${RSS_HOME}/jars"
 LOG_CONF_FILE="${RSS_CONF_DIR}/log4j2.xml"
 LOG_PATH="${RSS_LOG_DIR}/dashboard.log"
+LOG_OUT_PATH="${RSS_LOG_DIR}/dashboard.out"
 
 MAIN_CLASS="org.apache.uniffle.dashboard.web.Dashboard"
 
@@ -91,7 +92,6 @@ else
 fi
 
 DASHBOARD_JAVA_OPTS=${DASHBOARD_JAVA_OPTS:-""}
-$RUNNER ${DASHBOARD_BASE_JVM_ARGS} ${DASHBOARD_JVM_GC_ARGS} ${JVM_LOG_ARGS} ${DASHBOARD_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${DASHBOARD_CONF_FILE}" $@ &
-
+(nohup $RUNNER ${DASHBOARD_BASE_JVM_ARGS} ${DASHBOARD_JVM_GC_ARGS} ${JVM_LOG_ARGS} ${DASHBOARD_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${DASHBOARD_CONF_FILE}" $@ > ${LOG_OUT_PATH} 2>&1) &
 get_pid_file_name dashboard
 echo $! >${RSS_PID_DIR}/${pid_file}

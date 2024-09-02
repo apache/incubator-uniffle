@@ -15,22 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.dashboard.web.resource;
+package org.apache.uniffle.dashboard.web.vo;
 
-import org.apache.hbase.thirdparty.javax.ws.rs.Path;
-import org.apache.hbase.thirdparty.javax.ws.rs.Produces;
-import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-@Path("web")
-@Produces({MediaType.APPLICATION_JSON})
-public class WebResource {
-  @Path("coordinator")
-  public Class<CoordinatorResource> getGainCoordinatorsResource() {
-    return CoordinatorResource.class;
-  }
-
-  @Path("dashboard")
-  public Class<DashboardResource> getDashboardResource() {
-    return DashboardResource.class;
-  }
+@Data
+@AllArgsConstructor
+public class DashboardConfVO {
+  private String argumentKey;
+  private String argumentValue;
 }

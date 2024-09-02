@@ -30,6 +30,7 @@ COORDINATOR_CONF_FILE="${RSS_CONF_DIR}/coordinator.conf"
 JAR_DIR="${RSS_HOME}/jars"
 LOG_CONF_FILE="${RSS_CONF_DIR}/log4j2.xml"
 LOG_PATH="${RSS_LOG_DIR}/coordinator.log"
+LOG_OUT_PATH="${RSS_LOG_DIR}/coordinator.out"
 COORDINATOR_RPC_AUDIT_LOG_PATH="${RSS_LOG_DIR}/coordinator_rpc_audit.log"
 
 MAIN_CLASS="org.apache.uniffle.coordinator.CoordinatorServer"
@@ -97,7 +98,7 @@ GC_LOG_ARGS_NEW=" -XX:+IgnoreUnrecognizedVMOptions \
 JVM_LOG_ARGS=""
 
 if [ -f ${LOG_CONF_FILE} ]; then
-  JVM_LOG_ARGS=" -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH} -Dcoordinator.rpc.audit.log.path=${COORDINATOR_RPC_AUDIT_LOG_PATH}"
+  JVM_LOG_ARGS=" -Dlog4j2.configurationFile=file:${LOG_CONF_FILE} -Dlog.path=${LOG_PATH} -Drpc.audit.log.path=${COORDINATOR_RPC_AUDIT_LOG_PATH}"
 else
   echo "Exit with error: ${LOG_CONF_FILE} file doesn't exist."
   exit 1
@@ -111,7 +112,7 @@ else
 fi
 
 COORDINATOR_JAVA_OPTS=${COORDINATOR_JAVA_OPTS:-""}
-$RUNNER ${COORDINATOR_BASE_JVM_ARGS} ${COORDINATOR_JVM_GC_ARGS} ${JVM_LOG_ARGS} ${COORDINATOR_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${COORDINATOR_CONF_FILE}" $@ &
+(nohup $RUNNER ${COORDINATOR_BASE_JVM_ARGS} ${COORDINATOR_JVM_GC_ARGS} ${JVM_LOG_ARGS} ${COORDINATOR_JAVA_OPTS} -cp ${CLASSPATH} ${MAIN_CLASS} --conf "${COORDINATOR_CONF_FILE}" $@ > ${LOG_OUT_PATH} 2>&1) &
 
 get_pid_file_name coordinator
 echo $! >${RSS_PID_DIR}/${pid_file}

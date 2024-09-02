@@ -19,15 +19,25 @@
 
 set -o pipefail
 set -o nounset   # exit the script if you try to use an uninitialised variable
-set -o errexit   # exit the script if any statement returns a non-true return value
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-SRC_DIR="$SCRIPT_DIR/runConfs"
-DEST_DIR="$SCRIPT_DIR/../../.idea/runConfigurations/"
-mkdir -p "$DEST_DIR"
-ls -1 "$SRC_DIR" | xargs -n1 -I FILE cp "$SRC_DIR/FILE" "$DEST_DIR/FILE.xml"
+SHADED_JAR_PATH=${1}
+echo "checkShaded:"${SHADED_JAR_PATH}
+if [ ! -f "${SHADED_JAR_PATH}" ]; then
+    echo "check failed, file does not exist."
+    exit 1
+fi
 
-SRC_DIR="$SCRIPT_DIR/../../dev/local_dev_template"
-DEST_DIR="$SCRIPT_DIR/../../.idea/local_dev/"
-mkdir -p "$DEST_DIR"
-ls -1 "$SRC_DIR" | xargs -n1 -I FILE cp "$SRC_DIR/FILE" "$DEST_DIR"
+UNSHADED=$(unzip -l "${SHADED_JAR_PATH}" | awk 'NR>3 {print $4}' | grep -vE 'uniffle|org/apache/spark/shuffle|META-INF|git.properties|/$|\.html$|\.css$|\.xml$|^javax|^$')
+UNSHADED_COUNT=0
+if [ -n "$UNSHADED" ]; then
+    UNSHADED_COUNT=$(wc -l <<< "$UNSHADED")
+fi
+echo "unshaded count: $UNSHADED_COUNT"
+echo "unshaded content:"
+echo "$UNSHADED"
+if [ $UNSHADED_COUNT -eq 0 ]; then
+    echo "check success."
+else
+    echo "check failed."
+    exit 2
+fi

@@ -36,6 +36,10 @@
                   <img src="../assets/uniffle-logo.png" alt="unffile" />
                 </div>
               </el-menu-item>
+              <el-menu-item index="/dashboardpage">
+                <el-icon><House /></el-icon>
+                <span>Dashboard</span>
+              </el-menu-item>
               <el-menu-item index="/coordinatorserverpage">
                 <el-icon><House /></el-icon>
                 <span>Coordinator</span>
