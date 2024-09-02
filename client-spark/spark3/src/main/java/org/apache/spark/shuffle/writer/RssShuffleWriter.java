@@ -600,7 +600,6 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         // todo: if setting multi replica and another replica is succeed to send, no need to resend
         resendCandidates.addAll(failedBlockStatus);
       }
-
     }
 
     if (isFastFail) {
