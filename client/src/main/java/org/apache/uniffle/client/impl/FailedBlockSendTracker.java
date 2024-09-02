@@ -90,7 +90,7 @@ public class FailedBlockSendTracker {
                 return l.stream();
               }
             })
-        .map(x -> x.getShuffleServerInfo())
+        .map(TrackingBlockStatus::getShuffleServerInfo)
         .collect(Collectors.toSet());
   }
 }
