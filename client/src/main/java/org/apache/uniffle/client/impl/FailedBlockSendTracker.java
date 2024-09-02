@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.client.impl;
 
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,7 +49,8 @@ public class FailedBlockSendTracker {
       ShuffleServerInfo shuffleServerInfo,
       StatusCode statusCode) {
     trackingBlockStatusMap
-        .computeIfAbsent(shuffleBlockInfo.getBlockId(), s -> Lists.newLinkedList())
+        .computeIfAbsent(
+            shuffleBlockInfo.getBlockId(), s -> Collections.synchronizedList(Lists.newArrayList()))
         .add(new TrackingBlockStatus(shuffleBlockInfo, shuffleServerInfo, statusCode));
   }
 
@@ -62,9 +63,14 @@ public class FailedBlockSendTracker {
   }
 
   public void clearAndReleaseBlockResources() {
-    trackingBlockStatusMap.values().stream()
-        .flatMap(x -> x.stream())
-        .forEach(x -> x.getShuffleBlockInfo().executeCompletionCallback(true));
+    trackingBlockStatusMap
+        .values()
+        .forEach(
+            l -> {
+              synchronized (l) {
+                l.forEach(x -> x.getShuffleBlockInfo().executeCompletionCallback(false));
+              }
+            });
     trackingBlockStatusMap.clear();
   }
 
@@ -78,8 +84,13 @@ public class FailedBlockSendTracker {
 
   public Set<ShuffleServerInfo> getFaultyShuffleServers() {
     return trackingBlockStatusMap.values().stream()
-        .flatMap(Collection::stream)
-        .map(s -> s.getShuffleServerInfo())
+        .flatMap(
+            l -> {
+              synchronized (l) {
+                return l.stream();
+              }
+            })
+        .map(x -> x.getShuffleServerInfo())
         .collect(Collectors.toSet());
   }
 }
