@@ -31,6 +31,7 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import io.netty.buffer.Unpooled;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -280,17 +281,18 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       int retryMax,
       long retryIntervalMax) {
     return requirePreAllocation(
-        appId,
-        shuffleId,
-        partitionIds,
-        partitionRequireSizes,
-        requireSize,
-        retryMax,
-        retryIntervalMax,
-        new AtomicReference<>(StatusCode.INTERNAL_ERROR));
+            appId,
+            shuffleId,
+            partitionIds,
+            partitionRequireSizes,
+            requireSize,
+            retryMax,
+            retryIntervalMax,
+            new AtomicReference<>(StatusCode.INTERNAL_ERROR))
+        .getLeft();
   }
 
-  public long requirePreAllocation(
+  public Pair<Long, List<Integer>> requirePreAllocation(
       String appId,
       int shuffleId,
       List<Integer> partitionIds,
@@ -311,6 +313,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     long start = System.currentTimeMillis();
     int retry = 0;
     long result = FAILED_REQUIRE_ID;
+    List<Integer> needSplitPartitionIds = Collections.emptyList();
     if (LOG.isDebugEnabled()) {
       LOG.debug(
           "Requiring buffer for appId: {}, shuffleId: {}, partitionIds: {} with {} bytes from {}:{}",
@@ -328,7 +331,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       } catch (Exception e) {
         LOG.error(
             "Exception happened when requiring pre-allocated buffer from {}:{}", host, port, e);
-        return result;
+        return Pair.of(result, needSplitPartitionIds);
       }
       if (rpcResponse.getStatus() != NO_BUFFER
           && rpcResponse.getStatus() != RssProtos.StatusCode.NO_BUFFER_FOR_HUGE_PARTITION) {
@@ -348,7 +351,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                 + retryMax
                 + " times, cost: {}(ms)",
             System.currentTimeMillis() - start);
-        return result;
+        return Pair.of(result, needSplitPartitionIds);
       }
       try {
         LOG.info(
@@ -382,6 +385,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             System.currentTimeMillis() - start);
       }
       result = rpcResponse.getRequireBufferId();
+      needSplitPartitionIds = rpcResponse.getNeedSplitPartitionIdsList();
     } else if (NOT_RETRY_STATUS_CODES.contains(
         StatusCode.fromCode(rpcResponse.getStatus().getNumber()))) {
       failedStatusCodeRef.set(StatusCode.fromCode(rpcResponse.getStatus().getNumber()));
@@ -398,7 +402,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               + rpcResponse.getRetMsg();
       throw new NotRetryException(msg);
     }
-    return result;
+    return Pair.of(result, needSplitPartitionIds);
   }
 
   private RssProtos.ShuffleUnregisterByAppIdResponse doUnregisterShuffleByAppId(
@@ -564,16 +568,18 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       try {
         RetryUtils.retryWithCondition(
             () -> {
+              // TODO(baoloongmao): support partition split follow netty client
               long requireId =
                   requirePreAllocation(
-                      appId,
-                      shuffleId,
-                      partitionIds,
-                      partitionRequireSizes,
-                      allocateSize,
-                      request.getRetryMax() / maxRetryAttempts,
-                      request.getRetryIntervalMax(),
-                      failedStatusCode);
+                          appId,
+                          shuffleId,
+                          partitionIds,
+                          partitionRequireSizes,
+                          allocateSize,
+                          request.getRetryMax() / maxRetryAttempts,
+                          request.getRetryIntervalMax(),
+                          failedStatusCode)
+                      .getLeft();
               if (requireId == FAILED_REQUIRE_ID) {
                 throw new RssException(
                     String.format(

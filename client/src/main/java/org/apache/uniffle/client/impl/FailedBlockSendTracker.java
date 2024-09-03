@@ -21,6 +21,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -28,6 +30,7 @@ import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 
 public class FailedBlockSendTracker {
@@ -40,8 +43,11 @@ public class FailedBlockSendTracker {
    */
   private Map<Long, List<TrackingBlockStatus>> trackingBlockStatusMap;
 
+  private final BlockingQueue<TrackingPartitionStatus> trackingNeedSplitPartitionStatusQueue;
+
   public FailedBlockSendTracker() {
     this.trackingBlockStatusMap = Maps.newConcurrentMap();
+    this.trackingNeedSplitPartitionStatusQueue = new LinkedBlockingQueue<>();
   }
 
   public void add(
@@ -56,6 +62,8 @@ public class FailedBlockSendTracker {
 
   public void merge(FailedBlockSendTracker failedBlockSendTracker) {
     this.trackingBlockStatusMap.putAll(failedBlockSendTracker.trackingBlockStatusMap);
+    this.trackingNeedSplitPartitionStatusQueue.addAll(
+        failedBlockSendTracker.trackingNeedSplitPartitionStatusQueue);
   }
 
   public void remove(long blockId) {
@@ -72,6 +80,7 @@ public class FailedBlockSendTracker {
               }
             });
     trackingBlockStatusMap.clear();
+    trackingNeedSplitPartitionStatusQueue.clear();
   }
 
   public Set<Long> getFailedBlockIds() {
@@ -93,5 +102,21 @@ public class FailedBlockSendTracker {
               }
             });
     return shuffleServerInfos;
+  }
+
+  public void addNeedSplitPartition(int partitionId, ShuffleServerInfo shuffleServerInfo) {
+    try {
+      trackingNeedSplitPartitionStatusQueue.put(
+          new TrackingPartitionStatus(partitionId, shuffleServerInfo));
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RssException(e);
+    }
+  }
+
+  public List<TrackingPartitionStatus> removeAllTrackedPartitions() {
+    List<TrackingPartitionStatus> trackingPartitionStatusList = Lists.newArrayList();
+    trackingNeedSplitPartitionStatusQueue.drainTo(trackingPartitionStatusList);
+    return trackingPartitionStatusList;
   }
 }

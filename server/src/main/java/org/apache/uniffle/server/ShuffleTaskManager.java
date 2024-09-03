@@ -48,6 +48,7 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -581,7 +582,17 @@ public class ShuffleTaskManager {
     return shuffleTaskInfo.getPartitionDataSize(shuffleId, partitionId);
   }
 
-  public long requireBuffer(
+  /**
+   * Require buffer for shuffle data
+   *
+   * @param appId the appId
+   * @param shuffleId the shuffleId
+   * @param partitionIds the partitionIds
+   * @param partitionRequireSizes the partitionRequireSizes
+   * @param requireSize the requireSize
+   * @return returns (requireId, splitPartitionIds)
+   */
+  public Pair<Long, List<Integer>> requireBufferReturnPair(
       String appId,
       int shuffleId,
       List<Integer> partitionIds,
@@ -592,6 +603,7 @@ public class ShuffleTaskManager {
       LOG.error("No such app is registered. appId: {}, shuffleId: {}", appId, shuffleId);
       throw new NoRegisterException("No such app is registered. appId: " + appId);
     }
+    List<Integer> splitPartitionIds = new ArrayList<>();
     // To be compatible with legacy clients which have empty partitionRequireSizes
     if (partitionIds.size() == partitionRequireSizes.size()) {
       for (int i = 0; i < partitionIds.size(); i++) {
@@ -610,9 +622,33 @@ public class ShuffleTaskManager {
         }
         HugePartitionUtils.checkExceedPartitionHardLimit(
             "requireBuffer", shuffleBufferManager, partitionUsedDataSize, partitionRequireSize);
+        if (HugePartitionUtils.hasExceedPartitionSplitLimit(
+            shuffleBufferManager, partitionUsedDataSize)) {
+          LOG.info(
+              "Need split partition. appId: {}, shuffleId: {}, partitionIds: {}, partitionUsedDataSize: {}",
+              appId,
+              shuffleId,
+              partitionIds,
+              partitionUsedDataSize);
+          splitPartitionIds.add(partitionId);
+          // We do not mind to reduce the partitionRequireSize from the requireSize for soft
+          // partition split
+        }
       }
     }
-    return requireBuffer(appId, requireSize);
+    return Pair.of(requireBuffer(appId, requireSize), splitPartitionIds);
+  }
+
+  @VisibleForTesting
+  public long requireBuffer(
+      String appId,
+      int shuffleId,
+      List<Integer> partitionIds,
+      List<Integer> partitionRequireSizes,
+      int requireSize) {
+    return requireBufferReturnPair(
+            appId, shuffleId, partitionIds, partitionRequireSizes, requireSize)
+        .getLeft();
   }
 
   public long requireBuffer(String appId, int requireSize) {
