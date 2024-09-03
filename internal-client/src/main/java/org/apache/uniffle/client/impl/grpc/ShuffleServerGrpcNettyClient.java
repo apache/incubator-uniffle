@@ -101,27 +101,10 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
       int pageSize,
       int maxOrder,
       int smallCacheSize) {
-    super(host, grpcPort, maxRetryAttempts, rpcTimeoutMs, pageSize, maxOrder, smallCacheSize);
+    super(host, grpcPort, maxRetryAttempts, rpcTimeoutMs, true, pageSize, maxOrder, smallCacheSize);
     this.nettyPort = nettyPort;
     TransportContext transportContext = new TransportContext(new TransportConf(rssConf));
     this.clientFactory = new TransportClientFactory(transportContext);
-  }
-
-  @Override
-  protected ByteBufAllocator createByteBufAllocator(
-      int pageSize, int maxOrder, int smallCacheSize) {
-    LOG.info(
-        "ShuffleServerGrpcNettyClient is initialized - host:{}, gRPC port:{}, netty port:{}, maxRetryAttempts:{}, usePlaintext:{}, pageSize:{}, maxOrder:{}, smallCacheSize={}",
-        host,
-        port,
-        nettyPort,
-        maxRetryAttempts,
-        usePlaintext,
-        pageSize,
-        maxOrder,
-        smallCacheSize);
-    return GrpcNettyUtils.createPooledByteBufAllocatorWithSmallCacheOnly(
-        true, 0, pageSize, maxOrder, smallCacheSize);
   }
 
   @Override
