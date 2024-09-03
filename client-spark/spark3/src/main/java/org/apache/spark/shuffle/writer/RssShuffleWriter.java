@@ -556,6 +556,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       return;
     }
 
+    reassignOnPartitionNeedSplit(failedTracker);
+
     Set<Long> failedBlockIds = failedTracker.getFailedBlockIds();
     if (CollectionUtils.isEmpty(failedBlockIds)) {
       return;
@@ -617,6 +619,23 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
 
     reassignAndResendBlocks(resendCandidates);
+  }
+
+  private void reassignOnPartitionNeedSplit(FailedBlockSendTracker failedTracker) {
+    Map<Integer, List<ReceivingFailureServer>> failurePartitionToServers = new HashMap<>();
+
+    failedTracker
+        .removeAllTrackedPartitions()
+        .forEach(
+            partitionStatus ->
+                failurePartitionToServers
+                    .computeIfAbsent(partitionStatus.getPartitionId(), x -> new ArrayList<>())
+                    .add(
+                        new ReceivingFailureServer(
+                            partitionStatus.getShuffleServerInfo().getId(), StatusCode.SUCCESS)));
+    if (!failurePartitionToServers.isEmpty()) {
+      doReassignOnBlockSendFailure(failurePartitionToServers);
+    }
   }
 
   private void doReassignOnBlockSendFailure(
@@ -699,7 +718,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     for (TrackingBlockStatus blockStatus : blocks) {
       ShuffleBlockInfo block = blockStatus.getShuffleBlockInfo();
       // todo: getting the replacement should support multi replica.
-      ShuffleServerInfo replacement = getPartitionAssignedServers(block.getPartitionId()).get(0);
+      List<ShuffleServerInfo> servers = getPartitionAssignedServers(block.getPartitionId());
+      ShuffleServerInfo replacement = servers.get(0);
       if (blockStatus.getShuffleServerInfo().getId().equals(replacement.getId())) {
         throw new RssException(
             "No available replacement server for: " + blockStatus.getShuffleServerInfo().getId());

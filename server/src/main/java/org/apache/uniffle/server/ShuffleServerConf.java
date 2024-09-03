@@ -516,6 +516,16 @@ public class ShuffleServerConf extends RssBaseConf {
                   + "will be terminated. This helps to significantly improve the "
                   + "stability of the cluster by preventing partitions from becoming too large.");
 
+  public static final ConfigOption<Long> HUGE_PARTITION_SPLIT_LIMIT =
+      ConfigOptions.key("rss.server.huge-partition.split.limit")
+          .longType()
+          .defaultValue(Long.MAX_VALUE)
+          .withDescription(
+              "This option sets the maximum partition slice size threshold. "
+                  + "If the partition size exceeds this threshold, the rss client will "
+                  + "receive the need split partition list and resend the failed blocks to "
+                  + "new servers through reassign mechanism.");
+
   public static final ConfigOption<Long> SERVER_DECOMMISSION_CHECK_INTERVAL =
       ConfigOptions.key("rss.server.decommission.check.interval")
           .longType()
