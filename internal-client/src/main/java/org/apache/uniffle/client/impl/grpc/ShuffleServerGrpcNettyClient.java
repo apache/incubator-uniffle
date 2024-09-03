@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.grpc.netty.shaded.io.netty.buffer.ByteBufAllocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +54,6 @@ import org.apache.uniffle.common.netty.protocol.GetMemoryShuffleDataResponse;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.netty.protocol.SendShuffleDataRequest;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.util.GrpcNettyUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 
 public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {

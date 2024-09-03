@@ -59,8 +59,7 @@ public abstract class GrpcClient {
     NettyChannelBuilder channelBuilder =
         NettyChannelBuilder.forAddress(host, port)
             .withOption(
-                ChannelOption.ALLOCATOR,
-                getByteBufAllocator(pageSize, maxOrder, smallCacheSize));
+                ChannelOption.ALLOCATOR, getByteBufAllocator(pageSize, maxOrder, smallCacheSize));
 
     if (usePlaintext) {
       channelBuilder.usePlaintext();
@@ -81,7 +80,8 @@ public abstract class GrpcClient {
   protected static synchronized ByteBufAllocator getByteBufAllocator(
       int pageSize, int maxOrder, int smallCacheSize) {
     if (allocator == null) {
-      allocator = GrpcNettyUtils.createPooledByteBufAllocator(true, 0, pageSize, maxOrder, smallCacheSize);
+      allocator =
+          GrpcNettyUtils.createPooledByteBufAllocator(true, 0, pageSize, maxOrder, smallCacheSize);
     }
     return allocator;
   }
