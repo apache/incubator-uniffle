@@ -170,9 +170,9 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
     if (result.getDataBuffer().remaining() != expectedLength) {
       throw new RssException(
           "Wrong data length expect "
-              + result.getDataBuffer().remaining()
+              + expectedLength
               + " but actual is "
-              + expectedLength);
+              + result.getDataBuffer().remaining());
     }
     return result;
   }
