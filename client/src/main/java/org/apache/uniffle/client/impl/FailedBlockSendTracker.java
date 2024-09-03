@@ -21,10 +21,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -83,14 +83,15 @@ public class FailedBlockSendTracker {
   }
 
   public Set<ShuffleServerInfo> getFaultyShuffleServers() {
-    return trackingBlockStatusMap.values().stream()
-        .flatMap(
+    Set<ShuffleServerInfo> shuffleServerInfos = Sets.newHashSet();
+    trackingBlockStatusMap.values().stream()
+        .forEach(
             l -> {
               synchronized (l) {
-                return l.stream();
+                l.stream()
+                    .forEach((status) -> shuffleServerInfos.add(status.getShuffleServerInfo()));
               }
-            })
-        .map(TrackingBlockStatus::getShuffleServerInfo)
-        .collect(Collectors.toSet());
+            });
+    return shuffleServerInfos;
   }
 }
