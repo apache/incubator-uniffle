@@ -37,7 +37,7 @@ public abstract class GrpcClient {
   protected boolean usePlaintext;
   protected int maxRetryAttempts;
   protected ManagedChannel channel;
-  protected static PooledByteBufAllocator allocator;
+  private static PooledByteBufAllocator allocator;
 
   protected GrpcClient(String host, int port, int maxRetryAttempts, boolean usePlaintext) {
     this(host, port, maxRetryAttempts, usePlaintext, 0, 0, 0);
@@ -77,7 +77,7 @@ public abstract class GrpcClient {
     this.channel = channel;
   }
 
-  protected static synchronized ByteBufAllocator getByteBufAllocator(
+  private static synchronized ByteBufAllocator getByteBufAllocator(
       int pageSize, int maxOrder, int smallCacheSize) {
     if (allocator == null) {
       allocator =
