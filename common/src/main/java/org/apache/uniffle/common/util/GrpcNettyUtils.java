@@ -72,7 +72,8 @@ public class GrpcNettyUtils {
   public static synchronized ByteBufAllocator getSharedPooledByteBufAllocator(
       int pageSize, int maxOrder, int smallCacheSize) {
     if (allocator == null) {
-      allocator = GrpcNettyUtils.createPooledByteBufAllocator(true, 0, pageSize, maxOrder, smallCacheSize);
+      allocator =
+          GrpcNettyUtils.createPooledByteBufAllocator(true, 0, pageSize, maxOrder, smallCacheSize);
     }
     return allocator;
   }
