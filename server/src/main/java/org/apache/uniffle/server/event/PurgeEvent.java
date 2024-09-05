@@ -25,11 +25,18 @@ public abstract class PurgeEvent {
   private String appId;
   private String user;
   private List<Integer> shuffleIds;
+  // Quick Delete or not.
+  private boolean isSoftDelete;
 
   public PurgeEvent(String appId, String user, List<Integer> shuffleIds) {
+    this(appId, user, shuffleIds, false);
+  }
+
+  public PurgeEvent(String appId, String user, List<Integer> shuffleIds, boolean isSoftDelete) {
     this.appId = appId;
     this.user = user;
     this.shuffleIds = shuffleIds;
+    this.isSoftDelete = isSoftDelete;
   }
 
   public String getAppId() {
@@ -44,6 +51,10 @@ public abstract class PurgeEvent {
     return shuffleIds;
   }
 
+  public boolean isSoftDelete() {
+    return isSoftDelete;
+  }
+
   @Override
   public String toString() {
     return this.getClass().getSimpleName()
@@ -56,6 +67,8 @@ public abstract class PurgeEvent {
         + '\''
         + ", shuffleIds="
         + shuffleIds
+        + ", isSoftDelete="
+        + isSoftDelete
         + '}';
   }
 }

@@ -158,13 +158,9 @@ public class HybridStorageManager implements StorageManager {
   }
 
   public void removeResources(PurgeEvent event) {
-    removeResources(event, false);
-  }
-
-  public void removeResources(PurgeEvent event, boolean isQuick) {
     LOG.info("Start to remove resource of {}", event);
-    warmStorageManager.removeResources(event, isQuick);
-    coldStorageManager.removeResources(event, isQuick);
+    warmStorageManager.removeResources(event);
+    coldStorageManager.removeResources(event);
   }
 
   public StorageManager getColdStorageManager() {

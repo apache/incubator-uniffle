@@ -21,13 +21,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Queues;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -68,9 +66,6 @@ public class HadoopStorageManager extends SingleStorageManager {
   private Map<String, HadoopStorage> appIdToStorages = JavaUtils.newConcurrentMap();
   private Map<String, HadoopStorage> pathToStorages = JavaUtils.newConcurrentMap();
   private final boolean isStorageAuditLogEnabled;
-  private final BlockingQueue<AsynchronousDeleteEvent> quickNeedDeletePaths =
-      Queues.newLinkedBlockingQueue();
-  private Thread clearNeedDeleteLocalPathThread;
 
   HadoopStorageManager(ShuffleServerConf conf) {
     super(conf);
@@ -82,7 +77,7 @@ public class HadoopStorageManager extends SingleStorageManager {
           while (true) {
             AsynchronousDeleteEvent asynchronousDeleteEvent = null;
             try {
-              asynchronousDeleteEvent = quickNeedDeletePaths.take();
+              asynchronousDeleteEvent = softDirPaths.take();
               ShuffleDeleteHandler deleteHandler =
                   ShuffleHandlerFactory.getInstance()
                       .createShuffleDeleteHandler(
@@ -107,9 +102,9 @@ public class HadoopStorageManager extends SingleStorageManager {
             }
           }
         };
-    clearNeedDeleteLocalPathThread = new Thread(clearNeedDeletePath);
-    clearNeedDeleteLocalPathThread.setName("clearNeedDeleteHadoopPathThread");
-    clearNeedDeleteLocalPathThread.setDaemon(true);
+    clearSoftDirPathThread = new Thread(clearNeedDeletePath);
+    clearSoftDirPathThread.setName("clearSoftHadoopDirPathThread");
+    clearSoftDirPathThread.setDaemon(true);
   }
 
   @Override
@@ -138,11 +133,6 @@ public class HadoopStorageManager extends SingleStorageManager {
 
   @Override
   public void removeResources(PurgeEvent event) {
-    removeResources(event, false);
-  }
-
-  @Override
-  public void removeResources(PurgeEvent event, boolean isQuick) {
     String appId = event.getAppId();
     HadoopStorage storage = getStorageByAppId(appId);
     if (storage != null) {
@@ -193,13 +183,14 @@ public class HadoopStorageManager extends SingleStorageManager {
                   storage.getStoragePath()));
         }
       }
-      if (isQuick) {
+      if (event.isSoftDelete()) {
         AsynchronousDeleteEvent asynchronousDeleteEvent =
             new AsynchronousDeleteEvent(
                 appId, event.getUser(), storage.getConf(), event.getShuffleIds(), deletePaths);
-        deleteHandler.quickDelete(asynchronousDeleteEvent);
-        boolean isSucess = quickNeedDeletePaths.offer(asynchronousDeleteEvent);
+        deleteHandler.softDelete(asynchronousDeleteEvent);
+        boolean isSucess = softDirPaths.offer(asynchronousDeleteEvent);
         if (!isSucess) {
+          ShuffleServerMetrics.counterHadoopSoftDeleteFailed.inc();
           LOG.warn(
               "Remove the case where the clearNeedDeleteHadoopPathThread queue is full and cannot accept elements.");
         }

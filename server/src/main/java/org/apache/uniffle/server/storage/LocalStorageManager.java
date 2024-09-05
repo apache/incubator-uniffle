@@ -29,7 +29,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -42,7 +41,6 @@ import java.util.stream.Stream;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Queues;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -94,9 +92,6 @@ public class LocalStorageManager extends SingleStorageManager {
   private final List<StorageMediaProvider> typeProviders = Lists.newArrayList();
 
   private final boolean isStorageAuditLogEnabled;
-  private final BlockingQueue<AsynchronousDeleteEvent> quickNeedDeletePaths =
-      Queues.newLinkedBlockingQueue();
-  private Thread clearNeedDeleteLocalPathThread;
 
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
@@ -193,7 +188,7 @@ public class LocalStorageManager extends SingleStorageManager {
                         new CreateShuffleDeleteHandlerRequest(
                             StorageType.LOCALFILE.name(), new Configuration()));
             try {
-              asynchronousDeleteEvent = quickNeedDeletePaths.take();
+              asynchronousDeleteEvent = softDirPaths.take();
               deleteHandler.delete(
                   asynchronousDeleteEvent.getNeedDeleteRenamePaths(),
                   asynchronousDeleteEvent.getAppId(),
@@ -210,9 +205,9 @@ public class LocalStorageManager extends SingleStorageManager {
             }
           }
         };
-    clearNeedDeleteLocalPathThread = new Thread(clearNeedDeletePath);
-    clearNeedDeleteLocalPathThread.setName("clearNeedDeleteLocalPathThread");
-    clearNeedDeleteLocalPathThread.setDaemon(true);
+    clearSoftDirPathThread = new Thread(clearNeedDeletePath);
+    clearSoftDirPathThread.setName("clearSoftLocalDirPathThread");
+    clearSoftDirPathThread.setDaemon(true);
   }
 
   private StorageMedia getStorageTypeForBasePath(String basePath) {
@@ -304,11 +299,6 @@ public class LocalStorageManager extends SingleStorageManager {
 
   @Override
   public void removeResources(PurgeEvent event) {
-    removeResources(event, false);
-  }
-
-  @Override
-  public void removeResources(PurgeEvent event, boolean isQuick) {
     String appId = event.getAppId();
     String user = event.getUser();
     List<Integer> shuffleSet =
@@ -370,13 +360,14 @@ public class LocalStorageManager extends SingleStorageManager {
                   }
                 })
             .collect(Collectors.toList());
-    if (isQuick) {
+    if (event.isSoftDelete()) {
       AsynchronousDeleteEvent asynchronousDeleteEvent =
           new AsynchronousDeleteEvent(
               appId, event.getUser(), null, event.getShuffleIds(), deletePaths);
-      deleteHandler.quickDelete(asynchronousDeleteEvent);
-      boolean isSucess = quickNeedDeletePaths.offer(asynchronousDeleteEvent);
+      deleteHandler.softDelete(asynchronousDeleteEvent);
+      boolean isSucess = softDirPaths.offer(asynchronousDeleteEvent);
       if (!isSucess) {
+        ShuffleServerMetrics.counterLocalSoftDeleteFailed.inc();
         LOG.warn(
             "Remove the case where the clearNeedDeleteHadoopPathThread queue is full and cannot accept elements.");
       }

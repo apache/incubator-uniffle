@@ -122,11 +122,11 @@ public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
   }
 
   @Override
-  public void quickDelete(AsynchronousDeleteEvent asynchronousDeleteEvent) {
-    String appId = asynchronousDeleteEvent.getAppId();
-    String user = asynchronousDeleteEvent.getUser();
+  public void softDelete(AsynchronousDeleteEvent shuffleSoftDeletePurgeEvent) {
+    String appId = shuffleSoftDeletePurgeEvent.getAppId();
+    String user = shuffleSoftDeletePurgeEvent.getUser();
     for (Map.Entry<String, String> appIdNeedDeletePaths :
-        asynchronousDeleteEvent.getNeedDeletePathAndRenamePath().entrySet()) {
+        shuffleSoftDeletePurgeEvent.getNeedDeletePathAndRenamePath().entrySet()) {
       final Path path = new Path(appIdNeedDeletePaths.getKey());
       final Path breakdownPathFolder = new Path(appIdNeedDeletePaths.getValue());
       boolean isSuccess = false;

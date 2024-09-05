@@ -29,5 +29,5 @@ public interface ShuffleDeleteHandler {
   void delete(String[] storageBasePaths, String appId, String user);
 
   /** Rename the file and then delete it asynchronously. */
-  void quickDelete(AsynchronousDeleteEvent shuffleQuickPurgeEvent);
+  void softDelete(AsynchronousDeleteEvent shuffleSoftDeletePurgeEvent);
 }

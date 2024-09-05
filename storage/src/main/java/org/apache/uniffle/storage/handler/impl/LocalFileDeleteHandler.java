@@ -54,10 +54,10 @@ public class LocalFileDeleteHandler implements ShuffleDeleteHandler {
   }
 
   @Override
-  public void quickDelete(AsynchronousDeleteEvent asynchronousDeleteEvent) {
+  public void softDelete(AsynchronousDeleteEvent shuffleSoftDeletePurgeEvent) {
 
     for (Map.Entry<String, String> appIdNeedDeletePaths :
-        asynchronousDeleteEvent.getNeedDeletePathAndRenamePath().entrySet()) {
+        shuffleSoftDeletePurgeEvent.getNeedDeletePathAndRenamePath().entrySet()) {
       String appId = appIdNeedDeletePaths.getKey();
       String shufflePath = appIdNeedDeletePaths.getKey();
       String breakdownShufflePath = appIdNeedDeletePaths.getValue();
