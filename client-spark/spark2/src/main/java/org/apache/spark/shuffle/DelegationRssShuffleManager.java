@@ -29,7 +29,7 @@ import org.apache.spark.TaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryClient;
+import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryableClient;
 import org.apache.uniffle.client.request.RssAccessClusterRequest;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.common.exception.RssException;
@@ -43,7 +43,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   private static final Logger LOG = LoggerFactory.getLogger(DelegationRssShuffleManager.class);
 
   private final ShuffleManager delegate;
-  private final CoordinatorGrpcRetryClient coordinatorClients;
+  private final CoordinatorGrpcRetryableClient coordinatorClients;
   private final int accessTimeoutMs;
   private final SparkConf sparkConf;
   private String user;

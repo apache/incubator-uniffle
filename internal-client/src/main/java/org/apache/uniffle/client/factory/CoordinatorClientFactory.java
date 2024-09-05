@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcClient;
-import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryClient;
+import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryableClient;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.exception.RssException;
 
@@ -87,14 +87,14 @@ public class CoordinatorClientFactory {
     return coordinatorClients;
   }
 
-  public synchronized CoordinatorGrpcRetryClient createCoordinatorClient(
+  public synchronized CoordinatorGrpcRetryableClient createCoordinatorClient(
       ClientType clientType,
       String coordinators,
       long retryIntervalMs,
       int retryTimes,
       int heartBeatThreadNum) {
     List<CoordinatorClient> coordinatorClients = createCoordinatorClient(clientType, coordinators);
-    return new CoordinatorGrpcRetryClient(
+    return new CoordinatorGrpcRetryableClient(
         coordinatorClients, retryIntervalMs, retryTimes, heartBeatThreadNum);
   }
 }

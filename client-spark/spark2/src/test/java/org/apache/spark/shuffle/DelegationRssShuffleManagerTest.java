@@ -30,7 +30,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
-import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryClient;
+import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryableClient;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -67,7 +67,7 @@ public class DelegationRssShuffleManagerTest {
     coordinatorClients.add(mockCoordinatorClient);
     mockedStaticRssShuffleUtils
         .when(() -> RssSparkShuffleUtils.createCoordinatorClients(any()))
-        .thenReturn(new CoordinatorGrpcRetryClient(coordinatorClients, 0, 0, 1));
+        .thenReturn(new CoordinatorGrpcRetryableClient(coordinatorClients, 0, 0, 1));
     SparkConf conf = new SparkConf();
     conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(), "false");
     assertCreateSortShuffleManager(conf);
@@ -82,7 +82,7 @@ public class DelegationRssShuffleManagerTest {
     coordinatorClients.add(mockCoordinatorClient);
     mockedStaticRssShuffleUtils
         .when(() -> RssSparkShuffleUtils.createCoordinatorClients(any()))
-        .thenReturn(new CoordinatorGrpcRetryClient(coordinatorClients, 0, 0, 1));
+        .thenReturn(new CoordinatorGrpcRetryableClient(coordinatorClients, 0, 0, 1));
 
     SparkConf conf = new SparkConf();
     assertCreateSortShuffleManager(conf);
@@ -120,7 +120,7 @@ public class DelegationRssShuffleManagerTest {
     coordinatorClients.add(mockCoordinatorClient);
     mockedStaticRssShuffleUtils
         .when(() -> RssSparkShuffleUtils.createCoordinatorClients(any()))
-        .thenReturn(new CoordinatorGrpcRetryClient(coordinatorClients, 0, 0, 1));
+        .thenReturn(new CoordinatorGrpcRetryableClient(coordinatorClients, 0, 0, 1));
 
     SparkConf conf = new SparkConf();
     conf.set(RssSparkConfig.RSS_DYNAMIC_CLIENT_CONF_ENABLED.key(), "false");
@@ -154,7 +154,7 @@ public class DelegationRssShuffleManagerTest {
     coordinatorClients.add(mockDeniedCoordinatorClient);
     mockedStaticRssShuffleUtils
         .when(() -> RssSparkShuffleUtils.createCoordinatorClients(any()))
-        .thenReturn(new CoordinatorGrpcRetryClient(coordinatorClients, 0, 0, 1));
+        .thenReturn(new CoordinatorGrpcRetryableClient(coordinatorClients, 0, 0, 1));
     SparkConf conf = new SparkConf();
     conf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS, 3000L);
     conf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES, 3);
@@ -174,7 +174,7 @@ public class DelegationRssShuffleManagerTest {
     secondCoordinatorClients.add(mockCoordinatorClient);
     mockedStaticRssShuffleUtils
         .when(() -> RssSparkShuffleUtils.createCoordinatorClients(any()))
-        .thenReturn(new CoordinatorGrpcRetryClient(secondCoordinatorClients, 0, 0, 1));
+        .thenReturn(new CoordinatorGrpcRetryableClient(secondCoordinatorClients, 0, 0, 1));
     SparkConf secondConf = new SparkConf();
     secondConf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS, 3000L);
     secondConf.set(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES, 3);

@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
-import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryClient;
+import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryableClient;
 import org.apache.uniffle.client.request.RssReportShuffleFetchFailureRequest;
 import org.apache.uniffle.client.response.RssReportShuffleFetchFailureResponse;
 import org.apache.uniffle.client.util.ClientUtils;
@@ -103,7 +103,7 @@ public class RssSparkShuffleUtils {
     return instance;
   }
 
-  public static CoordinatorGrpcRetryClient createCoordinatorClients(SparkConf sparkConf) {
+  public static CoordinatorGrpcRetryableClient createCoordinatorClients(SparkConf sparkConf) {
     String clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     String coordinators = sparkConf.get(RssSparkConfig.RSS_COORDINATOR_QUORUM);
     long retryIntervalMs = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);

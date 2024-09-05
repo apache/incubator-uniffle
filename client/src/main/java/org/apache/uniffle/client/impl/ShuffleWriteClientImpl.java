@@ -51,7 +51,7 @@ import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
-import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryClient;
+import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryableClient;
 import org.apache.uniffle.client.request.RssAppHeartBeatRequest;
 import org.apache.uniffle.client.request.RssApplicationInfoRequest;
 import org.apache.uniffle.client.request.RssFetchClientConfRequest;
@@ -101,7 +101,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private String clientType;
   private int retryMax;
   private long retryIntervalMax;
-  private CoordinatorGrpcRetryClient coordinatorClients;
+  private CoordinatorGrpcRetryableClient coordinatorClients;
   // appId -> shuffleId -> servers
   private Map<String, Map<Integer, Set<ShuffleServerInfo>>> shuffleServerInfoMap =
       JavaUtils.newConcurrentMap();

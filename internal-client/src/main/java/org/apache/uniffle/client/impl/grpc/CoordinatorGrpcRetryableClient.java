@@ -45,14 +45,14 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
-public class CoordinatorGrpcRetryClient {
-  private static final Logger LOG = LoggerFactory.getLogger(CoordinatorGrpcRetryClient.class);
+public class CoordinatorGrpcRetryableClient {
+  private static final Logger LOG = LoggerFactory.getLogger(CoordinatorGrpcRetryableClient.class);
   private List<CoordinatorClient> coordinatorClients;
   private long retryIntervalMs;
   private int retryTimes;
   private ExecutorService heartBeatExecutorService;
 
-  public CoordinatorGrpcRetryClient(
+  public CoordinatorGrpcRetryableClient(
       List<CoordinatorClient> coordinatorClients,
       long retryIntervalMs,
       int retryTimes,
