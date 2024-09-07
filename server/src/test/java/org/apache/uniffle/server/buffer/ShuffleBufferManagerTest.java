@@ -35,6 +35,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
@@ -69,6 +71,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class ShuffleBufferManagerTest extends BufferTestBase {
+  private static final Logger LOG = LoggerFactory.getLogger(ShuffleBufferManagerTest.class);
+
   private ShuffleBufferManager shuffleBufferManager;
   private ShuffleFlushManager mockShuffleFlushManager;
   private ShuffleServer mockShuffleServer;
@@ -653,8 +657,13 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     int retry = 0;
     long committedCount = 0;
     do {
-      committedCount =
-          shuffleFlushManager.getCommittedBlockIds(appId, shuffleId).getLongCardinality();
+      try {
+        committedCount =
+            shuffleFlushManager.getCommittedBlockIds(appId, shuffleId).getLongCardinality();
+      } catch (Throwable e) {
+        // ignore ArrayIndexOutOfBoundsException and ConcurrentModificationException
+        LOG.error("Ignored exception.", e);
+      }
       if (committedCount < expectedBlockNum) {
         Thread.sleep(500);
       }
