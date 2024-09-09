@@ -423,6 +423,14 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
@@ -542,6 +550,14 @@
           <exclusion>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -675,6 +691,10 @@
           <exclusion>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -2324,6 +2344,12 @@
       </modules>
     </profile>
     <profile>
+      <id>hadoop-dependencies-provided</id>
+      <properties>
+        <hadoop.scope>provided</hadoop.scope>
+      </properties>
+    </profile>
+    <profile>
       <id>hadoop-dependencies-included</id>
       <properties>
         <hadoop.scope>compile</hadoop.scope>
@@ -2358,6 +2384,15 @@
           <scope>test</scope>
         </dependency>
       </dependencies>
+    </profile>
+    <profile>
+      <id>netty-4.1.68.Final</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <properties>
+        <netty.version>4.1.68.Final</netty.version>
+      </properties>
     </profile>
 
     <profile>
