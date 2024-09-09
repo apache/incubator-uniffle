@@ -26,6 +26,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import org.apache.uniffle.client.api.CoordinatorClient;
+import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryableClient;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.common.rpc.StatusCode;
 
@@ -59,8 +60,10 @@ public class RssShuffleManagerTestBase {
     CoordinatorClient mockCoordinatorClient = createCoordinatorClient(status);
     List<CoordinatorClient> coordinatorClients = Lists.newArrayList();
     coordinatorClients.add(mockCoordinatorClient);
+    CoordinatorGrpcRetryableClient client =
+        new CoordinatorGrpcRetryableClient(coordinatorClients, 0, 1, 1);
     mockedStaticRssShuffleUtils
         .when(() -> RssSparkShuffleUtils.createCoordinatorClients(any()))
-        .thenReturn(coordinatorClients);
+        .thenReturn(client);
   }
 }
