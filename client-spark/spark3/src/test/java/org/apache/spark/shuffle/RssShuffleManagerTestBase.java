@@ -60,7 +60,8 @@ public class RssShuffleManagerTestBase {
     CoordinatorClient mockCoordinatorClient = createCoordinatorClient(status);
     List<CoordinatorClient> coordinatorClients = Lists.newArrayList();
     coordinatorClients.add(mockCoordinatorClient);
-    CoordinatorGrpcRetryableClient client = new CoordinatorGrpcRetryableClient(coordinatorClients, 0, 1, 1);
+    CoordinatorGrpcRetryableClient client =
+        new CoordinatorGrpcRetryableClient(coordinatorClients, 0, 1, 1);
     mockedStaticRssShuffleUtils
         .when(() -> RssSparkShuffleUtils.createCoordinatorClients(any()))
         .thenReturn(client);
