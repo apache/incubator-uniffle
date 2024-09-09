@@ -737,7 +737,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
       int stageId,
       int stageAttemptNumber,
       int shuffleId,
-      Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
+      Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers,
+      boolean partitionSplit) {
     long startTime = System.currentTimeMillis();
     ShuffleHandleInfo handleInfo = shuffleHandleInfoManager.get(shuffleId);
     MutableShuffleHandleInfo internalHandle = null;
@@ -754,8 +755,11 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     synchronized (internalHandle) {
       // If the reassignment servers for one partition exceeds the max reassign server num,
       // it should fast fail.
-      internalHandle.checkPartitionReassignServerNum(
-          partitionToFailureServers.keySet(), partitionReassignMaxServerNum);
+      if (!partitionSplit) {
+        // Do not check the partition reassign server num for partition split case
+        internalHandle.checkPartitionReassignServerNum(
+            partitionToFailureServers.keySet(), partitionReassignMaxServerNum);
+      }
 
       Map<ShuffleServerInfo, List<PartitionRange>> newServerToPartitions = new HashMap<>();
       // receivingFailureServer -> partitionId -> replacementServerIds. For logging
@@ -769,26 +773,43 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           String serverId = receivingFailureServer.getServerId();
 
           boolean serverHasReplaced = false;
-          Set<ShuffleServerInfo> replacements = internalHandle.getReplacements(serverId);
-          if (CollectionUtils.isEmpty(replacements)) {
-            final int requiredServerNum = 1;
-            Set<String> excludedServers = new HashSet<>(internalHandle.listExcludedServers());
-            excludedServers.add(serverId);
-            replacements =
-                reassignServerForTask(
-                    stageId,
-                    stageAttemptNumber,
-                    shuffleId,
-                    Sets.newHashSet(partitionId),
-                    excludedServers,
-                    requiredServerNum,
-                    true);
-          } else {
-            serverHasReplaced = true;
-          }
 
-          Set<ShuffleServerInfo> updatedReassignServers =
-              internalHandle.updateAssignment(partitionId, serverId, replacements);
+          Set<ShuffleServerInfo> updatedReassignServers;
+          if (!partitionSplit) {
+            Set<ShuffleServerInfo> replacements = internalHandle.getReplacements(serverId);
+            if (CollectionUtils.isEmpty(replacements)) {
+              replacements =
+                  requestReassignServer(
+                      stageId,
+                      stageAttemptNumber,
+                      shuffleId,
+                      internalHandle,
+                      partitionId,
+                      serverId);
+            } else {
+              serverHasReplaced = true;
+            }
+            updatedReassignServers =
+                internalHandle.updateAssignment(partitionId, serverId, replacements);
+          } else {
+            Set<ShuffleServerInfo> replacements =
+                internalHandle.getReplacementsForPartition(partitionId, serverId);
+            if (CollectionUtils.isEmpty(replacements)) {
+              replacements =
+                  requestReassignServer(
+                      stageId,
+                      stageAttemptNumber,
+                      shuffleId,
+                      internalHandle,
+                      partitionId,
+                      serverId);
+            } else {
+              serverHasReplaced = true;
+            }
+            updatedReassignServers =
+                internalHandle.updateAssignmentOnPartitionSplit(
+                    partitionId, serverId, replacements);
+          }
 
           if (!updatedReassignServers.isEmpty()) {
             reassignResult
@@ -823,6 +844,31 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
 
       return internalHandle;
     }
+  }
+
+  private Set<ShuffleServerInfo> requestReassignServer(
+      int stageId,
+      int stageAttemptNumber,
+      int shuffleId,
+      MutableShuffleHandleInfo internalHandle,
+      int partitionId,
+      String serverId) {
+    Set<ShuffleServerInfo> replacements;
+    final int requiredServerNum = 1;
+    Set<String> excludedServers = new HashSet<>(internalHandle.listExcludedServers());
+    // Exclude the servers that has already been replaced for partition split case.
+    excludedServers.addAll(internalHandle.listExcludedServersForPartition(partitionId));
+    excludedServers.add(serverId);
+    replacements =
+        reassignServerForTask(
+            stageId,
+            stageAttemptNumber,
+            shuffleId,
+            Sets.newHashSet(partitionId),
+            excludedServers,
+            requiredServerNum,
+            true);
+    return replacements;
   }
 
   @Override

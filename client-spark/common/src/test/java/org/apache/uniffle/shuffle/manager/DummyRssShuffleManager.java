@@ -80,7 +80,8 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
       int stageId,
       int stageAttemptNumber,
       int shuffleId,
-      Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers) {
+      Map<Integer, List<ReceivingFailureServer>> partitionToFailureServers,
+      boolean partitionSplit) {
     return null;
   }
 }

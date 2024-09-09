@@ -671,6 +671,7 @@ message RssReassignOnBlockSendFailureRequest {
   int32 stageId = 4;
   int32 stageAttemptNumber = 5;
   string executorId = 6;
+  optional bool partitionSplit = 7;
 }
 
 message ReceivingFailureServers {
