@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -70,7 +71,7 @@ public class WriteBufferManager extends MemoryConsumer {
   /** An atomic counter used to keep track of the number of blocks */
   private AtomicLong blockCounter = new AtomicLong(0);
   // it's part of blockId
-  private Map<Integer, Integer> partitionToSeqNo = Maps.newHashMap();
+  private Map<Integer, AtomicInteger> partitionToSeqNo = Maps.newHashMap();
   private long askExecutorMemory;
   private int shuffleId;
   private String taskId;
@@ -413,10 +414,9 @@ public class WriteBufferManager extends MemoryConsumer {
 
   // it's run in single thread, and is not thread safe
   private int getNextSeqNo(int partitionId) {
-    partitionToSeqNo.putIfAbsent(partitionId, 0);
-    int seqNo = partitionToSeqNo.get(partitionId);
-    partitionToSeqNo.put(partitionId, seqNo + 1);
-    return seqNo;
+    return partitionToSeqNo
+        .computeIfAbsent(partitionId, k -> new AtomicInteger(0))
+        .getAndIncrement();
   }
 
   private void requestMemory(long requiredMem) {
