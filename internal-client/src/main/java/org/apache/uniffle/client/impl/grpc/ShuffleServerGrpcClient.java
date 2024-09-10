@@ -1183,7 +1183,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setAppId(request.getAppId())
             .setShuffleId(request.getShuffleId())
             .setPartitionId(request.getPartitionId())
-            .setBlockId(request.getBlockId())
+            .setMergedBlockId(request.getBlockId())
             .setTimestamp(start)
             .build();
     RssProtos.GetSortedShuffleDataResponse rpcResponse =

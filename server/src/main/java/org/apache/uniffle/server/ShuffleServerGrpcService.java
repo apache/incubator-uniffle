@@ -1471,7 +1471,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       String appId = request.getAppId();
       int shuffleId = request.getShuffleId();
       int partitionId = request.getPartitionId();
-      long blockId = request.getBlockId();
+      long blockId = request.getMergedBlockId();
       long timestamp = request.getTimestamp();
       auditContext
           .withAppId(appId)

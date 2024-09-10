@@ -685,7 +685,7 @@ message GetSortedShuffleDataRequest {
   string appId = 1;
   int32 shuffleId = 2;
   int32 partitionId = 3;
-  int64 blockId = 4;
+  int64 mergedBlockId = 4;
   int64 timestamp = 5;
 }
 
