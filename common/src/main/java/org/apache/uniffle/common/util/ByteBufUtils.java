@@ -80,7 +80,8 @@ public class ByteBufUtils {
     return from.retain().readSlice(length);
   }
 
-  public static final byte[] readBytes(ByteBuf buf) {
+  public static final byte[] readBytes(ByteBuf byteBuf) {
+    ByteBuf buf = byteBuf.duplicate();
     byte[] bytes = new byte[buf.readableBytes()];
     buf.readBytes(bytes);
     buf.resetReaderIndex();
