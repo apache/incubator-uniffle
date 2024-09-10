@@ -84,7 +84,6 @@ public class ByteBufUtils {
     ByteBuf buf = byteBuf.duplicate();
     byte[] bytes = new byte[buf.readableBytes()];
     buf.readBytes(bytes);
-    buf.resetReaderIndex();
     return bytes;
   }
 
