@@ -122,9 +122,9 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
         return;
       }
 
+      ShuffleServerMetrics.counterTotalDroppedEventNum.inc();
+      ShuffleServerMetrics.counterTotalFailedWrittenEventNum.inc();
       if (e instanceof EventDiscardException) {
-        ShuffleServerMetrics.counterTotalDroppedEventNum.inc();
-        ShuffleServerMetrics.counterTotalFailedWrittenEventNum.inc();
         if (storage != null) {
           ShuffleServerMetrics.incStorageFailedCounter(storage.getStorageHost());
         }

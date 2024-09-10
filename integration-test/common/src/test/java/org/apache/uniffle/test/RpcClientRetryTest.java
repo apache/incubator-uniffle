@@ -84,6 +84,7 @@ public class RpcClientRetryTest extends ShuffleReadWriteBase {
     shuffleServerConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 5.0);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 15.0);
     shuffleServerConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 600L);
+    shuffleServerConf.set(ShuffleServerConf.SINGLE_BUFFER_FLUSH_BLOCKS_NUM_THRESHOLD, 1);
     return new MockedShuffleServer(shuffleServerConf);
   }
 

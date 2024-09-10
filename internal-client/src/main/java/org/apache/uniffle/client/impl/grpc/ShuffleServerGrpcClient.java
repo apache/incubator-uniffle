@@ -149,9 +149,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         port,
         RssClientConf.RPC_MAX_ATTEMPTS.defaultValue(),
         RssClientConf.RPC_TIMEOUT_MS.defaultValue(),
-        RssClientConf.RPC_NETTY_PAGE_SIZE.defaultValue(),
-        RssClientConf.RPC_NETTY_MAX_ORDER.defaultValue(),
-        RssClientConf.RPC_NETTY_SMALL_CACHE_SIZE.defaultValue());
+        true,
+        0,
+        0,
+        0);
   }
 
   public ShuffleServerGrpcClient(RssConf rssConf, String host, int port) {
@@ -164,26 +165,10 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         rssConf == null
             ? RssClientConf.RPC_TIMEOUT_MS.defaultValue()
             : rssConf.getLong(RssClientConf.RPC_TIMEOUT_MS),
-        rssConf == null
-            ? RssClientConf.RPC_NETTY_PAGE_SIZE.defaultValue()
-            : rssConf.getInteger(RssClientConf.RPC_NETTY_PAGE_SIZE),
-        rssConf == null
-            ? RssClientConf.RPC_NETTY_MAX_ORDER.defaultValue()
-            : rssConf.getInteger(RssClientConf.RPC_NETTY_MAX_ORDER),
-        rssConf == null
-            ? RssClientConf.RPC_NETTY_SMALL_CACHE_SIZE.defaultValue()
-            : rssConf.getInteger(RssClientConf.RPC_NETTY_SMALL_CACHE_SIZE));
-  }
-
-  public ShuffleServerGrpcClient(
-      String host,
-      int port,
-      int maxRetryAttempts,
-      long rpcTimeoutMs,
-      int pageSize,
-      int maxOrder,
-      int smallCacheSize) {
-    this(host, port, maxRetryAttempts, rpcTimeoutMs, true, pageSize, maxOrder, smallCacheSize);
+        true,
+        0,
+        0,
+        0);
   }
 
   public ShuffleServerGrpcClient(
