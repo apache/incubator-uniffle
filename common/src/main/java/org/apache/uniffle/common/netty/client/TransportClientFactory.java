@@ -85,19 +85,20 @@ public class TransportClientFactory implements Closeable {
 
     IOMode ioMode = conf.ioMode();
     this.socketChannelClass = NettyUtils.getClientChannelClass(ioMode);
-    this.workerGroup =
-        NettyUtils.createEventLoop(ioMode, numConnectionsPerPeer, "netty-rpc-client");
+    int clientThreads =
+        (int) Math.max(conf.clientThreads(), numConnectionsPerPeer * conf.clientThreadsRatio());
+    this.workerGroup = NettyUtils.createEventLoop(ioMode, clientThreads, "netty-rpc-client");
     if (conf.isSharedAllocatorEnabled()) {
       this.byteBufAllocator =
           conf.isPooledAllocatorEnabled()
               ? NettyUtils.getSharedPooledByteBufAllocator(
-                  conf.preferDirectBufs(), false, numConnectionsPerPeer)
+                  conf.preferDirectBufs(), false, clientThreads)
               : NettyUtils.getSharedUnpooledByteBufAllocator(conf.preferDirectBufs());
     } else {
       this.byteBufAllocator =
           conf.isPooledAllocatorEnabled()
               ? NettyUtils.createPooledByteBufAllocator(
-                  conf.preferDirectBufs(), false, numConnectionsPerPeer)
+                  conf.preferDirectBufs(), false, clientThreads)
               : NettyUtils.createUnpooledByteBufAllocator(conf.preferDirectBufs());
     }
     if (logger.isDebugEnabled()) {
