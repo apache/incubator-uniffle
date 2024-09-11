@@ -85,7 +85,8 @@ public class TransportClientFactory implements Closeable {
 
     IOMode ioMode = conf.ioMode();
     this.socketChannelClass = NettyUtils.getClientChannelClass(ioMode);
-    this.workerGroup = NettyUtils.createEventLoop(ioMode, numConnectionsPerPeer, "netty-rpc-client");
+    this.workerGroup =
+        NettyUtils.createEventLoop(ioMode, numConnectionsPerPeer, "netty-rpc-client");
     if (conf.isSharedAllocatorEnabled()) {
       this.byteBufAllocator =
           conf.isPooledAllocatorEnabled()
