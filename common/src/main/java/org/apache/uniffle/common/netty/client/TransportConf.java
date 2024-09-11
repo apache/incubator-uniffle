@@ -37,16 +37,16 @@ public class TransportConf {
     return rssConf.get(RssClientConf.NETTY_IO_CONNECT_TIMEOUT_MS);
   }
 
+  public int connectionTimeoutMs() {
+    return rssConf.get(RssClientConf.NETTY_IO_CONNECTION_TIMEOUT_MS);
+  }
+
   public int clientThreads() {
     return rssConf.get(RssClientConf.NETTY_CLIENT_THREADS);
   }
 
   public double clientThreadsRatio() {
     return rssConf.get(RssClientConf.NETTY_CLIENT_THREADS_RATIO);
-  }
-
-  public int connectionTimeoutMs() {
-    return rssConf.get(RssClientConf.NETTY_IO_CONNECTION_TIMEOUT_MS);
   }
 
   public int numConnectionsPerPeer() {
