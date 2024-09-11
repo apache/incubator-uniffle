@@ -31,6 +31,7 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import io.netty.buffer.Unpooled;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,10 +44,12 @@ import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleIndexRequest;
 import org.apache.uniffle.client.request.RssGetShuffleResultForMultiPartRequest;
 import org.apache.uniffle.client.request.RssGetShuffleResultRequest;
+import org.apache.uniffle.client.request.RssGetSortedShuffleDataRequest;
 import org.apache.uniffle.client.request.RssRegisterShuffleRequest;
 import org.apache.uniffle.client.request.RssReportShuffleResultRequest;
 import org.apache.uniffle.client.request.RssSendCommitRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
+import org.apache.uniffle.client.request.RssStartSortMergeRequest;
 import org.apache.uniffle.client.request.RssUnregisterShuffleByAppIdRequest;
 import org.apache.uniffle.client.request.RssUnregisterShuffleRequest;
 import org.apache.uniffle.client.response.RssAppHeartBeatResponse;
@@ -55,10 +58,12 @@ import org.apache.uniffle.client.response.RssGetInMemoryShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleIndexResponse;
 import org.apache.uniffle.client.response.RssGetShuffleResultResponse;
+import org.apache.uniffle.client.response.RssGetSortedShuffleDataResponse;
 import org.apache.uniffle.client.response.RssRegisterShuffleResponse;
 import org.apache.uniffle.client.response.RssReportShuffleResultResponse;
 import org.apache.uniffle.client.response.RssSendCommitResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
+import org.apache.uniffle.client.response.RssStartSortMergeResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleByAppIdResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.common.BufferSegment;
@@ -192,7 +197,12 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       String user,
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
-      int stageAttemptNumber) {
+      int stageAttemptNumber,
+      String keyClassName,
+      String valueClassName,
+      String comparatorClassName,
+      int mergedBlockSize,
+      String mergeClassLoader) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
@@ -202,6 +212,17 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setMaxConcurrencyPerPartitionToWrite(maxConcurrencyPerPartitionToWrite)
         .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges))
         .setStageAttemptNumber(stageAttemptNumber);
+    if (StringUtils.isNotBlank(keyClassName)) {
+      reqBuilder.setKeyClass(keyClassName);
+      reqBuilder.setValueClass(valueClassName);
+      if (StringUtils.isNotBlank(comparatorClassName)) {
+        reqBuilder.setComparatorClass(comparatorClassName);
+      }
+      reqBuilder.setMergedBlockSize(mergedBlockSize);
+      if (StringUtils.isNotBlank(mergeClassLoader)) {
+        reqBuilder.setMergeClassLoader(mergeClassLoader);
+      }
+    }
     RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
     rsBuilder.setPath(remoteStorageInfo.getPath());
     Map<String, String> remoteStorageConf = remoteStorageInfo.getConfItems();
@@ -474,7 +495,12 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             request.getUser(),
             request.getDataDistributionType(),
             request.getMaxConcurrencyPerPartitionToWrite(),
-            request.getStageAttemptNumber());
+            request.getStageAttemptNumber(),
+            request.getKeyClassName(),
+            request.getValueClassName(),
+            request.getComparatorClassName(),
+            request.getMergedBlockSize(),
+            request.getMergeClassLoader());
 
     RssRegisterShuffleResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
@@ -1078,6 +1104,122 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       default:
         String msg =
             "Can't get shuffle in memory data from "
+                + host
+                + ":"
+                + port
+                + " for "
+                + requestInfo
+                + ", errorMsg:"
+                + rpcResponse.getRetMsg();
+        LOG.error(msg);
+        throw new RssFetchFailedException(msg);
+    }
+    return response;
+  }
+
+  @Override
+  public RssStartSortMergeResponse startSortMerge(RssStartSortMergeRequest request) {
+    ByteString serializedBlockIdsBytes = ByteString.EMPTY;
+    try {
+      if (request.getExpectedTaskIds() != null) {
+        serializedBlockIdsBytes =
+            UnsafeByteOperations.unsafeWrap(RssUtils.serializeBitMap(request.getExpectedTaskIds()));
+      }
+    } catch (Exception e) {
+      throw new RssException("Errors on serializing task ids bitmap.", e);
+    }
+
+    RssProtos.StartSortMergeRequest rpcRequest =
+        RssProtos.StartSortMergeRequest.newBuilder()
+            .setAppId(request.getAppId())
+            .setShuffleId(request.getShuffleId())
+            .setPartitionId(request.getPartitionId())
+            .setUniqueBlocksBitmap(serializedBlockIdsBytes)
+            .build();
+    long start = System.currentTimeMillis();
+    RssProtos.StartSortMergeResponse rpcResponse = getBlockingStub().startSortMerge(rpcRequest);
+    String requestInfo =
+        "appId["
+            + request.getAppId()
+            + "], shuffleId["
+            + request.getShuffleId()
+            + "], partitionId["
+            + request.getPartitionId()
+            + "]";
+    LOG.info(
+        "startSortMerge to {}:{} for {} cost {} ms",
+        host,
+        port,
+        requestInfo,
+        (System.currentTimeMillis() - start));
+    RssProtos.StatusCode statusCode = rpcResponse.getStatus();
+    RssStartSortMergeResponse response;
+    switch (statusCode) {
+      case SUCCESS:
+        response = new RssStartSortMergeResponse(StatusCode.SUCCESS);
+        break;
+      default:
+        String msg =
+            "Can't report unique block to from "
+                + host
+                + ":"
+                + port
+                + " for "
+                + requestInfo
+                + ", errorMsg:"
+                + rpcResponse.getRetMsg();
+        LOG.error(msg);
+        throw new RssException(msg);
+    }
+    return response;
+  }
+
+  @Override
+  public RssGetSortedShuffleDataResponse getSortedShuffleData(
+      RssGetSortedShuffleDataRequest request) {
+    long start = System.currentTimeMillis();
+    RssProtos.GetSortedShuffleDataRequest rpcRequest =
+        RssProtos.GetSortedShuffleDataRequest.newBuilder()
+            .setAppId(request.getAppId())
+            .setShuffleId(request.getShuffleId())
+            .setPartitionId(request.getPartitionId())
+            .setMergedBlockId(request.getBlockId())
+            .setTimestamp(start)
+            .build();
+    RssProtos.GetSortedShuffleDataResponse rpcResponse =
+        getBlockingStub().getSortedShuffleData(rpcRequest);
+    String requestInfo =
+        "appId["
+            + request.getAppId()
+            + "], shuffleId["
+            + request.getShuffleId()
+            + "], partitionId["
+            + request.getPartitionId()
+            + "], blockId["
+            + request.getBlockId()
+            + "]";
+    LOG.info(
+        "GetSortedShuffleData from {}:{} for {} cost {} ms",
+        host,
+        port,
+        requestInfo,
+        System.currentTimeMillis() - start);
+
+    RssProtos.StatusCode statusCode = rpcResponse.getStatus();
+
+    RssGetSortedShuffleDataResponse response;
+    switch (statusCode) {
+      case SUCCESS:
+        response =
+            new RssGetSortedShuffleDataResponse(
+                StatusCode.SUCCESS,
+                ByteBuffer.wrap(rpcResponse.getData().toByteArray()),
+                rpcResponse.getNextBlockId(),
+                rpcResponse.getMState());
+        break;
+      default:
+        String msg =
+            "Can't get sorted shuffle data from "
                 + host
                 + ":"
                 + port

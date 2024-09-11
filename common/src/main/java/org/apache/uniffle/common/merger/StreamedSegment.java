@@ -19,13 +19,13 @@ package org.apache.uniffle.common.merger;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import io.netty.buffer.ByteBuf;
 
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.records.RecordsReader;
 import org.apache.uniffle.common.serializer.PartialInputStream;
-import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
 
 public class StreamedSegment<K, V> extends Segment {
 
@@ -49,11 +49,10 @@ public class StreamedSegment<K, V> extends Segment {
     super(blockId);
     this.byteBuf = byteBuf;
     this.byteBuf.retain();
-    byte[] buffer = byteBuf.array();
     this.reader =
         new RecordsReader<>(
             rssConf,
-            PartialInputStreamImpl.newInputStream(buffer, 0, buffer.length),
+            PartialInputStream.newInputStream(byteBuf.nioBuffer()),
             keyClass,
             valueClass,
             raw);
@@ -61,16 +60,17 @@ public class StreamedSegment<K, V> extends Segment {
 
   // The buffer must be sorted by key
   public StreamedSegment(
-      RssConf rssConf, byte[] buffer, long blockId, Class keyClass, Class valueClass, boolean raw)
+      RssConf rssConf,
+      ByteBuffer byteBuffer,
+      long blockId,
+      Class keyClass,
+      Class valueClass,
+      boolean raw)
       throws IOException {
     super(blockId);
     this.reader =
         new RecordsReader<>(
-            rssConf,
-            PartialInputStreamImpl.newInputStream(buffer, 0, buffer.length),
-            keyClass,
-            valueClass,
-            raw);
+            rssConf, PartialInputStream.newInputStream(byteBuffer), keyClass, valueClass, raw);
   }
 
   public StreamedSegment(
@@ -87,7 +87,7 @@ public class StreamedSegment<K, V> extends Segment {
     this.reader =
         new RecordsReader<K, V>(
             rssConf,
-            PartialInputStreamImpl.newInputStream(file, start, end),
+            PartialInputStream.newInputStream(file, start, end),
             keyClass,
             valueClass,
             raw);

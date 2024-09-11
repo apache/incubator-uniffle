@@ -42,7 +42,6 @@ import org.apache.uniffle.common.merger.Segment;
 import org.apache.uniffle.common.merger.StreamedSegment;
 import org.apache.uniffle.common.records.RecordsReader;
 import org.apache.uniffle.common.serializer.PartialInputStream;
-import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
@@ -121,11 +120,7 @@ public class BlockFlushFileReaderTest {
     int index = 0;
     RecordsReader reader =
         new RecordsReader(
-            conf,
-            PartialInputStreamImpl.newInputStream(dataOutput, 0, dataOutput.length()),
-            keyClass,
-            valueClass,
-            false);
+            conf, PartialInputStream.newInputStream(dataOutput), keyClass, valueClass, false);
     while (reader.next()) {
       assertEquals(SerializerUtils.genData(keyClass, index), reader.getCurrentKey());
       assertEquals(SerializerUtils.genData(valueClass, index), reader.getCurrentValue());

@@ -18,11 +18,8 @@
 package org.apache.uniffle.common.serializer;
 
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 
 /*
@@ -113,34 +110,5 @@ public class PartialInputStreamImpl extends PartialInputStream {
     if (closeable != null) {
       closeable.close();
     }
-  }
-
-  private static PartialInputStreamImpl newInputStream(
-      SeekableByteChannel ch, long start, long end, Closeable closeable) throws IOException {
-    if (ch == null) {
-      throw new NullPointerException("channel is null!");
-    }
-    return new PartialInputStreamImpl(ch, start, end, closeable);
-  }
-
-  public static PartialInputStreamImpl newInputStream(File file, long start, long end)
-      throws IOException {
-    FileInputStream input = new FileInputStream(file);
-    FileChannel fc = input.getChannel();
-    long size = fc.size();
-    return newInputStream(
-        fc,
-        start,
-        Math.min(end, size),
-        () -> {
-          input.close();
-        });
-  }
-
-  public static PartialInputStreamImpl newInputStream(byte[] bytes, long start, long end)
-      throws IOException {
-    SeekableInMemoryByteChannel ch = new SeekableInMemoryByteChannel(bytes);
-    int size = bytes.length;
-    return newInputStream(ch, start, Math.min(end, size), () -> ch.close());
   }
 }

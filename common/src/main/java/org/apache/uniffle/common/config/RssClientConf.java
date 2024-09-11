@@ -252,4 +252,29 @@ public class RssClientConf {
           .defaultValue(false)
           .withDescription(
               "Whether to support rss client block send failure retry, default value is false.");
+
+  public static final ConfigOption<Integer> RSS_CLIENT_REMOTE_MERGE_FETCH_INIT_SLEEP_MS =
+      ConfigOptions.key("rss.client.remote.merge.fetch.initSleepMs")
+          .intType()
+          .defaultValue(100)
+          .withDescription("the init sleep ms for fetch remote merge records");
+
+  public static final ConfigOption<Integer> RSS_CLIENT_REMOTE_MERGE_FETCH_MAX_SLEEP_MS =
+      ConfigOptions.key("rss.client.remote.merge.fetch.maxSleepMs")
+          .intType()
+          .defaultValue(5000)
+          .withDescription("the max sleep ms for fetch remote merge records");
+
+  public static final ConfigOption<Integer> RSS_CLIENT_REMOTE_MERGE_READER_MAX_BUFFER =
+      ConfigOptions.key("rss.client.remote.merge.reader.maxBuffer")
+          .intType()
+          .defaultValue(2)
+          .withDescription(
+              "the max size of buffer in queue for one partition when fetch remote merge records");
+
+  public static final ConfigOption<Integer> RSS_CLIENT_REMOTE_MERGE_READER_MAX_RECORDS_PER_BUFFER =
+      ConfigOptions.key("rss.client.remote.merge.reader.maxRecordsPerBuffer")
+          .intType()
+          .defaultValue(500)
+          .withDescription("the max size of records per buffer when fetch remote merge records");
 }

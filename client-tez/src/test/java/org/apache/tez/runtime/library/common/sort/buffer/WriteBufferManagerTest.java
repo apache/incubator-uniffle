@@ -589,7 +589,12 @@ public class WriteBufferManagerTest {
         RemoteStorageInfo remoteStorage,
         ShuffleDataDistributionType dataDistributionType,
         int maxConcurrencyPerPartitionToWrite,
-        int stageAttemptNumber) {}
+        int stageAttemptNumber,
+        String keyClassName,
+        String valueClassName,
+        String comparatorClassName,
+        int mergedBlockSize,
+        String mergeClassLoader) {}
 
     @Override
     public boolean sendCommit(
@@ -684,5 +689,13 @@ public class WriteBufferManagerTest {
 
     @Override
     public void unregisterShuffle(String appId) {}
+
+    @Override
+    public void startSortMerge(
+        Set<ShuffleServerInfo> serverInfos,
+        String appId,
+        int shuffleId,
+        int partitionId,
+        Roaring64NavigableMap expectedTaskIds) {}
   }
 }

@@ -71,7 +71,12 @@ public interface ShuffleWriteClient {
         remoteStorage,
         dataDistributionType,
         maxConcurrencyPerPartitionToWrite,
-        0);
+        0,
+        null,
+        null,
+        null,
+        -1,
+        null);
   }
 
   void registerShuffle(
@@ -82,7 +87,12 @@ public interface ShuffleWriteClient {
       RemoteStorageInfo remoteStorage,
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
-      int stageAttemptNumber);
+      int stageAttemptNumber,
+      String keyClassName,
+      String valueClassName,
+      String comparatorClassName,
+      int mergedBlockSize,
+      String mergeClassLoader);
 
   boolean sendCommit(
       Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);
@@ -184,4 +194,11 @@ public interface ShuffleWriteClient {
   void unregisterShuffle(String appId, int shuffleId);
 
   void unregisterShuffle(String appId);
+
+  void startSortMerge(
+      Set<ShuffleServerInfo> serverInfos,
+      String appId,
+      int shuffleId,
+      int partitionId,
+      Roaring64NavigableMap expectedTaskIds);
 }

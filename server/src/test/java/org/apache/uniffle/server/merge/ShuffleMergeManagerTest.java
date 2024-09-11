@@ -41,7 +41,7 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.merger.MergeState;
 import org.apache.uniffle.common.records.RecordsReader;
-import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
+import org.apache.uniffle.common.serializer.PartialInputStream;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.apache.uniffle.common.serializer.writable.WritableSerializer;
 import org.apache.uniffle.common.util.BlockIdLayout;
@@ -194,9 +194,8 @@ public class ShuffleMergeManagerTest {
           if (blockSize != -1) {
             ShuffleDataResult shuffleDataResult =
                 mergeManager.getShuffleData(APP_ID, SHUFFLE_ID, PARTITION_ID, blockId);
-            PartialInputStreamImpl inputStream =
-                PartialInputStreamImpl.newInputStream(
-                    shuffleDataResult.getData(), 0, shuffleDataResult.getDataLength());
+            PartialInputStream inputStream =
+                PartialInputStream.newInputStream(shuffleDataResult.getDataBuffer());
             RecordsReader reader =
                 new RecordsReader(serverConf, inputStream, keyClass, valueClass, false);
             while (reader.next()) {
