@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -49,7 +51,9 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
     this.handlers = handlers;
     this.blockIdBitmap = blockIdBitmap;
     this.processedBlockIds = processedBlockIds;
-    this.shuffleServerInfos = shuffleServerInfos;
+    List<ShuffleServerInfo> shuffledServerList = new ArrayList<>(shuffleServerInfos);
+    Collections.shuffle(shuffledServerList);
+    this.shuffleServerInfos = shuffledServerList;
   }
 
   @Override
