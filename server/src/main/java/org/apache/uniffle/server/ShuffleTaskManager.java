@@ -88,6 +88,7 @@ import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 import static org.apache.uniffle.server.ShuffleServerConf.CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
+import static org.apache.uniffle.server.ShuffleServerMetrics.REQUIRE_BUFFER_COUNT;
 
 public class ShuffleTaskManager {
 
@@ -240,6 +241,8 @@ public class ShuffleTaskManager {
 
     topNShuffleDataSizeOfAppCalcTask = new TopNShuffleDataSizeOfAppCalcTask(this, conf);
     topNShuffleDataSizeOfAppCalcTask.start();
+
+    ShuffleServerMetrics.addLabeledGauge(REQUIRE_BUFFER_COUNT, requireBufferIds::size);
   }
 
   public ReentrantReadWriteLock.WriteLock getAppWriteLock(String appId) {
