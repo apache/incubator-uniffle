@@ -85,7 +85,7 @@ public class LocalDeletionStrategy extends AbstractDeletionStrategy {
       boolean isSucess = twoPhasesDeletionEventQueue.offer(asynchronousDeleteEvent);
       if (!isSucess) {
         LOG.warn(
-            "Remove the case where the clearNeedDeleteHadoopPathThread queue is full and cannot accept elements.");
+            "Remove the case where the twoPhasesDeletionEventQueue queue is full and cannot accept elements.");
         ShuffleServerMetrics.counterLocalTwoPhasesDeletionFaileTd.inc();
       }
     } else {

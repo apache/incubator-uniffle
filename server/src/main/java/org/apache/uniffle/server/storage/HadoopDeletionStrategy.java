@@ -102,7 +102,7 @@ public class HadoopDeletionStrategy extends AbstractDeletionStrategy {
       if (!isSucess) {
         ShuffleServerMetrics.counterHadoopTwoPhasesDeletionFailed.inc();
         LOG.warn(
-            "Remove the case where the clearNeedDeleteHadoopPathThread queue is full and cannot accept elements.");
+            "Remove the case where the twoPhasesDeletionEventQueue queue is full and cannot accept elements.");
       }
     } else {
       deleteHandler.delete(deletePaths.toArray(new String[0]), appId, event.getUser());
