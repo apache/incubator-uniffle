@@ -84,7 +84,7 @@ public class MetricsManager {
     return c.labels(this.defaultLabelValues);
   }
 
-  public <T> void addLabeledGauge(String name, Supplier<T> supplier) {
+  public <T extends Number> void addLabeledGauge(String name, Supplier<T> supplier) {
     supplierGaugeMap.computeIfAbsent(
         name,
         metricName ->

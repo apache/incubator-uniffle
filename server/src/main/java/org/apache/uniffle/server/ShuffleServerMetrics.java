@@ -515,7 +515,7 @@ public class ShuffleServerMetrics {
             .register(metricsManager.getCollectorRegistry());
   }
 
-  public static <T> void addLabeledGauge(String name, Supplier<T> supplier) {
+  public static <T extends Number> void addLabeledGauge(String name, Supplier<T> supplier) {
     metricsManager.addLabeledGauge(name, supplier);
   }
 }
