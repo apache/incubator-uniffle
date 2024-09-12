@@ -72,6 +72,9 @@ import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_K
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KRB5_CONF_FILE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_STORAGE_TYPE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_TEST_MODE_ENABLE;
+import static org.apache.uniffle.common.metrics.CommonMetrics.JVM_PAUSE_INFO_TIME_EXCEEDED;
+import static org.apache.uniffle.common.metrics.CommonMetrics.JVM_PAUSE_TOTAL_EXTRA_TIME;
+import static org.apache.uniffle.common.metrics.CommonMetrics.JVM_PAUSE_WARN_TIME_EXCEEDED;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_CHECK_INTERVAL;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_SHUTDOWN;
 import static org.apache.uniffle.server.ShuffleServerMetrics.USED_DIRECT_MEMORY_SIZE;
@@ -328,6 +331,12 @@ public class ShuffleServer {
             (PlatformDependent.usedDirectMemory()
                 + io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent
                     .usedDirectMemory()));
+    ShuffleServerMetrics.addLabeledGauge(
+        JVM_PAUSE_TOTAL_EXTRA_TIME, jvmPauseMonitor::getTotalGcExtraSleepTime);
+    ShuffleServerMetrics.addLabeledGauge(
+        JVM_PAUSE_INFO_TIME_EXCEEDED, jvmPauseMonitor::getNumGcInfoThresholdExceeded);
+    ShuffleServerMetrics.addLabeledGauge(
+        JVM_PAUSE_WARN_TIME_EXCEEDED, jvmPauseMonitor::getNumGcWarnThresholdExceeded);
 
     setServer();
   }
