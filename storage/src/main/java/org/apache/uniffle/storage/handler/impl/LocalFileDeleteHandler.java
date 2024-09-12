@@ -54,7 +54,7 @@ public class LocalFileDeleteHandler implements ShuffleDeleteHandler {
   }
 
   @Override
-  public void softDelete(AsynchronousDeleteEvent shuffleSoftDeletePurgeEvent) {
+  public void moveToTemp(AsynchronousDeleteEvent shuffleSoftDeletePurgeEvent) {
 
     for (Map.Entry<String, String> appIdNeedDeletePaths :
         shuffleSoftDeletePurgeEvent.getNeedDeletePathAndRenamePath().entrySet()) {

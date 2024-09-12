@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.storage.handler.api;
+package org.apache.uniffle.server.storage;
 
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+
+import com.google.common.collect.Queues;
+
+import org.apache.uniffle.server.event.PurgeEvent;
+import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.AsynchronousDeleteEvent;
 
-public interface ShuffleDeleteHandler {
+public abstract class AbstractDeletionStrategy {
 
-  /**
-   * Delete shuffle data with appId
-   *
-   * @param appId ApplicationId for delete
-   */
-  void delete(String[] storageBasePaths, String appId, String user);
+  protected final BlockingQueue<AsynchronousDeleteEvent> twoPhasesDeletionEventQueue =
+      Queues.newLinkedBlockingQueue();
+  protected Thread twoPhasesDeletionThread;
 
-  /** Rename the file and then delete it asynchronously. */
-  void moveToTemp(AsynchronousDeleteEvent shuffleSoftDeletePurgeEvent);
+  abstract void deleteShuffleData(List<String> deletePaths, Storage storage, PurgeEvent event);
 }

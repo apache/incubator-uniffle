@@ -22,11 +22,6 @@ import java.util.List;
 public class ShufflePurgeEvent extends PurgeEvent {
 
   public ShufflePurgeEvent(String appId, String user, List<Integer> shuffleIds) {
-    this(appId, user, shuffleIds, false);
-  }
-
-  public ShufflePurgeEvent(
-      String appId, String user, List<Integer> shuffleIds, boolean isSoftDelete) {
-    super(appId, user, shuffleIds, isSoftDelete);
+    super(appId, user, shuffleIds);
   }
 }

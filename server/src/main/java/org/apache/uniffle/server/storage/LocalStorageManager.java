@@ -69,7 +69,6 @@ import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageMediaProvider;
 import org.apache.uniffle.storage.factory.ShuffleHandlerFactory;
-import org.apache.uniffle.storage.handler.AsynchronousDeleteEvent;
 import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleDeleteHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -177,37 +176,7 @@ public class LocalStorageManager extends SingleStorageManager {
             localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList())));
     this.checker = new LocalStorageChecker(conf, localStorages);
     isStorageAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED);
-
-    Runnable clearNeedDeletePath =
-        () -> {
-          while (true) {
-            AsynchronousDeleteEvent asynchronousDeleteEvent = null;
-            ShuffleDeleteHandler deleteHandler =
-                ShuffleHandlerFactory.getInstance()
-                    .createShuffleDeleteHandler(
-                        new CreateShuffleDeleteHandlerRequest(
-                            StorageType.LOCALFILE.name(), new Configuration()));
-            try {
-              asynchronousDeleteEvent = softDirPaths.take();
-              deleteHandler.delete(
-                  asynchronousDeleteEvent.getNeedDeleteRenamePaths(),
-                  asynchronousDeleteEvent.getAppId(),
-                  asynchronousDeleteEvent.getUser());
-            } catch (Exception e) {
-              if (asynchronousDeleteEvent != null) {
-                LOG.error(
-                    "Delete Paths of {} failed.",
-                    asynchronousDeleteEvent.getNeedDeleteRenamePaths(),
-                    e);
-              } else {
-                LOG.error("Failed to delete a directory in clearNeedDeleteHadoopPathThread.", e);
-              }
-            }
-          }
-        };
-    clearSoftDirPathThread = new Thread(clearNeedDeletePath);
-    clearSoftDirPathThread.setName("clearSoftLocalDirPathThread");
-    clearSoftDirPathThread.setDaemon(true);
+    this.deletionStrategy = new LocalDeletionStrategy();
   }
 
   private StorageMedia getStorageTypeForBasePath(String basePath) {
@@ -315,12 +284,6 @@ public class LocalStorageManager extends SingleStorageManager {
         storage.removeResources(RssUtils.generateShuffleKey(appId, shuffleId));
       }
     }
-    // delete shuffle data for application
-    ShuffleDeleteHandler deleteHandler =
-        ShuffleHandlerFactory.getInstance()
-            .createShuffleDeleteHandler(
-                new CreateShuffleDeleteHandlerRequest(
-                    StorageType.LOCALFILE.name(), new Configuration()));
 
     List<String> deletePaths =
         localStorages.stream()
@@ -360,20 +323,7 @@ public class LocalStorageManager extends SingleStorageManager {
                   }
                 })
             .collect(Collectors.toList());
-    if (event.isSoftDelete()) {
-      AsynchronousDeleteEvent asynchronousDeleteEvent =
-          new AsynchronousDeleteEvent(
-              appId, event.getUser(), null, event.getShuffleIds(), deletePaths);
-      deleteHandler.softDelete(asynchronousDeleteEvent);
-      boolean isSucess = softDirPaths.offer(asynchronousDeleteEvent);
-      if (!isSucess) {
-        ShuffleServerMetrics.counterLocalSoftDeleteFailed.inc();
-        LOG.warn(
-            "Remove the case where the clearNeedDeleteHadoopPathThread queue is full and cannot accept elements.");
-      }
-    } else {
-      deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user);
-    }
+    deletionStrategy.deleteShuffleData(deletePaths, null, event);
     removeAppStorageInfo(event);
   }
 

@@ -19,11 +19,9 @@ package org.apache.uniffle.server.storage;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +36,6 @@ import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageWriteMetrics;
-import org.apache.uniffle.storage.handler.AsynchronousDeleteEvent;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 
 public abstract class SingleStorageManager implements StorageManager {
@@ -49,11 +46,9 @@ public abstract class SingleStorageManager implements StorageManager {
   private final long eventSizeThresholdL1;
   private final long eventSizeThresholdL2;
   private final long eventSizeThresholdL3;
+  protected AbstractDeletionStrategy deletionStrategy;
   protected final Map<String, ApplicationStorageInfo> appStorageInfoMap =
       JavaUtils.newConcurrentMap();
-  protected final BlockingQueue<AsynchronousDeleteEvent> softDirPaths =
-      Queues.newLinkedBlockingQueue();
-  protected Thread clearSoftDirPathThread;
 
   public SingleStorageManager(ShuffleServerConf conf) {
     writeSlowThreshold = conf.getSizeAsBytes(ShuffleServerConf.SERVER_WRITE_SLOW_THRESHOLD);

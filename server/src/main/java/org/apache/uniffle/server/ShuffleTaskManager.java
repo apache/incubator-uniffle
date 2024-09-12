@@ -779,18 +779,6 @@ public class ShuffleTaskManager {
    * @param shuffleIds
    */
   public void removeResourcesByShuffleIds(String appId, List<Integer> shuffleIds) {
-    removeResourcesByShuffleIds(appId, shuffleIds, false);
-  }
-
-  /**
-   * Clear up the partial resources of shuffleIds of App.
-   *
-   * @param appId
-   * @param shuffleIds
-   * @param isSoftDelete
-   */
-  public void removeResourcesByShuffleIds(
-      String appId, List<Integer> shuffleIds, boolean isSoftDelete) {
     Lock writeLock = getAppWriteLock(appId);
     writeLock.lock();
     try {
@@ -823,7 +811,7 @@ public class ShuffleTaskManager {
       withTimeoutExecution(
           () -> {
             storageManager.removeResources(
-                new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds, isSoftDelete));
+                new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds));
             return null;
           },
           storageRemoveOperationTimeoutSec,
@@ -1008,16 +996,6 @@ public class ShuffleTaskManager {
   @VisibleForTesting
   public void removeShuffleDataSync(String appId, int shuffleId) {
     removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId));
-  }
-
-  /**
-   * Delete all data under the shuffleId using the synchronous quick delete mode.
-   *
-   * @param appId
-   * @param shuffleId
-   */
-  public void softRemoveShuffleDataSync(String appId, int shuffleId) {
-    removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId), true);
   }
 
   public ShuffleDataDistributionType getDataDistributionType(String appId) {

@@ -122,7 +122,7 @@ public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
   }
 
   @Override
-  public void softDelete(AsynchronousDeleteEvent shuffleSoftDeletePurgeEvent) {
+  public void moveToTemp(AsynchronousDeleteEvent shuffleSoftDeletePurgeEvent) {
     String appId = shuffleSoftDeletePurgeEvent.getAppId();
     String user = shuffleSoftDeletePurgeEvent.getUser();
     for (Map.Entry<String, String> appIdNeedDeletePaths :
