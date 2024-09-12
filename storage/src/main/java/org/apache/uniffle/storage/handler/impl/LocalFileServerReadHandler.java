@@ -41,6 +41,9 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
   private String appId;
   private int shuffleId;
   private int partitionId;
+  private int partitionNumPerRange;
+  private int partitionNum;
+  private String path;
 
   public LocalFileServerReadHandler(
       String appId,
@@ -52,6 +55,9 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
+    this.partitionNumPerRange = partitionNumPerRange;
+    this.partitionNum = partitionNum;
+    this.path = path;
     init(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, path);
   }
 
@@ -138,6 +144,21 @@ public class LocalFileServerReadHandler implements ServerReadHandler {
 
   @Override
   public ShuffleIndexResult getShuffleIndex() {
+    if (indexFileName.isEmpty()) {
+      LOG.warn(
+          "index file is empty, appId: {}, shuffleId: {}, partitionId: {}, partitionNumPerRange: {}, partitionNum: {}, path: {}",
+          appId,
+          shuffleId,
+          partitionId,
+          partitionNumPerRange,
+          partitionNum,
+          path);
+      try {
+        prepareFilePath(appId, shuffleId, partitionId, partitionNumPerRange, partitionNum, path);
+      } catch (Exception e) {
+        LOG.error("prepare file path error ", e);
+      }
+    }
     File indexFile = new File(indexFileName);
     long indexFileSize = indexFile.length();
     int indexNum = (int) (indexFileSize / FileBasedShuffleSegment.SEGMENT_SIZE);
