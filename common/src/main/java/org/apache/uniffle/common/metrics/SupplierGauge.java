@@ -36,27 +36,46 @@ class SupplierGauge<T extends Number> extends Collector implements Collector.Des
   private Supplier<T> supplier;
   private List<String> labelNames;
   private List<String> labelValues;
+  private long updateInterval;
+  private long lastUpdateTime;
+  private T lastValue;
 
   SupplierGauge(
       String name, String help, Supplier<T> supplier, String[] labelNames, String[] labelValues) {
+    this(name, help, supplier, labelNames, labelValues, 0);
+  }
+
+  SupplierGauge(
+      String name,
+      String help,
+      Supplier<T> supplier,
+      String[] labelNames,
+      String[] labelValues,
+      long updateInterval) {
     this.name = name;
     this.help = help;
     this.supplier = supplier;
     this.labelNames = Arrays.asList(labelNames);
     this.labelValues = Arrays.asList(labelValues);
+    this.updateInterval = updateInterval;
+    this.lastUpdateTime = 0;
   }
 
   @Override
   public List<MetricFamilySamples> collect() {
     List<MetricFamilySamples.Sample> samples = new ArrayList<>();
-    T lastValue = supplier.get();
+    long time = System.currentTimeMillis();
+    if (time - lastUpdateTime > updateInterval) {
+      this.lastValue = this.supplier.get();
+      this.lastUpdateTime = time;
+    }
     if (lastValue == null) {
       LOG.warn("SupplierGauge {} returned null value.", this.name);
       return Collections.emptyList();
     }
     samples.add(
         new MetricFamilySamples.Sample(
-            this.name, this.labelNames, this.labelValues, lastValue.doubleValue()));
+            this.name, this.labelNames, this.labelValues, this.lastValue.doubleValue()));
     MetricFamilySamples mfs = new MetricFamilySamples(this.name, Type.GAUGE, this.help, samples);
     List<MetricFamilySamples> mfsList = new ArrayList<MetricFamilySamples>(1);
     mfsList.add(mfs);
