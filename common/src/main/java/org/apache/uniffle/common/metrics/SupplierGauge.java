@@ -51,7 +51,7 @@ class SupplierGauge<T extends Number> extends Collector implements Collector.Des
     List<MetricFamilySamples.Sample> samples = new ArrayList<>();
     T lastValue = supplier.get();
     if (lastValue == null) {
-      LOG.warn("SupplierGauge {} returned null value or is not number.", this.name);
+      LOG.warn("SupplierGauge {} returned null value.", this.name);
       return Collections.emptyList();
     }
     samples.add(
