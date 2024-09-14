@@ -19,7 +19,7 @@
   <div>
     <el-table
       :data="listPageData.tableData"
-      height="550"
+      height="800"
       style="width: 100%"
       :default-sort="sortColumn"
       @sort-change="sortChangeEvent"

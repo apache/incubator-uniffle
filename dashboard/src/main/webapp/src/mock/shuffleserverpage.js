@@ -21,7 +21,7 @@ Mock.mock(/\/server\/nodes\/summary/, 'get', function (options) {
   return {
     code: 0,
     data: {
-      ACTIVE: 5,
+      ACTIVE: 10,
       DECOMMISSIONED: 1,
       DECOMMISSIONING: 1,
       EXCLUDED: 19,
