@@ -167,7 +167,7 @@ public class JettyServer {
     try {
       server.start();
     } catch (BindException e) {
-      ExitUtils.terminate(1, "Fail to start jetty http server", e, LOG);
+      ExitUtils.terminate(1, "Fail to start jetty http server, port is " + httpPort, e, LOG);
     }
     LOG.info("Jetty http server started, listening on port {}", httpPort);
   }
