@@ -58,7 +58,7 @@
     <div>
       <el-table
         :data="pageData.appInfoData"
-        height="250"
+        height="650"
         style="width: 100%"
         :default-sort="sortApp"
         @sort-change="sortAppChangeEvent"
