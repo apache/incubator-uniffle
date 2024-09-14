@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -107,14 +108,19 @@ public class ReconfigurableConfManager<T> {
       return;
     }
     for (ConfigOption<T> configOption : updateConfOptions) {
-      T val = latestConf.get(configOption);
-      if (!Objects.equals(val, rssConf.get(configOption))) {
-        LOGGER.info(
-            "Update the config option: {} from {} -> {}",
-            configOption.key(),
-            rssConf.get(configOption),
-            val);
-        rssConf.set(configOption, val);
+      Optional<T> valOptional = latestConf.getOptional(configOption);
+      if (valOptional.isPresent()) {
+        T val = valOptional.get();
+        if (!Objects.equals(val, rssConf.get(configOption))) {
+          LOGGER.info(
+              "Update the config option: {} from {} -> {}",
+              configOption.key(),
+              rssConf.get(configOption),
+              val);
+          rssConf.set(configOption, val);
+        }
+      } else {
+        rssConf.remove(configOption.key());
       }
     }
   }
