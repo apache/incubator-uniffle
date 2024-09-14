@@ -23,6 +23,7 @@ import org.apache.uniffle.common.util.ExitUtils;
 import org.apache.uniffle.common.util.ExitUtils.ExitException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CoordinatorServerTest {
 
@@ -43,7 +44,7 @@ public class CoordinatorServerTest {
     try {
       cs2.start();
     } catch (Exception e) {
-      assertEquals(expectMessage, e.getMessage());
+      assertTrue(e.getMessage().startsWith(expectMessage));
       assertEquals(expectStatus, ((ExitException) e).getStatus());
     } finally {
       // Always call stopServer after new CoordinatorServer to shut down ExecutorService

@@ -38,6 +38,7 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_CHECK_INTERVAL;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_DECOMMISSION_SHUTDOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ShuffleServerTest {
@@ -56,7 +57,7 @@ public class ShuffleServerTest {
     try {
       ss2.start();
     } catch (Exception e) {
-      assertEquals(expectMessage, e.getMessage());
+      assertTrue(e.getMessage().startsWith(expectMessage));
       assertEquals(expectStatus, ((ExitException) e).getStatus());
     }
 

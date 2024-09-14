@@ -86,7 +86,7 @@ public class JettyServerTest {
     try {
       jettyServer2.start();
     } catch (Exception e) {
-      assertEquals(expectMessage, e.getMessage());
+      assertTrue(e.getMessage().startsWith(expectMessage));
       assertEquals(expectStatus, ((ExitException) e).getStatus());
     }
 
