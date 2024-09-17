@@ -17,8 +17,55 @@
 
 package org.apache.uniffle.common.metrics;
 
+import java.util.Map;
+import java.util.function.Supplier;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
+import io.prometheus.client.CollectorRegistry;
+
+import org.apache.uniffle.common.util.Constants;
+
 public class CommonMetrics {
   public static final String JVM_PAUSE_TOTAL_EXTRA_TIME = "JvmPauseMonitorTotalExtraTime";
   public static final String JVM_PAUSE_INFO_TIME_EXCEEDED = "JvmPauseMonitorInfoTimeExceeded";
   public static final String JVM_PAUSE_WARN_TIME_EXCEEDED = "JvmPauseMonitorWarnTimeExceeded";
+
+  private static MetricsManager metricsManager;
+  private static boolean isRegister = false;
+
+  @VisibleForTesting
+  public static void clear() {
+    isRegister = false;
+    CollectorRegistry.defaultRegistry.clear();
+  }
+
+  public static CollectorRegistry getCollectorRegistry() {
+    if (!isRegister) {
+      return null;
+    }
+    return metricsManager.getCollectorRegistry();
+  }
+
+  public static void addLabeledGauge(String name, Supplier<Double> supplier) {
+    if (!isRegister) {
+      return;
+    }
+    metricsManager.addLabeledGauge(name, supplier);
+  }
+
+  public static void unregisterSupplierGauge(String name) {
+    if (!isRegister) {
+      return;
+    }
+    metricsManager.unregisterSupplierGauge(name);
+  }
+
+  public static void register(CollectorRegistry collectorRegistry, String tags) {
+    if (!isRegister) {
+      Map<String, String> labels = Maps.newHashMap();
+      labels.put(Constants.METRICS_TAG_LABEL_NAME, tags);
+      metricsManager = new MetricsManager(collectorRegistry, labels);
+    }
+  }
 }

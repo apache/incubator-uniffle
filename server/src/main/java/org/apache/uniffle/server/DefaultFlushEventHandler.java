@@ -20,7 +20,6 @@ package org.apache.uniffle.server;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -30,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.executor.ThreadPoolManager;
 import org.apache.uniffle.common.function.ConsumerWithException;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.flush.EventDiscardException;
@@ -231,12 +231,8 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
         shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_THREAD_POOL_QUEUE_SIZE);
     BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(waitQueueSize);
     long keepAliveTime = shuffleServerConf.getLong(ShuffleServerConf.SERVER_FLUSH_THREAD_ALIVE);
-    LOG.info(
-        "CreateFlushPool, poolSize:{}, keepAliveTime:{}, queueSize:{}",
-        poolSize,
-        keepAliveTime,
-        waitQueueSize);
-    return new ThreadPoolExecutor(
+    return ThreadPoolManager.newThreadPool(
+        threadFactoryName,
         poolSize,
         poolSize,
         keepAliveTime,
