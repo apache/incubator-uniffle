@@ -150,7 +150,137 @@ Mock.mock(/\/server\/nodes\?status=active/, 'get', function (options) {
         nettyPort: 29997,
         jettyPort: 29998,
         totalMemory: 42949672960
-      }
+      },
+      {
+        id: '192.168.1.6-29999-29997',
+        ip: '192.168.1.6',
+        grpcPort: 29999,
+        usedMemory: 0,
+        preAllocatedMemory: 0,
+        availableMemory: 42949672960,
+        eventNumInFlush: 0,
+        registrationTime: 1722057271192,
+        timestamp: 1722404451189,
+        tags: ['GRPC_NETTY', 'ss_v5'],
+        status: 'ACTIVE',
+        storageInfo: {
+          '/dev/sdd1': {
+            type: 'HDD',
+            status: 'NORMAL'
+          },
+          '/dev/sdc1': {
+            type: 'HDD',
+            status: 'NORMAL'
+          }
+        },
+        nettyPort: 29997,
+        jettyPort: 29998,
+        totalMemory: 42949672960
+      },
+      {
+        id: '192.168.1.7-29999-29997',
+        ip: '192.168.1.7',
+        grpcPort: 29999,
+        usedMemory: 0,
+        preAllocatedMemory: 0,
+        availableMemory: 42949672960,
+        eventNumInFlush: 0,
+        registrationTime: 1722057271192,
+        timestamp: 1722404451189,
+        tags: ['GRPC_NETTY', 'ss_v5'],
+        status: 'ACTIVE',
+        storageInfo: {
+          '/dev/sdd1': {
+            type: 'HDD',
+            status: 'NORMAL'
+          },
+          '/dev/sdc1': {
+            type: 'HDD',
+            status: 'NORMAL'
+          }
+        },
+        nettyPort: 29997,
+        jettyPort: 29998,
+        totalMemory: 42949672960
+      },
+      {
+        id: '192.168.1.8-29999-29997',
+        ip: '192.168.1.8',
+        grpcPort: 29999,
+        usedMemory: 0,
+        preAllocatedMemory: 0,
+        availableMemory: 42949672960,
+        eventNumInFlush: 0,
+        registrationTime: 1722057271192,
+        timestamp: 1722404451189,
+        tags: ['GRPC_NETTY', 'ss_v5'],
+        status: 'ACTIVE',
+        storageInfo: {
+          '/dev/sdd1': {
+            type: 'HDD',
+            status: 'NORMAL'
+          },
+          '/dev/sdc1': {
+            type: 'HDD',
+            status: 'NORMAL'
+          }
+        },
+        nettyPort: 29997,
+        jettyPort: 29998,
+        totalMemory: 42949672960
+      },
+      {
+        id: '192.168.1.9-29999-29997',
+        ip: '192.168.1.9',
+        grpcPort: 29999,
+        usedMemory: 0,
+        preAllocatedMemory: 0,
+        availableMemory: 42949672960,
+        eventNumInFlush: 0,
+        registrationTime: 1722057271192,
+        timestamp: 1722404451189,
+        tags: ['GRPC_NETTY', 'ss_v5'],
+        status: 'ACTIVE',
+        storageInfo: {
+          '/dev/sdd1': {
+            type: 'HDD',
+            status: 'NORMAL'
+          },
+          '/dev/sdc1': {
+            type: 'HDD',
+            status: 'NORMAL'
+          }
+        },
+        nettyPort: 29997,
+        jettyPort: 29998,
+        totalMemory: 42949672960
+      },
+      {
+        id: '192.168.1.10-29999-29997',
+        ip: '192.168.1.10',
+        grpcPort: 29999,
+        usedMemory: 0,
+        preAllocatedMemory: 0,
+        availableMemory: 42949672960,
+        eventNumInFlush: 0,
+        registrationTime: 1722057271192,
+        timestamp: 1722404451189,
+        tags: ['GRPC_NETTY', 'ss_v5'],
+        status: 'ACTIVE',
+        storageInfo: {
+          '/dev/sdd1': {
+            type: 'HDD',
+            status: 'NORMAL'
+          },
+          '/dev/sdc1': {
+            type: 'HDD',
+            status: 'NORMAL'
+          }
+        },
+        nettyPort: 29997,
+        jettyPort: 29998,
+        totalMemory: 42949672960
+      },
     ],
     errMsg: 'success'
   }
