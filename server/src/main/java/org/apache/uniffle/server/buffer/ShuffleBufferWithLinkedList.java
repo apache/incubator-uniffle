@@ -18,9 +18,11 @@
 package org.apache.uniffle.server.buffer;
 
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import com.google.common.collect.Lists;
@@ -39,11 +41,11 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
   // blocks will be added to inFlushBlockMap as <eventId, blocks> pair
   // it will be removed after flush to storage
   // the strategy ensure that shuffle is in memory or storage
-  private List<ShufflePartitionedBlock> blocks;
-  private Map<Long, List<ShufflePartitionedBlock>> inFlushBlockMap;
+  private Set<ShufflePartitionedBlock> blocks;
+  private Map<Long, Set<ShufflePartitionedBlock>> inFlushBlockMap;
 
   public ShuffleBufferWithLinkedList() {
-    this.blocks = new LinkedList<>();
+    this.blocks = new LinkedHashSet<>();
     this.inFlushBlockMap = JavaUtils.newConcurrentMap();
   }
 
@@ -93,14 +95,14 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
           this.clearInFlushBuffer(event.getEventId());
           spBlocks.forEach(spb -> spb.getData().release());
         });
-    inFlushBlockMap.put(eventId, inFlushedQueueBlocks);
+    inFlushBlockMap.put(eventId, new LinkedHashSet<>(inFlushedQueueBlocks));
     blocks.clear();
     size = 0;
     return event;
   }
 
   @Override
-  public List<ShufflePartitionedBlock> getBlocks() {
+  public Set<ShufflePartitionedBlock> getBlocks() {
     return blocks;
   }
 
@@ -138,7 +140,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
   }
 
   @Override
-  public Map<Long, List<ShufflePartitionedBlock>> getInFlushBlockMap() {
+  public Map<Long, Set<ShufflePartitionedBlock>> getInFlushBlockMap() {
     return inFlushBlockMap;
   }
 
@@ -227,7 +229,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
 
   private boolean updateSegmentsWithBlockId(
       int offset,
-      List<ShufflePartitionedBlock> cachedBlocks,
+      Set<ShufflePartitionedBlock> cachedBlocks,
       long readBufferSize,
       long lastBlockId,
       List<BufferSegment> bufferSegments,
