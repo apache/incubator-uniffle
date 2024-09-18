@@ -85,6 +85,8 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE, 20.0);
     conf.set(ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE, 80.0);
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L * 1024L * 1024L);
+    conf.setBoolean(ShuffleServerConf.APP_LEVEL_SHUFFLE_BLOCK_SIZE_METRIC_ENABLED, true);
+
     mockShuffleFlushManager = mock(ShuffleFlushManager.class);
     mockShuffleServer = mock(ShuffleServer.class);
     mockShuffleTaskManager = mock(ShuffleTaskManager.class);
