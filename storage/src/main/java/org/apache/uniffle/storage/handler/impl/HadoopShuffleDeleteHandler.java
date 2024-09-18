@@ -19,6 +19,7 @@ package org.apache.uniffle.storage.handler.impl;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.ContentSummary;
@@ -29,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
+import org.apache.uniffle.storage.handler.AsynchronousDeleteEvent;
 import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 
 public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
@@ -116,6 +118,57 @@ public class HadoopShuffleDeleteHandler implements ShuffleDeleteHandler {
     ContentSummary contentSummary = fileSystem.getContentSummary(path);
     if (contentSummary.getFileCount() == 0) {
       fileSystem.delete(path, true);
+    }
+  }
+
+  @Override
+  public void moveToTemp(AsynchronousDeleteEvent shuffleSoftDeletePurgeEvent) {
+    String appId = shuffleSoftDeletePurgeEvent.getAppId();
+    String user = shuffleSoftDeletePurgeEvent.getUser();
+    for (Map.Entry<String, String> appIdNeedDeletePaths :
+        shuffleSoftDeletePurgeEvent.getNeedDeletePathAndRenamePath().entrySet()) {
+      final Path path = new Path(appIdNeedDeletePaths.getKey());
+      final Path breakdownPathFolder = new Path(appIdNeedDeletePaths.getValue());
+      boolean isSuccess = false;
+      int times = 0;
+      int retryMax = 5;
+      long start = System.currentTimeMillis();
+      LOG.info(
+          "Try rename shuffle data in Hadoop FS for appId[{}] of user[{}] with {}",
+          appId,
+          user,
+          path);
+      while (!isSuccess && times < retryMax) {
+        try {
+          FileSystem fileSystem = HadoopFilesystemProvider.getFilesystem(user, path, hadoopConf);
+          isSuccess = fileSystem.rename(path, breakdownPathFolder);
+        } catch (Exception e) {
+          if (e instanceof FileNotFoundException) {
+            LOG.info("[{}] doesn't exist, ignore it.", path);
+            return;
+          }
+          times++;
+          LOG.warn("Can't rename shuffle data for appId[{}] with {} times", appId, times, e);
+          try {
+            Thread.sleep(1000);
+          } catch (Exception ex) {
+            LOG.warn("Exception happened when Thread.sleep", ex);
+          }
+        }
+      }
+      if (isSuccess) {
+        LOG.info(
+            "Rename shuffle data in Hadoop FS for appId[{}] with {} successfully in {} ms",
+            appId,
+            path,
+            (System.currentTimeMillis() - start));
+      } else {
+        LOG.warn(
+            "Failed to rename shuffle data in Hadoop FS for appId [{}] with {} successfully in {} ms",
+            appId,
+            path,
+            (System.currentTimeMillis() - start));
+      }
     }
   }
 }

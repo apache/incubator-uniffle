@@ -48,11 +48,7 @@ import org.apache.uniffle.server.event.AppPurgeEvent;
 import org.apache.uniffle.server.event.PurgeEvent;
 import org.apache.uniffle.storage.common.HadoopStorage;
 import org.apache.uniffle.storage.common.Storage;
-import org.apache.uniffle.storage.factory.ShuffleHandlerFactory;
-import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
-import org.apache.uniffle.storage.request.CreateShuffleDeleteHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
-import org.apache.uniffle.storage.util.StorageType;
 
 public class HadoopStorageManager extends SingleStorageManager {
 
@@ -61,15 +57,14 @@ public class HadoopStorageManager extends SingleStorageManager {
       LoggerFactory.getLogger("SHUFFLE_SERVER_STORAGE_AUDIT_LOG");
 
   private final Configuration hadoopConf;
-  private final String shuffleServerId;
   private Map<String, HadoopStorage> appIdToStorages = JavaUtils.newConcurrentMap();
   private Map<String, HadoopStorage> pathToStorages = JavaUtils.newConcurrentMap();
   private final boolean isStorageAuditLogEnabled;
 
   HadoopStorageManager(ShuffleServerConf conf) {
     super(conf);
+    this.deletionStrategy = new HadoopDeletionStrategy(conf);
     hadoopConf = conf.getHadoopConf();
-    shuffleServerId = conf.getString(ShuffleServerConf.SHUFFLE_SERVER_ID, "shuffleServerId");
     isStorageAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED);
   }
 
@@ -102,20 +97,10 @@ public class HadoopStorageManager extends SingleStorageManager {
     String appId = event.getAppId();
     HadoopStorage storage = getStorageByAppId(appId);
     if (storage != null) {
-      boolean purgeForExpired = false;
       if (event instanceof AppPurgeEvent) {
         storage.removeHandlers(appId);
         appIdToStorages.remove(appId);
-        purgeForExpired = ((AppPurgeEvent) event).isAppExpired();
       }
-      ShuffleDeleteHandler deleteHandler =
-          ShuffleHandlerFactory.getInstance()
-              .createShuffleDeleteHandler(
-                  new CreateShuffleDeleteHandlerRequest(
-                      StorageType.HDFS.name(),
-                      storage.getConf(),
-                      purgeForExpired ? shuffleServerId : null));
-
       String basicPath =
           ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
       List<String> deletePaths = new ArrayList<>();
@@ -149,7 +134,7 @@ public class HadoopStorageManager extends SingleStorageManager {
                   storage.getStoragePath()));
         }
       }
-      deleteHandler.delete(deletePaths.toArray(new String[0]), appId, event.getUser());
+      deletionStrategy.deleteShuffleData(deletePaths, storage, event);
       removeAppStorageInfo(event);
     } else {
       LOG.warn("Storage gotten is null when removing resources for event: {}", event);

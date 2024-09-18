@@ -15,18 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.server.event;
+package org.apache.uniffle.server.storage;
 
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 
-public class ShufflePurgeEvent extends PurgeEvent {
+import com.google.common.collect.Queues;
 
-  public ShufflePurgeEvent(String appId, String user, List<Integer> shuffleIds) {
-    this(appId, user, shuffleIds, false);
-  }
+import org.apache.uniffle.server.event.PurgeEvent;
+import org.apache.uniffle.storage.common.Storage;
+import org.apache.uniffle.storage.handler.AsynchronousDeleteEvent;
 
-  public ShufflePurgeEvent(
-      String appId, String user, List<Integer> shuffleIds, boolean isTwoPhases) {
-    super(appId, user, shuffleIds, isTwoPhases);
-  }
+public abstract class AbstractDeletionStrategy {
+
+  protected final BlockingQueue<AsynchronousDeleteEvent> twoPhasesDeletionEventQueue =
+      Queues.newLinkedBlockingQueue();
+  protected Thread twoPhasesDeletionThread;
+
+  abstract void deleteShuffleData(List<String> deletePaths, Storage storage, PurgeEvent event);
 }

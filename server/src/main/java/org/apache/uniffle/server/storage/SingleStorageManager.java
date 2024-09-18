@@ -46,6 +46,7 @@ public abstract class SingleStorageManager implements StorageManager {
   private final long eventSizeThresholdL1;
   private final long eventSizeThresholdL2;
   private final long eventSizeThresholdL3;
+  protected AbstractDeletionStrategy deletionStrategy;
   protected final Map<String, ApplicationStorageInfo> appStorageInfoMap =
       JavaUtils.newConcurrentMap();
 

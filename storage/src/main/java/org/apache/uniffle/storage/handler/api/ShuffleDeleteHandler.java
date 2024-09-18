@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.storage.handler.api;
 
+import org.apache.uniffle.storage.handler.AsynchronousDeleteEvent;
+
 public interface ShuffleDeleteHandler {
 
   /**
@@ -25,4 +27,7 @@ public interface ShuffleDeleteHandler {
    * @param appId ApplicationId for delete
    */
   void delete(String[] storageBasePaths, String appId, String user);
+
+  /** Rename the file and then delete it asynchronously. */
+  void moveToTemp(AsynchronousDeleteEvent shuffleSoftDeletePurgeEvent);
 }

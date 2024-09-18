@@ -176,6 +176,7 @@ public class LocalStorageManager extends SingleStorageManager {
             localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList())));
     this.checker = new LocalStorageChecker(conf, localStorages);
     isStorageAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED);
+    this.deletionStrategy = new LocalDeletionStrategy();
   }
 
   private StorageMedia getStorageTypeForBasePath(String basePath) {
@@ -283,12 +284,6 @@ public class LocalStorageManager extends SingleStorageManager {
         storage.removeResources(RssUtils.generateShuffleKey(appId, shuffleId));
       }
     }
-    // delete shuffle data for application
-    ShuffleDeleteHandler deleteHandler =
-        ShuffleHandlerFactory.getInstance()
-            .createShuffleDeleteHandler(
-                new CreateShuffleDeleteHandlerRequest(
-                    StorageType.LOCALFILE.name(), new Configuration()));
 
     List<String> deletePaths =
         localStorages.stream()
@@ -328,8 +323,7 @@ public class LocalStorageManager extends SingleStorageManager {
                   }
                 })
             .collect(Collectors.toList());
-
-    deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user);
+    deletionStrategy.deleteShuffleData(deletePaths, null, event);
     removeAppStorageInfo(event);
   }
 

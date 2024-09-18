@@ -15,29 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.server.event;
+package org.apache.uniffle.storage.handler;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-// todo: introduce the unified abstract dispatcher to handle events,
-// mentioned in https://github.com/apache/incubator-uniffle/pull/249#discussion_r983001435
-public abstract class PurgeEvent {
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+
+public class AsynchronousDeleteEvent {
+  private static final String TEMPORARYSUFFIX = "_tmp";
   private String appId;
   private String user;
   private List<Integer> shuffleIds;
-  // Quick Delete or not.
-  private boolean isTwoPhasesDeletion;
+  private Configuration conf;
+  /** Records the mapping between the path to be deleted and the path to be renamed. */
+  private Map<String, String> needDeletePathAndRenamePath;
 
-  public PurgeEvent(String appId, String user, List<Integer> shuffleIds) {
-    this(appId, user, shuffleIds, false);
-  }
-
-  public PurgeEvent(
-      String appId, String user, List<Integer> shuffleIds, boolean isTwoPhasesDeletion) {
+  public AsynchronousDeleteEvent(
+      String appId,
+      String user,
+      Configuration conf,
+      List<Integer> shuffleIds,
+      List<String> needDeletePath) {
     this.appId = appId;
     this.user = user;
     this.shuffleIds = shuffleIds;
-    this.isTwoPhasesDeletion = isTwoPhasesDeletion;
+    this.conf = conf;
+    this.needDeletePathAndRenamePath =
+        needDeletePath.stream()
+            .collect(
+                Collectors.toMap(Function.identity(), s -> StringUtils.join(s, TEMPORARYSUFFIX)));
   }
 
   public String getAppId() {
@@ -52,24 +62,15 @@ public abstract class PurgeEvent {
     return shuffleIds;
   }
 
-  public boolean isTwoPhasesDeletion() {
-    return isTwoPhasesDeletion;
+  public Configuration getConf() {
+    return conf;
   }
 
-  @Override
-  public String toString() {
-    return this.getClass().getSimpleName()
-        + "{"
-        + "appId='"
-        + appId
-        + '\''
-        + ", user='"
-        + user
-        + '\''
-        + ", shuffleIds="
-        + shuffleIds
-        + ", isTwoPhasesDeletion="
-        + isTwoPhasesDeletion
-        + '}';
+  public Map<String, String> getNeedDeletePathAndRenamePath() {
+    return needDeletePathAndRenamePath;
+  }
+
+  public String[] getNeedDeleteRenamePaths() {
+    return needDeletePathAndRenamePath.values().stream().toArray(String[]::new);
   }
 }
