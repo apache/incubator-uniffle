@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -58,7 +59,8 @@ public class ReconfigurableConfManager<T> {
   }
 
   private void initialize(RssConf rssConf, Supplier<RssConf> confSupplier) {
-    this.rssConf = new RssConf(rssConf);
+    // Reconfigure for the given rssConf
+    this.rssConf = rssConf;
     if (confSupplier != null) {
       this.updateConfOptions = new ArrayList<>();
       this.scheduledThreadPoolExecutor =
@@ -106,14 +108,19 @@ public class ReconfigurableConfManager<T> {
       return;
     }
     for (ConfigOption<T> configOption : updateConfOptions) {
-      T val = latestConf.get(configOption);
-      if (!Objects.equals(val, rssConf.get(configOption))) {
-        LOGGER.info(
-            "Update the config option: {} from {} -> {}",
-            configOption.key(),
-            rssConf.get(configOption),
-            val);
-        rssConf.set(configOption, val);
+      Optional<T> valOptional = latestConf.getOptional(configOption);
+      if (valOptional.isPresent()) {
+        T val = valOptional.get();
+        if (!Objects.equals(val, rssConf.get(configOption))) {
+          LOGGER.info(
+              "Update the config option: {} from {} -> {}",
+              configOption.key(),
+              rssConf.get(configOption),
+              val);
+          rssConf.set(configOption, val);
+        }
+      } else {
+        rssConf.remove(configOption.key());
       }
     }
   }
@@ -126,12 +133,24 @@ public class ReconfigurableConfManager<T> {
     this.updateConfOptions.add(configOption);
   }
 
+  /**
+   * Initialize the reconfigurable conf manager and reconfigure for the given rss conf.
+   *
+   * @param rssConf the rss conf to be reconfigured
+   * @param rssConfFilePath the rss conf file path for reloading
+   */
   public static void init(RssConf rssConf, String rssConfFilePath) {
     ReconfigurableConfManager manager =
         new ReconfigurableConfManager(rssConf, rssConfFilePath, rssConf.getClass());
     reconfigurableConfManager = manager;
   }
 
+  /**
+   * Initialize the reconfigurable conf manager and reconfigure for the given rss conf.
+   *
+   * @param rssConf the rss conf to be reconfigured
+   * @param confSupplier the supplier of rss conf
+   */
   @VisibleForTesting
   protected static void initForTest(RssConf rssConf, Supplier<RssConf> confSupplier) {
     ReconfigurableConfManager manager = new ReconfigurableConfManager(rssConf, confSupplier);
