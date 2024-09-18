@@ -157,6 +157,15 @@ public class RssClientConf {
           .defaultValue(0)
           .withDescription("Number of threads used in the client thread pool.");
 
+  public static final ConfigOption<Double> NETTY_CLIENT_THREADS_RATIO =
+      ConfigOptions.key("rss.client.netty.client.threads.ratio")
+          .doubleType()
+          .defaultValue(2.0)
+          .withDescription(
+              "The number of threads used in the client thread pool will be "
+                  + "(`rss.client.netty.client.connections.per.peer` * `rss.client.netty.client.threads.ratio`). "
+                  + "This is only effective when `rss.client.netty.client.threads` is not explicitly set");
+
   public static final ConfigOption<Boolean> NETTY_CLIENT_PREFER_DIRECT_BUFS =
       ConfigOptions.key("rss.client.netty.client.prefer.direct.bufs")
           .booleanType()
