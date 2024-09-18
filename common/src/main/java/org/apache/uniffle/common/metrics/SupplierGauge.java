@@ -25,20 +25,20 @@ import java.util.function.Supplier;
 
 import io.prometheus.client.Collector;
 import io.prometheus.client.GaugeMetricFamily;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-class SupplierGauge extends Collector implements Collector.Describable {
+class SupplierGauge<T extends Number> extends Collector implements Collector.Describable {
+  private static final Logger LOG = LoggerFactory.getLogger(SupplierGauge.class);
+
   private String name;
   private String help;
-  private Supplier<Double> supplier;
+  private Supplier<T> supplier;
   private List<String> labelNames;
   private List<String> labelValues;
 
   SupplierGauge(
-      String name,
-      String help,
-      Supplier<Double> supplier,
-      String[] labelNames,
-      String[] labelValues) {
+      String name, String help, Supplier<T> supplier, String[] labelNames, String[] labelValues) {
     this.name = name;
     this.help = help;
     this.supplier = supplier;
@@ -49,9 +49,14 @@ class SupplierGauge extends Collector implements Collector.Describable {
   @Override
   public List<MetricFamilySamples> collect() {
     List<MetricFamilySamples.Sample> samples = new ArrayList<>();
+    T lastValue = supplier.get();
+    if (lastValue == null) {
+      LOG.warn("SupplierGauge {} returned null value.", this.name);
+      return Collections.emptyList();
+    }
     samples.add(
         new MetricFamilySamples.Sample(
-            this.name, this.labelNames, this.labelValues, this.supplier.get()));
+            this.name, this.labelNames, this.labelValues, lastValue.doubleValue()));
     MetricFamilySamples mfs = new MetricFamilySamples(this.name, Type.GAUGE, this.help, samples);
     List<MetricFamilySamples> mfsList = new ArrayList<MetricFamilySamples>(1);
     mfsList.add(mfs);

@@ -321,27 +321,22 @@ public class ShuffleServer {
             shuffleMergeManager);
     shuffleTaskManager.start();
     ShuffleServerMetrics.addLabeledGauge(
-        USED_DIRECT_MEMORY_SIZE_BY_NETTY, () -> (double) PlatformDependent.usedDirectMemory());
+        USED_DIRECT_MEMORY_SIZE_BY_NETTY, PlatformDependent::usedDirectMemory);
     ShuffleServerMetrics.addLabeledGauge(
         USED_DIRECT_MEMORY_SIZE_BY_GRPC_NETTY,
-        () ->
-            (double)
-                io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent.usedDirectMemory());
+        io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent::usedDirectMemory);
     ShuffleServerMetrics.addLabeledGauge(
         USED_DIRECT_MEMORY_SIZE,
         () ->
-            (double)
-                (PlatformDependent.usedDirectMemory()
-                    + io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent
-                        .usedDirectMemory()));
+            (PlatformDependent.usedDirectMemory()
+                + io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent
+                    .usedDirectMemory()));
     ShuffleServerMetrics.addLabeledGauge(
-        JVM_PAUSE_TOTAL_EXTRA_TIME, () -> (double) jvmPauseMonitor.getTotalGcExtraSleepTime());
+        JVM_PAUSE_TOTAL_EXTRA_TIME, jvmPauseMonitor::getTotalGcExtraSleepTime);
     ShuffleServerMetrics.addLabeledGauge(
-        JVM_PAUSE_INFO_TIME_EXCEEDED,
-        () -> (double) jvmPauseMonitor.getNumGcInfoThresholdExceeded());
+        JVM_PAUSE_INFO_TIME_EXCEEDED, jvmPauseMonitor::getNumGcInfoThresholdExceeded);
     ShuffleServerMetrics.addLabeledGauge(
-        JVM_PAUSE_WARN_TIME_EXCEEDED,
-        () -> (double) jvmPauseMonitor.getNumGcWarnThresholdExceeded());
+        JVM_PAUSE_WARN_TIME_EXCEEDED, jvmPauseMonitor::getNumGcWarnThresholdExceeded);
 
     setServer();
   }

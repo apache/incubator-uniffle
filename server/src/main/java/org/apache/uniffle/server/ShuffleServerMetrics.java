@@ -157,6 +157,8 @@ public class ShuffleServerMetrics {
   public static final String TOPN_OF_ON_HADOOP_DATA_SIZE_FOR_APP =
       "topN_of_on_hadoop_data_size_for_app";
 
+  public static final String REQUIRE_BUFFER_COUNT = "require_buffer_count";
+
   public static Counter.Child counterTotalAppNum;
   public static Counter.Child counterTotalAppWithHugePartitionNum;
   public static Counter.Child counterTotalPartitionNum;
@@ -513,7 +515,7 @@ public class ShuffleServerMetrics {
             .register(metricsManager.getCollectorRegistry());
   }
 
-  public static void addLabeledGauge(String name, Supplier<Double> supplier) {
+  public static <T extends Number> void addLabeledGauge(String name, Supplier<T> supplier) {
     metricsManager.addLabeledGauge(name, supplier);
   }
 }
