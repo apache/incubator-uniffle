@@ -92,10 +92,12 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
         () -> {
           this.clearInFlushBuffer(event.getEventId());
           spBlocks.forEach(spb -> spb.getData().release());
+          inFlushSize.addAndGet(-event.getSize());
         });
     inFlushBlockMap.put(eventId, blocksMap);
     blocksMap = newConcurrentSkipListMap();
     blockCount = 0;
+    inFlushSize.addAndGet(size);
     size = 0;
     return event;
   }

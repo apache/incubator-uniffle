@@ -92,9 +92,11 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
         () -> {
           this.clearInFlushBuffer(event.getEventId());
           spBlocks.forEach(spb -> spb.getData().release());
+          inFlushSize.addAndGet(-event.getSize());
         });
     inFlushBlockMap.put(eventId, inFlushedQueueBlocks);
     blocks.clear();
+    inFlushSize.addAndGet(size);
     size = 0;
     return event;
   }

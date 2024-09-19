@@ -19,6 +19,7 @@ package org.apache.uniffle.server.buffer;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import com.google.common.collect.Lists;
@@ -40,6 +41,8 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
   protected static final Logger LOG = LoggerFactory.getLogger(AbstractShuffleBuffer.class);
 
   protected long size;
+
+  protected AtomicLong inFlushSize = new AtomicLong();
 
   public AbstractShuffleBuffer() {
     this.size = 0;
@@ -177,5 +180,10 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
         break;
       }
     }
+  }
+
+  @Override
+  public long getInFlushSize() {
+    return inFlushSize.get();
   }
 }
