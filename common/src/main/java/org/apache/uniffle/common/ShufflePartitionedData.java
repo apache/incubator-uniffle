@@ -20,7 +20,7 @@ package org.apache.uniffle.common;
 import java.util.Arrays;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 public class ShufflePartitionedData {
 
@@ -29,11 +29,14 @@ public class ShufflePartitionedData {
   private int partitionId;
   private final ShufflePartitionedBlock[] blockList;
   private final long totalBlockSize;
+  private final long totalBlockLength;
 
-  public ShufflePartitionedData(int partitionId, Pair<Long, ShufflePartitionedBlock[]> pair) {
+  public ShufflePartitionedData(
+      int partitionId, Triple<Long, Long, ShufflePartitionedBlock[]> pair) {
     this.partitionId = partitionId;
     this.blockList = pair.getRight() == null ? EMPTY_BLOCK_LIST : pair.getRight();
     totalBlockSize = pair.getLeft();
+    totalBlockLength = pair.getMiddle();
   }
 
   @VisibleForTesting
@@ -41,10 +44,13 @@ public class ShufflePartitionedData {
     this.partitionId = partitionId;
     this.blockList = blockList == null ? EMPTY_BLOCK_LIST : blockList;
     long size = 0L;
+    long length = 0L;
     for (ShufflePartitionedBlock block : this.blockList) {
       size += block.getSize();
+      length += block.getLength();
     }
     totalBlockSize = size;
+    totalBlockLength = length;
   }
 
   @Override
@@ -70,5 +76,9 @@ public class ShufflePartitionedData {
 
   public long getTotalBlockSize() {
     return totalBlockSize;
+  }
+
+  public long getTotalBlockLength() {
+    return totalBlockLength;
   }
 }

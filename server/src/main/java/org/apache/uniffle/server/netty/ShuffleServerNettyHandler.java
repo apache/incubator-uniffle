@@ -30,7 +30,7 @@ import io.netty.channel.ChannelFutureListener;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,7 +167,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               + ", requireBlocksSize="
               + requireBlocksSize
               + ", stageAttemptNumber="
-              + stageAttemptNumber);
+              + stageAttemptNumber
+              + ", partitionCount="
+              + req.getPartitionToBlocks().size());
 
       ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
       if (taskInfo == null) {
@@ -759,12 +761,14 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     return ret;
   }
 
-  private Pair<Long, ShufflePartitionedBlock[]> toPartitionedBlock(List<ShuffleBlockInfo> blocks) {
+  private Triple<Long, Long, ShufflePartitionedBlock[]> toPartitionedBlock(
+      List<ShuffleBlockInfo> blocks) {
     if (blocks == null || blocks.size() == 0) {
-      return Pair.of(0L, new ShufflePartitionedBlock[] {});
+      return Triple.of(0L, 0L, new ShufflePartitionedBlock[] {});
     }
     ShufflePartitionedBlock[] ret = new ShufflePartitionedBlock[blocks.size()];
     long size = 0L;
+    long length = 0L;
     int i = 0;
     for (ShuffleBlockInfo block : blocks) {
       ret[i] =
@@ -776,9 +780,10 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               block.getTaskAttemptId(),
               block.getData());
       size += ret[i].getSize();
+      length += ret[i].getLength();
       i++;
     }
-    return Pair.of(size, ret);
+    return Triple.of(size, length, ret);
   }
 
   private StatusCode verifyRequest(String appId) {
