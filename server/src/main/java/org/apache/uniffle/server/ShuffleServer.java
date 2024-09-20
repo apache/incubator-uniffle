@@ -579,7 +579,6 @@ public class ShuffleServer {
     return startTimeMs;
   }
 
-  @VisibleForTesting
   public void sendHeartbeat() {
     ShuffleServer shuffleServer = this;
     registerHeartBeat.sendHeartBeat(
