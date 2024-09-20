@@ -112,6 +112,8 @@
                     <exclude>META-INF/*.DSA</exclude>
                     <exclude>META-INF/*.RSA</exclude>
                     <exclude>**/*.proto</exclude>
+                    <exclude>**/*.css</exclude>
+                    <exclude>**/*.html</exclude>
                   </excludes>
                 </filter>
               </filters>
@@ -156,8 +158,10 @@
                   <pattern>org.apache</pattern>
                   <shadedPattern>${rss.shade.packageName}.org.apache</shadedPattern>
                   <excludes>
+                    <!-- Exclude the provided dependencies -->
                     <!-- Exclude the packages belonging to uniffle -->
                     <exclude>org/apache/uniffle/**/*</exclude>
+                    <!-- Exclude the packages belonging to hadoop -->
                     <exclude>org/apache/hadoop/*</exclude>
                     <exclude>org/apache/hadoop/**/*</exclude>
                     <!-- Exclude the logging packages-->
@@ -166,10 +170,13 @@
                     <exclude>org/apache/commons/logging/**/*</exclude>
                     <exclude>org/apache/log4j/*</exclude>
                     <exclude>org/apache/log4j/**/*</exclude>
+                    <exclude>org/apache/logging/**/*</exclude>
                     <!-- Exclude spark packages -->
                     <exclude>org/apache/spark/**/*</exclude>
                     <!-- Exclude commons-io packages -->
                     <exclude>org/apache/commons/io/**/*</exclude>
+                    <!-- Exclude the packages belonging to collections 3 -->
+                    <exclude>org/apache/commons/collections/**/*</exclude>
                   </excludes>
                 </relocation>
                 <relocation>
@@ -179,18 +186,6 @@
                 <relocation>
                   <pattern>android.annotation</pattern>
                   <shadedPattern>${rss.shade.packageName}.android.annotation</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>javax</pattern>
-                  <shadedPattern>${rss.shade.packageName}.javax</shadedPattern>
-                  <includes>
-                    <include>javax/annotation/**/*</include>
-                    <include>javax/activation/**/*</include>
-                    <include>javax/xml/**/*</include>
-                    <include>javax/inject/**/*</include>
-                    <include>javax/validation/**/*</include>
-                    <include>javax/servlet/**/*</include>
-                  </includes>
                 </relocation>
                 <relocation>
                   <pattern>javassist</pattern>
