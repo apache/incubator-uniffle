@@ -862,6 +862,44 @@ public class ShuffleTaskManager {
         return;
       }
 
+      LOG.info("Dump Removing app summary of {}", appId);
+      StringBuilder partitionInfoSummary = new StringBuilder();
+      partitionInfoSummary.append("appId: ").append(appId).append("\n");
+      for (int shuffleId : shuffleTaskInfo.getShuffleIds()) {
+        Roaring64NavigableMap[] bitmaps = partitionsToBlockIds.get(appId).get(shuffleId);
+        long shuffleBlockCount = 0L;
+        if (bitmaps != null) {
+          for (Roaring64NavigableMap bitmap : bitmaps) {
+            shuffleBlockCount += bitmap.getLongCardinality();
+          }
+        }
+        if (conf.getBoolean(ShuffleServerConf.SERVER_LOG_APP_DETAIL_WHILE_REMOVE_ENABLED)) {
+          for (int partitionId : shuffleTaskInfo.getPartitionIds(shuffleId)) {
+            long partitionSize = shuffleTaskInfo.getPartitionDataSize(shuffleId, partitionId);
+            long partitionBlockCount = shuffleTaskInfo.getBlockNumber(shuffleId, partitionId);
+            LOG.info(
+                "shufflePartitionInfo(blockCount/size): {}-{}-{}: {}/{}",
+                appId,
+                shuffleId,
+                partitionId,
+                partitionBlockCount,
+                partitionSize);
+          }
+        }
+        partitionInfoSummary
+            .append(" shuffleId: ")
+            .append(shuffleId)
+            .append(" contains partition/block: ")
+            .append(shuffleTaskInfo.getPartitionIds(shuffleId).size())
+            .append("/")
+            .append(shuffleBlockCount)
+            .append("\n");
+      }
+      partitionInfoSummary
+          .append("The maxSizePartitionInfo: ")
+          .append(shuffleTaskInfo.getMaxSizePartitionInfo());
+      LOG.info("Removing app summary info: {}", partitionInfoSummary);
+
       partitionsToBlockIds.remove(appId);
       shuffleBufferManager.removeBuffer(appId);
       shuffleFlushManager.removeResources(appId);

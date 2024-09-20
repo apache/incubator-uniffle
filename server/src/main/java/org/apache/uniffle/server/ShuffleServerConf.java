@@ -714,6 +714,11 @@ public class ShuffleServerConf extends RssBaseConf {
           .stringType()
           .defaultValue(null)
           .withDescription("The jars path for class loader when merge");
+  public static final ConfigOption<Boolean> SERVER_LOG_APP_DETAIL_WHILE_REMOVE_ENABLED =
+      ConfigOptions.key("rss.server.log.app.detail.while.remove.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Whether to enable app detail log");
 
   public ShuffleServerConf() {}
 
