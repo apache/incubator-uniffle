@@ -908,7 +908,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
       auditContext.withAppId(appId).withShuffleId(shuffleId);
       auditContext.withArgs(
-          "partitionsList=" + partitionsList + ", blockIdLayout=" + blockIdLayout);
+          "partitionsListSize=" + partitionsList.size() + ", blockIdLayout=" + blockIdLayout);
 
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
