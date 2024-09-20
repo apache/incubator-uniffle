@@ -238,6 +238,29 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
       assertTrue(e instanceof NoBufferForHugePartitionException);
     }
 
+    // test: to simulate the flush delay, it also will limit the huge partition if the partial data
+    // is in flush queue.
+    ShuffleFlushManager shuffleFlushManager = shuffleServer.getShuffleFlushManager();
+    ShuffleFlushManager spyFlushManager = spy(shuffleFlushManager);
+    doAnswer(
+            invocationOnMock -> {
+              Thread.sleep(10000);
+              return invocationOnMock.callRealMethod();
+            })
+        .when(spyFlushManager)
+        .addToFlushQueue(any(ShuffleDataFlushEvent.class));
+    shuffleTaskManager.setShuffleFlushManager(spyFlushManager);
+    shuffleServer.getShuffleBufferManager().setBufferFlushThreshold(1024);
+    partitionedData0 = createPartitionedData(1, 1, 500);
+    shuffleTaskManager.cacheShuffleData(appId, shuffleId, true, partitionedData0);
+    shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
+    try {
+      shuffleTaskManager.requireBuffer(appId, 1, Arrays.asList(1), Arrays.asList(500), 500);
+      fail("Should throw NoBufferForHugePartitionException");
+    } catch (Exception e) {
+      assertTrue(e instanceof NoBufferForHugePartitionException);
+    }
+
     // metrics test
     assertEquals(0, ShuffleServerMetrics.counterTotalRequireBufferFailedForHugePartition.get());
     assertEquals(0, ShuffleServerMetrics.counterTotalRequireBufferFailedForRegularPartition.get());

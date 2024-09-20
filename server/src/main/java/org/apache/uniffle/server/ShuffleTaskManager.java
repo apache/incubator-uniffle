@@ -93,7 +93,7 @@ import static org.apache.uniffle.server.ShuffleServerMetrics.REQUIRE_BUFFER_COUN
 public class ShuffleTaskManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleTaskManager.class);
-  private final ShuffleFlushManager shuffleFlushManager;
+  private ShuffleFlushManager shuffleFlushManager;
   private final ScheduledExecutorService scheduledExecutorService;
   private final ScheduledExecutorService expiredAppCleanupExecutorService;
   private final ScheduledExecutorService leakShuffleDataCheckExecutorService;
@@ -1032,5 +1032,11 @@ public class ShuffleTaskManager {
   @VisibleForTesting
   protected void setStorageManager(StorageManager storageManager) {
     this.storageManager = storageManager;
+  }
+
+  // only for tests
+  @VisibleForTesting
+  protected void setShuffleFlushManager(ShuffleFlushManager flushManager) {
+    this.shuffleFlushManager = flushManager;
   }
 }

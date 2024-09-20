@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.exception.ExceedHugePartitionHardLimitException;
+import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 
 /** Huge partition utils. */
@@ -130,11 +131,9 @@ public class HugePartitionUtils {
       int partitionId,
       long usedPartitionDataSize) {
     if (usedPartitionDataSize > shuffleBufferManager.getHugePartitionSizeThreshold()) {
-      long memoryUsed =
-          shuffleBufferManager
-              .getShuffleBufferEntry(appId, shuffleId, partitionId)
-              .getValue()
-              .getSize();
+      ShuffleBuffer buffer =
+          shuffleBufferManager.getShuffleBufferEntry(appId, shuffleId, partitionId).getValue();
+      long memoryUsed = buffer.getInFlushSize() + buffer.getSize();
       if (memoryUsed > shuffleBufferManager.getHugePartitionMemoryLimitSize()) {
         LOG.warn(
             "AppId: {}, shuffleId: {}, partitionId: {}, memory used: {}, "

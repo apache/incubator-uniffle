@@ -757,4 +757,9 @@ public class ShuffleBufferManager {
   public void setUsedMemory(long usedMemory) {
     this.usedMemory.set(usedMemory);
   }
+
+  @VisibleForTesting
+  public void setBufferFlushThreshold(long bufferFlushThreshold) {
+    this.bufferFlushThreshold = bufferFlushThreshold;
+  }
 }
