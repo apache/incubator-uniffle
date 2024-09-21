@@ -90,9 +90,10 @@
             </goals>
             <configuration>
               <artifactSet>
-                <includes>
-                  <include>*:*</include>
-                </includes>
+                <excludes>
+                  <exclude>org.apache.logging.log4j:log4j-slf4j-impl</exclude>
+                  <exclude>org.apache.logging.log4j:log4j-slf4j2-impl</exclude>
+                </excludes>
               </artifactSet>
               <finalName>${project.artifactId}-${project.version}</finalName>
               <transformers>
