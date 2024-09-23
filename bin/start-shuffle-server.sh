@@ -104,13 +104,13 @@ SHUFFLE_SERVER_BASE_JVM_ARGS=${SHUFFLE_SERVER_BASE_JVM_ARGS:-" -server \
           -XX:+UnlockExperimentalVMOptions \
           -XX:+PrintCommandLineFlags"}
 
-DEFAULT_GC_ARGS=" -XX:+UseG1GC \
+DEFAULT_GC_ARGS=${SHUFFLE_SERVER_DEFAULT_GC_ARGS:-" -XX:+UseG1GC \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
           -XX:ConcGCThreads=5 \
           -XX:InitiatingHeapOccupancyPercent=60 \
           -XX:G1HeapRegionSize=32m \
-          -XX:G1NewSizePercent=10"
+          -XX:G1NewSizePercent=10"}
 
 GC_LOG_ARGS_LEGACY=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
