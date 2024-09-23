@@ -32,6 +32,7 @@ import org.apache.hbase.thirdparty.javax.ws.rs.core.MediaType;
 
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.web.resource.BaseResource;
+import org.apache.uniffle.common.web.resource.ConfOpsResource;
 import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.dashboard.web.Dashboard;
 import org.apache.uniffle.dashboard.web.config.DashboardConf;
@@ -70,6 +71,11 @@ public class DashboardResource extends BaseResource {
           dashboardInfo.put("startTime", getDashboard().getStartTimeMs());
           return dashboardInfo;
         });
+  }
+
+  @Path("/confOps")
+  public Class<ConfOpsResource> getConfOps() {
+    return ConfOpsResource.class;
   }
 
   private Dashboard getDashboard() {
