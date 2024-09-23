@@ -118,11 +118,11 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
   }
 
   public void runWithRemoteMerge() throws Exception {
-    // 1. run application when remote merge is enable
+    // 1 run application when remote merge is enable
     JobConf appConf = new JobConf(mrYarnCluster.getConfig());
     updateCommonConfiguration(appConf);
     runRssApp(appConf, true);
-    String rssPath1 = appConf.get("mapreduce.output.fileoutputformat.outputdir");
+    final String rssPath1 = appConf.get("mapreduce.output.fileoutputformat.outputdir");
 
     // 2 run original application
     appConf = new JobConf(mrYarnCluster.getConfig());

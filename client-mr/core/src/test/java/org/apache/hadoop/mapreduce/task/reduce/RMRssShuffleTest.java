@@ -216,20 +216,6 @@ public class RMRssShuffleTest {
       when(context.getReduceTask()).thenReturn(mock(Task.class));
 
       // 4 create reader
-      RMRecordsReader reader =
-          new RMRecordsReader(
-              APP_ID,
-              SHUFFLE_ID,
-              Sets.newHashSet(PARTITION_ID),
-              ImmutableMap.of(PARTITION_ID, serverInfos),
-              rssConf,
-              keyClass,
-              valueClass,
-              comparator,
-              true,
-              combiner,
-              false,
-              null);
       List<Segment> segments = new ArrayList<>();
       segments.add(
           SerializerUtils.genMemorySegment(
@@ -247,6 +233,20 @@ public class RMRssShuffleTest {
       ShuffleServerClient serverClient =
           new MockedShuffleServerClient(
               new int[] {PARTITION_ID}, new ByteBuffer[][] {{byteBuffer}}, blockIds);
+      RMRecordsReader reader =
+          new RMRecordsReader(
+              APP_ID,
+              SHUFFLE_ID,
+              Sets.newHashSet(PARTITION_ID),
+              ImmutableMap.of(PARTITION_ID, serverInfos),
+              rssConf,
+              keyClass,
+              valueClass,
+              comparator,
+              true,
+              combiner,
+              false,
+              null);
       RMRecordsReader readerSpy = spy(reader);
       doReturn(serverClient).when(readerSpy).createShuffleServerClient(any());
 
