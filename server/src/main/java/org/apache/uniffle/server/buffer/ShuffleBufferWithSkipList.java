@@ -62,9 +62,13 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
 
     synchronized (this) {
       for (ShufflePartitionedBlock block : data.getBlockList()) {
-        blocksMap.put(block.getBlockId(), block);
-        blockCount++;
-        size += block.getSize();
+        if (!blocksMap.containsKey(block.getBlockId())) {
+          blocksMap.put(block.getBlockId(), block);
+          blockCount++;
+          size += block.getSize();
+        } else {
+          block.getData().release();
+        }
       }
       this.size += size;
     }
