@@ -55,6 +55,7 @@ public class ShuffleServerMetricsTest {
 
   @BeforeAll
   public static void setUp() throws Exception {
+    ShuffleServerMetrics.clear();
     ShuffleServerConf ssc = new ShuffleServerConf();
     ssc.set(ShuffleServerConf.JETTY_HTTP_PORT, 12345);
     ssc.set(ShuffleServerConf.JETTY_CORE_POOL_SIZE, 128);
