@@ -947,23 +947,25 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ASSIGNMENT_RETRY_TIMES);
     faultyServerIds.addAll(rssStageResubmitManager.getServerIdBlackList());
     try {
-      ShuffleAssignmentsInfo response =
-          shuffleWriteClient.getShuffleAssignments(
-              appId,
-              shuffleId,
-              partitionNum,
-              partitionNumPerRange,
-              assignmentTags,
-              assignmentShuffleServerNumber,
-              estimateTaskConcurrency,
-              faultyServerIds,
-              stageId,
-              stageAttemptNumber,
-              reassign,
-              retryInterval,
-              retryTimes);
       return RetryUtils.retry(
           () -> {
+            // retry zero times in shuffleWriteClient.getShuffleAssignments, let
+            // getShuffleAssignments and registerShuffleServers in one retry func
+            ShuffleAssignmentsInfo response =
+                shuffleWriteClient.getShuffleAssignments(
+                    appId,
+                    shuffleId,
+                    partitionNum,
+                    partitionNumPerRange,
+                    assignmentTags,
+                    assignmentShuffleServerNumber,
+                    estimateTaskConcurrency,
+                    faultyServerIds,
+                    stageId,
+                    stageAttemptNumber,
+                    reassign,
+                    0,
+                    0);
             registerShuffleServers(
                 appId,
                 shuffleId,
@@ -975,7 +977,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           retryInterval,
           retryTimes);
     } catch (Throwable throwable) {
-      throw new RssException("registerShuffle failed!", throwable);
+      throw new RssException("getShuffleAssignments or registerShuffle failed!", throwable);
     }
   }
 

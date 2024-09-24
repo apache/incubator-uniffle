@@ -103,7 +103,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   private String clientType;
   private int retryMax;
   private long retryIntervalMax;
-  private CoordinatorGrpcRetryableClient coordinatorClients;
+  private CoordinatorGrpcRetryableClient coordinatorClient;
   // appId -> shuffleId -> servers
   private Map<String, Map<Integer, Set<ShuffleServerInfo>>> shuffleServerInfoMap =
       JavaUtils.newConcurrentMap();
@@ -607,7 +607,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public void registerCoordinators(String coordinators, long retryIntervalMs, int retryTimes) {
-    coordinatorClients =
+    coordinatorClient =
         coordinatorClientFactory.createCoordinatorClient(
             ClientType.valueOf(this.clientType),
             coordinators,
@@ -618,11 +618,11 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public Map<String, String> fetchClientConf(int timeoutMs) {
-    if (coordinatorClients == null) {
+    if (coordinatorClient == null) {
       return Maps.newHashMap();
     }
     try {
-      return coordinatorClients
+      return coordinatorClient
           .fetchClientConf(new RssFetchClientConfRequest(timeoutMs))
           .getClientConf();
     } catch (RssException e) {
@@ -632,11 +632,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
   @Override
   public RemoteStorageInfo fetchRemoteStorage(String appId) {
-    if (coordinatorClients == null) {
+    if (coordinatorClient == null) {
       return new RemoteStorageInfo("");
     }
     try {
-      return coordinatorClients.fetchRemoteStorage(new RssFetchRemoteStorageRequest(appId));
+      return coordinatorClient
+          .fetchRemoteStorage(new RssFetchRemoteStorageRequest(appId))
+          .getRemoteStorageInfo();
     } catch (RssException e) {
       return new RemoteStorageInfo("");
     }
@@ -670,13 +672,15 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             faultyServerIds,
             stageId,
             stageAttemptNumber,
-            reassign);
+            reassign,
+            retryIntervalMs,
+            retryTimes);
 
     RssGetShuffleAssignmentsResponse response =
         new RssGetShuffleAssignmentsResponse(StatusCode.INTERNAL_ERROR);
     try {
-      if (coordinatorClients != null) {
-        response = coordinatorClients.getShuffleAssignments(request, retryIntervalMs, retryTimes);
+      if (coordinatorClient != null) {
+        response = coordinatorClient.getShuffleAssignments(request);
       }
     } catch (RssException e) {
       String msg =
@@ -895,8 +899,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   @Override
   public void registerApplicationInfo(String appId, long timeoutMs, String user) {
     RssApplicationInfoRequest request = new RssApplicationInfoRequest(appId, timeoutMs, user);
-    if (coordinatorClients != null) {
-      coordinatorClients.registerApplicationInfo(request, timeoutMs);
+    if (coordinatorClient != null) {
+      coordinatorClient.registerApplicationInfo(request);
     }
   }
 
@@ -924,16 +928,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         },
         timeoutMs,
         "send heartbeat to shuffle server");
-    if (coordinatorClients != null) {
-      coordinatorClients.sendAppHeartBeat(request, timeoutMs);
+    if (coordinatorClient != null) {
+      coordinatorClient.sendAppHeartBeat(request);
     }
   }
 
   @Override
   public void close() {
     heartBeatExecutorService.shutdownNow();
-    if (coordinatorClients != null) {
-      coordinatorClients.close();
+    if (coordinatorClient != null) {
+      coordinatorClient.close();
     }
     dataTransferPool.shutdownNow();
   }

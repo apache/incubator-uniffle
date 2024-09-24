@@ -17,20 +17,17 @@
 
 package org.apache.uniffle.server;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
+import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryableClient;
 import org.apache.uniffle.client.request.RssSendHeartBeatRequest;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -45,10 +42,9 @@ public class RegisterHeartBeat {
   private final long heartBeatInterval;
   private final ShuffleServer shuffleServer;
   private final String coordinatorQuorum;
-  private final List<CoordinatorClient> coordinatorClients;
+  private final CoordinatorGrpcRetryableClient coordinatorClient;
   private final ScheduledExecutorService service =
       ThreadUtils.getDaemonSingleThreadScheduledExecutor("startHeartBeat");
-  private final ExecutorService heartBeatExecutorService;
 
   public RegisterHeartBeat(ShuffleServer shuffleServer) {
     ShuffleServerConf conf = shuffleServer.getShuffleServerConf();
@@ -56,13 +52,14 @@ public class RegisterHeartBeat {
     this.heartBeatInterval = conf.getLong(ShuffleServerConf.SERVER_HEARTBEAT_INTERVAL);
     this.coordinatorQuorum = conf.getString(ShuffleServerConf.RSS_COORDINATOR_QUORUM);
     CoordinatorClientFactory factory = CoordinatorClientFactory.getInstance();
-    this.coordinatorClients =
+    this.coordinatorClient =
         factory.createCoordinatorClient(
-            conf.get(ShuffleServerConf.RSS_COORDINATOR_CLIENT_TYPE), this.coordinatorQuorum);
+            conf.get(ShuffleServerConf.RSS_COORDINATOR_CLIENT_TYPE),
+            this.coordinatorQuorum,
+            0,
+            0,
+            conf.getInteger(ShuffleServerConf.SERVER_HEARTBEAT_THREAD_NUM));
     this.shuffleServer = shuffleServer;
-    this.heartBeatExecutorService =
-        ThreadUtils.getDaemonFixedThreadPool(
-            conf.getInteger(ShuffleServerConf.SERVER_HEARTBEAT_THREAD_NUM), "sendHeartBeat");
   }
 
   public void startHeartBeat() {
@@ -111,7 +108,6 @@ public class RegisterHeartBeat {
       int nettyPort,
       int jettyPort,
       long startTimeMs) {
-    AtomicBoolean sendSuccessfully = new AtomicBoolean(false);
     // use `rss.server.heartbeat.interval` as the timeout option
     RssSendHeartBeatRequest request =
         new RssSendHeartBeatRequest(
@@ -130,30 +126,14 @@ public class RegisterHeartBeat {
             jettyPort,
             startTimeMs);
 
-    ThreadUtils.executeTasks(
-        heartBeatExecutorService,
-        coordinatorClients,
-        client -> client.sendHeartBeat(request),
-        request.getTimeout() * 2,
-        "send heartbeat",
-        future -> {
-          try {
-            if (future.get(request.getTimeout() * 2, TimeUnit.MILLISECONDS).getStatusCode()
-                == StatusCode.SUCCESS) {
-              sendSuccessfully.set(true);
-            }
-          } catch (Exception e) {
-            LOG.error(e.getMessage());
-            return null;
-          }
-          return null;
-        });
-
-    return sendSuccessfully.get();
+    if (coordinatorClient.sendHeartBeat(request).getStatusCode() == StatusCode.SUCCESS) {
+      return true;
+    }
+    return false;
   }
 
   public void shutdown() {
-    heartBeatExecutorService.shutdownNow();
+    coordinatorClient.close();
     service.shutdownNow();
   }
 }
