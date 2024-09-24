@@ -1241,7 +1241,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           reply = builder.build();
         } catch (FileNotFoundException indexFileNotFoundException) {
           LOG.warn(
-              "Index file for {} is not found, maybe the data has been flushed to cold storage.",
+              "Index file for {} is not found, maybe the data has been flushed to cold storage "
+                  + "or still in memory buffer pool.",
               requestInfo,
               indexFileNotFoundException);
           reply = GetLocalShuffleIndexResponse.newBuilder().setStatus(status.toProto()).build();
