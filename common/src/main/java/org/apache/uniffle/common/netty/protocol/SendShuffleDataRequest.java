@@ -23,8 +23,10 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.netty.buffer.ByteBuf;
+import org.apache.commons.lang3.tuple.Pair;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.util.ByteBufUtils;
 
 public class SendShuffleDataRequest extends RequestMessage {
@@ -33,8 +35,26 @@ public class SendShuffleDataRequest extends RequestMessage {
 
   private int stageAttemptNumber;
   private long requireId;
-  private Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks;
+  // client
+  private Map<Integer, List<ShuffleBlockInfo>> partitionToBlocksInClient;
+  // server
+  private Map<Integer, List<ShufflePartitionedBlock>> partitionToBlocksInServer;
   private long timestamp;
+
+  private int encodedLength;
+
+  public SendShuffleDataRequest(long requestId) {
+    super(requestId);
+    encodedLength += REQUEST_ID_ENCODE_LENGTH;
+  }
+
+  public SendShuffleDataRequest(long requestId, String appId, int shuffleId, long requireId) {
+    super(requestId);
+    this.appId = appId;
+    this.shuffleId = shuffleId;
+    this.requireId = requireId;
+    this.stageAttemptNumber = 0;
+  }
 
   public SendShuffleDataRequest(
       long requestId,
@@ -58,7 +78,7 @@ public class SendShuffleDataRequest extends RequestMessage {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.requireId = requireId;
-    this.partitionToBlocks = partitionToBlocks;
+    this.partitionToBlocksInClient = partitionToBlocks;
     this.timestamp = timestamp;
     this.stageAttemptNumber = stageAttemptNumber;
   }
@@ -76,7 +96,7 @@ public class SendShuffleDataRequest extends RequestMessage {
             + Integer.BYTES
             + Long.BYTES
             + Integer.BYTES;
-    for (Map.Entry<Integer, List<ShuffleBlockInfo>> entry : partitionToBlocks.entrySet()) {
+    for (Map.Entry<Integer, List<ShuffleBlockInfo>> entry : partitionToBlocksInClient.entrySet()) {
       encodeLength += 2 * Integer.BYTES;
       for (ShuffleBlockInfo sbi : entry.getValue()) {
         encodeLength += Encoders.encodeLengthOfShuffleBlockInfo(sbi);
@@ -95,15 +115,46 @@ public class SendShuffleDataRequest extends RequestMessage {
     buf.writeLong(timestamp);
   }
 
-  private static Map<Integer, List<ShuffleBlockInfo>> decodePartitionData(ByteBuf byteBuf) {
-    Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = Maps.newHashMap();
+  public void decodeShuffleData(ByteBuf byteBuf) {
+    this.appId = ByteBufUtils.readLengthAndString(byteBuf);
+    encodedLength += ByteBufUtils.encodedLength(appId);
+    this.shuffleId = byteBuf.readInt();
+    encodedLength += Integer.BYTES;
+    encodedLength += Integer.BYTES; // stageAttemptNumber not in use, keep same with encodedLength.
+    this.requireId = byteBuf.readLong();
+    encodedLength += Long.BYTES;
+    this.partitionToBlocksInServer = decodePartitionData(byteBuf);
+    this.timestamp = byteBuf.readLong();
+    encodedLength += Long.BYTES;
+  }
+
+  public int getEncodedLength() {
+    return encodedLength;
+  }
+
+  private Map<Integer, List<ShufflePartitionedBlock>> decodePartitionData(ByteBuf byteBuf) {
+    Map<Integer, List<ShufflePartitionedBlock>> partitionToBlocks = Maps.newHashMap();
     int lengthOfPartitionData = byteBuf.readInt();
     for (int i = 0; i < lengthOfPartitionData; i++) {
       int partitionId = byteBuf.readInt();
       int lengthOfShuffleBlocks = byteBuf.readInt();
-      List<ShuffleBlockInfo> shuffleBlockInfoList = Lists.newArrayList();
+      encodedLength += 2 * Integer.BYTES;
+      List<ShufflePartitionedBlock> shuffleBlockInfoList = Lists.newArrayList();
       for (int j = 0; j < lengthOfShuffleBlocks; j++) {
-        shuffleBlockInfoList.add(Decoders.decodeShuffleBlockInfo(byteBuf));
+        try {
+          Pair<Integer, ShufflePartitionedBlock> pair = Decoders.decodeShuffleBlockInfo(byteBuf);
+          encodedLength += pair.getLeft();
+          shuffleBlockInfoList.add(pair.getRight());
+        } catch (Throwable t) {
+          shuffleBlockInfoList.forEach(sbi -> sbi.getData().release());
+          if (!partitionToBlocks.isEmpty()) {
+            partitionToBlocks.forEach(
+                (integer, shuffleBlockInfos) -> {
+                  shuffleBlockInfos.forEach(sbi -> sbi.getData().release());
+                });
+          }
+          throw t;
+        }
       }
       partitionToBlocks.put(partitionId, shuffleBlockInfoList);
     }
@@ -112,18 +163,14 @@ public class SendShuffleDataRequest extends RequestMessage {
 
   public static SendShuffleDataRequest decode(ByteBuf byteBuf) {
     long requestId = byteBuf.readLong();
-    String appId = ByteBufUtils.readLengthAndString(byteBuf);
-    int shuffleId = byteBuf.readInt();
-    long requireId = byteBuf.readLong();
-    Map<Integer, List<ShuffleBlockInfo>> partitionToBlocks = decodePartitionData(byteBuf);
-    long timestamp = byteBuf.readLong();
-    return new SendShuffleDataRequest(
-        requestId, appId, shuffleId, requireId, partitionToBlocks, timestamp);
+    SendShuffleDataRequest req = new SendShuffleDataRequest(requestId);
+    req.decodeShuffleData(byteBuf);
+    return req;
   }
 
   private void encodePartitionData(ByteBuf buf) {
-    buf.writeInt(partitionToBlocks.size());
-    for (Map.Entry<Integer, List<ShuffleBlockInfo>> entry : partitionToBlocks.entrySet()) {
+    buf.writeInt(partitionToBlocksInClient.size());
+    for (Map.Entry<Integer, List<ShuffleBlockInfo>> entry : partitionToBlocksInClient.entrySet()) {
       buf.writeInt(entry.getKey());
       buf.writeInt(entry.getValue().size());
       for (ShuffleBlockInfo sbi : entry.getValue()) {
@@ -148,8 +195,12 @@ public class SendShuffleDataRequest extends RequestMessage {
     this.requireId = requireId;
   }
 
-  public Map<Integer, List<ShuffleBlockInfo>> getPartitionToBlocks() {
-    return partitionToBlocks;
+  public Map<Integer, List<ShufflePartitionedBlock>> getPartitionToBlocks() {
+    return partitionToBlocksInServer;
+  }
+
+  public Map<Integer, List<ShuffleBlockInfo>> getPartitionToBlocksClient() {
+    return partitionToBlocksInClient;
   }
 
   public long getTimestamp() {

@@ -22,25 +22,22 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
 
 public class NettyProtocolTestUtils {
 
   private static boolean compareShuffleBlockInfo(
-      ShuffleBlockInfo blockInfo1, ShuffleBlockInfo blockInfo2) {
-    return blockInfo1.getPartitionId() == blockInfo2.getPartitionId()
-        && blockInfo1.getBlockId() == blockInfo2.getBlockId()
-        && blockInfo1.getLength() == blockInfo2.getLength()
-        && blockInfo1.getShuffleId() == blockInfo2.getShuffleId()
+      ShuffleBlockInfo blockInfo1, ShufflePartitionedBlock blockInfo2) {
+    return blockInfo1.getBlockId() == blockInfo2.getBlockId()
+        && blockInfo1.getLength() == blockInfo2.getDataLength()
         && blockInfo1.getCrc() == blockInfo2.getCrc()
         && blockInfo1.getTaskAttemptId() == blockInfo2.getTaskAttemptId()
         && blockInfo1.getUncompressLength() == blockInfo2.getUncompressLength()
-        && blockInfo1.getFreeMemory() == blockInfo2.getFreeMemory()
-        && blockInfo1.getData().equals(blockInfo2.getData())
-        && blockInfo1.getShuffleServerInfos().equals(blockInfo2.getShuffleServerInfos());
+        && blockInfo1.getData().equals(blockInfo2.getData());
   }
 
   private static boolean compareBlockList(
-      List<ShuffleBlockInfo> list1, List<ShuffleBlockInfo> list2) {
+      List<ShuffleBlockInfo> list1, List<ShufflePartitionedBlock> list2) {
     if (list1 == null || list2 == null || list1.size() != list2.size()) {
       return false;
     }
@@ -53,7 +50,7 @@ public class NettyProtocolTestUtils {
   }
 
   private static boolean comparePartitionToBlockList(
-      Map<Integer, List<ShuffleBlockInfo>> m1, Map<Integer, List<ShuffleBlockInfo>> m2) {
+      Map<Integer, List<ShuffleBlockInfo>> m1, Map<Integer, List<ShufflePartitionedBlock>> m2) {
     if (m1 == null || m2 == null || m1.size() != m2.size()) {
       return false;
     }
@@ -84,6 +81,7 @@ public class NettyProtocolTestUtils {
     if (!isEqual) {
       return false;
     }
-    return comparePartitionToBlockList(req1.getPartitionToBlocks(), req2.getPartitionToBlocks());
+    return comparePartitionToBlockList(
+        req1.getPartitionToBlocksClient(), req2.getPartitionToBlocks());
   }
 }

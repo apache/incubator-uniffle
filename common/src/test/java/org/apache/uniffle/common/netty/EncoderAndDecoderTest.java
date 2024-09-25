@@ -122,7 +122,7 @@ public class EncoderAndDecoderTest {
     Thread.sleep(200);
     channelRef.get().writeAndFlush(DATA_REQUEST);
     channelRef.get().closeFuture().await(3L, TimeUnit.SECONDS);
-    DATA_REQUEST.getPartitionToBlocks().values().stream()
+    DATA_REQUEST.getPartitionToBlocksClient().values().stream()
         .flatMap(Collection::stream)
         .forEach(shuffleBlockInfo -> shuffleBlockInfo.getData().release());
   }

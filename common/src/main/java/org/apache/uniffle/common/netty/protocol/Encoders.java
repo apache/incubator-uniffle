@@ -59,14 +59,22 @@ public class Encoders {
         + 2 * Integer.BYTES;
   }
 
+  public static int encodeLengthShuffleBlockInfoCommon() {
+    return 4 * Long.BYTES + 4 * Integer.BYTES + Integer.BYTES + Integer.BYTES;
+  }
+
   public static int encodeLengthOfShuffleBlockInfo(ShuffleBlockInfo shuffleBlockInfo) {
-    int encodeLength =
-        4 * Long.BYTES
-            + 4 * Integer.BYTES
-            + Integer.BYTES
-            + shuffleBlockInfo.getLength()
-            + Integer.BYTES;
+    int encodeLength = encodeLengthShuffleBlockInfoCommon();
+    encodeLength += shuffleBlockInfo.getLength();
     for (ShuffleServerInfo shuffleServerInfo : shuffleBlockInfo.getShuffleServerInfos()) {
+      encodeLength += encodeLengthOfShuffleServerInfo(shuffleServerInfo);
+    }
+    return encodeLength;
+  }
+
+  public static int encodeLengthOfShuffleServerInfos(List<ShuffleServerInfo> shuffleServerInfos) {
+    int encodeLength = 0;
+    for (ShuffleServerInfo shuffleServerInfo : shuffleServerInfos) {
       encodeLength += encodeLengthOfShuffleServerInfo(shuffleServerInfo);
     }
     return encodeLength;

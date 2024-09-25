@@ -30,6 +30,7 @@ import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -102,18 +103,18 @@ public class NettyProtocolTest {
     ByteBuf byteBuf = Unpooled.buffer(sendShuffleDataRequest.encodedLength());
     sendShuffleDataRequest.encode(byteBuf);
     assertEquals(byteBuf.readableBytes(), encodeLength);
-    SendShuffleDataRequest sendShuffleDataRequest1 = sendShuffleDataRequest.decode(byteBuf);
+    SendShuffleDataRequest sendShuffleDataRequestInServer = sendShuffleDataRequest.decode(byteBuf);
     assertTrue(
         NettyProtocolTestUtils.compareSendShuffleDataRequest(
-            sendShuffleDataRequest, sendShuffleDataRequest1));
-    assertEquals(encodeLength, sendShuffleDataRequest1.encodedLength());
+            sendShuffleDataRequest, sendShuffleDataRequestInServer));
+    assertEquals(encodeLength, sendShuffleDataRequestInServer.getEncodedLength());
     byteBuf.release();
-    for (ShuffleBlockInfo shuffleBlockInfo :
-        sendShuffleDataRequest1.getPartitionToBlocks().get(1)) {
+    for (ShufflePartitionedBlock shuffleBlockInfo :
+        sendShuffleDataRequestInServer.getPartitionToBlocks().get(1)) {
       shuffleBlockInfo.getData().release();
     }
-    for (ShuffleBlockInfo shuffleBlockInfo :
-        sendShuffleDataRequest1.getPartitionToBlocks().get(2)) {
+    for (ShufflePartitionedBlock shuffleBlockInfo :
+        sendShuffleDataRequestInServer.getPartitionToBlocks().get(2)) {
       shuffleBlockInfo.getData().release();
     }
     assertEquals(0, byteBuf.refCnt());

@@ -23,9 +23,10 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.netty.buffer.ByteBuf;
+import org.apache.commons.lang3.tuple.Pair;
 
 import org.apache.uniffle.common.BufferSegment;
-import org.apache.uniffle.common.ShuffleBlockInfo;
+import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.NettyUtils;
@@ -39,13 +40,15 @@ public class Decoders {
     return new ShuffleServerInfo(id, host, grpcPort, nettyPort);
   }
 
-  public static ShuffleBlockInfo decodeShuffleBlockInfo(ByteBuf byteBuf) {
-    int partId = byteBuf.readInt();
-    long blockId = byteBuf.readLong();
-    int length = byteBuf.readInt();
-    int shuffleId = byteBuf.readInt();
-    long crc = byteBuf.readLong();
-    long taskAttemptId = byteBuf.readLong();
+  public static Pair<Integer, ShufflePartitionedBlock> decodeShuffleBlockInfo(ByteBuf byteBuf) {
+    // partId Int
+    byteBuf.skipBytes(4);
+    final long blockId = byteBuf.readLong();
+    final int length = byteBuf.readInt();
+    // shuffleId Int
+    byteBuf.skipBytes(4);
+    final long crc = byteBuf.readLong();
+    final long taskAttemptId = byteBuf.readLong();
     int dataLength = byteBuf.readInt();
     ByteBuf data = NettyUtils.getSharedUnpooledByteBufAllocator(true).directBuffer(dataLength);
     data.writeBytes(byteBuf, dataLength);
@@ -54,19 +57,18 @@ public class Decoders {
     for (int k = 0; k < lengthOfShuffleServers; k++) {
       serverInfos.add(decodeShuffleServerInfo(byteBuf));
     }
-    int uncompressLength = byteBuf.readInt();
-    long freeMemory = byteBuf.readLong();
-    return new ShuffleBlockInfo(
-        shuffleId,
-        partId,
-        blockId,
-        length,
-        crc,
-        data,
-        serverInfos,
-        uncompressLength,
-        freeMemory,
-        taskAttemptId);
+    final int uncompressLength = byteBuf.readInt();
+    // freeMemory Long
+    byteBuf.skipBytes(8);
+
+    int shuffleBlockInfoLength =
+        Encoders.encodeLengthShuffleBlockInfoCommon()
+            + length
+            + Encoders.encodeLengthOfShuffleServerInfos(serverInfos);
+
+    return Pair.of(
+        shuffleBlockInfoLength,
+        new ShufflePartitionedBlock(length, uncompressLength, crc, blockId, taskAttemptId, data));
   }
 
   public static Map<Integer, List<Long>> decodePartitionToBlockIds(ByteBuf byteBuf) {

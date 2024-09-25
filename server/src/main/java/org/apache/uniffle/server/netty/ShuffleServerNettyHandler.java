@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ReconfigurableRegistry;
-import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
@@ -150,8 +149,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       PreAllocatedBufferInfo info =
           shuffleTaskManager.getAndRemovePreAllocatedBuffer(requireBufferId);
       int requireSize = info == null ? 0 : info.getRequireSize();
-      int requireBlocksSize =
-          requireSize - req.encodedLength() < 0 ? 0 : requireSize - req.encodedLength();
+      int requireBlocksSize = Math.max(requireSize - req.getEncodedLength(), 0);
 
       boolean isPreAllocated = info != null;
 
@@ -754,29 +752,24 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
   private List<ShufflePartitionedData> toPartitionedDataList(SendShuffleDataRequest req) {
     List<ShufflePartitionedData> ret = Lists.newArrayList();
 
-    for (Map.Entry<Integer, List<ShuffleBlockInfo>> entry : req.getPartitionToBlocks().entrySet()) {
+    for (Map.Entry<Integer, List<ShufflePartitionedBlock>> entry :
+        req.getPartitionToBlocks().entrySet()) {
       ret.add(toPartitionedData(entry.getKey(), entry.getValue()));
     }
     return ret;
   }
 
-  private ShufflePartitionedData toPartitionedData(int partitionId, List<ShuffleBlockInfo> blocks) {
-    if (blocks == null || blocks.size() == 0) {
+  private ShufflePartitionedData toPartitionedData(
+      int partitionId, List<ShufflePartitionedBlock> blocks) {
+    if (blocks == null || blocks.isEmpty()) {
       return new ShufflePartitionedData(partitionId, 0L, 0L, new ShufflePartitionedBlock[] {});
     }
     ShufflePartitionedBlock[] ret = new ShufflePartitionedBlock[blocks.size()];
     long encodedLength = 0L;
     long dataLength = 0L;
     int i = 0;
-    for (ShuffleBlockInfo block : blocks) {
-      ret[i] =
-          new ShufflePartitionedBlock(
-              block.getLength(),
-              block.getUncompressLength(),
-              block.getCrc(),
-              block.getBlockId(),
-              block.getTaskAttemptId(),
-              block.getData());
+    for (ShufflePartitionedBlock block : blocks) {
+      ret[i] = block;
       encodedLength += ret[i].getEncodedLength();
       dataLength += ret[i].getDataLength();
       i++;
@@ -912,11 +905,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       auditLogger = AUDIT_LOGGER;
     }
     ServerRpcAuditContext auditContext = new ServerRpcAuditContext(auditLogger);
+    auditContext.withCreationTimeNs(System.nanoTime());
     if (auditLogger != null) {
-      auditContext
-          .withCommand(command)
-          .withFrom(transportClient.getSocketAddress().toString())
-          .withCreationTimeNs(System.nanoTime());
+      auditContext.withCommand(command).withFrom(transportClient.getSocketAddress().toString());
     }
     return auditContext;
   }
