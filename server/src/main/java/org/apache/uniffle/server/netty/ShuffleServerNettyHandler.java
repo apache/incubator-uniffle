@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ReconfigurableRegistry;
-import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
@@ -61,6 +60,7 @@ import org.apache.uniffle.common.netty.protocol.GetSortedShuffleDataResponse;
 import org.apache.uniffle.common.netty.protocol.RequestMessage;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.netty.protocol.SendShuffleDataRequest;
+import org.apache.uniffle.common.netty.protocol.SendShuffleDataRequestV1;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServer;
@@ -120,8 +120,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
   @Override
   public void receive(TransportClient client, RequestMessage msg) {
     shuffleServer.getNettyMetrics().incCounter(msg.getClass().getName());
-    if (msg instanceof SendShuffleDataRequest) {
-      handleSendShuffleDataRequest(client, (SendShuffleDataRequest) msg);
+    if (msg instanceof SendShuffleDataRequestV1) {
+      handleSendShuffleDataRequest(client, (SendShuffleDataRequestV1) msg);
     } else if (msg instanceof GetLocalShuffleDataRequest) {
       handleGetLocalShuffleData(client, (GetLocalShuffleDataRequest) msg);
     } else if (msg instanceof GetLocalShuffleIndexRequest) {
@@ -141,7 +141,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     LOG.error("exception caught {}", client.getSocketAddress(), cause);
   }
 
-  public void handleSendShuffleDataRequest(TransportClient client, SendShuffleDataRequest req) {
+  public void handleSendShuffleDataRequest(TransportClient client, SendShuffleDataRequestV1 req) {
     try (ServerRpcAuditContext auditContext = createAuditContext("sendShuffleData", client)) {
       RpcResponse rpcResponse;
       String appId = req.getAppId();
@@ -156,8 +156,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       PreAllocatedBufferInfo info =
           shuffleTaskManager.getAndRemovePreAllocatedBuffer(requireBufferId);
       int requireSize = info == null ? 0 : info.getRequireSize();
-      int requireBlocksSize =
-          requireSize - req.encodedLength() < 0 ? 0 : requireSize - req.encodedLength();
+      int requireBlocksSize = Math.max(requireSize - req.getDecodedLength(), 0);
 
       boolean isPreAllocated = info != null;
 
@@ -280,7 +279,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           return;
         }
         final long start = System.currentTimeMillis();
-        shuffleBufferManager.releaseMemory(req.encodedLength(), false, true);
+        shuffleBufferManager.releaseMemory(req.getDecodedLength(), false, true);
         List<ShufflePartitionedData> shufflePartitionedDataList = toPartitionedDataList(req);
         long alreadyReleasedSize = 0;
         boolean hasFailureOccurred = false;
@@ -384,7 +383,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
   }
 
   private static void releaseNettyBufferAndMetrics(
-      SendShuffleDataRequest req,
+      SendShuffleDataRequestV1 req,
       String appId,
       int shuffleId,
       long requireBufferId,
@@ -863,32 +862,27 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     }
   }
 
-  private List<ShufflePartitionedData> toPartitionedDataList(SendShuffleDataRequest req) {
+  private List<ShufflePartitionedData> toPartitionedDataList(SendShuffleDataRequestV1 req) {
     List<ShufflePartitionedData> ret = Lists.newArrayList();
 
-    for (Map.Entry<Integer, List<ShuffleBlockInfo>> entry : req.getPartitionToBlocks().entrySet()) {
+    for (Map.Entry<Integer, List<ShufflePartitionedBlock>> entry :
+        req.getPartitionToBlocks().entrySet()) {
       ret.add(toPartitionedData(entry.getKey(), entry.getValue()));
     }
     return ret;
   }
 
-  private ShufflePartitionedData toPartitionedData(int partitionId, List<ShuffleBlockInfo> blocks) {
-    if (blocks == null || blocks.size() == 0) {
+  private ShufflePartitionedData toPartitionedData(
+      int partitionId, List<ShufflePartitionedBlock> blocks) {
+    if (blocks == null || blocks.isEmpty()) {
       return new ShufflePartitionedData(partitionId, 0L, 0L, new ShufflePartitionedBlock[] {});
     }
     ShufflePartitionedBlock[] ret = new ShufflePartitionedBlock[blocks.size()];
     long encodedLength = 0L;
     long dataLength = 0L;
     int i = 0;
-    for (ShuffleBlockInfo block : blocks) {
-      ret[i] =
-          new ShufflePartitionedBlock(
-              block.getLength(),
-              block.getUncompressLength(),
-              block.getCrc(),
-              block.getBlockId(),
-              block.getTaskAttemptId(),
-              block.getData());
+    for (ShufflePartitionedBlock block : blocks) {
+      ret[i] = block;
       encodedLength += ret[i].getEncodedLength();
       dataLength += ret[i].getDataLength();
       i++;
