@@ -41,6 +41,9 @@ public final class MessageEncoder extends MessageToMessageEncoder<Message> {
   private static final Logger logger = LoggerFactory.getLogger(MessageEncoder.class);
 
   public static final MessageEncoder INSTANCE = new MessageEncoder();
+  public static final int MESSAGE_HEADER_SIZE =
+      // Inner message encodedLength + TYPE_ENCODED_LENGTH + bodyLength
+      Integer.BYTES + Message.TYPE_ENCODED_LENGTH + Integer.BYTES;
 
   private MessageEncoder() {}
 
@@ -79,7 +82,7 @@ public final class MessageEncoder extends MessageToMessageEncoder<Message> {
 
     Message.Type msgType = in.type();
     // message size, message type size, body size, message encoded length
-    int headerLength = Integer.BYTES + msgType.encodedLength() + Integer.BYTES + in.encodedLength();
+    int headerLength = MESSAGE_HEADER_SIZE + in.encodedLength();
     ByteBuf header = ctx.alloc().heapBuffer(headerLength);
     header.writeInt(in.encodedLength());
     msgType.encode(header);

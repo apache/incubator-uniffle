@@ -51,10 +51,17 @@ public class ShufflePartitionedBlock {
     this.data = data;
   }
 
-  // calculate the data size for this block in memory including metadata which are
-  // blockId, crc, taskAttemptId, length, uncompressLength
+  /**
+   * Calculate the data size for this block in memory including metadata which are partitionId,
+   * blockId, crc, taskAttemptId, uncompressLength and data length. This should be consistent with
+   * {@link ShuffleBlockInfo#getSize()}.
+   *
+   * @return the encoded size of this object in memory
+   */
   public long getSize() {
-    return length + 3 * 8 + 2 * 4;
+    // FIXME(maobaolong): The size is calculated based on the Protobuf message ShuffleBlock.
+    //  If Netty's custom serialization is used, the calculation logic here needs to be modified.
+    return length + 3 * Long.BYTES + 2 * Integer.BYTES;
   }
 
   @Override
