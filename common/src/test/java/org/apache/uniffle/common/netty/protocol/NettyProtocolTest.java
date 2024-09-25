@@ -102,7 +102,7 @@ public class NettyProtocolTest {
     ByteBuf byteBuf = Unpooled.buffer(sendShuffleDataRequest.encodedLength());
     sendShuffleDataRequest.encode(byteBuf);
     assertEquals(byteBuf.readableBytes(), encodeLength);
-    SendShuffleDataRequest sendShuffleDataRequest1 = sendShuffleDataRequest.decode(byteBuf);
+    SendShuffleDataRequest sendShuffleDataRequest1 = sendShuffleDataRequest.decode(byteBuf, true);
     assertTrue(
         NettyProtocolTestUtils.compareSendShuffleDataRequest(
             sendShuffleDataRequest, sendShuffleDataRequest1));

@@ -39,7 +39,7 @@ public class Decoders {
     return new ShuffleServerInfo(id, host, grpcPort, nettyPort);
   }
 
-  public static ShuffleBlockInfo decodeShuffleBlockInfo(ByteBuf byteBuf) {
+  public static ShuffleBlockInfo decodeShuffleBlockInfo(ByteBuf byteBuf, boolean pooled) {
     int partId = byteBuf.readInt();
     long blockId = byteBuf.readLong();
     int length = byteBuf.readInt();
@@ -47,7 +47,10 @@ public class Decoders {
     long crc = byteBuf.readLong();
     long taskAttemptId = byteBuf.readLong();
     int dataLength = byteBuf.readInt();
-    ByteBuf data = NettyUtils.getSharedUnpooledByteBufAllocator(true).directBuffer(dataLength);
+    ByteBuf data =
+        pooled
+            ? NettyUtils.getSharedPooledByteBufAllocator(true, false, 0).directBuffer(dataLength)
+            : NettyUtils.getSharedUnpooledByteBufAllocator(true).directBuffer(dataLength);
     data.writeBytes(byteBuf, dataLength);
     int lengthOfShuffleServers = byteBuf.readInt();
     List<ShuffleServerInfo> serverInfos = Lists.newArrayList();

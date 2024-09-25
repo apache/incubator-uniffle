@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.common.netty.protocol;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 
 import org.apache.uniffle.common.exception.RssException;
@@ -140,12 +141,17 @@ public abstract class Message implements Encodable {
     }
   }
 
+  @VisibleForTesting
   public static Message decode(Type msgType, ByteBuf in) {
+    return decode(msgType, in, true);
+  }
+
+  public static Message decode(Type msgType, ByteBuf in, boolean pooled) {
     switch (msgType) {
       case RPC_RESPONSE:
         return RpcResponse.decode(in, false);
       case SEND_SHUFFLE_DATA_REQUEST:
-        return SendShuffleDataRequest.decode(in);
+        return SendShuffleDataRequest.decode(in, pooled);
       case GET_LOCAL_SHUFFLE_DATA_REQUEST:
         return GetLocalShuffleDataRequest.decode(in);
       case GET_LOCAL_SHUFFLE_DATA_RESPONSE:

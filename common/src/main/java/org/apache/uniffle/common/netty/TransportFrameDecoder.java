@@ -59,6 +59,16 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
   private long totalSize = 0;
   private long nextFrameSize = UNKNOWN_FRAME_SIZE;
 
+  private final boolean pooled;
+
+  public TransportFrameDecoder() {
+    this(true);
+  }
+
+  public TransportFrameDecoder(boolean pooled) {
+    this.pooled = pooled;
+  }
+
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object data) {
     ByteBuf in = (ByteBuf) data;
@@ -72,7 +82,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
       }
       Message msg = null;
       try {
-        msg = Message.decode(curType, frame);
+        msg = Message.decode(curType, frame, pooled);
       } finally {
         if (shouldRelease(msg)) {
           frame.release();

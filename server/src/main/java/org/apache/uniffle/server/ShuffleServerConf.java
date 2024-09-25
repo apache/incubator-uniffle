@@ -600,6 +600,13 @@ public class ShuffleServerConf extends RssBaseConf {
                   + "network_bandwidth = 10Gbps, buffer size should be ~ 1.25MB."
                   + "Default is 0, OS will dynamically adjust the buf size.");
 
+  public static final ConfigOption<Boolean> NETTY_SERVER_POOLED_ALLOCATOR_ENABLED =
+      ConfigOptions.key("rss.server.netty.pooled.allocator.enabled")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription(
+              "If true, we will use PooledByteBufAllocator to allocate byte buffers within Netty, otherwise we'll use UnpooledByteBufAllocator.");
+
   public static final ConfigOption<Integer> TOP_N_APP_SHUFFLE_DATA_SIZE_NUMBER =
       ConfigOptions.key("rss.server.topN.appShuffleDataSize.number")
           .intType()

@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.StreamSupport;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -130,7 +131,8 @@ public class StreamServer implements ServerInterface {
       int backlogSize,
       int timeoutMillis,
       int sendBuf,
-      int receiveBuf) {
+      int receiveBuf,
+      boolean pooled) {
     ServerBootstrap serverBootstrap = new ServerBootstrap().group(bossGroup, workerGroup);
     if (bossGroup instanceof EpollEventLoopGroup) {
       serverBootstrap.channel(EpollServerSocketChannel.class);
@@ -141,6 +143,10 @@ public class StreamServer implements ServerInterface {
     ShuffleServerNettyHandler serverNettyHandler = new ShuffleServerNettyHandler(shuffleServer);
     TransportContext transportContext =
         new TransportContext(new TransportConf(shuffleServerConf), serverNettyHandler, true);
+    ByteBufAllocator allocator =
+        pooled
+            ? NettyUtils.getSharedPooledByteBufAllocator(true, false, 0)
+            : NettyUtils.getSharedUnpooledByteBufAllocator(true);
     serverBootstrap
         .childHandler(
             new ChannelInitializer<SocketChannel>() {
@@ -155,9 +161,9 @@ public class StreamServer implements ServerInterface {
             })
         .option(ChannelOption.SO_BACKLOG, backlogSize)
         .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMillis)
-        .option(ChannelOption.ALLOCATOR, NettyUtils.getSharedUnpooledByteBufAllocator(true))
+        .option(ChannelOption.ALLOCATOR, allocator)
         .childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMillis)
-        .childOption(ChannelOption.ALLOCATOR, NettyUtils.getSharedUnpooledByteBufAllocator(true))
+        .childOption(ChannelOption.ALLOCATOR, allocator)
         .childOption(ChannelOption.TCP_NODELAY, true)
         .childOption(ChannelOption.SO_KEEPALIVE, true);
 
@@ -193,7 +199,8 @@ public class StreamServer implements ServerInterface {
             shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_BACKLOG),
             shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_CONNECT_TIMEOUT),
             shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_SEND_BUF),
-            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_RECEIVE_BUF));
+            shuffleServerConf.getInteger(ShuffleServerConf.NETTY_SERVER_RECEIVE_BUF),
+            shuffleServerConf.getBoolean(ShuffleServerConf.NETTY_SERVER_POOLED_ALLOCATOR_ENABLED));
 
     // Bind the ports and save the results so that the channels can be closed later.
     // If the second bind fails, the first one gets cleaned up in the shutdown.

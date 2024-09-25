@@ -115,7 +115,11 @@ public class TransportClientFactory implements Closeable {
 
   public TransportClient createClient(String remoteHost, int remotePort, int partitionId)
       throws IOException, InterruptedException {
-    return createClient(remoteHost, remotePort, partitionId, new TransportFrameDecoder());
+    return createClient(
+        remoteHost,
+        remotePort,
+        partitionId,
+        new TransportFrameDecoder(conf.isPooledAllocatorEnabled()));
   }
 
   public TransportClient createClient(
