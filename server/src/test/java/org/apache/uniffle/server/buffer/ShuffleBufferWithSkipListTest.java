@@ -197,6 +197,19 @@ public class ShuffleBufferWithSkipListTest extends BufferTestBase {
     assertEquals(3, result.getBufferSegments().size());
   }
 
+  @Test
+  public void appendRepeatBlockTest() {
+    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithSkipList();
+    ShufflePartitionedData block = createData(10);
+    shuffleBuffer.append(block);
+    // ShufflePartitionedBlock has constant 32 bytes overhead
+    assertEquals(42, shuffleBuffer.getSize());
+
+    shuffleBuffer.append(block);
+    // The repeat block should not append to shuffleBuffer
+    assertEquals(42, shuffleBuffer.getSize());
+  }
+
   @Override
   protected AtomicInteger getAtomSequenceNo() {
     return atomSequenceNo;

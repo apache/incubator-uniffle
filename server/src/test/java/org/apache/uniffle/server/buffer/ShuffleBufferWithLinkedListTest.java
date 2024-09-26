@@ -583,6 +583,19 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
     assertArrayEquals(expectedData, sdr.getData());
   }
 
+  @Test
+  public void appendRepeatBlockTest() {
+    ShuffleBuffer shuffleBuffer = new ShuffleBufferWithLinkedList();
+    ShufflePartitionedData block = createData(10);
+    shuffleBuffer.append(block);
+    // ShufflePartitionedBlock has constant 32 bytes overhead
+    assertEquals(42, shuffleBuffer.getSize());
+
+    shuffleBuffer.append(block);
+    // The repeat block should not append to shuffleBuffer
+    assertEquals(42, shuffleBuffer.getSize());
+  }
+
   private byte[] getExpectedData(ShufflePartitionedData... spds) {
     int size = 0;
     for (ShufflePartitionedData spd : spds) {
