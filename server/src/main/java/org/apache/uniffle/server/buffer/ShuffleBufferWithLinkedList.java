@@ -55,8 +55,13 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
 
     synchronized (this) {
       for (ShufflePartitionedBlock block : data.getBlockList()) {
-        blocks.add(block);
-        size += block.getSize();
+        // If sendShuffleData retried, we may receive duplicate block. The duplicate
+        // block would gc without release. Here we must release the duplicated block.
+        if (blocks.add(block)) {
+          size += block.getSize();
+        } else {
+          block.getData().release();
+        }
       }
       this.size += size;
     }
