@@ -83,7 +83,8 @@ public class MultiReplicaClientReadHandler extends AbstractClientReadHandler {
                 readHandlerIndex + 1,
                 handlers.size(),
                 shuffleServerInfos.get(readHandlerIndex).getId(),
-                shuffleServerInfos.get(readHandlerIndex + 1).getId());
+                shuffleServerInfos.get(readHandlerIndex + 1).getId(),
+                e);
           } else {
             LOG.warn(
                 "Finished read from {}/{} [{}], but haven't finished read all the blocks.",
