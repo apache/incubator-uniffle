@@ -159,6 +159,10 @@ public class ShuffleServerMetrics {
 
   public static final String REQUIRE_BUFFER_COUNT = "require_buffer_count";
 
+  public static final String BLOCK_COUNT_IN_BUFFER_POOL = "block_count_in_buffer_pool";
+  public static final String BUFFER_COUNT_IN_BUFFER_POOL = "buffer_count_in_buffer_pool";
+  public static final String SHUFFLE_COUNT_IN_BUFFER_POOL = "shuffle_count_in_buffer_pool";
+
   public static Counter.Child counterTotalAppNum;
   public static Counter.Child counterTotalAppWithHugePartitionNum;
   public static Counter.Child counterTotalPartitionNum;
@@ -517,5 +521,13 @@ public class ShuffleServerMetrics {
 
   public static <T extends Number> void addLabeledGauge(String name, Supplier<T> supplier) {
     metricsManager.addLabeledGauge(name, supplier);
+  }
+
+  public static <T extends Number> void addLabeledCacheGauge(
+      String name, Supplier<T> supplier, long updateInterval) {
+    if (!isRegister) {
+      return;
+    }
+    metricsManager.addLabeledCacheGauge(name, supplier, updateInterval);
   }
 }
