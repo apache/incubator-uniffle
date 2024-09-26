@@ -788,17 +788,21 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
           Set<ShuffleServerInfo> updatedReassignServers =
               internalHandle.updateAssignment(partitionId, serverId, replacements);
 
-          reassignResult
-              .computeIfAbsent(serverId, x -> new HashMap<>())
-              .computeIfAbsent(partitionId, x -> new HashSet<>())
-              .addAll(
-                  updatedReassignServers.stream().map(x -> x.getId()).collect(Collectors.toSet()));
+          if (!updatedReassignServers.isEmpty()) {
+            reassignResult
+                .computeIfAbsent(serverId, x -> new HashMap<>())
+                .computeIfAbsent(partitionId, x -> new HashSet<>())
+                .addAll(
+                    updatedReassignServers.stream()
+                        .map(x -> x.getId())
+                        .collect(Collectors.toSet()));
 
-          if (serverHasReplaced) {
-            for (ShuffleServerInfo serverInfo : updatedReassignServers) {
-              newServerToPartitions
-                  .computeIfAbsent(serverInfo, x -> new ArrayList<>())
-                  .add(new PartitionRange(partitionId, partitionId));
+            if (serverHasReplaced) {
+              for (ShuffleServerInfo serverInfo : updatedReassignServers) {
+                newServerToPartitions
+                    .computeIfAbsent(serverInfo, x -> new ArrayList<>())
+                    .add(new PartitionRange(partitionId, partitionId));
+              }
             }
           }
         }
