@@ -17,8 +17,8 @@
 
 package org.apache.uniffle.server.buffer;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -55,7 +55,7 @@ public interface ShuffleBuffer {
   long getInFlushSize();
 
   /** Only for test */
-  List<ShufflePartitionedBlock> getBlocks();
+  Set<ShufflePartitionedBlock> getBlocks();
 
   int getBlockCount();
 
@@ -64,5 +64,5 @@ public interface ShuffleBuffer {
   void clearInFlushBuffer(long eventId);
 
   @VisibleForTesting
-  Map<Long, List<ShufflePartitionedBlock>> getInFlushBlockMap();
+  Map<Long, Set<ShufflePartitionedBlock>> getInFlushBlockMap();
 }

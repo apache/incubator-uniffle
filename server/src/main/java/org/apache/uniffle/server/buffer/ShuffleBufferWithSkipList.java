@@ -17,11 +17,12 @@
 
 package org.apache.uniffle.server.buffer;
 
-import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Supplier;
@@ -109,8 +110,8 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   }
 
   @Override
-  public List<ShufflePartitionedBlock> getBlocks() {
-    return new LinkedList<>(blocksMap.values());
+  public Set<ShufflePartitionedBlock> getBlocks() {
+    return new LinkedHashSet<>(blocksMap.values());
   }
 
   @Override
@@ -147,9 +148,10 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   }
 
   @Override
-  public Map<Long, List<ShufflePartitionedBlock>> getInFlushBlockMap() {
+  public Map<Long, Set<ShufflePartitionedBlock>> getInFlushBlockMap() {
     return inFlushBlockMap.entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> new ArrayList<>(e.getValue().values())));
+        .collect(
+            Collectors.toMap(Map.Entry::getKey, e -> new LinkedHashSet<>(e.getValue().values())));
   }
 
   @Override

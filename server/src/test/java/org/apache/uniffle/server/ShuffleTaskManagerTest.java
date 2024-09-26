@@ -657,12 +657,12 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     shuffleTaskManager.refreshAppId("clearTest1");
     shuffleTaskManager.refreshAppId("clearTest2");
     assertEquals(2, shuffleTaskManager.getAppIds().size());
-    ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 35);
 
     // keep refresh status of application "clearTest1"
     int retry = 0;
     while (retry < 10) {
       Thread.sleep(1000);
+      ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 35);
       shuffleTaskManager.cacheShuffleData("clearTest1", shuffleId, false, partitionedData0);
       shuffleTaskManager.updateCachedBlockIds(
           "clearTest1", shuffleId, partitionedData0.getBlockList());
@@ -673,7 +673,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     // application "clearTest2" was removed according to rss.server.app.expired.withoutHeartbeat
     assertEquals(Sets.newHashSet("clearTest1"), shuffleTaskManager.getAppIds());
     assertEquals(
-        1, shuffleTaskManager.getCachedBlockIds("clearTest1", shuffleId).getLongCardinality());
+        10, shuffleTaskManager.getCachedBlockIds("clearTest1", shuffleId).getLongCardinality());
 
     // register again
     shuffleTaskManager.registerShuffle(
@@ -1031,12 +1031,11 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     shuffleTaskManager.refreshAppId(appId);
     assertEquals(1, shuffleTaskManager.getAppIds().size());
 
-    ShufflePartitionedData shuffleData = createPartitionedData(1, 1, 48);
-
     // make sure shuffle data flush to disk
     int retry = 0;
     while (retry < 5) {
       Thread.sleep(1000);
+      ShufflePartitionedData shuffleData = createPartitionedData(1, 1, 48);
       shuffleTaskManager.cacheShuffleData(appId, shuffleId, false, shuffleData);
       shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, shuffleData.getBlockList());
       shuffleTaskManager.refreshAppId(appId);
