@@ -34,6 +34,7 @@ import org.apache.uniffle.common.config.RssConf;
 public class ConfOpsResource {
   private static final Logger LOG = LoggerFactory.getLogger(ConfOpsResource.class);
   public static final String SERVLET_CONTEXT_ATTR_CONF = "_servlet_context_attr_conf_";
+  private static final String WARNING_MSG = "WARN: The change will lost after restart.\n";
 
   @Context protected ServletContext servletContext;
 
@@ -51,11 +52,11 @@ public class ConfOpsResource {
       if (conf != null) {
         if (delete) {
           conf.remove(key);
-          return "Removed key: " + key;
+          return WARNING_MSG + "Removed key: " + key;
         } else {
           String oldValue = conf.getString(key, null);
           conf.setString(key, value);
-          return "Set key: " + key + " from '" + oldValue + "' to '" + value + "'";
+          return WARNING_MSG + "Set key: " + key + " from '" + oldValue + "' to '" + value + "'";
         }
       }
     }
