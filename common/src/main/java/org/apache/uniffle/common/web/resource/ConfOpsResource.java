@@ -33,8 +33,8 @@ import org.apache.uniffle.common.config.RssConf;
 @Path("/confOps")
 public class ConfOpsResource {
   private static final Logger LOG = LoggerFactory.getLogger(ConfOpsResource.class);
+  private static final String WARNING_MSG = "temporarily effective until restart";
   public static final String SERVLET_CONTEXT_ATTR_CONF = "_servlet_context_attr_conf_";
-  private static final String WARNING_MSG = "WARN: The change will lost after restart.\n";
 
   @Context protected ServletContext servletContext;
 
@@ -46,20 +46,19 @@ public class ConfOpsResource {
       @FormParam("value") String value,
       @FormParam("delete") @DefaultValue("false") boolean delete) {
     LOG.info("Dynamic updating {} to {}, delete={}", key, value, delete);
-    String response = "do nothing";
     if (Strings.isNotEmpty(key)) {
       RssConf conf = (RssConf) servletContext.getAttribute(SERVLET_CONTEXT_ATTR_CONF);
       if (conf != null) {
         if (delete) {
           conf.remove(key);
-          return WARNING_MSG + "Removed key: " + key;
+          return String.format("Remove(%s) key: %s", WARNING_MSG, key);
         } else {
           String oldValue = conf.getString(key, null);
           conf.setString(key, value);
-          return WARNING_MSG + "Set key: " + key + " from '" + oldValue + "' to '" + value + "'";
+          return String.format("Set(%s) key: %s from %s to %s", WARNING_MSG, key, oldValue, value);
         }
       }
     }
-    return response;
+    return "Nothing changed";
   }
 }
