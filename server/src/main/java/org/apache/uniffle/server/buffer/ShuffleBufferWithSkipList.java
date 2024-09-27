@@ -62,7 +62,8 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
     if (evicted) {
       return BUFFER_EVICTED;
     }
-    long currentSize = 0;
+    long currentEncodedLength = 0;
+    long currentDataLength = 0;
 
     for (ShufflePartitionedBlock block : data.getBlockList()) {
       // If sendShuffleData retried, we may receive duplicate block. The duplicate
@@ -70,14 +71,16 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
       if (!blocksMap.containsKey(block.getBlockId())) {
         blocksMap.put(block.getBlockId(), block);
         blockCount++;
-        currentSize += block.getEncodedLength();
+        currentEncodedLength += block.getEncodedLength();
+        currentDataLength += block.getDataLength();
       } else {
         block.getData().release();
       }
     }
-    this.size += currentSize;
+    this.encodedLength += currentEncodedLength;
+    this.dataLength += currentDataLength;
 
-    return currentSize;
+    return currentEncodedLength;
   }
 
   @Override
@@ -95,18 +98,28 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
     long eventId = ShuffleFlushManager.ATOMIC_EVENT_ID.getAndIncrement();
     final ShuffleDataFlushEvent event =
         new ShuffleDataFlushEvent(
-            eventId, appId, shuffleId, startPartition, endPartition, size, spBlocks, isValid, this);
+            eventId,
+            appId,
+            shuffleId,
+            startPartition,
+            endPartition,
+            encodedLength,
+            dataLength,
+            spBlocks,
+            isValid,
+            this);
     event.addCleanupCallback(
         () -> {
           this.clearInFlushBuffer(event.getEventId());
           spBlocks.forEach(spb -> spb.getData().release());
-          inFlushSize.addAndGet(-event.getSize());
+          inFlushSize.addAndGet(-event.getEncodedLength());
         });
     inFlushBlockMap.put(eventId, blocksMap);
     blocksMap = newConcurrentSkipListMap();
     blockCount = 0;
-    inFlushSize.addAndGet(size);
-    size = 0;
+    inFlushSize.addAndGet(encodedLength);
+    encodedLength = 0;
+    dataLength = 0;
     return event;
   }
 

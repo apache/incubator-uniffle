@@ -275,11 +275,11 @@ public class LocalStorageManager extends SingleStorageManager {
     super.updateWriteMetrics(event, writeTime);
     ShuffleServerMetrics.counterTotalLocalFileWriteDataSize
         .labels(ShuffleServerMetrics.LOCAL_DISK_PATH_LABEL_ALL)
-        .inc(event.getSize());
+        .inc(event.getDataLength());
     if (event.getUnderStorage() != null) {
       ShuffleServerMetrics.counterTotalLocalFileWriteDataSize
           .labels(event.getUnderStorage().getStoragePath())
-          .inc(event.getSize());
+          .inc(event.getDataLength());
     }
   }
 

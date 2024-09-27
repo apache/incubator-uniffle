@@ -177,9 +177,9 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     // validate buffer, no flush happened
     Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
         shuffleBufferManager.getBufferPool();
-    assertEquals(100, bufferPool.get(appId).get(1).get(0).getSize());
-    assertEquals(200, bufferPool.get(appId).get(2).get(0).getSize());
-    assertEquals(100, bufferPool.get(appId).get(3).get(0).getSize());
+    assertEquals(100, bufferPool.get(appId).get(1).get(0).getEncodedLength());
+    assertEquals(200, bufferPool.get(appId).get(2).get(0).getEncodedLength());
+    assertEquals(100, bufferPool.get(appId).get(3).get(0).getEncodedLength());
     // validate get shuffle data
     ShuffleDataResult sdr =
         shuffleBufferManager.getShuffleData(appId, 2, 0, Constants.INVALID_BLOCK_ID, 60);
@@ -300,16 +300,16 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     Map<String, Map<Integer, RangeMap<Integer, ShuffleBuffer>>> bufferPool =
         shuffleBufferManager.getBufferPool();
     ShuffleBuffer buffer = bufferPool.get(appId).get(shuffleId).get(0);
-    assertEquals(48, buffer.getSize());
+    assertEquals(48, buffer.getEncodedLength());
     assertEquals(48, shuffleBufferManager.getUsedMemory());
 
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 16));
-    assertEquals(96, buffer.getSize());
+    assertEquals(96, buffer.getEncodedLength());
     assertEquals(96, shuffleBufferManager.getUsedMemory());
 
     // reach high water lever, flush
     shuffleBufferManager.cacheShuffleData(appId, shuffleId, false, createData(0, 273));
-    assertEquals(0, buffer.getSize());
+    assertEquals(0, buffer.getEncodedLength());
     assertEquals(401, shuffleBufferManager.getUsedMemory());
     assertEquals(401, shuffleBufferManager.getInFlushSize());
     verify(mockShuffleFlushManager, times(1)).addToFlushQueue(any());
@@ -334,9 +334,9 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
     ShuffleBuffer buffer0 = bufferPool.get(appId).get(shuffleId).get(0);
     ShuffleBuffer buffer1 = bufferPool.get(appId).get(shuffleId).get(1);
     ShuffleBuffer buffer2 = bufferPool.get(appId).get(2).get(0);
-    assertEquals(0, buffer0.getSize());
-    assertEquals(0, buffer1.getSize());
-    assertEquals(64, buffer2.getSize());
+    assertEquals(0, buffer0.getEncodedLength());
+    assertEquals(0, buffer1.getEncodedLength());
+    assertEquals(64, buffer2.getEncodedLength());
     assertEquals(528, shuffleBufferManager.getUsedMemory());
     assertEquals(464, shuffleBufferManager.getInFlushSize());
     verify(mockShuffleFlushManager, times(3)).addToFlushQueue(any());

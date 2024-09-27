@@ -82,7 +82,7 @@ public class HadoopStorageManager extends SingleStorageManager {
       return;
     }
     ShuffleServerMetrics.incHadoopStorageWriteDataSize(
-        storage.getStorageHost(), event.getSize(), event.isOwnedByHugePartition());
+        storage.getStorageHost(), event.getDataLength(), event.isOwnedByHugePartition());
   }
 
   @Override

@@ -110,7 +110,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
             "Flush event:{} successfully in {} ms and release {} bytes",
             event,
             System.currentTimeMillis() - start,
-            event.getSize());
+            event.getEncodedLength());
       }
     } catch (Exception e) {
       if (e instanceof EventRetryException) {
@@ -134,7 +134,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
             "Flush event: {} failed in {} ms and release {} bytes. This will make data lost.",
             event,
             System.currentTimeMillis() - start,
-            event.getSize());
+            event.getEncodedLength());
         return;
       }
 
