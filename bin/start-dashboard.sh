@@ -54,11 +54,11 @@ DASHBOARD_BASE_JVM_ARGS=${DASHBOARD_BASE_JVM_ARGS:-" -server \
           -Xms${DASHBOARD_XMX_SIZE} \
           -XX:+PrintCommandLineFlags"}
 
-DEFAULT_GC_ARGS=" -XX:+UseG1GC \
+DEFAULT_GC_ARGS=${DASHBOARD_DEFAULT_GC_ARGS:-" -XX:+UseG1GC \
           -XX:MaxGCPauseMillis=200 \
           -XX:ParallelGCThreads=20 \
           -XX:ConcGCThreads=5 \
-          -XX:InitiatingHeapOccupancyPercent=45"
+          -XX:InitiatingHeapOccupancyPercent=45"}
 
 GC_LOG_ARGS_LEGACY=" -XX:+PrintGC \
           -XX:+PrintAdaptiveSizePolicy \
