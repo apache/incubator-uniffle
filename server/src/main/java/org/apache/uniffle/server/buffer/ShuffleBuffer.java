@@ -50,7 +50,11 @@ public interface ShuffleBuffer {
   ShuffleDataResult getShuffleData(
       long lastBlockId, int readBufferSize, Roaring64NavigableMap expectedTaskIds);
 
+  /** @return the buffer memory size include encoded length */
   long getSize();
+
+  /** @return the buffer block data size */
+  long getLength();
 
   long getInFlushSize();
 

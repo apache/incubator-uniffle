@@ -51,22 +51,23 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
 
   @Override
   public long append(ShufflePartitionedData data) {
-    long size = 0;
+    long currentSize = 0;
 
     synchronized (this) {
       for (ShufflePartitionedBlock block : data.getBlockList()) {
         // If sendShuffleData retried, we may receive duplicate block. The duplicate
         // block would gc without release. Here we must release the duplicated block.
         if (blocks.add(block)) {
-          size += block.getSize();
+          currentSize += block.getSize();
+          this.length += block.getLength();
         } else {
           block.getData().release();
         }
       }
-      this.size += size;
+      this.size += currentSize;
     }
 
-    return size;
+    return currentSize;
   }
 
   @Override
@@ -94,7 +95,16 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
     long eventId = ShuffleFlushManager.ATOMIC_EVENT_ID.getAndIncrement();
     final ShuffleDataFlushEvent event =
         new ShuffleDataFlushEvent(
-            eventId, appId, shuffleId, startPartition, endPartition, size, spBlocks, isValid, this);
+            eventId,
+            appId,
+            shuffleId,
+            startPartition,
+            endPartition,
+            size,
+            length,
+            spBlocks,
+            isValid,
+            this);
     event.addCleanupCallback(
         () -> {
           this.clearInFlushBuffer(event.getEventId());

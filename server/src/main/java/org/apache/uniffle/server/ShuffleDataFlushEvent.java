@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,11 @@ public class ShuffleDataFlushEvent {
   private final int shuffleId;
   private final int startPartition;
   private final int endPartition;
+  /** The memory cost size include encoded length */
   private final long size;
+  /** The data size of this shuffle block */
+  private final long length;
+
   private final List<ShufflePartitionedBlock> shuffleBlocks;
   private final Supplier<Boolean> valid;
   private final ShuffleBuffer shuffleBuffer;
@@ -50,6 +55,7 @@ public class ShuffleDataFlushEvent {
   private boolean ownedByHugePartition = false;
   private long startPendingTime;
 
+  @VisibleForTesting
   public ShuffleDataFlushEvent(
       long eventId,
       String appId,
@@ -57,6 +63,30 @@ public class ShuffleDataFlushEvent {
       int startPartition,
       int endPartition,
       long size,
+      List<ShufflePartitionedBlock> shuffleBlocks,
+      Supplier<Boolean> valid,
+      ShuffleBuffer shuffleBuffer) {
+    this(
+        eventId,
+        appId,
+        shuffleId,
+        startPartition,
+        endPartition,
+        size,
+        size,
+        shuffleBlocks,
+        valid,
+        shuffleBuffer);
+  }
+
+  public ShuffleDataFlushEvent(
+      long eventId,
+      String appId,
+      int shuffleId,
+      int startPartition,
+      int endPartition,
+      long size,
+      long length,
       List<ShufflePartitionedBlock> shuffleBlocks,
       Supplier<Boolean> valid,
       ShuffleBuffer shuffleBuffer) {
@@ -70,6 +100,7 @@ public class ShuffleDataFlushEvent {
     this.valid = valid;
     this.shuffleBuffer = shuffleBuffer;
     this.cleanupCallbackChains = new ArrayList<>();
+    this.length = length;
   }
 
   public List<ShufflePartitionedBlock> getShuffleBlocks() {
@@ -82,6 +113,10 @@ public class ShuffleDataFlushEvent {
 
   public long getSize() {
     return size;
+  }
+
+  public long getLength() {
+    return length;
   }
 
   public String getAppId() {

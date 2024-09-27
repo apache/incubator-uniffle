@@ -198,7 +198,7 @@ public class ShuffleFlushManager {
                 event.getStartPartition() + "_" + event.getEndPartition(),
                 event.getUnderStorage().getStorageHost(),
                 event.getUnderStorage().getStoragePath(),
-                event.getSize(),
+                event.getLength(),
                 DateFormatUtils.format(startTime, AUDIT_DATE_PATTERN),
                 DateFormatUtils.format(endTime, AUDIT_DATE_PATTERN),
                 endTime - startTime));

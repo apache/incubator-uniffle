@@ -40,7 +40,10 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
 
   protected static final Logger LOG = LoggerFactory.getLogger(AbstractShuffleBuffer.class);
 
+  /** The memory cost size include encoded length */
   protected long size;
+  /** The data size of this shuffle block */
+  protected long length;
 
   protected AtomicLong inFlushSize = new AtomicLong();
 
@@ -68,6 +71,11 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
   @Override
   public long getSize() {
     return size;
+  }
+
+  @Override
+  public long getLength() {
+    return length;
   }
 
   @Override
