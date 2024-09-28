@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.ReconfigurableRegistry;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
@@ -50,6 +51,7 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.audit.RpcAuditContext;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.ExceedHugePartitionHardLimitException;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.NoBufferException;
@@ -102,14 +104,15 @@ import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 import static org.apache.uniffle.server.merge.ShuffleMergeManager.MERGE_APP_SUFFIX;
 
-public class ShuffleServerGrpcService extends ShuffleServerImplBase {
+public class ShuffleServerGrpcService extends ShuffleServerImplBase
+    implements ReconfigurableRegistry.ReconfigureListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcService.class);
   private static final Logger AUDIT_LOGGER =
       LoggerFactory.getLogger("SHUFFLE_SERVER_RPC_AUDIT_LOG");
   private final ShuffleServer shuffleServer;
-  private final boolean isRpcAuditLogEnabled;
-  private final List<String> rpcAuditExcludeOpList;
+  private boolean isRpcAuditLogEnabled;
+  private List<String> rpcAuditExcludeOpList;
 
   public ShuffleServerGrpcService(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
@@ -1740,5 +1743,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           .withCreationTimeNs(System.nanoTime());
     }
     return auditContext;
+  }
+
+  @Override
+  public void update(RssConf conf, Map<String, Object> changedProperties) {
+    if (changedProperties == null) {
+      return;
+    }
+    if (changedProperties.containsKey(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED.key())) {
+      isRpcAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED);
+    } else if (changedProperties.containsKey(
+        ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST.key())) {
+      rpcAuditExcludeOpList = conf.get(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST);
+    }
   }
 }

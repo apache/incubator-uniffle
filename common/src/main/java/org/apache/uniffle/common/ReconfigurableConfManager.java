@@ -19,7 +19,9 @@ package org.apache.uniffle.common;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
@@ -107,6 +109,7 @@ public class ReconfigurableConfManager<T> {
     if (latestConf == null) {
       return;
     }
+    Map<String, Object> changedProperties = new HashMap<>();
     for (ConfigOption<T> configOption : updateConfOptions) {
       Optional<T> valOptional = latestConf.getOptional(configOption);
       if (valOptional.isPresent()) {
@@ -118,11 +121,14 @@ public class ReconfigurableConfManager<T> {
               rssConf.get(configOption),
               val);
           rssConf.set(configOption, val);
+          changedProperties.put(configOption.key(), val);
         }
       } else {
         rssConf.remove(configOption.key());
+        changedProperties.put(configOption.key(), rssConf.get(configOption));
       }
     }
+    ReconfigurableRegistry.update(rssConf, changedProperties);
   }
 
   private RssConf getConfRef() {

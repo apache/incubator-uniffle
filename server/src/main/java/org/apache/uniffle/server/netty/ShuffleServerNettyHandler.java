@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ReconfigurableRegistry;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -42,6 +43,7 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.audit.RpcAuditContext;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.ExceedHugePartitionHardLimitException;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.RssException;
@@ -72,15 +74,16 @@ import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
-public class ShuffleServerNettyHandler implements BaseMessageHandler {
+public class ShuffleServerNettyHandler
+    implements BaseMessageHandler, ReconfigurableRegistry.ReconfigureListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerNettyHandler.class);
   private static final Logger AUDIT_LOGGER =
       LoggerFactory.getLogger("SHUFFLE_SERVER_RPC_AUDIT_LOG");
   private static final int RPC_TIMEOUT = 60000;
   private final ShuffleServer shuffleServer;
-  private final boolean isRpcAuditLogEnabled;
-  private final List<String> rpcAuditExcludeOpList;
+  private boolean isRpcAuditLogEnabled;
+  private List<String> rpcAuditExcludeOpList;
 
   public ShuffleServerNettyHandler(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
@@ -96,6 +99,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     } else {
       rpcAuditExcludeOpList = Collections.emptyList();
     }
+    ReconfigurableRegistry.register(this);
   }
 
   @Override
@@ -771,6 +775,19 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       return StatusCode.NO_REGISTER;
     }
     return StatusCode.SUCCESS;
+  }
+
+  @Override
+  public void update(RssConf conf, Map<String, Object> changedProperties) {
+    if (changedProperties == null) {
+      return;
+    }
+    if (changedProperties.containsKey(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED.key())) {
+      isRpcAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED);
+    } else if (changedProperties.containsKey(
+        ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST.key())) {
+      rpcAuditExcludeOpList = conf.get(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST);
+    }
   }
 
   class ReleaseMemoryAndRecordReadTimeListener implements ChannelFutureListener {

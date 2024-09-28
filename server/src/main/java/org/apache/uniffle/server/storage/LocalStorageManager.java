@@ -48,8 +48,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.AuditType;
+import org.apache.uniffle.common.ReconfigurableRegistry;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.UnionKey;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageMedia;
@@ -77,7 +79,8 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.apache.uniffle.server.ShuffleServerConf.DISK_CAPACITY_WATERMARK_CHECK_ENABLED;
 import static org.apache.uniffle.server.ShuffleServerConf.LOCAL_STORAGE_INITIALIZE_MAX_FAIL_NUMBER;
 
-public class LocalStorageManager extends SingleStorageManager {
+public class LocalStorageManager extends SingleStorageManager
+    implements ReconfigurableRegistry.ReconfigureListener {
   private static final Logger LOG = LoggerFactory.getLogger(LocalStorageManager.class);
   private static final Logger AUDIT_LOGGER =
       LoggerFactory.getLogger("SHUFFLE_SERVER_STORAGE_AUDIT_LOG");
@@ -90,7 +93,7 @@ public class LocalStorageManager extends SingleStorageManager {
   private final ConcurrentSkipListMap<String, LocalStorage> sortedPartitionsOfStorageMap;
   private final List<StorageMediaProvider> typeProviders = Lists.newArrayList();
 
-  private final boolean isStorageAuditLogEnabled;
+  private boolean isStorageAuditLogEnabled;
 
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
@@ -434,5 +437,22 @@ public class LocalStorageManager extends SingleStorageManager {
   @VisibleForTesting
   public Map<String, LocalStorage> getSortedPartitionsOfStorageMap() {
     return sortedPartitionsOfStorageMap;
+  }
+
+  @Override
+  public void update(RssConf conf, Map<String, Object> changedProperties) {
+    if (changedProperties == null || conf == null) {
+      return;
+    }
+    if (changedProperties.containsKey(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED.key())) {
+      isStorageAuditLogEnabled =
+          conf.getBoolean(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED);
+    }
+  }
+
+  @Override
+  public void stop() {
+    super.stop();
+    ReconfigurableRegistry.unregister(this);
   }
 }
