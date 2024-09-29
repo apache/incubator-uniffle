@@ -575,7 +575,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             shuffleIndexResult.release();
           }
           LOG.warn(
-              "Index file for {} is not found, maybe the data has been flushed to cold storage.",
+              "Index file for {} is not found, maybe the data has been flushed to cold storage "
+                  + "or partial data still in another shuffle server(when partition split is enabled).",
               requestInfo,
               indexFileNotFoundException);
           response =
