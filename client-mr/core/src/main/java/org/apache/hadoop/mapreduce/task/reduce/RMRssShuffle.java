@@ -180,13 +180,11 @@ public class RMRssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, Exceptio
 
     RMRecordsReader reader;
     KeyValueReader<ComparativeOutputBuffer, ComparativeOutputBuffer> keyValueReader;
-    SerializerInstance serializerInstance;
     private Progress mergeProgress = new Progress();
 
     public RecordsRelayer(RMRecordsReader reader, SerializerInstance keySerializer) {
       this.reader = reader;
       this.keyValueReader = this.reader.rawKeyValueReader();
-      this.serializerInstance = keySerializer;
     }
 
     @Override
