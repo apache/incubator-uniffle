@@ -66,6 +66,7 @@ public class CommonMetrics {
       Map<String, String> labels = Maps.newHashMap();
       labels.put(Constants.METRICS_TAG_LABEL_NAME, tags);
       metricsManager = new MetricsManager(collectorRegistry, labels);
+      isRegister = true;
     }
   }
 }

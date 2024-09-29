@@ -18,6 +18,7 @@
 package org.apache.uniffle.common.executor;
 
 import java.io.Closeable;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,6 +27,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,7 +138,13 @@ public class ThreadPoolManager {
     return THREAD_POOL_MAP.containsKey(key);
   }
 
-  private static class MeasurableThreadPoolExecutor implements Closeable {
+  @VisibleForTesting
+  public static Map<Object, MeasurableThreadPoolExecutor> getThreadPoolMap() {
+    return Collections.unmodifiableMap(THREAD_POOL_MAP);
+  }
+
+  @VisibleForTesting
+  public static class MeasurableThreadPoolExecutor implements Closeable {
 
     private final String name;
 
@@ -160,6 +168,11 @@ public class ThreadPoolManager {
           () -> (double) threadPoolExecutor.getQueue().size());
       CommonMetrics.addLabeledGauge(
           name + "_RejectCount", () -> (double) measurableRejectedExecutionHandler.getCount());
+    }
+
+    @VisibleForTesting
+    public String getName() {
+      return name;
     }
 
     @Override
