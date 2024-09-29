@@ -144,6 +144,14 @@ public class ThreadPoolManager {
   }
 
   @VisibleForTesting
+  public static void clear() {
+    for (MeasurableThreadPoolExecutor executor : THREAD_POOL_MAP.values()) {
+      executor.close();
+    }
+    THREAD_POOL_MAP.clear();
+  }
+
+  @VisibleForTesting
   public static class MeasurableThreadPoolExecutor implements Closeable {
 
     private final String name;

@@ -28,6 +28,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.prometheus.client.CollectorRegistry;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.metrics.CommonMetrics;
@@ -40,11 +41,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** Test ThreadPoolManager. */
 public class ThreadPoolManagerTest {
   @BeforeAll
-  public static void setup() {
+  public static void beforeAll() {
     Map<String, String> labels = Maps.newHashMap();
     labels.put(Constants.METRICS_TAG_LABEL_NAME, "test");
     MetricsManager metricsManager = new MetricsManager(CollectorRegistry.defaultRegistry, labels);
     CommonMetrics.register(metricsManager.getCollectorRegistry(), "test");
+  }
+
+  @BeforeEach
+  public void before() {
+    ThreadPoolManager.clear();
   }
 
   @AfterAll
