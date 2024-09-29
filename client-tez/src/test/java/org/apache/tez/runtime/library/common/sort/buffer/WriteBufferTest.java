@@ -48,9 +48,9 @@ import org.apache.uniffle.common.serializer.SerializerInstance;
 
 import static com.google.common.collect.Maps.newConcurrentMap;
 import static org.apache.uniffle.common.serializer.SerializerUtils.genData;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WriteBufferTest {
 
