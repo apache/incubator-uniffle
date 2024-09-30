@@ -684,6 +684,10 @@ public class RssConf implements Cloneable {
     this.settings.remove(key);
   }
 
+  public boolean isSet(String key) {
+    return this.settings.containsKey(key);
+  }
+
   public Map<String, Object> getPropsWithPrefix(String confPrefix) {
     Map<String, Object> configMap = new HashMap<>();
     for (Map.Entry<String, Object> entry : settings.entrySet()) {

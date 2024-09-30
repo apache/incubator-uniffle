@@ -19,6 +19,7 @@ package org.apache.uniffle.common;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -123,12 +124,14 @@ public class ReconfigurableConfManager<T> {
           rssConf.set(configOption, val);
           changedProperties.put(configOption.key(), val);
         }
-      } else {
+      } else if (rssConf.isSet(configOption.key())) {
         rssConf.remove(configOption.key());
         changedProperties.put(configOption.key(), rssConf.get(configOption));
       }
     }
-    ReconfigurableRegistry.update(rssConf, changedProperties);
+    if (!changedProperties.isEmpty()) {
+      ReconfigurableRegistry.update(rssConf, Collections.unmodifiableMap(changedProperties));
+    }
   }
 
   private RssConf getConfRef() {

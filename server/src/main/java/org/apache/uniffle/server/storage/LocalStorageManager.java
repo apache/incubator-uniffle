@@ -178,7 +178,10 @@ public class LocalStorageManager extends SingleStorageManager
         StringUtils.join(
             localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList())));
     this.checker = new LocalStorageChecker(conf, localStorages);
-    isStorageAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED);
+    isStorageAuditLogEnabled =
+        conf.getReconfigurableConf(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED).get();
+    ReconfigurableRegistry.register(
+        ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED.toString(), this);
   }
 
   private StorageMedia getStorageTypeForBasePath(String basePath) {
@@ -453,6 +456,7 @@ public class LocalStorageManager extends SingleStorageManager
   @Override
   public void stop() {
     super.stop();
-    ReconfigurableRegistry.unregister(this);
+    ReconfigurableRegistry.unregister(
+        ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED.key(), this);
   }
 }

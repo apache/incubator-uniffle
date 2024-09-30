@@ -17,10 +17,16 @@
 
 package org.apache.uniffle.common;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,29 +35,106 @@ import org.apache.uniffle.common.config.RssConf;
 public class ReconfigurableRegistry {
   private static final Logger LOG = LoggerFactory.getLogger(ReconfigurableRegistry.class);
 
-  private static final List<ReconfigureListener> LISTENER_LIST = new LinkedList<>();
+  private static final HashMap<Set<String>, List<ReconfigureListener>> LISTENER_MAP =
+      new HashMap<>();
+
+  // prevent instantiation
+  private ReconfigurableRegistry() {}
 
   /**
-   * Add a listener.
+   * Add a listener which listens to all properties.
    *
    * @param listener the given property listener
    */
   public static synchronized void register(ReconfigureListener listener) {
-    LISTENER_LIST.add(listener);
+    register(Collections.emptySet(), listener);
   }
 
   /**
-   * remove the listener related to the given property.
+   * Add a listener which listens to the given keys.
    *
-   * @param listener the listener
-   * @return true if the instance is removed
+   * @param key the given key
+   * @param listener the given property listener
    */
-  public static synchronized boolean unregister(ReconfigureListener listener) {
-    return LISTENER_LIST.remove(listener);
+  public static synchronized void register(String key, ReconfigureListener listener) {
+    register(Sets.newHashSet(key), listener);
   }
 
-  // prevent instantiation
-  private ReconfigurableRegistry() {}
+  /**
+   * Add a listener which listens to the given keys.
+   *
+   * @param keys the given keys
+   * @param listener the given property listener
+   */
+  public static synchronized void register(Set<String> keys, ReconfigureListener listener) {
+    List listenerList = LISTENER_MAP.computeIfAbsent(keys, k -> new ArrayList<>());
+    listenerList.add(listener);
+  }
+
+  /**
+   * Remove all listeners related to the given keys.
+   *
+   * @param keys the given keys
+   * @return true if the listeners are removed, otherwise false
+   */
+  public static synchronized boolean unregister(Set<String> keys) {
+    return LISTENER_MAP.remove(keys) != null;
+  }
+
+  /**
+   * Remove the listener related to the given keys.
+   *
+   * @param key the given key
+   * @param listener the given listener
+   * @return true if the listeners are removed, otherwise false
+   */
+  public static synchronized boolean unregister(String key, ReconfigureListener listener) {
+    return unregister(Sets.newHashSet(key), listener);
+  }
+
+  /**
+   * Remove the listener related to the given keys.
+   *
+   * @param keys the given keys
+   * @param listener the given listener
+   * @return true if the listeners are removed, otherwise false
+   */
+  public static synchronized boolean unregister(Set<String> keys, ReconfigureListener listener) {
+    List<ReconfigureListener> listenerList = LISTENER_MAP.get(keys);
+    if (listenerList == null) {
+      return false;
+    }
+    boolean removed = listenerList.remove(listener);
+    if (listenerList.isEmpty()) {
+      LISTENER_MAP.remove(keys);
+    }
+    return removed;
+  }
+
+  /**
+   * Remove the listener from all keys listeners first, if the listener is not in any keys, will
+   * scan all the listener maps to remove the listener.
+   *
+   * @param listener the given listener
+   * @return true if the listeners are removed, otherwise false
+   */
+  public static synchronized boolean unregister(ReconfigureListener listener) {
+    boolean removed = unregister(Collections.emptySet(), listener);
+    if (!removed) {
+      for (Map.Entry<Set<String>, List<ReconfigureListener>> entry : LISTENER_MAP.entrySet()) {
+        removed = unregister(entry.getKey(), listener);
+        if (removed) {
+          break;
+        }
+      }
+    }
+    return removed;
+  }
+
+  @VisibleForTesting
+  public static int getSize() {
+    return LISTENER_MAP.size();
+  }
 
   /**
    * When the property was reconfigured, this function will be invoked. This property listeners will
@@ -61,18 +144,23 @@ public class ReconfigurableRegistry {
    * @param changedProperties the changed properties
    */
   public static synchronized void update(RssConf conf, Map<String, Object> changedProperties) {
-    Throwable lastException = null;
-    for (ReconfigureListener listener : LISTENER_LIST) {
-      try {
-        listener.update(conf, changedProperties);
-      } catch (Throwable e) {
-        LOG.warn("Exception while update config for {}", changedProperties, e);
-        lastException = e;
+    for (Map.Entry<Set<String>, List<ReconfigureListener>> entry : LISTENER_MAP.entrySet()) {
+      // check if the keys is empty, if empty, it means all keys are listened.
+      Set<String> intersection =
+          entry.getKey().isEmpty()
+              ? changedProperties.keySet()
+              : Sets.intersection(entry.getKey(), changedProperties.keySet());
+      if (!intersection.isEmpty()) {
+        Map<String, Object> filteredMap =
+            Maps.filterKeys(changedProperties, intersection::contains);
+        for (ReconfigureListener listener : entry.getValue()) {
+          try {
+            listener.update(conf, filteredMap);
+          } catch (Throwable e) {
+            LOG.warn("Exception while updating config for {}", changedProperties, e);
+          }
+        }
       }
-    }
-    if (lastException != null) {
-      throw new IllegalStateException(
-          "last exception while update config " + changedProperties, lastException);
     }
   }
 

@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.coordinator;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -89,15 +88,18 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     isRpcAuditLogEnabled =
         coordinatorServer
             .getCoordinatorConf()
-            .getBoolean(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED);
-    if (isRpcAuditLogEnabled) {
-      rpcAuditExcludeOpList =
-          coordinatorServer
-              .getCoordinatorConf()
-              .get(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST);
-    } else {
-      rpcAuditExcludeOpList = Collections.emptyList();
-    }
+            .getReconfigurableConf(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED)
+            .get();
+    rpcAuditExcludeOpList =
+        coordinatorServer
+            .getCoordinatorConf()
+            .getReconfigurableConf(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST)
+            .get();
+    ReconfigurableRegistry.register(
+        Sets.newHashSet(
+            CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED.key(),
+            CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST.key()),
+        this);
   }
 
   @Override
@@ -556,7 +558,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     }
     if (changedProperties.containsKey(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED.key())) {
       isRpcAuditLogEnabled = conf.getBoolean(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED);
-    } else if (changedProperties.containsKey(
+    }
+    if (changedProperties.containsKey(
         CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST.key())) {
       rpcAuditExcludeOpList = conf.get(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST);
     }

@@ -19,7 +19,6 @@ package org.apache.uniffle.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -119,15 +118,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase
     isRpcAuditLogEnabled =
         shuffleServer
             .getShuffleServerConf()
-            .getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED);
-    if (isRpcAuditLogEnabled) {
-      rpcAuditExcludeOpList =
-          shuffleServer
-              .getShuffleServerConf()
-              .get(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST);
-    } else {
-      rpcAuditExcludeOpList = Collections.emptyList();
-    }
+            .getReconfigurableConf(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED)
+            .get();
+    rpcAuditExcludeOpList =
+        shuffleServer
+            .getShuffleServerConf()
+            .getReconfigurableConf(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST)
+            .get();
+    ReconfigurableRegistry.register(
+        Sets.newHashSet(
+            ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED.key(),
+            ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST.key()),
+        this);
   }
 
   @Override
@@ -1752,7 +1754,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase
     }
     if (changedProperties.containsKey(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED.key())) {
       isRpcAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED);
-    } else if (changedProperties.containsKey(
+    }
+    if (changedProperties.containsKey(
         ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST.key())) {
       rpcAuditExcludeOpList = conf.get(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST);
     }
