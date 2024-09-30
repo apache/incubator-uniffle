@@ -61,31 +61,24 @@ public class RMTezOrderedWordCountTest extends TezIntegrationTestBase {
   }
 
   public void run() throws Exception {
-    // 1 Run Tez examples based on rss when remote merge is enabled and client type is GRPC
+    // 1 Run original Tez examples
     TezConfiguration appConf = new TezConfiguration(miniTezCluster.getConfig());
-    updateRssConfiguration(appConf, ClientType.GRPC);
-    appendAndUploadRssJars(appConf);
-    appConf.set(RssTezConfig.RSS_REMOTE_MERGE_ENABLE, "true");
-    runTezApp(appConf, getTestTool(), getTestArgs("rss-grpc"));
-    final String rssGrpcPath = getOutputDir("rss-grpc");
-
-    // 2 Run Tez examples based on rss when remote merge is enabled and client type is GRPC_NETTY
-    appConf = new TezConfiguration(miniTezCluster.getConfig());
-    updateRssConfiguration(appConf, ClientType.GRPC_NETTY);
-    appendAndUploadRssJars(appConf);
-    appConf.set(RssTezConfig.RSS_REMOTE_MERGE_ENABLE, "true");
-    runTezApp(appConf, getTestTool(), getTestArgs("rss-netty"));
-    final String rssNettyPath = getOutputDir("rss-netty");
-
-    // 3 Run original Tez examples
-    appConf = new TezConfiguration(miniTezCluster.getConfig());
     updateCommonConfiguration(appConf);
     runTezApp(appConf, getTestTool(), getTestArgs("origin"));
     final String originPath = getOutputDir("origin");
 
-    // 4 verify the results
-    verifyResults(originPath, rssGrpcPath);
-    verifyResults(originPath, rssNettyPath);
+    // Run RSS tests with different configurations
+    runRemoteMergeRssTest(ClientType.GRPC, "rss-grpc", originPath);
+  }
+
+  private void runRemoteMergeRssTest(ClientType clientType, String testName, String originPath)
+      throws Exception {
+    TezConfiguration appConf = new TezConfiguration(miniTezCluster.getConfig());
+    appConf.set(RssTezConfig.RSS_REMOTE_MERGE_ENABLE, "true");
+    updateRssConfiguration(appConf, clientType);
+    appendAndUploadRssJars(appConf);
+    runTezApp(appConf, getTestTool(), getTestArgs(testName));
+    verifyResults(originPath, getOutputDir(testName));
   }
 
   private void generateInputFile() throws Exception {

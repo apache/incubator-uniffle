@@ -76,7 +76,9 @@ public class RMRssShuffleScheduler extends ShuffleScheduler {
 
     String pathComponent = srcAttempt.getPathComponent();
     TezTaskAttemptID tezTaskAttemptId = IdUtils.convertTezTaskAttemptID(pathComponent);
-    rssShuffle.partitionIdToSuccessTezTasks.putIfAbsent(partitionId, new HashSet<>());
+    if (!rssShuffle.partitionIdToSuccessTezTasks.containsKey(partitionId)) {
+      rssShuffle.partitionIdToSuccessTezTasks.put(partitionId, new HashSet<>());
+    }
     rssShuffle.partitionIdToSuccessTezTasks.get(partitionId).add(tezTaskAttemptId.getTaskID());
   }
 }
