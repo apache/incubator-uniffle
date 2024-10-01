@@ -72,6 +72,16 @@ public class ReconfigurableRegistry {
   }
 
   /**
+   * Remove all listeners related to the given key.
+   *
+   * @param key the given key
+   * @return true if the listeners are removed, otherwise false
+   */
+  public static synchronized boolean unregister(String key) {
+    return unregister(Sets.newHashSet(key));
+  }
+
+  /**
    * Remove all listeners related to the given keys.
    *
    * @param keys the given keys

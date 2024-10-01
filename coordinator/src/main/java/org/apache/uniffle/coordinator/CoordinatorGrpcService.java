@@ -37,7 +37,6 @@ import org.apache.uniffle.common.ReconfigurableRegistry;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.audit.RpcAuditContext;
-import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.ClientContextServerInterceptor;
 import org.apache.uniffle.common.storage.StorageInfoUtils;
 import org.apache.uniffle.coordinator.access.AccessCheckResult;
@@ -73,8 +72,7 @@ import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 import org.apache.uniffle.proto.RssProtos.StatusCode;
 
 /** Implementation class for services defined in protobuf */
-public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorServerImplBase
-    implements ReconfigurableRegistry.ReconfigureListener {
+public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorServerImplBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorGrpcService.class);
   private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger("COORDINATOR_RPC_AUDIT_LOG");
@@ -99,7 +97,21 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         Sets.newHashSet(
             CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED.key(),
             CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST.key()),
-        this);
+        (conf, changedProperties) -> {
+          if (changedProperties == null || conf == null) {
+            return;
+          }
+          if (changedProperties.containsKey(
+              CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED.key())) {
+            isRpcAuditLogEnabled =
+                conf.getBoolean(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED);
+          }
+          if (changedProperties.containsKey(
+              CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST.key())) {
+            rpcAuditExcludeOpList =
+                conf.get(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST);
+          }
+        });
   }
 
   @Override
@@ -549,19 +561,5 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
           .withCreationTimeNs(System.nanoTime());
     }
     return auditContext;
-  }
-
-  @Override
-  public void update(RssConf conf, Map<String, Object> changedProperties) {
-    if (changedProperties == null || conf == null) {
-      return;
-    }
-    if (changedProperties.containsKey(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED.key())) {
-      isRpcAuditLogEnabled = conf.getBoolean(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED);
-    }
-    if (changedProperties.containsKey(
-        CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST.key())) {
-      rpcAuditExcludeOpList = conf.get(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST);
-    }
   }
 }

@@ -50,7 +50,6 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.audit.RpcAuditContext;
 import org.apache.uniffle.common.config.RssBaseConf;
-import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.ExceedHugePartitionHardLimitException;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.NoBufferException;
@@ -103,8 +102,7 @@ import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 import static org.apache.uniffle.server.merge.ShuffleMergeManager.MERGE_APP_SUFFIX;
 
-public class ShuffleServerGrpcService extends ShuffleServerImplBase
-    implements ReconfigurableRegistry.ReconfigureListener {
+public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcService.class);
   private static final Logger AUDIT_LOGGER =
@@ -129,7 +127,19 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase
         Sets.newHashSet(
             ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED.key(),
             ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST.key()),
-        this);
+        (conf, changedProperties) -> {
+          if (changedProperties == null) {
+            return;
+          }
+          if (changedProperties.containsKey(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED.key())) {
+            isRpcAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED);
+          }
+          if (changedProperties.containsKey(
+              ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST.key())) {
+            rpcAuditExcludeOpList =
+                conf.get(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST);
+          }
+        });
   }
 
   @Override
@@ -1745,19 +1755,5 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase
           .withCreationTimeNs(System.nanoTime());
     }
     return auditContext;
-  }
-
-  @Override
-  public void update(RssConf conf, Map<String, Object> changedProperties) {
-    if (changedProperties == null) {
-      return;
-    }
-    if (changedProperties.containsKey(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED.key())) {
-      isRpcAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED);
-    }
-    if (changedProperties.containsKey(
-        ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST.key())) {
-      rpcAuditExcludeOpList = conf.get(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST);
-    }
   }
 }
