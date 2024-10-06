@@ -19,11 +19,11 @@ package org.apache.uniffle.server.netty;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.BufferSegment;
+import org.apache.uniffle.common.ReconfigurableRegistry;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
@@ -79,23 +80,38 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       LoggerFactory.getLogger("SHUFFLE_SERVER_RPC_AUDIT_LOG");
   private static final int RPC_TIMEOUT = 60000;
   private final ShuffleServer shuffleServer;
-  private final boolean isRpcAuditLogEnabled;
-  private final List<String> rpcAuditExcludeOpList;
+  private boolean isRpcAuditLogEnabled;
+  private List<String> rpcAuditExcludeOpList;
 
   public ShuffleServerNettyHandler(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
     isRpcAuditLogEnabled =
         shuffleServer
             .getShuffleServerConf()
-            .getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED);
-    if (isRpcAuditLogEnabled) {
-      rpcAuditExcludeOpList =
-          shuffleServer
-              .getShuffleServerConf()
-              .get(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST);
-    } else {
-      rpcAuditExcludeOpList = Collections.emptyList();
-    }
+            .getReconfigurableConf(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED)
+            .get();
+    rpcAuditExcludeOpList =
+        shuffleServer
+            .getShuffleServerConf()
+            .getReconfigurableConf(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST)
+            .get();
+    ReconfigurableRegistry.register(
+        Sets.newHashSet(
+            ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED.key(),
+            ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST.key()),
+        (conf, changedProperties) -> {
+          if (changedProperties == null) {
+            return;
+          }
+          if (changedProperties.containsKey(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED.key())) {
+            isRpcAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED);
+          }
+          if (changedProperties.containsKey(
+              ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST.key())) {
+            rpcAuditExcludeOpList =
+                conf.get(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST);
+          }
+        });
   }
 
   @Override

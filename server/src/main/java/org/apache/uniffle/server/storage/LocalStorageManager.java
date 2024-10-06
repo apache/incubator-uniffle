@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.AuditType;
+import org.apache.uniffle.common.ReconfigurableRegistry;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.UnionKey;
 import org.apache.uniffle.common.exception.RssException;
@@ -90,7 +91,7 @@ public class LocalStorageManager extends SingleStorageManager {
   private final ConcurrentSkipListMap<String, LocalStorage> sortedPartitionsOfStorageMap;
   private final List<StorageMediaProvider> typeProviders = Lists.newArrayList();
 
-  private final boolean isStorageAuditLogEnabled;
+  private boolean isStorageAuditLogEnabled;
 
   @VisibleForTesting
   LocalStorageManager(ShuffleServerConf conf) {
@@ -175,7 +176,20 @@ public class LocalStorageManager extends SingleStorageManager {
         StringUtils.join(
             localStorages.stream().map(LocalStorage::getBasePath).collect(Collectors.toList())));
     this.checker = new LocalStorageChecker(conf, localStorages);
-    isStorageAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED);
+    isStorageAuditLogEnabled =
+        conf.getReconfigurableConf(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED).get();
+    ReconfigurableRegistry.register(
+        ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED.toString(),
+        (rssConf, changedProperties) -> {
+          if (changedProperties == null || rssConf == null) {
+            return;
+          }
+          if (changedProperties.containsKey(
+              ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED.key())) {
+            isStorageAuditLogEnabled =
+                rssConf.getBoolean(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED);
+          }
+        });
   }
 
   private StorageMedia getStorageTypeForBasePath(String basePath) {
@@ -434,5 +448,11 @@ public class LocalStorageManager extends SingleStorageManager {
   @VisibleForTesting
   public Map<String, LocalStorage> getSortedPartitionsOfStorageMap() {
     return sortedPartitionsOfStorageMap;
+  }
+
+  @Override
+  public void stop() {
+    super.stop();
+    ReconfigurableRegistry.unregister(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED.key());
   }
 }

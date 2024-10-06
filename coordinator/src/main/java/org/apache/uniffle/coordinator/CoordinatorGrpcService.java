@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.coordinator;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.PartitionRange;
+import org.apache.uniffle.common.ReconfigurableRegistry;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.audit.RpcAuditContext;
@@ -78,23 +78,40 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
   private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger("COORDINATOR_RPC_AUDIT_LOG");
 
   private final CoordinatorServer coordinatorServer;
-  private final boolean isRpcAuditLogEnabled;
-  private final List<String> rpcAuditExcludeOpList;
+  private boolean isRpcAuditLogEnabled;
+  private List<String> rpcAuditExcludeOpList;
 
   public CoordinatorGrpcService(CoordinatorServer coordinatorServer) {
     this.coordinatorServer = coordinatorServer;
     isRpcAuditLogEnabled =
         coordinatorServer
             .getCoordinatorConf()
-            .getBoolean(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED);
-    if (isRpcAuditLogEnabled) {
-      rpcAuditExcludeOpList =
-          coordinatorServer
-              .getCoordinatorConf()
-              .get(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST);
-    } else {
-      rpcAuditExcludeOpList = Collections.emptyList();
-    }
+            .getReconfigurableConf(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED)
+            .get();
+    rpcAuditExcludeOpList =
+        coordinatorServer
+            .getCoordinatorConf()
+            .getReconfigurableConf(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST)
+            .get();
+    ReconfigurableRegistry.register(
+        Sets.newHashSet(
+            CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED.key(),
+            CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST.key()),
+        (conf, changedProperties) -> {
+          if (changedProperties == null || conf == null) {
+            return;
+          }
+          if (changedProperties.containsKey(
+              CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED.key())) {
+            isRpcAuditLogEnabled =
+                conf.getBoolean(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED);
+          }
+          if (changedProperties.containsKey(
+              CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST.key())) {
+            rpcAuditExcludeOpList =
+                conf.get(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST);
+          }
+        });
   }
 
   @Override

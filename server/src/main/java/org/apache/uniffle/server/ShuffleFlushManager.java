@@ -70,7 +70,7 @@ public class ShuffleFlushManager {
   private final StorageManager storageManager;
   private final long pendingEventTimeoutSec;
   private FlushEventHandler eventHandler;
-  private final boolean isStorageAuditLogEnabled;
+  private boolean isStorageAuditLogEnabled;
 
   public ShuffleFlushManager(
       ShuffleServerConf shuffleServerConf,
