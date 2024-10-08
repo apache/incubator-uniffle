@@ -929,7 +929,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         timeoutMs,
         "send heartbeat to shuffle server");
     if (coordinatorClient != null) {
-      coordinatorClient.sendAppHeartBeat(request);
+      coordinatorClient.scheduleAtFixedRateToSendAppHeartBeat(request);
     }
   }
 

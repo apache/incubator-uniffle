@@ -66,7 +66,8 @@ public class CoordinatorGrpcRetryableClient implements CoordinatorClient {
   }
 
   @Override
-  public RssAppHeartBeatResponse sendAppHeartBeat(RssAppHeartBeatRequest request) {
+  public RssAppHeartBeatResponse scheduleAtFixedRateToSendAppHeartBeat(
+      RssAppHeartBeatRequest request) {
     AtomicReference<RssAppHeartBeatResponse> rssResponse = new AtomicReference<>();
     rssResponse.set(new RssAppHeartBeatResponse(StatusCode.INTERNAL_ERROR));
     ThreadUtils.executeTasks(
@@ -74,7 +75,8 @@ public class CoordinatorGrpcRetryableClient implements CoordinatorClient {
         coordinatorClients,
         coordinatorClient -> {
           try {
-            RssAppHeartBeatResponse response = coordinatorClient.sendAppHeartBeat(request);
+            RssAppHeartBeatResponse response =
+                coordinatorClient.scheduleAtFixedRateToSendAppHeartBeat(request);
             if (response.getStatusCode() != StatusCode.SUCCESS) {
               LOG.warn("Failed to send heartbeat to " + coordinatorClient.getDesc());
             } else {
