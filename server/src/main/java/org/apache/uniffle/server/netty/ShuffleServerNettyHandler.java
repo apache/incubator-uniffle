@@ -303,7 +303,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               responseMessage = errorMsg;
               hasFailureOccurred = true;
             } else {
-              long toReleasedSize = spd.getTotalBlockSize();
+              long toReleasedSize = spd.getTotalBlockEncodedLength();
               // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
               shuffleTaskManager.releasePreAllocatedSize(toReleasedSize);
               alreadyReleasedSize += toReleasedSize;
@@ -335,7 +335,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             // Once the cache failure occurs, we should explicitly release data held by byteBuf
             if (hasFailureOccurred) {
               Arrays.stream(spd.getBlockList()).forEach(block -> block.getData().release());
-              shuffleBufferManager.releaseMemory(spd.getTotalBlockSize(), false, false);
+              shuffleBufferManager.releaseMemory(spd.getTotalBlockEncodedLength(), false, false);
             }
           }
         }
@@ -767,8 +767,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       return Triple.of(0L, 0L, new ShufflePartitionedBlock[] {});
     }
     ShufflePartitionedBlock[] ret = new ShufflePartitionedBlock[blocks.size()];
-    long size = 0L;
-    long length = 0L;
+    long encodedLength = 0L;
+    long dataLength = 0L;
     int i = 0;
     for (ShuffleBlockInfo block : blocks) {
       ret[i] =
@@ -779,11 +779,11 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               block.getBlockId(),
               block.getTaskAttemptId(),
               block.getData());
-      size += ret[i].getSize();
-      length += ret[i].getLength();
+      encodedLength += ret[i].getSize();
+      dataLength += ret[i].getLength();
       i++;
     }
-    return Triple.of(size, length, ret);
+    return Triple.of(encodedLength, dataLength, ret);
   }
 
   private StatusCode verifyRequest(String appId) {

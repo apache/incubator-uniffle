@@ -232,7 +232,7 @@ public class ShuffleBufferManager {
     }
     LOG.debug(
         "cache shuffle data, size: {}, blockCount: {}, appId: {}, shuffleId: {}, partitionId: {}",
-        spd.getTotalBlockLength(),
+        spd.getTotalBlockDataLength(),
         spd.getBlockList().length,
         appId,
         shuffleId,

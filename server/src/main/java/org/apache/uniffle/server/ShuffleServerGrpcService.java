@@ -496,7 +496,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 // TODO: Use ShuffleBufferWithSkipList to avoid caching block here.
                 shuffleServer.getShuffleMergeManager().cacheBlock(appId, shuffleId, spd);
               }
-              long toReleasedSize = spd.getTotalBlockSize();
+              long toReleasedSize = spd.getTotalBlockEncodedLength();
               // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
               manager.releasePreAllocatedSize(toReleasedSize);
               alreadyReleasedSize += toReleasedSize;
@@ -529,7 +529,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             if (hasFailureOccurred) {
               shuffleServer
                   .getShuffleBufferManager()
-                  .releaseMemory(spd.getTotalBlockSize(), false, false);
+                  .releaseMemory(spd.getTotalBlockEncodedLength(), false, false);
             }
           }
         }
@@ -1667,8 +1667,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       return Triple.of(0L, 0L, new ShufflePartitionedBlock[] {});
     }
     ShufflePartitionedBlock[] ret = new ShufflePartitionedBlock[blocks.size()];
-    long size = 0L;
-    long length = 0L;
+    long encodedLength = 0L;
+    long dataLength = 0L;
     int i = 0;
     for (ShuffleBlock block : blocks) {
       ByteBuf data = ByteBufUtils.byteStringToByteBuf(block.getData());
@@ -1680,11 +1680,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               block.getBlockId(),
               block.getTaskAttemptId(),
               data);
-      size += ret[i].getSize();
-      length += ret[i].getLength();
+      encodedLength += ret[i].getSize();
+      dataLength += ret[i].getLength();
       i++;
     }
-    return Triple.of(size, length, ret);
+    return Triple.of(encodedLength, dataLength, ret);
   }
 
   private Map<Integer, long[]> toPartitionBlocksMap(List<PartitionToBlockIds> partitionToBlockIds) {

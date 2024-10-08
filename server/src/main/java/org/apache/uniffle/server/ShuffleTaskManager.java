@@ -332,7 +332,7 @@ public class ShuffleTaskManager {
       String appId, int shuffleId, boolean isPreAllocated, ShufflePartitionedData spd) {
     refreshAppId(appId);
     long partitionSize = getPartitionDataSize(appId, shuffleId, spd.getPartitionId());
-    long deltaSize = spd.getTotalBlockSize();
+    long deltaSize = spd.getTotalBlockEncodedLength();
     partitionSize += deltaSize;
     // We do not need to check the huge partition size here, after old client upgraded to this
     // version,

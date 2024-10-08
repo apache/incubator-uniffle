@@ -28,29 +28,29 @@ public class ShufflePartitionedData {
       new ShufflePartitionedBlock[] {};
   private int partitionId;
   private final ShufflePartitionedBlock[] blockList;
-  private final long totalBlockSize;
-  private final long totalBlockLength;
+  private final long totalBlockEncodedLength;
+  private final long totalBlockDataLength;
 
   public ShufflePartitionedData(
       int partitionId, Triple<Long, Long, ShufflePartitionedBlock[]> pair) {
     this.partitionId = partitionId;
     this.blockList = pair.getRight() == null ? EMPTY_BLOCK_LIST : pair.getRight();
-    totalBlockSize = pair.getLeft();
-    totalBlockLength = pair.getMiddle();
+    totalBlockEncodedLength = pair.getLeft();
+    totalBlockDataLength = pair.getMiddle();
   }
 
   @VisibleForTesting
   public ShufflePartitionedData(int partitionId, ShufflePartitionedBlock[] blockList) {
     this.partitionId = partitionId;
     this.blockList = blockList == null ? EMPTY_BLOCK_LIST : blockList;
-    long size = 0L;
-    long length = 0L;
+    long encodedLength = 0L;
+    long dataLength = 0L;
     for (ShufflePartitionedBlock block : this.blockList) {
-      size += block.getSize();
-      length += block.getLength();
+      encodedLength += block.getSize();
+      dataLength += block.getLength();
     }
-    totalBlockSize = size;
-    totalBlockLength = length;
+    totalBlockEncodedLength = encodedLength;
+    totalBlockDataLength = dataLength;
   }
 
   @Override
@@ -74,11 +74,11 @@ public class ShufflePartitionedData {
     return blockList;
   }
 
-  public long getTotalBlockSize() {
-    return totalBlockSize;
+  public long getTotalBlockEncodedLength() {
+    return totalBlockEncodedLength;
   }
 
-  public long getTotalBlockLength() {
-    return totalBlockLength;
+  public long getTotalBlockDataLength() {
+    return totalBlockDataLength;
   }
 }

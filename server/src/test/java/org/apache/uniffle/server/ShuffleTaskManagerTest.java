@@ -295,14 +295,14 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
 
     // case1
     ShufflePartitionedData partitionedData0 = createPartitionedData(1, 1, 35);
-    long size1 = partitionedData0.getTotalBlockSize();
+    long size1 = partitionedData0.getTotalBlockEncodedLength();
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
 
     assertEquals(size1, shuffleTaskManager.getShuffleTaskInfo(appId).getTotalDataSize());
 
     // case2
     partitionedData0 = createPartitionedData(1, 1, 35);
-    long size2 = partitionedData0.getTotalBlockSize();
+    long size2 = partitionedData0.getTotalBlockEncodedLength();
     shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 1, partitionedData0.getBlockList());
     assertEquals(size1 + size2, shuffleTaskManager.getShuffleTaskInfo(appId).getTotalDataSize());
     assertEquals(
