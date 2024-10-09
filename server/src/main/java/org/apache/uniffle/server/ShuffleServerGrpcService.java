@@ -46,7 +46,6 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
-import org.apache.uniffle.common.ShufflePartitionedBlocksInfo;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.audit.RpcAuditContext;
 import org.apache.uniffle.common.config.RssBaseConf;
@@ -467,10 +466,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           return;
         }
         final long start = System.currentTimeMillis();
-        List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
+        List<ShufflePartitionedData> shufflePartitionedDataList = toPartitionedDataList(req);
         long alreadyReleasedSize = 0;
         boolean hasFailureOccurred = false;
-        for (ShufflePartitionedData spd : shufflePartitionedData) {
+        for (ShufflePartitionedData spd : shufflePartitionedDataList) {
           String shuffleDataInfo =
               "appId["
                   + appId
@@ -559,7 +558,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                   + "], cost "
                   + costTime
                   + " ms with "
-                  + shufflePartitionedData.size()
+                  + shufflePartitionedDataList.size()
                   + " blocks and "
                   + requireSize
                   + " bytes");
@@ -1649,21 +1648,19 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     }
   }
 
-  private List<ShufflePartitionedData> toPartitionedData(SendShuffleDataRequest req) {
+  private List<ShufflePartitionedData> toPartitionedDataList(SendShuffleDataRequest req) {
     List<ShufflePartitionedData> ret = Lists.newArrayList();
 
     for (ShuffleData data : req.getShuffleDataList()) {
-      ret.add(
-          new ShufflePartitionedData(
-              data.getPartitionId(), toPartitionedBlock(data.getBlockList())));
+      ret.add(toPartitionedData(data.getPartitionId(), data.getBlockList()));
     }
 
     return ret;
   }
 
-  private ShufflePartitionedBlocksInfo toPartitionedBlock(List<ShuffleBlock> blocks) {
+  private ShufflePartitionedData toPartitionedData(int partitionId, List<ShuffleBlock> blocks) {
     if (blocks == null || blocks.size() == 0) {
-      return ShufflePartitionedBlocksInfo.of(0L, 0L, new ShufflePartitionedBlock[] {});
+      return new ShufflePartitionedData(partitionId, 0L, 0L, new ShufflePartitionedBlock[] {});
     }
     ShufflePartitionedBlock[] ret = new ShufflePartitionedBlock[blocks.size()];
     long encodedLength = 0L;
@@ -1683,7 +1680,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       dataLength += ret[i].getDataLength();
       i++;
     }
-    return ShufflePartitionedBlocksInfo.of(encodedLength, dataLength, ret);
+    return new ShufflePartitionedData(partitionId, encodedLength, dataLength, ret);
   }
 
   private Map<Integer, long[]> toPartitionBlocksMap(List<PartitionToBlockIds> partitionToBlockIds) {

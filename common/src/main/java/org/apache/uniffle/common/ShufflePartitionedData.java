@@ -30,11 +30,12 @@ public class ShufflePartitionedData {
   private final long totalBlockEncodedLength;
   private final long totalBlockDataLength;
 
-  public ShufflePartitionedData(int partitionId, ShufflePartitionedBlocksInfo blocksInfo) {
+  public ShufflePartitionedData(
+      int partitionId, long encodedLength, long dataLength, ShufflePartitionedBlock[] blockList) {
     this.partitionId = partitionId;
-    this.blockList = blocksInfo.getBlocks() == null ? EMPTY_BLOCK_LIST : blocksInfo.getBlocks();
-    totalBlockEncodedLength = blocksInfo.getEncodedLength();
-    totalBlockDataLength = blocksInfo.getDataLength();
+    this.blockList = blockList == null ? EMPTY_BLOCK_LIST : blockList;
+    totalBlockEncodedLength = encodedLength;
+    totalBlockDataLength = dataLength;
   }
 
   @VisibleForTesting
