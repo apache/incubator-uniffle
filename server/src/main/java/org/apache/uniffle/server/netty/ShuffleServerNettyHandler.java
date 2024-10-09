@@ -30,7 +30,6 @@ import io.netty.channel.ChannelFutureListener;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,7 +166,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               + ", requireBlocksSize="
               + requireBlocksSize
               + ", stageAttemptNumber="
-              + stageAttemptNumber);
+              + stageAttemptNumber
+              + ", partitionCount="
+              + req.getPartitionToBlocks().size());
 
       ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
       if (taskInfo == null) {
@@ -274,10 +275,10 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         }
         final long start = System.currentTimeMillis();
         shuffleBufferManager.releaseMemory(req.encodedLength(), false, true);
-        List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
+        List<ShufflePartitionedData> shufflePartitionedDataList = toPartitionedDataList(req);
         long alreadyReleasedSize = 0;
         boolean hasFailureOccurred = false;
-        for (ShufflePartitionedData spd : shufflePartitionedData) {
+        for (ShufflePartitionedData spd : shufflePartitionedDataList) {
           String shuffleDataInfo =
               "appId["
                   + appId
@@ -301,7 +302,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               responseMessage = errorMsg;
               hasFailureOccurred = true;
             } else {
-              long toReleasedSize = spd.getTotalBlockSize();
+              long toReleasedSize = spd.getTotalBlockEncodedLength();
               // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
               shuffleTaskManager.releasePreAllocatedSize(toReleasedSize);
               alreadyReleasedSize += toReleasedSize;
@@ -333,7 +334,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
             // Once the cache failure occurs, we should explicitly release data held by byteBuf
             if (hasFailureOccurred) {
               Arrays.stream(spd.getBlockList()).forEach(block -> block.getData().release());
-              shuffleBufferManager.releaseMemory(spd.getTotalBlockSize(), false, false);
+              shuffleBufferManager.releaseMemory(spd.getTotalBlockEncodedLength(), false, false);
             }
           }
         }
@@ -359,7 +360,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                   + "], cost "
                   + costTime
                   + " ms with "
-                  + shufflePartitionedData.size()
+                  + shufflePartitionedDataList.size()
                   + " blocks and "
                   + requireBlocksSize
                   + " bytes");
@@ -750,21 +751,22 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     }
   }
 
-  private List<ShufflePartitionedData> toPartitionedData(SendShuffleDataRequest req) {
+  private List<ShufflePartitionedData> toPartitionedDataList(SendShuffleDataRequest req) {
     List<ShufflePartitionedData> ret = Lists.newArrayList();
 
     for (Map.Entry<Integer, List<ShuffleBlockInfo>> entry : req.getPartitionToBlocks().entrySet()) {
-      ret.add(new ShufflePartitionedData(entry.getKey(), toPartitionedBlock(entry.getValue())));
+      ret.add(toPartitionedData(entry.getKey(), entry.getValue()));
     }
     return ret;
   }
 
-  private Pair<Long, ShufflePartitionedBlock[]> toPartitionedBlock(List<ShuffleBlockInfo> blocks) {
+  private ShufflePartitionedData toPartitionedData(int partitionId, List<ShuffleBlockInfo> blocks) {
     if (blocks == null || blocks.size() == 0) {
-      return Pair.of(0L, new ShufflePartitionedBlock[] {});
+      return new ShufflePartitionedData(partitionId, 0L, 0L, new ShufflePartitionedBlock[] {});
     }
     ShufflePartitionedBlock[] ret = new ShufflePartitionedBlock[blocks.size()];
-    long size = 0L;
+    long encodedLength = 0L;
+    long dataLength = 0L;
     int i = 0;
     for (ShuffleBlockInfo block : blocks) {
       ret[i] =
@@ -775,10 +777,11 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               block.getBlockId(),
               block.getTaskAttemptId(),
               block.getData());
-      size += ret[i].getSize();
+      encodedLength += ret[i].getEncodedLength();
+      dataLength += ret[i].getDataLength();
       i++;
     }
-    return Pair.of(size, ret);
+    return new ShufflePartitionedData(partitionId, encodedLength, dataLength, ret);
   }
 
   private StatusCode verifyRequest(String appId) {

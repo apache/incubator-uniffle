@@ -20,7 +20,6 @@ package org.apache.uniffle.common;
 import java.util.Arrays;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class ShufflePartitionedData {
 
@@ -28,23 +27,29 @@ public class ShufflePartitionedData {
       new ShufflePartitionedBlock[] {};
   private int partitionId;
   private final ShufflePartitionedBlock[] blockList;
-  private final long totalBlockSize;
+  private final long totalBlockEncodedLength;
+  private final long totalBlockDataLength;
 
-  public ShufflePartitionedData(int partitionId, Pair<Long, ShufflePartitionedBlock[]> pair) {
+  public ShufflePartitionedData(
+      int partitionId, long encodedLength, long dataLength, ShufflePartitionedBlock[] blockList) {
     this.partitionId = partitionId;
-    this.blockList = pair.getRight() == null ? EMPTY_BLOCK_LIST : pair.getRight();
-    totalBlockSize = pair.getLeft();
+    this.blockList = blockList == null ? EMPTY_BLOCK_LIST : blockList;
+    totalBlockEncodedLength = encodedLength;
+    totalBlockDataLength = dataLength;
   }
 
   @VisibleForTesting
   public ShufflePartitionedData(int partitionId, ShufflePartitionedBlock[] blockList) {
     this.partitionId = partitionId;
     this.blockList = blockList == null ? EMPTY_BLOCK_LIST : blockList;
-    long size = 0L;
+    long encodedLength = 0L;
+    long dataLength = 0L;
     for (ShufflePartitionedBlock block : this.blockList) {
-      size += block.getSize();
+      encodedLength += block.getEncodedLength();
+      dataLength += block.getDataLength();
     }
-    totalBlockSize = size;
+    totalBlockEncodedLength = encodedLength;
+    totalBlockDataLength = dataLength;
   }
 
   @Override
@@ -68,7 +73,11 @@ public class ShufflePartitionedData {
     return blockList;
   }
 
-  public long getTotalBlockSize() {
-    return totalBlockSize;
+  public long getTotalBlockEncodedLength() {
+    return totalBlockEncodedLength;
+  }
+
+  public long getTotalBlockDataLength() {
+    return totalBlockDataLength;
   }
 }

@@ -68,7 +68,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
         if (!blocksMap.containsKey(block.getBlockId())) {
           blocksMap.put(block.getBlockId(), block);
           blockCount++;
-          size += block.getSize();
+          size += block.getEncodedLength();
         } else {
           block.getData().release();
         }
@@ -127,10 +127,10 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
     for (ShufflePartitionedBlock spb : blocksMap.values()) {
       try {
         spb.getData().release();
-        releasedSize += spb.getSize();
+        releasedSize += spb.getEncodedLength();
       } catch (Throwable t) {
         lastException = t;
-        failedToReleaseSize += spb.getSize();
+        failedToReleaseSize += spb.getEncodedLength();
       }
     }
     if (lastException != null) {
@@ -249,13 +249,13 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
           new BufferSegment(
               block.getBlockId(),
               currentOffset,
-              block.getLength(),
+              block.getDataLength(),
               block.getUncompressLength(),
               block.getCrc(),
               block.getTaskAttemptId()));
       readBlocks.add(block);
       // update offset
-      currentOffset += block.getLength();
+      currentOffset += block.getDataLength();
       if (currentOffset >= readBufferSize) {
         break;
       }

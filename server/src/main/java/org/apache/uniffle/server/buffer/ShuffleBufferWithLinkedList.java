@@ -58,7 +58,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
         // If sendShuffleData retried, we may receive duplicate block. The duplicate
         // block would gc without release. Here we must release the duplicated block.
         if (blocks.add(block)) {
-          size += block.getSize();
+          size += block.getEncodedLength();
         } else {
           block.getData().release();
         }
@@ -126,10 +126,10 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
     for (ShufflePartitionedBlock spb : blocks) {
       try {
         spb.getData().release();
-        releasedSize += spb.getSize();
+        releasedSize += spb.getEncodedLength();
       } catch (Throwable t) {
         lastException = t;
-        failedToReleaseSize += spb.getSize();
+        failedToReleaseSize += spb.getEncodedLength();
       }
     }
     if (lastException != null) {
@@ -261,13 +261,13 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
           new BufferSegment(
               block.getBlockId(),
               currentOffset,
-              block.getLength(),
+              block.getDataLength(),
               block.getUncompressLength(),
               block.getCrc(),
               block.getTaskAttemptId()));
       readBlocks.add(block);
       // update offset
-      currentOffset += block.getLength();
+      currentOffset += block.getDataLength();
       if (currentOffset >= readBufferSize) {
         break;
       }

@@ -137,7 +137,7 @@ public abstract class SingleStorageManager implements StorageManager {
     long length = 0;
     long blockNum = 0;
     for (ShufflePartitionedBlock block : event.getShuffleBlocks()) {
-      length += block.getLength();
+      length += block.getDataLength();
       blockNum++;
     }
     List<Integer> partitions = Lists.newArrayList();

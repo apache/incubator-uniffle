@@ -109,7 +109,7 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
             new FileBasedShuffleSegment(
                 blockId,
                 startOffset,
-                block.getLength(),
+                block.getDataLength(),
                 block.getUncompressLength(),
                 crc,
                 block.getTaskAttemptId());
