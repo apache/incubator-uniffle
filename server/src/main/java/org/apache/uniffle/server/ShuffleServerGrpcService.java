@@ -34,7 +34,6 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Triple;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +46,7 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShuffleIndexResult;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.ShufflePartitionedBlocksInfo;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.audit.RpcAuditContext;
 import org.apache.uniffle.common.config.RssBaseConf;
@@ -1661,10 +1661,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     return ret;
   }
 
-  private Triple<Long, Long, ShufflePartitionedBlock[]> toPartitionedBlock(
-      List<ShuffleBlock> blocks) {
+  private ShufflePartitionedBlocksInfo toPartitionedBlock(List<ShuffleBlock> blocks) {
     if (blocks == null || blocks.size() == 0) {
-      return Triple.of(0L, 0L, new ShufflePartitionedBlock[] {});
+      return ShufflePartitionedBlocksInfo.of(0L, 0L, new ShufflePartitionedBlock[] {});
     }
     ShufflePartitionedBlock[] ret = new ShufflePartitionedBlock[blocks.size()];
     long encodedLength = 0L;
@@ -1680,11 +1679,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               block.getBlockId(),
               block.getTaskAttemptId(),
               data);
-      encodedLength += ret[i].getSize();
-      dataLength += ret[i].getLength();
+      encodedLength += ret[i].getEncodedLength();
+      dataLength += ret[i].getDataLength();
       i++;
     }
-    return Triple.of(encodedLength, dataLength, ret);
+    return ShufflePartitionedBlocksInfo.of(encodedLength, dataLength, ret);
   }
 
   private Map<Integer, long[]> toPartitionBlocksMap(List<PartitionToBlockIds> partitionToBlockIds) {

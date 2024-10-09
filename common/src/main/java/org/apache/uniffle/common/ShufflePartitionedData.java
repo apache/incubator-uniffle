@@ -20,7 +20,6 @@ package org.apache.uniffle.common;
 import java.util.Arrays;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.lang3.tuple.Triple;
 
 public class ShufflePartitionedData {
 
@@ -31,12 +30,11 @@ public class ShufflePartitionedData {
   private final long totalBlockEncodedLength;
   private final long totalBlockDataLength;
 
-  public ShufflePartitionedData(
-      int partitionId, Triple<Long, Long, ShufflePartitionedBlock[]> pair) {
+  public ShufflePartitionedData(int partitionId, ShufflePartitionedBlocksInfo blocksInfo) {
     this.partitionId = partitionId;
-    this.blockList = pair.getRight() == null ? EMPTY_BLOCK_LIST : pair.getRight();
-    totalBlockEncodedLength = pair.getLeft();
-    totalBlockDataLength = pair.getMiddle();
+    this.blockList = blocksInfo.getBlocks() == null ? EMPTY_BLOCK_LIST : blocksInfo.getBlocks();
+    totalBlockEncodedLength = blocksInfo.getEncodedLength();
+    totalBlockDataLength = blocksInfo.getDataLength();
   }
 
   @VisibleForTesting
@@ -46,8 +44,8 @@ public class ShufflePartitionedData {
     long encodedLength = 0L;
     long dataLength = 0L;
     for (ShufflePartitionedBlock block : this.blockList) {
-      encodedLength += block.getSize();
-      dataLength += block.getLength();
+      encodedLength += block.getEncodedLength();
+      dataLength += block.getDataLength();
     }
     totalBlockEncodedLength = encodedLength;
     totalBlockDataLength = dataLength;

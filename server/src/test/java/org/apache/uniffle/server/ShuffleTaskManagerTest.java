@@ -1159,7 +1159,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     for (ShufflePartitionedBlock block : blocks) {
       for (BufferSegment bs : bufferSegments) {
         if (bs.getBlockId() == block.getBlockId()) {
-          assertEquals(block.getLength(), bs.getLength());
+          assertEquals(block.getDataLength(), bs.getLength());
           assertEquals(block.getCrc(), bs.getCrc());
           matchNum++;
           break;

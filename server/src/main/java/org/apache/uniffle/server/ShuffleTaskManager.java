@@ -506,7 +506,7 @@ public class ShuffleTaskManager {
     synchronized (bitmap) {
       for (ShufflePartitionedBlock spb : spbs) {
         bitmap.addLong(spb.getBlockId());
-        size += spb.getSize();
+        size += spb.getEncodedLength();
       }
     }
     long partitionSize = shuffleTaskInfo.addPartitionDataSize(shuffleId, partitionId, size);

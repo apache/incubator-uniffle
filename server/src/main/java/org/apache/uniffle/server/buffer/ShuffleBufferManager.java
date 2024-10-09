@@ -226,7 +226,7 @@ public class ShuffleBufferManager {
       Arrays.stream(spd.getBlockList())
           .forEach(
               b -> {
-                int blockSize = b.getLength();
+                int blockSize = b.getDataLength();
                 ShuffleServerMetrics.appHistogramWriteBlockSize.labels(appId).observe(blockSize);
               });
     }
