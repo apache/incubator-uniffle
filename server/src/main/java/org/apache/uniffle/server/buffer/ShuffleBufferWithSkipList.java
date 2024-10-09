@@ -59,7 +59,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
 
   @Override
   public long append(ShufflePartitionedData data) {
-    long size = 0;
+    long currentSize = 0;
 
     synchronized (this) {
       for (ShufflePartitionedBlock block : data.getBlockList()) {
@@ -68,15 +68,16 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
         if (!blocksMap.containsKey(block.getBlockId())) {
           blocksMap.put(block.getBlockId(), block);
           blockCount++;
-          size += block.getSize();
+          currentSize += block.getSize();
+          this.length += block.getLength();
         } else {
           block.getData().release();
         }
       }
-      this.size += size;
+      this.size += currentSize;
     }
 
-    return size;
+    return currentSize;
   }
 
   @Override
@@ -94,7 +95,16 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
     long eventId = ShuffleFlushManager.ATOMIC_EVENT_ID.getAndIncrement();
     final ShuffleDataFlushEvent event =
         new ShuffleDataFlushEvent(
-            eventId, appId, shuffleId, startPartition, endPartition, size, spBlocks, isValid, this);
+            eventId,
+            appId,
+            shuffleId,
+            startPartition,
+            endPartition,
+            size,
+            length,
+            spBlocks,
+            isValid,
+            this);
     event.addCleanupCallback(
         () -> {
           this.clearInFlushBuffer(event.getEventId());
@@ -106,6 +116,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
     blockCount = 0;
     inFlushSize.addAndGet(size);
     size = 0;
+    length = 0;
     return event;
   }
 

@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -666,6 +667,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     } while (size < expectedBlockNum);
   }
 
+  @VisibleForTesting
   public static ShuffleDataFlushEvent createShuffleDataFlushEvent(
       String appId,
       int shuffleId,
@@ -690,6 +692,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
         startPartition,
         endPartition,
         size,
+        spbs.stream().mapToInt(ShufflePartitionedBlock::getLength).sum(),
         spbs,
         isValid,
         null);
