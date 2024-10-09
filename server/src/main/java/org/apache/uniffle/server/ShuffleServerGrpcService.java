@@ -870,6 +870,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               appId,
               shuffleId);
         }
+        auditContext.withContext("updatedBlockCount=" + updatedBlockCount);
+        auditContext.withContext("expectedBlockCount=" + expectedBlockCount);
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
         msg = "error happened when report shuffle result, check shuffle server for detail";
@@ -917,7 +919,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
 
       String msg = "OK";
-      GetShuffleResultResponse reply;
       byte[] serializedBlockIds = null;
       String requestInfo =
           "appId[" + appId + "], shuffleId[" + shuffleId + "], partitionId[" + partitionId + "]";
@@ -942,7 +943,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
 
       auditContext.withStatusCode(status);
-      reply =
+      auditContext.withReturnValue("serializedBlockIdsBytes=" + serializedBlockIdsBytes.size());
+      GetShuffleResultResponse reply =
           GetShuffleResultResponse.newBuilder()
               .setStatus(status.toProto())
               .setRetMsg(msg)
@@ -986,7 +988,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
 
       String msg = "OK";
-      GetShuffleResultForMultiPartResponse reply;
       byte[] serializedBlockIds = null;
       String requestInfo =
           "appId[" + appId + "], shuffleId[" + shuffleId + "], partitions" + partitionsList;
@@ -1011,8 +1012,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         LOG.error("Error happened when get shuffle result for {}", requestInfo, e);
       }
 
+      auditContext.withReturnValue("serializedBlockIdsBytes=" + serializedBlockIdsBytes.size());
       auditContext.withStatusCode(status);
-      reply =
+      GetShuffleResultForMultiPartResponse reply =
           GetShuffleResultForMultiPartResponse.newBuilder()
               .setStatus(status.toProto())
               .setRetMsg(msg)
