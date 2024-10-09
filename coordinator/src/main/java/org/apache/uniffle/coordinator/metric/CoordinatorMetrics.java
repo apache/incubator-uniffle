@@ -26,6 +26,7 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import org.apache.commons.lang3.StringUtils;
 
+import org.apache.uniffle.common.metrics.CommonMetrics;
 import org.apache.uniffle.common.metrics.MetricsManager;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
@@ -68,6 +69,7 @@ public class CoordinatorMetrics {
       metricsManager = new MetricsManager(collectorRegistry, labels);
       isRegister = true;
       setUpMetrics();
+      CommonMetrics.register(collectorRegistry, Constants.COORDINATOR_TAG);
     }
   }
 
@@ -81,6 +83,7 @@ public class CoordinatorMetrics {
     isRegister = false;
     GAUGE_USED_REMOTE_STORAGE.clear();
     CollectorRegistry.defaultRegistry.clear();
+    CommonMetrics.clear();
   }
 
   public static CollectorRegistry getCollectorRegistry() {

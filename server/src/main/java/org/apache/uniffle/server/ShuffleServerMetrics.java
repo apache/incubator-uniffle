@@ -30,6 +30,7 @@ import io.prometheus.client.Summary;
 import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.common.config.ConfigUtils;
+import org.apache.uniffle.common.metrics.CommonMetrics;
 import org.apache.uniffle.common.metrics.MetricsManager;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.storage.common.LocalStorage;
@@ -270,6 +271,7 @@ public class ShuffleServerMetrics {
       metricsManager = new MetricsManager(collectorRegistry, labels);
       isRegister = true;
       setUpMetrics(serverConf);
+      CommonMetrics.register(collectorRegistry, tags);
     }
   }
 
@@ -289,6 +291,7 @@ public class ShuffleServerMetrics {
   public static void clear() {
     isRegister = false;
     CollectorRegistry.defaultRegistry.clear();
+    CommonMetrics.clear();
   }
 
   public static CollectorRegistry getCollectorRegistry() {
