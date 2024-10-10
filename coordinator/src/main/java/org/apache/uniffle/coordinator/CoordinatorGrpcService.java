@@ -238,6 +238,17 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
     try (CoordinatorRpcAuditContext auditContext = createAuditContext("heartbeat")) {
       final ServerNode serverNode = toServerNode(request);
       auditContext.withArgs("serverNode=" + serverNode.getId());
+      ServerNode oldServerNode = null;
+      try {
+        oldServerNode = coordinatorServer.getClusterManager().getServerNodeById(serverNode.getId());
+      } catch (Exception ignored) {
+        // Ignore this exception.
+        // Because when receiving the heartbeat for the fist time, there will be no
+        // server node information and an exception will be thrown.
+      }
+      // combine appInfo list from oldServerNode to serverNode
+      serverNode.combineAppInfos(oldServerNode);
+
       coordinatorServer.getClusterManager().add(serverNode);
       final ShuffleServerHeartBeatResponse response =
           ShuffleServerHeartBeatResponse.newBuilder()
@@ -538,7 +549,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         request.getServerId().getJettyPort(),
         request.getStartTimeMs(),
         request.getVersion(),
-        request.getGitCommitId());
+        request.getGitCommitId(),
+        request.getAppInfosList());
   }
 
   /**

@@ -36,6 +36,7 @@ import org.apache.uniffle.common.web.resource.BaseResource;
 import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.AppInfo;
 import org.apache.uniffle.coordinator.ApplicationManager;
+import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.web.vo.AppInfoVO;
 import org.apache.uniffle.coordinator.web.vo.UserAppNumVO;
@@ -89,20 +90,20 @@ public class ApplicationResource extends BaseResource {
             for (Map.Entry<String, AppInfo> appIdTimestampMap :
                 userAppIdTimestampMap.getValue().entrySet()) {
               AppInfo appInfo = appIdTimestampMap.getValue();
-              userToAppList.add(
-                  new AppInfoVO(
-                      userAppIdTimestampMap.getKey(),
-                      appInfo.getAppId(),
-                      appInfo.getUpdateTime(),
-                      appInfo.getRegistrationTime(),
-                      appInfo.getVersion(),
-                      appInfo.getGitCommitId()));
+              AppInfoVO appInfoVO =
+                  getCoordinatorServer().getAppInfoV0(userAppIdTimestampMap.getKey(), appInfo);
+              userToAppList.add(appInfoVO);
             }
           }
           // Display is inverted by the submission time of the application.
           userToAppList.sort(Comparator.reverseOrder());
           return userToAppList;
         });
+  }
+
+  private CoordinatorServer getCoordinatorServer() {
+    return (CoordinatorServer)
+        servletContext.getAttribute(CoordinatorServer.class.getCanonicalName());
   }
 
   private ApplicationManager getApplicationManager() {
