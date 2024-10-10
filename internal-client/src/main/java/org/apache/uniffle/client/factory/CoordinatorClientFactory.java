@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,7 @@ public class CoordinatorClientFactory {
     return LazyHolder.INSTANCE;
   }
 
+  @VisibleForTesting
   public synchronized CoordinatorClient createCoordinatorClient(
       ClientType clientType, String host, int port) {
     if (clientType.equals(ClientType.GRPC) || clientType.equals(ClientType.GRPC_NETTY)) {
@@ -53,6 +55,7 @@ public class CoordinatorClientFactory {
     }
   }
 
+  @VisibleForTesting
   public synchronized List<CoordinatorClient> createCoordinatorClient(
       ClientType clientType, String coordinators) {
     LOG.info("Start to create coordinator clients from {}", coordinators);

@@ -34,7 +34,7 @@ import org.apache.uniffle.client.response.RssSendHeartBeatResponse;
 
 public interface CoordinatorClient {
 
-  RssAppHeartBeatResponse sendAppHeartBeat(RssAppHeartBeatRequest request);
+  RssAppHeartBeatResponse scheduleAtFixedRateToSendAppHeartBeat(RssAppHeartBeatRequest request);
 
   RssApplicationInfoResponse registerApplicationInfo(RssApplicationInfoRequest request);
 
