@@ -103,7 +103,18 @@ public class SendShuffleDataRequest extends RequestMessage {
       int lengthOfShuffleBlocks = byteBuf.readInt();
       List<ShuffleBlockInfo> shuffleBlockInfoList = Lists.newArrayList();
       for (int j = 0; j < lengthOfShuffleBlocks; j++) {
-        shuffleBlockInfoList.add(Decoders.decodeShuffleBlockInfo(byteBuf));
+        try {
+          shuffleBlockInfoList.add(Decoders.decodeShuffleBlockInfo(byteBuf));
+        } catch (Throwable t) {
+          shuffleBlockInfoList.forEach(sbi -> sbi.getData().release());
+          if (!partitionToBlocks.isEmpty()) {
+            partitionToBlocks.forEach(
+                (integer, shuffleBlockInfos) -> {
+                  shuffleBlockInfos.forEach(sbi -> sbi.getData().release());
+                });
+          }
+          throw t;
+        }
       }
       partitionToBlocks.put(partitionId, shuffleBlockInfoList);
     }
