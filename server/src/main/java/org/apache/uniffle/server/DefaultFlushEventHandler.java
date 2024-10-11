@@ -22,6 +22,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Queues;
@@ -165,17 +166,22 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
 
   protected void initFlushEventExecutor() {
     if (StorageType.withLocalfile(storageType)) {
-      int poolSize =
-          shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_LOCALFILE_THREAD_POOL_SIZE);
       localFileThreadPoolExecutor =
-          createFlushEventExecutor(poolSize, "LocalFileFlushEventThreadPool");
+          createFlushEventExecutor(
+              () ->
+                  shuffleServerConf.getInteger(
+                      ShuffleServerConf.SERVER_FLUSH_LOCALFILE_THREAD_POOL_SIZE),
+              "LocalFileFlushEventThreadPool");
     }
     if (StorageType.withHadoop(storageType)) {
-      int poolSize =
-          shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_HADOOP_THREAD_POOL_SIZE);
-      hadoopThreadPoolExecutor = createFlushEventExecutor(poolSize, "HadoopFlushEventThreadPool");
+      hadoopThreadPoolExecutor =
+          createFlushEventExecutor(
+              () ->
+                  shuffleServerConf.getInteger(
+                      ShuffleServerConf.SERVER_FLUSH_HADOOP_THREAD_POOL_SIZE),
+              "HadoopFlushEventThreadPool");
     }
-    fallbackThreadPoolExecutor = createFlushEventExecutor(5, "FallBackFlushEventThreadPool");
+    fallbackThreadPoolExecutor = createFlushEventExecutor(() -> 5, "FallBackFlushEventThreadPool");
     ShuffleServerMetrics.addLabeledGauge(EVENT_QUEUE_SIZE, () -> (double) flushQueue.size());
     startEventProcessor();
   }
@@ -226,16 +232,16 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
     }
   }
 
-  protected Executor createFlushEventExecutor(int poolSize, String threadFactoryName) {
+  protected Executor createFlushEventExecutor(
+      Supplier<Integer> poolSizeSupplier, String threadFactoryName) {
     int waitQueueSize =
         shuffleServerConf.getInteger(ShuffleServerConf.SERVER_FLUSH_THREAD_POOL_QUEUE_SIZE);
     BlockingQueue<Runnable> waitQueue = Queues.newLinkedBlockingQueue(waitQueueSize);
-    long keepAliveTime = shuffleServerConf.getLong(ShuffleServerConf.SERVER_FLUSH_THREAD_ALIVE);
     return ThreadPoolManager.newThreadPool(
         threadFactoryName,
-        poolSize,
-        poolSize,
-        keepAliveTime,
+        poolSizeSupplier,
+        poolSizeSupplier,
+        () -> shuffleServerConf.getLong(ShuffleServerConf.SERVER_FLUSH_THREAD_ALIVE),
         TimeUnit.SECONDS,
         waitQueue,
         ThreadUtils.getThreadFactory(threadFactoryName));

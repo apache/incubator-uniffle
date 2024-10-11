@@ -47,11 +47,16 @@ public class CommonMetrics {
     return metricsManager.getCollectorRegistry();
   }
 
-  public static void addLabeledGauge(String name, Supplier<Double> supplier) {
+  public static <T extends Number> void addLabeledGauge(String name, Supplier<T> supplier) {
+    addLabeledCacheGauge(name, supplier, 0);
+  }
+
+  public static <T extends Number> void addLabeledCacheGauge(
+      String name, Supplier<T> supplier, long updateInterval) {
     if (!isRegister) {
       return;
     }
-    metricsManager.addLabeledGauge(name, supplier);
+    metricsManager.addLabeledCacheGauge(name, supplier, updateInterval);
   }
 
   public static void unregisterSupplierGauge(String name) {

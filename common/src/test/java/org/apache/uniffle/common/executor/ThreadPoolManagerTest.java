@@ -107,27 +107,32 @@ public class ThreadPoolManagerTest {
             new LinkedBlockingQueue<>(1),
             new ThreadFactoryBuilder().setDaemon(false).setNameFormat("test-thread-pool").build(),
             new ThreadPoolExecutor.AbortPolicy());
-    int rejectedCount = 0;
-    for (int i = 0; i < 10; i++) {
-      try {
-        threadPool.submit(
-            () -> {
-              try {
-                Thread.sleep(1000L);
-              } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-              }
-            });
-      } catch (RejectedExecutionException e) {
-        rejectedCount++;
+    try {
+      int rejectedCount = 0;
+      for (int i = 0; i < 10; i++) {
+        try {
+          threadPool.submit(
+              () -> {
+                try {
+                  Thread.sleep(1000L);
+                } catch (InterruptedException e) {
+                  throw new RuntimeException(e);
+                }
+              });
+        } catch (RejectedExecutionException e) {
+          rejectedCount++;
+        }
       }
+      assertEquals(8, rejectedCount);
+      assertEquals(
+          rejectedCount,
+          CommonMetrics.getCollectorRegistry()
+              .getSampleValue("test_RejectCount", new String[] {"tags"}, new String[] {"test"})
+              .intValue());
+    } finally {
+      ThreadPoolManager.unregister(threadPool);
+      threadPool.shutdown();
     }
-    assertEquals(8, rejectedCount);
-    assertEquals(
-        rejectedCount,
-        CommonMetrics.getCollectorRegistry()
-            .getSampleValue("test_RejectCount", new String[] {"tags"}, new String[] {"test"})
-            .intValue());
   }
 
   private void testInternal(ThreadPoolExecutor threadPool) {
@@ -146,6 +151,7 @@ public class ThreadPoolManagerTest {
     } finally {
       ThreadPoolManager.unregister(threadPool);
       assertTrue(!ThreadPoolManager.exists(threadPool));
+      threadPool.shutdown();
     }
   }
 }
