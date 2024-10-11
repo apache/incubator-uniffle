@@ -231,9 +231,7 @@ public class ShuffleServerMetricsTest {
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
-    // the original metrics have 69 items before this commit, but is would grow up
-    // when the new metric is added, we needn't correct this test while adding new metrics
-    assertTrue(actualObj.get("metrics").size() > 50);
+    assertEquals(84, actualObj.get("metrics").size());
   }
 
   @Test
@@ -242,9 +240,7 @@ public class ShuffleServerMetricsTest {
     ObjectMapper mapper = new ObjectMapper();
     JsonNode actualObj = mapper.readTree(content);
     assertEquals(2, actualObj.size());
-    // the original metrics have 69 items before this commit, but is would grow up
-    // when the new metric is added, we needn't correct this test while adding new metrics
-    assertTrue(actualObj.get("metrics").size() > 50);
+    assertEquals(68, actualObj.get("metrics").size());
   }
 
   @Test
