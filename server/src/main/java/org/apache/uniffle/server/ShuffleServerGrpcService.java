@@ -852,6 +852,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               + "]";
 
       try {
+        long start = System.currentTimeMillis();
         int expectedBlockCount =
             partitionToBlockIds.values().stream().mapToInt(x -> x.length).sum();
         LOG.info(
@@ -863,6 +864,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             shuffleServer
                 .getShuffleTaskManager()
                 .addFinishedBlockIds(appId, shuffleId, partitionToBlockIds, bitmapNum);
+        long costTime = System.currentTimeMillis() - start;
+        shuffleServer
+            .getGrpcMetrics()
+            .recordProcessTime(ShuffleServerGrpcMetrics.REPORT_SHUFFLE_RESULT_METHOD, costTime);
         if (expectedBlockCount != updatedBlockCount) {
           LOG.warn(
               "Existing {} duplicated blockIds on blockId report for appId: {}, shuffleId: {}",
@@ -993,6 +998,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       ByteString serializedBlockIdsBytes = ByteString.EMPTY;
 
       try {
+        long start = System.currentTimeMillis();
         serializedBlockIds =
             shuffleServer
                 .getShuffleTaskManager()
@@ -1004,6 +1010,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           LOG.warn(msg);
         } else {
           serializedBlockIdsBytes = UnsafeByteOperations.unsafeWrap(serializedBlockIds);
+          long costTime = System.currentTimeMillis() - start;
+          shuffleServer
+              .getGrpcMetrics()
+              .recordProcessTime(
+                  ShuffleServerGrpcMetrics.GET_SHUFFLE_RESULT_FOR_MULTI_PART_METHOD, costTime);
         }
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
