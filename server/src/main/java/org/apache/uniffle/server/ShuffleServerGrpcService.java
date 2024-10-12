@@ -492,10 +492,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               hasFailureOccurred = true;
               break;
             } else {
-              if (shuffleServer.isRemoteMergeEnable()) {
-                // TODO: Use ShuffleBufferWithSkipList to avoid caching block here.
-                shuffleServer.getShuffleMergeManager().cacheBlock(appId, shuffleId, spd);
-              }
               long toReleasedSize = spd.getTotalBlockSize();
               // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
               manager.releasePreAllocatedSize(toReleasedSize);

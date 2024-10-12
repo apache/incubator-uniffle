@@ -30,7 +30,6 @@ import org.apache.uniffle.common.serializer.PartialInputStream;
 public class StreamedSegment<K, V> extends Segment {
 
   private RecordsReader<K, V> reader;
-  ByteBuf byteBuf = null;
 
   public StreamedSegment(
       RssConf rssConf,
@@ -41,21 +40,6 @@ public class StreamedSegment<K, V> extends Segment {
       boolean raw) {
     super(blockId);
     this.reader = new RecordsReader<>(rssConf, inputStream, keyClass, valueClass, raw);
-  }
-
-  public StreamedSegment(
-      RssConf rssConf, ByteBuf byteBuf, long blockId, Class keyClass, Class valueClass, boolean raw)
-      throws IOException {
-    super(blockId);
-    this.byteBuf = byteBuf;
-    this.byteBuf.retain();
-    this.reader =
-        new RecordsReader<>(
-            rssConf,
-            PartialInputStream.newInputStream(byteBuf.nioBuffer()),
-            keyClass,
-            valueClass,
-            raw);
   }
 
   // The buffer must be sorted by key
@@ -110,10 +94,6 @@ public class StreamedSegment<K, V> extends Segment {
 
   @Override
   public void close() throws IOException {
-    if (byteBuf != null) {
-      this.byteBuf.release();
-      this.byteBuf = null;
-    }
     if (this.reader != null) {
       this.reader.close();
       this.reader = null;

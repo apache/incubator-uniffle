@@ -29,7 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import io.netty.buffer.ByteBuf;
+import com.google.common.collect.Range;
+import io.netty.buffer.ByteBufUtil;
 import org.apache.hadoop.io.RawComparator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -51,8 +52,9 @@ import org.apache.uniffle.common.netty.buffer.FileSegmentManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
+import org.apache.uniffle.server.buffer.ShuffleBuffer;
+import org.apache.uniffle.server.buffer.ShuffleBufferWithSkipList;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.impl.LocalFileServerReadHandler;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
@@ -73,13 +75,6 @@ public class Partition<K, V> {
 
   private final Shuffle shuffle;
   private final int partitionId;
-  // Inserting or deleting ShuffleBuffer::blocks while traversing blocks may cause an
-  // ConcurrentModificationException.
-  // So cache the block here. When we use the cached block, we should check refCnt so that we can
-  // make sure the ByteBuf
-  // is not released.
-  Map<Long, ShufflePartitionedBlock> cachedblockMap = JavaUtils.newConcurrentMap();
-  Map<Long, ShufflePartitionedBlock> mergedBlockMap = JavaUtils.newConcurrentMap();
 
   private MergeState state = MergeState.INITED;
   private MergedResult result;
@@ -133,6 +128,22 @@ public class Partition<K, V> {
     }
   }
 
+  private ShufflePartitionedBlock getShufflePartitionedBlock(long blockId, boolean merged) {
+    Map.Entry<Range<Integer>, ShuffleBuffer> entry =
+        shuffle
+            .shuffleServer
+            .getShuffleBufferManager()
+            .getShuffleBufferEntry(
+                merged ? shuffle.appId + MERGE_APP_SUFFIX : shuffle.appId,
+                shuffle.shuffleId,
+                partitionId);
+    if (entry != null) {
+      ShuffleBuffer shuffleBuffer = entry.getValue();
+      return ((ShuffleBufferWithSkipList) shuffleBuffer).getBlock(blockId);
+    }
+    return null;
+  }
+
   // getSegments is used to get segments from original shuffle blocks
   public List<Segment> getSegments(
       RssConf rssConf, Iterator<Long> blockIds, Class keyClass, Class valueClass)
@@ -141,25 +152,21 @@ public class Partition<K, V> {
     Set<Long> blocksFlushed = new HashSet<>();
     while (blockIds.hasNext()) {
       long blockId = blockIds.next();
-      ByteBuf buf = null;
-      if (cachedblockMap.containsKey(blockId)) {
-        buf = cachedblockMap.get(blockId).getData();
-      }
-      if (buf != null && buf.refCnt() > 0) {
+      ShufflePartitionedBlock block = getShufflePartitionedBlock(blockId, false);
+      if (block != null && ByteBufUtil.isAccessible(block.getData())) {
         try {
           StreamedSegment segment =
               new StreamedSegment(
                   rssConf,
-                  buf,
+                  block.getData().nioBuffer(0, block.getLength()),
                   blockId,
                   keyClass,
                   valueClass,
                   (shuffle.comparator instanceof RawComparator));
           segments.add(segment);
         } catch (Exception e) {
-          // If ByteBuf is released by flush cleanup before we retain in Segment,
-          // will throw ConcurrentModificationException. So we need get block buffer
-          // from file
+          // If ByteBuf is released by flush cleanup will throw ConcurrentModificationException.
+          // So we need get block buffer from file
           LOG.warn("construct segment failed, caused by ", e);
           blocksFlushed.add(blockId);
         }
@@ -238,10 +245,6 @@ public class Partition<K, V> {
     return new MergeStatus(currentState, size);
   }
 
-  public void cacheBlock(ShufflePartitionedBlock spb) {
-    cachedblockMap.put(spb.getBlockId(), spb);
-  }
-
   // When we merge data, we will divide the merge results into blocks according to the specified
   // block size.
   // The merged block in a new appId field (${appd} + MERGE_APP_SUFFIX). We will process the merged
@@ -260,7 +263,6 @@ public class Partition<K, V> {
               .getShuffleTaskManager()
               .cacheShuffleData(appId, shuffle.shuffleId, false, spd);
       if (ret == StatusCode.SUCCESS) {
-        mergedBlockMap.put(blockId, spb);
         shuffle
             .shuffleServer
             .getShuffleTaskManager()
@@ -317,7 +319,7 @@ public class Partition<K, V> {
 
   private NettyManagedBuffer getMergedBlockBufferInMemory(long blockId) {
     try {
-      ShufflePartitionedBlock block = this.mergedBlockMap.get(blockId);
+      ShufflePartitionedBlock block = this.getShufflePartitionedBlock(blockId, true);
       // We must make sure refCnt > 0, it means the ByteBuf is not released by flush cleanup
       if (block != null && block.getData().refCnt() > 0) {
         return new NettyManagedBuffer(block.getData().retain());
@@ -412,8 +414,6 @@ public class Partition<K, V> {
       if (reader != null) {
         reader.close();
       }
-      cachedblockMap.clear();
-      mergedBlockMap.clear();
       shuffleMeta.clear();
     } catch (Exception e) {
       LOG.warn("Partition {} clean up failed, caused by {}", this, e);
