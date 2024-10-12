@@ -158,7 +158,7 @@ public class Partition<K, V> {
           StreamedSegment segment =
               new StreamedSegment(
                   rssConf,
-                  block.getData().nioBuffer(0, block.getLength()),
+                  block.getData().nioBuffer(0, block.getDataLength()),
                   blockId,
                   keyClass,
                   valueClass,
