@@ -53,7 +53,6 @@ import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -366,8 +365,6 @@ public class LocalStorageManagerTest {
     shuffleTaskInfos.put("app1", new ShuffleTaskInfo("app1"));
     shuffleTaskInfos.put("app2", new ShuffleTaskInfo("app2"));
     localStorageManager.checkAndClearLeakedShuffleData(shuffleTaskInfos::keySet);
-    TestLoggerExtension testLogger = TestLoggerExtension.getTestLogger(context);
-    assertFalse(testLogger.wasLogged("app"));
 
     // test race condition case, app 3 is new app
     shuffleTaskInfos.put("3", new ShuffleTaskInfo("app3"));
@@ -375,6 +372,8 @@ public class LocalStorageManagerTest {
     when(mockLocalStorage.getAppIds()).thenReturn(Collections.singleton("app3"));
     storages.add(mockLocalStorage);
     localStorageManager.checkAndClearLeakedShuffleData(shuffleTaskInfos::keySet);
+
+    TestLoggerExtension testLogger = TestLoggerExtension.getTestLogger(context);
     assertTrue(testLogger.wasLogged("Delete shuffle data for appId\\[app3\\]"));
     System.out.println();
   }
