@@ -599,14 +599,14 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
   private byte[] getExpectedData(ShufflePartitionedData... spds) {
     int size = 0;
     for (ShufflePartitionedData spd : spds) {
-      size += spd.getBlockList()[0].getLength();
+      size += spd.getBlockList()[0].getDataLength();
     }
     byte[] expectedData = new byte[size];
     int offset = 0;
     for (ShufflePartitionedData spd : spds) {
       ShufflePartitionedBlock block = spd.getBlockList()[0];
-      ByteBufUtils.readBytes(block.getData(), expectedData, offset, block.getLength());
-      offset += block.getLength();
+      ByteBufUtils.readBytes(block.getData(), expectedData, offset, block.getDataLength());
+      offset += block.getDataLength();
     }
     return expectedData;
   }
@@ -623,10 +623,10 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
       ShufflePartitionedBlock spb = blocks.get(i);
       BufferSegment segment = bufferSegments.get(segmentIndex);
       assertEquals(spb.getBlockId(), segment.getBlockId());
-      assertEquals(spb.getLength(), segment.getLength());
+      assertEquals(spb.getDataLength(), segment.getLength());
       assertEquals(spb.getCrc(), segment.getCrc());
       assertEquals(offset, segment.getOffset());
-      offset += spb.getLength();
+      offset += spb.getDataLength();
       segmentIndex++;
     }
   }

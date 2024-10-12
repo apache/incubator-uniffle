@@ -226,10 +226,17 @@ public class ShuffleBufferManager {
       Arrays.stream(spd.getBlockList())
           .forEach(
               b -> {
-                int blockSize = b.getLength();
+                int blockSize = b.getDataLength();
                 ShuffleServerMetrics.appHistogramWriteBlockSize.labels(appId).observe(blockSize);
               });
     }
+    LOG.debug(
+        "cache shuffle data, size: {}, blockCount: {}, appId: {}, shuffleId: {}, partitionId: {}",
+        spd.getTotalBlockDataLength(),
+        spd.getBlockList().length,
+        appId,
+        shuffleId,
+        spd.getPartitionId());
     updateShuffleSize(appId, shuffleId, size);
     synchronized (this) {
       flushSingleBufferIfNecessary(
