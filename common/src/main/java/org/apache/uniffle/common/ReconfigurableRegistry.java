@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,6 +145,11 @@ public class ReconfigurableRegistry {
     return LISTENER_MAP.size();
   }
 
+  @VisibleForTesting
+  public static void clear() {
+    LISTENER_MAP.clear();
+  }
+
   /**
    * When the property was reconfigured, this function will be invoked. This property listeners will
    * be notified.
@@ -153,19 +157,18 @@ public class ReconfigurableRegistry {
    * @param conf the rss conf
    * @param changedProperties the changed properties
    */
-  public static synchronized void update(RssConf conf, Map<String, Object> changedProperties) {
+  public static synchronized void update(RssConf conf, Set<String> changedProperties) {
     for (Map.Entry<Set<String>, List<ReconfigureListener>> entry : LISTENER_MAP.entrySet()) {
       // check if the keys is empty, if empty, it means all keys are listened.
       Set<String> intersection =
           entry.getKey().isEmpty()
-              ? changedProperties.keySet()
-              : Sets.intersection(entry.getKey(), changedProperties.keySet());
+              ? changedProperties
+              : Sets.intersection(entry.getKey(), changedProperties);
       if (!intersection.isEmpty()) {
-        Map<String, Object> filteredMap =
-            Maps.filterKeys(changedProperties, intersection::contains);
+        Set<String> filteredSet = Sets.filter(changedProperties, intersection::contains);
         for (ReconfigureListener listener : entry.getValue()) {
           try {
-            listener.update(conf, filteredMap);
+            listener.update(conf, filteredSet);
           } catch (Throwable e) {
             LOG.warn("Exception while updating config for {}", changedProperties, e);
           }
@@ -181,6 +184,6 @@ public class ReconfigurableRegistry {
      * @param conf the rss conf
      * @param changedProperties the changed properties
      */
-    void update(RssConf conf, Map<String, Object> changedProperties);
+    void update(RssConf conf, Set<String> changedProperties);
   }
 }
