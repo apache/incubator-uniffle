@@ -922,7 +922,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           }
           return null;
         },
-        timeoutMs,
+        timeoutMs * allShuffleServers.size() / heartBeatThreadNum + 100,
         "send heartbeat to shuffle server");
     if (coordinatorClients != null) {
       coordinatorClients.sendAppHeartBeat(request, timeoutMs);
