@@ -18,10 +18,11 @@
 package org.apache.uniffle.common;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.google.common.collect.Sets;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.config.RssConf;
@@ -32,6 +33,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** Tests enum type {@link ReconfigurableRegistry}. */
 public class ReconfigurableRegistryTest {
 
+  @BeforeEach
+  public void before() {
+    ReconfigurableRegistry.clear();
+  }
+
   @Test
   public void testUpdate() {
     ReconfigurableBad bad = new ReconfigurableBad();
@@ -41,18 +47,18 @@ public class ReconfigurableRegistryTest {
       ReconfigurableRegistry.register(good0);
       ReconfigurableRegistry.register(bad);
       ReconfigurableRegistry.register(good1);
-      ReconfigurableRegistry.update(null, Collections.singletonMap("key", "value"));
+      ReconfigurableRegistry.update(null, Collections.singleton("key"));
       assertEquals(1, good0.mInvokeCount);
       assertEquals(1, good1.mInvokeCount);
-      ReconfigurableRegistry.update(null, Collections.singletonMap("key", "value"));
+      ReconfigurableRegistry.update(null, Collections.singleton("key"));
       assertEquals(2, good0.mInvokeCount);
       assertEquals(2, good1.mInvokeCount);
       // remove bad guy
       ReconfigurableRegistry.unregister(bad);
-      ReconfigurableRegistry.update(null, Collections.singletonMap("key", "value"));
+      ReconfigurableRegistry.update(null, Collections.singleton("key"));
       assertEquals(3, good0.mInvokeCount);
       assertEquals(3, good1.mInvokeCount);
-      ReconfigurableRegistry.update(null, Collections.singletonMap("key", "value"));
+      ReconfigurableRegistry.update(null, Collections.singleton("key"));
       assertEquals(4, good0.mInvokeCount);
       assertEquals(4, good1.mInvokeCount);
     } finally {
@@ -80,7 +86,7 @@ public class ReconfigurableRegistryTest {
       ReconfigurableRegistry.register(goodAny);
       ReconfigurableRegistry.register("key2", good2);
       ReconfigurableRegistry.register(Sets.newHashSet("key0", "key1"), good01);
-      ReconfigurableRegistry.update(null, Collections.singletonMap("key", "value"));
+      ReconfigurableRegistry.update(null, Collections.singleton("key"));
 
       assertEquals(0, good0.mInvokeCount);
       assertEquals(0, good1.mInvokeCount);
@@ -89,7 +95,7 @@ public class ReconfigurableRegistryTest {
       assertEquals(0, good2.mInvokeCount);
       assertEquals(0, good01.mInvokeCount);
 
-      ReconfigurableRegistry.update(null, Collections.singletonMap("key1", "value1"));
+      ReconfigurableRegistry.update(null, Collections.singleton("key1"));
 
       assertEquals(0, good0.mInvokeCount);
       assertEquals(1, good1.mInvokeCount);
@@ -98,10 +104,10 @@ public class ReconfigurableRegistryTest {
       assertEquals(0, good2.mInvokeCount);
       assertEquals(1, good01.mInvokeCount);
 
-      Map<String, Object> changedProperties = new HashMap<>();
-      changedProperties.put("key0", "value0");
-      changedProperties.put("key1", "value1");
-      changedProperties.put("key2", "value2");
+      Set<String> changedProperties = new HashSet<>();
+      changedProperties.add("key0");
+      changedProperties.add("key1");
+      changedProperties.add("key2");
       ReconfigurableRegistry.update(null, changedProperties);
 
       assertEquals(1, good0.mInvokeCount);
@@ -123,7 +129,7 @@ public class ReconfigurableRegistryTest {
 
   class ReconfigurableBad implements ReconfigurableRegistry.ReconfigureListener {
     @Override
-    public void update(RssConf conf, Map<String, Object> changedProperties) {
+    public void update(RssConf conf, Set<String> changedProperties) {
       throw new RuntimeException("I am bad guy");
     }
   }
@@ -132,7 +138,7 @@ public class ReconfigurableRegistryTest {
     int mInvokeCount = 0;
 
     @Override
-    public void update(RssConf rssConf, Map<String, Object> changedProperties) {
+    public void update(RssConf rssConf, Set<String> changedProperties) {
       mInvokeCount += changedProperties.size();
     }
   }

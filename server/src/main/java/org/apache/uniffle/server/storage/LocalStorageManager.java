@@ -184,7 +184,7 @@ public class LocalStorageManager extends SingleStorageManager {
           if (changedProperties == null || rssConf == null) {
             return;
           }
-          if (changedProperties.containsKey(
+          if (changedProperties.contains(
               ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED.key())) {
             isStorageAuditLogEnabled =
                 rssConf.getBoolean(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED);

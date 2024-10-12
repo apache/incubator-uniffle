@@ -131,10 +131,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           if (changedProperties == null) {
             return;
           }
-          if (changedProperties.containsKey(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED.key())) {
+          if (changedProperties.contains(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED.key())) {
             isRpcAuditLogEnabled = conf.getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED);
           }
-          if (changedProperties.containsKey(
+          if (changedProperties.contains(
               ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST.key())) {
             rpcAuditExcludeOpList =
                 conf.get(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST);
