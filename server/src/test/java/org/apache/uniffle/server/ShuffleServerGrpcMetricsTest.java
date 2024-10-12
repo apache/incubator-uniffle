@@ -43,7 +43,7 @@ public class ShuffleServerGrpcMetricsTest {
     Map<String, Summary.Child> sendTimeSummaryTime = metrics.getTransportTimeSummaryMap();
     Map<String, Summary.Child> processTimeSummaryTime = metrics.getProcessTimeSummaryMap();
     assertEquals(3, sendTimeSummaryTime.size());
-    assertEquals(3, processTimeSummaryTime.size());
+    assertEquals(5, processTimeSummaryTime.size());
 
     Thread.sleep(1000L);
     assertEquals(

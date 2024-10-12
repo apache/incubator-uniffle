@@ -1033,46 +1033,49 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     ExecutorService executorService = null;
     try {
       int concurrency = Math.min(unregisterThreadPoolSize, shuffleServerInfos.size());
-      executorService = ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
+      if (concurrency > 0) {
+        executorService = ThreadUtils.getDaemonFixedThreadPool(concurrency, "unregister-shuffle");
 
-      ThreadUtils.executeTasks(
-          executorService,
-          shuffleServerInfos,
-          shuffleServerInfo -> {
-            try {
-              ShuffleServerClient client =
-                  ShuffleServerClientFactory.getInstance()
-                      .getShuffleServerClient(clientType, shuffleServerInfo, rssConf);
-              RssUnregisterShuffleByAppIdResponse response =
-                  client.unregisterShuffleByAppId(request);
-              if (response.getStatusCode() == StatusCode.SUCCESS) {
-                LOG.info("Successfully unregistered shuffle from {}", shuffleServerInfo);
-              } else {
-                LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
+        ThreadUtils.executeTasks(
+            executorService,
+            shuffleServerInfos,
+            shuffleServerInfo -> {
+              try {
+                ShuffleServerClient client =
+                    ShuffleServerClientFactory.getInstance()
+                        .getShuffleServerClient(clientType, shuffleServerInfo, rssConf);
+                RssUnregisterShuffleByAppIdResponse response =
+                    client.unregisterShuffleByAppId(request);
+                if (response.getStatusCode() == StatusCode.SUCCESS) {
+                  LOG.info("Successfully unregistered shuffle from {}", shuffleServerInfo);
+                } else {
+                  LOG.warn("Failed to unregister shuffle from {}", shuffleServerInfo);
+                }
+              } catch (Exception e) {
+                // this request observed the unregisterRequestTimeSec timeout
+                if (e instanceof StatusRuntimeException
+                    && ((StatusRuntimeException) e).getStatus().getCode()
+                        == Status.DEADLINE_EXCEEDED.getCode()) {
+                  LOG.warn(
+                      "Timeout occurred while unregistering from {}. The request timeout is {}s: {}",
+                      shuffleServerInfo,
+                      unregisterRequestTimeSec,
+                      ((StatusRuntimeException) e).getStatus().getDescription());
+                } else {
+                  LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
+                }
               }
-            } catch (Exception e) {
-              // this request observed the unregisterRequestTimeSec timeout
-              if (e instanceof StatusRuntimeException
-                  && ((StatusRuntimeException) e).getStatus().getCode()
-                      == Status.DEADLINE_EXCEEDED.getCode()) {
-                LOG.warn(
-                    "Timeout occurred while unregistering from {}. The request timeout is {}s: {}",
-                    shuffleServerInfo,
-                    unregisterRequestTimeSec,
-                    ((StatusRuntimeException) e).getStatus().getDescription());
-              } else {
-                LOG.warn("Error while unregistering from {}", shuffleServerInfo, e);
-              }
-            }
-            return null;
-          },
-          unregisterTimeMs,
-          "unregister shuffle server",
-          String.format(
-              "Please consider increasing the thread pool size (%s) or the overall timeout (%ss) "
-                  + "if you still think the request timeout (%ss) is sensible.",
-              unregisterThreadPoolSize, unregisterTimeSec, unregisterRequestTimeSec));
-
+              return null;
+            },
+            unregisterTimeMs,
+            "unregister shuffle server",
+            String.format(
+                "Please consider increasing the thread pool size (%s) or the overall timeout (%ss) "
+                    + "if you still think the request timeout (%ss) is sensible.",
+                unregisterThreadPoolSize, unregisterTimeSec, unregisterRequestTimeSec));
+      } else {
+        LOG.info("No need to unregister shuffle.");
+      }
     } finally {
       if (executorService != null) {
         executorService.shutdownNow();

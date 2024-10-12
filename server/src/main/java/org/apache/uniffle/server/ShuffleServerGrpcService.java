@@ -34,7 +34,6 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -467,10 +466,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           return;
         }
         final long start = System.currentTimeMillis();
-        List<ShufflePartitionedData> shufflePartitionedData = toPartitionedData(req);
+        List<ShufflePartitionedData> shufflePartitionedDataList = toPartitionedDataList(req);
         long alreadyReleasedSize = 0;
         boolean hasFailureOccurred = false;
-        for (ShufflePartitionedData spd : shufflePartitionedData) {
+        for (ShufflePartitionedData spd : shufflePartitionedDataList) {
           String shuffleDataInfo =
               "appId["
                   + appId
@@ -492,7 +491,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               hasFailureOccurred = true;
               break;
             } else {
-              long toReleasedSize = spd.getTotalBlockSize();
+              long toReleasedSize = spd.getTotalBlockEncodedLength();
               // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
               manager.releasePreAllocatedSize(toReleasedSize);
               alreadyReleasedSize += toReleasedSize;
@@ -525,7 +524,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             if (hasFailureOccurred) {
               shuffleServer
                   .getShuffleBufferManager()
-                  .releaseMemory(spd.getTotalBlockSize(), false, false);
+                  .releaseMemory(spd.getTotalBlockEncodedLength(), false, false);
             }
           }
         }
@@ -555,7 +554,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                   + "], cost "
                   + costTime
                   + " ms with "
-                  + shufflePartitionedData.size()
+                  + shufflePartitionedDataList.size()
                   + " blocks and "
                   + requireSize
                   + " bytes");
@@ -848,6 +847,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               + "]";
 
       try {
+        long start = System.currentTimeMillis();
         int expectedBlockCount =
             partitionToBlockIds.values().stream().mapToInt(x -> x.length).sum();
         LOG.info(
@@ -859,6 +859,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             shuffleServer
                 .getShuffleTaskManager()
                 .addFinishedBlockIds(appId, shuffleId, partitionToBlockIds, bitmapNum);
+        long costTime = System.currentTimeMillis() - start;
+        shuffleServer
+            .getGrpcMetrics()
+            .recordProcessTime(ShuffleServerGrpcMetrics.REPORT_SHUFFLE_RESULT_METHOD, costTime);
         if (expectedBlockCount != updatedBlockCount) {
           LOG.warn(
               "Existing {} duplicated blockIds on blockId report for appId: {}, shuffleId: {}",
@@ -989,6 +993,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       ByteString serializedBlockIdsBytes = ByteString.EMPTY;
 
       try {
+        long start = System.currentTimeMillis();
         serializedBlockIds =
             shuffleServer
                 .getShuffleTaskManager()
@@ -1000,6 +1005,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           LOG.warn(msg);
         } else {
           serializedBlockIdsBytes = UnsafeByteOperations.unsafeWrap(serializedBlockIds);
+          long costTime = System.currentTimeMillis() - start;
+          shuffleServer
+              .getGrpcMetrics()
+              .recordProcessTime(
+                  ShuffleServerGrpcMetrics.GET_SHUFFLE_RESULT_FOR_MULTI_PART_METHOD, costTime);
         }
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
@@ -1645,24 +1655,23 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
     }
   }
 
-  private List<ShufflePartitionedData> toPartitionedData(SendShuffleDataRequest req) {
+  private List<ShufflePartitionedData> toPartitionedDataList(SendShuffleDataRequest req) {
     List<ShufflePartitionedData> ret = Lists.newArrayList();
 
     for (ShuffleData data : req.getShuffleDataList()) {
-      ret.add(
-          new ShufflePartitionedData(
-              data.getPartitionId(), toPartitionedBlock(data.getBlockList())));
+      ret.add(toPartitionedData(data.getPartitionId(), data.getBlockList()));
     }
 
     return ret;
   }
 
-  private Pair<Long, ShufflePartitionedBlock[]> toPartitionedBlock(List<ShuffleBlock> blocks) {
+  private ShufflePartitionedData toPartitionedData(int partitionId, List<ShuffleBlock> blocks) {
     if (blocks == null || blocks.size() == 0) {
-      return Pair.of(0L, new ShufflePartitionedBlock[] {});
+      return new ShufflePartitionedData(partitionId, 0L, 0L, new ShufflePartitionedBlock[] {});
     }
     ShufflePartitionedBlock[] ret = new ShufflePartitionedBlock[blocks.size()];
-    long size = 0L;
+    long encodedLength = 0L;
+    long dataLength = 0L;
     int i = 0;
     for (ShuffleBlock block : blocks) {
       ByteBuf data = ByteBufUtils.byteStringToByteBuf(block.getData());
@@ -1674,10 +1683,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               block.getBlockId(),
               block.getTaskAttemptId(),
               data);
-      size += ret[i].getSize();
+      encodedLength += ret[i].getEncodedLength();
+      dataLength += ret[i].getDataLength();
       i++;
     }
-    return Pair.of(size, ret);
+    return new ShufflePartitionedData(partitionId, encodedLength, dataLength, ret);
   }
 
   private Map<Integer, long[]> toPartitionBlocksMap(List<PartitionToBlockIds> partitionToBlockIds) {
