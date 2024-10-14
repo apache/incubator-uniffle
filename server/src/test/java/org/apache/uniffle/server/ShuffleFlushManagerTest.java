@@ -607,7 +607,8 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
 
     ShuffleDataReadEvent shuffle1ReadEvent = new ShuffleDataReadEvent(appId2, 1, 0, 0);
     ShuffleDataReadEvent shuffle11ReadEvent = new ShuffleDataReadEvent(appId2, 11, 0, 0);
-    assertNull(storageManager.selectStorage(shuffle1ReadEvent));
+    // As there are only one storage, it should select the only storage anyway
+    assertNotNull(storageManager.selectStorage(shuffle1ReadEvent));
     assertNotNull(storageManager.selectStorage(shuffle11ReadEvent));
 
     storageManager.removeResources(
