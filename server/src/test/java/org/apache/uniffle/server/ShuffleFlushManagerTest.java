@@ -24,6 +24,7 @@ import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -247,13 +248,13 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     ShuffleFlushManager manager =
         new ShuffleFlushManager(shuffleServerConf, mockShuffleServer, storageManager);
     ShuffleDataFlushEvent event1 = createShuffleDataFlushEvent(appId, 1, 1, 1, null);
-    final List<ShufflePartitionedBlock> blocks1 = event1.getShuffleBlocks();
+    final Collection<ShufflePartitionedBlock> blocks1 = event1.getShuffleBlocks();
     manager.addToFlushQueue(event1);
     ShuffleDataFlushEvent event21 = createShuffleDataFlushEvent(appId, 2, 2, 2, null);
-    final List<ShufflePartitionedBlock> blocks21 = event21.getShuffleBlocks();
+    final Collection<ShufflePartitionedBlock> blocks21 = event21.getShuffleBlocks();
     manager.addToFlushQueue(event21);
     ShuffleDataFlushEvent event22 = createShuffleDataFlushEvent(appId, 2, 2, 2, null);
-    final List<ShufflePartitionedBlock> blocks22 = event22.getShuffleBlocks();
+    final Collection<ShufflePartitionedBlock> blocks22 = event22.getShuffleBlocks();
     manager.addToFlushQueue(event22);
     // wait for write data
     waitForFlush(manager, appId, 1, 5);
@@ -326,7 +327,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
     manager.addToFlushQueue(event1);
     waitForFlush(manager, appId, 1, 5);
     assertEquals(1, event1.getRetryTimes());
-    List<ShufflePartitionedBlock> blocks1 = event1.getShuffleBlocks();
+    Collection<ShufflePartitionedBlock> blocks1 = event1.getShuffleBlocks();
     assertEquals(blocks1.size(), manager.getCommittedBlockIds(appId, 1).getLongCardinality());
 
     int maxRetryTimes = 5;
@@ -731,7 +732,7 @@ public class ShuffleFlushManagerTest extends HadoopTestBase {
       String appId,
       int shuffleId,
       int partitionId,
-      List<ShufflePartitionedBlock> blocks,
+      Collection<ShufflePartitionedBlock> blocks,
       int partitionNumPerRange,
       String basePath) {
     Roaring64NavigableMap expectBlockIds = Roaring64NavigableMap.bitmapOf();

@@ -20,7 +20,7 @@ package org.apache.uniffle.storage.handler.impl;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.List;
+import java.util.Collection;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
@@ -81,7 +81,8 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
   }
 
   @Override
-  public synchronized void write(List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
+  public synchronized void write(Collection<ShufflePartitionedBlock> shuffleBlocks)
+      throws Exception {
 
     // Ignore this write, if the shuffle directory is deleted after being uploaded in multi mode
     // or after its app heartbeat times out.

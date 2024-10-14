@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -56,7 +57,7 @@ public class PooledHadoopShuffleWriteHandlerTest {
     }
 
     @Override
-    public void write(List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
+    public void write(Collection<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
       execution.run();
       invokedList.add(index);
     }

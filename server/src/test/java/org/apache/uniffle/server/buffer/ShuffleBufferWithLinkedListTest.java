@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server.buffer;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -224,10 +225,10 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
         2,
         1);
     assertArrayEquals(expectedData, sdr.getData());
-
-    assertEquals(0, event1.getShuffleBlocks().get(0).getTaskAttemptId());
-    assertEquals(1, event1.getShuffleBlocks().get(1).getTaskAttemptId());
-    assertEquals(2, event1.getShuffleBlocks().get(2).getTaskAttemptId());
+    Iterator<ShufflePartitionedBlock> it = event1.getShuffleBlocks().iterator();
+    assertEquals(0, it.next().getTaskAttemptId());
+    assertEquals(1, it.next().getTaskAttemptId());
+    assertEquals(2, it.next().getTaskAttemptId());
 
     assertEquals(
         1,
