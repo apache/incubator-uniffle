@@ -73,13 +73,14 @@ public class GrpcServer implements ServerInterface {
     this.grpcMetrics = grpcMetrics;
 
     int rpcExecutorSize = conf.getInteger(RssBaseConf.RPC_EXECUTOR_SIZE);
+    int queueSize = conf.getInteger(RssBaseConf.RPC_EXECUTOR_QUEUE_SIZE);
     pool =
         new GrpcThreadPoolExecutor(
             rpcExecutorSize,
             rpcExecutorSize * 2,
             10,
             TimeUnit.MINUTES,
-            Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
+            Queues.newLinkedBlockingQueue(queueSize),
             ThreadUtils.getThreadFactory("Grpc"),
             grpcMetrics);
     ThreadPoolManager.registerThreadPool("Grpc", rpcExecutorSize, rpcExecutorSize * 2, 10, pool);
