@@ -204,6 +204,12 @@ public class LocalStorageManager extends SingleStorageManager {
 
   @Override
   public Storage selectStorage(ShuffleDataFlushEvent event) {
+    if (localStorages.size() == 1) {
+      if (event.getUnderStorage() == null) {
+        event.setUnderStorage(localStorages.get(0));
+      }
+      return localStorages.get(0);
+    }
     String appId = event.getAppId();
     int shuffleId = event.getShuffleId();
     int partitionId = event.getStartPartition();
@@ -254,6 +260,9 @@ public class LocalStorageManager extends SingleStorageManager {
 
   @Override
   public Storage selectStorage(ShuffleDataReadEvent event) {
+    if (localStorages.size() == 1) {
+      return localStorages.get(0);
+    }
     String appId = event.getAppId();
     int shuffleId = event.getShuffleId();
     int partitionId = event.getStartPartition();
