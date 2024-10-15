@@ -83,7 +83,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
     }
     // buffer will be cleared, and new list must be created for async flush
     Collection<ShufflePartitionedBlock> spBlocks = blocks;
-    Collection<ShufflePartitionedBlock> inFlushedQueueBlocks = spBlocks;
+    Set<ShufflePartitionedBlock> inFlushedQueueBlocks = blocks;
     if (dataDistributionType == ShuffleDataDistributionType.LOCAL_ORDER) {
       /**
        * When reordering the blocks, it will break down the original reads sequence to cause the
