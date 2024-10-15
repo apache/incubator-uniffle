@@ -50,23 +50,24 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
   }
 
   @Override
-  public long append(ShufflePartitionedData data) {
-    long size = 0;
-
-    synchronized (this) {
-      for (ShufflePartitionedBlock block : data.getBlockList()) {
-        // If sendShuffleData retried, we may receive duplicate block. The duplicate
-        // block would gc without release. Here we must release the duplicated block.
-        if (blocks.add(block)) {
-          size += block.getEncodedLength();
-        } else {
-          block.getData().release();
-        }
-      }
-      this.size += size;
+  public synchronized long append(ShufflePartitionedData data) {
+    if (evicted) {
+      return BUFFER_EVICTED;
     }
+    long currentSize = 0;
 
-    return size;
+    for (ShufflePartitionedBlock block : data.getBlockList()) {
+      // If sendShuffleData retried, we may receive duplicate block. The duplicate
+      // block would gc without release. Here we must release the duplicated block.
+      if (blocks.add(block)) {
+        currentSize += block.getEncodedLength();
+      } else {
+        block.getData().release();
+      }
+    }
+    this.size += currentSize;
+
+    return currentSize;
   }
 
   @Override
@@ -119,10 +120,11 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
   }
 
   @Override
-  public long release() {
+  public synchronized long release() {
     Throwable lastException = null;
     int failedToReleaseSize = 0;
     long releasedSize = 0;
+    evicted = true;
     for (ShufflePartitionedBlock spb : blocks) {
       try {
         spb.getData().release();
