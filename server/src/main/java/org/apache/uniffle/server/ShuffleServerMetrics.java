@@ -160,8 +160,8 @@ public class ShuffleServerMetrics {
 
   public static final String REQUIRE_BUFFER_COUNT = "require_buffer_count";
 
-  public static final String IN_FLUSH_BLOCK_COUNT_IN_BUFFER_POOL
-      = "in_flush_block_count_in_buffer_pool";
+  public static final String IN_FLUSH_BLOCK_COUNT_IN_BUFFER_POOL =
+      "in_flush_block_count_in_buffer_pool";
   public static final String BLOCK_COUNT_IN_BUFFER_POOL = "block_count_in_buffer_pool";
   public static final String BUFFER_COUNT_IN_BUFFER_POOL = "buffer_count_in_buffer_pool";
   public static final String SHUFFLE_COUNT_IN_BUFFER_POOL = "shuffle_count_in_buffer_pool";
