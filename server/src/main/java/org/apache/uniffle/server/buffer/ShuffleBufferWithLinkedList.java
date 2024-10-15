@@ -103,7 +103,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
           inFlushedQueueBlocks.forEach(spb -> spb.getData().release());
           inFlushSize.addAndGet(-event.getSize());
         });
-    inFlushBlockMap.put(eventId, new LinkedHashSet<>(blocks));
+    inFlushBlockMap.put(eventId, inFlushedQueueBlocks);
     blocks = new LinkedHashSet<>();
     inFlushSize.addAndGet(size);
     size = 0;
