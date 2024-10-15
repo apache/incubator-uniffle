@@ -107,13 +107,13 @@ type CoordinatorConfig struct {
 	// +optional
 	HTTPNodePort []int32 `json:"httpNodePort,omitempty"`
 
-	// NodePortServiceAnnotations contains annotations for the NodePort service.
+	// NodePortServiceAnnotations is a list of annotations for the NodePort service.
 	// +optional
-	NodePortServiceAnnotations map[string]string `json:"nodePortServiceAnnotations,omitempty"`
+	NodePortServiceAnnotations []map[string]string `json:"nodePortServiceAnnotations,omitempty"`
 
-	// HeadlessServiceAnnotations contains annotations for the headless service.
+	// HeadlessServiceAnnotations is a list of annotations for the headless service.
 	// +optional
-	HeadlessServiceAnnotations map[string]string `json:"headlessServiceAnnotations,omitempty"`
+	HeadlessServiceAnnotations []map[string]string `json:"headlessServiceAnnotations,omitempty"`
 }
 
 // ShuffleServerConfig records configuration used to generate workload of shuffle servers.

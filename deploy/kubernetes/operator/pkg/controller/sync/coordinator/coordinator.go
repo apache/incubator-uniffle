@@ -106,8 +106,11 @@ func GenerateHeadlessSvc(rss *unifflev1alpha1.RemoteShuffleService, index int) *
 	serviceName := appendHeadless(name)
 
 	annotations := map[string]string{}
-	for key, value := range rss.Spec.Coordinator.HeadlessServiceAnnotations {
-		annotations[key] = value
+
+	if len(rss.Spec.Coordinator.HeadlessServiceAnnotations) > index {
+		for key, value := range rss.Spec.Coordinator.HeadlessServiceAnnotations[index] {
+			annotations[key] = value
+		}
 	}
 
 	svc := &corev1.Service{
@@ -148,8 +151,11 @@ func GenerateSvc(rss *unifflev1alpha1.RemoteShuffleService, index int) *corev1.S
 	name := GenerateNameByIndex(rss, index)
 
 	annotations := map[string]string{}
-	for key, value := range rss.Spec.Coordinator.NodePortServiceAnnotations {
-		annotations[key] = value
+
+	if len(rss.Spec.Coordinator.NodePortServiceAnnotations) > index {
+		for key, value := range rss.Spec.Coordinator.NodePortServiceAnnotations[index] {
+			annotations[key] = value
+		}
 	}
 
 	svc := &corev1.Service{
