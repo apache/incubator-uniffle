@@ -48,6 +48,7 @@ import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
+import static org.apache.uniffle.server.ShuffleServerMetrics.COMMITTED_BLOCK_COUNT;
 
 public class ShuffleFlushManager {
 
@@ -91,6 +92,15 @@ public class ShuffleFlushManager {
             shuffleServerConf, storageManager, shuffleServer, this::processFlushEvent);
     isStorageAuditLogEnabled =
         this.shuffleServerConf.getBoolean(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED);
+
+    ShuffleServerMetrics.addLabeledCacheGauge(
+        COMMITTED_BLOCK_COUNT,
+        () ->
+            committedBlockIds.values().stream()
+                .flatMap(innerMap -> innerMap.values().stream())
+                .mapToLong(bitmap -> bitmap.getLongCardinality())
+                .sum(),
+        2 * 60 * 1000L /* 2 minutes */);
   }
 
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
