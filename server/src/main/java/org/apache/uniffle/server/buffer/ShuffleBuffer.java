@@ -59,6 +59,8 @@ public interface ShuffleBuffer {
 
   int getBlockCount();
 
+  long getInFlushBlockCount();
+
   long release();
 
   void clearInFlushBuffer(long eventId);
