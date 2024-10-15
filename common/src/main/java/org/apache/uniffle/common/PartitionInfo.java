@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.common;
 
+import org.apache.uniffle.common.util.UnitConverter;
+
 public class PartitionInfo {
   private int id;
   private int shuffleId;
@@ -49,7 +51,8 @@ public class PartitionInfo {
   @Override
   public String toString() {
     return String.format(
-        "[id=%s, shuffleId=%s, size=%s, blockCount=%s]", id, shuffleId, size, blockCount);
+        "[id=%s, shuffleId=%s, size=%s, blockCount=%s]",
+        id, shuffleId, UnitConverter.formatSize(size), blockCount);
   }
 
   public boolean isCurrentPartition(int shuffleId, int partitionId) {

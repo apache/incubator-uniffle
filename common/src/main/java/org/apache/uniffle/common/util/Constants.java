@@ -89,4 +89,6 @@ public final class Constants {
   // We are accessing this configuration through RssConf, the spark prefix is stripped, hence, this
   // field.
   public static final String DRIVER_HOST = "driver.host";
+
+  public static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 }
