@@ -121,6 +121,11 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   }
 
   @Override
+  public long getInFlushBlockCount() {
+    return inFlushBlockMap.values().stream().mapToLong(Map::size).sum();
+  }
+
+  @Override
   public synchronized long release() {
     Throwable lastException = null;
     int failedToReleaseSize = 0;

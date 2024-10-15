@@ -56,6 +56,7 @@ import org.apache.uniffle.server.ShuffleTaskManager;
 
 import static org.apache.uniffle.server.ShuffleServerMetrics.BLOCK_COUNT_IN_BUFFER_POOL;
 import static org.apache.uniffle.server.ShuffleServerMetrics.BUFFER_COUNT_IN_BUFFER_POOL;
+import static org.apache.uniffle.server.ShuffleServerMetrics.IN_FLUSH_BLOCK_COUNT_IN_BUFFER_POOL;
 import static org.apache.uniffle.server.ShuffleServerMetrics.SHUFFLE_COUNT_IN_BUFFER_POOL;
 
 public class ShuffleBufferManager {
@@ -152,7 +153,16 @@ public class ShuffleBufferManager {
             bufferPool.values().stream()
                 .flatMap(innerMap -> innerMap.values().stream())
                 .flatMap(rangeMap -> rangeMap.asMapOfRanges().values().stream())
-                .mapToInt(shuffleBuffer -> shuffleBuffer.getBlockCount())
+                .mapToLong(shuffleBuffer -> shuffleBuffer.getBlockCount())
+                .sum(),
+        2 * 60 * 1000L /* 2 minutes */);
+    ShuffleServerMetrics.addLabeledCacheGauge(
+        IN_FLUSH_BLOCK_COUNT_IN_BUFFER_POOL,
+        () ->
+            bufferPool.values().stream()
+                .flatMap(innerMap -> innerMap.values().stream())
+                .flatMap(rangeMap -> rangeMap.asMapOfRanges().values().stream())
+                .mapToLong(shuffleBuffer -> shuffleBuffer.getInFlushBlockCount())
                 .sum(),
         2 * 60 * 1000L /* 2 minutes */);
     ShuffleServerMetrics.addLabeledCacheGauge(
@@ -160,12 +170,12 @@ public class ShuffleBufferManager {
         () ->
             bufferPool.values().stream()
                 .flatMap(innerMap -> innerMap.values().stream())
-                .mapToInt(rangeMap -> rangeMap.asMapOfRanges().size())
+                .mapToLong(rangeMap -> rangeMap.asMapOfRanges().size())
                 .sum(),
         2 * 60 * 1000L /* 2 minutes */);
     ShuffleServerMetrics.addLabeledGauge(
         SHUFFLE_COUNT_IN_BUFFER_POOL,
-        () -> bufferPool.values().stream().mapToInt(innerMap -> innerMap.size()).sum());
+        () -> bufferPool.values().stream().mapToLong(innerMap -> innerMap.size()).sum());
   }
 
   public void setShuffleTaskManager(ShuffleTaskManager taskManager) {
