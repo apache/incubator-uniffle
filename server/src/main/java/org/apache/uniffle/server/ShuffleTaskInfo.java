@@ -25,14 +25,18 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.PartitionInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.UnitConverter;
+import org.apache.uniffle.storage.util.StorageType;
 
 /**
  * ShuffleTaskInfo contains the information of submitting the shuffle, the information of the cache
@@ -74,6 +78,8 @@ public class ShuffleTaskInfo {
   private final Map<Integer, ShuffleDetailInfo> shuffleDetailInfos;
 
   private final Map<Integer, Integer> latestStageAttemptNumbers;
+  private Map<String, String> appConf;
+  private boolean clientStorageTypeWithMemory = false;
 
   public ShuffleTaskInfo(String appId) {
     this.appId = appId;
@@ -283,6 +289,10 @@ public class ShuffleTaskInfo {
     return shuffleDetailInfos.get(shuffleId);
   }
 
+  public boolean isClientStorageTypeWithMemory() {
+    return clientStorageTypeWithMemory;
+  }
+
   @Override
   public String toString() {
     return "ShuffleTaskInfo{"
@@ -302,5 +312,23 @@ public class ShuffleTaskInfo {
         + ", shuffleDetailInfo="
         + shuffleDetailInfos
         + '}';
+  }
+
+  public void setAppConf(Map<String, String> appConf) {
+    this.appConf = appConf;
+    String storageType = appConf.get(RssClientConf.RSS_STORAGE_TYPE.key());
+    if (StringUtils.isEmpty(storageType)) {
+      storageType =
+          appConf.get(Constants.SPARK_RSS_CONFIG_PREFIX + RssClientConf.RSS_STORAGE_TYPE.key());
+    }
+    if (StringUtils.isNotEmpty(storageType)) {
+      clientStorageTypeWithMemory = StorageType.withMemory(StorageType.valueOf(storageType));
+    }
+
+    LOGGER.info(
+        "{} set appConf to {}, clientStorageTypeWithMemory = {}",
+        appId,
+        appConf,
+        clientStorageTypeWithMemory);
   }
 }

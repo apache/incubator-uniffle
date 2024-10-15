@@ -202,7 +202,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       String valueClassName,
       String comparatorClassName,
       int mergedBlockSize,
-      String mergeClassLoader) {
+      String mergeClassLoader,
+      Map<String, String> appConf) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
@@ -211,7 +212,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setShuffleDataDistribution(RssProtos.DataDistribution.valueOf(dataDistributionType.name()))
         .setMaxConcurrencyPerPartitionToWrite(maxConcurrencyPerPartitionToWrite)
         .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges))
-        .setStageAttemptNumber(stageAttemptNumber);
+        .setStageAttemptNumber(stageAttemptNumber)
+        .putAllAppConf(appConf);
     if (StringUtils.isNotBlank(keyClassName)) {
       reqBuilder.setKeyClass(keyClassName);
       reqBuilder.setValueClass(valueClassName);
@@ -500,7 +502,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             request.getValueClassName(),
             request.getComparatorClassName(),
             request.getMergedBlockSize(),
-            request.getMergeClassLoader());
+            request.getMergeClassLoader(),
+            request.getAppConf());
 
     RssRegisterShuffleResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();

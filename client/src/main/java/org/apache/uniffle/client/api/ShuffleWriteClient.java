@@ -76,7 +76,65 @@ public interface ShuffleWriteClient {
         null,
         null,
         -1,
-        null);
+        null,
+        Collections.emptyMap());
+  }
+
+  default void registerShuffle(
+      ShuffleServerInfo shuffleServerInfo,
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorage,
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite,
+      Map<String, String> appConf) {
+    registerShuffle(
+        shuffleServerInfo,
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorage,
+        dataDistributionType,
+        maxConcurrencyPerPartitionToWrite,
+        0,
+        null,
+        null,
+        null,
+        -1,
+        null,
+        appConf);
+  }
+
+  default void registerShuffle(
+      ShuffleServerInfo shuffleServerInfo,
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorage,
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite,
+      int stageAttemptNumber,
+      String keyClassName,
+      String valueClassName,
+      String comparatorClassName,
+      int mergedBlockSize,
+      String mergeClassLoader) {
+    registerShuffle(
+        shuffleServerInfo,
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorage,
+        dataDistributionType,
+        maxConcurrencyPerPartitionToWrite,
+        stageAttemptNumber,
+        keyClassName,
+        valueClassName,
+        comparatorClassName,
+        mergedBlockSize,
+        mergeClassLoader,
+        Collections.emptyMap());
   }
 
   void registerShuffle(
@@ -92,7 +150,8 @@ public interface ShuffleWriteClient {
       String valueClassName,
       String comparatorClassName,
       int mergedBlockSize,
-      String mergeClassLoader);
+      String mergeClassLoader,
+      Map<String, String> appConf);
 
   boolean sendCommit(
       Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);

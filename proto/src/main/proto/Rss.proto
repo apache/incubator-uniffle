@@ -193,6 +193,7 @@ message ShuffleRegisterRequest {
   string comparatorClass = 11;
   int32 mergedBlockSize = 12;
   string mergeClassLoader = 13;
+  map<string, string> appConf = 1000;
 }
 
 enum DataDistribution {

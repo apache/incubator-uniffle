@@ -17,8 +17,11 @@
 
 package org.apache.uniffle.client.request;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.common.PartitionRange;
@@ -41,7 +44,9 @@ public class RssRegisterShuffleRequest {
   private String comparatorClassName;
   private int mergedBlockSize;
   private String mergeClassLoader;
+  private Map<String, String> appConf;
 
+  @VisibleForTesting
   public RssRegisterShuffleRequest(
       String appId,
       int shuffleId,
@@ -63,7 +68,8 @@ public class RssRegisterShuffleRequest {
         null,
         null,
         -1,
-        null);
+        null,
+        Collections.emptyMap());
   }
 
   public RssRegisterShuffleRequest(
@@ -79,7 +85,8 @@ public class RssRegisterShuffleRequest {
       String valueClassName,
       String comparatorClassName,
       int mergedBlockSize,
-      String mergeClassLoader) {
+      String mergeClassLoader,
+      Map<String, String> appConf) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionRanges = partitionRanges;
@@ -93,8 +100,10 @@ public class RssRegisterShuffleRequest {
     this.comparatorClassName = comparatorClassName;
     this.mergedBlockSize = mergedBlockSize;
     this.mergeClassLoader = mergeClassLoader;
+    this.appConf = appConf;
   }
 
+  @VisibleForTesting
   public RssRegisterShuffleRequest(
       String appId,
       int shuffleId,
@@ -115,7 +124,8 @@ public class RssRegisterShuffleRequest {
         null,
         null,
         -1,
-        null);
+        null,
+        Collections.emptyMap());
   }
 
   public RssRegisterShuffleRequest(
@@ -133,7 +143,8 @@ public class RssRegisterShuffleRequest {
         null,
         null,
         -1,
-        null);
+        null,
+        Collections.emptyMap());
   }
 
   public String getAppId() {
@@ -186,5 +197,9 @@ public class RssRegisterShuffleRequest {
 
   public String getMergeClassLoader() {
     return mergeClassLoader;
+  }
+
+  public Map<String, String> getAppConf() {
+    return appConf;
   }
 }

@@ -726,7 +726,8 @@ public class SortWriteBufferManagerTest {
         String valueClassName,
         String comparatorClassName,
         int mergedBlockSize,
-        String mergeClassLoader) {}
+        String mergeClassLoader,
+        Map<String, String> appConf) {}
 
     @Override
     public boolean sendCommit(

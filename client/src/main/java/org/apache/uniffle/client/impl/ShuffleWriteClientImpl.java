@@ -568,7 +568,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       String valueClassName,
       String comparatorClassName,
       int mergedBlockSize,
-      String mergeClassLoader) {
+      String mergeClassLoader,
+      Map<String, String> appConf) {
     String user = null;
     try {
       user = UserGroupInformation.getCurrentUser().getShortUserName();
@@ -590,7 +591,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             valueClassName,
             comparatorClassName,
             mergedBlockSize,
-            mergeClassLoader);
+            mergeClassLoader,
+            appConf);
     RssRegisterShuffleResponse response =
         getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 
