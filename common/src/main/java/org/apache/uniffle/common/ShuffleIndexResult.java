@@ -85,7 +85,8 @@ public class ShuffleIndexResult {
             "Failed to release shuffle index result with length {} of {}. "
                 + "Maybe it has been released by others.",
             dataFileLen,
-            dataFileName);
+            dataFileName,
+            e);
       }
     }
   }
