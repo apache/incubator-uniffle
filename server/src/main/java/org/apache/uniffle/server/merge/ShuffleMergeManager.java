@@ -39,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleDataResult;
-import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.merger.Segment;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -260,13 +259,6 @@ public class ShuffleMergeManager {
   public ShuffleDataResult getShuffleData(
       String appId, int shuffleId, int partitionId, long blockId) throws IOException {
     return this.getPartition(appId, shuffleId, partitionId).getShuffleData(blockId);
-  }
-
-  public void cacheBlock(String appId, int shuffleId, ShufflePartitionedData spd)
-      throws IOException {
-    if (this.shuffles.containsKey(appId) && this.shuffles.get(appId).containsKey(shuffleId)) {
-      this.getShuffle(appId, shuffleId).cacheBlock(spd);
-    }
   }
 
   public MergeStatus tryGetBlock(String appId, int shuffleId, int partitionId, long blockId) {

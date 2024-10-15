@@ -32,6 +32,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.server.ShuffleServerConf;
+import org.apache.uniffle.server.buffer.ShuffleBufferType;
 
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_ENABLE;
 
@@ -46,6 +47,7 @@ public class RMWordCountTest extends MRIntegrationTestBase {
   public static void setupServers() throws Exception {
     ShuffleServerConf serverConf = new ShuffleServerConf();
     serverConf.set(SERVER_MERGE_ENABLE, true);
+    serverConf.set(ShuffleServerConf.SERVER_SHUFFLE_BUFFER_TYPE, ShuffleBufferType.SKIP_LIST);
     MRIntegrationTestBase.setupServers(MRIntegrationTestBase.getDynamicConf(), serverConf);
   }
 

@@ -49,6 +49,7 @@ import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
 import org.apache.uniffle.server.ShuffleTaskManager;
+import org.apache.uniffle.server.buffer.ShuffleBufferType;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,6 +81,7 @@ public class ShuffleMergeManagerTest {
         tempDir1.getAbsolutePath() + "," + tempDir2.getAbsolutePath());
     serverConf.setLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60L * 1000L * 60L);
     serverConf.set(ShuffleServerConf.SERVER_MERGE_ENABLE, true);
+    serverConf.set(ShuffleServerConf.SERVER_SHUFFLE_BUFFER_TYPE, ShuffleBufferType.SKIP_LIST);
     ShuffleServerMetrics.clear();
     ShuffleServerMetrics.register();
     assertTrue(this.tempDir1.isDirectory());
@@ -156,7 +158,6 @@ public class ShuffleMergeManagerTest {
     }
     ShufflePartitionedData spd = new ShufflePartitionedData(PARTITION_ID, shufflePartitionedBlocks);
     shuffleTaskManager.cacheShuffleData(APP_ID, SHUFFLE_ID, false, spd);
-    mergeManager.cacheBlock(APP_ID, SHUFFLE_ID, spd);
     // 4.2 report shuffle result
     shuffleTaskManager.addFinishedBlockIds(
         APP_ID, SHUFFLE_ID, ImmutableMap.of(PARTITION_ID, blocks), 1);

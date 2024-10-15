@@ -58,6 +58,7 @@ import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.buffer.ShuffleBufferType;
 import org.apache.uniffle.server.merge.ShuffleMergeManager;
 import org.apache.uniffle.server.netty.StreamServer;
 import org.apache.uniffle.server.storage.StorageManager;
@@ -310,6 +311,10 @@ public class ShuffleServer {
         new ShuffleBufferManager(shuffleServerConf, shuffleFlushManager, nettyServerEnabled);
     remoteMergeEnable = shuffleServerConf.get(ShuffleServerConf.SERVER_MERGE_ENABLE);
     if (remoteMergeEnable) {
+      if (shuffleBufferManager.getShuffleBufferType() != ShuffleBufferType.SKIP_LIST) {
+        throw new RssException(
+            "Shuffle buffer type must be SKIP_LIST when remote merge is enable!");
+      }
       shuffleMergeManager = new ShuffleMergeManager(shuffleServerConf, this);
     }
     shuffleTaskManager =
