@@ -106,6 +106,14 @@ type CoordinatorConfig struct {
 	// HTTPNodePort defines http port of node port service used for coordinators' external access.
 	// +optional
 	HTTPNodePort []int32 `json:"httpNodePort,omitempty"`
+
+	// NodePortServiceAnnotations contains annotations for the NodePort service.
+	// +optional
+	NodePortServiceAnnotations map[string]string `json:"nodePortServiceAnnotations,omitempty"`
+
+	// HeadlessServiceAnnotations contains annotations for the headless service.
+	// +optional
+	HeadlessServiceAnnotations map[string]string `json:"headlessServiceAnnotations,omitempty"`
 }
 
 // ShuffleServerConfig records configuration used to generate workload of shuffle servers.
