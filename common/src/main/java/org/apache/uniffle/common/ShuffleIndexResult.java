@@ -20,6 +20,7 @@ package org.apache.uniffle.common;
 import java.nio.ByteBuffer;
 
 import io.netty.buffer.Unpooled;
+import io.netty.util.IllegalReferenceCountException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,7 @@ public class ShuffleIndexResult {
     if (this.buffer != null) {
       try {
         this.buffer.release();
-      } catch (Throwable e) {
+      } catch (IllegalReferenceCountException e) {
         LOG.warn(
             "Failed to release shuffle index result with length {} of {}. "
                 + "Maybe it has been released by others.",
