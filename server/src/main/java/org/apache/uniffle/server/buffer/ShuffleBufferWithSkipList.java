@@ -64,18 +64,18 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
     }
     long currentSize = 0;
 
-      for (ShufflePartitionedBlock block : data.getBlockList()) {
-        // If sendShuffleData retried, we may receive duplicate block. The duplicate
-        // block would gc without release. Here we must release the duplicated block.
-        if (!blocksMap.containsKey(block.getBlockId())) {
-          blocksMap.put(block.getBlockId(), block);
-          blockCount++;
-          currentSize += block.getEncodedLength();
-        } else {
-          block.getData().release();
-        }
+    for (ShufflePartitionedBlock block : data.getBlockList()) {
+      // If sendShuffleData retried, we may receive duplicate block. The duplicate
+      // block would gc without release. Here we must release the duplicated block.
+      if (!blocksMap.containsKey(block.getBlockId())) {
+        blocksMap.put(block.getBlockId(), block);
+        blockCount++;
+        currentSize += block.getEncodedLength();
+      } else {
+        block.getData().release();
       }
-      this.size += currentSize;
+    }
+    this.size += currentSize;
 
     return currentSize;
   }
