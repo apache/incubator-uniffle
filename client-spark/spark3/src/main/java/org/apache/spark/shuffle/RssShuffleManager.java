@@ -899,11 +899,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
         this.sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX));
   }
 
-  @VisibleForTesting
-  public SparkConf getSparkConf() {
-    return sparkConf;
-  }
-
   private synchronized void startHeartbeat() {
     shuffleWriteClient.registerApplicationInfo(id.get(), heartbeatTimeout, user);
     if (!heartbeatStarted) {

@@ -194,11 +194,14 @@ public class ShuffleFlushManager {
         throw new EventRetryException();
       }
       long endTime = System.currentTimeMillis();
-
-      // update some metrics for shuffle task
-      updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
       ShuffleTaskInfo shuffleTaskInfo =
           shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
+      if (shuffleTaskInfo == null || !shuffleTaskInfo.isClientStorageTypeWithMemory()) {
+        // With memory storage type should never need cachedBlockIds,
+        // since client do not need call finish shuffle rpc
+        // update some metrics for shuffle task
+        updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
+      }
       if (isStorageAuditLogEnabled) {
         AUDIT_LOGGER.info(
             String.format(
