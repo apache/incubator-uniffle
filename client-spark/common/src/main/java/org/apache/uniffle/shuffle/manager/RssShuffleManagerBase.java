@@ -403,7 +403,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX);
     int heartbeatThread = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
     CoordinatorClientFactory coordinatorClientFactory = CoordinatorClientFactory.getInstance();
-    CoordinatorGrpcRetryableClient coordinatorClients =
+    CoordinatorGrpcRetryableClient coordinatorClient =
         coordinatorClientFactory.createCoordinatorClient(
             ClientType.valueOf(clientType),
             coordinators,
@@ -423,11 +423,11 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     }
     RssFetchClientConfRequest request =
         new RssFetchClientConfRequest(timeoutMs, user, Collections.emptyMap());
-    RssFetchClientConfResponse response = coordinatorClients.fetchClientConf(request);
+    RssFetchClientConfResponse response = coordinatorClient.fetchClientConf(request);
     if (response.getStatusCode() == StatusCode.SUCCESS) {
       RssSparkShuffleUtils.applyDynamicClientConf(sparkConf, response.getClientConf());
     }
-    coordinatorClients.close();
+    coordinatorClient.close();
   }
 
   @Override

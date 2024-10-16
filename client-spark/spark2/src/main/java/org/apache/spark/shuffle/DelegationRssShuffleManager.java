@@ -43,7 +43,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   private static final Logger LOG = LoggerFactory.getLogger(DelegationRssShuffleManager.class);
 
   private final ShuffleManager delegate;
-  private final CoordinatorGrpcRetryableClient coordinatorClients;
+  private final CoordinatorGrpcRetryableClient coordinatorClient;
   private final int accessTimeoutMs;
   private final SparkConf sparkConf;
   private String user;
@@ -55,10 +55,10 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     this.sparkConf = sparkConf;
     accessTimeoutMs = sparkConf.get(RssSparkConfig.RSS_ACCESS_TIMEOUT_MS);
     if (isDriver) {
-      coordinatorClients = RssSparkShuffleUtils.createCoordinatorClients(sparkConf);
+      coordinatorClient = RssSparkShuffleUtils.createCoordinatorClients(sparkConf);
       delegate = createShuffleManagerInDriver();
     } else {
-      coordinatorClients = null;
+      coordinatorClient = null;
       delegate = createShuffleManagerInExecutor();
     }
 
@@ -126,9 +126,9 @@ public class DelegationRssShuffleManager implements ShuffleManager {
 
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
     try {
-      if (coordinatorClients != null) {
+      if (coordinatorClient != null) {
         RssAccessClusterResponse response =
-            coordinatorClients.accessCluster(
+            coordinatorClient.accessCluster(
                 new RssAccessClusterRequest(
                     accessId,
                     assignmentTags,
@@ -209,8 +209,8 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   @Override
   public void stop() {
     delegate.stop();
-    if (coordinatorClients != null) {
-      coordinatorClients.close();
+    if (coordinatorClient != null) {
+      coordinatorClient.close();
     }
   }
 
