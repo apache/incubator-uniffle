@@ -15,19 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.storage.handler.api;
+package org.apache.uniffle.common.web.resource;
 
-import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
-import org.apache.uniffle.common.ShufflePartitionedBlock;
+public class ConfVO {
+  private Map<String, String> update = Collections.emptyMap();
+  private List<String> delete = Collections.emptyList();
 
-public interface ShuffleWriteHandler {
+  public List<String> getDelete() {
+    return delete;
+  }
 
-  /**
-   * Write the blocks to storage
-   *
-   * @param shuffleBlocks blocks to storage
-   * @throws Exception
-   */
-  void write(Collection<ShufflePartitionedBlock> shuffleBlocks) throws Exception;
+  public void setDelete(List<String> delete) {
+    this.delete = delete;
+  }
+
+  public Map<String, String> getUpdate() {
+    return update;
+  }
+
+  public void setUpdate(Map<String, String> update) {
+    this.update = update;
+  }
+
+  @Override
+  public String toString() {
+    return "ConfVO{" + "update=" + update + ", delete=" + delete + '}';
+  }
 }

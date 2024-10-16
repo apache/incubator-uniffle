@@ -44,8 +44,12 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
 
   protected AtomicLong inFlushSize = new AtomicLong();
 
+  protected volatile boolean evicted;
+  public static final long BUFFER_EVICTED = -1L;
+
   public AbstractShuffleBuffer() {
     this.size = 0;
+    this.evicted = false;
   }
 
   /** Only for test */
@@ -126,7 +130,7 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
       } catch (Exception e) {
         LOG.error(
             "Unexpected exception for System.arraycopy, length["
-                + block.getLength()
+                + block.getDataLength()
                 + "], offset["
                 + offset
                 + "], dataLength["
@@ -135,7 +139,7 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
             e);
         throw e;
       }
-      offset += block.getLength();
+      offset += block.getDataLength();
     }
   }
 
@@ -168,13 +172,13 @@ public abstract class AbstractShuffleBuffer implements ShuffleBuffer {
           new BufferSegment(
               block.getBlockId(),
               currentOffset,
-              block.getLength(),
+              block.getDataLength(),
               block.getUncompressLength(),
               block.getCrc(),
               block.getTaskAttemptId()));
       readBlocks.add(block);
       // update offset
-      currentOffset += block.getLength();
+      currentOffset += block.getDataLength();
       // check if length >= request buffer size
       if (currentOffset >= readBufferSize) {
         break;

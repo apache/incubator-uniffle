@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server.buffer;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -224,10 +225,10 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
         2,
         1);
     assertArrayEquals(expectedData, sdr.getData());
-
-    assertEquals(0, event1.getShuffleBlocks().get(0).getTaskAttemptId());
-    assertEquals(1, event1.getShuffleBlocks().get(1).getTaskAttemptId());
-    assertEquals(2, event1.getShuffleBlocks().get(2).getTaskAttemptId());
+    Iterator<ShufflePartitionedBlock> it = event1.getShuffleBlocks().iterator();
+    assertEquals(0, it.next().getTaskAttemptId());
+    assertEquals(1, it.next().getTaskAttemptId());
+    assertEquals(2, it.next().getTaskAttemptId());
 
     assertEquals(
         1,
@@ -599,14 +600,14 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
   private byte[] getExpectedData(ShufflePartitionedData... spds) {
     int size = 0;
     for (ShufflePartitionedData spd : spds) {
-      size += spd.getBlockList()[0].getLength();
+      size += spd.getBlockList()[0].getDataLength();
     }
     byte[] expectedData = new byte[size];
     int offset = 0;
     for (ShufflePartitionedData spd : spds) {
       ShufflePartitionedBlock block = spd.getBlockList()[0];
-      ByteBufUtils.readBytes(block.getData(), expectedData, offset, block.getLength());
-      offset += block.getLength();
+      ByteBufUtils.readBytes(block.getData(), expectedData, offset, block.getDataLength());
+      offset += block.getDataLength();
     }
     return expectedData;
   }
@@ -623,10 +624,10 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
       ShufflePartitionedBlock spb = blocks.get(i);
       BufferSegment segment = bufferSegments.get(segmentIndex);
       assertEquals(spb.getBlockId(), segment.getBlockId());
-      assertEquals(spb.getLength(), segment.getLength());
+      assertEquals(spb.getDataLength(), segment.getLength());
       assertEquals(spb.getCrc(), segment.getCrc());
       assertEquals(offset, segment.getOffset());
-      offset += spb.getLength();
+      offset += spb.getDataLength();
       segmentIndex++;
     }
   }

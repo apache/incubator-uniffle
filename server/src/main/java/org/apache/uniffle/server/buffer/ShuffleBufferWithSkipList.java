@@ -17,9 +17,9 @@
 
 package org.apache.uniffle.server.buffer;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,25 +58,26 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   }
 
   @Override
-  public long append(ShufflePartitionedData data) {
-    long size = 0;
-
-    synchronized (this) {
-      for (ShufflePartitionedBlock block : data.getBlockList()) {
-        // If sendShuffleData retried, we may receive duplicate block. The duplicate
-        // block would gc without release. Here we must release the duplicated block.
-        if (!blocksMap.containsKey(block.getBlockId())) {
-          blocksMap.put(block.getBlockId(), block);
-          blockCount++;
-          size += block.getSize();
-        } else {
-          block.getData().release();
-        }
-      }
-      this.size += size;
+  public synchronized long append(ShufflePartitionedData data) {
+    if (evicted) {
+      return BUFFER_EVICTED;
     }
+    long currentSize = 0;
 
-    return size;
+    for (ShufflePartitionedBlock block : data.getBlockList()) {
+      // If sendShuffleData retried, we may receive duplicate block. The duplicate
+      // block would gc without release. Here we must release the duplicated block.
+      if (!blocksMap.containsKey(block.getBlockId())) {
+        blocksMap.put(block.getBlockId(), block);
+        blockCount++;
+        currentSize += block.getEncodedLength();
+      } else {
+        block.getData().release();
+      }
+    }
+    this.size += currentSize;
+
+    return currentSize;
   }
 
   @Override
@@ -90,7 +91,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
     if (blocksMap.isEmpty()) {
       return null;
     }
-    List<ShufflePartitionedBlock> spBlocks = new LinkedList<>(blocksMap.values());
+    Collection<ShufflePartitionedBlock> spBlocks = blocksMap.values();
     long eventId = ShuffleFlushManager.ATOMIC_EVENT_ID.getAndIncrement();
     final ShuffleDataFlushEvent event =
         new ShuffleDataFlushEvent(
@@ -120,17 +121,23 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
   }
 
   @Override
-  public long release() {
+  public long getInFlushBlockCount() {
+    return inFlushBlockMap.values().stream().mapToLong(Map::size).sum();
+  }
+
+  @Override
+  public synchronized long release() {
     Throwable lastException = null;
     int failedToReleaseSize = 0;
     long releasedSize = 0;
+    evicted = true;
     for (ShufflePartitionedBlock spb : blocksMap.values()) {
       try {
         spb.getData().release();
-        releasedSize += spb.getSize();
+        releasedSize += spb.getEncodedLength();
       } catch (Throwable t) {
         lastException = t;
-        failedToReleaseSize += spb.getSize();
+        failedToReleaseSize += spb.getEncodedLength();
       }
     }
     if (lastException != null) {
@@ -249,13 +256,13 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
           new BufferSegment(
               block.getBlockId(),
               currentOffset,
-              block.getLength(),
+              block.getDataLength(),
               block.getUncompressLength(),
               block.getCrc(),
               block.getTaskAttemptId()));
       readBlocks.add(block);
       // update offset
-      currentOffset += block.getLength();
+      currentOffset += block.getDataLength();
       if (currentOffset >= readBufferSize) {
         break;
       }

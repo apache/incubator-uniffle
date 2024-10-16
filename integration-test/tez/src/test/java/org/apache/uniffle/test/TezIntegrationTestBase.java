@@ -75,6 +75,9 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
       miniTezCluster.init(conf);
       miniTezCluster.start();
     }
+  }
+
+  protected static void setupServers(ShuffleServerConf serverConf) throws Exception {
     LOG.info("Starting coordinators and shuffle servers");
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     Map<String, String> dynamicConf = new HashMap<>();
@@ -83,8 +86,14 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf grpcShuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+    if (serverConf != null) {
+      grpcShuffleServerConf.addAll(serverConf);
+    }
     createShuffleServer(grpcShuffleServerConf);
     ShuffleServerConf nettyShuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
+    if (serverConf != null) {
+      nettyShuffleServerConf.addAll(serverConf);
+    }
     createShuffleServer(nettyShuffleServerConf);
     startServers();
   }

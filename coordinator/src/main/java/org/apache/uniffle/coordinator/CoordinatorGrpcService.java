@@ -101,12 +101,11 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
           if (changedProperties == null || conf == null) {
             return;
           }
-          if (changedProperties.containsKey(
-              CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED.key())) {
+          if (changedProperties.contains(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED.key())) {
             isRpcAuditLogEnabled =
                 conf.getBoolean(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_ENABLED);
           }
-          if (changedProperties.containsKey(
+          if (changedProperties.contains(
               CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST.key())) {
             rpcAuditExcludeOpList =
                 conf.get(CoordinatorConf.COORDINATOR_RPC_AUDIT_LOG_EXCLUDE_LIST);

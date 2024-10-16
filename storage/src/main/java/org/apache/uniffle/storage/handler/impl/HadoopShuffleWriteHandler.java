@@ -18,7 +18,7 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -109,7 +109,7 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
   }
 
   @Override
-  public void write(List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
+  public void write(Collection<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
     final long start = System.currentTimeMillis();
     writeLock.lock();
     try {
@@ -132,7 +132,7 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
               new FileBasedShuffleSegment(
                   blockId,
                   startOffset,
-                  block.getLength(),
+                  block.getDataLength(),
                   block.getUncompressLength(),
                   crc,
                   block.getTaskAttemptId());

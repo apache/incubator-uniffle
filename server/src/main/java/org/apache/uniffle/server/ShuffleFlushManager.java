@@ -123,7 +123,7 @@ public class ShuffleFlushManager {
         throw new EventDiscardException();
       }
 
-      List<ShufflePartitionedBlock> blocks = event.getShuffleBlocks();
+      Collection<ShufflePartitionedBlock> blocks = event.getShuffleBlocks();
       if (CollectionUtils.isEmpty(blocks)) {
         LOG.info("There is no block to be flushed: {}", event);
         return;
@@ -236,7 +236,7 @@ public class ShuffleFlushManager {
   }
 
   private void updateCommittedBlockIds(
-      String appId, int shuffleId, List<ShufflePartitionedBlock> blocks) {
+      String appId, int shuffleId, Collection<ShufflePartitionedBlock> blocks) {
     if (blocks == null || blocks.size() == 0) {
       return;
     }
