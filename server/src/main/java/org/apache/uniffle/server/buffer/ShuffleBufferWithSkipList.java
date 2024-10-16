@@ -17,9 +17,9 @@
 
 package org.apache.uniffle.server.buffer;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -91,7 +91,7 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
     if (blocksMap.isEmpty()) {
       return null;
     }
-    List<ShufflePartitionedBlock> spBlocks = new LinkedList<>(blocksMap.values());
+    Collection<ShufflePartitionedBlock> spBlocks = blocksMap.values();
     long eventId = ShuffleFlushManager.ATOMIC_EVENT_ID.getAndIncrement();
     final ShuffleDataFlushEvent event =
         new ShuffleDataFlushEvent(

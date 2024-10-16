@@ -18,6 +18,7 @@
 package org.apache.uniffle.server;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -38,7 +39,7 @@ public class ShuffleDataFlushEvent {
   private final int startPartition;
   private final int endPartition;
   private final long size;
-  private final List<ShufflePartitionedBlock> shuffleBlocks;
+  private final Collection<ShufflePartitionedBlock> shuffleBlocks;
   private final Supplier<Boolean> valid;
   private final ShuffleBuffer shuffleBuffer;
   private final AtomicInteger retryTimes = new AtomicInteger();
@@ -57,7 +58,7 @@ public class ShuffleDataFlushEvent {
       int startPartition,
       int endPartition,
       long size,
-      List<ShufflePartitionedBlock> shuffleBlocks,
+      Collection<ShufflePartitionedBlock> shuffleBlocks,
       Supplier<Boolean> valid,
       ShuffleBuffer shuffleBuffer) {
     this.eventId = eventId;
@@ -72,7 +73,7 @@ public class ShuffleDataFlushEvent {
     this.cleanupCallbackChains = new ArrayList<>();
   }
 
-  public List<ShufflePartitionedBlock> getShuffleBlocks() {
+  public Collection<ShufflePartitionedBlock> getShuffleBlocks() {
     return shuffleBlocks;
   }
 

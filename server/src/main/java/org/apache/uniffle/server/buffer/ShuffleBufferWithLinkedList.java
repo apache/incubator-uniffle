@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server.buffer;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -82,15 +83,16 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
       return null;
     }
     // buffer will be cleared, and new list must be created for async flush
-    List<ShufflePartitionedBlock> spBlocks = new LinkedList<>(blocks);
-    List<ShufflePartitionedBlock> inFlushedQueueBlocks = spBlocks;
+    Collection<ShufflePartitionedBlock> spBlocks = blocks;
+    Set<ShufflePartitionedBlock> inFlushedQueueBlocks = blocks;
     if (dataDistributionType == ShuffleDataDistributionType.LOCAL_ORDER) {
       /**
        * When reordering the blocks, it will break down the original reads sequence to cause the
        * data lost in some cases. So we should create a reference copy to avoid this.
        */
-      inFlushedQueueBlocks = new LinkedList<>(spBlocks);
-      spBlocks.sort(Comparator.comparingLong(ShufflePartitionedBlock::getTaskAttemptId));
+      LinkedList<ShufflePartitionedBlock> orderedSpBlocks = new LinkedList<>(blocks);
+      orderedSpBlocks.sort(Comparator.comparingLong(ShufflePartitionedBlock::getTaskAttemptId));
+      spBlocks = orderedSpBlocks;
     }
     long eventId = ShuffleFlushManager.ATOMIC_EVENT_ID.getAndIncrement();
     final ShuffleDataFlushEvent event =
@@ -99,11 +101,11 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
     event.addCleanupCallback(
         () -> {
           this.clearInFlushBuffer(event.getEventId());
-          spBlocks.forEach(spb -> spb.getData().release());
+          inFlushedQueueBlocks.forEach(spb -> spb.getData().release());
           inFlushSize.addAndGet(-event.getSize());
         });
-    inFlushBlockMap.put(eventId, new LinkedHashSet<>(inFlushedQueueBlocks));
-    blocks.clear();
+    inFlushBlockMap.put(eventId, inFlushedQueueBlocks);
+    blocks = new LinkedHashSet<>();
     inFlushSize.addAndGet(size);
     size = 0;
     return event;

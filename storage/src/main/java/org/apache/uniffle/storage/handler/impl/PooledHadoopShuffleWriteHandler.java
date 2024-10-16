@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Function;
 
@@ -105,7 +105,7 @@ public class PooledHadoopShuffleWriteHandler implements ShuffleWriteHandler {
   }
 
   @Override
-  public void write(List<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
+  public void write(Collection<ShufflePartitionedBlock> shuffleBlocks) throws Exception {
     if (queue.isEmpty() && initializedHandlerCnt < maxConcurrency) {
       synchronized (this) {
         if (initializedHandlerCnt < maxConcurrency) {
