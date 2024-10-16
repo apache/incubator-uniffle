@@ -128,6 +128,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
     this.speculation = sparkConf.getBoolean("spark.speculation", false);
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+    RssUtils.setExtraJavaProperties(rssConf);
     // configureBlockIdLayout requires maxFailures and speculation to be initialized
     configureBlockIdLayout(sparkConf, rssConf);
     this.blockIdLayout = BlockIdLayout.from(rssConf);
