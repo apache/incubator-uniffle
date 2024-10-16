@@ -162,6 +162,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     this.clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
     this.dataDistributionType = getDataDistributionType(sparkConf);
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+    RssUtils.setExtraJavaProperties(rssConf);
     this.maxConcurrencyPerPartitionToWrite = rssConf.get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE);
     this.maxFailures = sparkConf.getInt("spark.task.maxFailures", 4);
     this.speculation = sparkConf.getBoolean("spark.speculation", false);
