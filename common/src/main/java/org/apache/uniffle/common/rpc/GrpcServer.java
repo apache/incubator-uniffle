@@ -82,7 +82,12 @@ public class GrpcServer implements ServerInterface {
             Queues.newLinkedBlockingQueue(Integer.MAX_VALUE),
             ThreadUtils.getThreadFactory("Grpc"),
             grpcMetrics);
-    ThreadPoolManager.registerThreadPool("Grpc", rpcExecutorSize, rpcExecutorSize * 2, 10, pool);
+    ThreadPoolManager.registerThreadPool(
+        "Grpc",
+        () -> conf.getInteger(RssBaseConf.RPC_EXECUTOR_SIZE),
+        () -> conf.getInteger(RssBaseConf.RPC_EXECUTOR_SIZE) * 2,
+        () -> TimeUnit.MINUTES.toMillis(10),
+        pool);
   }
 
   // This method is only used for the sake of synchronizing one test
