@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 import io.prometheus.client.CollectorRegistry;
@@ -48,6 +49,8 @@ import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategy;
 import org.apache.uniffle.coordinator.strategy.assignment.AssignmentStrategyFactory;
 import org.apache.uniffle.coordinator.util.CoordinatorUtils;
+import org.apache.uniffle.coordinator.web.vo.AppInfoVO;
+import org.apache.uniffle.proto.RssProtos;
 
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_ENABLE;
 import static org.apache.uniffle.common.config.RssBaseConf.RSS_SECURITY_HADOOP_KERBEROS_KEYTAB_FILE;
@@ -284,5 +287,30 @@ public class CoordinatorServer {
 
   public int getRpcListenPort() {
     return rpcListenPort;
+  }
+
+  public AppInfoVO getAppInfoV0(String user, AppInfo appInfo) {
+    AppInfoVO appInfoVO =
+        new AppInfoVO(
+            user,
+            appInfo.getAppId(),
+            appInfo.getUpdateTime(),
+            appInfo.getRegistrationTime(),
+            appInfo.getVersion(),
+            appInfo.getGitCommitId());
+    for (ServerNode server : clusterManager.list()) {
+      Map<String, RssProtos.ApplicationInfo> appIdToInfos = server.getAppIdToInfos();
+      if (appIdToInfos.containsKey(appInfoVO.getAppId())) {
+        RssProtos.ApplicationInfo app = appIdToInfos.get(appInfoVO.getAppId());
+        appInfoVO.setPartitionNum(appInfoVO.getPartitionNum() + app.getPartitionNum());
+        appInfoVO.setMemorySize(appInfoVO.getMemorySize() + app.getMemorySize());
+        appInfoVO.setLocalFileNum(appInfoVO.getLocalFileNum() + app.getLocalFileNum());
+        appInfoVO.setLocalTotalSize(appInfoVO.getLocalTotalSize() + app.getLocalTotalSize());
+        appInfoVO.setHadoopFileNum(appInfoVO.getHadoopFileNum() + app.getHadoopFileNum());
+        appInfoVO.setHadoopTotalSize(appInfoVO.getHadoopTotalSize() + app.getHadoopTotalSize());
+        appInfoVO.setTotalSize(appInfoVO.getTotalSize() + app.getTotalSize());
+      }
+    }
+    return appInfoVO;
   }
 }

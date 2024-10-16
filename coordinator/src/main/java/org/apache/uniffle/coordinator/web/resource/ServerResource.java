@@ -51,6 +51,7 @@ import org.apache.uniffle.coordinator.ServerNode;
 import org.apache.uniffle.coordinator.web.request.ApplicationRequest;
 import org.apache.uniffle.coordinator.web.request.CancelDecommissionRequest;
 import org.apache.uniffle.coordinator.web.request.DecommissionRequest;
+import org.apache.uniffle.coordinator.web.vo.ServerNodeVO;
 
 @Produces({MediaType.APPLICATION_JSON})
 public class ServerResource extends BaseResource {
@@ -70,23 +71,30 @@ public class ServerResource extends BaseResource {
 
   @GET
   @Path("/nodes")
-  public Response<List<ServerNode>> nodes(@QueryParam("status") String status) {
+  public Response<List<ServerNodeVO>> nodes(@QueryParam("status") String status) {
     ClusterManager clusterManager = getClusterManager();
-    List<ServerNode> serverList;
+    List<ServerNodeVO> serverList;
     if (ServerStatus.UNHEALTHY.name().equalsIgnoreCase(status)) {
-      serverList = clusterManager.getUnhealthyServerList();
+      serverList =
+          clusterManager.getUnhealthyServerList().stream()
+              .map(node -> node.getServerNodeVO())
+              .collect(Collectors.toList());
     } else if (ServerStatus.LOST.name().equalsIgnoreCase(status)) {
-      serverList = clusterManager.getLostServerList();
+      serverList =
+          clusterManager.getLostServerList().stream()
+              .map(node -> node.getServerNodeVO())
+              .collect(Collectors.toList());
     } else if (ServerStatus.EXCLUDED.name().equalsIgnoreCase(status)) {
       serverList =
           clusterManager.getExcludedNodes().stream()
-              .map(ServerNode::new)
+              .map(ServerNodeVO::new)
               .collect(Collectors.toList());
     } else {
       List<ServerNode> serverAllList = clusterManager.list();
       serverList =
           serverAllList.stream()
               .filter(node -> !clusterManager.getExcludedNodes().contains(node.getId()))
+              .map(node -> node.getServerNodeVO())
               .collect(Collectors.toList());
     }
     serverList =
@@ -96,7 +104,7 @@ public class ServerResource extends BaseResource {
                   return status == null || server.getStatus().name().equalsIgnoreCase(status);
                 })
             .collect(Collectors.toList());
-    serverList.sort(Comparator.comparing(ServerNode::getId));
+    serverList.sort(Comparator.comparing(ServerNodeVO::getId));
     return Response.success(serverList);
   }
 

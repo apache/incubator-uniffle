@@ -17,13 +17,19 @@
 
 package org.apache.uniffle.coordinator.web.vo;
 
+import java.util.Objects;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Data
 @Builder
 @AllArgsConstructor
+@Getter
+@Setter
 public class AppInfoVO implements Comparable<AppInfoVO> {
   private String userName;
   private String appId;
@@ -32,8 +38,48 @@ public class AppInfoVO implements Comparable<AppInfoVO> {
   private String version;
   private String gitCommitId;
 
+  private long partitionNum;
+  private long memorySize;
+  private long localFileNum;
+  private long localTotalSize;
+  private long hadoopFileNum;
+  private long hadoopTotalSize;
+  private long totalSize;
+
+  public AppInfoVO() {}
+
+  public AppInfoVO(
+      String userName,
+      String appId,
+      long updateTime,
+      long registrationTime,
+      String version,
+      String gitCommitId) {
+    this(userName, appId, updateTime, registrationTime, version, gitCommitId, 0, 0, 0, 0, 0, 0, 0);
+  }
+
   @Override
   public int compareTo(AppInfoVO appInfoVO) {
     return Long.compare(registrationTime, appInfoVO.getRegistrationTime());
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof AppInfoVO)) {
+      return false;
+    }
+    AppInfoVO appInfoVO = (AppInfoVO) o;
+    return updateTime == appInfoVO.updateTime
+        && registrationTime == appInfoVO.registrationTime
+        && userName.equals(appInfoVO.userName)
+        && appId.equals(appInfoVO.appId);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(userName, appId, updateTime, registrationTime);
   }
 }

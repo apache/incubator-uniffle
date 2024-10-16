@@ -17,8 +17,10 @@
 
 package org.apache.uniffle.server;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -57,6 +59,7 @@ import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
+import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.merge.ShuffleMergeManager;
 import org.apache.uniffle.server.netty.StreamServer;
@@ -144,8 +147,6 @@ public class ShuffleServer {
   }
 
   public void start() throws Exception {
-    LOG.info(
-        "{} version: {}", this.getClass().getSimpleName(), Constants.VERSION_AND_REVISION_SHORT);
     jettyServer.start();
     grpcPort = server.start();
     if (nettyServerEnabled) {
@@ -452,16 +453,16 @@ public class ShuffleServer {
   }
 
   public synchronized void cancelDecommission() {
-    boolean wasDecommissioning =
+    boolean wasDecomissioning =
         serverStatus.compareAndSet(ServerStatus.DECOMMISSIONING, ServerStatus.ACTIVE);
-    boolean wasDecommissioned =
+    boolean wasDecomissioned =
         serverStatus.compareAndSet(ServerStatus.DECOMMISSIONED, ServerStatus.ACTIVE);
-    if (!wasDecommissioning && !wasDecommissioned) {
+    if (!wasDecomissioning && !wasDecomissioned) {
       LOG.info("Shuffle server is not decommissioning. Nothing needs to be done.");
       return;
     }
 
-    if (wasDecommissioning) {
+    if (wasDecomissioning) {
       if (decommissionFuture.cancel(true)) {
         LOG.info("Decommission canceled.");
       } else {
@@ -579,6 +580,29 @@ public class ShuffleServer {
     return startTimeMs;
   }
 
+  public List<RssProtos.ApplicationInfo> getAppInfos() {
+    List<RssProtos.ApplicationInfo> appInfos = new ArrayList<>();
+    Map<String, ShuffleTaskInfo> taskInfos = getShuffleTaskManager().getShuffleTaskInfos();
+    for (Map.Entry<String, ShuffleTaskInfo> entry : taskInfos.entrySet()) {
+      String appId = entry.getKey();
+      ShuffleTaskInfo taskInfo = entry.getValue();
+      RssProtos.ApplicationInfo applicationInfo =
+          RssProtos.ApplicationInfo.newBuilder()
+              .setAppId(appId)
+              .setPartitionNum(taskInfo.getPartitionNum())
+              .setMemorySize(taskInfo.getInMemoryDataSize())
+              .setHadoopFileNum(taskInfo.getOnHadoopNum())
+              .setLocalFileNum(taskInfo.getOnLocalFileNum())
+              .setLocalTotalSize(taskInfo.getOnLocalFileDataSize())
+              .setHadoopTotalSize(taskInfo.getOnHadoopDataSize())
+              .setTotalSize(taskInfo.getTotalDataSize())
+              .build();
+
+      appInfos.add(applicationInfo);
+    }
+    return appInfos;
+  }
+
   @VisibleForTesting
   public void sendHeartbeat() {
     ShuffleServer shuffleServer = this;
@@ -595,7 +619,8 @@ public class ShuffleServer {
         shuffleServer.getStorageManager().getStorageInfo(),
         shuffleServer.getNettyPort(),
         shuffleServer.getJettyPort(),
-        shuffleServer.getStartTimeMs());
+        shuffleServer.getStartTimeMs(),
+        shuffleServer.getAppInfos());
   }
 
   public ShuffleMergeManager getShuffleMergeManager() {

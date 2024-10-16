@@ -17,35 +17,52 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.storage.StorageInfo;
+import org.apache.uniffle.coordinator.web.vo.ServerNodeVO;
+import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 
 public class ServerNode implements Comparable<ServerNode> {
+  private final ServerNodeVO serverNodeVO;
+  private final Map<String, RssProtos.ApplicationInfo> appIdToInfos;
 
-  private String id;
-  private String ip;
-  private int grpcPort;
-  private long usedMemory;
-  private long preAllocatedMemory;
-  private long availableMemory;
-  private int eventNumInFlush;
-  private long registrationTime;
-  private long timestamp;
-  private Set<String> tags;
-  private ServerStatus status;
-  private Map<String, StorageInfo> storageInfo;
-  private int nettyPort = -1;
-  private int jettyPort = -1;
-  private long startTime = -1;
-  private String version;
-  private String gitCommitId;
+  public Map<String, RssProtos.ApplicationInfo> getAppIdToInfos() {
+    return appIdToInfos;
+  }
+
+  public void combineAppInfos(ServerNode oldServerNode) {
+    if (oldServerNode == null) {
+      return;
+    }
+    for (Map.Entry<String, RssProtos.ApplicationInfo> entry :
+        oldServerNode.getAppIdToInfos().entrySet()) {
+      if (entry.getValue() == null) {
+        continue;
+      }
+      if (!appIdToInfos.containsKey(entry.getKey())) {
+        appIdToInfos.put(entry.getKey(), entry.getValue());
+      } else {
+        RssProtos.ApplicationInfo current = appIdToInfos.get(entry.getKey());
+        RssProtos.ApplicationInfo other = entry.getValue();
+        // keep the max info
+        if (current.getTotalSize() > other.getTotalSize()) {
+          appIdToInfos.put(entry.getKey(), current);
+        } else {
+          appIdToInfos.put(entry.getKey(), other);
+        }
+      }
+    }
+  }
 
   public ServerNode(String id) {
     this(id, "", 0, 0, 0, 0, 0, Sets.newHashSet(), ServerStatus.EXCLUDED);
@@ -181,7 +198,8 @@ public class ServerNode implements Comparable<ServerNode> {
         jettyPort,
         startTime,
         "",
-        "");
+        "",
+        Collections.emptyList());
   }
 
   public ServerNode(
@@ -199,141 +217,142 @@ public class ServerNode implements Comparable<ServerNode> {
       int jettyPort,
       long startTime,
       String version,
-      String gitCommitId) {
-    this.id = id;
-    this.ip = ip;
-    this.grpcPort = grpcPort;
-    this.usedMemory = usedMemory;
-    this.preAllocatedMemory = preAllocatedMemory;
-    this.availableMemory = availableMemory;
-    this.eventNumInFlush = eventNumInFlush;
-    this.registrationTime = System.currentTimeMillis();
-    this.timestamp = registrationTime;
-    this.tags = tags;
-    this.status = status;
-    this.storageInfo = storageInfoMap;
-    if (nettyPort > 0) {
-      this.nettyPort = nettyPort;
+      String gitCommitId,
+      List<RssProtos.ApplicationInfo> appInfos) {
+    this.serverNodeVO =
+        new ServerNodeVO(
+            id,
+            ip,
+            grpcPort,
+            usedMemory,
+            preAllocatedMemory,
+            availableMemory,
+            eventNumInFlush,
+            tags,
+            status,
+            storageInfoMap,
+            nettyPort,
+            jettyPort,
+            startTime,
+            version,
+            gitCommitId);
+    this.appIdToInfos = new ConcurrentHashMap<>();
+    for (RssProtos.ApplicationInfo app : appInfos) {
+      this.appIdToInfos.put(app.getAppId(), app);
     }
-    if (jettyPort > 0) {
-      this.jettyPort = jettyPort;
-    }
-    this.startTime = startTime;
-    this.version = version;
-    this.gitCommitId = gitCommitId;
   }
 
   public ShuffleServerId convertToGrpcProto() {
     return ShuffleServerId.newBuilder()
-        .setId(id)
-        .setIp(ip)
-        .setPort(grpcPort)
-        .setNettyPort(nettyPort)
-        .setJettyPort(jettyPort)
+        .setId(serverNodeVO.getId())
+        .setIp(serverNodeVO.getIp())
+        .setPort(serverNodeVO.getGrpcPort())
+        .setNettyPort(serverNodeVO.getNettyPort())
+        .setJettyPort(serverNodeVO.getJettyPort())
         .build();
   }
 
   public String getId() {
-    return id;
+    return serverNodeVO.getId();
   }
 
   public String getIp() {
-    return ip;
+    return serverNodeVO.getIp();
   }
 
   public int getGrpcPort() {
-    return grpcPort;
+    return serverNodeVO.getGrpcPort();
   }
 
   public long getTimestamp() {
-    return timestamp;
+    return serverNodeVO.getTimestamp();
   }
 
   public long getPreAllocatedMemory() {
-    return preAllocatedMemory;
+    return serverNodeVO.getPreAllocatedMemory();
   }
 
   public long getAvailableMemory() {
-    return availableMemory;
+    return serverNodeVO.getAvailableMemory();
   }
 
   public int getEventNumInFlush() {
-    return eventNumInFlush;
+    return serverNodeVO.getEventNumInFlush();
   }
 
   public long getUsedMemory() {
-    return usedMemory;
+    return serverNodeVO.getUsedMemory();
   }
 
   public Set<String> getTags() {
-    return tags;
+    return serverNodeVO.getTags();
   }
 
   public ServerStatus getStatus() {
-    return status;
+    return serverNodeVO.getStatus();
   }
 
   public void setStatus(ServerStatus serverStatus) {
-    this.status = serverStatus;
+    serverNodeVO.setStatus(serverStatus);
   }
 
   public Map<String, StorageInfo> getStorageInfo() {
-    return storageInfo;
+    return serverNodeVO.getStorageInfo();
   }
 
   @Override
   public String toString() {
     return "ServerNode with id["
-        + id
+        + serverNodeVO.getId()
         + "], ip["
-        + ip
+        + serverNodeVO.getIp()
         + "], grpc port["
-        + grpcPort
+        + serverNodeVO.getGrpcPort()
         + "], netty port["
-        + nettyPort
+        + serverNodeVO.getNettyPort()
         + "], jettyPort["
-        + jettyPort
+        + serverNodeVO.getJettyPort()
         + "], usedMemory["
-        + usedMemory
+        + serverNodeVO.getUsedMemory()
         + "], preAllocatedMemory["
-        + preAllocatedMemory
+        + serverNodeVO.getPreAllocatedMemory()
         + "], availableMemory["
-        + availableMemory
+        + serverNodeVO.getAvailableMemory()
         + "], eventNumInFlush["
-        + eventNumInFlush
+        + serverNodeVO.getEventNumInFlush()
         + "], timestamp["
-        + timestamp
+        + serverNodeVO.getTimestamp()
         + "], tags["
-        + tags.toString()
+        + serverNodeVO.getTags().toString()
         + "], status["
-        + status
+        + serverNodeVO.getStatus()
         + "], storages[num="
-        + storageInfo.size()
+        + serverNodeVO.getStorageInfo().size()
         + "], version["
-        + version
+        + serverNodeVO.getVersion()
         + "], gitCommitId["
-        + gitCommitId
+        + serverNodeVO.getGitCommitId()
         + "]";
   }
 
   /** Only for test case */
   public void setTimestamp(long timestamp) {
-    this.timestamp = timestamp;
+    serverNodeVO.setTimestamp(timestamp);
   }
 
   void setRegistrationTime(long registrationTime) {
-    this.registrationTime = registrationTime;
+    serverNodeVO.setRegistrationTime(registrationTime);
   }
 
   public long getRegistrationTime() {
-    return registrationTime;
+    return serverNodeVO.getRegistrationTime();
   }
 
   @Override
   public int compareTo(ServerNode other) {
-    if (availableMemory > other.getAvailableMemory()) {
+    if (getAvailableMemory() > other.getAvailableMemory()) {
       return -1;
-    } else if (availableMemory < other.getAvailableMemory()) {
+    } else if (getAvailableMemory() < other.getAvailableMemory()) {
       return 1;
     }
     return 0;
@@ -341,38 +360,42 @@ public class ServerNode implements Comparable<ServerNode> {
 
   @Override
   public int hashCode() {
-    return id.hashCode();
+    return serverNodeVO.getId().hashCode();
   }
 
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof ServerNode) {
-      return id.equals(((ServerNode) obj).getId());
+      return serverNodeVO.getId().equals(((ServerNode) obj).getId());
     }
     return false;
   }
 
   public long getTotalMemory() {
-    return availableMemory + usedMemory;
+    return serverNodeVO.getAvailableMemory() + serverNodeVO.getUsedMemory();
   }
 
   public int getNettyPort() {
-    return nettyPort;
+    return serverNodeVO.getNettyPort();
   }
 
   public int getJettyPort() {
-    return jettyPort;
+    return serverNodeVO.getJettyPort();
   }
 
   public long getStartTime() {
-    return startTime;
+    return serverNodeVO.getStartTime();
   }
 
   public String getVersion() {
-    return version;
+    return serverNodeVO.getVersion();
   }
 
   public String getGitCommitId() {
-    return gitCommitId;
+    return serverNodeVO.getGitCommitId();
+  }
+
+  public ServerNodeVO getServerNodeVO() {
+    return serverNodeVO;
   }
 }

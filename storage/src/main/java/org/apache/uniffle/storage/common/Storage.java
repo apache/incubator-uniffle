@@ -20,7 +20,7 @@ package org.apache.uniffle.storage.common;
 import java.io.IOException;
 
 import org.apache.uniffle.storage.handler.api.ServerReadHandler;
-import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
+import org.apache.uniffle.storage.handler.api.ShuffleWriteHandlerWrapper;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 
@@ -32,7 +32,7 @@ public interface Storage {
 
   void updateReadMetrics(StorageReadMetrics metrics);
 
-  ShuffleWriteHandler getOrCreateWriteHandler(CreateShuffleWriteHandlerRequest request)
+  ShuffleWriteHandlerWrapper getOrCreateWriteHandler(CreateShuffleWriteHandlerRequest request)
       throws IOException;
 
   boolean containsWriteHandler(String appId);
