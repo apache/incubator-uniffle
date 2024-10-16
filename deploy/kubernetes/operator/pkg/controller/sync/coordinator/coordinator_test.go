@@ -569,7 +569,7 @@ func TestGenerateSvcWithAnnotationsForCoordinator(t *testing.T) {
 		expectedAnnotations []map[string]string
 	}{
 		{
-			name: "with headless/nodeport svc annotations",
+			name: "nodeport and headless services with annotations",
 			rss:  buildRssWithSvcAnnotations(),
 			expectedAnnotations: []map[string]string{
 				{"annotation1": "value1"},
