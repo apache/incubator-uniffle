@@ -281,6 +281,11 @@ public class RssUtils {
         Constants.KEY_SPLIT_CHAR, appId, String.valueOf(shuffleId), String.valueOf(partition));
   }
 
+  public static String generatePartitionKeyExceptAppId(Integer shuffleId, Integer partition) {
+    return String.join(
+        Constants.KEY_SPLIT_CHAR, String.valueOf(shuffleId), String.valueOf(partition));
+  }
+
   public static <T> T loadExtension(Class<T> extCls, String clsPackage, Object obj) {
     List<T> exts = loadExtensions(extCls, Arrays.asList(clsPackage), obj);
     if (exts != null && exts.size() == 1) {
