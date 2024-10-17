@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,11 @@ public class ShuffleDataFlushEvent {
   private final int shuffleId;
   private final int startPartition;
   private final int endPartition;
-  private final long size;
+  /** The memory cost size include encoded length */
+  private final long encodedLength;
+  /** The data size of this shuffle block */
+  private final long dataLength;
+
   private final Collection<ShufflePartitionedBlock> shuffleBlocks;
   private final Supplier<Boolean> valid;
   private final ShuffleBuffer shuffleBuffer;
@@ -51,13 +56,38 @@ public class ShuffleDataFlushEvent {
   private boolean ownedByHugePartition = false;
   private long startPendingTime;
 
+  @VisibleForTesting
   public ShuffleDataFlushEvent(
       long eventId,
       String appId,
       int shuffleId,
       int startPartition,
       int endPartition,
-      long size,
+      long encodedLength,
+      Collection<ShufflePartitionedBlock> shuffleBlocks,
+      Supplier<Boolean> valid,
+      ShuffleBuffer shuffleBuffer) {
+    this(
+        eventId,
+        appId,
+        shuffleId,
+        startPartition,
+        endPartition,
+        encodedLength,
+        encodedLength,
+        shuffleBlocks,
+        valid,
+        shuffleBuffer);
+  }
+
+  public ShuffleDataFlushEvent(
+      long eventId,
+      String appId,
+      int shuffleId,
+      int startPartition,
+      int endPartition,
+      long encodedLength,
+      long dataLength,
       Collection<ShufflePartitionedBlock> shuffleBlocks,
       Supplier<Boolean> valid,
       ShuffleBuffer shuffleBuffer) {
@@ -66,11 +96,12 @@ public class ShuffleDataFlushEvent {
     this.shuffleId = shuffleId;
     this.startPartition = startPartition;
     this.endPartition = endPartition;
-    this.size = size;
+    this.encodedLength = encodedLength;
     this.shuffleBlocks = shuffleBlocks;
     this.valid = valid;
     this.shuffleBuffer = shuffleBuffer;
     this.cleanupCallbackChains = new ArrayList<>();
+    this.dataLength = dataLength;
   }
 
   public Collection<ShufflePartitionedBlock> getShuffleBlocks() {
@@ -81,8 +112,12 @@ public class ShuffleDataFlushEvent {
     return eventId;
   }
 
-  public long getSize() {
-    return size;
+  public long getEncodedLength() {
+    return encodedLength;
+  }
+
+  public long getDataLength() {
+    return dataLength;
   }
 
   public String getAppId() {

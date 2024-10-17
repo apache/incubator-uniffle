@@ -325,7 +325,7 @@ public class ShuffleBufferManager {
     // When we use multi storage and trigger single buffer flush, the buffer size should be bigger
     // than rss.server.flush.cold.storage.threshold.size, otherwise cold storage will be useless.
     if ((isHugePartition || this.bufferFlushEnabled)
-        && (buffer.getSize() > this.bufferFlushThreshold
+        && (buffer.getEncodedLength() > this.bufferFlushThreshold
             || buffer.getBlockCount() > bufferFlushBlocksNumThreshold)) {
       if (LOG.isDebugEnabled()) {
         LOG.debug(
@@ -334,7 +334,7 @@ public class ShuffleBufferManager {
             startPartition,
             endPartition,
             isHugePartition,
-            buffer.getSize(),
+            buffer.getEncodedLength(),
             buffer.getBlockCount());
       }
       flushBuffer(buffer, appId, shuffleId, startPartition, endPartition, isHugePartition);
@@ -397,9 +397,9 @@ public class ShuffleBufferManager {
               () -> bufferPool.getOrDefault(appId, new HashMap<>()).containsKey(shuffleId),
               shuffleFlushManager.getDataDistributionType(appId));
       if (event != null) {
-        event.addCleanupCallback(() -> releaseMemory(event.getSize(), true, false));
-        updateShuffleSize(appId, shuffleId, -event.getSize());
-        inFlushSize.addAndGet(event.getSize());
+        event.addCleanupCallback(() -> releaseMemory(event.getEncodedLength(), true, false));
+        updateShuffleSize(appId, shuffleId, -event.getEncodedLength());
+        inFlushSize.addAndGet(event.getEncodedLength());
         if (isHugePartition) {
           event.markOwnedByHugePartition();
         }
@@ -575,7 +575,7 @@ public class ShuffleBufferManager {
                 shuffleIdToBuffers.getValue().asMapOfRanges().entrySet()) {
               Range<Integer> range = rangeEntry.getKey();
               ShuffleBuffer shuffleBuffer = rangeEntry.getValue();
-              pickedFlushSize += shuffleBuffer.getSize();
+              pickedFlushSize += shuffleBuffer.getEncodedLength();
               flushBuffer(
                   shuffleBuffer,
                   appId,
@@ -770,11 +770,11 @@ public class ShuffleBufferManager {
           // the actual released size by this thread
           long releasedSize = buffer.release();
           ShuffleServerMetrics.gaugeTotalPartitionNum.dec();
-          if (releasedSize != buffer.getSize()) {
+          if (releasedSize != buffer.getEncodedLength()) {
             LOG.warn(
                 "Release shuffle buffer size {} is not equal to buffer size {}, appId: {}, shuffleId: {}",
                 releasedSize,
-                buffer.getSize(),
+                buffer.getEncodedLength(),
                 appId,
                 shuffleId);
           }

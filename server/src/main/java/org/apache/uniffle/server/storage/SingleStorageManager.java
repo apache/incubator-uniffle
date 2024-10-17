@@ -26,7 +26,6 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.storage.ApplicationStorageInfo;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
@@ -87,7 +86,7 @@ public abstract class SingleStorageManager implements StorageManager {
       if (metrics.getWriteTime() > writeSlowThreshold) {
         ShuffleServerMetrics.counterWriteSlow.inc();
       }
-      ShuffleServerMetrics.counterTotalWriteDataSize.inc(metrics.getEventSize());
+      ShuffleServerMetrics.counterTotalWriteDataSize.inc(metrics.getDataSize());
       ShuffleServerMetrics.counterTotalWriteBlockSize.inc(metrics.getWriteBlocks());
       if (metrics.getEventSize() < eventSizeThresholdL1) {
         ShuffleServerMetrics.counterEventSizeThresholdLevel1.inc();
@@ -101,8 +100,8 @@ public abstract class SingleStorageManager implements StorageManager {
       String appId = event.getAppId();
       ApplicationStorageInfo appStorage =
           appStorageInfoMap.computeIfAbsent(appId, id -> new ApplicationStorageInfo(appId));
-      appStorage.incUsedBytes(event.getSize());
-      ShuffleServerMetrics.gaugeStorageUsedBytes.inc(event.getSize());
+      appStorage.incUsedBytes(event.getDataLength());
+      ShuffleServerMetrics.gaugeStorageUsedBytes.inc(event.getDataLength());
       if (event.getUnderStorage().containsWriteHandler(appId)) {
         appStorage.incFileNum(1);
         ShuffleServerMetrics.gaugeFlushFileNum.inc();
@@ -134,12 +133,7 @@ public abstract class SingleStorageManager implements StorageManager {
 
   public StorageWriteMetrics createStorageWriteMetrics(
       ShuffleDataFlushEvent event, long writeTime) {
-    long length = 0;
-    long blockNum = 0;
-    for (ShufflePartitionedBlock block : event.getShuffleBlocks()) {
-      length += block.getDataLength();
-      blockNum++;
-    }
+    long blockNum = event.getShuffleBlocks().size();
     List<Integer> partitions = Lists.newArrayList();
     for (int partition = event.getStartPartition();
         partition <= event.getEndPartition();
@@ -147,10 +141,10 @@ public abstract class SingleStorageManager implements StorageManager {
       partitions.add(partition);
     }
     return new StorageWriteMetrics(
-        event.getSize(),
+        event.getEncodedLength(),
         blockNum,
         writeTime,
-        length,
+        event.getDataLength(),
         partitions,
         event.getAppId(),
         event.getShuffleId());

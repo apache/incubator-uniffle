@@ -198,7 +198,7 @@ public class ShuffleFlushManager {
                 event.getStartPartition() + "_" + event.getEndPartition(),
                 event.getUnderStorage().getStorageHost(),
                 event.getUnderStorage().getStoragePath(),
-                event.getSize(),
+                event.getDataLength(),
                 DateFormatUtils.format(startTime, AUDIT_DATE_PATTERN),
                 DateFormatUtils.format(endTime, AUDIT_DATE_PATTERN),
                 endTime - startTime));
@@ -206,9 +206,9 @@ public class ShuffleFlushManager {
       if (null != shuffleTaskInfo) {
         String storageHost = event.getUnderStorage().getStorageHost();
         if (LocalStorage.STORAGE_HOST.equals(storageHost)) {
-          shuffleTaskInfo.addOnLocalFileDataSize(event.getSize());
+          shuffleTaskInfo.addOnLocalFileDataSize(event.getEncodedLength());
         } else {
-          shuffleTaskInfo.addOnHadoopDataSize(event.getSize());
+          shuffleTaskInfo.addOnHadoopDataSize(event.getEncodedLength());
         }
       }
     } finally {

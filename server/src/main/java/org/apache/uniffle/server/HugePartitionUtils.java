@@ -133,7 +133,7 @@ public class HugePartitionUtils {
     if (usedPartitionDataSize > shuffleBufferManager.getHugePartitionSizeThreshold()) {
       ShuffleBuffer buffer =
           shuffleBufferManager.getShuffleBufferEntry(appId, shuffleId, partitionId).getValue();
-      long memoryUsed = buffer.getInFlushSize() + buffer.getSize();
+      long memoryUsed = buffer.getInFlushSize() + buffer.getEncodedLength();
       if (memoryUsed > shuffleBufferManager.getHugePartitionMemoryLimitSize()) {
         LOG.warn(
             "AppId: {}, shuffleId: {}, partitionId: {}, memory used: {}, "
