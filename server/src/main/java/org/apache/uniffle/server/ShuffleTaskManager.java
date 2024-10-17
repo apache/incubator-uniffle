@@ -72,6 +72,7 @@ import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.common.util.UnitConverter;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
@@ -866,13 +867,6 @@ public class ShuffleTaskManager {
       StringBuilder partitionInfoSummary = new StringBuilder();
       partitionInfoSummary.append("appId: ").append(appId).append("\n");
       for (int shuffleId : shuffleTaskInfo.getShuffleIds()) {
-        Roaring64NavigableMap[] bitmaps = partitionsToBlockIds.get(appId).get(shuffleId);
-        long shuffleBlockCount = 0L;
-        if (bitmaps != null) {
-          for (Roaring64NavigableMap bitmap : bitmaps) {
-            shuffleBlockCount += bitmap.getLongCardinality();
-          }
-        }
         if (conf.getBoolean(ShuffleServerConf.SERVER_LOG_APP_DETAIL_WHILE_REMOVE_ENABLED)) {
           for (int partitionId : shuffleTaskInfo.getPartitionIds(shuffleId)) {
             long partitionSize = shuffleTaskInfo.getPartitionDataSize(shuffleId, partitionId);
@@ -883,21 +877,11 @@ public class ShuffleTaskManager {
                 shuffleId,
                 partitionId,
                 partitionBlockCount,
-                partitionSize);
+                UnitConverter.formatSize(partitionSize));
           }
         }
-        partitionInfoSummary
-            .append(" shuffleId: ")
-            .append(shuffleId)
-            .append(" contains partition/block: ")
-            .append(shuffleTaskInfo.getPartitionIds(shuffleId).size())
-            .append("/")
-            .append(shuffleBlockCount)
-            .append("\n");
       }
-      partitionInfoSummary
-          .append("The maxSizePartitionInfo: ")
-          .append(shuffleTaskInfo.getMaxSizePartitionInfo());
+      partitionInfoSummary.append("The app task info: ").append(shuffleTaskInfo);
       LOG.info("Removing app summary info: {}", partitionInfoSummary);
 
       partitionsToBlockIds.remove(appId);
