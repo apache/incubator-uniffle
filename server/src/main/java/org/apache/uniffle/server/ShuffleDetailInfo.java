@@ -28,12 +28,14 @@ public class ShuffleDetailInfo {
   private int id;
   private AtomicLong dataSize;
   private AtomicLong blockCount;
+  private AtomicLong partitionCount;
   private long startTime;
 
   public ShuffleDetailInfo(int id, long startTime) {
     this.id = id;
     this.dataSize = new AtomicLong();
     this.blockCount = new AtomicLong();
+    this.partitionCount = new AtomicLong();
     this.startTime = startTime;
   }
 
@@ -61,13 +63,18 @@ public class ShuffleDetailInfo {
     blockCount.addAndGet(count);
   }
 
+  public void incrPartitionCount() {
+    partitionCount.addAndGet(1);
+  }
+
   @Override
   public String toString() {
     return String.format(
-        "ShuffleDetail [id=%s, dataSize=%s, blockCount=%s, startTime=%s]",
+        "ShuffleDetail [%d: partitionCount=%s, blockCount=%s, size=%s, startTime=%s]",
         id,
-        UnitConverter.formatSize(dataSize.get()),
+        partitionCount,
         blockCount,
+        UnitConverter.formatSize(dataSize.get()),
         DateFormatUtils.format(startTime, Constants.DATE_PATTERN));
   }
 }

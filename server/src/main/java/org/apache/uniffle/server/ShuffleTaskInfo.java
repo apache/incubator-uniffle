@@ -134,13 +134,18 @@ public class ShuffleTaskInfo {
   public long addPartitionDataSize(int shuffleId, int partitionId, long delta) {
     totalDataSize.addAndGet(delta);
     inMemoryDataSize.addAndGet(delta);
-    shuffleDetailInfos
-        .computeIfAbsent(
-            shuffleId, key -> new ShuffleDetailInfo(shuffleId, System.currentTimeMillis()))
-        .incrDataSize(delta);
+    ShuffleDetailInfo shuffleDetailInfo =
+        shuffleDetailInfos.computeIfAbsent(
+            shuffleId, key -> new ShuffleDetailInfo(shuffleId, System.currentTimeMillis()));
+    shuffleDetailInfo.incrDataSize(delta);
     partitionDataSizes.computeIfAbsent(shuffleId, key -> JavaUtils.newConcurrentMap());
     Map<Integer, Long> partitions = partitionDataSizes.get(shuffleId);
-    partitions.putIfAbsent(partitionId, 0L);
+    partitions.computeIfAbsent(
+        partitionId,
+        k -> {
+          shuffleDetailInfo.incrPartitionCount();
+          return 0L;
+        });
     return partitions.computeIfPresent(
         partitionId,
         (k, v) -> {
