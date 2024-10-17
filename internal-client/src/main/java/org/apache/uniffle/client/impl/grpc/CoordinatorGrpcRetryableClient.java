@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,13 +40,13 @@ import org.apache.uniffle.client.response.RssApplicationInfoResponse;
 import org.apache.uniffle.client.response.RssFetchClientConfResponse;
 import org.apache.uniffle.client.response.RssFetchRemoteStorageResponse;
 import org.apache.uniffle.client.response.RssGetShuffleAssignmentsResponse;
-import org.apache.uniffle.common.RemoteStorageInfo;
+import org.apache.uniffle.client.response.RssSendHeartBeatResponse;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 
-public class CoordinatorGrpcRetryableClient {
+public class CoordinatorGrpcRetryableClient implements CoordinatorClient {
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorGrpcRetryableClient.class);
   private List<CoordinatorClient> coordinatorClients;
   private long retryIntervalMs;
@@ -64,16 +65,22 @@ public class CoordinatorGrpcRetryableClient {
         ThreadUtils.getDaemonFixedThreadPool(heartBeatThreadNum, "client-heartbeat");
   }
 
-  public void sendAppHeartBeat(RssAppHeartBeatRequest request, long timeoutMs) {
+  @Override
+  public RssAppHeartBeatResponse scheduleAtFixedRateToSendAppHeartBeat(
+      RssAppHeartBeatRequest request) {
+    AtomicReference<RssAppHeartBeatResponse> rssResponse = new AtomicReference<>();
+    rssResponse.set(new RssAppHeartBeatResponse(StatusCode.INTERNAL_ERROR));
     ThreadUtils.executeTasks(
         heartBeatExecutorService,
         coordinatorClients,
         coordinatorClient -> {
           try {
-            RssAppHeartBeatResponse response = coordinatorClient.sendAppHeartBeat(request);
+            RssAppHeartBeatResponse response =
+                coordinatorClient.scheduleAtFixedRateToSendAppHeartBeat(request);
             if (response.getStatusCode() != StatusCode.SUCCESS) {
               LOG.warn("Failed to send heartbeat to " + coordinatorClient.getDesc());
             } else {
+              rssResponse.set(response);
               LOG.info("Successfully send heartbeat to " + coordinatorClient.getDesc());
             }
           } catch (Exception e) {
@@ -81,11 +88,15 @@ public class CoordinatorGrpcRetryableClient {
           }
           return null;
         },
-        timeoutMs,
+        request.getTimeoutMs(),
         "send heartbeat to coordinator");
+    return rssResponse.get();
   }
 
-  public void registerApplicationInfo(RssApplicationInfoRequest request, long timeoutMs) {
+  @Override
+  public RssApplicationInfoResponse registerApplicationInfo(RssApplicationInfoRequest request) {
+    AtomicReference<RssApplicationInfoResponse> rssResponse = new AtomicReference<>();
+    rssResponse.set(new RssApplicationInfoResponse(StatusCode.INTERNAL_ERROR));
     ThreadUtils.executeTasks(
         heartBeatExecutorService,
         coordinatorClients,
@@ -96,6 +107,7 @@ public class CoordinatorGrpcRetryableClient {
             if (response.getStatusCode() != StatusCode.SUCCESS) {
               LOG.error("Failed to send applicationInfo to " + coordinatorClient.getDesc());
             } else {
+              rssResponse.set(response);
               LOG.info("Successfully send applicationInfo to " + coordinatorClient.getDesc());
             }
           } catch (Exception e) {
@@ -104,11 +116,13 @@ public class CoordinatorGrpcRetryableClient {
           }
           return null;
         },
-        timeoutMs,
+        request.getTimeoutMs(),
         "register application");
+    return rssResponse.get();
   }
 
-  public boolean sendHeartBeat(RssSendHeartBeatRequest request) {
+  @Override
+  public RssSendHeartBeatResponse sendHeartBeat(RssSendHeartBeatRequest request) {
     AtomicBoolean sendSuccessfully = new AtomicBoolean(false);
     ThreadUtils.executeTasks(
         heartBeatExecutorService,
@@ -124,16 +138,20 @@ public class CoordinatorGrpcRetryableClient {
             }
           } catch (Exception e) {
             LOG.error(e.getMessage());
-            return null;
           }
           return null;
         });
 
-    return sendSuccessfully.get();
+    if (sendSuccessfully.get()) {
+      return new RssSendHeartBeatResponse(StatusCode.SUCCESS);
+    } else {
+      return new RssSendHeartBeatResponse(StatusCode.INTERNAL_ERROR);
+    }
   }
 
+  @Override
   public RssGetShuffleAssignmentsResponse getShuffleAssignments(
-      RssGetShuffleAssignmentsRequest request, long retryIntervalMs, int retryTimes) {
+      RssGetShuffleAssignmentsRequest request) {
     try {
       return RetryUtils.retry(
           () -> {
@@ -149,7 +167,7 @@ public class CoordinatorGrpcRetryableClient {
                 LOG.info(
                     "Success to get shuffle server assignment from {}",
                     coordinatorClient.getDesc());
-                break;
+                return response;
               }
             }
             if (response.getStatusCode() != StatusCode.SUCCESS) {
@@ -164,8 +182,8 @@ public class CoordinatorGrpcRetryableClient {
     }
   }
 
-  public RssAccessClusterResponse accessCluster(
-      RssAccessClusterRequest request, long retryIntervalMs, int retryTimes) {
+  @Override
+  public RssAccessClusterResponse accessCluster(RssAccessClusterRequest request) {
     try {
       return RetryUtils.retry(
           () -> {
@@ -177,12 +195,10 @@ public class CoordinatorGrpcRetryableClient {
                     "Success to access cluster {} using {}",
                     coordinatorClient.getDesc(),
                     request.getAccessId());
-                break;
+                return response;
               }
             }
-            if (response.getStatusCode() == StatusCode.SUCCESS) {
-              return response;
-            } else if (response.getStatusCode() == StatusCode.ACCESS_DENIED) {
+            if (response.getStatusCode() == StatusCode.ACCESS_DENIED) {
               throw new RssException(
                   "Request to access cluster is denied using "
                       + request.getAccessId()
@@ -192,13 +208,14 @@ public class CoordinatorGrpcRetryableClient {
               throw new RssException("Fail to reach cluster for " + response.getMessage());
             }
           },
-          retryIntervalMs,
-          retryTimes);
+          request.getRetryIntervalMs(),
+          request.getRetryTimes());
     } catch (Throwable throwable) {
       throw new RssException("getShuffleAssignments failed!", throwable);
     }
   }
 
+  @Override
   public RssFetchClientConfResponse fetchClientConf(RssFetchClientConfRequest request) {
     try {
       return RetryUtils.retry(
@@ -223,7 +240,8 @@ public class CoordinatorGrpcRetryableClient {
     }
   }
 
-  public RemoteStorageInfo fetchRemoteStorage(RssFetchRemoteStorageRequest request) {
+  @Override
+  public RssFetchRemoteStorageResponse fetchRemoteStorage(RssFetchRemoteStorageRequest request) {
     try {
       return RetryUtils.retry(
           () -> {
@@ -241,7 +259,7 @@ public class CoordinatorGrpcRetryableClient {
             if (response.getStatusCode() != StatusCode.SUCCESS) {
               throw new RssException(response.getMessage());
             }
-            return response.getRemoteStorageInfo();
+            return response;
           },
           this.retryIntervalMs,
           this.retryTimes);
@@ -250,7 +268,19 @@ public class CoordinatorGrpcRetryableClient {
     }
   }
 
+  @Override
+  public String getDesc() {
+    StringBuilder result = new StringBuilder("CoordinatorGrpcRetryableClient:");
+    for (CoordinatorClient coordinatorClient : coordinatorClients) {
+      result.append("\n");
+      result.append(coordinatorClient.getDesc());
+    }
+    return result.toString();
+  }
+
+  @Override
   public void close() {
+    heartBeatExecutorService.shutdownNow();
     coordinatorClients.forEach(CoordinatorClient::close);
   }
 }
