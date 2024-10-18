@@ -20,12 +20,17 @@ package org.apache.uniffle.common;
 import java.nio.ByteBuffer;
 
 import io.netty.buffer.Unpooled;
+import io.netty.util.IllegalReferenceCountException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.util.ByteBufUtils;
 
 public class ShuffleIndexResult {
+  private static final Logger LOG = LoggerFactory.getLogger(ShuffleIndexResult.class);
+
   private final ManagedBuffer buffer;
   private long dataFileLen;
   private String dataFileName;
@@ -74,7 +79,16 @@ public class ShuffleIndexResult {
 
   public void release() {
     if (this.buffer != null) {
-      this.buffer.release();
+      try {
+        this.buffer.release();
+      } catch (IllegalReferenceCountException e) {
+        LOG.warn(
+            "Failed to release shuffle index result with length {} of {}. "
+                + "Maybe it has been released by others.",
+            dataFileLen,
+            dataFileName,
+            e);
+      }
     }
   }
 
