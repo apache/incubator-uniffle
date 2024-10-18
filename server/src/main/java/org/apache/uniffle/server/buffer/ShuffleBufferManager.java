@@ -807,4 +807,8 @@ public class ShuffleBufferManager {
   public void setBufferFlushThreshold(long bufferFlushThreshold) {
     this.bufferFlushThreshold = bufferFlushThreshold;
   }
+
+  public ShuffleBufferType getShuffleBufferType() {
+    return shuffleBufferType;
+  }
 }

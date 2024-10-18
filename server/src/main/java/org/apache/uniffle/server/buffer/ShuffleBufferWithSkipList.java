@@ -282,4 +282,16 @@ public class ShuffleBufferWithSkipList extends AbstractShuffleBuffer {
     }
     return hasLastBlockId;
   }
+
+  public synchronized ShufflePartitionedBlock getBlock(long blockId) {
+    ShufflePartitionedBlock block = blocksMap.get(blockId);
+    if (block == null) {
+      for (ConcurrentSkipListMap<Long, ShufflePartitionedBlock> map : inFlushBlockMap.values()) {
+        if (map.containsKey(blockId)) {
+          return map.get(blockId);
+        }
+      }
+    }
+    return block;
+  }
 }

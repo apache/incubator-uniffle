@@ -24,8 +24,6 @@ import java.util.Map;
 import com.google.common.annotations.VisibleForTesting;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
-import org.apache.uniffle.common.ShufflePartitionedBlock;
-import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.server.ShuffleServer;
@@ -79,14 +77,6 @@ public class Shuffle<K, V> {
       partition.cleanup();
     }
     this.partitions.clear();
-  }
-
-  public void cacheBlock(ShufflePartitionedData spd) throws IOException {
-    int partitionId = spd.getPartitionId();
-    this.partitions.putIfAbsent(partitionId, new Partition<K, V>(this, partitionId));
-    for (ShufflePartitionedBlock block : spd.getBlockList()) {
-      this.partitions.get(partitionId).cacheBlock(block);
-    }
   }
 
   public ClassLoader getClassLoader() {
