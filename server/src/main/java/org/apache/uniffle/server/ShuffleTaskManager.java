@@ -299,7 +299,7 @@ public class ShuffleTaskManager {
       refreshAppId(appId);
 
       ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
-      taskInfo.setAppConf(appConf);
+      taskInfo.setAppConf(appConf, conf);
       taskInfo.setUser(user);
       taskInfo.setSpecification(
           ShuffleSpecification.builder()

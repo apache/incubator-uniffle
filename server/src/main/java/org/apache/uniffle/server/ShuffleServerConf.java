@@ -719,6 +719,11 @@ public class ShuffleServerConf extends RssBaseConf {
           .booleanType()
           .defaultValue(false)
           .withDescription("Whether to enable app detail log");
+  public static final ConfigOption<Boolean> SERVER_WITH_MEMORY_STORAGE_TYPE_OPTIMIZE_ENABLED =
+      ConfigOptions.key("rss.server.with.memory.storage.type.opt.enabled")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription("Whether to enable with memory storage type optimize");
 
   public ShuffleServerConf() {}
 

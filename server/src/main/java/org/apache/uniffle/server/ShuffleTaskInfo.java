@@ -314,21 +314,19 @@ public class ShuffleTaskInfo {
         + '}';
   }
 
-  public void setAppConf(Map<String, String> appConf) {
+  public void setAppConf(Map<String, String> appConf, ShuffleServerConf serverConf) {
     this.appConf = appConf;
-    String storageType = appConf.get(RssClientConf.RSS_STORAGE_TYPE.key());
-    if (StringUtils.isEmpty(storageType)) {
-      storageType =
-          appConf.get(Constants.SPARK_RSS_CONFIG_PREFIX + RssClientConf.RSS_STORAGE_TYPE.key());
+    LOGGER.info("{} set appConf to {}", appId, appConf);
+    if (serverConf.getBoolean(ShuffleServerConf.SERVER_WITH_MEMORY_STORAGE_TYPE_OPTIMIZE_ENABLED)) {
+      String storageType = appConf.get(RssClientConf.RSS_STORAGE_TYPE.key());
+      if (StringUtils.isEmpty(storageType)) {
+        storageType =
+            appConf.get(Constants.SPARK_RSS_CONFIG_PREFIX + RssClientConf.RSS_STORAGE_TYPE.key());
+      }
+      if (StringUtils.isNotEmpty(storageType)) {
+        clientStorageTypeWithMemory = StorageType.withMemory(StorageType.valueOf(storageType));
+        LOGGER.info("{} set clientStorageTypeWithMemory to {}", appId, clientStorageTypeWithMemory);
+      }
     }
-    if (StringUtils.isNotEmpty(storageType)) {
-      clientStorageTypeWithMemory = StorageType.withMemory(StorageType.valueOf(storageType));
-    }
-
-    LOGGER.info(
-        "{} set appConf to {}, clientStorageTypeWithMemory = {}",
-        appId,
-        appConf,
-        clientStorageTypeWithMemory);
   }
 }
