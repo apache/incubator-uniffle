@@ -95,7 +95,7 @@ import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartRequest;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartResponse;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultRequest;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultResponse;
-import org.apache.uniffle.proto.RssProtos.PMergeContext;
+import org.apache.uniffle.proto.RssProtos.MergeContext;
 import org.apache.uniffle.proto.RssProtos.PartitionToBlockIds;
 import org.apache.uniffle.proto.RssProtos.RemoteStorage;
 import org.apache.uniffle.proto.RssProtos.RemoteStorageConfItem;
@@ -199,7 +199,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      PMergeContext mergeContext) {
+      MergeContext mergeContext) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)

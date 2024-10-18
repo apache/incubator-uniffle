@@ -177,7 +177,7 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
         ShuffleDataDistributionType.NORMAL,
         -1,
         0,
-        RssProtos.PMergeContext.newBuilder()
+        RssProtos.MergeContext.newBuilder()
             .setKeyClass(keyClass.getName())
             .setValueClass(valueClass.getName())
             .setComparatorClass(comparator.getClass().getName())
@@ -342,7 +342,7 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
         ShuffleDataDistributionType.NORMAL,
         -1,
         0,
-        RssProtos.PMergeContext.newBuilder()
+        RssProtos.MergeContext.newBuilder()
             .setKeyClass(keyClass.getName())
             .setValueClass(valueClass.getName())
             .setComparatorClass(comparator.getClass().getName())
@@ -516,7 +516,7 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
         ShuffleDataDistributionType.NORMAL,
         -1,
         0,
-        RssProtos.PMergeContext.newBuilder()
+        RssProtos.MergeContext.newBuilder()
             .setKeyClass(keyClass.getName())
             .setValueClass(valueClass.getName())
             .setComparatorClass(comparator.getClass().getName())
@@ -725,7 +725,7 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
         ShuffleDataDistributionType.NORMAL,
         -1,
         0,
-        RssProtos.PMergeContext.newBuilder()
+        RssProtos.MergeContext.newBuilder()
             .setKeyClass(keyClass.getName())
             .setValueClass(valueClass.getName())
             .setComparatorClass(comparator.getClass().getName())

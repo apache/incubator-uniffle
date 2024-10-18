@@ -508,7 +508,7 @@ public class FetcherTest {
         ShuffleDataDistributionType distributionType,
         int maxConcurrencyPerPartitionToWrite,
         int stageAttemptNumber,
-        RssProtos.PMergeContext mergeContext) {}
+        RssProtos.MergeContext mergeContext) {}
 
     @Override
     public boolean sendCommit(

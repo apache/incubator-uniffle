@@ -33,7 +33,7 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
-import org.apache.uniffle.proto.RssProtos.PMergeContext;
+import org.apache.uniffle.proto.RssProtos.MergeContext;
 
 public interface ShuffleWriteClient {
 
@@ -85,7 +85,7 @@ public interface ShuffleWriteClient {
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      PMergeContext mergeContext);
+      MergeContext mergeContext);
 
   boolean sendCommit(
       Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);

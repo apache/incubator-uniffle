@@ -80,7 +80,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.hadoop.shim.HadoopShimImpl;
-import org.apache.uniffle.proto.RssProtos.PMergeContext;
+import org.apache.uniffle.proto.RssProtos.MergeContext;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.hadoop.mapreduce.RssMRConfig.RSS_REMOTE_MERGE_CLASS_LOADER;
@@ -287,7 +287,7 @@ public class RssMRAppMaster extends MRAppMaster {
                                       .get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE),
                                   0,
                                   remoteMergeEnable
-                                      ? PMergeContext.newBuilder()
+                                      ? MergeContext.newBuilder()
                                           .setKeyClass(conf.getMapOutputKeyClass().getName())
                                           .setValueClass(conf.getMapOutputValueClass().getName())
                                           .setComparatorClass(

@@ -44,7 +44,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.merger.Segment;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.JavaUtils;
-import org.apache.uniffle.proto.RssProtos.PMergeContext;
+import org.apache.uniffle.proto.RssProtos.MergeContext;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 
@@ -147,7 +147,7 @@ public class ShuffleMergeManager {
     return cachedClassLoader.getOrDefault(label, cachedClassLoader.get(""));
   }
 
-  public StatusCode registerShuffle(String appId, int shuffleId, PMergeContext mergeContext) {
+  public StatusCode registerShuffle(String appId, int shuffleId, MergeContext mergeContext) {
     try {
       ClassLoader classLoader = getClassLoader(mergeContext.getMergeClassLoader());
       Class kClass = ClassUtils.getClass(classLoader, mergeContext.getKeyClass());

@@ -132,7 +132,7 @@ public class ShuffleMergeManagerTest {
     mergeManager.registerShuffle(
         APP_ID,
         SHUFFLE_ID,
-        RssProtos.PMergeContext.newBuilder()
+        RssProtos.MergeContext.newBuilder()
             .setKeyClass(keyClassName)
             .setValueClass(valueClassName)
             .setComparatorClass(comparatorClassName)

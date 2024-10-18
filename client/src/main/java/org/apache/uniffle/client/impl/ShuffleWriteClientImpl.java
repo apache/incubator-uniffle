@@ -95,7 +95,7 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
-import org.apache.uniffle.proto.RssProtos.PMergeContext;
+import org.apache.uniffle.proto.RssProtos.MergeContext;
 
 public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
@@ -565,7 +565,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      PMergeContext mergeContext) {
+      MergeContext mergeContext) {
     String user = null;
     try {
       user = UserGroupInformation.getCurrentUser().getShortUserName();

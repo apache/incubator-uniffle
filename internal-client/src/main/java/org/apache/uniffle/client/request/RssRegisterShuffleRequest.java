@@ -25,7 +25,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.config.RssClientConf;
-import org.apache.uniffle.proto.RssProtos.PMergeContext;
+import org.apache.uniffle.proto.RssProtos.MergeContext;
 
 public class RssRegisterShuffleRequest {
 
@@ -38,7 +38,7 @@ public class RssRegisterShuffleRequest {
   private int maxConcurrencyPerPartitionToWrite;
   private int stageAttemptNumber;
 
-  private final PMergeContext mergeContext;
+  private final MergeContext mergeContext;
 
   public RssRegisterShuffleRequest(
       String appId,
@@ -69,7 +69,7 @@ public class RssRegisterShuffleRequest {
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      PMergeContext mergeContext) {
+      MergeContext mergeContext) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionRanges = partitionRanges;
@@ -146,7 +146,7 @@ public class RssRegisterShuffleRequest {
     return stageAttemptNumber;
   }
 
-  public PMergeContext getMergeContext() {
+  public MergeContext getMergeContext() {
     return mergeContext;
   }
 }

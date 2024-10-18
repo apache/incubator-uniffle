@@ -179,7 +179,7 @@ message ShufflePartitionRange {
   int32 end = 2;
 }
 
-message PMergeContext {
+message MergeContext {
   string keyClass = 1;
   string valueClass = 2;
   string comparatorClass = 3;
@@ -196,7 +196,7 @@ message ShuffleRegisterRequest {
   DataDistribution shuffleDataDistribution = 6;
   int32 maxConcurrencyPerPartitionToWrite = 7;
   int32 stageAttemptNumber = 8;
-  PMergeContext mergeContext = 9;
+  MergeContext mergeContext = 9;
 }
 
 enum DataDistribution {
