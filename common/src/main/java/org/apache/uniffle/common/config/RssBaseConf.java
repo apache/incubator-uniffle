@@ -181,6 +181,11 @@ public class RssBaseConf extends RssConf {
           .intType()
           .defaultValue(1000)
           .withDescription("Thread number for grpc to process request");
+  public static final ConfigOption<Integer> RPC_EXECUTOR_QUEUE_SIZE =
+      ConfigOptions.key("rss.rpc.executor.queue.size")
+          .intType()
+          .defaultValue(Integer.MAX_VALUE)
+          .withDescription("Thread pool waiting queue size");
 
   public static final ConfigOption<Boolean> RSS_JVM_METRICS_VERBOSE_ENABLE =
       ConfigOptions.key("rss.jvm.metrics.verbose.enable")
