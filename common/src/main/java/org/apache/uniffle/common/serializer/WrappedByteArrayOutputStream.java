@@ -15,16 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common.merger;
+package org.apache.uniffle.common.serializer;
 
-import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 
-public interface Recordable {
+/** Subclass of ByteArrayOutputStream that exposes `buf` directly. */
+public class WrappedByteArrayOutputStream extends ByteArrayOutputStream {
 
-  @FunctionalInterface
-  interface Flushable {
-    void flush() throws IOException;
+  public WrappedByteArrayOutputStream() {
+    super();
   }
 
-  boolean record(long written, Flushable flush, boolean force) throws IOException;
+  public WrappedByteArrayOutputStream(int size) {
+    super(size);
+  }
+
+  public byte[] getBuf() {
+    return buf;
+  }
 }

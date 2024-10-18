@@ -93,9 +93,12 @@ public class DefaultMergeEventHandler implements MergeEventHandler {
   }
 
   @Override
-  public void handle(MergeEvent event) {
+  public boolean handle(MergeEvent event) {
     if (queue.offer(event)) {
       ShuffleServerMetrics.gaugeMergeEventQueueSize.inc();
+      return true;
+    } else {
+      return false;
     }
   }
 

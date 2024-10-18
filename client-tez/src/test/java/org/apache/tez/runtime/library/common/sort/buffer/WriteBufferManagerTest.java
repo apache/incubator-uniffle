@@ -19,7 +19,6 @@ package org.apache.tez.runtime.library.common.sort.buffer;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -73,7 +72,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.records.RecordsReader;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
+import org.apache.uniffle.common.serializer.SerInputStream;
 import org.apache.uniffle.common.serializer.SerializerFactory;
 import org.apache.uniffle.common.serializer.SerializerInstance;
 import org.apache.uniffle.common.serializer.SerializerUtils;
@@ -616,11 +615,8 @@ public class WriteBufferManagerTest {
     buf.readBytes(bytes);
     RecordsReader<Text, Text> reader =
         new RecordsReader<>(
-            rssConf,
-            PartialInputStreamImpl.newInputStream(ByteBuffer.wrap(bytes)),
-            Text.class,
-            Text.class,
-            false);
+            rssConf, SerInputStream.newInputStream(buf), Text.class, Text.class, false, false);
+    reader.init();
     int index = 0;
     while (reader.next()) {
       assertEquals(SerializerUtils.genData(Text.class, index), reader.getCurrentKey());

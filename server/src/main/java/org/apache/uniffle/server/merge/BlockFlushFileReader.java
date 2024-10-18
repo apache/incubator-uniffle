@@ -27,12 +27,17 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.util.internal.OutOfDirectMemoryError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.netty.buffer.FileSegmentManagedBuffer;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.SerInputStream;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.common.util.NettyUtils;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
 /**
@@ -53,6 +58,7 @@ public class BlockFlushFileReader {
   private static final Logger LOG = LoggerFactory.getLogger(BlockFlushFileReader.class);
   private static final int BUFFER_SIZE = 4096;
 
+  private final boolean direct;
   private String dataFile;
   private FileInputStream dataInput;
   private FileChannel dataFileChannel;
@@ -74,17 +80,21 @@ public class BlockFlushFileReader {
   private final int ringBufferSize;
   private final int mask;
 
-  public BlockFlushFileReader(String dataFile, String indexFile, int ringBufferSize)
-      throws IOException {
+  public BlockFlushFileReader(
+      String dataFile, String indexFile, int ringBufferSize, boolean direct) {
     // Make sure flush file will not be updated
     this.ringBufferSize = ringBufferSize;
+    this.direct = direct;
     this.mask = ringBufferSize - 1;
-    loadShuffleIndex(indexFile);
     this.dataFile = dataFile;
-    this.dataInput = new FileInputStream(dataFile);
-    this.dataFileChannel = dataInput.getChannel();
+    loadShuffleIndex(indexFile);
     // Avoid flushFileReader noop loop
     this.lock.lock();
+  }
+
+  void start() throws IOException {
+    this.dataInput = new FileInputStream(dataFile);
+    this.dataFileChannel = dataInput.getChannel();
     this.flushFileReader = new FlushFileReader();
     this.flushFileReader.start();
   }
@@ -109,9 +119,14 @@ public class BlockFlushFileReader {
     }
   }
 
-  public void close() throws IOException, InterruptedException {
-    if (!this.stop) {
-      stop = true;
+  public void close() throws IOException {
+    stop = true;
+    for (BlockInputStream is : inputStreamMap.values()) {
+      is.close();
+    }
+    inputStreamMap.clear();
+    indexSegments.clear();
+    if (flushFileReader != null) {
       flushFileReader.interrupt();
       flushFileReader = null;
     }
@@ -119,6 +134,7 @@ public class BlockFlushFileReader {
       this.dataInput.close();
       this.dataInput = null;
       this.dataFile = null;
+      this.dataFileChannel = null;
     }
   }
 
@@ -128,7 +144,7 @@ public class BlockFlushFileReader {
     }
     if (!inputStreamMap.containsKey(blockId)) {
       inputStreamMap.put(
-          blockId, new BlockInputStream(blockId, this.indexSegments.get(blockId).getLength()));
+          blockId, new BlockInputStream(this.indexSegments.get(blockId).getLength()));
     }
     return inputStreamMap.get(blockId);
   }
@@ -184,29 +200,44 @@ public class BlockFlushFileReader {
 
   class Buffer {
 
-    private byte[] bytes = new byte[BUFFER_SIZE];
-    private int cap = BUFFER_SIZE;
-    private int pos = cap;
+    private ByteBuf buffer;
+
+    Buffer() {
+      UnpooledByteBufAllocator allocator = NettyUtils.getSharedUnpooledByteBufAllocator(true);
+      this.buffer =
+          direct ? allocator.directBuffer(BUFFER_SIZE) : allocator.heapBuffer(BUFFER_SIZE);
+    }
 
     public int get() {
-      return this.bytes[pos++] & 0xFF;
+      return this.buffer.readByte() & 0xFF;
     }
 
     public int get(byte[] bs, int off, int len) {
-      int r = Math.min(cap - pos, len);
-      System.arraycopy(bytes, pos, bs, off, r);
-      pos += r;
+      int r = Math.min(this.buffer.readableBytes(), len);
+      this.buffer.readBytes(bs, off, r);
       return r;
     }
 
     public boolean readable() {
-      return pos < cap;
+      return this.buffer.readableBytes() > 0;
     }
 
     public void writeBuffer(int length) throws IOException {
-      dataFileChannel.read(ByteBuffer.wrap(this.bytes, 0, length));
-      this.pos = 0;
-      this.cap = length;
+      ByteBuffer byteBuffer = this.buffer.nioBuffer(0, length);
+      dataFileChannel.read(byteBuffer);
+      this.buffer.readerIndex(0);
+      this.buffer.writerIndex(length);
+    }
+
+    public ByteBuf getByteBuf() {
+      return this.buffer;
+    }
+
+    public void release() {
+      if (this.buffer != null) {
+        this.buffer.release();
+        this.buffer = null;
+      }
     }
   }
 
@@ -220,9 +251,20 @@ public class BlockFlushFileReader {
     int writeIndex = 0;
 
     RingBuffer() {
-      this.buffers = new Buffer[ringBufferSize];
-      for (int i = 0; i < ringBufferSize; i++) {
-        this.buffers[i] = new Buffer();
+      try {
+        this.buffers = new Buffer[ringBufferSize];
+        for (int i = 0; i < ringBufferSize; i++) {
+          this.buffers[i] = new Buffer();
+        }
+      } catch (OutOfDirectMemoryError error) {
+        // If out of direct memory here, previously created buffers
+        // cannot be released.
+        for (int i = 0; i < ringBufferSize; i++) {
+          if (this.buffers[i] != null) {
+            this.buffers[i].release();
+          }
+        }
+        throw error;
       }
     }
 
@@ -268,25 +310,45 @@ public class BlockFlushFileReader {
       }
       return total;
     }
+
+    Buffer getReadBuffer() {
+      if (!empty()) {
+        return this.buffers[readIndex & mask];
+      }
+      return null;
+    }
+
+    void incReadIndex() {
+      readIndex++;
+    }
+
+    void release() {
+      for (Buffer buffer : this.buffers) {
+        buffer.release();
+      }
+    }
   }
 
-  public class BlockInputStream extends PartialInputStream {
+  public class BlockInputStream extends SerInputStream {
 
-    private long blockId;
     private RingBuffer ringBuffer;
     private boolean eof = false;
     private final int length;
     private int pos = 0;
     private int offsetInThisBlock = 0;
 
-    public BlockInputStream(long blockId, int length) {
-      this.blockId = blockId;
+    public BlockInputStream(int length) {
       this.length = length;
-      this.ringBuffer = new RingBuffer();
+    }
+
+    public void init() {
+      if (this.ringBuffer == null) {
+        this.ringBuffer = new RingBuffer();
+      }
     }
 
     @Override
-    public int available() throws IOException {
+    public int available() {
       return length - pos;
     }
 
@@ -300,20 +362,67 @@ public class BlockFlushFileReader {
       return length;
     }
 
+    @Override
+    public void transferTo(ByteBuf to, int len) throws IOException {
+      while (len > 0) {
+        int c = internalTransferTo(to, len);
+        len -= c;
+      }
+    }
+
+    private int internalTransferTo(ByteBuf out, int len) {
+      if (stop) {
+        throw new RssException("Block flush file reader is closed, caused by " + readThrowable);
+      }
+      if (len == 0) {
+        return 0;
+      } else if (eof || len < 0) {
+        throw new IndexOutOfBoundsException();
+      }
+
+      while (ringBuffer.empty() && !stop) {
+        if (lock.isHeldByCurrentThread()) {
+          lock.unlock();
+        }
+        try {
+          lock.lockInterruptibly();
+        } catch (InterruptedException e) {
+          throw new RssException(e);
+        }
+      }
+
+      int c = 0;
+      while (len > 0) {
+        Buffer buffer = this.ringBuffer.getReadBuffer();
+        if (buffer == null) {
+          break;
+        }
+        ByteBuf byteBuf = buffer.getByteBuf();
+        int toRead = len;
+        if (len >= byteBuf.readableBytes()) {
+          this.ringBuffer.incReadIndex();
+          toRead = byteBuf.readableBytes();
+        }
+        len -= toRead;
+        out.writeBytes(byteBuf, toRead);
+        pos += toRead;
+        c += toRead;
+      }
+      if (pos >= length) {
+        eof = true;
+      }
+      return c;
+    }
+
     public long getOffsetInThisBlock() {
       return this.offsetInThisBlock;
     }
 
     @Override
-    public void close() throws IOException {
-      try {
-        inputStreamMap.remove(blockId);
-        indexSegments.remove(blockId);
-        if (inputStreamMap.size() == 0) {
-          BlockFlushFileReader.this.close();
-        }
-      } catch (InterruptedException e) {
-        throw new IOException(e);
+    public void close() {
+      if (ringBuffer != null) {
+        ringBuffer.release();
+        ringBuffer = null;
       }
     }
 
@@ -326,6 +435,7 @@ public class BlockFlushFileReader {
       this.offsetInThisBlock += size;
     }
 
+    @Override
     public int read(byte[] bs, int off, int len) throws IOException {
       if (stop) {
         throw new IOException("Block flush file reader is closed, caused by " + readThrowable);

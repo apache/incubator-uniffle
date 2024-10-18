@@ -491,6 +491,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               hasFailureOccurred = true;
               break;
             } else {
+              if (shuffleServer.isRemoteMergeEnable()) {
+                shuffleServer.getShuffleMergeManager().setDirect(appId, shuffleId, false);
+              }
               long toReleasedSize = spd.getTotalBlockEncodedLength();
               // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
               manager.releasePreAllocatedSize(toReleasedSize);
@@ -1623,7 +1626,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                   .setMState(mergeState.code())
                   .setStatus(status.toProto())
                   .setRetMsg(msg)
-                  .setData(UnsafeByteOperations.unsafeWrap(sdr.getData()))
+                  .setData(UnsafeByteOperations.unsafeWrap(sdr.getData(), 0, sdr.getDataLength()))
                   .build();
         } catch (Exception e) {
           status = StatusCode.INTERNAL_ERROR;
@@ -1641,8 +1644,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           shuffleServer.getShuffleBufferManager().releaseReadMemory(blockSize);
         }
       } else {
-        status = StatusCode.INTERNAL_ERROR;
-        msg = "Can't require memory to get shuffle data";
+        status = StatusCode.NO_BUFFER;
+        msg = "Can't require read memory to get sorted shuffle data";
         LOG.error(msg + " for " + requestInfo);
         reply =
             RssProtos.GetSortedShuffleDataResponse.newBuilder()

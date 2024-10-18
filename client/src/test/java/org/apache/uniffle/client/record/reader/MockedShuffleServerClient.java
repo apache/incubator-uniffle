@@ -18,12 +18,13 @@
 package org.apache.uniffle.client.record.reader;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
@@ -58,16 +59,17 @@ import org.apache.uniffle.client.response.RssUnregisterShuffleByAppIdResponse;
 import org.apache.uniffle.client.response.RssUnregisterShuffleResponse;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.merger.MergeState;
+import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.RssUtils;
 
 public class MockedShuffleServerClient implements ShuffleServerClient {
 
-  private Map<Integer, List<ByteBuffer>> shuffleData;
+  private Map<Integer, List<ByteBuf>> shuffleData;
   private Map<Integer, Integer> indexes;
   private long[] blockIds;
 
-  public MockedShuffleServerClient(int[] partitionIds, ByteBuffer[][] buffers, long[] blockIds) {
+  public MockedShuffleServerClient(int[] partitionIds, ByteBuf[][] buffers, long[] blockIds) {
     if (partitionIds.length != buffers.length) {
       throw new RssException("partition id length is not matched");
     }
@@ -75,7 +77,7 @@ public class MockedShuffleServerClient implements ShuffleServerClient {
     for (int i = 0; i < partitionIds.length; i++) {
       int partition = partitionIds[i];
       shuffleData.put(partition, new ArrayList<>());
-      for (ByteBuffer byteBuffer : buffers[i]) {
+      for (ByteBuf byteBuffer : buffers[i]) {
         shuffleData.get(partition).add(byteBuffer);
       }
     }
@@ -100,12 +102,18 @@ public class MockedShuffleServerClient implements ShuffleServerClient {
       response =
           new RssGetSortedShuffleDataResponse(
               StatusCode.SUCCESS,
-              shuffleData.get(partitionId).get(index),
+              "",
+              new NettyManagedBuffer(shuffleData.get(partitionId).get(index).retain()),
               10000,
               MergeState.DONE.code());
     } else {
       response =
-          new RssGetSortedShuffleDataResponse(StatusCode.SUCCESS, null, -1, MergeState.DONE.code());
+          new RssGetSortedShuffleDataResponse(
+              StatusCode.SUCCESS,
+              "",
+              new NettyManagedBuffer(Unpooled.buffer(0)),
+              -1,
+              MergeState.DONE.code());
     }
     indexes.put(partitionId, index + 1);
     return response;

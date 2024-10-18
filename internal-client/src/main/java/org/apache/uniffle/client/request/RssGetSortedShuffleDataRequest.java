@@ -17,7 +17,7 @@
 
 package org.apache.uniffle.client.request;
 
-public class RssGetSortedShuffleDataRequest {
+public class RssGetSortedShuffleDataRequest extends RetryableRequest {
 
   private final String appId;
   private final int shuffleId;
@@ -25,11 +25,18 @@ public class RssGetSortedShuffleDataRequest {
   private final long blockId;
 
   public RssGetSortedShuffleDataRequest(
-      String appId, int shuffleId, int partitionId, long blockId) {
+      String appId,
+      int shuffleId,
+      int partitionId,
+      long blockId,
+      int retryMax,
+      long retryIntervalMax) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionId = partitionId;
     this.blockId = blockId;
+    this.retryMax = retryMax;
+    this.retryIntervalMax = retryIntervalMax;
   }
 
   public String getAppId() {
@@ -46,5 +53,10 @@ public class RssGetSortedShuffleDataRequest {
 
   public long getBlockId() {
     return blockId;
+  }
+
+  @Override
+  public String operationType() {
+    return "GetSortedShuffleData";
   }
 }

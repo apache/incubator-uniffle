@@ -19,18 +19,15 @@ package org.apache.uniffle.server.merge;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.common.collect.Range;
-import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.ByteBuf;
+import io.netty.util.IllegalReferenceCountException;
 import org.apache.hadoop.io.RawComparator;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
@@ -52,6 +49,8 @@ import org.apache.uniffle.common.netty.buffer.FileSegmentManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.serializer.SerInputStream;
+import org.apache.uniffle.common.serializer.SerOutputStream;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferWithSkipList;
@@ -92,7 +91,8 @@ public class Partition<K, V> {
     this.shuffle = shuffle;
     this.partitionId = partitionId;
     this.result =
-        new MergedResult(shuffle.serverConf, this::cachedMergedBlock, shuffle.mergedBlockSize);
+        new MergedResult(
+            shuffle.serverConf, this::cachedMergedBlock, shuffle.mergedBlockSize, this);
     this.initSleepTime = shuffle.serverConf.get(SERVER_MERGE_CACHE_MERGED_BLOCK_INIT_SLEEP_MS);
     this.maxSleepTime = shuffle.serverConf.get(SERVER_MERGE_CACHE_MERGED_BLOCK_MAX_SLEEP_MS);
     int tmpRingBufferSize = shuffle.serverConf.get(SERVER_MERGE_BLOCK_RING_BUFFER_SIZE);
@@ -107,7 +107,7 @@ public class Partition<K, V> {
   }
 
   // startSortMerge is used to trigger to merger
-  synchronized void startSortMerge(Roaring64NavigableMap expectedBlockIdMap) throws IOException {
+  synchronized void startSortMerge(Roaring64NavigableMap expectedBlockIdMap) {
     if (getState() != INITED) {
       LOG.warn("Partition is already merging, so ignore duplicate reports, partition is {}", this);
     } else {
@@ -121,7 +121,9 @@ public class Partition<K, V> {
                 shuffle.kClass,
                 shuffle.vClass,
                 expectedBlockIdMap);
-        shuffle.eventHandler.handle(event);
+        if (!shuffle.eventHandler.handle(event)) {
+          setState(INTERNAL_ERROR);
+        }
       } else {
         setState(DONE);
       }
@@ -144,49 +146,63 @@ public class Partition<K, V> {
     return null;
   }
 
-  // getSegments is used to get segments from original shuffle blocks
-  public List<Segment> getSegments(
-      RssConf rssConf, Iterator<Long> blockIds, Class keyClass, Class valueClass)
-      throws IOException {
-    List<Segment> segments = new ArrayList<>();
-    Set<Long> blocksFlushed = new HashSet<>();
+  public boolean collectBlocks(Iterator<Long> blockIds, Map<Long, ByteBuf> cachedBlocks) {
+    boolean allCached = true;
     while (blockIds.hasNext()) {
       long blockId = blockIds.next();
       ShufflePartitionedBlock block = getShufflePartitionedBlock(blockId, false);
-      if (block != null && ByteBufUtil.isAccessible(block.getData())) {
-        try {
-          StreamedSegment segment =
-              new StreamedSegment(
-                  rssConf,
-                  block.getData().nioBuffer(0, block.getDataLength()),
-                  blockId,
-                  keyClass,
-                  valueClass,
-                  (shuffle.comparator instanceof RawComparator));
-          segments.add(segment);
-        } catch (Exception e) {
-          // If ByteBuf is released by flush cleanup will throw ConcurrentModificationException.
-          // So we need get block buffer from file
-          LOG.warn("construct segment failed, caused by ", e);
-          blocksFlushed.add(blockId);
-        }
-      } else {
-        blocksFlushed.add(blockId);
+      if (block == null) {
+        allCached = false;
+        continue;
+      }
+      try {
+        // If ByteBuf is released by flush cleanup will throw IllegalReferenceCountException.
+        // Then we need get block buffer from file
+        ByteBuf byteBuf = block.getData().retain().duplicate();
+        cachedBlocks.put(blockId, byteBuf.slice(0, block.getDataLength()));
+      } catch (IllegalReferenceCountException irce) {
+        allCached = false;
+        LOG.warn("Can't read bytes from block in memory, maybe already been flushed!");
       }
     }
-    if (blocksFlushed.isEmpty()) {
-      return segments;
-    }
-    try {
-      LocalFileServerReadHandler handler = getLocalFileServerReadHandler(rssConf, shuffle.appId);
-      this.reader =
-          new BlockFlushFileReader(
-              handler.getDataFileName(), handler.getIndexFileName(), ringBufferSize);
-      for (Long blockId : blocksFlushed) {
+    return allCached;
+  }
+
+  BlockFlushFileReader createReader(RssConf rssConf) {
+    LocalFileServerReadHandler handler = getLocalFileServerReadHandler(rssConf, shuffle.appId);
+    return new BlockFlushFileReader(
+        handler.getDataFileName(), handler.getIndexFileName(), ringBufferSize, shuffle.direct);
+  }
+
+  public boolean collectSegments(
+      RssConf rssConf,
+      Iterator<Long> blockIds,
+      Class keyClass,
+      Class valueClass,
+      Map<Long, ByteBuf> cachedBlock,
+      List<Segment> segments,
+      BlockFlushFileReader reader) {
+    while (blockIds.hasNext()) {
+      long blockId = blockIds.next();
+      if (cachedBlock.containsKey(blockId)) {
+        ByteBuf byteBuf = cachedBlock.get(blockId);
+        SerInputStream serInputStream = SerInputStream.newInputStream(byteBuf);
+        StreamedSegment segment =
+            new StreamedSegment(
+                rssConf,
+                serInputStream,
+                blockId,
+                keyClass,
+                valueClass,
+                byteBuf.readableBytes(),
+                (shuffle.comparator instanceof RawComparator));
+        segments.add(segment);
+      } else {
         BlockFlushFileReader.BlockInputStream inputStream =
             reader.registerBlockInputStream(blockId);
         if (inputStream == null) {
-          throw new IOException("Can not find any buffer or file for block " + blockId);
+          LOG.warn("Can not find any buffer or file for block {}", blockId);
+          return false;
         }
         segments.add(
             new StreamedSegment(
@@ -195,20 +211,27 @@ public class Partition<K, V> {
                 blockId,
                 keyClass,
                 valueClass,
+                inputStream.available(),
                 (shuffle.comparator instanceof RawComparator)));
       }
-      return segments;
-    } catch (Throwable throwable) {
-      throw new IOException(throwable);
     }
+    return true;
   }
 
-  void merge(List<Segment> segments) throws IOException {
+  SerOutputStream createSerOutputStream(long totalBytes) {
+    return result.getOutputStream(shuffle.direct, totalBytes);
+  }
+
+  void merge(List<Segment> segments, SerOutputStream output, BlockFlushFileReader reader) {
     try {
-      OutputStream outputStream = result.getOutputStream();
+      segments.forEach(segment -> segment.init());
+      // start reader must happen after init segment to allocate ring buffer.
+      if (reader != null) {
+        reader.start();
+      }
       Merger.merge(
           shuffle.serverConf,
-          outputStream,
+          output,
           segments,
           shuffle.kClass,
           shuffle.vClass,
@@ -216,10 +239,29 @@ public class Partition<K, V> {
           (shuffle.comparator instanceof RawComparator));
       setState(DONE);
     } catch (Exception e) {
-      // TODO: should retry!!!
-      LOG.error("Partition {} remote merge failed, caused by {}", this, e);
+      LOG.info("Found exception when merge for {}, caused by", this, e);
       setState(INTERNAL_ERROR);
-      throw new IOException(e);
+    } finally {
+      try {
+        if (reader != null) {
+          reader.close();
+        }
+      } catch (IOException ioe) {
+        LOG.warn("Fail to close reader, caused by", this, ioe);
+      }
+      try {
+        output.close();
+      } catch (IOException ioe) {
+        LOG.warn("Fail to close output, caused by ", ioe);
+      }
+      segments.forEach(
+          segment -> {
+            try {
+              segment.close();
+            } catch (IOException ioe) {
+              LOG.warn("Fail to close segment, caused by ", ioe);
+            }
+          });
     }
   }
 
@@ -245,59 +287,59 @@ public class Partition<K, V> {
     return new MergeStatus(currentState, size);
   }
 
+  public void requireMemory(int requireSize) throws IOException {
+    while (!shuffle.shuffleServer.getShuffleTaskManager().requireMemory(requireSize, false)) {
+      try {
+        LOG.debug("Can not allocate enough memory for {}, then will sleep {}ms", this, sleepTime);
+        Thread.sleep(sleepTime);
+        sleepTime = Math.min(maxSleepTime, sleepTime * 2);
+      } catch (InterruptedException ex) {
+        LOG.warn("Found InterruptedException when sleep to wait require buffer {}", this);
+        throw new IOException(ex);
+      }
+    }
+  }
+
+  public void releaseMemory(int requireSize) {
+    shuffle.shuffleServer.getShuffleTaskManager().releaseMemory(requireSize, false, false);
+  }
+
   // When we merge data, we will divide the merge results into blocks according to the specified
   // block size.
   // The merged block in a new appId field (${appd} + MERGE_APP_SUFFIX). We will process the merged
   // blocks in the
   // original way, cache them first, and flush them to disk when necessary.
-  private void cachedMergedBlock(byte[] buffer, long blockId, int length) {
+  private boolean cachedMergedBlock(ByteBuf byteBuf, long blockId, int length) {
     String appId = shuffle.appId + MERGE_APP_SUFFIX;
     ShufflePartitionedBlock spb =
-        new ShufflePartitionedBlock(length, length, -1, blockId, -1, buffer);
+        new ShufflePartitionedBlock(length, length, -1, blockId, -1, byteBuf.retain());
     ShufflePartitionedData spd =
         new ShufflePartitionedData(partitionId, new ShufflePartitionedBlock[] {spb});
-    while (true) {
-      StatusCode ret =
-          shuffle
-              .shuffleServer
-              .getShuffleTaskManager()
-              .cacheShuffleData(appId, shuffle.shuffleId, false, spd);
-      if (ret == StatusCode.SUCCESS) {
+    StatusCode ret =
         shuffle
             .shuffleServer
             .getShuffleTaskManager()
-            .updateCachedBlockIds(
-                appId, shuffle.shuffleId, spd.getPartitionId(), spd.getBlockList());
-        sleepTime = initSleepTime;
-        break;
-      } else if (ret == StatusCode.NO_BUFFER) {
-        try {
-          LOG.info(
-              "Can not allocate enough memory for "
-                  + this
-                  + ", then will sleep "
-                  + sleepTime
-                  + "ms");
-          Thread.sleep(sleepTime);
-          sleepTime = Math.min(maxSleepTime, sleepTime * 2);
-        } catch (InterruptedException ex) {
-          throw new RssException(ex);
-        }
-      } else {
-        String shuffleDataInfo =
-            "appId["
-                + appId
-                + "], shuffleId["
-                + shuffle.shuffleId
-                + "], partitionId["
-                + spd.getPartitionId()
-                + "]";
-        throw new RssException(
-            "Error happened when shuffleEngine.write for "
-                + shuffleDataInfo
-                + ", statusCode="
-                + ret);
-      }
+            .cacheShuffleData(appId, shuffle.shuffleId, true, spd);
+    if (ret == StatusCode.SUCCESS) {
+      shuffle
+          .shuffleServer
+          .getShuffleTaskManager()
+          .updateCachedBlockIds(appId, shuffle.shuffleId, spd.getPartitionId(), spd.getBlockList());
+      sleepTime = initSleepTime;
+      return true;
+    } else {
+      String shuffleDataInfo =
+          "appId["
+              + appId
+              + "], shuffleId["
+              + shuffle.shuffleId
+              + "], partitionId["
+              + spd.getPartitionId()
+              + "]";
+      LOG.warn(
+          "Error happened when shuffleEngine.write for {}, statusCode={}", shuffleDataInfo, ret);
+      byteBuf.release();
+      return false;
     }
   }
 
@@ -321,11 +363,12 @@ public class Partition<K, V> {
     try {
       ShufflePartitionedBlock block = this.getShufflePartitionedBlock(blockId, true);
       // We must make sure refCnt > 0, it means the ByteBuf is not released by flush cleanup
-      if (block != null && block.getData().refCnt() > 0) {
-        return new NettyManagedBuffer(block.getData().retain());
+      if (block != null) {
+        ByteBuf byteBuf = block.getData().retain();
+        return new NettyManagedBuffer(byteBuf.duplicate());
       }
       return null;
-    } catch (Exception e) {
+    } catch (IllegalReferenceCountException e) {
       // If release that is triggered by flush cleanup before we retain, may throw
       // IllegalReferenceCountException.
       // It means ByteBuf is not available, we must get the block buffer from file.
@@ -411,9 +454,6 @@ public class Partition<K, V> {
 
   void cleanup() {
     try {
-      if (reader != null) {
-        reader.close();
-      }
       shuffleMeta.clear();
     } catch (Exception e) {
       LOG.warn("Partition {} clean up failed, caused by {}", this, e);

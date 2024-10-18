@@ -17,12 +17,11 @@
 
 package org.apache.uniffle.client.record.writer;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import io.netty.buffer.ByteBuf;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -31,7 +30,9 @@ import org.apache.uniffle.client.record.RecordBuffer;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.records.RecordsReader;
 import org.apache.uniffle.common.records.RecordsWriter;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.DynBufferSerOutputStream;
+import org.apache.uniffle.common.serializer.SerInputStream;
+import org.apache.uniffle.common.serializer.SerOutputStream;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -68,19 +69,19 @@ public class RecordCollectionTest {
 
     // 4 serialize records
     RssConf rssConf = new RssConf();
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    RecordsWriter writer = new RecordsWriter(rssConf, outputStream, keyClass, valueClass, false);
+    SerOutputStream outputStream = new DynBufferSerOutputStream();
+    RecordsWriter writer =
+        new RecordsWriter(rssConf, outputStream, keyClass, valueClass, false, false);
+    writer.init();
     recordBuffer.serialize(writer);
     writer.close();
 
     // 5 check the serialized data
+    ByteBuf byteBuf = outputStream.toByteBuf();
     RecordsReader reader =
         new RecordsReader<>(
-            rssConf,
-            PartialInputStream.newInputStream(ByteBuffer.wrap(outputStream.toByteArray())),
-            keyClass,
-            valueClass,
-            false);
+            rssConf, SerInputStream.newInputStream(byteBuf), keyClass, valueClass, false, false);
+    reader.init();
     int index = 0;
     while (reader.next()) {
       assertEquals(SerializerUtils.genData(keyClass, index), reader.getCurrentKey());
@@ -89,6 +90,7 @@ public class RecordCollectionTest {
     }
     assertEquals(RECORDS, index);
     reader.close();
+    byteBuf.release();
   }
 
   @ParameterizedTest
@@ -126,8 +128,10 @@ public class RecordCollectionTest {
 
     // 4 serialize records
     RssConf rssConf = new RssConf();
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    RecordsWriter writer = new RecordsWriter(rssConf, outputStream, keyClass, valueClass, false);
+    SerOutputStream outputStream = new DynBufferSerOutputStream();
+    RecordsWriter writer =
+        new RecordsWriter(rssConf, outputStream, keyClass, valueClass, false, false);
+    writer.init();
     recordBlob.serialize(writer);
     writer.close();
 
@@ -135,10 +139,12 @@ public class RecordCollectionTest {
     RecordsReader reader =
         new RecordsReader<>(
             rssConf,
-            PartialInputStream.newInputStream(ByteBuffer.wrap(outputStream.toByteArray())),
+            SerInputStream.newInputStream(outputStream.toByteBuf()),
             keyClass,
             valueClass,
+            false,
             false);
+    reader.init();
     int index = 0;
     while (reader.next()) {
       int aimValue = index;

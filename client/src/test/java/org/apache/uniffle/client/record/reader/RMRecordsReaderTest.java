@@ -17,14 +17,14 @@
 
 package org.apache.uniffle.client.record.reader;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import io.netty.buffer.ByteBuf;
 import org.apache.hadoop.io.IntWritable;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,11 +37,13 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.merger.Merger;
 import org.apache.uniffle.common.merger.Segment;
+import org.apache.uniffle.common.serializer.DynBufferSerOutputStream;
+import org.apache.uniffle.common.serializer.SerOutputStream;
 import org.apache.uniffle.common.serializer.SerializerFactory;
 import org.apache.uniffle.common.serializer.SerializerInstance;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 
-import static org.apache.uniffle.common.serializer.SerializerUtils.genSortedRecordBytes;
+import static org.apache.uniffle.common.serializer.SerializerUtils.genSortedRecordBuffer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -90,10 +92,9 @@ public class RMRecordsReaderTest {
             combiner,
             false,
             null);
-    byte[] buffers = genSortedRecordBytes(rssConf, keyClass, valueClass, 0, 1, RECORDS_NUM, 1);
+    ByteBuf byteBuf = genSortedRecordBuffer(rssConf, keyClass, valueClass, 0, 1, RECORDS_NUM, 1);
     ShuffleServerClient serverClient =
-        new MockedShuffleServerClient(
-            new int[] {partitionId}, new ByteBuffer[][] {{ByteBuffer.wrap(buffers)}}, null);
+        new MockedShuffleServerClient(new int[] {partitionId}, new ByteBuf[][] {{byteBuf}}, null);
     RMRecordsReader readerSpy = spy(reader);
     doReturn(serverClient).when(readerSpy).createShuffleServerClient(any());
 
@@ -107,6 +108,7 @@ public class RMRecordsReaderTest {
       index++;
     }
     assertEquals(RECORDS_NUM, index);
+    byteBuf.release();
   }
 
   @Timeout(30)
@@ -142,13 +144,13 @@ public class RMRecordsReaderTest {
         SerializerUtils.genMemorySegment(rssConf, keyClass, valueClass, 1L, 0, 2, RECORDS_NUM));
     segments.add(
         SerializerUtils.genMemorySegment(rssConf, keyClass, valueClass, 2L, 1, 2, RECORDS_NUM));
-    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    segments.forEach(segment -> segment.init());
+    SerOutputStream output = new DynBufferSerOutputStream();
     Merger.merge(rssConf, output, segments, keyClass, valueClass, comparator, false);
     output.close();
-    byte[] buffers = output.toByteArray();
+    ByteBuf byteBuf = output.toByteBuf();
     ShuffleServerClient serverClient =
-        new MockedShuffleServerClient(
-            new int[] {partitionId}, new ByteBuffer[][] {{ByteBuffer.wrap(buffers)}}, null);
+        new MockedShuffleServerClient(new int[] {partitionId}, new ByteBuf[][] {{byteBuf}}, null);
     RMRecordsReader reader =
         new RMRecordsReader(
             APP_ID,
@@ -185,6 +187,7 @@ public class RMRecordsReaderTest {
       index++;
     }
     assertEquals(RECORDS_NUM * 2, index);
+    byteBuf.release();
   }
 
   @Timeout(30)
@@ -231,15 +234,12 @@ public class RMRecordsReaderTest {
             false,
             null);
     RMRecordsReader readerSpy = spy(reader);
-    ByteBuffer[][] buffers = new ByteBuffer[3][2];
+    ByteBuf[][] buffers = new ByteBuf[3][2];
     for (int i = 0; i < 3; i++) {
-      buffers[i][0] =
-          ByteBuffer.wrap(
-              genSortedRecordBytes(rssConf, keyClass, valueClass, i, 3, RECORDS_NUM, 1));
+      buffers[i][0] = genSortedRecordBuffer(rssConf, keyClass, valueClass, i, 3, RECORDS_NUM, 1);
       buffers[i][1] =
-          ByteBuffer.wrap(
-              genSortedRecordBytes(
-                  rssConf, keyClass, valueClass, i + RECORDS_NUM * 3, 3, RECORDS_NUM, 1));
+          genSortedRecordBuffer(
+              rssConf, keyClass, valueClass, i + RECORDS_NUM * 3, 3, RECORDS_NUM, 1);
     }
     ShuffleServerClient serverClient =
         new MockedShuffleServerClient(
@@ -256,6 +256,7 @@ public class RMRecordsReaderTest {
       index++;
     }
     assertEquals(RECORDS_NUM * 6, index);
+    Arrays.stream(buffers).forEach(bs -> Arrays.stream(bs).forEach(b -> b.release()));
   }
 
   @Timeout(30)
@@ -305,15 +306,12 @@ public class RMRecordsReaderTest {
             false,
             null);
     RMRecordsReader readerSpy = spy(reader);
-    ByteBuffer[][] buffers = new ByteBuffer[3][2];
+    ByteBuf[][] buffers = new ByteBuf[3][2];
     for (int i = 0; i < 3; i++) {
-      buffers[i][0] =
-          ByteBuffer.wrap(
-              genSortedRecordBytes(rssConf, keyClass, valueClass, i, 3, RECORDS_NUM, 2));
+      buffers[i][0] = genSortedRecordBuffer(rssConf, keyClass, valueClass, i, 3, RECORDS_NUM, 2);
       buffers[i][1] =
-          ByteBuffer.wrap(
-              genSortedRecordBytes(
-                  rssConf, keyClass, valueClass, i + RECORDS_NUM * 3, 3, RECORDS_NUM, 2));
+          genSortedRecordBuffer(
+              rssConf, keyClass, valueClass, i + RECORDS_NUM * 3, 3, RECORDS_NUM, 2);
     }
     ShuffleServerClient serverClient =
         new MockedShuffleServerClient(
@@ -331,5 +329,6 @@ public class RMRecordsReaderTest {
       index++;
     }
     assertEquals(RECORDS_NUM * 6, index);
+    Arrays.stream(buffers).forEach(bs -> Arrays.stream(bs).forEach(b -> b.release()));
   }
 }

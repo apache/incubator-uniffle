@@ -42,6 +42,7 @@ public class Shuffle<K, V> {
   private final Map<Integer, Partition<K, V>> partitions = JavaUtils.newConcurrentMap();
   final int mergedBlockSize;
   final ClassLoader classLoader;
+  boolean direct = false;
 
   public Shuffle(
       RssConf rssConf,
@@ -77,6 +78,10 @@ public class Shuffle<K, V> {
       partition.cleanup();
     }
     this.partitions.clear();
+  }
+
+  public void setDirect(boolean direct) throws IOException {
+    this.direct = direct;
   }
 
   public ClassLoader getClassLoader() {

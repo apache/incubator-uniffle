@@ -121,6 +121,8 @@ public class RMRssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, Exceptio
     }
     Map<Integer, List<ShuffleServerInfo>> serverInfoMap = new HashMap<>();
     serverInfoMap.put(partitionId, new ArrayList<>(serverInfoSet));
+    String clientType =
+        rssJobConf.get(RssMRConfig.RSS_CLIENT_TYPE, RssMRConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
     this.reader =
         new RMRecordsReader(
             appId,
@@ -134,7 +136,8 @@ public class RMRssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, Exceptio
             true,
             combiner,
             combiner != null,
-            new MRMetricsReporter(context.getReporter()));
+            new MRMetricsReporter(context.getReporter()),
+            clientType);
   }
 
   @Override
