@@ -18,6 +18,7 @@
 package org.apache.uniffle.common.audit;
 
 import java.io.Closeable;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 
@@ -25,17 +26,25 @@ import org.apache.uniffle.common.rpc.StatusCode;
 
 /** Context for rpc audit logging. */
 public abstract class RpcAuditContext implements Closeable {
+  private static final ThreadLocal<RpcAuditContext> RPC_AUDIT_CONTEXT_THREAD_LOCAL =
+      new ThreadLocal<>();
   private final Logger log;
   private String command;
   private String statusCode;
   private String args;
   private String returnValue;
+  private String context;
   private String from;
   private long creationTimeNs;
   protected long executionTimeNs;
 
   public RpcAuditContext(Logger log) {
     this.log = log;
+    RPC_AUDIT_CONTEXT_THREAD_LOCAL.set(this);
+  }
+
+  public static final Optional<RpcAuditContext> getRpcAuditContext() {
+    return Optional.ofNullable(RPC_AUDIT_CONTEXT_THREAD_LOCAL.get());
   }
 
   protected abstract String content();
@@ -119,6 +128,21 @@ public abstract class RpcAuditContext implements Closeable {
     return this;
   }
 
+  /**
+   * Sets context field, context can be concat by invoke multiply time.
+   *
+   * @param contextPart the new context part
+   * @return this {@link RpcAuditContext} instance
+   */
+  public RpcAuditContext withContext(String contextPart) {
+    if (context == null) {
+      context = contextPart;
+    } else {
+      this.context += ", " + contextPart;
+    }
+    return this;
+  }
+
   @Override
   public void close() {
     if (log == null) {
@@ -139,6 +163,9 @@ public abstract class RpcAuditContext implements Closeable {
     }
     if (returnValue != null) {
       line += String.format("\treturn{%s}", returnValue);
+    }
+    if (context != null) {
+      line += String.format("\tcontext{%s}", context);
     }
     return line;
   }
