@@ -95,6 +95,7 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.proto.RssProtos.MergeContext;
 
 public class ShuffleWriteClientImpl implements ShuffleWriteClient {
 
@@ -564,11 +565,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      String keyClassName,
-      String valueClassName,
-      String comparatorClassName,
-      int mergedBlockSize,
-      String mergeClassLoader) {
+      MergeContext mergeContext) {
     String user = null;
     try {
       user = UserGroupInformation.getCurrentUser().getShortUserName();
@@ -586,11 +583,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             dataDistributionType,
             maxConcurrencyPerPartitionToWrite,
             stageAttemptNumber,
-            keyClassName,
-            valueClassName,
-            comparatorClassName,
-            mergedBlockSize,
-            mergeClassLoader);
+            mergeContext);
     RssRegisterShuffleResponse response =
         getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 

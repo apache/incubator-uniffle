@@ -325,7 +325,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                   maxConcurrencyPerPartitionToWrite);
       if (StatusCode.SUCCESS == result
           && shuffleServer.isRemoteMergeEnable()
-          && StringUtils.isNotBlank(req.getKeyClass())) {
+          && req.hasMergeContext()) {
         // The merged block is in a different domain from the original block,
         // so you need to register a new app for holding the merged block.
         result =
@@ -343,14 +343,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           result =
               shuffleServer
                   .getShuffleMergeManager()
-                  .registerShuffle(
-                      appId,
-                      shuffleId,
-                      req.getKeyClass(),
-                      req.getValueClass(),
-                      req.getComparatorClass(),
-                      req.getMergedBlockSize(),
-                      req.getMergeClassLoader());
+                  .registerShuffle(appId, shuffleId, req.getMergeContext());
         }
       }
       auditContext.withStatusCode(result);
