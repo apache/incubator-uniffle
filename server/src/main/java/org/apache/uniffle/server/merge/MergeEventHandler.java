@@ -19,7 +19,7 @@ package org.apache.uniffle.server.merge;
 
 public interface MergeEventHandler {
 
-  void handle(MergeEvent event);
+  boolean handle(MergeEvent event);
 
   int getEventNumInMerge();
 

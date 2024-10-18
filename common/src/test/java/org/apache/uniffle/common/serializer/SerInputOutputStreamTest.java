@@ -18,86 +18,86 @@
 package org.apache.uniffle.common.serializer;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Random;
 
-import org.junit.jupiter.api.BeforeAll;
+import io.netty.buffer.ByteBuf;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-public class PartialInputStreamTest {
+public class SerInputOutputStreamTest {
 
   private static final int BYTES_LEN = 10240;
-  private static ByteBuffer testBuffer;
   private static final int LOOP = 10;
   @TempDir private static File tempDir;
-  private static File tempFile;
-
-  @BeforeAll
-  public static void initData() throws IOException {
-    byte[] bytes = new byte[BYTES_LEN];
-    for (int i = 0; i < BYTES_LEN; i++) {
-      bytes[i] = (byte) (i & 0x7F);
-    }
-    testBuffer = ByteBuffer.wrap(bytes);
-    tempFile = new File(tempDir, "data");
-    FileOutputStream output = new FileOutputStream(tempFile);
-    output.write(bytes);
-    output.close();
-  }
 
   @Test
-  public void testReadMemroyInputStream() throws IOException {
-    // 1 test whole file
-    testRandomReadMemory(testBuffer, 0, BYTES_LEN);
+  public void testReadMemoryInputStream() throws IOException {
+    SerOutputStream outputStream = new DynBufferSerOutputStream();
+    for (int i = 0; i < BYTES_LEN; i++) {
+      outputStream.write((byte) (i & 0x7F));
+    }
+    ByteBuf testBuf = outputStream.toByteBuf();
+
+    // 1 test whole buffer
+    testRandomReadMemory(testBuf, 0, BYTES_LEN);
 
     // 2 test from start to random end
     Random random = new Random();
     for (int i = 0; i < LOOP; i++) {
-      testRandomReadMemory(testBuffer, 0, random.nextInt(BYTES_LEN - 1));
+      testRandomReadMemory(testBuf, 0, random.nextInt(BYTES_LEN - 1));
     }
 
     // 3 test from random start to end
     for (int i = 0; i < LOOP; i++) {
-      testRandomReadMemory(testBuffer, random.nextInt(BYTES_LEN - 1), BYTES_LEN);
+      testRandomReadMemory(testBuf, random.nextInt(BYTES_LEN - 1), BYTES_LEN);
     }
 
     // 4 test from random start to random end
     for (int i = 0; i < LOOP; i++) {
       int r1 = random.nextInt(BYTES_LEN - 2) + 1;
       int r2 = random.nextInt(BYTES_LEN - 2) + 1;
-      testRandomReadMemory(testBuffer, Math.min(r1, r2), Math.max(r1, r2));
+      testRandomReadMemory(testBuf, Math.min(r1, r2), Math.max(r1, r2));
     }
 
     // 5 Test when bytes is from start to start
-    testRandomReadMemory(testBuffer, 0, 0);
+    testRandomReadMemory(testBuf, 0, 0);
 
     // 6 Test when bytes is from end to end
-    testRandomReadMemory(testBuffer, BYTES_LEN, BYTES_LEN);
+    testRandomReadMemory(testBuf, BYTES_LEN, BYTES_LEN);
 
     // 7 Test when bytes is from random to this random
     for (int i = 0; i < LOOP; i++) {
       int r = random.nextInt(BYTES_LEN - 2) + 1;
-      testRandomReadMemory(testBuffer, r, r);
+      testRandomReadMemory(testBuf, r, r);
     }
+    testBuf.release();
   }
 
   @Test
   public void testReadNullBytes() throws IOException {
     // Test when bytes is byte[0]
-    PartialInputStream input = PartialInputStream.newInputStream(ByteBuffer.wrap(new byte[0]));
+    SerOutputStream outputStream = new DynBufferSerOutputStream();
+    ByteBuf testBuf = outputStream.toByteBuf();
+    SerInputStream input = SerInputStream.newInputStream(testBuf, 0, 0);
     assertEquals(0, input.available());
     assertEquals(-1, input.read());
     input.close();
+    testBuf.release();
   }
 
   @Test
   public void testReadFileInputStream() throws IOException {
+    File tempFile = new File(tempDir, "data");
+    ;
+    SerOutputStream outputStream = new FileSerOutputStream(tempFile);
+    for (int i = 0; i < BYTES_LEN; i++) {
+      outputStream.write((byte) (i & 0x7F));
+    }
+
     // 1 test whole file
     testRandomReadFile(tempFile, 0, BYTES_LEN);
 
@@ -132,28 +132,17 @@ public class PartialInputStreamTest {
     }
   }
 
-  private void testRandomReadMemory(ByteBuffer byteBuffer, long start, long end)
-      throws IOException {
-    PartialInputStream input = PartialInputStream.newInputStream(byteBuffer, start, end);
+  private void testRandomReadMemory(ByteBuf byteBuf, int start, int end) throws IOException {
+    SerInputStream input = SerInputStream.newInputStream(byteBuf, start, end);
     testRandomReadOneBytePerTime(input, start, end);
     input.close();
 
-    input = PartialInputStream.newInputStream(byteBuffer, start, end);
+    input = SerInputStream.newInputStream(byteBuf, start, end);
     testRandomReadMultiBytesPerTime(input, start, end);
     input.close();
   }
 
-  private void testRandomReadFile(File file, long start, long end) throws IOException {
-    PartialInputStream input = PartialInputStream.newInputStream(file, start, end);
-    testRandomReadOneBytePerTime(input, start, end);
-    input.close();
-
-    input = PartialInputStream.newInputStream(file, start, end);
-    testRandomReadMultiBytesPerTime(input, start, end);
-    input.close();
-  }
-
-  private void testRandomReadOneBytePerTime(PartialInputStream input, long start, long end)
+  private void testRandomReadOneBytePerTime(SerInputStream input, long start, long end)
       throws IOException {
     // test read one byte per time
     long index = start;
@@ -171,7 +160,7 @@ public class PartialInputStreamTest {
     }
   }
 
-  void testRandomReadMultiBytesPerTime(PartialInputStream input, long start, long end)
+  private void testRandomReadMultiBytesPerTime(SerInputStream input, long start, long end)
       throws IOException {
     // test read multi bytes per times
     long index = start;
@@ -193,5 +182,15 @@ public class PartialInputStreamTest {
     if (end == BYTES_LEN) {
       assertEquals(-1, input.read());
     }
+  }
+
+  private void testRandomReadFile(File file, long start, long end) throws IOException {
+    SerInputStream input = SerInputStream.newInputStream(file, start, end);
+    testRandomReadOneBytePerTime(input, start, end);
+    input.close();
+
+    input = SerInputStream.newInputStream(file, start, end);
+    testRandomReadMultiBytesPerTime(input, start, end);
+    input.close();
   }
 }

@@ -62,7 +62,9 @@ public abstract class Message implements Encodable {
     SHUFFLE_COMMIT_RESPONSE(17),
     GET_SHUFFLE_RESULT_RESPONSE(18),
     GET_SHUFFLE_RESULT_FOR_MULTI_PART_RESPONSE(19),
-    REQUIRE_BUFFER_RESPONSE(20);
+    REQUIRE_BUFFER_RESPONSE(20),
+    GET_SORTED_SHUFFLE_DATA_REQUEST(21),
+    GET_SORTED_SHUFFLE_DATA_RESPONSE(22);
 
     private final byte id;
 
@@ -132,6 +134,10 @@ public abstract class Message implements Encodable {
           return GET_SHUFFLE_RESULT_FOR_MULTI_PART_RESPONSE;
         case 20:
           return REQUIRE_BUFFER_RESPONSE;
+        case 21:
+          return GET_SORTED_SHUFFLE_DATA_REQUEST;
+        case 22:
+          return GET_SORTED_SHUFFLE_DATA_RESPONSE;
         case -1:
           throw new IllegalArgumentException("User type messages cannot be decoded.");
         default:
@@ -158,6 +164,10 @@ public abstract class Message implements Encodable {
         return GetMemoryShuffleDataRequest.decode(in);
       case GET_MEMORY_SHUFFLE_DATA_RESPONSE:
         return GetMemoryShuffleDataResponse.decode(in, true);
+      case GET_SORTED_SHUFFLE_DATA_REQUEST:
+        return GetSortedShuffleDataRequest.decode(in);
+      case GET_SORTED_SHUFFLE_DATA_RESPONSE:
+        return GetSortedShuffleDataResponse.decode(in, true);
       default:
         throw new IllegalArgumentException("Unexpected message type: " + msgType);
     }

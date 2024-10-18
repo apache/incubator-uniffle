@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableMap;
+import io.netty.buffer.ByteBuf;
+import org.apache.hadoop.io.DataInputBuffer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +43,8 @@ import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.merger.MergeState;
 import org.apache.uniffle.common.records.RecordsReader;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.SerInputStream;
+import org.apache.uniffle.common.serializer.SerializerInstance;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.apache.uniffle.common.serializer.writable.WritableSerializer;
 import org.apache.uniffle.common.util.BlockIdLayout;
@@ -52,6 +55,7 @@ import org.apache.uniffle.server.ShuffleTaskManager;
 import org.apache.uniffle.server.buffer.ShuffleBufferType;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.common.serializer.SerializerUtils.genData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -82,6 +86,7 @@ public class ShuffleMergeManagerTest {
     serverConf.setLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 60L * 1000L * 60L);
     serverConf.set(ShuffleServerConf.SERVER_MERGE_ENABLE, true);
     serverConf.set(ShuffleServerConf.SERVER_SHUFFLE_BUFFER_TYPE, ShuffleBufferType.SKIP_LIST);
+    serverConf.set(ShuffleServerConf.SERVER_BUFFER_CAPACITY, 100 * 1024 * 1024L);
     ShuffleServerMetrics.clear();
     ShuffleServerMetrics.register();
     assertTrue(this.tempDir1.isDirectory());
@@ -101,18 +106,24 @@ public class ShuffleMergeManagerTest {
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,true,true",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,true,false",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false,true",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false,false",
       })
-  public void testMergerManager(String classes, @TempDir File tmpDir) throws Exception {
+  public void testMergerManager(String classes) throws Exception {
     // 1 Construct serializer and comparator
     final String[] classArray = classes.split(",");
     final String keyClassName = classArray[0];
     final String valueClassName = classArray[1];
     final Class keyClass = SerializerUtils.getClassByName(keyClassName);
     final Class valueClass = SerializerUtils.getClassByName(valueClassName);
+    boolean raw = classArray.length > 2 ? Boolean.parseBoolean(classArray[2]) : false;
+    boolean direct = classArray.length > 3 ? Boolean.parseBoolean(classArray[3]) : false;
     final Comparator comparator = SerializerUtils.getComparator(keyClass);
     final String comparatorClassName = comparator.getClass().getName();
     final WritableSerializer serializer = new WritableSerializer(new RssConf());
+    final SerializerInstance instance = serializer.newInstance();
 
     // 2 Construct shuffle task manager and merge manager
     shuffleServer = new ShuffleServer(serverConf);
@@ -144,20 +155,21 @@ public class ShuffleMergeManagerTest {
     blocks[3] = blockIdLayout.getBlockId(1, PARTITION_ID, 1);
     ShufflePartitionedBlock[] shufflePartitionedBlocks = new ShufflePartitionedBlock[4];
     for (int i = 0; i < 4; i++) {
-      byte[] buffer =
-          SerializerUtils.genSortedRecordBytes(
-              serverConf, keyClass, valueClass, i, 4, RECORDS_NUMBER, 1);
+      ByteBuf byteBuf =
+          SerializerUtils.genSortedRecordBuffer(
+              serverConf, keyClass, valueClass, i, 4, RECORDS_NUMBER, 1, direct);
       shufflePartitionedBlocks[i] =
           new ShufflePartitionedBlock(
-              buffer.length,
-              buffer.length,
+              byteBuf.readableBytes(),
+              byteBuf.readableBytes(),
               0,
               blocks[i],
               blockIdLayout.getTaskAttemptId(blocks[i]),
-              buffer);
+              byteBuf);
     }
     ShufflePartitionedData spd = new ShufflePartitionedData(PARTITION_ID, shufflePartitionedBlocks);
     shuffleTaskManager.cacheShuffleData(APP_ID, SHUFFLE_ID, false, spd);
+    mergeManager.setDirect(APP_ID, SHUFFLE_ID, direct);
     // 4.2 report shuffle result
     shuffleTaskManager.addFinishedBlockIds(
         APP_ID, SHUFFLE_ID, ImmutableMap.of(PARTITION_ID, blocks), 1);
@@ -195,13 +207,31 @@ public class ShuffleMergeManagerTest {
           if (blockSize != -1) {
             ShuffleDataResult shuffleDataResult =
                 mergeManager.getShuffleData(APP_ID, SHUFFLE_ID, PARTITION_ID, blockId);
-            PartialInputStream inputStream =
-                PartialInputStream.newInputStream(shuffleDataResult.getDataBuffer());
+            SerInputStream inputStream =
+                SerInputStream.newInputStream(shuffleDataResult.getDataBuf());
             RecordsReader reader =
-                new RecordsReader(serverConf, inputStream, keyClass, valueClass, false);
+                new RecordsReader(serverConf, inputStream, keyClass, valueClass, raw, true);
+            reader.init();
             while (reader.next()) {
-              assertEquals(SerializerUtils.genData(keyClass, index), reader.getCurrentKey());
-              assertEquals(SerializerUtils.genData(valueClass, index), reader.getCurrentValue());
+              if (raw) {
+                ByteBuf keyByteBuf = (ByteBuf) reader.getCurrentKey();
+                ByteBuf valueByteBuf = (ByteBuf) reader.getCurrentValue();
+                byte[] keyBytes = new byte[keyByteBuf.readableBytes()];
+                byte[] valueBytes = new byte[valueByteBuf.readableBytes()];
+                keyByteBuf.readBytes(keyBytes);
+                valueByteBuf.readBytes(valueBytes);
+                DataInputBuffer keyInputBuffer = new DataInputBuffer();
+                keyInputBuffer.reset(keyBytes, 0, keyBytes.length);
+                assertEquals(
+                    genData(keyClass, index), instance.deserialize(keyInputBuffer, keyClass));
+                DataInputBuffer valueInputBuffer = new DataInputBuffer();
+                valueInputBuffer.reset(valueBytes, 0, valueBytes.length);
+                assertEquals(
+                    genData(valueClass, index), instance.deserialize(valueInputBuffer, valueClass));
+              } else {
+                assertEquals(genData(keyClass, index), reader.getCurrentKey());
+                assertEquals(genData(valueClass, index), reader.getCurrentValue());
+              }
               index++;
             }
             shuffleDataResult.release();

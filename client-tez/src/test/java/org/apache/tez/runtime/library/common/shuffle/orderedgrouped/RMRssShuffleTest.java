@@ -20,6 +20,7 @@ package org.apache.tez.runtime.library.common.shuffle.orderedgrouped;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -28,6 +29,7 @@ import java.util.zip.Deflater;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import io.netty.buffer.ByteBuf;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.IntWritable;
@@ -74,7 +76,7 @@ import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
 import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_KEY_CLASS;
 import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_KEY_COMPARATOR_CLASS;
 import static org.apache.tez.runtime.library.api.TezRuntimeConfiguration.TEZ_RUNTIME_VALUE_CLASS;
-import static org.apache.uniffle.common.serializer.SerializerUtils.genSortedRecordBytes;
+import static org.apache.uniffle.common.serializer.SerializerUtils.genSortedRecordBuffer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -158,12 +160,9 @@ public class RMRssShuffleTest {
             false,
             null);
     RMRecordsReader recordsReaderSpy = spy(recordsReader);
-    ByteBuffer[][] buffers =
-        new ByteBuffer[][] {
-          {
-            ByteBuffer.wrap(
-                genSortedRecordBytes(rssConf, keyClass, valueClass, 0, 1, RECORDS_NUM, duplicated))
-          }
+    ByteBuf[][] buffers =
+        new ByteBuf[][] {
+          {genSortedRecordBuffer(rssConf, keyClass, valueClass, 0, 1, RECORDS_NUM, duplicated)}
         };
     ShuffleServerClient serverClient =
         new MockedShuffleServerClient(new int[] {PARTITION_ID}, buffers, blockIds);
@@ -228,6 +227,7 @@ public class RMRssShuffleTest {
       index++;
     }
     assertEquals(RECORDS_NUM, index);
+    Arrays.stream(buffers).forEach(bs -> Arrays.stream(bs).forEach(b -> b.release()));
   }
 
   @Test
@@ -309,15 +309,13 @@ public class RMRssShuffleTest {
             false,
             null);
     RMRecordsReader recordsReaderSpy = spy(recordsReader);
-    ByteBuffer[][] buffers = new ByteBuffer[3][2];
+    ByteBuf[][] buffers = new ByteBuf[3][2];
     for (int i = 0; i < 3; i++) {
       buffers[i][0] =
-          ByteBuffer.wrap(
-              genSortedRecordBytes(rssConf, keyClass, valueClass, i, 3, RECORDS_NUM, duplicated));
+          genSortedRecordBuffer(rssConf, keyClass, valueClass, i, 3, RECORDS_NUM, duplicated);
       buffers[i][1] =
-          ByteBuffer.wrap(
-              genSortedRecordBytes(
-                  rssConf, keyClass, valueClass, i + RECORDS_NUM * 3, 3, RECORDS_NUM, duplicated));
+          genSortedRecordBuffer(
+              rssConf, keyClass, valueClass, i + RECORDS_NUM * 3, 3, RECORDS_NUM, duplicated);
     }
     ShuffleServerClient serverClient =
         new MockedShuffleServerClient(
@@ -396,6 +394,7 @@ public class RMRssShuffleTest {
       index++;
     }
     assertEquals(RECORDS_NUM * 6, index);
+    Arrays.stream(buffers).forEach(bs -> Arrays.stream(bs).forEach(b -> b.release()));
   }
 
   public static DataMovementEvent createDataMovementEvent(int partition, String path)

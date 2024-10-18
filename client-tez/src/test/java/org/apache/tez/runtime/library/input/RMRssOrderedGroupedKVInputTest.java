@@ -17,7 +17,6 @@
 
 package org.apache.tez.runtime.library.input;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -29,6 +28,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import io.netty.buffer.ByteBuf;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.IntWritable;
@@ -72,12 +72,14 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.merger.Merger;
 import org.apache.uniffle.common.merger.Segment;
+import org.apache.uniffle.common.serializer.DynBufferSerOutputStream;
+import org.apache.uniffle.common.serializer.SerOutputStream;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.apache.uniffle.common.util.BlockIdLayout;
 
 import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_DESTINATION_VERTEX_ID;
 import static org.apache.tez.common.RssTezConfig.RSS_SHUFFLE_SOURCE_VERTEX_ID;
-import static org.apache.uniffle.common.serializer.SerializerUtils.genSortedRecordBytes;
+import static org.apache.uniffle.common.serializer.SerializerUtils.genSortedRecordBuffer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -166,10 +168,11 @@ public class RMRssOrderedGroupedKVInputTest {
         SerializerUtils.genMemorySegment(rssConf, keyClass, valueClass, 1L, 0, 2, RECORDS_NUM));
     segments.add(
         SerializerUtils.genMemorySegment(rssConf, keyClass, valueClass, 2L, 1, 2, RECORDS_NUM));
-    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    segments.forEach(segment -> segment.init());
+    SerOutputStream output = new DynBufferSerOutputStream();
     Merger.merge(rssConf, output, segments, keyClass, valueClass, comparator, false);
     output.close();
-    ByteBuffer[][] buffers = new ByteBuffer[][] {{ByteBuffer.wrap(output.toByteArray())}};
+    ByteBuf[][] buffers = new ByteBuf[][] {{output.toByteBuf()}};
     ShuffleServerClient serverClient =
         new MockedShuffleServerClient(new int[] {PARTITION_ID}, buffers, blockIds);
     RMRecordsReader recordsReader =
@@ -362,15 +365,12 @@ public class RMRssOrderedGroupedKVInputTest {
             false,
             null);
     RMRecordsReader recordsReaderSpy = spy(recordsReader);
-    ByteBuffer[][] buffers = new ByteBuffer[3][2];
+    ByteBuf[][] buffers = new ByteBuf[3][2];
     for (int i = 0; i < 3; i++) {
-      buffers[i][0] =
-          ByteBuffer.wrap(
-              genSortedRecordBytes(rssConf, keyClass, valueClass, i, 3, RECORDS_NUM, 1));
+      buffers[i][0] = genSortedRecordBuffer(rssConf, keyClass, valueClass, i, 3, RECORDS_NUM, 1);
       buffers[i][1] =
-          ByteBuffer.wrap(
-              genSortedRecordBytes(
-                  rssConf, keyClass, valueClass, i + RECORDS_NUM * 3, 3, RECORDS_NUM, 1));
+          genSortedRecordBuffer(
+              rssConf, keyClass, valueClass, i + RECORDS_NUM * 3, 3, RECORDS_NUM, 1);
     }
     ShuffleServerClient serverClient =
         new MockedShuffleServerClient(
