@@ -57,7 +57,7 @@ import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.records.RecordsReader;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
+import org.apache.uniffle.common.serializer.SerInputStream;
 import org.apache.uniffle.common.serializer.SerializerFactory;
 import org.apache.uniffle.common.serializer.SerializerInstance;
 import org.apache.uniffle.common.serializer.SerializerUtils;
@@ -522,11 +522,8 @@ public class SortWriteBufferManagerTest {
     ByteBuf byteBuf = blockInfos.get(0).getData();
     RecordsReader<Text, Text> reader =
         new RecordsReader<>(
-            rssConf,
-            PartialInputStreamImpl.newInputStream(byteBuf.nioBuffer()),
-            Text.class,
-            Text.class,
-            false);
+            rssConf, SerInputStream.newInputStream(byteBuf), Text.class, Text.class, false, false);
+    reader.init();
     int index = 0;
     while (reader.next()) {
       assertEquals(SerializerUtils.genData(Text.class, index), reader.getCurrentKey());
@@ -609,10 +606,12 @@ public class SortWriteBufferManagerTest {
     RecordsReader<Text, IntWritable> reader =
         new RecordsReader<>(
             rssConf,
-            PartialInputStreamImpl.newInputStream(byteBuf.nioBuffer()),
+            SerInputStream.newInputStream(byteBuf),
             Text.class,
             IntWritable.class,
+            false,
             false);
+    reader.init();
     int index = 0;
     while (reader.next()) {
       int aimValue = index;

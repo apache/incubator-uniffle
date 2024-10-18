@@ -17,42 +17,72 @@
 
 package org.apache.uniffle.common.serializer;
 
-import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
+import java.nio.channels.FileChannel;
 
-/*
- * PartialInputStream is a configurable partial input stream, which
- * only allows reading from start to end of the source input stream.
- * */
-public class PartialInputStreamImpl extends PartialInputStream {
+import io.netty.buffer.ByteBuf;
 
-  private final SeekableByteChannel ch; // the source input channel
+public class FileSerInputStream extends SerInputStream {
+
   private final long start; // the start of source input stream
   private final long end; // the end of source input stream
-  private long pos; // the read offset
+  private FileInputStream input; // the input stream of the source
+  private FileChannel fileChannel;
 
+  // In FileSerInputStream, buffer is not direct memory. This stream will read file
+  // content to direct memory, then copy the direct memory to heap. But it doesn't
+  // matter, because it is only used for testing.
   private ByteBuffer bb = null;
   private byte[] bs = null;
   private byte[] b1;
-  private Closeable closeable;
+  private long pos;
 
-  public PartialInputStreamImpl(SeekableByteChannel ch, long start, long end, Closeable closeable)
-      throws IOException {
+  public FileSerInputStream(File file, long start, long end) throws IOException {
     if (start < 0) {
       throw new IOException("Negative position for channel!");
     }
-    this.ch = ch;
+    this.input = new FileInputStream(file);
+    this.fileChannel = input.getChannel();
+    if (this.fileChannel == null) {
+      throw new IOException("channel is null!");
+    }
     this.start = start;
     this.end = end;
-    this.closeable = closeable;
     this.pos = start;
-    ch.position(start);
+    this.fileChannel.position(start);
+  }
+
+  @Override
+  public int available() {
+    return (int) (end - pos);
+  }
+
+  @Override
+  public long getStart() {
+    return start;
+  }
+
+  @Override
+  public long getEnd() {
+    return end;
+  }
+
+  @Override
+  public void transferTo(ByteBuf to, int len) throws IOException {
+    // We copy the bytes, but it doesn't matter, only for test
+    byte[] bytes = new byte[len];
+    while (len > 0) {
+      int c = read(bytes, 0, bytes.length);
+      len -= c;
+    }
+    to.writeBytes(bytes);
   }
 
   private int read(ByteBuffer bb) throws IOException {
-    return ch.read(bb);
+    return fileChannel.read(bb);
   }
 
   @Override
@@ -62,7 +92,7 @@ public class PartialInputStreamImpl extends PartialInputStream {
     }
     int n = read(b1);
     if (n == 1) {
-      return b1[0] & 0xff;
+      return b1[0] & 0xFF;
     }
     return -1;
   }
@@ -91,24 +121,10 @@ public class PartialInputStreamImpl extends PartialInputStream {
   }
 
   @Override
-  public int available() throws IOException {
-    return (int) (end - pos);
-  }
-
-  @Override
-  public long getStart() {
-    return start;
-  }
-
-  @Override
-  public long getEnd() {
-    return end;
-  }
-
-  @Override
   public void close() throws IOException {
-    if (closeable != null) {
-      closeable.close();
+    if (this.input != null) {
+      this.input.close();
+      this.input = null;
     }
   }
 }

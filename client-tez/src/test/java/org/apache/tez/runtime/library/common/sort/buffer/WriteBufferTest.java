@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import io.netty.buffer.Unpooled;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -41,8 +42,7 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.serializer.DeserializationStream;
-import org.apache.uniffle.common.serializer.PartialInputStream;
-import org.apache.uniffle.common.serializer.PartialInputStreamImpl;
+import org.apache.uniffle.common.serializer.SerInputStream;
 import org.apache.uniffle.common.serializer.SerializerFactory;
 import org.apache.uniffle.common.serializer.SerializerInstance;
 
@@ -203,9 +203,11 @@ public class WriteBufferTest {
       buffer.addRecord(genData(Text.class, i), genData(IntWritable.class, i));
     }
     byte[] bytes = buffer.getData();
-    PartialInputStream inputStream = PartialInputStreamImpl.newInputStream(ByteBuffer.wrap(bytes));
+    SerInputStream inputStream =
+        SerInputStream.newInputStream(Unpooled.wrappedBuffer(ByteBuffer.wrap(bytes)));
     DeserializationStream dStream =
-        instance.deserializeStream(inputStream, Text.class, IntWritable.class, false);
+        instance.deserializeStream(inputStream, Text.class, IntWritable.class, false, false);
+    dStream.init();
     for (int i = 0; i < RECORDS_NUM; i++) {
       assertTrue(dStream.nextRecord());
       assertEquals(genData(Text.class, i), dStream.getCurrentKey());
@@ -240,9 +242,11 @@ public class WriteBufferTest {
       buffer.addRecord(genData(Text.class, i), genData(IntWritable.class, i));
     }
     byte[] bytes = buffer.getData();
-    PartialInputStream inputStream = PartialInputStreamImpl.newInputStream(ByteBuffer.wrap(bytes));
+    SerInputStream inputStream =
+        SerInputStream.newInputStream(Unpooled.wrappedBuffer(ByteBuffer.wrap(bytes)));
     DeserializationStream dStream =
-        instance.deserializeStream(inputStream, Text.class, IntWritable.class, false);
+        instance.deserializeStream(inputStream, Text.class, IntWritable.class, false, false);
+    dStream.init();
     for (int i = 0; i < RECORDS_NUM; i++) {
       assertTrue(dStream.nextRecord());
       assertEquals(genData(Text.class, i), dStream.getCurrentKey());

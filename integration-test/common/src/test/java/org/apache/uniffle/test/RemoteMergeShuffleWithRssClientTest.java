@@ -20,6 +20,7 @@ package org.apache.uniffle.test;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,10 +34,10 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import io.netty.buffer.ByteBuf;
 import org.apache.hadoop.io.IntWritable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,7 +50,6 @@ import org.apache.uniffle.client.record.reader.KeyValueReader;
 import org.apache.uniffle.client.record.reader.RMRecordsReader;
 import org.apache.uniffle.client.record.writer.Combiner;
 import org.apache.uniffle.client.record.writer.SumByKeyCombiner;
-import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
@@ -64,6 +64,7 @@ import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.buffer.ShuffleBufferType;
 import org.apache.uniffle.storage.util.StorageType;
@@ -75,6 +76,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
 
   private static final int SHUFFLE_ID = 0;
   private static final int PARTITION_ID = 0;
+  private static final int RECORD_NUMBER = 1009;
 
   private static ShuffleServerInfo shuffleServerInfo;
   private ShuffleWriteClientImpl shuffleWriteClientImpl;
@@ -84,7 +86,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setBoolean(COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, false);
     createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MERGE_ENABLE, true);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MERGE_DEFAULT_MERGED_BLOCK_SIZE, "1k");
     shuffleServerConf.set(
@@ -100,8 +102,13 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     shuffleServerConf.setInteger("rss.jetty.http.port", ports.get(1));
     createShuffleServer(shuffleServerConf);
     startServers();
+    ShuffleServer shuffleServer = nettyShuffleServers.get(0);
     shuffleServerInfo =
-        new ShuffleServerInfo("127.0.0.1-20001", grpcShuffleServers.get(0).getIp(), ports.get(0));
+        new ShuffleServerInfo(
+            "127.0.0.1-20001",
+            shuffleServer.getIp(),
+            shuffleServer.getGrpcPort(),
+            shuffleServer.getNettyPort());
   }
 
   private static List<Integer> findAvailablePorts(int num) throws IOException {
@@ -121,12 +128,11 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     return ports;
   }
 
-  @BeforeEach
-  public void createClient() {
+  public void createClient(String clientType) {
     shuffleWriteClientImpl =
         new ShuffleWriteClientImpl(
             ShuffleClientFactory.newWriteBuilder()
-                .clientType(ClientType.GRPC.name())
+                .clientType(clientType)
                 .retryMax(3)
                 .retryIntervalMax(1000)
                 .heartBeatThreadNum(1)
@@ -148,8 +154,10 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,true",
-        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC,true",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC_NETTY,true",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC,false",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC_NETTY,false",
       })
   @Timeout(10)
   public void remoteMergeWriteReadTest(String classes) throws Exception {
@@ -159,11 +167,13 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     final String valueClassName = classArray[1];
     final Class keyClass = SerializerUtils.getClassByName(keyClassName);
     final Class valueClass = SerializerUtils.getClassByName(valueClassName);
-    final boolean raw = classArray.length > 2 ? Boolean.parseBoolean(classArray[2]) : false;
+    final String clientType = classArray[2];
+    final boolean raw = classArray.length > 3 ? Boolean.parseBoolean(classArray[3]) : false;
     final Comparator comparator = SerializerUtils.getComparator(keyClass);
     final RssConf rssConf = new RssConf();
 
     // 2 register shuffle
+    createClient(clientType);
     String testAppId = "remoteMergeWriteReadTest" + classes;
     shuffleWriteClientImpl.registerShuffle(
         shuffleServerInfo,
@@ -195,7 +205,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             0,
             5,
-            1009,
+            RECORD_NUMBER,
             1));
     blocks1.add(
         createShuffleBlockForRemoteMerge(
@@ -208,7 +218,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             2,
             5,
-            1009,
+            RECORD_NUMBER,
             1));
     blocks1.add(
         createShuffleBlockForRemoteMerge(
@@ -221,7 +231,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             4,
             5,
-            1009,
+            RECORD_NUMBER,
             1));
     shuffleWriteClientImpl.sendShuffleData(testAppId, blocks1, () -> false);
     // task 1 attempt 0 generate two blocks
@@ -237,7 +247,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             1,
             5,
-            1009,
+            RECORD_NUMBER,
             1));
     blocks2.add(
         createShuffleBlockForRemoteMerge(
@@ -250,7 +260,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             3,
             5,
-            1009,
+            RECORD_NUMBER,
             1));
     shuffleWriteClientImpl.sendShuffleData(testAppId, blocks2, () -> false);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers =
@@ -291,7 +301,8 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             raw,
             null,
             false,
-            null);
+            null,
+            clientType);
     reader.start();
     int index = 0;
     KeyValueReader keyValueReader = reader.keyValueReader();
@@ -300,15 +311,17 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
       assertEquals(SerializerUtils.genData(valueClass, index), keyValueReader.getCurrentValue());
       index++;
     }
-    assertEquals(5 * 1009, index);
+    assertEquals(5 * RECORD_NUMBER, index);
     shuffleWriteClientImpl.unregisterShuffle(testAppId);
   }
 
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,true",
-        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC,true",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC_NETTY,true",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC,false",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC_NETTY,false",
       })
   @Timeout(10)
   public void remoteMergeWriteReadTestWithCombine(String classes) throws Exception {
@@ -318,7 +331,8 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     final String valueClassName = classArray[1];
     final Class keyClass = SerializerUtils.getClassByName(keyClassName);
     final Class valueClass = SerializerUtils.getClassByName(valueClassName);
-    final boolean raw = classArray.length > 2 ? Boolean.parseBoolean(classArray[2]) : false;
+    final String clientType = classArray[2];
+    final boolean raw = classArray.length > 3 ? Boolean.parseBoolean(classArray[3]) : false;
     final Comparator comparator = SerializerUtils.getComparator(keyClass);
     final RssConf rssConf = new RssConf();
     SerializerFactory factory = new SerializerFactory(rssConf);
@@ -327,6 +341,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     final Combiner combiner = new SumByKeyCombiner(raw, serializerInstance, keyClass, valueClass);
 
     // 2 register shuffle
+    createClient(clientType);
     String testAppId = "remoteMergeWriteReadTestWithCombine" + classes;
     shuffleWriteClientImpl.registerShuffle(
         shuffleServerInfo,
@@ -358,7 +373,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             0,
             3,
-            1009,
+            RECORD_NUMBER,
             1));
     blocks1.add(
         createShuffleBlockForRemoteMerge(
@@ -371,7 +386,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             1,
             3,
-            1009,
+            RECORD_NUMBER,
             1));
     blocks1.add(
         createShuffleBlockForRemoteMerge(
@@ -384,7 +399,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             2,
             3,
-            1009,
+            RECORD_NUMBER,
             1));
     shuffleWriteClientImpl.sendShuffleData(testAppId, blocks1, () -> false);
     // task 1 attempt 0 generate two blocks
@@ -400,7 +415,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             0,
             3,
-            1009,
+            RECORD_NUMBER,
             1));
     blocks2.add(
         createShuffleBlockForRemoteMerge(
@@ -413,7 +428,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             2,
             3,
-            1009,
+            RECORD_NUMBER,
             1));
     shuffleWriteClientImpl.sendShuffleData(testAppId, blocks2, () -> false);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers =
@@ -454,7 +469,8 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             raw,
             combiner,
             false,
-            null);
+            null,
+            clientType);
     reader.start();
     int index = 0;
     KeyValueReader keyValueReader = reader.keyValueReader();
@@ -472,15 +488,17 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
       assertEquals(newValue, keyValueReader.getCurrentValue());
       index++;
     }
-    assertEquals(3 * 1009, index);
+    assertEquals(3 * RECORD_NUMBER, index);
     shuffleWriteClientImpl.unregisterShuffle(testAppId);
   }
 
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,true",
-        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC,true",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC_NETTY,true",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC,false",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC_NETTY,false",
       })
   @Timeout(10)
   public void remoteMergeWriteReadTestMultiPartition(String classes) throws Exception {
@@ -490,11 +508,13 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     final String valueClassName = classArray[1];
     final Class keyClass = SerializerUtils.getClassByName(keyClassName);
     final Class valueClass = SerializerUtils.getClassByName(valueClassName);
-    final boolean raw = classArray.length > 2 ? Boolean.parseBoolean(classArray[2]) : false;
+    final String clientType = classArray[2];
+    final boolean raw = classArray.length > 3 ? Boolean.parseBoolean(classArray[3]) : false;
     final Comparator comparator = SerializerUtils.getComparator(keyClass);
     final RssConf rssConf = new RssConf();
 
     // 2 register shuffle
+    createClient(clientType);
     String testAppId = "remoteMergeWriteReadTestMultiPartition" + classes;
     shuffleWriteClientImpl.registerShuffle(
         shuffleServerInfo,
@@ -530,7 +550,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             0,
             6,
-            1009,
+            RECORD_NUMBER,
             1));
     blocks1.add(
         createShuffleBlockForRemoteMerge(
@@ -543,7 +563,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             2,
             6,
-            1009,
+            RECORD_NUMBER,
             1));
     blocks1.add(
         createShuffleBlockForRemoteMerge(
@@ -556,7 +576,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             4,
             6,
-            1009,
+            RECORD_NUMBER,
             1));
     shuffleWriteClientImpl.sendShuffleData(testAppId, blocks1, () -> false);
     // task 1 attempt 0 generate two blocks
@@ -572,7 +592,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             1,
             6,
-            1009,
+            RECORD_NUMBER,
             1));
     blocks2.add(
         createShuffleBlockForRemoteMerge(
@@ -585,7 +605,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             3,
             6,
-            1009,
+            RECORD_NUMBER,
             1));
     blocks2.add(
         createShuffleBlockForRemoteMerge(
@@ -598,7 +618,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             5,
             6,
-            1009,
+            RECORD_NUMBER,
             1));
     shuffleWriteClientImpl.sendShuffleData(testAppId, blocks2, () -> false);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers =
@@ -665,7 +685,8 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             raw,
             null,
             false,
-            null);
+            null,
+            clientType);
     reader.start();
     int index = 0;
     KeyValueReader keyValueReader = reader.keyValueReader();
@@ -674,15 +695,17 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
       assertEquals(SerializerUtils.genData(valueClass, index), keyValueReader.getCurrentValue());
       index++;
     }
-    assertEquals(6 * 1009, index);
+    assertEquals(6 * RECORD_NUMBER, index);
     shuffleWriteClientImpl.unregisterShuffle(testAppId);
   }
 
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,true",
-        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC,true",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC_NETTY,true",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC,false",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,GRPC_NETTY,false",
       })
   @Timeout(10)
   public void remoteMergeWriteReadTestMultiPartitionWithCombine(String classes) throws Exception {
@@ -692,7 +715,8 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     final String valueClassName = classArray[1];
     final Class keyClass = SerializerUtils.getClassByName(keyClassName);
     final Class valueClass = SerializerUtils.getClassByName(valueClassName);
-    final boolean raw = classArray.length > 2 ? Boolean.parseBoolean(classArray[2]) : false;
+    final String clientType = classArray[2];
+    final boolean raw = classArray.length > 3 ? Boolean.parseBoolean(classArray[3]) : false;
     final Comparator comparator = SerializerUtils.getComparator(keyClass);
     final RssConf rssConf = new RssConf();
     SerializerFactory factory = new SerializerFactory(rssConf);
@@ -701,6 +725,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     final Combiner combiner = new SumByKeyCombiner(raw, serializerInstance, keyClass, valueClass);
 
     // 2 register shuffle
+    createClient(clientType);
     String testAppId = "remoteMergeWriteReadTestMultiPartitionWithCombine" + classes;
     shuffleWriteClientImpl.registerShuffle(
         shuffleServerInfo,
@@ -736,7 +761,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             0,
             6,
-            1009,
+            RECORD_NUMBER,
             2));
     blocks1.add(
         createShuffleBlockForRemoteMerge(
@@ -749,7 +774,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             2,
             6,
-            1009,
+            RECORD_NUMBER,
             2));
     blocks1.add(
         createShuffleBlockForRemoteMerge(
@@ -762,7 +787,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             4,
             6,
-            1009,
+            RECORD_NUMBER,
             2));
     shuffleWriteClientImpl.sendShuffleData(testAppId, blocks1, () -> false);
     // task 1 attempt 0 generate two blocks
@@ -778,7 +803,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             1,
             6,
-            1009,
+            RECORD_NUMBER,
             2));
     blocks2.add(
         createShuffleBlockForRemoteMerge(
@@ -791,7 +816,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             3,
             6,
-            1009,
+            RECORD_NUMBER,
             2));
     blocks2.add(
         createShuffleBlockForRemoteMerge(
@@ -804,7 +829,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             valueClass,
             5,
             6,
-            1009,
+            RECORD_NUMBER,
             2));
     shuffleWriteClientImpl.sendShuffleData(testAppId, blocks2, () -> false);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers =
@@ -871,7 +896,8 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
             raw,
             combiner,
             false,
-            null);
+            null,
+            clientType);
     reader.start();
     int index = 0;
     KeyValueReader keyValueReader = reader.keyValueReader();
@@ -881,7 +907,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
           SerializerUtils.genData(valueClass, index * 2), keyValueReader.getCurrentValue());
       index++;
     }
-    assertEquals(6 * 1009, index);
+    assertEquals(6 * RECORD_NUMBER, index);
     shuffleWriteClientImpl.unregisterShuffle(testAppId);
   }
 
@@ -902,18 +928,19 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
       throws IOException {
     long blockId =
         blockIdLayout.getBlockId(ATOMIC_INT_SORTED.getAndIncrement(), PARTITION_ID, taskAttemptId);
-    byte[] buf =
-        SerializerUtils.genSortedRecordBytes(
+    ByteBuf byteBuf =
+        SerializerUtils.genSortedRecordBuffer(
             rssConf, keyClass, valueClass, start, interval, samples, duplicated);
+    ByteBuffer byteBuffer = byteBuf.nioBuffer();
     return new ShuffleBlockInfo(
         SHUFFLE_ID,
         partitionId,
         blockId,
-        buf.length,
-        ChecksumUtils.getCrc32(buf),
-        buf,
+        byteBuf.readableBytes(),
+        ChecksumUtils.getCrc32(byteBuffer),
+        byteBuffer.array(),
         shuffleServerInfoList,
-        buf.length,
+        byteBuf.readableBytes(),
         0,
         taskAttemptId);
   }

@@ -71,6 +71,7 @@ public class RMTezOrderedWordCountTest extends TezIntegrationTestBase {
 
     // Run RSS tests with different configurations
     runRemoteMergeRssTest(ClientType.GRPC, "rss-grpc", originPath);
+    runRemoteMergeRssTest(ClientType.GRPC_NETTY, "rss-netty", originPath);
   }
 
   private void runRemoteMergeRssTest(ClientType clientType, String testName, String originPath)

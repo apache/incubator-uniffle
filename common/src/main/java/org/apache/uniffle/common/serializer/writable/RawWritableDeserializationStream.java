@@ -24,22 +24,27 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableUtils;
 
 import org.apache.uniffle.common.serializer.DeserializationStream;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.SerInputStream;
 
 public class RawWritableDeserializationStream<K extends Writable, V extends Writable>
     extends DeserializationStream<ComparativeOutputBuffer, ComparativeOutputBuffer> {
 
   public static final int EOF_MARKER = -1; // End of File Marker
 
-  private PartialInputStream inputStream;
+  private SerInputStream inputStream;
   private DataInputStream dataIn;
   private ComparativeOutputBuffer currentKeyBuffer;
   private ComparativeOutputBuffer currentValueBuffer;
 
   public RawWritableDeserializationStream(
-      WritableSerializerInstance instance, PartialInputStream inputStream) {
+      WritableSerializerInstance instance, SerInputStream inputStream) {
     this.inputStream = inputStream;
-    this.dataIn = new DataInputStream(inputStream);
+  }
+
+  @Override
+  public void init() {
+    this.inputStream.init();
+    this.dataIn = new DataInputStream(this.inputStream);
   }
 
   @Override
@@ -71,6 +76,10 @@ public class RawWritableDeserializationStream<K extends Writable, V extends Writ
 
   @Override
   public void close() throws IOException {
+    if (inputStream != null) {
+      inputStream.close();
+      inputStream = null;
+    }
     if (dataIn != null) {
       dataIn.close();
       dataIn = null;

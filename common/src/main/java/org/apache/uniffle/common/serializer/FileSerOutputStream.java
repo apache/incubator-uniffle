@@ -17,46 +17,44 @@
 
 package org.apache.uniffle.common.serializer;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.io.OutputStream;
 
-public class BufferPartialInputStreamImpl extends PartialInputStream {
+import io.netty.buffer.ByteBuf;
 
-  private ByteBuffer buffer;
-  private final long start; // the start of source input stream
-  private final long end; // the end of source input stream
+public class FileSerOutputStream extends SerOutputStream {
 
-  public BufferPartialInputStreamImpl(ByteBuffer byteBuffer, long start, long end)
-      throws IOException {
-    if (start < 0) {
-      throw new IOException("Negative position for channel!");
+  private OutputStream outputStream;
+
+  public FileSerOutputStream(File file) throws IOException {
+    this.outputStream = new FileOutputStream(file);
+  }
+
+  @Override
+  public void write(ByteBuf from) throws IOException {
+    // We copy the bytes, but it doesn't matter, only for test
+    byte[] bytes = new byte[from.readableBytes()];
+    from.readBytes(bytes);
+    outputStream.write(bytes);
+  }
+
+  @Override
+  public void write(int b) throws IOException {
+    outputStream.write(b);
+  }
+
+  @Override
+  public void flush() throws IOException {
+    outputStream.flush();
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (outputStream != null) {
+      outputStream.close();
+      outputStream = null;
     }
-    this.buffer = byteBuffer;
-    this.start = start;
-    this.end = end;
-    this.buffer.position((int) start);
-  }
-
-  @Override
-  public int read() throws IOException {
-    if (available() <= 0) {
-      return -1;
-    }
-    return this.buffer.get() & 0xff;
-  }
-
-  @Override
-  public int available() throws IOException {
-    return (int) (end - this.buffer.position());
-  }
-
-  @Override
-  public long getStart() {
-    return start;
-  }
-
-  @Override
-  public long getEnd() {
-    return end;
   }
 }

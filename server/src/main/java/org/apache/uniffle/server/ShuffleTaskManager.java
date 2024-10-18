@@ -591,6 +591,15 @@ public class ShuffleTaskManager {
     return requireBuffer("EMPTY", requireSize);
   }
 
+  public boolean requireMemory(int requireSize, boolean isPreAllocated) {
+    return shuffleBufferManager.requireMemory(requireSize, isPreAllocated);
+  }
+
+  public void releaseMemory(
+      int requireSize, boolean isReleaseFlushMemory, boolean isReleasePreAllocation) {
+    shuffleBufferManager.releaseMemory(requireSize, isReleaseFlushMemory, isReleasePreAllocation);
+  }
+
   public byte[] getFinishedBlockIds(
       String appId, Integer shuffleId, Set<Integer> partitions, BlockIdLayout blockIdLayout)
       throws IOException {

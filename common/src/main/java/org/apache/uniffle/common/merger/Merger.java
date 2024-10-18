@@ -18,12 +18,12 @@
 package org.apache.uniffle.common.merger;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
+import io.netty.buffer.ByteBuf;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.util.PriorityQueue;
@@ -31,6 +31,7 @@ import org.apache.hadoop.util.PriorityQueue;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.records.RecordsWriter;
+import org.apache.uniffle.common.serializer.SerOutputStream;
 
 public class Merger {
 
@@ -42,6 +43,7 @@ public class Merger {
     private final Class<V> valueClass;
     private Comparator comparator;
     private boolean raw;
+    private boolean shared;
 
     private Object currentKey;
     private Object currentValue;
@@ -54,7 +56,8 @@ public class Merger {
         Class<K> keyClass,
         Class<V> valueClass,
         Comparator<K> comparator,
-        boolean raw) {
+        boolean raw,
+        boolean shared) {
       this.rssConf = rssConf;
       this.segments = segments;
       this.keyClass = keyClass;
@@ -62,8 +65,9 @@ public class Merger {
       if (comparator == null) {
         throw new RssException("comparator is null!");
       }
-      this.raw = raw;
       this.comparator = comparator;
+      this.raw = raw;
+      this.shared = shared;
     }
 
     public void setPopSegmentHook(Function<Integer, Segment> popSegmentHook) {
@@ -73,14 +77,33 @@ public class Merger {
     @Override
     protected boolean lessThan(Object o1, Object o2) {
       if (raw) {
-        Segment s1 = (Segment) o1;
-        Segment s2 = (Segment) o2;
-        DataOutputBuffer key1 = (DataOutputBuffer) s1.getCurrentKey();
-        DataOutputBuffer key2 = (DataOutputBuffer) s2.getCurrentKey();
-        int c =
-            ((RawComparator) comparator)
-                .compare(key1.getData(), 0, key1.getLength(), key2.getData(), 0, key2.getLength());
-        return c < 0 || ((c == 0) && s1.getId() < s2.getId());
+        if (shared) {
+          Segment s1 = (Segment) o1;
+          Segment s2 = (Segment) o2;
+          ByteBuf key1 = (ByteBuf) s1.getCurrentKey();
+          ByteBuf key2 = (ByteBuf) s2.getCurrentKey();
+          // make sure key buffer is in heap, avoid byte array copy
+          int c =
+              ((RawComparator) comparator)
+                  .compare(
+                      key1.array(),
+                      key1.arrayOffset() + key1.readerIndex(),
+                      key1.readableBytes(),
+                      key2.array(),
+                      key2.arrayOffset() + key2.readerIndex(),
+                      key2.readableBytes());
+          return c < 0 || ((c == 0) && s1.getId() < s2.getId());
+        } else {
+          Segment s1 = (Segment) o1;
+          Segment s2 = (Segment) o2;
+          DataOutputBuffer key1 = (DataOutputBuffer) s1.getCurrentKey();
+          DataOutputBuffer key2 = (DataOutputBuffer) s2.getCurrentKey();
+          int c =
+              ((RawComparator) comparator)
+                  .compare(
+                      key1.getData(), 0, key1.getLength(), key2.getData(), 0, key2.getLength());
+          return c < 0 || ((c == 0) && s1.getId() < s2.getId());
+        }
       } else {
         Segment s1 = (Segment) o1;
         Segment s2 = (Segment) o2;
@@ -153,6 +176,7 @@ public class Merger {
         if (popSegmentHook != null) {
           Segment newSegment = popSegmentHook.apply((int) segment.getId());
           if (newSegment != null) {
+            newSegment.init();
             if (newSegment.next()) {
               put(newSegment);
             } else {
@@ -163,46 +187,40 @@ public class Merger {
       }
     }
 
-    void merge(OutputStream output) throws IOException {
+    public void merge(SerOutputStream output) throws IOException {
       RecordsWriter<K, V> writer =
-          new RecordsWriter<K, V>(rssConf, output, keyClass, valueClass, raw);
-      boolean recorded = true;
-      while (this.next()) {
-        writer.append(this.getCurrentKey(), this.getCurrentValue());
-        if (output instanceof Recordable) {
-          recorded =
-              ((Recordable) output)
-                  .record(writer.getTotalBytesWritten(), () -> writer.flush(), false);
+          new RecordsWriter<K, V>(rssConf, output, keyClass, valueClass, raw, shared);
+      try {
+        writer.init();
+        while (this.next()) {
+          writer.append(this.getCurrentKey(), this.getCurrentValue());
         }
+        writer.flush();
+      } finally {
+        writer.close();
       }
-      writer.flush();
-      if (!recorded) {
-        ((Recordable) output).record(writer.getTotalBytesWritten(), null, true);
-      }
-      writer.close();
     }
 
     @Override
-    public void close() throws IOException {
-      Segment segment;
-      while ((segment = pop()) != null) {
-        segment.close();
-      }
-    }
+    public void close() throws IOException {}
   }
 
   public static void merge(
       RssConf conf,
-      OutputStream output,
+      SerOutputStream output,
       List<Segment> segments,
       Class keyClass,
       Class valueClass,
       Comparator comparator,
       boolean raw)
       throws IOException {
-    MergeQueue mergeQueue = new MergeQueue(conf, segments, keyClass, valueClass, comparator, raw);
-    mergeQueue.init();
-    mergeQueue.merge(output);
-    mergeQueue.close();
+    MergeQueue mergeQueue =
+        new MergeQueue(conf, segments, keyClass, valueClass, comparator, raw, true);
+    try {
+      mergeQueue.init();
+      mergeQueue.merge(output);
+    } finally {
+      mergeQueue.close();
+    }
   }
 }

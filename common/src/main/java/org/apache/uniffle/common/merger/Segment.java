@@ -27,6 +27,8 @@ public abstract class Segment {
     this.id = id;
   }
 
+  public void init() {}
+
   public abstract boolean next() throws IOException;
 
   public abstract Object getCurrentKey();
@@ -38,4 +40,6 @@ public abstract class Segment {
   }
 
   public abstract void close() throws IOException;
+
+  public abstract long getSize();
 }
