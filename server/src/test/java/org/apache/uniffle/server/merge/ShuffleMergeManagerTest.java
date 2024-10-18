@@ -45,6 +45,7 @@ import org.apache.uniffle.common.serializer.PartialInputStream;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.apache.uniffle.common.serializer.writable.WritableSerializer;
 import org.apache.uniffle.common.util.BlockIdLayout;
+import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.ShuffleServerMetrics;
@@ -129,7 +130,15 @@ public class ShuffleMergeManagerTest {
         new RemoteStorageInfo(""),
         USER);
     mergeManager.registerShuffle(
-        APP_ID, SHUFFLE_ID, keyClassName, valueClassName, comparatorClassName, -1, "");
+        APP_ID,
+        SHUFFLE_ID,
+        RssProtos.PMergeContext.newBuilder()
+            .setKeyClass(keyClassName)
+            .setValueClass(valueClassName)
+            .setComparatorClass(comparatorClassName)
+            .setMergedBlockSize(-1)
+            .setMergeClassLoader("")
+            .build());
 
     // 4 report blocks
     // 4.1 send shuffle data

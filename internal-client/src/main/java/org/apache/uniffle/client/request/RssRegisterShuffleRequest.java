@@ -25,6 +25,7 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.proto.RssProtos.PMergeContext;
 
 public class RssRegisterShuffleRequest {
 
@@ -36,11 +37,8 @@ public class RssRegisterShuffleRequest {
   private ShuffleDataDistributionType dataDistributionType;
   private int maxConcurrencyPerPartitionToWrite;
   private int stageAttemptNumber;
-  private String keyClassName;
-  private String valueClassName;
-  private String comparatorClassName;
-  private int mergedBlockSize;
-  private String mergeClassLoader;
+
+  private final PMergeContext mergeContext;
 
   public RssRegisterShuffleRequest(
       String appId,
@@ -59,10 +57,6 @@ public class RssRegisterShuffleRequest {
         dataDistributionType,
         maxConcurrencyPerPartitionToWrite,
         0,
-        null,
-        null,
-        null,
-        -1,
         null);
   }
 
@@ -75,11 +69,7 @@ public class RssRegisterShuffleRequest {
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      String keyClassName,
-      String valueClassName,
-      String comparatorClassName,
-      int mergedBlockSize,
-      String mergeClassLoader) {
+      PMergeContext mergeContext) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionRanges = partitionRanges;
@@ -88,11 +78,7 @@ public class RssRegisterShuffleRequest {
     this.dataDistributionType = dataDistributionType;
     this.maxConcurrencyPerPartitionToWrite = maxConcurrencyPerPartitionToWrite;
     this.stageAttemptNumber = stageAttemptNumber;
-    this.keyClassName = keyClassName;
-    this.valueClassName = valueClassName;
-    this.comparatorClassName = comparatorClassName;
-    this.mergedBlockSize = mergedBlockSize;
-    this.mergeClassLoader = mergeClassLoader;
+    this.mergeContext = mergeContext;
   }
 
   public RssRegisterShuffleRequest(
@@ -111,10 +97,6 @@ public class RssRegisterShuffleRequest {
         dataDistributionType,
         RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue(),
         0,
-        null,
-        null,
-        null,
-        -1,
         null);
   }
 
@@ -129,10 +111,6 @@ public class RssRegisterShuffleRequest {
         ShuffleDataDistributionType.NORMAL,
         RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue(),
         0,
-        null,
-        null,
-        null,
-        -1,
         null);
   }
 
@@ -168,23 +146,7 @@ public class RssRegisterShuffleRequest {
     return stageAttemptNumber;
   }
 
-  public String getKeyClassName() {
-    return keyClassName;
-  }
-
-  public String getValueClassName() {
-    return valueClassName;
-  }
-
-  public String getComparatorClassName() {
-    return comparatorClassName;
-  }
-
-  public int getMergedBlockSize() {
-    return mergedBlockSize;
-  }
-
-  public String getMergeClassLoader() {
-    return mergeClassLoader;
+  public PMergeContext getMergeContext() {
+    return mergeContext;
   }
 }

@@ -77,6 +77,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.hadoop.shim.HadoopShimImpl;
+import org.apache.uniffle.proto.RssProtos;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -507,11 +508,7 @@ public class FetcherTest {
         ShuffleDataDistributionType distributionType,
         int maxConcurrencyPerPartitionToWrite,
         int stageAttemptNumber,
-        String keyClassName,
-        String valueClassName,
-        String comparatorClassName,
-        int mergedBlockSize,
-        String mergeClassLoader) {}
+        RssProtos.PMergeContext mergeContext) {}
 
     @Override
     public boolean sendCommit(

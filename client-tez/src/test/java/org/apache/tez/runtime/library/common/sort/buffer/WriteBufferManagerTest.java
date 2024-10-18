@@ -78,6 +78,7 @@ import org.apache.uniffle.common.serializer.SerializerFactory;
 import org.apache.uniffle.common.serializer.SerializerInstance;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -719,11 +720,7 @@ public class WriteBufferManagerTest {
         ShuffleDataDistributionType dataDistributionType,
         int maxConcurrencyPerPartitionToWrite,
         int stageAttemptNumber,
-        String keyClassName,
-        String valueClassName,
-        String comparatorClassName,
-        int mergedBlockSize,
-        String mergeClassLoader) {}
+        RssProtos.PMergeContext mergeContext) {}
 
     @Override
     public boolean sendCommit(

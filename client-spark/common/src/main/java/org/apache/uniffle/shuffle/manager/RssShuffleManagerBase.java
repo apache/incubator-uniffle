@@ -1028,10 +1028,6 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                   ShuffleDataDistributionType.NORMAL,
                   maxConcurrencyPerPartitionToWrite,
                   stageAttemptNumber,
-                  null,
-                  null,
-                  null,
-                  -1,
                   null);
             });
     LOG.info(

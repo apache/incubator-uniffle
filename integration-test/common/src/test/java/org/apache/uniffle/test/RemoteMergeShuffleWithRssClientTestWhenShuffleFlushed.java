@@ -64,6 +64,7 @@ import org.apache.uniffle.common.serializer.SerializerUtils;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
+import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -176,11 +177,13 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
         ShuffleDataDistributionType.NORMAL,
         -1,
         0,
-        keyClass.getName(),
-        valueClass.getName(),
-        comparator.getClass().getName(),
-        -1,
-        null);
+        RssProtos.PMergeContext.newBuilder()
+            .setKeyClass(keyClass.getName())
+            .setValueClass(valueClass.getName())
+            .setComparatorClass(comparator.getClass().getName())
+            .setMergedBlockSize(-1)
+            .setMergeClassLoader("")
+            .build());
 
     // 3 report shuffle result
     // task 0 attempt 0 generate three blocks
@@ -339,11 +342,13 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
         ShuffleDataDistributionType.NORMAL,
         -1,
         0,
-        keyClass.getName(),
-        valueClass.getName(),
-        comparator.getClass().getName(),
-        -1,
-        null);
+        RssProtos.PMergeContext.newBuilder()
+            .setKeyClass(keyClass.getName())
+            .setValueClass(valueClass.getName())
+            .setComparatorClass(comparator.getClass().getName())
+            .setMergedBlockSize(-1)
+            .setMergeClassLoader("")
+            .build());
     Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
 
     // 3 report shuffle result
@@ -511,11 +516,13 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
         ShuffleDataDistributionType.NORMAL,
         -1,
         0,
-        keyClass.getName(),
-        valueClass.getName(),
-        comparator.getClass().getName(),
-        -1,
-        null);
+        RssProtos.PMergeContext.newBuilder()
+            .setKeyClass(keyClass.getName())
+            .setValueClass(valueClass.getName())
+            .setComparatorClass(comparator.getClass().getName())
+            .setMergedBlockSize(-1)
+            .setMergeClassLoader("")
+            .build());
 
     // 3 report shuffle result
     // this shuffle have three partition, which is hash by key index mode 3
@@ -718,11 +725,13 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
         ShuffleDataDistributionType.NORMAL,
         -1,
         0,
-        keyClass.getName(),
-        valueClass.getName(),
-        comparator.getClass().getName(),
-        -1,
-        null);
+        RssProtos.PMergeContext.newBuilder()
+            .setKeyClass(keyClass.getName())
+            .setValueClass(valueClass.getName())
+            .setComparatorClass(comparator.getClass().getName())
+            .setMergedBlockSize(-1)
+            .setMergeClassLoader("")
+            .build());
 
     // 3 report shuffle result
     // this shuffle have three partition, which is hash by key index mode 3

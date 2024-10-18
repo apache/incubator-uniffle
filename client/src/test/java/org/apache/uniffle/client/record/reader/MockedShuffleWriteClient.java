@@ -34,6 +34,7 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.proto.RssProtos;
 
 public class MockedShuffleWriteClient implements ShuffleWriteClient {
 
@@ -63,11 +64,7 @@ public class MockedShuffleWriteClient implements ShuffleWriteClient {
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      String keyClassName,
-      String valueClassName,
-      String comparatorClassName,
-      int mergedBlockSize,
-      String mergeClassLoader) {}
+      RssProtos.PMergeContext mergeContext) {}
 
   @Override
   public boolean sendCommit(

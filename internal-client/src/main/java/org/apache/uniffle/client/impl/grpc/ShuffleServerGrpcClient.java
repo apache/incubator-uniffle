@@ -95,6 +95,7 @@ import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartRequest;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultForMultiPartResponse;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultRequest;
 import org.apache.uniffle.proto.RssProtos.GetShuffleResultResponse;
+import org.apache.uniffle.proto.RssProtos.PMergeContext;
 import org.apache.uniffle.proto.RssProtos.PartitionToBlockIds;
 import org.apache.uniffle.proto.RssProtos.RemoteStorage;
 import org.apache.uniffle.proto.RssProtos.RemoteStorageConfItem;
@@ -198,11 +199,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      String keyClassName,
-      String valueClassName,
-      String comparatorClassName,
-      int mergedBlockSize,
-      String mergeClassLoader) {
+      PMergeContext mergeContext) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
@@ -212,16 +209,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setMaxConcurrencyPerPartitionToWrite(maxConcurrencyPerPartitionToWrite)
         .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges))
         .setStageAttemptNumber(stageAttemptNumber);
-    if (StringUtils.isNotBlank(keyClassName)) {
-      reqBuilder.setKeyClass(keyClassName);
-      reqBuilder.setValueClass(valueClassName);
-      if (StringUtils.isNotBlank(comparatorClassName)) {
-        reqBuilder.setComparatorClass(comparatorClassName);
-      }
-      reqBuilder.setMergedBlockSize(mergedBlockSize);
-      if (StringUtils.isNotBlank(mergeClassLoader)) {
-        reqBuilder.setMergeClassLoader(mergeClassLoader);
-      }
+    if (mergeContext != null && StringUtils.isNotBlank(mergeContext.getKeyClass())) {
+      reqBuilder.setMergeContext(mergeContext);
     }
     RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();
     rsBuilder.setPath(remoteStorageInfo.getPath());
@@ -496,11 +485,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             request.getDataDistributionType(),
             request.getMaxConcurrencyPerPartitionToWrite(),
             request.getStageAttemptNumber(),
-            request.getKeyClassName(),
-            request.getValueClassName(),
-            request.getComparatorClassName(),
-            request.getMergedBlockSize(),
-            request.getMergeClassLoader());
+            request.getMergeContext());
 
     RssRegisterShuffleResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();

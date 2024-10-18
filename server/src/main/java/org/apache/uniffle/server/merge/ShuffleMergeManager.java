@@ -44,6 +44,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.merger.Segment;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.proto.RssProtos.PMergeContext;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 
@@ -146,22 +147,16 @@ public class ShuffleMergeManager {
     return cachedClassLoader.getOrDefault(label, cachedClassLoader.get(""));
   }
 
-  public StatusCode registerShuffle(
-      String appId,
-      int shuffleId,
-      String keyClassName,
-      String valueClassName,
-      String comparatorClassName,
-      int mergedBlockSize,
-      String classLoaderLabel) {
+  public StatusCode registerShuffle(String appId, int shuffleId, PMergeContext mergeContext) {
     try {
-      ClassLoader classLoader = getClassLoader(classLoaderLabel);
-      Class kClass = ClassUtils.getClass(classLoader, keyClassName);
-      Class vClass = ClassUtils.getClass(classLoader, valueClassName);
+      ClassLoader classLoader = getClassLoader(mergeContext.getMergeClassLoader());
+      Class kClass = ClassUtils.getClass(classLoader, mergeContext.getKeyClass());
+      Class vClass = ClassUtils.getClass(classLoader, mergeContext.getValueClass());
       Comparator comparator;
-      if (StringUtils.isNotBlank(comparatorClassName)) {
+      if (StringUtils.isNotBlank(mergeContext.getComparatorClass())) {
         Constructor constructor =
-            ClassUtils.getClass(classLoader, comparatorClassName).getDeclaredConstructor();
+            ClassUtils.getClass(classLoader, mergeContext.getComparatorClass())
+                .getDeclaredConstructor();
         constructor.setAccessible(true);
         comparator = (Comparator) constructor.newInstance();
       } else {
@@ -181,7 +176,7 @@ public class ShuffleMergeManager {
                   kClass,
                   vClass,
                   comparator,
-                  mergedBlockSize,
+                  mergeContext.getMergedBlockSize(),
                   classLoader));
     } catch (ClassNotFoundException
         | InstantiationException

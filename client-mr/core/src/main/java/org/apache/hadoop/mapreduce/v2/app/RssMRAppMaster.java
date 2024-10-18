@@ -80,6 +80,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.hadoop.shim.HadoopShimImpl;
+import org.apache.uniffle.proto.RssProtos.PMergeContext;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.hadoop.mapreduce.RssMRConfig.RSS_REMOTE_MERGE_CLASS_LOADER;
@@ -285,17 +286,20 @@ public class RssMRAppMaster extends MRAppMaster {
                                   RssMRConfig.toRssConf(conf)
                                       .get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE),
                                   0,
-                                  remoteMergeEnable ? conf.getMapOutputKeyClass().getName() : null,
                                   remoteMergeEnable
-                                      ? conf.getMapOutputValueClass().getName()
-                                      : null,
-                                  remoteMergeEnable
-                                      ? conf.getOutputKeyComparator().getClass().getName()
-                                      : null,
-                                  conf.getInt(
-                                      RssMRConfig.RSS_MERGED_BLOCK_SZIE,
-                                      RssMRConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT),
-                                  conf.get(RSS_REMOTE_MERGE_CLASS_LOADER)));
+                                      ? PMergeContext.newBuilder()
+                                          .setKeyClass(conf.getMapOutputKeyClass().getName())
+                                          .setValueClass(conf.getMapOutputValueClass().getName())
+                                          .setComparatorClass(
+                                              conf.getOutputKeyComparator().getClass().getName())
+                                          .setMergedBlockSize(
+                                              conf.getInt(
+                                                  RssMRConfig.RSS_MERGED_BLOCK_SZIE,
+                                                  RssMRConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT))
+                                          .setMergeClassLoader(
+                                              conf.get(RSS_REMOTE_MERGE_CLASS_LOADER, ""))
+                                          .build()
+                                      : null));
                   LOG.info(
                       "Finish register shuffle with "
                           + (System.currentTimeMillis() - start)

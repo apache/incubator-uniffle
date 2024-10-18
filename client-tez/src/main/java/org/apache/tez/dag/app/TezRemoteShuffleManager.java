@@ -66,6 +66,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
+import org.apache.uniffle.proto.RssProtos;
 
 import static org.apache.uniffle.common.config.RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE;
 
@@ -305,13 +306,19 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
                                           RssTezConfig.toRssConf(conf)
                                               .get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE),
                                           0,
-                                          keyClassName,
-                                          valueClassName,
-                                          comparatorClassName,
-                                          conf.getInt(
-                                              RssTezConfig.RSS_MERGED_BLOCK_SZIE,
-                                              RssTezConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT),
-                                          conf.get(RssTezConfig.RSS_REMOTE_MERGE_CLASS_LOADER)));
+                                          RssProtos.PMergeContext.newBuilder()
+                                              .setKeyClass(keyClassName)
+                                              .setValueClass(valueClassName)
+                                              .setComparatorClass(comparatorClassName)
+                                              .setMergedBlockSize(
+                                                  conf.getInt(
+                                                      RssTezConfig.RSS_MERGED_BLOCK_SZIE,
+                                                      RssTezConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT))
+                                              .setMergeClassLoader(
+                                                  conf.get(
+                                                      RssTezConfig.RSS_REMOTE_MERGE_CLASS_LOADER,
+                                                      ""))
+                                              .build()));
                           LOG.info(
                               "Finish register shuffle with "
                                   + (System.currentTimeMillis() - start)
