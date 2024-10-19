@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.server;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,6 +34,7 @@ import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.proto.RssProtos;
 
 public class RegisterHeartBeat {
 
@@ -84,7 +86,8 @@ public class RegisterHeartBeat {
                 shuffleServer.getStorageManager().getStorageInfo(),
                 shuffleServer.getNettyPort(),
                 shuffleServer.getJettyPort(),
-                shuffleServer.getStartTimeMs());
+                shuffleServer.getStartTimeMs(),
+                shuffleServer.getAppInfos());
           } catch (Exception e) {
             LOG.warn("Error happened when send heart beat to coordinator");
           }
@@ -107,7 +110,8 @@ public class RegisterHeartBeat {
       Map<String, StorageInfo> localStorageInfo,
       int nettyPort,
       int jettyPort,
-      long startTimeMs) {
+      long startTimeMs,
+      List<RssProtos.ApplicationInfo> appInfos) {
     // use `rss.server.heartbeat.interval` as the timeout option
     RssSendHeartBeatRequest request =
         new RssSendHeartBeatRequest(
@@ -124,7 +128,8 @@ public class RegisterHeartBeat {
             localStorageInfo,
             nettyPort,
             jettyPort,
-            startTimeMs);
+            startTimeMs,
+            appInfos);
 
     if (coordinatorClient.sendHeartBeat(request).getStatusCode() == StatusCode.SUCCESS) {
       return true;

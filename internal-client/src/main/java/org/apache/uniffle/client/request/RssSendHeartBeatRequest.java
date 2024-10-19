@@ -17,11 +17,13 @@
 
 package org.apache.uniffle.client.request;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.storage.StorageInfo;
+import org.apache.uniffle.proto.RssProtos;
 
 public class RssSendHeartBeatRequest {
 
@@ -39,6 +41,7 @@ public class RssSendHeartBeatRequest {
   private final int nettyPort;
   private final int jettyPort;
   private final long startTimeMs;
+  private final List<RssProtos.ApplicationInfo> appInfos;
 
   public RssSendHeartBeatRequest(
       String shuffleServerId,
@@ -54,7 +57,8 @@ public class RssSendHeartBeatRequest {
       Map<String, StorageInfo> storageInfo,
       int nettyPort,
       int jettyPort,
-      long startTimeMs) {
+      long startTimeMs,
+      List<RssProtos.ApplicationInfo> appInfos) {
     this.shuffleServerId = shuffleServerId;
     this.shuffleServerIp = shuffleServerIp;
     this.shuffleServerPort = shuffleServerPort;
@@ -69,6 +73,7 @@ public class RssSendHeartBeatRequest {
     this.nettyPort = nettyPort;
     this.jettyPort = jettyPort;
     this.startTimeMs = startTimeMs;
+    this.appInfos = appInfos;
   }
 
   public String getShuffleServerId() {
@@ -125,5 +130,9 @@ public class RssSendHeartBeatRequest {
 
   public long getStartTimeMs() {
     return startTimeMs;
+  }
+
+  public List<RssProtos.ApplicationInfo> getAppInfos() {
+    return appInfos;
   }
 }
