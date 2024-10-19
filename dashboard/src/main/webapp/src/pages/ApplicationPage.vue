@@ -79,16 +79,13 @@
           :formatter="dateFormatter"
           sortable
         />
-        <el-table-column
-          prop="version"
-          label="Version"
-          min-width="180"
-        />
-        <el-table-column
-          prop="gitCommitId"
-          label="GitCommitId"
-          min-width="180"
-        />
+        <el-table-column label="Version" min-width="180">
+          <template v-slot="{ row }">
+            <div class="version">
+              {{ row.version }}_{{ row.gitCommitId }}
+            </div>
+          </template>
+        </el-table-column>
       </el-table>
     </div>
   </div>
