@@ -89,6 +89,37 @@
           label="GitCommitId"
           min-width="180"
         />
+        <el-table-column prop="partitionNum" label="PartitionNum" min-width="180" />
+        <el-table-column
+            prop="memorySize"
+            label="MemorySize"
+            min-width="180"
+            :formatter="memFormatter"
+        />
+        <el-table-column label="LocalFile" min-width="180">
+          <template v-slot="{ row }">
+            <div class="mb-4">
+              {{ row.localFileNum }}({{
+                memFormatter(null, null, row.localTotalSize)
+              }})
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="HadoopFile" min-width="180">
+          <template v-slot="{ row }">
+            <div class="mb-4">
+              {{ row.hadoopFileNum }}({{
+                memFormatter(null, null, row.hadoopTotalSize)
+              }})
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column
+            prop="totalSize"
+            label="TotalSize"
+            min-width="180"
+            :formatter="memFormatter"
+        />
       </el-table>
     </div>
   </div>
@@ -97,7 +128,7 @@
 <script>
 import { getApplicationInfoList, getAppTotal, getTotalForUser } from '@/api/api'
 import { onMounted, reactive } from 'vue'
-import { dateFormatter } from '@/utils/common'
+import { dateFormatter, memFormatter } from '@/utils/common'
 import { useCurrentServerStore } from '@/store/useCurrentServerStore'
 
 export default {
@@ -164,7 +195,8 @@ export default {
       sortAppCollectChangeEvent,
       sortApp,
       sortAppChangeEvent,
-      dateFormatter
+      dateFormatter,
+      memFormatter
     }
   }
 }
