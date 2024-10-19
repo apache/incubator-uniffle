@@ -294,6 +294,18 @@ public class RssBaseConf extends RssConf {
                   + " first combining the username and the password with a colon (uniffle:uniffle123)"
                   + ", and then by encoding the resulting string in base64 (dW5pZmZsZTp1bmlmZmxlMTIz).");
 
+  public static final ConfigOption<String> RSS_STORAGE_WRITE_DATA_BUFFER_SIZE =
+      ConfigOptions.key("rss.storage.write.dataBufferSize")
+          .stringType()
+          .defaultValue("8k")
+          .withDescription("The buffer size to cache the write data content.");
+
+  public static final ConfigOption<String> RSS_STORAGE_WRITE_INDEX_BUFFER_SIZE =
+      ConfigOptions.key("rss.storage.write.indexBufferSize")
+          .stringType()
+          .defaultValue("8k")
+          .withDescription("The buffer size to cache the write index content.");
+
   public boolean loadConfFromFile(String fileName, List<ConfigOption<Object>> configOptions) {
     Map<String, String> properties = RssUtils.getPropertiesFromFile(fileName);
     if (properties == null) {

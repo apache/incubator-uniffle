@@ -132,6 +132,7 @@ public class LocalStorage extends AbstractStorage {
   @Override
   ShuffleWriteHandler newWriteHandler(CreateShuffleWriteHandlerRequest request) {
     return new LocalFileWriteHandler(
+        request.getRssBaseConf(),
         request.getAppId(),
         request.getShuffleId(),
         request.getStartPartition(),
