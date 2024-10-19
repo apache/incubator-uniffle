@@ -384,4 +384,8 @@ public class ServerNode implements Comparable<ServerNode> {
   public String getGitCommitId() {
     return gitCommitId;
   }
+
+  public Map<String, RssProtos.ApplicationInfo> getAppIdToInfos() {
+    return appIdToInfos;
+  }
 }
