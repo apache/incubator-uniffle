@@ -54,7 +54,9 @@ public class ShuffleTaskInfo {
 
   private final AtomicLong totalDataSize = new AtomicLong(0);
   private final AtomicLong inMemoryDataSize = new AtomicLong(0);
+  private final AtomicLong onLocalFileNum = new AtomicLong(0);
   private final AtomicLong onLocalFileDataSize = new AtomicLong(0);
+  private final AtomicLong onHadoopFileNum = new AtomicLong(0);
   private final AtomicLong onHadoopDataSize = new AtomicLong(0);
 
   /** shuffleId, partitionId, partitionSize */
@@ -166,7 +168,10 @@ public class ShuffleTaskInfo {
     return inMemoryDataSize.get();
   }
 
-  public long addOnLocalFileDataSize(long delta) {
+  public long addOnLocalFileDataSize(long delta, boolean isNewlyCreated) {
+    if (isNewlyCreated) {
+      onLocalFileNum.incrementAndGet();
+    }
     inMemoryDataSize.addAndGet(-delta);
     return onLocalFileDataSize.addAndGet(delta);
   }
@@ -175,7 +180,10 @@ public class ShuffleTaskInfo {
     return onLocalFileDataSize.get();
   }
 
-  public long addOnHadoopDataSize(long delta) {
+  public long addOnHadoopDataSize(long delta, boolean isNewlyCreated) {
+    if (isNewlyCreated) {
+      onHadoopDataSize.incrementAndGet();
+    }
     inMemoryDataSize.addAndGet(-delta);
     return onHadoopDataSize.addAndGet(delta);
   }
