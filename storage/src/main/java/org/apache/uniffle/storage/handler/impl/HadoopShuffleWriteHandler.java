@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
 import org.apache.uniffle.common.util.ByteBufUtils;
@@ -41,6 +42,7 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(HadoopShuffleWriteHandler.class);
 
+  private RssBaseConf rssBaseConf;
   private Configuration hadoopConf;
   private String basePath;
   private String fileNamePrefix;
@@ -48,6 +50,8 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
   private int failTimes = 0;
   private String user;
   private FileSystem fileSystem;
+  private final int dataBufferSize;
+  private final int indexBufferSize;
 
   // Only for test cases when using non-kerberized dfs cluster.
   @VisibleForTesting
@@ -60,15 +64,19 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
       String fileNamePrefix,
       Configuration hadoopConf)
       throws Exception {
-    this.hadoopConf = hadoopConf;
-    this.fileNamePrefix = fileNamePrefix;
-    this.basePath =
-        ShuffleStorageUtils.getFullShuffleDataFolder(
-            storageBasePath,
-            ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
-    initialize();
+    this(
+        new RssBaseConf(),
+        appId,
+        shuffleId,
+        startPartition,
+        endPartition,
+        storageBasePath,
+        fileNamePrefix,
+        hadoopConf,
+        "");
   }
 
+  @VisibleForTesting
   public HadoopShuffleWriteHandler(
       String appId,
       int shuffleId,
@@ -79,6 +87,30 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
       Configuration hadoopConf,
       String user)
       throws Exception {
+    this(
+        new RssBaseConf(),
+        appId,
+        shuffleId,
+        startPartition,
+        endPartition,
+        storageBasePath,
+        fileNamePrefix,
+        hadoopConf,
+        user);
+  }
+
+  public HadoopShuffleWriteHandler(
+      RssBaseConf rssBaseConf,
+      String appId,
+      int shuffleId,
+      int startPartition,
+      int endPartition,
+      String storageBasePath,
+      String fileNamePrefix,
+      Configuration hadoopConf,
+      String user)
+      throws Exception {
+    this.rssBaseConf = rssBaseConf;
     this.hadoopConf = hadoopConf;
     this.fileNamePrefix = fileNamePrefix;
     this.basePath =
@@ -86,6 +118,16 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
             storageBasePath,
             ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
     this.user = user;
+    this.dataBufferSize =
+        (int)
+            this.rssBaseConf.getSizeAsBytes(
+                RssBaseConf.RSS_STORAGE_HDFS_WRITE_DATA_BUFFER_SIZE.key(),
+                RssBaseConf.RSS_STORAGE_HDFS_WRITE_DATA_BUFFER_SIZE.defaultValue());
+    this.indexBufferSize =
+        (int)
+            this.rssBaseConf.getSizeAsBytes(
+                RssBaseConf.RSS_STORAGE_HDFS_WRITE_INDEX_BUFFER_SIZE.key(),
+                RssBaseConf.RSS_STORAGE_HDFS_WRITE_INDEX_BUFFER_SIZE.defaultValue());
     initialize();
   }
 
@@ -120,8 +162,8 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
           ShuffleStorageUtils.generateDataFileName(fileNamePrefix + "_" + failTimes);
       String indexFileName =
           ShuffleStorageUtils.generateIndexFileName(fileNamePrefix + "_" + failTimes);
-      try (HadoopFileWriter dataWriter = createWriter(dataFileName);
-          HadoopFileWriter indexWriter = createWriter(indexFileName)) {
+      try (HadoopFileWriter dataWriter = createWriter(dataFileName, dataBufferSize);
+          HadoopFileWriter indexWriter = createWriter(indexFileName, indexBufferSize)) {
         for (ShufflePartitionedBlock block : shuffleBlocks) {
           long blockId = block.getBlockId();
           long crc = block.getCrc();
@@ -172,6 +214,13 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
   public HadoopFileWriter createWriter(String fileName) throws IOException, IllegalStateException {
     Path path = new Path(basePath, fileName);
     HadoopFileWriter writer = new HadoopFileWriter(fileSystem, path, hadoopConf);
+    return writer;
+  }
+
+  public HadoopFileWriter createWriter(String fileName, int bufferSize)
+      throws IOException, IllegalStateException {
+    Path path = new Path(basePath, fileName);
+    HadoopFileWriter writer = new HadoopFileWriter(fileSystem, path, hadoopConf, bufferSize);
     return writer;
   }
 
