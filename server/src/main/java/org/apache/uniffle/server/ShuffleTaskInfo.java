@@ -283,6 +283,10 @@ public class ShuffleTaskInfo {
     return shuffleDetailInfos.get(shuffleId);
   }
 
+  public long getPartitionNum() {
+    return partitionDataSizes.values().stream().mapToLong(Map::size).sum();
+  }
+
   @Override
   public String toString() {
     return "ShuffleTaskInfo{"

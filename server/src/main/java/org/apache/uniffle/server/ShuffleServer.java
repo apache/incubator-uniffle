@@ -17,8 +17,10 @@
 
 package org.apache.uniffle.server;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -57,6 +59,7 @@ import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.web.CoalescedCollectorRegistry;
 import org.apache.uniffle.common.web.JettyServer;
+import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
 import org.apache.uniffle.server.buffer.ShuffleBufferType;
 import org.apache.uniffle.server.merge.ShuffleMergeManager;
@@ -584,6 +587,26 @@ public class ShuffleServer {
     return startTimeMs;
   }
 
+  public List<RssProtos.ApplicationInfo> getAppInfos() {
+    List<RssProtos.ApplicationInfo> appInfos = new ArrayList<>();
+    Map<String, ShuffleTaskInfo> taskInfos = getShuffleTaskManager().getShuffleTaskInfos();
+    taskInfos.forEach(
+        (appId, taskInfo) -> {
+          RssProtos.ApplicationInfo applicationInfo =
+              RssProtos.ApplicationInfo.newBuilder()
+                  .setAppId(appId)
+                  .setPartitionNum(taskInfo.getPartitionNum())
+                  .setMemorySize(taskInfo.getInMemoryDataSize())
+                  .setLocalTotalSize(taskInfo.getOnLocalFileDataSize())
+                  .setHadoopTotalSize(taskInfo.getOnHadoopDataSize())
+                  .setTotalSize(taskInfo.getTotalDataSize())
+                  .build();
+
+          appInfos.add(applicationInfo);
+        });
+    return appInfos;
+  }
+
   @VisibleForTesting
   public void sendHeartbeat() {
     ShuffleServer shuffleServer = this;
@@ -600,7 +623,8 @@ public class ShuffleServer {
         shuffleServer.getStorageManager().getStorageInfo(),
         shuffleServer.getNettyPort(),
         shuffleServer.getJettyPort(),
-        shuffleServer.getStartTimeMs());
+        shuffleServer.getStartTimeMs(),
+        shuffleServer.getAppInfos());
   }
 
   public ShuffleMergeManager getShuffleMergeManager() {

@@ -17,14 +17,18 @@
 
 package org.apache.uniffle.coordinator;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.storage.StorageInfo;
+import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 
 public class ServerNode implements Comparable<ServerNode> {
@@ -46,6 +50,7 @@ public class ServerNode implements Comparable<ServerNode> {
   private long startTime = -1;
   private String version;
   private String gitCommitId;
+  Map<String, RssProtos.ApplicationInfo> appIdToInfos;
 
   public ServerNode(String id) {
     this(id, "", 0, 0, 0, 0, 0, Sets.newHashSet(), ServerStatus.EXCLUDED);
@@ -181,7 +186,8 @@ public class ServerNode implements Comparable<ServerNode> {
         jettyPort,
         startTime,
         "",
-        "");
+        "",
+        Collections.EMPTY_LIST);
   }
 
   public ServerNode(
@@ -199,7 +205,8 @@ public class ServerNode implements Comparable<ServerNode> {
       int jettyPort,
       long startTime,
       String version,
-      String gitCommitId) {
+      String gitCommitId,
+      List<RssProtos.ApplicationInfo> appInfos) {
     this.id = id;
     this.ip = ip;
     this.grpcPort = grpcPort;
@@ -221,6 +228,8 @@ public class ServerNode implements Comparable<ServerNode> {
     this.startTime = startTime;
     this.version = version;
     this.gitCommitId = gitCommitId;
+    this.appIdToInfos = new ConcurrentHashMap<>();
+    appInfos.forEach(appInfo -> appIdToInfos.put(appInfo.getAppId(), appInfo));
   }
 
   public ShuffleServerId convertToGrpcProto() {
