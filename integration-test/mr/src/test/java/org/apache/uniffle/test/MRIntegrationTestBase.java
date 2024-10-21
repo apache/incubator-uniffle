@@ -123,11 +123,11 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     verifyResults(originPath, rssRemoteSpillPath);
   }
 
-  public void runWithRemoteMerge() throws Exception {
+  public void runWithRemoteMerge(ClientType clientType) throws Exception {
     // 1 run application when remote merge is enable
     JobConf appConf = new JobConf(mrYarnCluster.getConfig());
     updateCommonConfiguration(appConf);
-    runRssApp(appConf, true);
+    runRssApp(appConf, true, clientType);
     final String rssPath1 = appConf.get("mapreduce.output.fileoutputformat.outputdir");
 
     // 2 run original application
@@ -149,10 +149,11 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
   }
 
   private void runRssApp(Configuration jobConf, ClientType clientType) throws Exception {
-    runRssApp(jobConf, false);
+    runRssApp(jobConf, false, clientType);
   }
 
-  private void runRssApp(Configuration jobConf, boolean remoteMerge) throws Exception {
+  private void runRssApp(Configuration jobConf, boolean remoteMerge, ClientType clientType)
+      throws Exception {
     URL url = MRIntegrationTestBase.class.getResource("/");
     final String parentPath =
         new Path(url.getPath()).getParent().getParent().getParent().getParent().toString();
@@ -233,11 +234,12 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
     addDynamicConf(coordinatorConf, dynamicConf);
     createCoordinatorServer(coordinatorConf);
     ShuffleServerConf grpcShuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+    ShuffleServerConf nettyShuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
     if (serverConf != null) {
-      shuffleServerConf.addAll(serverConf);
+      grpcShuffleServerConf.addAll(serverConf);
+      nettyShuffleServerConf.addAll(serverConf);
     }
     createShuffleServer(grpcShuffleServerConf);
-    ShuffleServerConf nettyShuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
     createShuffleServer(nettyShuffleServerConf);
     startServers();
   }
