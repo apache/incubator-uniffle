@@ -20,22 +20,22 @@ package org.apache.uniffle.common.serializer.writable;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import org.apache.hadoop.io.DataOutputBuffer;
+import io.netty.buffer.ByteBuf;
 import org.apache.hadoop.io.WritableUtils;
 
 import org.apache.uniffle.common.serializer.SerOutputStream;
 import org.apache.uniffle.common.serializer.SerializationStream;
 
-public class RawWritableSerializationStream<K, V> extends SerializationStream {
+public class BufferedRawWritableSerializationStream<K, V> extends SerializationStream {
 
-  private DataOutputStream dataOut;
-  private SerOutputStream output;
   // DataOutputStream::size return int, can not support big file which is larger than
   // Integer.MAX_VALUE.
   // Here introduce totalBytesWritten to record the written bytes.
   private long totalBytesWritten = 0;
+  private SerOutputStream output;
+  private DataOutputStream dataOut;
 
-  public RawWritableSerializationStream(
+  public BufferedRawWritableSerializationStream(
       WritableSerializerInstance instance, SerOutputStream output) {
     this.output = output;
   }
@@ -47,21 +47,20 @@ public class RawWritableSerializationStream<K, V> extends SerializationStream {
 
   @Override
   public void writeRecord(Object key, Object value) throws IOException {
-    DataOutputBuffer keyBuffer = (DataOutputBuffer) key;
-    DataOutputBuffer valueBuffer = (DataOutputBuffer) value;
-    int keyLength = keyBuffer.getLength();
-    int valueLength = valueBuffer.getLength();
+    ByteBuf keyBuffer = (ByteBuf) key;
+    ByteBuf valueBuffer = (ByteBuf) value;
+    int keyLength = keyBuffer.readableBytes();
+    int valueLength = valueBuffer.readableBytes();
     int toWriteLength =
         WritableUtils.getVIntSize(keyLength)
             + WritableUtils.getVIntSize(valueLength)
-            + keyBuffer.getLength()
-            + valueBuffer.getLength();
-    output.preAllocate(toWriteLength);
-    // write size and buffer to output
+            + keyLength
+            + valueLength;
+    this.output.preAllocate(toWriteLength);
     WritableUtils.writeVInt(dataOut, keyLength);
     WritableUtils.writeVInt(dataOut, valueLength);
-    keyBuffer.writeTo(dataOut);
-    valueBuffer.writeTo(dataOut);
+    output.write(keyBuffer);
+    output.write(valueBuffer);
     totalBytesWritten += toWriteLength;
   }
 

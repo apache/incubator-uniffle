@@ -73,6 +73,7 @@ public class RMRssShuffle implements ExceptionReporter {
   private ShuffleInputEventHandlerOrderedGrouped eventHandler;
   private final TezTaskAttemptID tezTaskAttemptID;
   private final String srcNameTrimmed;
+  private final String clientType;
   private Map<Integer, List<ShuffleServerInfo>> partitionToServers;
 
   private AtomicBoolean isShutDown = new AtomicBoolean(false);
@@ -101,6 +102,8 @@ public class RMRssShuffle implements ExceptionReporter {
     this.numInputs = numInputs;
     this.shuffleId = shuffleId;
     this.applicationAttemptId = applicationAttemptId;
+    this.clientType =
+        conf.get(RssTezConfig.RSS_CLIENT_TYPE, RssTezConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE);
     this.appId = this.applicationAttemptId.toString();
     this.srcNameTrimmed = TezUtilsInternal.cleanVertexName(inputContext.getSourceVertexName());
     LOG.info(srcNameTrimmed + ": Shuffle assigned with " + numInputs + " inputs.");
@@ -254,7 +257,8 @@ public class RMRssShuffle implements ExceptionReporter {
         false,
         (inc) -> {
           inputRecordCounter.increment(inc);
-        });
+        },
+        this.clientType);
   }
 
   @Override

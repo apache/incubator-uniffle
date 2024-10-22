@@ -19,7 +19,6 @@ package org.apache.uniffle.common.serializer.writable;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.Writable;
@@ -27,7 +26,8 @@ import org.apache.hadoop.util.ReflectionUtils;
 
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.serializer.DeserializationStream;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.SerInputStream;
+import org.apache.uniffle.common.serializer.SerOutputStream;
 import org.apache.uniffle.common.serializer.SerializationStream;
 import org.apache.uniffle.common.serializer.SerializerInstance;
 
@@ -47,9 +47,14 @@ public class WritableSerializerInstance extends SerializerInstance {
   }
 
   @Override
-  public <K, V> SerializationStream serializeStream(OutputStream output, boolean raw) {
+  public <K, V> SerializationStream serializeStream(
+      SerOutputStream output, boolean raw, boolean buffered) {
     if (raw) {
-      return new RawWritableSerializationStream(this, output);
+      if (buffered) {
+        return new BufferedRawWritableSerializationStream(this, output);
+      } else {
+        return new RawWritableSerializationStream(this, output);
+      }
     } else {
       return new WritableSerializationStream(this, output);
     }
@@ -57,9 +62,13 @@ public class WritableSerializerInstance extends SerializerInstance {
 
   @Override
   public <K, V> DeserializationStream deserializeStream(
-      PartialInputStream input, Class<K> keyClass, Class<V> valueClass, boolean raw) {
+      SerInputStream input, Class<K> keyClass, Class<V> valueClass, boolean raw, boolean buffered) {
     if (raw) {
-      return new RawWritableDeserializationStream(this, input);
+      if (buffered) {
+        return new BufferedRawWritableDeserializationStream(this, input);
+      } else {
+        return new RawWritableDeserializationStream(this, input);
+      }
     } else {
       return new WritableDeserializationStream(this, input, keyClass, valueClass);
     }

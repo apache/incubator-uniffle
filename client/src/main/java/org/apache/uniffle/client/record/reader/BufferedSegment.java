@@ -58,4 +58,10 @@ public class BufferedSegment<K, V> extends Segment {
       this.recordBuffer = null;
     }
   }
+
+  @Override
+  public long getSize() {
+    // Should never use
+    return -1;
+  }
 }

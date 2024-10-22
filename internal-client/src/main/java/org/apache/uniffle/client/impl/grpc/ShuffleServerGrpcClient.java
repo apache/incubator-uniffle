@@ -1170,8 +1170,6 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setMergedBlockId(request.getBlockId())
             .setTimestamp(start)
             .build();
-    RssProtos.GetSortedShuffleDataResponse rpcResponse =
-        getBlockingStub().getSortedShuffleData(rpcRequest);
     String requestInfo =
         "appId["
             + request.getAppId()
@@ -1182,6 +1180,17 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             + "], blockId["
             + request.getBlockId()
             + "]";
+    int retry = 0;
+    RssProtos.GetSortedShuffleDataResponse rpcResponse;
+    while (true) {
+      rpcResponse = getBlockingStub().getSortedShuffleData(rpcRequest);
+      if (rpcResponse.getStatus() != NO_BUFFER) {
+        break;
+      }
+      waitOrThrow(
+          request, retry, requestInfo, StatusCode.fromProto(rpcResponse.getStatus()), start);
+      retry++;
+    }
     LOG.info(
         "GetSortedShuffleData from {}:{} for {} cost {} ms",
         host,
@@ -1197,7 +1206,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         response =
             new RssGetSortedShuffleDataResponse(
                 StatusCode.SUCCESS,
-                ByteBuffer.wrap(rpcResponse.getData().toByteArray()),
+                rpcResponse.getRetMsg(),
+                rpcResponse.getData().asReadOnlyByteBuffer(),
                 rpcResponse.getNextBlockId(),
                 rpcResponse.getMState());
         break;

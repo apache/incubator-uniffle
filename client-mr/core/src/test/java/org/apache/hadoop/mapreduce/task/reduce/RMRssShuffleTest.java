@@ -17,8 +17,6 @@
 
 package org.apache.hadoop.mapreduce.task.reduce;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,6 +27,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import io.netty.buffer.ByteBuf;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.RawComparator;
@@ -58,13 +57,15 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.merger.Merger;
 import org.apache.uniffle.common.merger.Segment;
+import org.apache.uniffle.common.serializer.DynBufferSerOutputStream;
+import org.apache.uniffle.common.serializer.SerOutputStream;
 import org.apache.uniffle.common.serializer.Serializer;
 import org.apache.uniffle.common.serializer.SerializerFactory;
 import org.apache.uniffle.common.serializer.SerializerInstance;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 
 import static org.apache.uniffle.common.serializer.SerializerUtils.genData;
-import static org.apache.uniffle.common.serializer.SerializerUtils.genSortedRecordBytes;
+import static org.apache.uniffle.common.serializer.SerializerUtils.genSortedRecordBuffer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -136,12 +137,10 @@ public class RMRssShuffleTest {
               combiner,
               false,
               null);
-      ByteBuffer byteBuffer =
-          ByteBuffer.wrap(
-              genSortedRecordBytes(rssConf, keyClass, valueClass, 0, 1, RECORDS_NUM, 1));
+      ByteBuf byteBuf = genSortedRecordBuffer(rssConf, keyClass, valueClass, 0, 1, RECORDS_NUM, 1);
       ShuffleServerClient serverClient =
           new MockedShuffleServerClient(
-              new int[] {PARTITION_ID}, new ByteBuffer[][] {{byteBuffer}}, blockIds);
+              new int[] {PARTITION_ID}, new ByteBuf[][] {{byteBuf}}, blockIds);
       RMRecordsReader readerSpy = spy(reader);
       doReturn(serverClient).when(readerSpy).createShuffleServerClient(any());
 
@@ -170,6 +169,7 @@ public class RMRssShuffleTest {
         index++;
       }
       assertEquals(RECORDS_NUM, index);
+      byteBuf.release();
     }
   }
 
@@ -219,20 +219,21 @@ public class RMRssShuffleTest {
       List<Segment> segments = new ArrayList<>();
       segments.add(
           SerializerUtils.genMemorySegment(
-              rssConf, keyClass, valueClass, 0L, 0, 2, RECORDS_NUM, true));
+              rssConf, keyClass, valueClass, 0L, 0, 2, RECORDS_NUM, true, false));
       segments.add(
           SerializerUtils.genMemorySegment(
-              rssConf, keyClass, valueClass, 1L, 0, 2, RECORDS_NUM, true));
+              rssConf, keyClass, valueClass, 1L, 0, 2, RECORDS_NUM, true, false));
       segments.add(
           SerializerUtils.genMemorySegment(
-              rssConf, keyClass, valueClass, 2L, 1, 2, RECORDS_NUM, true));
-      ByteArrayOutputStream output = new ByteArrayOutputStream();
+              rssConf, keyClass, valueClass, 2L, 1, 2, RECORDS_NUM, true, false));
+      segments.forEach(segment -> segment.init());
+      SerOutputStream output = new DynBufferSerOutputStream();
       Merger.merge(rssConf, output, segments, keyClass, valueClass, comparator, true);
       output.close();
-      ByteBuffer byteBuffer = ByteBuffer.wrap(output.toByteArray());
+      ByteBuf byteBuf = output.toByteBuf();
       ShuffleServerClient serverClient =
           new MockedShuffleServerClient(
-              new int[] {PARTITION_ID}, new ByteBuffer[][] {{byteBuffer}}, blockIds);
+              new int[] {PARTITION_ID}, new ByteBuf[][] {{byteBuf}}, blockIds);
       RMRecordsReader reader =
           new RMRecordsReader(
               APP_ID,
@@ -280,6 +281,7 @@ public class RMRssShuffleTest {
         index++;
       }
       assertEquals(RECORDS_NUM * 2, index);
+      byteBuf.release();
     }
   }
 }

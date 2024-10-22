@@ -19,19 +19,18 @@ package org.apache.uniffle.common.serializer.writable;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableUtils;
 
+import org.apache.uniffle.common.serializer.SerOutputStream;
 import org.apache.uniffle.common.serializer.SerializationStream;
 
 public class WritableSerializationStream<K extends Writable, V extends Writable>
     extends SerializationStream {
 
-  public static final int EOF_MARKER = -1; // End of File Marker
-
+  private SerOutputStream output;
   private DataOutputStream dataOut;
   // DataOutputStream::size return int, can not support big file which is larger than
   // Integer.MAX_VALUE.
@@ -40,12 +39,13 @@ public class WritableSerializationStream<K extends Writable, V extends Writable>
   DataOutputBuffer buffer = new DataOutputBuffer();
   DataOutputBuffer sizebuffer = new DataOutputBuffer();
 
-  public WritableSerializationStream(WritableSerializerInstance instance, OutputStream out) {
-    if (out instanceof DataOutputStream) {
-      dataOut = (DataOutputStream) out;
-    } else {
-      dataOut = new DataOutputStream(out);
-    }
+  public WritableSerializationStream(WritableSerializerInstance instance, SerOutputStream out) {
+    this.output = out;
+  }
+
+  @Override
+  public void init() {
+    this.dataOut = new DataOutputStream(this.output);
   }
 
   @Override
@@ -56,6 +56,12 @@ public class WritableSerializationStream<K extends Writable, V extends Writable>
     int keyLength = buffer.getLength();
     ((Writable) value).write(buffer);
     int valueLength = buffer.getLength() - keyLength;
+    int toWriteLength =
+        WritableUtils.getVIntSize(keyLength)
+            + WritableUtils.getVIntSize(valueLength)
+            + keyLength
+            + valueLength;
+    output.preAllocate(toWriteLength);
 
     // write size and buffer to output
     sizebuffer.reset();
@@ -63,7 +69,7 @@ public class WritableSerializationStream<K extends Writable, V extends Writable>
     WritableUtils.writeVInt(sizebuffer, valueLength);
     sizebuffer.writeTo(dataOut);
     buffer.writeTo(dataOut);
-    totalBytesWritten += sizebuffer.getLength() + buffer.getLength();
+    totalBytesWritten += toWriteLength;
   }
 
   @Override
@@ -74,8 +80,6 @@ public class WritableSerializationStream<K extends Writable, V extends Writable>
   @Override
   public void close() throws IOException {
     if (dataOut != null) {
-      WritableUtils.writeVInt(dataOut, EOF_MARKER);
-      WritableUtils.writeVInt(dataOut, EOF_MARKER);
       dataOut.close();
       dataOut = null;
     }

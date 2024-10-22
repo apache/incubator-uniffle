@@ -45,6 +45,7 @@ import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.ExceedHugePartitionHardLimitException;
 import org.apache.uniffle.common.exception.FileNotFoundException;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.merger.MergeState;
 import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.netty.client.TransportClient;
@@ -55,6 +56,8 @@ import org.apache.uniffle.common.netty.protocol.GetLocalShuffleIndexRequest;
 import org.apache.uniffle.common.netty.protocol.GetLocalShuffleIndexResponse;
 import org.apache.uniffle.common.netty.protocol.GetMemoryShuffleDataRequest;
 import org.apache.uniffle.common.netty.protocol.GetMemoryShuffleDataResponse;
+import org.apache.uniffle.common.netty.protocol.GetSortedShuffleDataRequest;
+import org.apache.uniffle.common.netty.protocol.GetSortedShuffleDataResponse;
 import org.apache.uniffle.common.netty.protocol.RequestMessage;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.netty.protocol.SendShuffleDataRequest;
@@ -68,6 +71,7 @@ import org.apache.uniffle.server.ShuffleTaskManager;
 import org.apache.uniffle.server.audit.ServerRpcAuditContext;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
+import org.apache.uniffle.server.merge.MergeStatus;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -124,6 +128,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       handleGetLocalShuffleIndexRequest(client, (GetLocalShuffleIndexRequest) msg);
     } else if (msg instanceof GetMemoryShuffleDataRequest) {
       handleGetMemoryShuffleDataRequest(client, (GetMemoryShuffleDataRequest) msg);
+    } else if (msg instanceof GetSortedShuffleDataRequest) {
+      handleGetSortedShuffleDataRequest(client, (GetSortedShuffleDataRequest) msg);
     } else {
       throw new RssException("Can not handle message " + msg.type());
     }
@@ -302,6 +308,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               responseMessage = errorMsg;
               hasFailureOccurred = true;
             } else {
+              if (shuffleServer.isRemoteMergeEnable()) {
+                shuffleServer.getShuffleMergeManager().setDirect(appId, shuffleId, true);
+              }
               long toReleasedSize = spd.getTotalBlockEncodedLength();
               // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
               shuffleTaskManager.releasePreAllocatedSize(toReleasedSize);
@@ -751,6 +760,109 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
     }
   }
 
+  public void handleGetSortedShuffleDataRequest(
+      TransportClient client, GetSortedShuffleDataRequest req) {
+    final long start = System.currentTimeMillis();
+    long requestId = req.getRequestId();
+    String appId = req.getAppId();
+    int shuffleId = req.getShuffleId();
+    int partitionId = req.getPartitionId();
+    long blockId = req.getBlockId();
+    long timestamp = req.getTimestamp();
+
+    if (timestamp > 0) {
+      long transportTime = start - timestamp;
+      if (transportTime > 0) {
+        shuffleServer
+            .getNettyMetrics()
+            .recordTransportTime(GetSortedShuffleDataRequest.class.getName(), transportTime);
+      }
+    }
+    StatusCode status = StatusCode.SUCCESS;
+    String msg = "OK";
+    GetSortedShuffleDataResponse response;
+    String requestInfo =
+        "appId["
+            + appId
+            + "], shuffleId["
+            + shuffleId
+            + "], partitionId["
+            + partitionId
+            + "], blockId["
+            + blockId
+            + "]";
+    if (!shuffleServer.isRemoteMergeEnable()) {
+      msg = "Remote merge is disabled";
+      status = StatusCode.INTERNAL_ERROR;
+      response =
+          new GetSortedShuffleDataResponse(
+              requestId, status, msg, -1, MergeState.INTERNAL_ERROR.code(), Unpooled.EMPTY_BUFFER);
+      client.getChannel().writeAndFlush(response);
+      return;
+    }
+    MergeStatus mergeStatus =
+        shuffleServer.getShuffleMergeManager().tryGetBlock(appId, shuffleId, partitionId, blockId);
+    MergeState mergeState = mergeStatus.getState();
+    long readBlockSize = mergeStatus.getSize();
+
+    if (mergeState == MergeState.INITED
+        || (mergeState == MergeState.MERGING && readBlockSize == -1)
+        || (mergeState == MergeState.DONE && readBlockSize == -1)
+        || mergeState == MergeState.INTERNAL_ERROR) {
+      msg = mergeState.name();
+      response =
+          new GetSortedShuffleDataResponse(
+              requestId, status, msg, -1, mergeState.code(), Unpooled.EMPTY_BUFFER);
+      client.getChannel().writeAndFlush(response);
+      return;
+    }
+
+    if (shuffleServer.getShuffleBufferManager().requireReadMemory(readBlockSize)) {
+      ShuffleDataResult sdr = null;
+      try {
+        sdr =
+            shuffleServer
+                .getShuffleMergeManager()
+                .getShuffleData(appId, shuffleId, partitionId, blockId);
+
+        response =
+            new GetSortedShuffleDataResponse(
+                requestId, status, msg, blockId + 1, mergeState.code(), sdr.getManagedBuffer());
+
+        ReleaseMemoryAndRecordReadTimeListener listener =
+            new ReleaseMemoryAndRecordReadTimeListener(
+                start, readBlockSize, sdr.getDataLength(), requestInfo, req, response, client);
+
+        client.getChannel().writeAndFlush(response).addListener(listener);
+      } catch (Exception e) {
+        shuffleServer.getShuffleBufferManager().releaseReadMemory(readBlockSize);
+        if (sdr != null) {
+          sdr.release();
+        }
+        status = StatusCode.INTERNAL_ERROR;
+        msg = "Error happened when get shuffle data for " + requestInfo + ", " + e.getMessage();
+        LOG.error(msg, e);
+        response =
+            new GetSortedShuffleDataResponse(
+                requestId,
+                status,
+                msg,
+                -1,
+                MergeState.INTERNAL_ERROR.code(),
+                Unpooled.EMPTY_BUFFER);
+        client.getChannel().writeAndFlush(response);
+      }
+    } else {
+      status = StatusCode.NO_BUFFER;
+      msg = "Can't require read memory to get sorted shuffle data";
+      LOG.error(msg + " for " + requestInfo);
+      response =
+          new GetSortedShuffleDataResponse(
+              requestId, status, msg, -1, mergeState.code(), Unpooled.EMPTY_BUFFER);
+      client.getChannel().writeAndFlush(response);
+    }
+  }
+
   private List<ShufflePartitionedData> toPartitionedDataList(SendShuffleDataRequest req) {
     List<ShufflePartitionedData> ret = Lists.newArrayList();
 
@@ -871,6 +983,15 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                     StatusCode.INTERNAL_ERROR,
                     errorMsg,
                     Lists.newArrayList(),
+                    Unpooled.EMPTY_BUFFER);
+          } else if (request instanceof GetSortedShuffleDataRequest) {
+            errorResponse =
+                new GetSortedShuffleDataResponse(
+                    request.getRequestId(),
+                    StatusCode.INTERNAL_ERROR,
+                    errorMsg,
+                    -1L,
+                    MergeState.INTERNAL_ERROR.code(),
                     Unpooled.EMPTY_BUFFER);
           } else {
             LOG.error("Cannot handle request {}", request.type(), cause);

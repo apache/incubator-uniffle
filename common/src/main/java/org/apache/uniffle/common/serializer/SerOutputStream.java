@@ -18,16 +18,19 @@
 package org.apache.uniffle.common.serializer;
 
 import java.io.IOException;
+import java.io.OutputStream;
 
-public abstract class DeserializationStream<K, V> {
+import io.netty.buffer.ByteBuf;
 
-  public abstract void init();
+import org.apache.uniffle.common.exception.RssException;
 
-  public abstract boolean nextRecord() throws IOException;
+public abstract class SerOutputStream extends OutputStream {
 
-  public abstract K getCurrentKey() throws IOException;
+  public abstract void write(ByteBuf from) throws IOException;
 
-  public abstract V getCurrentValue() throws IOException;
+  public ByteBuf toByteBuf() {
+    throw new RssException("toByteBuf is not supported");
+  }
 
-  public abstract void close() throws IOException;
+  public void preAllocate(int length) throws IOException {}
 }

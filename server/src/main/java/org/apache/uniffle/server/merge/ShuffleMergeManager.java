@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
@@ -39,14 +40,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShuffleDataResult;
-import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.merger.Segment;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.serializer.SerOutputStream;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.proto.RssProtos.MergeContext;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 
+import static org.apache.uniffle.common.merger.MergeState.INTERNAL_ERROR;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_CLASS_LOADER_JARS_PATH;
 
 public class ShuffleMergeManager {
@@ -230,30 +232,72 @@ public class ShuffleMergeManager {
   }
 
   public void processEvent(MergeEvent event) {
+    boolean success = false;
+    Partition partition = null;
+    Map<Long, ByteBuf> cachedBlocks = new HashMap<>();
     try {
-      ClassLoader original = Thread.currentThread().getContextClassLoader();
       Thread.currentThread()
           .setContextClassLoader(
               this.getShuffle(event.getAppId(), event.getShuffleId()).getClassLoader());
-      List<Segment> segments =
-          this.getPartition(event.getAppId(), event.getShuffleId(), event.getPartitionId())
-              .getSegments(
-                  serverConf,
-                  event.getExpectedBlockIdMap().iterator(),
-                  event.getKeyClass(),
-                  event.getValueClass());
-      this.getPartition(event.getAppId(), event.getShuffleId(), event.getPartitionId())
-          .merge(segments);
-      Thread.currentThread().setContextClassLoader(original);
-    } catch (Exception e) {
-      LOG.info("Found exception when merge, caused by ", e);
-      throw new RssException(e);
+      partition = this.getPartition(event.getAppId(), event.getShuffleId(), event.getPartitionId());
+      if (partition == null) {
+        LOG.info("Can not find partition for event: {}", event);
+        return;
+      }
+
+      // 1 collect blocks, retain block from bufferPool, need to release.
+      boolean allCached =
+          partition.collectBlocks(event.getExpectedBlockIdMap().iterator(), cachedBlocks);
+
+      // 2 If the size of cacheBlock is less than total block, we will read from file, so construct
+      // reader
+      BlockFlushFileReader reader = null;
+      if (!allCached) {
+        // create reader do not allocate resource.
+        reader = partition.createReader(serverConf);
+      }
+
+      // 3 collect input segments, but not init. So do not allocate any resource.
+      List<Segment> segments = new ArrayList<>();
+      boolean allFound =
+          partition.collectSegments(
+              serverConf,
+              event.getExpectedBlockIdMap().iterator(),
+              event.getKeyClass(),
+              event.getValueClass(),
+              cachedBlocks,
+              segments,
+              reader);
+      if (!allFound) {
+        return;
+      }
+
+      // 4 create output, but not init. So do not allocate any resource.
+      // Because of the presence of EOF, the totalBytes are generally slightly larger than the
+      // required space.
+      long totalBytes = segments.stream().mapToLong(segment -> segment.getSize()).sum();
+      SerOutputStream output = partition.createSerOutputStream(totalBytes);
+
+      // 5 merge segments to output
+      partition.merge(segments, output, reader);
+      success = true;
+    } finally {
+      if (!success && partition != null) {
+        partition.setState(INTERNAL_ERROR);
+      }
+      cachedBlocks.values().forEach(byteBuf -> byteBuf.release());
     }
   }
 
   public ShuffleDataResult getShuffleData(
       String appId, int shuffleId, int partitionId, long blockId) throws IOException {
     return this.getPartition(appId, shuffleId, partitionId).getShuffleData(blockId);
+  }
+
+  public void setDirect(String appId, int shuffleId, boolean direct) throws IOException {
+    if (this.shuffles.containsKey(appId) && this.shuffles.get(appId).containsKey(shuffleId)) {
+      this.getShuffle(appId, shuffleId).setDirect(direct);
+    }
   }
 
   public MergeStatus tryGetBlock(String appId, int shuffleId, int partitionId, long blockId) {
@@ -271,7 +315,12 @@ public class ShuffleMergeManager {
 
   @VisibleForTesting
   Partition getPartition(String appId, int shuffleId, int partitionId) {
-    return this.shuffles.get(appId).get(shuffleId).getPartition(partitionId);
+    if (this.shuffles.containsKey(appId)) {
+      if (this.shuffles.get(appId).containsKey(shuffleId)) {
+        return this.shuffles.get(appId).get(shuffleId).getPartition(partitionId);
+      }
+    }
+    return null;
   }
 
   public void refreshAppId(String appId) {
