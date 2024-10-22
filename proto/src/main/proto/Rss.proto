@@ -179,6 +179,14 @@ message ShufflePartitionRange {
   int32 end = 2;
 }
 
+message MergeContext {
+  string keyClass = 1;
+  string valueClass = 2;
+  string comparatorClass = 3;
+  int32 mergedBlockSize = 4;
+  string mergeClassLoader = 5;
+}
+
 message ShuffleRegisterRequest {
   string appId = 1;
   int32 shuffleId = 2;
@@ -188,11 +196,7 @@ message ShuffleRegisterRequest {
   DataDistribution shuffleDataDistribution = 6;
   int32 maxConcurrencyPerPartitionToWrite = 7;
   int32 stageAttemptNumber = 8;
-  string keyClass = 9;
-  string valueClass = 10;
-  string comparatorClass = 11;
-  int32 mergedBlockSize = 12;
-  string mergeClassLoader = 13;
+  MergeContext mergeContext = 9;
 }
 
 enum DataDistribution {
@@ -273,6 +277,17 @@ enum ServerStatus {
   // todo: more status, such as UPGRADING
 }
 
+message ApplicationInfo {
+  string appId = 1;
+  int64 partitionNum = 2;
+  int64 memorySize = 3;
+  int64 localFileNum = 4;
+  int64 localTotalSize = 5;
+  int64 hadoopFileNum = 6;
+  int64 hadoopTotalSize = 7;
+  int64 totalSize = 8;
+}
+
 message ShuffleServerHeartBeatRequest {
   ShuffleServerId serverId = 1;
   int64 usedMemory = 2;
@@ -286,6 +301,7 @@ message ShuffleServerHeartBeatRequest {
   optional string version = 22;
   optional string gitCommitId = 23;
   optional int64 startTimeMs = 24;
+  repeated ApplicationInfo applicationInfo = 25;
 }
 
 message ShuffleServerHeartBeatResponse {

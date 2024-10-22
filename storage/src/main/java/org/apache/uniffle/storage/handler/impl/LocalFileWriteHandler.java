@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
@@ -37,9 +38,40 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(LocalFileWriteHandler.class);
 
+  private final RssBaseConf rssBaseConf;
   private String fileNamePrefix;
   private String basePath;
+  private final int dataBufferSize;
+  private final int indexBufferSize;
 
+  public LocalFileWriteHandler(
+      RssBaseConf rssBaseConf,
+      String appId,
+      int shuffleId,
+      int startPartition,
+      int endPartition,
+      String storageBasePath,
+      String fileNamePrefix) {
+    this.rssBaseConf = rssBaseConf;
+    this.fileNamePrefix = fileNamePrefix;
+    this.basePath =
+        ShuffleStorageUtils.getFullShuffleDataFolder(
+            storageBasePath,
+            ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
+    this.dataBufferSize =
+        (int)
+            this.rssBaseConf.getSizeAsBytes(
+                RssBaseConf.RSS_STORAGE_WRITE_DATA_BUFFER_SIZE.key(),
+                RssBaseConf.RSS_STORAGE_WRITE_DATA_BUFFER_SIZE.defaultValue());
+    this.indexBufferSize =
+        (int)
+            this.rssBaseConf.getSizeAsBytes(
+                RssBaseConf.RSS_STORAGE_WRITE_INDEX_BUFFER_SIZE.key(),
+                RssBaseConf.RSS_STORAGE_WRITE_INDEX_BUFFER_SIZE.defaultValue());
+    createBasePath();
+  }
+
+  @VisibleForTesting
   public LocalFileWriteHandler(
       String appId,
       int shuffleId,
@@ -47,12 +79,14 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
       int endPartition,
       String storageBasePath,
       String fileNamePrefix) {
-    this.fileNamePrefix = fileNamePrefix;
-    this.basePath =
-        ShuffleStorageUtils.getFullShuffleDataFolder(
-            storageBasePath,
-            ShuffleStorageUtils.getShuffleDataPath(appId, shuffleId, startPartition, endPartition));
-    createBasePath();
+    this(
+        new RssBaseConf(),
+        appId,
+        shuffleId,
+        startPartition,
+        endPartition,
+        storageBasePath,
+        fileNamePrefix);
   }
 
   private void createBasePath() {
@@ -96,8 +130,8 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
     String dataFileName = ShuffleStorageUtils.generateDataFileName(fileNamePrefix);
     String indexFileName = ShuffleStorageUtils.generateIndexFileName(fileNamePrefix);
 
-    try (LocalFileWriter dataWriter = createWriter(dataFileName);
-        LocalFileWriter indexWriter = createWriter(indexFileName)) {
+    try (LocalFileWriter dataWriter = createWriter(dataFileName, dataBufferSize);
+        LocalFileWriter indexWriter = createWriter(indexFileName, indexBufferSize); ) {
 
       long startTime = System.currentTimeMillis();
       for (ShufflePartitionedBlock block : shuffleBlocks) {
@@ -131,9 +165,10 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
     }
   }
 
-  private LocalFileWriter createWriter(String fileName) throws IOException, IllegalStateException {
+  private LocalFileWriter createWriter(String fileName, int bufferSize)
+      throws IOException, IllegalStateException {
     File file = new File(basePath, fileName);
-    return new LocalFileWriter(file);
+    return new LocalFileWriter(file, bufferSize);
   }
 
   @VisibleForTesting
