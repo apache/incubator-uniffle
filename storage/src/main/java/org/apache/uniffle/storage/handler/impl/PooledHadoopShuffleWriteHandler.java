@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ShufflePartitionedBlock;
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -70,6 +71,7 @@ public class PooledHadoopShuffleWriteHandler implements ShuffleWriteHandler {
   }
 
   public PooledHadoopShuffleWriteHandler(
+      RssBaseConf rssBaseConf,
       String appId,
       int shuffleId,
       int startPartition,
@@ -90,6 +92,7 @@ public class PooledHadoopShuffleWriteHandler implements ShuffleWriteHandler {
         index -> {
           try {
             return new HadoopShuffleWriteHandler(
+                rssBaseConf,
                 appId,
                 shuffleId,
                 startPartition,

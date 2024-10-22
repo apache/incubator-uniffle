@@ -61,13 +61,13 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
     this.dataBufferSize =
         (int)
             this.rssBaseConf.getSizeAsBytes(
-                RssBaseConf.RSS_STORAGE_WRITE_DATA_BUFFER_SIZE.key(),
-                RssBaseConf.RSS_STORAGE_WRITE_DATA_BUFFER_SIZE.defaultValue());
+                RssBaseConf.RSS_STORAGE_LOCALFILE_WRITE_DATA_BUFFER_SIZE.key(),
+                RssBaseConf.RSS_STORAGE_LOCALFILE_WRITE_DATA_BUFFER_SIZE.defaultValue());
     this.indexBufferSize =
         (int)
             this.rssBaseConf.getSizeAsBytes(
-                RssBaseConf.RSS_STORAGE_WRITE_INDEX_BUFFER_SIZE.key(),
-                RssBaseConf.RSS_STORAGE_WRITE_INDEX_BUFFER_SIZE.defaultValue());
+                RssBaseConf.RSS_STORAGE_LOCALFILE_WRITE_INDEX_BUFFER_SIZE.key(),
+                RssBaseConf.RSS_STORAGE_LOCALFILE_WRITE_INDEX_BUFFER_SIZE.defaultValue());
     createBasePath();
   }
 
