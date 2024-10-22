@@ -31,7 +31,6 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import io.netty.buffer.Unpooled;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -209,7 +208,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         .setMaxConcurrencyPerPartitionToWrite(maxConcurrencyPerPartitionToWrite)
         .addAllPartitionRanges(toShufflePartitionRanges(partitionRanges))
         .setStageAttemptNumber(stageAttemptNumber);
-    if (mergeContext != null && StringUtils.isNotBlank(mergeContext.getKeyClass())) {
+    if (mergeContext != null) {
       reqBuilder.setMergeContext(mergeContext);
     }
     RemoteStorage.Builder rsBuilder = RemoteStorage.newBuilder();

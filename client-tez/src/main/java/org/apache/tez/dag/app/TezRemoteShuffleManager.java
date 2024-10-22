@@ -306,19 +306,23 @@ public class TezRemoteShuffleManager implements ServicePluginLifecycle {
                                           RssTezConfig.toRssConf(conf)
                                               .get(MAX_CONCURRENCY_PER_PARTITION_TO_WRITE),
                                           0,
-                                          RssProtos.MergeContext.newBuilder()
-                                              .setKeyClass(keyClassName)
-                                              .setValueClass(valueClassName)
-                                              .setComparatorClass(comparatorClassName)
-                                              .setMergedBlockSize(
-                                                  conf.getInt(
-                                                      RssTezConfig.RSS_MERGED_BLOCK_SZIE,
-                                                      RssTezConfig.RSS_MERGED_BLOCK_SZIE_DEFAULT))
-                                              .setMergeClassLoader(
-                                                  conf.get(
-                                                      RssTezConfig.RSS_REMOTE_MERGE_CLASS_LOADER,
-                                                      ""))
-                                              .build()));
+                                          StringUtils.isBlank(keyClassName)
+                                              ? null
+                                              : RssProtos.MergeContext.newBuilder()
+                                                  .setKeyClass(keyClassName)
+                                                  .setValueClass(valueClassName)
+                                                  .setComparatorClass(comparatorClassName)
+                                                  .setMergedBlockSize(
+                                                      conf.getInt(
+                                                          RssTezConfig.RSS_MERGED_BLOCK_SZIE,
+                                                          RssTezConfig
+                                                              .RSS_MERGED_BLOCK_SZIE_DEFAULT))
+                                                  .setMergeClassLoader(
+                                                      conf.get(
+                                                          RssTezConfig
+                                                              .RSS_REMOTE_MERGE_CLASS_LOADER,
+                                                          ""))
+                                                  .build()));
                           LOG.info(
                               "Finish register shuffle with "
                                   + (System.currentTimeMillis() - start)
