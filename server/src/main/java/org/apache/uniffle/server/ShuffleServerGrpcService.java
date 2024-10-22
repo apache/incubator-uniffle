@@ -1501,7 +1501,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         if (transportTime > 0) {
           shuffleServer
               .getGrpcMetrics()
-              .recordTransportTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, transportTime);
+              .recordTransportTime(ShuffleServerGrpcMetrics.GET_SORTED_SHUFFLE_DATA_METHOD, transportTime);
         }
       }
       StatusCode status = StatusCode.SUCCESS;
@@ -1604,7 +1604,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getDataLength());
           shuffleServer
               .getGrpcMetrics()
-              .recordProcessTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, readTime);
+              .recordProcessTime(ShuffleServerGrpcMetrics.GET_SORTED_SHUFFLE_DATA_METHOD, readTime);
           LOG.info(
               "Successfully getSortedShuffleData cost {} ms for shuffle"
                   + " data with {}, length is {}, state is {}",
