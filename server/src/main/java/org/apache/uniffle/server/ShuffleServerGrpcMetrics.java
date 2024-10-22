@@ -65,7 +65,8 @@ public class ShuffleServerGrpcMetrics extends GRPCMetrics {
   private static final String GRPC_GET_SHUFFLE_INDEX_TOTAL = "grpc_get_local_shuffle_index_total";
   private static final String GRPC_GET_SHUFFLE_RESULT_FOR_MULTI_PART_TOTAL =
       "grpc_get_shuffle_result_for_multi_part_total";
-  private static final String GRPC_GET_SORTED_SHUFFLE_DATA_TOTAL = "grpc_get_sorted_shuffle_data_total";
+  private static final String GRPC_GET_SORTED_SHUFFLE_DATA_TOTAL =
+      "grpc_get_sorted_shuffle_data_total";
   private static final String GRPC_START_SORT_MERGE_TOTAL = "grpc_start_sort_merge_total";
 
   private static final String GRPC_SEND_SHUFFLE_DATA_TRANSPORT_LATENCY =
