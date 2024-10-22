@@ -63,15 +63,17 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
 
   @VisibleForTesting
   public ShuffleServerGrpcNettyClient(String host, int grpcPort, int nettyPort) {
-    this(new RssConf(), host, grpcPort, nettyPort);
+    this(new RssConf(), host, grpcPort, nettyPort, 0);
   }
 
-  public ShuffleServerGrpcNettyClient(RssConf rssConf, String host, int grpcPort, int nettyPort) {
+  public ShuffleServerGrpcNettyClient(
+      RssConf rssConf, String host, int grpcPort, int nettyPort, int serviceVersion) {
     this(
         rssConf == null ? new RssConf() : rssConf,
         host,
         grpcPort,
         nettyPort,
+        serviceVersion,
         rssConf == null
             ? RssClientConf.RPC_MAX_ATTEMPTS.defaultValue()
             : rssConf.getInteger(RssClientConf.RPC_MAX_ATTEMPTS),
@@ -94,12 +96,22 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
       String host,
       int grpcPort,
       int nettyPort,
+      int serviceVersion,
       int maxRetryAttempts,
       long rpcTimeoutMs,
       int pageSize,
       int maxOrder,
       int smallCacheSize) {
-    super(host, grpcPort, maxRetryAttempts, rpcTimeoutMs, true, pageSize, maxOrder, smallCacheSize);
+    super(
+        host,
+        grpcPort,
+        serviceVersion,
+        maxRetryAttempts,
+        rpcTimeoutMs,
+        true,
+        pageSize,
+        maxOrder,
+        smallCacheSize);
     this.nettyPort = nettyPort;
     TransportContext transportContext = new TransportContext(new TransportConf(rssConf));
     this.clientFactory = new TransportClientFactory(transportContext);

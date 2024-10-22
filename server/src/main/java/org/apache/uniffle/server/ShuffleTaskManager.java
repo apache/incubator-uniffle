@@ -279,7 +279,8 @@ public class ShuffleTaskManager {
         remoteStorageInfo,
         user,
         ShuffleDataDistributionType.NORMAL,
-        -1);
+        -1,
+        null);
   }
 
   public StatusCode registerShuffle(
@@ -289,7 +290,8 @@ public class ShuffleTaskManager {
       RemoteStorageInfo remoteStorageInfo,
       String user,
       ShuffleDataDistributionType dataDistType,
-      int maxConcurrencyPerPartitionToWrite) {
+      int maxConcurrencyPerPartitionToWrite,
+      BlockIdLayout blockIdLayout) {
     ReentrantReadWriteLock.WriteLock lock = getAppWriteLock(appId);
     lock.lock();
     try {
@@ -303,6 +305,7 @@ public class ShuffleTaskManager {
                   getMaxConcurrencyWriting(maxConcurrencyPerPartitionToWrite, conf))
               .dataDistributionType(dataDistType)
               .build());
+      taskInfo.setBlockIdLayout(blockIdLayout);
 
       partitionsToBlockIds.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());
       for (PartitionRange partitionRange : partitionRanges) {
@@ -629,6 +632,9 @@ public class ShuffleTaskManager {
     }
 
     ShuffleTaskInfo taskInfo = getShuffleTaskInfo(appId);
+    if (blockIdLayout == null) {
+      blockIdLayout = taskInfo.getBlockIdLayout();
+    }
     long expectedBlockNumber = 0;
     Map<Integer, Set<Integer>> bitmapIndexToPartitions = Maps.newHashMap();
     for (int partitionId : partitions) {

@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.PartitionInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.UnitConverter;
 
@@ -74,6 +75,8 @@ public class ShuffleTaskInfo {
   private final Map<Integer, ShuffleDetailInfo> shuffleDetailInfos;
 
   private final Map<Integer, Integer> latestStageAttemptNumbers;
+
+  private BlockIdLayout blockIdLayout;
 
   public ShuffleTaskInfo(String appId) {
     this.appId = appId;
@@ -306,5 +309,13 @@ public class ShuffleTaskInfo {
         + ", shuffleDetailInfo="
         + shuffleDetailInfos
         + '}';
+  }
+
+  public BlockIdLayout getBlockIdLayout() {
+    return blockIdLayout;
+  }
+
+  public void setBlockIdLayout(BlockIdLayout blockIdLayout) {
+    this.blockIdLayout = blockIdLayout;
   }
 }

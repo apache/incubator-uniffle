@@ -76,7 +76,9 @@ import org.apache.uniffle.common.exception.NotRetryException;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
+import org.apache.uniffle.common.rpc.ServiceVersion;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.proto.RssProtos;
@@ -147,6 +149,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     this(
         host,
         port,
+        0,
         RssClientConf.RPC_MAX_ATTEMPTS.defaultValue(),
         RssClientConf.RPC_TIMEOUT_MS.defaultValue(),
         true,
@@ -155,10 +158,11 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         0);
   }
 
-  public ShuffleServerGrpcClient(RssConf rssConf, String host, int port) {
+  public ShuffleServerGrpcClient(RssConf rssConf, String host, int port, int serviceVersion) {
     this(
         host,
         port,
+        serviceVersion,
         rssConf == null
             ? RssClientConf.RPC_MAX_ATTEMPTS.defaultValue()
             : rssConf.getInteger(RssClientConf.RPC_MAX_ATTEMPTS),
@@ -174,13 +178,22 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   public ShuffleServerGrpcClient(
       String host,
       int port,
+      int serviceVersion,
       int maxRetryAttempts,
       long rpcTimeoutMs,
       boolean usePlaintext,
       int pageSize,
       int maxOrder,
       int smallCacheSize) {
-    super(host, port, maxRetryAttempts, usePlaintext, pageSize, maxOrder, smallCacheSize);
+    super(
+        host,
+        port,
+        serviceVersion,
+        maxRetryAttempts,
+        usePlaintext,
+        pageSize,
+        maxOrder,
+        smallCacheSize);
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
     rpcTimeout = rpcTimeoutMs;
   }
@@ -198,7 +211,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      MergeContext mergeContext) {
+      MergeContext mergeContext,
+      BlockIdLayout blockIdLayout) {
     ShuffleRegisterRequest.Builder reqBuilder = ShuffleRegisterRequest.newBuilder();
     reqBuilder
         .setAppId(appId)
@@ -222,6 +236,9 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       }
     }
     reqBuilder.setRemoteStorage(rsBuilder.build());
+    if (blockIdLayout != null) {
+      reqBuilder.setBlockIdLayout(blockIdLayout.toProto());
+    }
     return getBlockingStub().registerShuffle(reqBuilder.build());
   }
 
@@ -484,7 +501,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             request.getDataDistributionType(),
             request.getMaxConcurrencyPerPartitionToWrite(),
             request.getStageAttemptNumber(),
-            request.getMergeContext());
+            request.getMergeContext(),
+            request.getBlockIdLayout());
 
     RssRegisterShuffleResponse response;
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
@@ -806,18 +824,21 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
 
   @Override
   public RssGetShuffleResultResponse getShuffleResult(RssGetShuffleResultRequest request) {
-    GetShuffleResultRequest rpcRequest =
+    GetShuffleResultRequest.Builder builder =
         GetShuffleResultRequest.newBuilder()
             .setAppId(request.getAppId())
             .setShuffleId(request.getShuffleId())
-            .setPartitionId(request.getPartitionId())
-            .setBlockIdLayout(
-                RssProtos.BlockIdLayout.newBuilder()
-                    .setSequenceNoBits(request.getBlockIdLayout().sequenceNoBits)
-                    .setPartitionIdBits(request.getBlockIdLayout().partitionIdBits)
-                    .setTaskAttemptIdBits(request.getBlockIdLayout().taskAttemptIdBits)
-                    .build())
-            .build();
+            .setPartitionId(request.getPartitionId());
+    if (!getServiceVersion().supportFeature(ServiceVersion.Feature.REGISTER_BLOCK_ID_LAYOUT)) {
+      // set blockIdLayout for each request for backward compatibility to the old server
+      builder.setBlockIdLayout(
+          RssProtos.BlockIdLayout.newBuilder()
+              .setSequenceNoBits(request.getBlockIdLayout().sequenceNoBits)
+              .setPartitionIdBits(request.getBlockIdLayout().partitionIdBits)
+              .setTaskAttemptIdBits(request.getBlockIdLayout().taskAttemptIdBits)
+              .build());
+    }
+    GetShuffleResultRequest rpcRequest = builder.build();
     GetShuffleResultResponse rpcResponse = getBlockingStub().getShuffleResult(rpcRequest);
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();
 
@@ -854,18 +875,21 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   @Override
   public RssGetShuffleResultResponse getShuffleResultForMultiPart(
       RssGetShuffleResultForMultiPartRequest request) {
-    GetShuffleResultForMultiPartRequest rpcRequest =
+    GetShuffleResultForMultiPartRequest.Builder builder =
         GetShuffleResultForMultiPartRequest.newBuilder()
             .setAppId(request.getAppId())
             .setShuffleId(request.getShuffleId())
-            .addAllPartitions(request.getPartitions())
-            .setBlockIdLayout(
-                RssProtos.BlockIdLayout.newBuilder()
-                    .setSequenceNoBits(request.getBlockIdLayout().sequenceNoBits)
-                    .setPartitionIdBits(request.getBlockIdLayout().partitionIdBits)
-                    .setTaskAttemptIdBits(request.getBlockIdLayout().taskAttemptIdBits)
-                    .build())
-            .build();
+            .addAllPartitions(request.getPartitions());
+    if (!getServiceVersion().supportFeature(ServiceVersion.Feature.REGISTER_BLOCK_ID_LAYOUT)) {
+      // set blockIdLayout for each request for backward compatibility to the old server
+      builder.setBlockIdLayout(
+          RssProtos.BlockIdLayout.newBuilder()
+              .setSequenceNoBits(request.getBlockIdLayout().sequenceNoBits)
+              .setPartitionIdBits(request.getBlockIdLayout().partitionIdBits)
+              .setTaskAttemptIdBits(request.getBlockIdLayout().taskAttemptIdBits)
+              .build());
+    }
+    GetShuffleResultForMultiPartRequest rpcRequest = builder.build();
     GetShuffleResultForMultiPartResponse rpcResponse =
         getBlockingStub().getShuffleResultForMultiPart(rpcRequest);
     RssProtos.StatusCode statusCode = rpcResponse.getStatus();

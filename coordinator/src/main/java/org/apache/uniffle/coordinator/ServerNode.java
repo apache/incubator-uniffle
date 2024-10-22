@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -33,6 +34,7 @@ import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 
 public class ServerNode implements Comparable<ServerNode> {
 
+  private final int serviceVersion;
   private String id;
   private String ip;
   private int grpcPort;
@@ -56,7 +58,7 @@ public class ServerNode implements Comparable<ServerNode> {
     this(id, "", 0, 0, 0, 0, 0, Sets.newHashSet(), ServerStatus.EXCLUDED);
   }
 
-  // Only for test
+  @VisibleForTesting
   public ServerNode(
       String id,
       String ip,
@@ -129,6 +131,7 @@ public class ServerNode implements Comparable<ServerNode> {
         -1);
   }
 
+  @VisibleForTesting
   public ServerNode(
       String id,
       String ip,
@@ -187,7 +190,8 @@ public class ServerNode implements Comparable<ServerNode> {
         startTime,
         "",
         "",
-        Collections.EMPTY_LIST);
+        Collections.EMPTY_LIST,
+        0);
   }
 
   public ServerNode(
@@ -206,7 +210,8 @@ public class ServerNode implements Comparable<ServerNode> {
       long startTime,
       String version,
       String gitCommitId,
-      List<RssProtos.ApplicationInfo> appInfos) {
+      List<RssProtos.ApplicationInfo> appInfos,
+      int serviceVersion) {
     this.id = id;
     this.ip = ip;
     this.grpcPort = grpcPort;
@@ -230,6 +235,7 @@ public class ServerNode implements Comparable<ServerNode> {
     this.gitCommitId = gitCommitId;
     this.appIdToInfos = new ConcurrentHashMap<>();
     appInfos.forEach(appInfo -> appIdToInfos.put(appInfo.getAppId(), appInfo));
+    this.serviceVersion = serviceVersion;
   }
 
   public ShuffleServerId convertToGrpcProto() {
@@ -239,6 +245,7 @@ public class ServerNode implements Comparable<ServerNode> {
         .setPort(grpcPort)
         .setNettyPort(nettyPort)
         .setJettyPort(jettyPort)
+        .setServiceVersion(serviceVersion)
         .build();
   }
 

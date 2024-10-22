@@ -52,6 +52,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.rpc.ServiceVersion;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.storage.StorageInfoUtils;
@@ -151,6 +152,7 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             .setVersion(Constants.VERSION)
             .setGitCommitId(Constants.REVISION_SHORT)
             .addAllApplicationInfo(appInfos)
+            .setServiceVersion(ServiceVersion.NEWEST_VERSION.getVersion())
             .build();
 
     RssProtos.StatusCode status;
@@ -424,7 +426,11 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
               .map(
                   ss ->
                       new ShuffleServerInfo(
-                          ss.getId(), ss.getIp(), ss.getPort(), ss.getNettyPort()))
+                          ss.getId(),
+                          ss.getIp(),
+                          ss.getPort(),
+                          ss.getNettyPort(),
+                          ss.getServiceVersion()))
               .collect(Collectors.toList());
       for (int i = startPartition; i <= endPartition; i++) {
         partitionToServers.put(i, shuffleServerInfos);
@@ -449,7 +455,12 @@ public class CoordinatorGrpcClient extends GrpcClient implements CoordinatorClie
             new PartitionRange(assign.getStartPartition(), assign.getEndPartition());
         for (ShuffleServerId ssi : shuffleServerIds) {
           ShuffleServerInfo shuffleServerInfo =
-              new ShuffleServerInfo(ssi.getId(), ssi.getIp(), ssi.getPort(), ssi.getNettyPort());
+              new ShuffleServerInfo(
+                  ssi.getId(),
+                  ssi.getIp(),
+                  ssi.getPort(),
+                  ssi.getNettyPort(),
+                  ssi.getServiceVersion());
           if (!serverToPartitionRanges.containsKey(shuffleServerInfo)) {
             serverToPartitionRanges.put(shuffleServerInfo, Lists.newArrayList());
           }
