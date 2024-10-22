@@ -26,7 +26,7 @@ import org.apache.hadoop.io.WritableUtils;
 import org.apache.uniffle.common.serializer.SerOutputStream;
 import org.apache.uniffle.common.serializer.SerializationStream;
 
-public class SharedRawWritableSerializationStream<K, V> extends SerializationStream {
+public class BufferedRawWritableSerializationStream<K, V> extends SerializationStream {
 
   // DataOutputStream::size return int, can not support big file which is larger than
   // Integer.MAX_VALUE.
@@ -35,7 +35,7 @@ public class SharedRawWritableSerializationStream<K, V> extends SerializationStr
   private SerOutputStream output;
   private DataOutputStream dataOut;
 
-  public SharedRawWritableSerializationStream(
+  public BufferedRawWritableSerializationStream(
       WritableSerializerInstance instance, SerOutputStream output) {
     this.output = output;
   }

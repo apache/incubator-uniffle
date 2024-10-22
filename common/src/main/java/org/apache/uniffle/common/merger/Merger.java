@@ -43,7 +43,7 @@ public class Merger {
     private final Class<V> valueClass;
     private Comparator comparator;
     private boolean raw;
-    private boolean shared;
+    private boolean buffered;
 
     private Object currentKey;
     private Object currentValue;
@@ -57,7 +57,7 @@ public class Merger {
         Class<V> valueClass,
         Comparator<K> comparator,
         boolean raw,
-        boolean shared) {
+        boolean buffered) {
       this.rssConf = rssConf;
       this.segments = segments;
       this.keyClass = keyClass;
@@ -67,7 +67,7 @@ public class Merger {
       }
       this.comparator = comparator;
       this.raw = raw;
-      this.shared = shared;
+      this.buffered = buffered;
     }
 
     public void setPopSegmentHook(Function<Integer, Segment> popSegmentHook) {
@@ -77,7 +77,7 @@ public class Merger {
     @Override
     protected boolean lessThan(Object o1, Object o2) {
       if (raw) {
-        if (shared) {
+        if (buffered) {
           Segment s1 = (Segment) o1;
           Segment s2 = (Segment) o2;
           ByteBuf key1 = (ByteBuf) s1.getCurrentKey();
@@ -189,7 +189,7 @@ public class Merger {
 
     public void merge(SerOutputStream output) throws IOException {
       RecordsWriter<K, V> writer =
-          new RecordsWriter<K, V>(rssConf, output, keyClass, valueClass, raw, shared);
+          new RecordsWriter<K, V>(rssConf, output, keyClass, valueClass, raw, buffered);
       try {
         writer.init();
         while (this.next()) {

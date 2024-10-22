@@ -29,8 +29,8 @@ public abstract class SerializerInstance {
   public abstract <T> T deserialize(DataInputBuffer buffer, Class vClass) throws IOException;
 
   public abstract <K, V> SerializationStream serializeStream(
-      SerOutputStream output, boolean raw, boolean shared);
+      SerOutputStream output, boolean raw, boolean buffered);
 
   public abstract <K, V> DeserializationStream deserializeStream(
-      SerInputStream input, Class<K> keyClass, Class<V> valueClass, boolean raw, boolean shared);
+      SerInputStream input, Class<K> keyClass, Class<V> valueClass, boolean raw, boolean buffered);
 }

@@ -48,10 +48,10 @@ public class WritableSerializerInstance extends SerializerInstance {
 
   @Override
   public <K, V> SerializationStream serializeStream(
-      SerOutputStream output, boolean raw, boolean shared) {
+      SerOutputStream output, boolean raw, boolean buffered) {
     if (raw) {
-      if (shared) {
-        return new SharedRawWritableSerializationStream(this, output);
+      if (buffered) {
+        return new BufferedRawWritableSerializationStream(this, output);
       } else {
         return new RawWritableSerializationStream(this, output);
       }
@@ -62,10 +62,10 @@ public class WritableSerializerInstance extends SerializerInstance {
 
   @Override
   public <K, V> DeserializationStream deserializeStream(
-      SerInputStream input, Class<K> keyClass, Class<V> valueClass, boolean raw, boolean shared) {
+      SerInputStream input, Class<K> keyClass, Class<V> valueClass, boolean raw, boolean buffered) {
     if (raw) {
-      if (shared) {
-        return new SharedRawWritableDeserializationStream(this, input);
+      if (buffered) {
+        return new BufferedRawWritableDeserializationStream(this, input);
       } else {
         return new RawWritableDeserializationStream(this, input);
       }

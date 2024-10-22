@@ -36,12 +36,12 @@ public class RecordsWriter<K, V> {
       Class keyClass,
       Class valueClass,
       boolean raw,
-      boolean shared) {
+      boolean buffered) {
     SerializerFactory factory = new SerializerFactory(rssConf);
     Serializer serializer = factory.getSerializer(keyClass);
     assert factory.getSerializer(valueClass).getClass().equals(serializer.getClass());
     SerializerInstance instance = serializer.newInstance();
-    stream = instance.serializeStream(out, raw, shared);
+    stream = instance.serializeStream(out, raw, buffered);
   }
 
   public void init() {

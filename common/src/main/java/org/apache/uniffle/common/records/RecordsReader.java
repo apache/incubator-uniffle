@@ -38,12 +38,12 @@ public class RecordsReader<K, V> {
       Class<K> keyClass,
       Class<V> valueClass,
       boolean raw,
-      boolean shared) {
+      boolean buffered) {
     SerializerFactory factory = new SerializerFactory(rssConf);
     Serializer serializer = factory.getSerializer(keyClass);
     assert factory.getSerializer(valueClass).getClass().equals(serializer.getClass());
     SerializerInstance instance = serializer.newInstance();
-    stream = instance.deserializeStream(input, keyClass, valueClass, raw, shared);
+    stream = instance.deserializeStream(input, keyClass, valueClass, raw, buffered);
   }
 
   public void init() {

@@ -29,16 +29,16 @@ import org.apache.uniffle.common.serializer.DeserializationStream;
 import org.apache.uniffle.common.serializer.SerInputStream;
 import org.apache.uniffle.common.util.NettyUtils;
 
-// Compare to RawWritableDeserializationStream, SharedRawWritableDeserializationStream use shared
+// Compare to RawWritableDeserializationStream, BufferedRawWritableDeserializationStream use shared
 // buffer to store record. It means that after we use nextRecord, we store the record to shared
-// buffer. It means we must copy from this before next nextRecord.
-// Usually, SharedRawWritableDeserializationStream is used on the server side and
+// buffer. It means we must use this before next nextRecord.
+// Usually, BufferedRawWritableDeserializationStream is used on the server side and
 // RawWritableDeserializationStream is used on the client side. Because the records obtained
-// in SharedRawWritableDeserializationStream are quickly used to form merged block, using
+// in BufferedRawWritableDeserializationStream are quickly used to form merged block, using
 // shared buffer can avoid frequent memory requests. On the client side, the records obtained
 // are generally used for subsequent data processing and must be independent copies, so
 // RawWritableDeserializationStream is used in client side.
-public class SharedRawWritableDeserializationStream<K extends Writable, V extends Writable>
+public class BufferedRawWritableDeserializationStream<K extends Writable, V extends Writable>
     extends DeserializationStream<ByteBuf, ByteBuf> {
 
   private static final int INIT_BUFFER_SIZE = 256;
@@ -50,7 +50,7 @@ public class SharedRawWritableDeserializationStream<K extends Writable, V extend
   private ByteBuf currentKeyBuffer;
   private ByteBuf currentValueBuffer;
 
-  public SharedRawWritableDeserializationStream(
+  public BufferedRawWritableDeserializationStream(
       WritableSerializerInstance instance, SerInputStream inputStream) {
     this.inputStream = inputStream;
   }
