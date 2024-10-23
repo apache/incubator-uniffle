@@ -168,7 +168,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
       String responseMessage = "OK";
       try {
-        shuffleServer.sendHeartbeat();
+        if (shuffleServer
+            .getShuffleServerConf()
+            .getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED)) {
+          shuffleServer.sendHeartbeat();
+        }
         shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId);
         if (shuffleServer.isRemoteMergeEnable()) {
           shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId + MERGE_APP_SUFFIX);
@@ -211,7 +215,11 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
       String responseMessage = "OK";
       try {
-        shuffleServer.sendHeartbeat();
+        if (shuffleServer
+            .getShuffleServerConf()
+            .getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED)) {
+          shuffleServer.sendHeartbeat();
+        }
         shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId, shuffleId);
         if (shuffleServer.isRemoteMergeEnable()) {
           shuffleServer
