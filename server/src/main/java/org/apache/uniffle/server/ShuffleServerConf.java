@@ -719,6 +719,11 @@ public class ShuffleServerConf extends RssBaseConf {
           .booleanType()
           .defaultValue(false)
           .withDescription("Whether to enable app detail log");
+  public static final ConfigOption<Boolean> SERVER_TRIGGER_REPORT_WHILE_UNREGISTER_ENABLED =
+      ConfigOptions.key("rss.server.trigger.report.while.unregister.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Whether to trigger report while unregister");
 
   public ShuffleServerConf() {}
 
