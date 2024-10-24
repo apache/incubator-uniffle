@@ -21,6 +21,7 @@ import java.util.Objects;
 
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.proto.RssProtos;
 
 /**
  * This represents the actual bit layout of {@link BlockId}s.
@@ -192,6 +193,14 @@ public class BlockIdLayout {
         sequenceNo,
         partitionId,
         (int) taskAttemptId);
+  }
+
+  public RssProtos.BlockIdLayout toProto() {
+    return RssProtos.BlockIdLayout.newBuilder()
+        .setSequenceNoBits(sequenceNoBits)
+        .setPartitionIdBits(partitionIdBits)
+        .setTaskAttemptIdBits(taskAttemptIdBits)
+        .build();
   }
 
   public static BlockIdLayout from(RssConf rssConf) {

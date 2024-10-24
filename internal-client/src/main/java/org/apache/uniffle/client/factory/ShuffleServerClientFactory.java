@@ -47,13 +47,17 @@ public class ShuffleServerClientFactory {
       String clientType, ShuffleServerInfo shuffleServerInfo, RssConf rssConf) {
     if (clientType.equalsIgnoreCase(ClientType.GRPC.name())) {
       return new ShuffleServerGrpcClient(
-          rssConf, shuffleServerInfo.getHost(), shuffleServerInfo.getGrpcPort());
+          rssConf,
+          shuffleServerInfo.getHost(),
+          shuffleServerInfo.getGrpcPort(),
+          shuffleServerInfo.getServiceVersion());
     } else if (clientType.equalsIgnoreCase(ClientType.GRPC_NETTY.name())) {
       return new ShuffleServerGrpcNettyClient(
           rssConf,
           shuffleServerInfo.getHost(),
           shuffleServerInfo.getGrpcPort(),
-          shuffleServerInfo.getNettyPort());
+          shuffleServerInfo.getNettyPort(),
+          shuffleServerInfo.getServiceVersion());
     } else {
       throw new UnsupportedOperationException("Unsupported client type " + clientType);
     }

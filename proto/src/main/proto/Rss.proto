@@ -197,6 +197,7 @@ message ShuffleRegisterRequest {
   int32 maxConcurrencyPerPartitionToWrite = 7;
   int32 stageAttemptNumber = 8;
   MergeContext mergeContext = 9;
+  BlockIdLayout blockIdLayout = 11;
 }
 
 enum DataDistribution {
@@ -302,6 +303,7 @@ message ShuffleServerHeartBeatRequest {
   optional string gitCommitId = 23;
   optional int64 startTimeMs = 24;
   repeated ApplicationInfo applicationInfo = 25;
+  optional int32 serviceVersion = 26;
 }
 
 message ShuffleServerHeartBeatResponse {
@@ -315,6 +317,7 @@ message ShuffleServerId {
   int32 port = 3;
   int32 netty_port = 4;
   int32 jetty_port = 5;
+  int32 serviceVersion = 6;
 }
 
 message ShuffleServerResult {

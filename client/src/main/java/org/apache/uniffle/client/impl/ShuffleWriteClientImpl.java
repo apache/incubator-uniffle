@@ -583,7 +583,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             dataDistributionType,
             maxConcurrencyPerPartitionToWrite,
             stageAttemptNumber,
-            mergeContext);
+            mergeContext,
+            blockIdLayout);
     RssRegisterShuffleResponse response =
         getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 
