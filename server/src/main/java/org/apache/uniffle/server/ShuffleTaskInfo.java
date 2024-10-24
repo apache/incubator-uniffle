@@ -23,16 +23,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.PartitionInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.UnitConverter;
+import org.apache.uniffle.storage.util.StorageType;
 
 /**
  * ShuffleTaskInfo contains the information of submitting the shuffle, the information of the cache
@@ -76,6 +81,8 @@ public class ShuffleTaskInfo {
   private final Map<Integer, ShuffleDetailInfo> shuffleDetailInfos;
 
   private final Map<Integer, Integer> latestStageAttemptNumbers;
+  private Map<String, String> properties;
+  private boolean clientStorageTypeWithMemory = false;
 
   public ShuffleTaskInfo(String appId) {
     this.appId = appId;
@@ -295,6 +302,10 @@ public class ShuffleTaskInfo {
     return partitionDataSizes.values().stream().mapToLong(Map::size).sum();
   }
 
+  public boolean isClientStorageTypeWithMemory() {
+    return clientStorageTypeWithMemory;
+  }
+
   @Override
   public String toString() {
     return "ShuffleTaskInfo{"
@@ -314,5 +325,26 @@ public class ShuffleTaskInfo {
         + ", shuffleDetailInfo="
         + shuffleDetailInfos
         + '}';
+  }
+
+  public void setProperties(Map<String, String> properties, ShuffleServerConf serverConf) {
+    Map<String, String> filteredProperties =
+        properties.entrySet().stream()
+            .filter(entry -> entry.getKey().contains(".rss."))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    this.properties = filteredProperties;
+    LOGGER.info("{} set properties to {}", appId, properties);
+    if (serverConf.getBoolean(ShuffleServerConf.SERVER_WITH_MEMORY_STORAGE_TYPE_OPTIMIZE_ENABLED)) {
+      String storageType = properties.get(RssClientConf.RSS_STORAGE_TYPE.key());
+      if (StringUtils.isEmpty(storageType)) {
+        storageType =
+            properties.get(
+                Constants.SPARK_RSS_CONFIG_PREFIX + RssClientConf.RSS_STORAGE_TYPE.key());
+      }
+      if (StringUtils.isNotEmpty(storageType)) {
+        clientStorageTypeWithMemory = StorageType.withMemory(StorageType.valueOf(storageType));
+        LOGGER.info("{} set clientStorageTypeWithMemory to {}", appId, clientStorageTypeWithMemory);
+      }
+    }
   }
 }

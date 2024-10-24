@@ -34,6 +34,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import scala.Tuple2;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -1016,6 +1018,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     }
     LOG.info("Start to register shuffleId {}", shuffleId);
     long start = System.currentTimeMillis();
+    Map<String, String> sparkConfMap = sparkConfToMap(getSparkConf());
     serverToPartitionRanges.entrySet().stream()
         .forEach(
             entry -> {
@@ -1028,7 +1031,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                   ShuffleDataDistributionType.NORMAL,
                   maxConcurrencyPerPartitionToWrite,
                   stageAttemptNumber,
-                  null);
+                  null,
+                  sparkConfMap);
             });
     LOG.info(
         "Finish register shuffleId {} with {} ms", shuffleId, (System.currentTimeMillis() - start));
@@ -1045,6 +1049,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     }
     LOG.info("Start to register shuffleId[{}]", shuffleId);
     long start = System.currentTimeMillis();
+    Map<String, String> sparkConfMap = sparkConfToMap(getSparkConf());
     Set<Map.Entry<ShuffleServerInfo, List<PartitionRange>>> entries =
         serverToPartitionRanges.entrySet();
     entries.stream()
@@ -1057,7 +1062,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                   entry.getValue(),
                   remoteStorage,
                   dataDistributionType,
-                  maxConcurrencyPerPartitionToWrite);
+                  maxConcurrencyPerPartitionToWrite,
+                  sparkConfMap);
             });
     LOG.info(
         "Finish register shuffleId[{}] with {} ms",
@@ -1083,5 +1089,21 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
 
   public boolean isRssStageRetryForFetchFailureEnabled() {
     return rssStageRetryForFetchFailureEnabled;
+  }
+
+  @VisibleForTesting
+  public SparkConf getSparkConf() {
+    return sparkConf;
+  }
+
+  public Map<String, String> sparkConfToMap(SparkConf sparkConf) {
+    Map<String, String> map = new HashMap<>();
+
+    for (Tuple2<String, String> tuple : sparkConf.getAll()) {
+      String key = tuple._1;
+      map.put(key, tuple._2);
+    }
+
+    return map;
   }
 }

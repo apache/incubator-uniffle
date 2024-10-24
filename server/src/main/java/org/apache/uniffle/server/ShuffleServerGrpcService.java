@@ -322,7 +322,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                   new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
                   user,
                   shuffleDataDistributionType,
-                  maxConcurrencyPerPartitionToWrite);
+                  maxConcurrencyPerPartitionToWrite,
+                  req.getPropertiesMap());
       if (StatusCode.SUCCESS == result
           && shuffleServer.isRemoteMergeEnable()
           && req.hasMergeContext()) {
@@ -338,7 +339,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                     new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
                     user,
                     shuffleDataDistributionType,
-                    maxConcurrencyPerPartitionToWrite);
+                    maxConcurrencyPerPartitionToWrite,
+                    req.getPropertiesMap());
         if (result == StatusCode.SUCCESS) {
           result =
               shuffleServer

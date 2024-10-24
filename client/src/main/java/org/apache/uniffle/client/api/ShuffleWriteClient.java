@@ -73,7 +73,53 @@ public interface ShuffleWriteClient {
         dataDistributionType,
         maxConcurrencyPerPartitionToWrite,
         0,
-        null);
+        null,
+        Collections.emptyMap());
+  }
+
+  default void registerShuffle(
+      ShuffleServerInfo shuffleServerInfo,
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorage,
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite,
+      Map<String, String> properties) {
+    registerShuffle(
+        shuffleServerInfo,
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorage,
+        dataDistributionType,
+        maxConcurrencyPerPartitionToWrite,
+        0,
+        null,
+        properties);
+  }
+
+  default void registerShuffle(
+      ShuffleServerInfo shuffleServerInfo,
+      String appId,
+      int shuffleId,
+      List<PartitionRange> partitionRanges,
+      RemoteStorageInfo remoteStorage,
+      ShuffleDataDistributionType dataDistributionType,
+      int maxConcurrencyPerPartitionToWrite,
+      int stageAttemptNumber,
+      MergeContext mergeContext) {
+    registerShuffle(
+        shuffleServerInfo,
+        appId,
+        shuffleId,
+        partitionRanges,
+        remoteStorage,
+        dataDistributionType,
+        maxConcurrencyPerPartitionToWrite,
+        stageAttemptNumber,
+        mergeContext,
+        Collections.emptyMap());
   }
 
   void registerShuffle(
@@ -85,7 +131,8 @@ public interface ShuffleWriteClient {
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      MergeContext mergeContext);
+      MergeContext mergeContext,
+      Map<String, String> properties);
 
   boolean sendCommit(
       Set<ShuffleServerInfo> shuffleServerInfoSet, String appId, int shuffleId, int numMaps);

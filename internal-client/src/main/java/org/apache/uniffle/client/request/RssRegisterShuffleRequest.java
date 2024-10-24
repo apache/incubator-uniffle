@@ -17,8 +17,11 @@
 
 package org.apache.uniffle.client.request;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.common.PartitionRange;
@@ -39,7 +42,9 @@ public class RssRegisterShuffleRequest {
   private int stageAttemptNumber;
 
   private final MergeContext mergeContext;
+  private Map<String, String> properties;
 
+  @VisibleForTesting
   public RssRegisterShuffleRequest(
       String appId,
       int shuffleId,
@@ -57,7 +62,8 @@ public class RssRegisterShuffleRequest {
         dataDistributionType,
         maxConcurrencyPerPartitionToWrite,
         0,
-        null);
+        null,
+        Collections.emptyMap());
   }
 
   public RssRegisterShuffleRequest(
@@ -69,7 +75,8 @@ public class RssRegisterShuffleRequest {
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      MergeContext mergeContext) {
+      MergeContext mergeContext,
+      Map<String, String> properties) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionRanges = partitionRanges;
@@ -79,8 +86,10 @@ public class RssRegisterShuffleRequest {
     this.maxConcurrencyPerPartitionToWrite = maxConcurrencyPerPartitionToWrite;
     this.stageAttemptNumber = stageAttemptNumber;
     this.mergeContext = mergeContext;
+    this.properties = properties;
   }
 
+  @VisibleForTesting
   public RssRegisterShuffleRequest(
       String appId,
       int shuffleId,
@@ -97,7 +106,8 @@ public class RssRegisterShuffleRequest {
         dataDistributionType,
         RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue(),
         0,
-        null);
+        null,
+        Collections.emptyMap());
   }
 
   public RssRegisterShuffleRequest(
@@ -111,7 +121,8 @@ public class RssRegisterShuffleRequest {
         ShuffleDataDistributionType.NORMAL,
         RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue(),
         0,
-        null);
+        null,
+        Collections.emptyMap());
   }
 
   public String getAppId() {
@@ -148,5 +159,9 @@ public class RssRegisterShuffleRequest {
 
   public MergeContext getMergeContext() {
     return mergeContext;
+  }
+
+  public Map<String, String> getProperties() {
+    return properties;
   }
 }

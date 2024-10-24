@@ -565,7 +565,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      MergeContext mergeContext) {
+      MergeContext mergeContext,
+      Map<String, String> properties) {
     String user = null;
     try {
       user = UserGroupInformation.getCurrentUser().getShortUserName();
@@ -583,7 +584,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             dataDistributionType,
             maxConcurrencyPerPartitionToWrite,
             stageAttemptNumber,
-            mergeContext);
+            mergeContext,
+            properties);
     RssRegisterShuffleResponse response =
         getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 
