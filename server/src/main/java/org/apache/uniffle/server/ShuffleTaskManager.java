@@ -89,6 +89,8 @@ import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
 import static org.apache.uniffle.server.ShuffleServerConf.CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
+import static org.apache.uniffle.server.ShuffleServerMetrics.CACHED_BLOCK_COUNT;
+import static org.apache.uniffle.server.ShuffleServerMetrics.REPORTED_BLOCK_COUNT;
 import static org.apache.uniffle.server.ShuffleServerMetrics.REQUIRE_BUFFER_COUNT;
 
 public class ShuffleTaskManager {
@@ -244,6 +246,26 @@ public class ShuffleTaskManager {
     topNShuffleDataSizeOfAppCalcTask.start();
 
     ShuffleServerMetrics.addLabeledGauge(REQUIRE_BUFFER_COUNT, requireBufferIds::size);
+    ShuffleServerMetrics.addLabeledCacheGauge(
+        REPORTED_BLOCK_COUNT,
+        () ->
+            partitionsToBlockIds.values().stream()
+                .flatMap(innerMap -> innerMap.values().stream())
+                .flatMapToLong(
+                    arr ->
+                        java.util.Arrays.stream(arr)
+                            .mapToLong(Roaring64NavigableMap::getLongCardinality))
+                .sum(),
+        2 * 60 * 1000L /* 2 minutes */);
+    ShuffleServerMetrics.addLabeledCacheGauge(
+        CACHED_BLOCK_COUNT,
+        () ->
+            shuffleTaskInfos.values().stream()
+                .map(ShuffleTaskInfo::getCachedBlockIds)
+                .flatMap(map -> map.values().stream())
+                .mapToLong(Roaring64NavigableMap::getLongCardinality)
+                .sum(),
+        2 * 60 * 1000L /* 2 minutes */);
   }
 
   public ReentrantReadWriteLock.WriteLock getAppWriteLock(String appId) {
