@@ -720,6 +720,12 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(false)
           .withDescription("Whether to enable app detail log");
 
+  public static final ConfigOption<Boolean> SERVER_BITMAP_NEW_STRATEGY_ENABLED =
+      ConfigOptions.key("rss.server.bitmap.new.strategy")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Whether to enable new strategy of bitmap.");
+
   public ShuffleServerConf() {}
 
   public ShuffleServerConf(String fileName) {
