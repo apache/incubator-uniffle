@@ -267,13 +267,13 @@ public class RssClientConf {
   public static final ConfigOption<Integer> RSS_CLIENT_REMOTE_MERGE_FETCH_INIT_SLEEP_MS =
       ConfigOptions.key("rss.client.remote.merge.fetch.initSleepMs")
           .intType()
-          .defaultValue(20)
+          .defaultValue(100)
           .withDescription("the init sleep ms for fetch remote merge records");
 
   public static final ConfigOption<Integer> RSS_CLIENT_REMOTE_MERGE_FETCH_MAX_SLEEP_MS =
       ConfigOptions.key("rss.client.remote.merge.fetch.maxSleepMs")
           .intType()
-          .defaultValue(1000)
+          .defaultValue(5000)
           .withDescription("the max sleep ms for fetch remote merge records");
 
   public static final ConfigOption<Integer> RSS_CLIENT_REMOTE_MERGE_READER_MAX_BUFFER =

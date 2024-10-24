@@ -706,7 +706,7 @@ public class ShuffleServerConf extends RssBaseConf {
   public static final ConfigOption<Integer> SERVER_MERGE_BLOCK_RING_BUFFER_SIZE =
       ConfigOptions.key("rss.server.merge.blockRingBufferSize")
           .intType()
-          .defaultValue(4)
+          .defaultValue(2)
           .withDescription("The ring buffer size for read block when merge");
 
   public static final ConfigOption<String> SERVER_MERGE_CLASS_LOADER_JARS_PATH =
