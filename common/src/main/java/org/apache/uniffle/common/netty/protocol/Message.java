@@ -151,7 +151,7 @@ public abstract class Message implements Encodable {
       case RPC_RESPONSE:
         return RpcResponse.decode(in, false);
       case SEND_SHUFFLE_DATA_REQUEST:
-        return SendShuffleDataRequest.decode(in);
+        return SendShuffleDataRequestV1.decode(in);
       case GET_LOCAL_SHUFFLE_DATA_REQUEST:
         return GetLocalShuffleDataRequest.decode(in);
       case GET_LOCAL_SHUFFLE_DATA_RESPONSE:
