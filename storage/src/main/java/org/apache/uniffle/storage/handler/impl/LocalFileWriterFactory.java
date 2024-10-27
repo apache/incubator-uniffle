@@ -15,21 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.storage.api;
+package org.apache.uniffle.storage.handler.impl;
 
-import java.io.Closeable;
-import java.io.IOException;
+import java.io.File;
 
-import io.netty.buffer.ByteBuf;
+import org.apache.commons.lang3.StringUtils;
 
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
+import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.storage.api.FileWriter;
 
-public interface FileWriter extends Closeable {
-  void writeData(byte[] data) throws IOException;
+public class LocalFileWriterFactory {
+  public static FileWriter getLocalFileWriter(RssConf conf, File file, int buffer)
+      throws Exception {
+    String className = conf.get(RssBaseConf.RSS_STORAGE_LOCALFILE_WRITER_CLASS);
+    if (StringUtils.isEmpty(className)) {
+      return null;
+    }
 
-  void writeData(ByteBuf buf) throws IOException;
-
-  void writeIndex(FileBasedShuffleSegment segment) throws IOException;
-
-  long nextOffset();
+    return (FileWriter)
+        RssUtils.getConstructor(className, File.class, int.class).newInstance(file, buffer);
+  }
 }

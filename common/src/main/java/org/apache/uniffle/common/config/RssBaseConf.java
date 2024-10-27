@@ -305,6 +305,11 @@ public class RssBaseConf extends RssConf {
           .stringType()
           .defaultValue("8k")
           .withDescription("The buffer size to cache the write index content for LOCALFILE.");
+  public static final ConfigOption<String> RSS_STORAGE_LOCALFILE_WRITER_CLASS =
+      ConfigOptions.key("rss.storage.localfile.writer.class")
+          .stringType()
+          .defaultValue("org.apache.uniffle.storage.handler.impl.LocalFileWriter")
+          .withDescription("The writer class to write shuffle data for LOCALFILE.");
 
   public static final ConfigOption<String> RSS_STORAGE_HDFS_WRITE_DATA_BUFFER_SIZE =
       ConfigOptions.key("rss.storage.hdfs.write.dataBufferSize")

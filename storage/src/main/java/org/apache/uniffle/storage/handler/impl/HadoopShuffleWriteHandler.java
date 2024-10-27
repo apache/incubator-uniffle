@@ -33,7 +33,6 @@ import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.filesystem.HadoopFilesystemProvider;
-import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -168,7 +167,7 @@ public class HadoopShuffleWriteHandler implements ShuffleWriteHandler {
           long blockId = block.getBlockId();
           long crc = block.getCrc();
           long startOffset = dataWriter.nextOffset();
-          dataWriter.writeData(ByteBufUtils.readBytes(block.getData()));
+          dataWriter.writeData(block.getData());
 
           FileBasedShuffleSegment segment =
               new FileBasedShuffleSegment(
