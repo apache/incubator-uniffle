@@ -149,9 +149,12 @@ public class ShuffleTaskManager {
     this.shuffleBufferManager = shuffleBufferManager;
     this.storageManager = storageManager;
     this.shuffleMergeManager = shuffleMergeManager;
+    org.apache.uniffle.common.StorageType storageType =
+        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE);
     this.storageTypeWithMemory =
-        StorageType.withMemory(
-            StorageType.valueOf(conf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name()));
+        storageType == null
+            ? false
+            : StorageType.withMemory(StorageType.valueOf(storageType.name()));
     this.appExpiredWithoutHB = conf.getLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT);
     this.commitCheckIntervalMax = conf.getLong(ShuffleServerConf.SERVER_COMMIT_CHECK_INTERVAL_MAX);
     this.preAllocationExpired = conf.getLong(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED);

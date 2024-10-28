@@ -98,6 +98,7 @@ import org.apache.uniffle.server.merge.MergeStatus;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.server.merge.ShuffleMergeManager.MERGE_APP_SUFFIX;
 
@@ -578,6 +579,15 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
       auditContext.withAppId(appId).withShuffleId(shuffleId);
+      org.apache.uniffle.common.StorageType storageType =
+          shuffleServer.getShuffleServerConf().get(ShuffleServerConf.RSS_STORAGE_TYPE);
+      boolean storageTypeWithMemory =
+          StorageType.withMemory(StorageType.valueOf(storageType.name()));
+      if (storageTypeWithMemory) {
+        LOG.warn(
+            "finishShuffle should not be called while server-side configured StorageType to {}",
+            storageType);
+      }
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
         auditContext.withStatusCode(status);
@@ -635,6 +645,15 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
       auditContext.withAppId(appId).withShuffleId(shuffleId);
+      org.apache.uniffle.common.StorageType storageType =
+          shuffleServer.getShuffleServerConf().get(ShuffleServerConf.RSS_STORAGE_TYPE);
+      boolean storageTypeWithMemory =
+          StorageType.withMemory(StorageType.valueOf(storageType.name()));
+      if (storageTypeWithMemory) {
+        LOG.warn(
+            "finishShuffle should not be called while server-side configured StorageType to {}",
+            storageType);
+      }
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
         auditContext.withStatusCode(status);

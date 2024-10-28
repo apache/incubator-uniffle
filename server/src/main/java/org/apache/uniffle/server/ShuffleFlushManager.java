@@ -103,9 +103,7 @@ public class ShuffleFlushManager {
                 .mapToLong(bitmap -> bitmap.getLongCardinality())
                 .sum(),
         2 * 60 * 1000L /* 2 minutes */);
-    this.storageTypeWithMemory =
-        StorageType.withMemory(
-            StorageType.valueOf(shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_TYPE).name()));
+    this.storageTypeWithMemory = StorageType.withMemory(StorageType.valueOf(storageType));
   }
 
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
