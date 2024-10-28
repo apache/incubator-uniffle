@@ -334,7 +334,7 @@ public class ShuffleTaskInfo {
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     this.properties = filteredProperties;
     LOGGER.info("{} set properties to {}", appId, properties);
-    if (serverConf.getBoolean(ShuffleServerConf.SERVER_WITH_MEMORY_STORAGE_TYPE_OPTIMIZE_ENABLED)) {
+    if (serverConf.getBoolean(ShuffleServerConf.SERVER_STORAGE_BITMAP_MEMORY_OPTIMIZE_ENABLED)) {
       String storageType = properties.get(RssClientConf.RSS_STORAGE_TYPE.key());
       if (StringUtils.isEmpty(storageType)) {
         storageType =
