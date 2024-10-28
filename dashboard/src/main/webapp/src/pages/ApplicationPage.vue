@@ -116,6 +116,7 @@
             label="TotalSize"
             min-width="180"
             :formatter="memFormatter"
+            sortable
         />
       </el-table>
     </div>
