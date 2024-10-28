@@ -31,7 +31,10 @@ public class LocalFileWriterFactory {
       throws Exception {
     String className = conf.get(RssBaseConf.RSS_STORAGE_LOCALFILE_WRITER_CLASS);
     if (StringUtils.isEmpty(className)) {
-      return null;
+      throw new IllegalStateException(
+          "Configuration error: "
+              + RssBaseConf.RSS_STORAGE_LOCALFILE_WRITER_CLASS.toString()
+              + " should not set to empty");
     }
 
     return (FileWriter)
