@@ -25,11 +25,19 @@ public abstract class PurgeEvent {
   private String appId;
   private String user;
   private List<Integer> shuffleIds;
+  // Quick Delete or not.
+  private boolean isTwoPhasesDeletion;
 
   public PurgeEvent(String appId, String user, List<Integer> shuffleIds) {
+    this(appId, user, shuffleIds, false);
+  }
+
+  public PurgeEvent(
+      String appId, String user, List<Integer> shuffleIds, boolean isTwoPhasesDeletion) {
     this.appId = appId;
     this.user = user;
     this.shuffleIds = shuffleIds;
+    this.isTwoPhasesDeletion = isTwoPhasesDeletion;
   }
 
   public String getAppId() {
@@ -44,6 +52,10 @@ public abstract class PurgeEvent {
     return shuffleIds;
   }
 
+  public boolean isTwoPhasesDeletion() {
+    return isTwoPhasesDeletion;
+  }
+
   @Override
   public String toString() {
     return this.getClass().getSimpleName()
@@ -56,6 +68,8 @@ public abstract class PurgeEvent {
         + '\''
         + ", shuffleIds="
         + shuffleIds
+        + ", isTwoPhasesDeletion="
+        + isTwoPhasesDeletion
         + '}';
   }
 }

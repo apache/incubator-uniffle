@@ -114,7 +114,8 @@ public class HadoopStorageManager extends SingleStorageManager {
                   new CreateShuffleDeleteHandlerRequest(
                       StorageType.HDFS.name(),
                       storage.getConf(),
-                      purgeForExpired ? shuffleServerId : null));
+                      purgeForExpired ? shuffleServerId : null,
+                      event.isTwoPhasesDeletion()));
 
       String basicPath =
           ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
@@ -149,7 +150,11 @@ public class HadoopStorageManager extends SingleStorageManager {
                   storage.getStoragePath()));
         }
       }
-      deleteHandler.delete(deletePaths.toArray(new String[0]), appId, event.getUser());
+      boolean isSuccess =
+          deleteHandler.delete(deletePaths.toArray(new String[0]), appId, event.getUser());
+      if (!isSuccess && event.isTwoPhasesDeletion()) {
+        ShuffleServerMetrics.counterLocalTwoPhasesDeletionFaileTd.inc();
+      }
       removeAppStorageInfo(event);
     } else {
       LOG.warn("Storage gotten is null when removing resources for event: {}", event);

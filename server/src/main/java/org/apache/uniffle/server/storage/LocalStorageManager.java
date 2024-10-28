@@ -311,7 +311,9 @@ public class LocalStorageManager extends SingleStorageManager {
         ShuffleHandlerFactory.getInstance()
             .createShuffleDeleteHandler(
                 new CreateShuffleDeleteHandlerRequest(
-                    StorageType.LOCALFILE.name(), new Configuration()));
+                    StorageType.LOCALFILE.name(),
+                    new Configuration(),
+                    event.isTwoPhasesDeletion()));
 
     List<String> deletePaths =
         localStorages.stream()
@@ -352,7 +354,11 @@ public class LocalStorageManager extends SingleStorageManager {
                 })
             .collect(Collectors.toList());
 
-    deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user);
+    boolean isSuccess =
+        deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user);
+    if (!isSuccess && event.isTwoPhasesDeletion()) {
+      ShuffleServerMetrics.counterHadoopTwoPhasesDeletionFailed.inc();
+    }
     removeAppStorageInfo(event);
   }
 
