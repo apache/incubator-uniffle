@@ -20,6 +20,7 @@ package org.apache.uniffle.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -86,6 +87,7 @@ import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.server.ShuffleServerConf.CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
@@ -96,6 +98,7 @@ import static org.apache.uniffle.server.ShuffleServerMetrics.REQUIRE_BUFFER_COUN
 public class ShuffleTaskManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleTaskManager.class);
+  private final boolean storageTypeWithMemory;
   private ShuffleFlushManager shuffleFlushManager;
   private final ScheduledExecutorService scheduledExecutorService;
   private final ScheduledExecutorService expiredAppCleanupExecutorService;
@@ -146,6 +149,12 @@ public class ShuffleTaskManager {
     this.shuffleBufferManager = shuffleBufferManager;
     this.storageManager = storageManager;
     this.shuffleMergeManager = shuffleMergeManager;
+    org.apache.uniffle.common.StorageType storageType =
+        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE);
+    this.storageTypeWithMemory =
+        storageType == null
+            ? false
+            : StorageType.withMemory(StorageType.valueOf(storageType.name()));
     this.appExpiredWithoutHB = conf.getLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT);
     this.commitCheckIntervalMax = conf.getLong(ShuffleServerConf.SERVER_COMMIT_CHECK_INTERVAL_MAX);
     this.preAllocationExpired = conf.getLong(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED);
@@ -301,7 +310,8 @@ public class ShuffleTaskManager {
         remoteStorageInfo,
         user,
         ShuffleDataDistributionType.NORMAL,
-        -1);
+        -1,
+        Collections.emptyMap());
   }
 
   public StatusCode registerShuffle(
@@ -311,13 +321,15 @@ public class ShuffleTaskManager {
       RemoteStorageInfo remoteStorageInfo,
       String user,
       ShuffleDataDistributionType dataDistType,
-      int maxConcurrencyPerPartitionToWrite) {
+      int maxConcurrencyPerPartitionToWrite,
+      Map<String, String> properties) {
     ReentrantReadWriteLock.WriteLock lock = getAppWriteLock(appId);
     lock.lock();
     try {
       refreshAppId(appId);
 
       ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
+      taskInfo.setProperties(properties);
       taskInfo.setUser(user);
       taskInfo.setSpecification(
           ShuffleSpecification.builder()
@@ -520,15 +532,23 @@ public class ShuffleTaskManager {
     }
     ShuffleTaskInfo shuffleTaskInfo =
         shuffleTaskInfos.computeIfAbsent(appId, x -> new ShuffleTaskInfo(appId));
-    Roaring64NavigableMap bitmap =
-        shuffleTaskInfo
-            .getCachedBlockIds()
-            .computeIfAbsent(shuffleId, x -> Roaring64NavigableMap.bitmapOf());
-
     long size = 0L;
-    synchronized (bitmap) {
+    // With memory storage type should never need cachedBlockIds,
+    // since client do not need call finish shuffle rpc
+    if (!storageTypeWithMemory) {
+      Roaring64NavigableMap bitmap =
+          shuffleTaskInfo
+              .getCachedBlockIds()
+              .computeIfAbsent(shuffleId, x -> Roaring64NavigableMap.bitmapOf());
+
+      synchronized (bitmap) {
+        for (ShufflePartitionedBlock spb : spbs) {
+          bitmap.addLong(spb.getBlockId());
+          size += spb.getEncodedLength();
+        }
+      }
+    } else {
       for (ShufflePartitionedBlock spb : spbs) {
-        bitmap.addLong(spb.getBlockId());
         size += spb.getEncodedLength();
       }
     }

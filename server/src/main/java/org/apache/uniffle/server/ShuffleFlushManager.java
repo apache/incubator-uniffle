@@ -46,6 +46,7 @@ import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandlerWrapper;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
 import static org.apache.uniffle.server.ShuffleServerMetrics.COMMITTED_BLOCK_COUNT;
@@ -62,6 +63,7 @@ public class ShuffleFlushManager {
   private final String storageType;
   private final int storageDataReplica;
   private final ShuffleServerConf shuffleServerConf;
+  private final boolean storageTypeWithMemory;
   private Configuration hadoopConf;
   // appId -> shuffleId -> committed shuffle blockIds
   private Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds =
@@ -101,6 +103,7 @@ public class ShuffleFlushManager {
                 .mapToLong(bitmap -> bitmap.getLongCardinality())
                 .sum(),
         2 * 60 * 1000L /* 2 minutes */);
+    this.storageTypeWithMemory = StorageType.withMemory(StorageType.valueOf(storageType));
   }
 
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
@@ -194,11 +197,14 @@ public class ShuffleFlushManager {
         throw new EventRetryException();
       }
       long endTime = System.currentTimeMillis();
-
-      // update some metrics for shuffle task
-      updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
       ShuffleTaskInfo shuffleTaskInfo =
           shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
+      if (shuffleTaskInfo == null || !storageTypeWithMemory) {
+        // With memory storage type should never need cachedBlockIds,
+        // since client do not need call finish shuffle rpc
+        // update some metrics for shuffle task
+        updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
+      }
       if (isStorageAuditLogEnabled) {
         AUDIT_LOGGER.info(
             String.format(
