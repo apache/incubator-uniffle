@@ -35,6 +35,8 @@ public class ShuffleServerInfo implements Serializable {
 
   private int nettyPort = -1;
 
+  private int serviceVersion = 0;
+
   @VisibleForTesting
   public ShuffleServerInfo(String host, int port) {
     this.id = host + "-" + port;
@@ -57,10 +59,16 @@ public class ShuffleServerInfo implements Serializable {
   }
 
   public ShuffleServerInfo(String id, String host, int grpcPort, int nettyPort) {
+    this(id, host, grpcPort, nettyPort, 0);
+  }
+
+  public ShuffleServerInfo(
+      String id, String host, int grpcPort, int nettyPort, int serviceVersion) {
     this.id = id;
     this.host = host;
     this.grpcPort = grpcPort;
     this.nettyPort = nettyPort;
+    this.serviceVersion = serviceVersion;
   }
 
   public String getId() {
@@ -77,6 +85,10 @@ public class ShuffleServerInfo implements Serializable {
 
   public int getNettyPort() {
     return nettyPort;
+  }
+
+  public int getServiceVersion() {
+    return serviceVersion;
   }
 
   @Override
@@ -121,7 +133,8 @@ public class ShuffleServerInfo implements Serializable {
             shuffleServerId.getId(),
             shuffleServerId.getIp(),
             shuffleServerId.getPort(),
-            shuffleServerId.getNettyPort());
+            shuffleServerId.getNettyPort(),
+            shuffleServerId.getServiceVersion());
     return shuffleServerInfo;
   }
 

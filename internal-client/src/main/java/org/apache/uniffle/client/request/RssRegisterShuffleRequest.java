@@ -19,16 +19,19 @@ package org.apache.uniffle.client.request;
 
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 
 import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.proto.RssProtos.MergeContext;
 
 public class RssRegisterShuffleRequest {
 
+  private final BlockIdLayout blockIdLayout;
   private String appId;
   private int shuffleId;
   private List<PartitionRange> partitionRanges;
@@ -40,6 +43,7 @@ public class RssRegisterShuffleRequest {
 
   private final MergeContext mergeContext;
 
+  @VisibleForTesting
   public RssRegisterShuffleRequest(
       String appId,
       int shuffleId,
@@ -57,6 +61,7 @@ public class RssRegisterShuffleRequest {
         dataDistributionType,
         maxConcurrencyPerPartitionToWrite,
         0,
+        null,
         null);
   }
 
@@ -69,7 +74,8 @@ public class RssRegisterShuffleRequest {
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      MergeContext mergeContext) {
+      MergeContext mergeContext,
+      BlockIdLayout blockIdLayout) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionRanges = partitionRanges;
@@ -79,8 +85,10 @@ public class RssRegisterShuffleRequest {
     this.maxConcurrencyPerPartitionToWrite = maxConcurrencyPerPartitionToWrite;
     this.stageAttemptNumber = stageAttemptNumber;
     this.mergeContext = mergeContext;
+    this.blockIdLayout = blockIdLayout;
   }
 
+  @VisibleForTesting
   public RssRegisterShuffleRequest(
       String appId,
       int shuffleId,
@@ -97,9 +105,11 @@ public class RssRegisterShuffleRequest {
         dataDistributionType,
         RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue(),
         0,
+        null,
         null);
   }
 
+  @VisibleForTesting
   public RssRegisterShuffleRequest(
       String appId, int shuffleId, List<PartitionRange> partitionRanges, String remoteStoragePath) {
     this(
@@ -111,6 +121,7 @@ public class RssRegisterShuffleRequest {
         ShuffleDataDistributionType.NORMAL,
         RssClientConf.MAX_CONCURRENCY_PER_PARTITION_TO_WRITE.defaultValue(),
         0,
+        null,
         null);
   }
 
@@ -148,5 +159,9 @@ public class RssRegisterShuffleRequest {
 
   public MergeContext getMergeContext() {
     return mergeContext;
+  }
+
+  public BlockIdLayout getBlockIdLayout() {
+    return blockIdLayout;
   }
 }

@@ -234,6 +234,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       String remoteStoragePath = req.getRemoteStorage().getPath();
       String user = req.getUser();
       int stageAttemptNumber = req.getStageAttemptNumber();
+      BlockIdLayout blockIdLayout = null;
+      if (req.hasBlockIdLayout()) {
+        blockIdLayout =
+            BlockIdLayout.from(
+                req.getBlockIdLayout().getSequenceNoBits(),
+                req.getBlockIdLayout().getPartitionIdBits(),
+                req.getBlockIdLayout().getTaskAttemptIdBits());
+      }
       auditContext.withAppId(appId).withShuffleId(shuffleId);
       auditContext.withArgs(
           "remoteStoragePath="
@@ -241,7 +249,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               + ", user="
               + user
               + ", stageAttemptNumber="
-              + stageAttemptNumber);
+              + stageAttemptNumber
+              + ", blockIdLayout="
+              + blockIdLayout);
       // If the Stage is registered for the first time, you do not need to consider the Stage retry
       // and delete the Block data that has been sent.
       if (stageAttemptNumber > 0) {
@@ -322,7 +332,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                   new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
                   user,
                   shuffleDataDistributionType,
-                  maxConcurrencyPerPartitionToWrite);
+                  maxConcurrencyPerPartitionToWrite,
+                  blockIdLayout);
       if (StatusCode.SUCCESS == result
           && shuffleServer.isRemoteMergeEnable()
           && req.hasMergeContext()) {
@@ -338,7 +349,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                     new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
                     user,
                     shuffleDataDistributionType,
-                    maxConcurrencyPerPartitionToWrite);
+                    maxConcurrencyPerPartitionToWrite,
+                    blockIdLayout);
         if (result == StatusCode.SUCCESS) {
           result =
               shuffleServer
@@ -890,11 +902,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       String appId = request.getAppId();
       int shuffleId = request.getShuffleId();
       int partitionId = request.getPartitionId();
-      BlockIdLayout blockIdLayout =
-          BlockIdLayout.from(
-              request.getBlockIdLayout().getSequenceNoBits(),
-              request.getBlockIdLayout().getPartitionIdBits(),
-              request.getBlockIdLayout().getTaskAttemptIdBits());
+      BlockIdLayout blockIdLayout = null;
+      if (request.hasBlockIdLayout()) {
+        blockIdLayout =
+            BlockIdLayout.from(
+                request.getBlockIdLayout().getSequenceNoBits(),
+                request.getBlockIdLayout().getPartitionIdBits(),
+                request.getBlockIdLayout().getTaskAttemptIdBits());
+      }
 
       auditContext.withAppId(appId).withShuffleId(shuffleId);
       auditContext.withArgs("partitionId=" + partitionId + ", blockIdLayout=" + blockIdLayout);
@@ -958,11 +973,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       int shuffleId = request.getShuffleId();
       List<Integer> partitionsList = request.getPartitionsList();
 
-      BlockIdLayout blockIdLayout =
-          BlockIdLayout.from(
-              request.getBlockIdLayout().getSequenceNoBits(),
-              request.getBlockIdLayout().getPartitionIdBits(),
-              request.getBlockIdLayout().getTaskAttemptIdBits());
+      BlockIdLayout blockIdLayout = null;
+      if (request.hasBlockIdLayout()) {
+        blockIdLayout =
+            BlockIdLayout.from(
+                request.getBlockIdLayout().getSequenceNoBits(),
+                request.getBlockIdLayout().getPartitionIdBits(),
+                request.getBlockIdLayout().getTaskAttemptIdBits());
+      }
 
       auditContext.withAppId(appId).withShuffleId(shuffleId);
       auditContext.withArgs(

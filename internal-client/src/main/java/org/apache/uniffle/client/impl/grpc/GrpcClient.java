@@ -25,6 +25,7 @@ import io.grpc.netty.shaded.io.netty.channel.ChannelOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.rpc.ServiceVersion;
 import org.apache.uniffle.common.util.GrpcNettyUtils;
 
 public abstract class GrpcClient {
@@ -32,17 +33,19 @@ public abstract class GrpcClient {
   private static final Logger logger = LoggerFactory.getLogger(GrpcClient.class);
   protected String host;
   protected int port;
+  protected ServiceVersion serviceVersion;
   protected boolean usePlaintext;
   protected int maxRetryAttempts;
   protected ManagedChannel channel;
 
   protected GrpcClient(String host, int port, int maxRetryAttempts, boolean usePlaintext) {
-    this(host, port, maxRetryAttempts, usePlaintext, 0, 0, 0);
+    this(host, port, 0, maxRetryAttempts, usePlaintext, 0, 0, 0);
   }
 
   protected GrpcClient(
       String host,
       int port,
+      int serviceVersion,
       int maxRetryAttempts,
       boolean usePlaintext,
       int pageSize,
@@ -50,6 +53,7 @@ public abstract class GrpcClient {
       int smallCacheSize) {
     this.host = host;
     this.port = port;
+    this.serviceVersion = new ServiceVersion(serviceVersion);
     this.maxRetryAttempts = maxRetryAttempts;
     this.usePlaintext = usePlaintext;
 
@@ -73,6 +77,10 @@ public abstract class GrpcClient {
 
   protected GrpcClient(ManagedChannel channel) {
     this.channel = channel;
+  }
+
+  public ServiceVersion getServiceVersion() {
+    return serviceVersion;
   }
 
   public void close() {

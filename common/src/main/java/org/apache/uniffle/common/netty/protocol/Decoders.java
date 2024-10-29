@@ -36,7 +36,9 @@ public class Decoders {
     String host = ByteBufUtils.readLengthAndString(byteBuf);
     int grpcPort = byteBuf.readInt();
     int nettyPort = byteBuf.readInt();
-    return new ShuffleServerInfo(id, host, grpcPort, nettyPort);
+    // this decodeShuffleServerInfo method is deprecated,
+    // clients do not need to encode service version
+    return new ShuffleServerInfo(id, host, grpcPort, nettyPort, 0);
   }
 
   public static ShuffleBlockInfo decodeShuffleBlockInfo(ByteBuf byteBuf) {
