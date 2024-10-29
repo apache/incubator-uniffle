@@ -59,6 +59,7 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.common.util.RssUtils;
+import org.apache.uniffle.server.block.DefaultShuffleBlockIdManager;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
@@ -816,7 +817,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
       }
     }
     Roaring64NavigableMap resultBlockIds =
-        shuffleTaskManager.getBlockIdsByPartitionId(
+        DefaultShuffleBlockIdManager.getBlockIdsByPartitionId(
             Sets.newHashSet(expectedPartitionId),
             bitmapBlockIds,
             Roaring64NavigableMap.bitmapOf(),
@@ -825,7 +826,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
 
     bitmapBlockIds.addLong(layout.getBlockId(0, 0, 0));
     resultBlockIds =
-        shuffleTaskManager.getBlockIdsByPartitionId(
+        DefaultShuffleBlockIdManager.getBlockIdsByPartitionId(
             Sets.newHashSet(0), bitmapBlockIds, Roaring64NavigableMap.bitmapOf(), layout);
     assertEquals(Roaring64NavigableMap.bitmapOf(0L), resultBlockIds);
 
@@ -833,7 +834,7 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
         layout.getBlockId(layout.maxSequenceNo, layout.maxPartitionId, layout.maxTaskAttemptId);
     bitmapBlockIds.addLong(expectedBlockId);
     resultBlockIds =
-        shuffleTaskManager.getBlockIdsByPartitionId(
+        DefaultShuffleBlockIdManager.getBlockIdsByPartitionId(
             Sets.newHashSet(layout.maxPartitionId),
             bitmapBlockIds,
             Roaring64NavigableMap.bitmapOf(),
@@ -872,12 +873,12 @@ public class ShuffleTaskManagerTest extends HadoopTestBase {
     }
 
     Roaring64NavigableMap resultBlockIds =
-        shuffleTaskManager.getBlockIdsByPartitionId(
+        DefaultShuffleBlockIdManager.getBlockIdsByPartitionId(
             requestPartitions, bitmapBlockIds, Roaring64NavigableMap.bitmapOf(), layout);
     assertEquals(expectedBlockIds, resultBlockIds);
     assertEquals(
         bitmapBlockIds,
-        shuffleTaskManager.getBlockIdsByPartitionId(
+        DefaultShuffleBlockIdManager.getBlockIdsByPartitionId(
             allPartitions, bitmapBlockIds, Roaring64NavigableMap.bitmapOf(), layout));
   }
 
