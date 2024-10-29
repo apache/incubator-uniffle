@@ -589,7 +589,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 "commitShuffleTask should not be called while server-side configured StorageType to %s for appId %s",
                 storageType, appId);
         LOG.error(errorMessage);
-        throw new IllegalStateException(errorMessage);
+        throw new UnsupportedOperationException(errorMessage);
       }
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
@@ -658,7 +658,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 "finishShuffle should not be called while server-side configured StorageType to %s for appId %s",
                 storageType, appId);
         LOG.error(errorMessage);
-        throw new IllegalStateException(errorMessage);
+        throw new UnsupportedOperationException(errorMessage);
       }
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
