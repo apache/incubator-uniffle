@@ -584,9 +584,12 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       boolean storageTypeWithMemory =
           StorageType.withMemory(StorageType.valueOf(storageType.name()));
       if (storageTypeWithMemory) {
-        LOG.warn(
-            "finishShuffle should not be called while server-side configured StorageType to {}",
-            storageType);
+        String errorMessage =
+            String.format(
+                "commitShuffleTask should not be called while server-side configured StorageType to %s for appId %s",
+                storageType, appId);
+        LOG.error(errorMessage);
+        throw new IllegalStateException(errorMessage);
       }
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
@@ -650,9 +653,12 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       boolean storageTypeWithMemory =
           StorageType.withMemory(StorageType.valueOf(storageType.name()));
       if (storageTypeWithMemory) {
-        LOG.warn(
-            "finishShuffle should not be called while server-side configured StorageType to {}",
-            storageType);
+        String errorMessage =
+            String.format(
+                "finishShuffle should not be called while server-side configured StorageType to %s for appId %s",
+                storageType, appId);
+        LOG.error(errorMessage);
+        throw new IllegalStateException(errorMessage);
       }
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
