@@ -251,7 +251,13 @@ public class ShuffleTaskManager {
     ShuffleServerMetrics.addLabeledGauge(REQUIRE_BUFFER_COUNT, requireBufferIds::size);
     ShuffleServerMetrics.addLabeledCacheGauge(
         REPORTED_BLOCK_COUNT,
-        () -> shuffleBlockIdManager.getTotalBlockCount(),
+        () ->
+            shuffleBlockIdManager.getTotalBlockCount()
+                + shuffleTaskInfos.values().stream()
+                    .map(ShuffleTaskInfo::getShuffleBlockIdManager)
+                    .filter(manager -> manager != null && manager != shuffleBlockIdManager)
+                    .mapToLong(ShuffleBlockIdManager::getTotalBlockCount)
+                    .sum(),
         2 * 60 * 1000L /* 2 minutes */);
     ShuffleServerMetrics.addLabeledCacheGauge(
         CACHED_BLOCK_COUNT,
@@ -324,8 +330,9 @@ public class ShuffleTaskManager {
                   getMaxConcurrencyWriting(maxConcurrencyPerPartitionToWrite, conf))
               .dataDistributionType(dataDistType)
               .build());
+      taskInfo.setShuffleBlockIdManagerIfNeeded(shuffleBlockIdManager);
 
-      shuffleBlockIdManager.registerAppId(appId);
+      taskInfo.getShuffleBlockIdManager().registerAppId(appId);
       for (PartitionRange partitionRange : partitionRanges) {
         shuffleBufferManager.registerBuffer(
             appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
@@ -457,8 +464,11 @@ public class ShuffleTaskManager {
       throw new InvalidRequestException(
           "ShuffleTaskInfo is not found that should not happen for appId: " + appId);
     }
-    return shuffleBlockIdManager.addFinishedBlockIds(
-        taskInfo, appId, shuffleId, partitionToBlockIds, bitmapNum);
+    ShuffleBlockIdManager manager = taskInfo.getShuffleBlockIdManager();
+    if (manager == null) {
+      throw new RssException("appId[" + appId + "] is expired!");
+    }
+    return manager.addFinishedBlockIds(taskInfo, appId, shuffleId, partitionToBlockIds, bitmapNum);
   }
 
   public int updateAndGetCommitCount(String appId, int shuffleId) {
@@ -617,8 +627,11 @@ public class ShuffleTaskManager {
       }
     }
     ShuffleTaskInfo taskInfo = getShuffleTaskInfo(appId);
-    return shuffleBlockIdManager.getFinishedBlockIds(
-        taskInfo, appId, shuffleId, partitions, blockIdLayout);
+    ShuffleBlockIdManager manager = taskInfo.getShuffleBlockIdManager();
+    if (manager == null) {
+      throw new RssException("appId[" + appId + "] is expired!");
+    }
+    return manager.getFinishedBlockIds(taskInfo, appId, shuffleId, partitions, blockIdLayout);
   }
 
   public ShuffleDataResult getInMemoryShuffleData(
@@ -742,8 +755,14 @@ public class ShuffleTaskManager {
           taskInfo.getCommitCounts().remove(shuffleId);
           taskInfo.getCommitLocks().remove(shuffleId);
         }
+        ShuffleBlockIdManager manager = taskInfo.getShuffleBlockIdManager();
+        if (manager == null) {
+          throw new RssException("appId[" + appId + "] is expired!");
+        }
+        manager.removeBlockIdByShuffleId(appId, shuffleIds);
+      } else {
+        shuffleBlockIdManager.removeBlockIdByShuffleId(appId, shuffleIds);
       }
-      shuffleBlockIdManager.removeBlockIdByShuffleId(appId, shuffleIds);
       shuffleBufferManager.removeBufferByShuffleId(appId, shuffleIds);
       shuffleFlushManager.removeResourcesOfShuffleId(appId, shuffleIds);
 
@@ -821,6 +840,10 @@ public class ShuffleTaskManager {
       partitionInfoSummary.append("The app task info: ").append(shuffleTaskInfo);
       LOG.info("Removing app summary info: {}", partitionInfoSummary);
 
+      ShuffleBlockIdManager manager = shuffleTaskInfo.getShuffleBlockIdManager();
+      if (manager != null) {
+        manager.removeBlockIdByAppId(appId);
+      }
       shuffleBlockIdManager.removeBlockIdByAppId(appId);
       shuffleBufferManager.removeBuffer(appId);
       shuffleFlushManager.removeResources(appId);

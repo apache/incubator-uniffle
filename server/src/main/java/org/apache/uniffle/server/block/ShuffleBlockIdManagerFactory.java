@@ -25,21 +25,22 @@ import org.apache.uniffle.server.ShuffleServerConf;
 public class ShuffleBlockIdManagerFactory {
   public static ShuffleBlockIdManager createShuffleBlockIdManager(ShuffleServerConf conf) {
     String className = conf.get(ShuffleServerConf.SERVER_BLOCK_ID_MANAGER_CLASS);
+    return createShuffleBlockIdManager(
+        className, ShuffleServerConf.SERVER_BLOCK_ID_MANAGER_CLASS.key());
+  }
+
+  public static ShuffleBlockIdManager createShuffleBlockIdManager(
+      String className, String configKey) {
     if (StringUtils.isEmpty(className)) {
       throw new IllegalStateException(
-          "Configuration error: "
-              + ShuffleServerConf.SERVER_BLOCK_ID_MANAGER_CLASS.toString()
-              + " should not set to empty");
+          "Configuration error: " + configKey + " should not set to empty");
     }
 
     try {
       return (ShuffleBlockIdManager) RssUtils.getConstructor(className).newInstance();
     } catch (Exception e) {
       throw new IllegalStateException(
-          "Configuration error: "
-              + ShuffleServerConf.SERVER_BLOCK_ID_MANAGER_CLASS.key()
-              + " is failed to create instance of "
-              + className);
+          "Configuration error: " + configKey + " is failed to create instance of " + className, e);
     }
   }
 }

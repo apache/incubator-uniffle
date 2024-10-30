@@ -295,4 +295,10 @@ public class RssClientConf {
           .asList()
           .noDefaultValue()
           .withDescription("the extra java properties could be configured by this option");
+
+  public static final ConfigOption<String> RSS_CLIENT_BLOCK_ID_MANAGER_CLASS =
+      ConfigOptions.key("rss.client.blockIdManagerClass")
+          .stringType()
+          .noDefaultValue()
+          .withDescription("The block id manager class for server");
 }
