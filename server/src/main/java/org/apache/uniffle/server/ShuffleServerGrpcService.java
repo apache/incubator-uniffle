@@ -169,6 +169,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         }
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
+        LOG.error("App {} exception while unregisterShuffleByAppId", appId, e);
       }
 
       auditContext.withStatusCode(status);
@@ -212,6 +213,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         }
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
+        LOG.error("App {} exception while unregisterShuffle", appId, e);
       }
 
       auditContext.withStatusCode(status);
