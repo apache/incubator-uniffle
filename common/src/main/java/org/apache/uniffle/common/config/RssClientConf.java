@@ -296,9 +296,9 @@ public class RssClientConf {
           .noDefaultValue()
           .withDescription("the extra java properties could be configured by this option");
 
-  public static final ConfigOption<String> RSS_CLIENT_BLOCK_ID_MANAGER_CLASS =
-      ConfigOptions.key("rss.client.blockIdManagerClass")
+  public static final ConfigOption<String> RSS_CLIENT_BLOCK_ID_STRATEGY_CLASS =
+      ConfigOptions.key("rss.client.blockIdStrategyClass")
           .stringType()
           .noDefaultValue()
-          .withDescription("The block id manager class for server");
+          .withDescription("The block id strategy class for server");
 }
