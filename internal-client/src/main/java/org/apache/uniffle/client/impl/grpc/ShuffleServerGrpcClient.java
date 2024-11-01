@@ -77,6 +77,7 @@ import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
 import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.rpc.StatusCode;
+import org.apache.uniffle.common.util.OutputUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.proto.RssProtos;
@@ -316,7 +317,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           "Requiring buffer for appId: {}, shuffleId: {}, partitionIds: {} with {} bytes from {}:{}",
           appId,
           shuffleId,
-          partitionIds,
+          OutputUtils.listToSegment(partitionIds, 10),
           requireSize,
           host,
           port);
@@ -355,7 +356,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             "Can't require buffer for appId: {}, shuffleId: {}, partitionIds: {} with {} bytes from {}:{} due to {}, sleep and try[{}] again",
             appId,
             shuffleId,
-            partitionIds,
+            OutputUtils.listToSegment(partitionIds, 10),
             requireSize,
             host,
             port,
