@@ -123,7 +123,7 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   getCoordinatorConf,
@@ -196,11 +196,9 @@ export default {
     /**
      * The system obtains data from global variables and requests the interface to obtain new data after data changes.
      */
-    currentServerStore.$subscribe((mutable, state) => {
-      if (state.currentServer) {
-        getCoordinatorServerConfPage()
-        getCoorServerInfo()
-      }
+    watch(() => currentServerStore.currentServer, () => {
+      getCoordinatorServerConfPage()
+      getCoorServerInfo()
     })
 
     onMounted(() => {

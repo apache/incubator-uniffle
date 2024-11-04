@@ -109,14 +109,16 @@ export default {
       }
     }
 
-    function handleChangeServer(key) {
+    const handleChangeServer = (key) => {
       currentServerStore.currentServer = key
     }
 
     async function getSelectCurrentServer() {
       const res = await getAllCoordinatorAddrees()
       const selectCurrentServer = res.data.data
-      currentServerStore.currentServer = Object.keys(selectCurrentServer)[0]
+      if (!currentServerStore.currentServer) {
+        currentServerStore.currentServer = Object.keys(selectCurrentServer)[0]
+      }
       hostNameAndPorts.length = 0
       Object.entries(selectCurrentServer).forEach(([key, value]) => {
         hostNameAndPorts.push({ value: value, label: key })
