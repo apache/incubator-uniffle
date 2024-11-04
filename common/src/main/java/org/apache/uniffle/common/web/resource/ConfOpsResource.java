@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.ReconfigurableRegistry;
 import org.apache.uniffle.common.config.RssConf;
 
-@Path("/confOps")
+@Path("/confops")
 public class ConfOpsResource {
   private static final Logger LOG = LoggerFactory.getLogger(ConfOpsResource.class);
   private static final String WARNING_MSG = "temporarily effective until restart";
@@ -43,7 +43,7 @@ public class ConfOpsResource {
 
   @Authorization
   @POST
-  @Path("/update")
+  @Path("/temp/update")
   @Consumes(MediaType.APPLICATION_JSON)
   public String update(ConfVO updateConfigs) {
     LOG.info("Dynamic updating {}", updateConfigs);
