@@ -24,9 +24,9 @@ import org.apache.uniffle.server.ShuffleServerConf;
 
 public class ShuffleBlockIdManagerFactory {
   public static ShuffleBlockIdManager createShuffleBlockIdManager(ShuffleServerConf conf) {
-    String className = conf.get(ShuffleServerConf.SERVER_BLOCK_ID_STRATEGY_CLASS);
+    String className = conf.get(ShuffleServerConf.SERVER_BLOCK_ID_MANAGER_CLASS);
     return createShuffleBlockIdManager(
-        className, ShuffleServerConf.SERVER_BLOCK_ID_STRATEGY_CLASS.key());
+        className, ShuffleServerConf.SERVER_BLOCK_ID_MANAGER_CLASS.key());
   }
 
   public static ShuffleBlockIdManager createShuffleBlockIdManager(

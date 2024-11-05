@@ -331,16 +331,15 @@ public class ShuffleTaskInfo {
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     this.properties = filteredProperties;
     LOGGER.info("{} set properties to {}", appId, filteredProperties);
-    String keyName = RssClientConf.RSS_CLIENT_BLOCK_ID_STRATEGY_CLASS.key();
+    String keyName = RssClientConf.RSS_CLIENT_BLOCK_ID_MANAGER_CLASS.key();
     String className = properties.get(keyName);
     if (StringUtils.isEmpty(className)) {
       keyName =
-          Constants.SPARK_RSS_CONFIG_PREFIX
-              + RssClientConf.RSS_CLIENT_BLOCK_ID_STRATEGY_CLASS.key();
+          Constants.SPARK_RSS_CONFIG_PREFIX + RssClientConf.RSS_CLIENT_BLOCK_ID_MANAGER_CLASS.key();
       className =
           properties.get(
               Constants.SPARK_RSS_CONFIG_PREFIX
-                  + RssClientConf.RSS_CLIENT_BLOCK_ID_STRATEGY_CLASS.key());
+                  + RssClientConf.RSS_CLIENT_BLOCK_ID_MANAGER_CLASS.key());
     }
     if (StringUtils.isNotEmpty(className)) {
       shuffleBlockIdManager =
