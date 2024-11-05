@@ -112,7 +112,7 @@ public class CoordinatorServerResource extends BaseResource {
     return builder.toString();
   }
 
-  @Path("/confOps")
+  @Path("/conf/ops")
   public Class<ConfOpsResource> getConfOps() {
     return ConfOpsResource.class;
   }
