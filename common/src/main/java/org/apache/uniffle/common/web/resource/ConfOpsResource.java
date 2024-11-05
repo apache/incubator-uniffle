@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.ReconfigurableRegistry;
 import org.apache.uniffle.common.config.RssConf;
 
-@Path("/confops")
+@Path("/conf/ops")
 public class ConfOpsResource {
   private static final Logger LOG = LoggerFactory.getLogger(ConfOpsResource.class);
   private static final String WARNING_MSG = "temporarily effective until restart";
