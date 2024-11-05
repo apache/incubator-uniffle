@@ -62,9 +62,9 @@ jobs:
         if: ${{ matrix.features == '' }}
       - name: Run tests
         working-directory: ./rust/experimental/server
-        run: cargo test --verbose
+        run: cargo test --verbose -- --test-threads=1
         if: ${{ matrix.features == '' }}
       - name: Run tests with memory-prof
         working-directory: ./rust/experimental/server
-        run: cargo test --verbose --features memory-prof
+        run: cargo test --verbose --features memory-prof -- --test-threads=1
         if: ${{ matrix.features == 'memory-prof' }}
