@@ -123,6 +123,7 @@ export default {
       Object.entries(selectCurrentServer).forEach(([key, value]) => {
         hostNameAndPorts.push({ value: value, label: key })
       })
+      hostNameAndPorts.sort((a, b) => a.label.localeCompare(b.label))
     }
 
     onMounted(() => {
