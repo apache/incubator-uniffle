@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ReconfigurableConfManager;
+import org.apache.uniffle.common.ReconfigurableRegistry;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -176,6 +177,33 @@ public class ShuffleBufferManager {
     ShuffleServerMetrics.addLabeledGauge(
         SHUFFLE_COUNT_IN_BUFFER_POOL,
         () -> bufferPool.values().stream().mapToLong(innerMap -> innerMap.size()).sum());
+    ReconfigurableRegistry.register(
+        Sets.newHashSet(
+            ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE.key(),
+            ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE.key()),
+        (theConf, changedProperties) -> {
+          if (changedProperties == null) {
+            return;
+          }
+          if (changedProperties.contains(
+              ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE.key())) {
+            this.highWaterMark =
+                (long)
+                    (capacity
+                        / 100.0
+                        * conf.get(
+                            ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE));
+          }
+          if (changedProperties.contains(
+              ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE.key())) {
+            this.lowWaterMark =
+                (long)
+                    (capacity
+                        / 100.0
+                        * conf.get(
+                            ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE));
+          }
+        });
   }
 
   public void setShuffleTaskManager(ShuffleTaskManager taskManager) {
