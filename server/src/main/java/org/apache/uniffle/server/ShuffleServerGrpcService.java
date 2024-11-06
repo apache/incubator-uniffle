@@ -59,6 +59,7 @@ import org.apache.uniffle.common.rpc.ClientContextServerInterceptor;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ByteBufUtils;
+import org.apache.uniffle.common.util.OutputUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
@@ -711,6 +712,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       if (request.getPartitionIdsList() != null) {
         auditArgs += ", partitionIdsSize=" + request.getPartitionIdsList().size();
       }
+      if (request.getPartitionIdsList() != null) {
+        auditArgs +=
+            ", partitionIds=" + OutputUtils.listToSegment(request.getPartitionIdsList(), 1, 10);
+      }
       auditContext.withArgs(auditArgs);
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
@@ -992,8 +997,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               request.getBlockIdLayout().getTaskAttemptIdBits());
 
       auditContext.withAppId(appId).withShuffleId(shuffleId);
+      String partitionIdsOutput = OutputUtils.listToSegment(partitionsList, 1, 10);
       auditContext.withArgs(
-          "partitionsListSize=" + partitionsList.size() + ", blockIdLayout=" + blockIdLayout);
+          "partitionsListSize="
+              + partitionsList.size()
+              + ", partitionIds="
+              + partitionIdsOutput
+              + ", blockIdLayout="
+              + blockIdLayout);
 
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
@@ -1012,7 +1023,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       GetShuffleResultForMultiPartResponse reply;
       byte[] serializedBlockIds = null;
       String requestInfo =
-          "appId[" + appId + "], shuffleId[" + shuffleId + "], partitions" + partitionsList;
+          "appId[" + appId + "], shuffleId[" + shuffleId + "], partitions=" + partitionIdsOutput;
       ByteString serializedBlockIdsBytes = ByteString.EMPTY;
 
       try {

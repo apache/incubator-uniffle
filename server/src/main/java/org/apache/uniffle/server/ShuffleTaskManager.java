@@ -71,6 +71,7 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.common.util.OutputUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.util.UnitConverter;
@@ -604,7 +605,10 @@ public class ShuffleTaskManager {
           String errorMessage =
               String.format(
                   "Huge partition is limited to writing. appId: %s, shuffleId: %s, partitionIds: %s, partitionUsedDataSize: %s",
-                  appId, shuffleId, partitionIds, partitionUsedDataSize);
+                  appId,
+                  shuffleId,
+                  OutputUtils.listToSegment(partitionIds, 10),
+                  partitionUsedDataSize);
           LOG.error(errorMessage);
           throw new NoBufferForHugePartitionException(errorMessage);
         }
