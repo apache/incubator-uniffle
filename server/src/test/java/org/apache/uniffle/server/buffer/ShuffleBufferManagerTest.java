@@ -30,6 +30,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.google.common.collect.RangeMap;
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.prometheus.client.Collector;
+import org.apache.commons.lang3.tuple.Pair;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -794,5 +795,63 @@ public class ShuffleBufferManagerTest extends BufferTestBase {
                 }
               }
             });
+  }
+
+  @Test
+  public void splitPartitionTest(@TempDir File tmpDir) throws Exception {
+    ShuffleServerConf shuffleConf = new ShuffleServerConf();
+    File dataDir = new File(tmpDir, "data");
+    shuffleConf.setString(ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
+    shuffleConf.set(
+        ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(dataDir.getAbsolutePath()));
+    shuffleConf.set(ShuffleServerConf.HUGE_PARTITION_SPLIT_LIMIT, 200L);
+
+    ShuffleServer mockShuffleServer = mock(ShuffleServer.class);
+    StorageManager storageManager =
+        StorageManagerFactory.getInstance().createStorageManager(shuffleConf);
+    ShuffleFlushManager shuffleFlushManager =
+        new ShuffleFlushManager(shuffleConf, mockShuffleServer, storageManager);
+    shuffleBufferManager = new ShuffleBufferManager(shuffleConf, shuffleFlushManager, false);
+    ShuffleTaskManager shuffleTaskManager =
+        new ShuffleTaskManager(
+            shuffleConf, shuffleFlushManager, shuffleBufferManager, storageManager);
+
+    when(mockShuffleServer.getShuffleFlushManager()).thenReturn(shuffleFlushManager);
+    when(mockShuffleServer.getShuffleBufferManager()).thenReturn(shuffleBufferManager);
+    when(mockShuffleServer.getShuffleTaskManager()).thenReturn(shuffleTaskManager);
+
+    String appId = "flushSingleBufferForHugePartitionTest_appId";
+    int shuffleId = 1;
+
+    shuffleTaskManager.registerShuffle(
+        appId, shuffleId, Arrays.asList(new PartitionRange(0, 0)), new RemoteStorageInfo(""), "");
+
+    // case1: its partition size does not exceed the split limit
+    shuffleBufferManager.registerBuffer(appId, shuffleId, 0, 0);
+    ShufflePartitionedData partitionedData = createData(0, 1);
+    shuffleTaskManager.cacheShuffleData(appId, shuffleId, false, partitionedData);
+    shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 0, partitionedData.getBlockList());
+    long usedSize = shuffleTaskManager.getPartitionDataSize(appId, shuffleId, 0);
+    assertEquals(1 + 32, usedSize);
+    assertFalse(
+        HugePartitionUtils.hasExceedPartitionSplitLimit(
+            shuffleBufferManager, shuffleTaskManager.getPartitionDataSize(appId, shuffleId, 0)));
+
+    // case2: its partition exceed the split limit
+    partitionedData = createData(0, 200);
+    shuffleTaskManager.cacheShuffleData(appId, shuffleId, false, partitionedData);
+    shuffleTaskManager.updateCachedBlockIds(appId, shuffleId, 0, partitionedData.getBlockList());
+    usedSize = shuffleTaskManager.getPartitionDataSize(appId, shuffleId, 0);
+    assertEquals(1 + 32 + 200 + 32, usedSize);
+    assertTrue(
+        HugePartitionUtils.hasExceedPartitionSplitLimit(
+            shuffleBufferManager, shuffleTaskManager.getPartitionDataSize(appId, shuffleId, 0)));
+
+    // check returned need split partitions
+    Pair<Long, List<Integer>> pair =
+        shuffleTaskManager.requireBufferReturnPair(
+            appId, shuffleId, Arrays.asList(0, 1), Arrays.asList(10, 10), 20);
+    assertEquals(1, pair.getRight().size());
+    assertEquals(0, pair.getRight().get(0));
   }
 }

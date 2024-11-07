@@ -19,6 +19,7 @@ package org.apache.uniffle.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,6 +35,7 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -732,21 +734,24 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       long requireBufferId = -1;
       String responseMessage = "";
       String shuffleDataInfo = "appId[" + appId + "], shuffleId[" + request.getShuffleId() + "]";
+      List<Integer> needSplitPartitionIds = Collections.emptyList();
       try {
         if (StringUtils.isEmpty(appId)) {
           // To be compatible with older client version
           requireBufferId =
               shuffleServer.getShuffleTaskManager().requireBuffer(request.getRequireSize());
         } else {
-          requireBufferId =
+          Pair<Long, List<Integer>> pair =
               shuffleServer
                   .getShuffleTaskManager()
-                  .requireBuffer(
+                  .requireBufferReturnPair(
                       appId,
                       request.getShuffleId(),
                       request.getPartitionIdsList(),
                       request.getPartitionRequireSizesList(),
                       request.getRequireSize());
+          requireBufferId = pair.getLeft();
+          needSplitPartitionIds = pair.getRight();
         }
       } catch (NoBufferException e) {
         responseMessage = e.getMessage();
@@ -780,6 +785,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               .setStatus(status.toProto())
               .setRequireBufferId(requireBufferId)
               .setRetMsg(responseMessage)
+              .addAllNeedSplitPartitionIds(needSplitPartitionIds)
               .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();

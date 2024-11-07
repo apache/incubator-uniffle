@@ -218,6 +218,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                             .forEach(
                                 blockId ->
                                     blockIdsSendSuccessTracker.get(blockId).incrementAndGet());
+                        recordNeedSplitPartition(
+                            failedBlockSendTracker, ssi, response.getNeedSplitPartitionIds());
                         if (defectiveServers != null) {
                           defectiveServers.remove(ssi);
                         }
@@ -281,6 +283,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         .forEach(block -> blockIdsSendFailTracker.add(block, shuffleServerInfo, statusCode));
   }
 
+  void recordNeedSplitPartition(
+      FailedBlockSendTracker blockIdsSendFailTracker,
+      ShuffleServerInfo shuffleServerInfo,
+      Set<Integer> needSplitPartitions) {
+    if (needSplitPartitions != null) {
+      needSplitPartitions.forEach(
+          partition -> blockIdsSendFailTracker.addNeedSplitPartition(partition, shuffleServerInfo));
+    }
+  }
+
   void genServerToBlocks(
       ShuffleBlockInfo sbi,
       List<ShuffleServerInfo> serverList,
@@ -322,6 +334,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @Override
+  @VisibleForTesting
   public SendShuffleDataResult sendShuffleData(
       String appId,
       List<ShuffleBlockInfo> shuffleBlockInfoList,

@@ -81,6 +81,7 @@ public class ShuffleBufferManager {
   // Huge partition vars
   private ReconfigurableConfManager.Reconfigurable<Long> hugePartitionSizeThresholdRef;
   private ReconfigurableConfManager.Reconfigurable<Long> hugePartitionSizeHardLimitRef;
+  private ReconfigurableConfManager.Reconfigurable<Long> hugePartitionSplitLimitRef;
   private long hugePartitionMemoryLimitSize;
   protected AtomicLong preAllocatedSize = new AtomicLong(0L);
   protected AtomicLong inFlushSize = new AtomicLong(0L);
@@ -141,6 +142,8 @@ public class ShuffleBufferManager {
         conf.getReconfigurableConf(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD);
     this.hugePartitionSizeHardLimitRef =
         conf.getReconfigurableConf(ShuffleServerConf.HUGE_PARTITION_SIZE_HARD_LIMIT);
+    this.hugePartitionSplitLimitRef =
+        conf.getReconfigurableConf(ShuffleServerConf.HUGE_PARTITION_SPLIT_LIMIT);
     this.hugePartitionMemoryLimitSize =
         Math.round(
             capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO));
@@ -838,5 +841,9 @@ public class ShuffleBufferManager {
 
   public ShuffleBufferType getShuffleBufferType() {
     return shuffleBufferType;
+  }
+
+  public long getHugePartitionSplitLimit() {
+    return hugePartitionSplitLimitRef.getSizeAsBytes();
   }
 }

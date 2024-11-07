@@ -267,12 +267,13 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     RssProtos.ReassignOnBlockSendFailureResponse reply;
     try {
       LOG.info(
-          "Accepted reassign request on block sent failure for shuffleId: {}, stageId: {}, stageAttemptNumber: {} from taskAttemptId: {} on executorId: {}",
+          "Accepted reassign request on block sent failure for shuffleId: {}, stageId: {}, stageAttemptNumber: {} from taskAttemptId: {} on executorId: {} while partition split:{}",
           request.getShuffleId(),
           request.getStageId(),
           request.getStageAttemptNumber(),
           request.getTaskAttemptId(),
-          request.getExecutorId());
+          request.getExecutorId(),
+          request.getPartitionSplit());
       MutableShuffleHandleInfo handle =
           shuffleManager.reassignOnBlockSendFailure(
               request.getStageId(),
@@ -281,7 +282,8 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
               request.getFailurePartitionToServerIdsMap().entrySet().stream()
                   .collect(
                       Collectors.toMap(
-                          Map.Entry::getKey, x -> ReceivingFailureServer.fromProto(x.getValue()))));
+                          Map.Entry::getKey, x -> ReceivingFailureServer.fromProto(x.getValue()))),
+              request.getPartitionSplit());
       code = RssProtos.StatusCode.SUCCESS;
       reply =
           RssProtos.ReassignOnBlockSendFailureResponse.newBuilder()

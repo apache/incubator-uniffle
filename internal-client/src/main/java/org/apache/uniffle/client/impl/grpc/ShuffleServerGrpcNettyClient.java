@@ -20,10 +20,13 @@ package org.apache.uniffle.client.impl.grpc;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hbase.thirdparty.org.glassfish.jersey.internal.guava.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,7 +130,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     int stageAttemptNumber = request.getStageAttemptNumber();
     boolean isSuccessful = true;
     AtomicReference<StatusCode> failedStatusCode = new AtomicReference<>(StatusCode.INTERNAL_ERROR);
-
+    Set<Integer> needSplitPartitionIds = Sets.newHashSet();
     for (Map.Entry<Integer, Map<Integer, List<ShuffleBlockInfo>>> stb :
         shuffleIdToBlocks.entrySet()) {
       int shuffleId = stb.getKey();
@@ -161,7 +164,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
         RetryUtils.retryWithCondition(
             () -> {
               final TransportClient transportClient = getTransportClient();
-              long requireId =
+              Pair<Long, List<Integer>> result =
                   requirePreAllocation(
                       request.getAppId(),
                       shuffleId,
@@ -171,6 +174,8 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
                       request.getRetryMax(),
                       request.getRetryIntervalMax(),
                       failedStatusCode);
+              long requireId = result.getLeft();
+              needSplitPartitionIds.addAll(result.getRight());
               if (requireId == FAILED_REQUIRE_ID) {
                 throw new RssException(
                     String.format(
@@ -232,6 +237,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     } else {
       response = new RssSendShuffleDataResponse(failedStatusCode.get());
     }
+    response.setNeedSplitPartitionIds(needSplitPartitionIds);
     return response;
   }
 
