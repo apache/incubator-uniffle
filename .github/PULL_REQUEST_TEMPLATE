@@ -4,7 +4,7 @@
 1. Title: [#<issue>] <type>(<scope>): <subject>
    Examples:
      - "[#123] feat(operator): support xxx"
-     - "[#123] feat(server)(coordinator): support xxx"
+     - "[#123] feat(server,coordinator): support xxx"
      - "[#123] feat(common): support xxx"
      - "[MINOR] improvement(script): fix style"
      - "[MINOR] improvement(ci): add some examples and notice"
