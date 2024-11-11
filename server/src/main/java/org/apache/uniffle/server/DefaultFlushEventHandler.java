@@ -144,7 +144,10 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       }
 
       LOG.error(
-          "Unexpected exceptions happened when handling the flush event: {}, due to ", event, e);
+          "Unexpected exceptions happened when handling the flush event: [{}] (it cost {} ms), due to ",
+          event,
+          System.currentTimeMillis() - start,
+          e);
       // We need to release the memory when unexpected exceptions happened
       event.doCleanup();
     } finally {
