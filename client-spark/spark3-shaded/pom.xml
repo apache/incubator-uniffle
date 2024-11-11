@@ -214,7 +214,8 @@
                           type="glob"></mapper>
                 </move>
                 <delete dir="${project.build.directory}/unpacked/META-INF/license"/>
-                <move file="${project.build.directory}/unpacked/META-INF/LICENSE-binary"
+                <move failonerror="false" quiet="true"
+                      file="${project.build.directory}/unpacked/META-INF/LICENSE-binary"
                       tofile="${project.build.directory}/unpacked/META-INF/LICENSE"/>
                 <echo message="repackaging netty jar"></echo>
                 <jar destfile="${project.build.directory}/${project.artifactId}-${project.version}.jar"

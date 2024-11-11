@@ -214,7 +214,8 @@
                           type="glob"></mapper>
                 </move>
                 <delete dir="${project.build.directory}/unpacked/META-INF/license"/>
-                <move file="${project.build.directory}/unpacked/META-INF/LICENSE-binary"
+                <move failonerror="false" quiet="true"
+                      file="${project.build.directory}/unpacked/META-INF/LICENSE-binary"
                       tofile="${project.build.directory}/unpacked/META-INF/LICENSE"/>
                 <!-- Delete our NettyUtils to avoid errors like NoSuchMethodError, let Spark use its own NettyUtils -->
                 <!-- See https://github.com/apache/incubator-uniffle/pull/1565 for more details -->
