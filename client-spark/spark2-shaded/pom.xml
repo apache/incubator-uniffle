@@ -213,6 +213,9 @@
                           to="lib${rss.shade.native.packageName}_netty_transport_native_kqueue_aarch_64.jnilib"
                           type="glob"></mapper>
                 </move>
+                <delete dir="${project.build.directory}/unpacked/META-INF/license"/>
+                <move file="${project.build.directory}/unpacked/META-INF/LICENSE-binary"
+                      tofile="${project.build.directory}/unpacked/META-INF/LICENSE"/>
                 <!-- Delete our NettyUtils to avoid errors like NoSuchMethodError, let Spark use its own NettyUtils -->
                 <!-- See https://github.com/apache/incubator-uniffle/pull/1565 for more details -->
                 <delete dir="${project.build.directory}/unpacked/org/apache/spark/network"/>

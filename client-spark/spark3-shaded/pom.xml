@@ -213,6 +213,9 @@
                           to="lib${rss.shade.native.packageName}_netty_transport_native_kqueue_aarch_64.jnilib"
                           type="glob"></mapper>
                 </move>
+                <delete dir="${project.build.directory}/unpacked/META-INF/license"/>
+                <move file="${project.build.directory}/unpacked/META-INF/LICENSE-binary"
+                      tofile="${project.build.directory}/unpacked/META-INF/LICENSE"/>
                 <echo message="repackaging netty jar"></echo>
                 <jar destfile="${project.build.directory}/${project.artifactId}-${project.version}.jar"
                      basedir="${project.build.directory}/unpacked"/>

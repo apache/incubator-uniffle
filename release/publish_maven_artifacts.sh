@@ -51,7 +51,7 @@ copy_license_files() {
   cp -f "${PROJECT_DIR}/NOTICE-binary" \
   "${PROJECT_DIR}/client-spark/spark2-shaded/src/main/resources/META-INF/NOTICE"
   cp -f "${PROJECT_DIR}/LICENSE-binary" \
-  "${PROJECT_DIR}/client-spark/spark2-shaded/src/main/resources/META-INF/LICENSE"
+  "${PROJECT_DIR}/client-spark/spark2-shaded/src/main/resources/META-INF/LICENSE-binary"
   rm -rf "${PROJECT_DIR}/client-spark/spark2-shaded/src/main/resources/META-INF/licenses"
   cp -rf "${PROJECT_DIR}/licenses-binary" \
   "${PROJECT_DIR}/client-spark/spark2-shaded/src/main/resources/META-INF/licenses"
@@ -60,7 +60,7 @@ copy_license_files() {
   cp -f "${PROJECT_DIR}/NOTICE-binary" \
     "${PROJECT_DIR}/client-spark/spark3-shaded/src/main/resources/META-INF/NOTICE"
   cp -f "${PROJECT_DIR}/LICENSE-binary" \
-    "${PROJECT_DIR}/client-spark/spark3-shaded/src/main/resources/META-INF/LICENSE"
+    "${PROJECT_DIR}/client-spark/spark3-shaded/src/main/resources/META-INF/LICENSE-binary"
   rm -rf "${PROJECT_DIR}/client-spark/spark3-shaded/src/main/resources/META-INF/licenses"
   cp -rf "${PROJECT_DIR}/licenses-binary" \
     "${PROJECT_DIR}/client-spark/spark3-shaded/src/main/resources/META-INF/licenses"
