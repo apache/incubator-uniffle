@@ -267,6 +267,13 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(2 * 1024L * 1024L)
           .withDescription("The index file size hint");
 
+  public static final ConfigOption<Boolean> SERVER_UNHEALTHY_ONCE_STORAGE_CORRUPTION =
+      ConfigOptions.key("rss.server.health.markUnhealthyOnceStorageCorruption")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "Mark server unhealthy once any storage corrupted. Default value is false");
+
   public static final ConfigOption<Double> HEALTH_STORAGE_MAX_USAGE_PERCENTAGE =
       ConfigOptions.key("rss.server.health.max.storage.usage.percentage")
           .doubleType()
