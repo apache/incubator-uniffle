@@ -677,7 +677,7 @@ public class ShuffleServerConf extends RssBaseConf {
           .withDescription("The storage remove resource operation timeout.");
 
   public static final ConfigOption<Long> STORAGE_FLUSH_OPERATION_TIMEOUT_SEC =
-      ConfigOptions.key("rss.server.storage.flushOptionTimeoutSec")
+      ConfigOptions.key("rss.server.storage.flushOperationTimeoutSec")
           .longType()
           .defaultValue(-1L)
           .withDescription(
