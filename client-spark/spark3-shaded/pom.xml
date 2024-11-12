@@ -123,6 +123,10 @@
                   <pattern>org.roaringbitmap</pattern>
                   <shadedPattern>${rss.shade.packageName}.org.roaringbitmap</shadedPattern>
                 </relocation>
+                <relocation>
+                  <pattern>META-INF/license</pattern>
+                  <shadedPattern>META-INF/license-tmp</shadedPattern>
+                </relocation>
               </relocations>
             </configuration>
           </execution>
@@ -213,6 +217,22 @@
                           to="lib${rss.shade.native.packageName}_netty_transport_native_kqueue_aarch_64.jnilib"
                           type="glob"></mapper>
                 </move>
+                <!-- Since it may be compiled on case-insensitive operating system, it may be executed multiple times.
+                 Here the license directory, licenses directory, and LICENSE file are processed with aliases. -->
+                <move failonerror="false" quiet="true"
+                      todir="${project.build.directory}/unpacked/META-INF/license-tmps">
+                  <fileset dir="${project.build.directory}/unpacked/META-INF/license-tmp">
+                    <include name="LICENSE*.txt"/>
+                  </fileset>
+                </move>
+                <delete failonerror="false" quiet="true"
+                        dir="${project.build.directory}/unpacked/META-INF/license-tmp"/>
+                <move failonerror="false" quiet="true"
+                      file="${project.build.directory}/unpacked/META-INF/license-tmps"
+                      tofile="${project.build.directory}/unpacked/META-INF/licenses"/>
+                <move failonerror="false" quiet="true"
+                      file="${project.build.directory}/unpacked/META-INF/LICENSE-binary"
+                      tofile="${project.build.directory}/unpacked/META-INF/LICENSE"/>
                 <echo message="repackaging netty jar"></echo>
                 <jar destfile="${project.build.directory}/${project.artifactId}-${project.version}.jar"
                      basedir="${project.build.directory}/unpacked"/>
