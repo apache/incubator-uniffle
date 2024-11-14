@@ -676,6 +676,13 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(10 * 60L)
           .withDescription("The storage remove resource operation timeout.");
 
+  public static final ConfigOption<Long> STORAGE_FLUSH_OPERATION_TIMEOUT_SEC =
+      ConfigOptions.key("rss.server.storage.flushOperationTimeoutSec")
+          .longType()
+          .defaultValue(-1L)
+          .withDescription(
+              "The storage flush max timeout second, this will not be activated by default");
+
   public static final ConfigOption<Boolean> SERVER_MERGE_ENABLE =
       ConfigOptions.key("rss.server.merge.enable")
           .booleanType()
