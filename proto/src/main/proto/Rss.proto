@@ -305,7 +305,7 @@ message ShuffleServerHeartBeatRequest {
   optional string gitCommitId = 23;
   optional int64 startTimeMs = 24;
   repeated ApplicationInfo applicationInfo = 25;
-  map<string, string> displayMetrics = 30;
+  map<string, string> displayMetrics = 26;
 }
 
 message ShuffleServerHeartBeatResponse {
