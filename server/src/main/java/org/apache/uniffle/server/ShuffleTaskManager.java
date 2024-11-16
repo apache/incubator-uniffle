@@ -789,7 +789,8 @@ public class ShuffleTaskManager {
       int partitionNum,
       String storageType,
       long offset,
-      int length) {
+      int length,
+      int storageId) {
     refreshAppId(appId);
 
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
@@ -804,12 +805,24 @@ public class ShuffleTaskManager {
         ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
     Storage storage =
         storageManager.selectStorage(
-            new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
+            new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0], storageId));
     if (storage == null) {
       throw new FileNotFoundException("No such data stored in current storage manager.");
     }
 
-    return storage.getOrCreateReadHandler(request).getShuffleData(offset, length);
+    // only one partition part in one storage
+    try {
+      return storage.getOrCreateReadHandler(request).getShuffleData(offset, length);
+    } catch (FileNotFoundException e) {
+      LOG.warn(
+          "shuffle file not found {}-{}-{} in {}",
+          appId,
+          shuffleId,
+          partitionId,
+          storage.getStoragePath(),
+          e);
+      throw e;
+    }
   }
 
   public ShuffleIndexResult getShuffleIndex(
@@ -831,12 +844,16 @@ public class ShuffleTaskManager {
     int[] range =
         ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
     Storage storage =
-        storageManager.selectStorage(
+        storageManager.selectStorageForIndex(
             new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
     if (storage == null) {
       throw new FileNotFoundException("No such data in current storage manager.");
     }
-    return storage.getOrCreateReadHandler(request).getShuffleIndex();
+    ShuffleIndexResult result = storage.getOrCreateReadHandler(request).getShuffleIndex();
+    if (result == null) {
+      throw new FileNotFoundException("No such data in current storage manager.");
+    }
+    return result;
   }
 
   public void checkResourceStatus() {

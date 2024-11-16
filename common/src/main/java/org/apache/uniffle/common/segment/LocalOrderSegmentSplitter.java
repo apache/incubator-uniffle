@@ -85,7 +85,12 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
      * ShuffleDataSegment size should < readBufferSize 3. Single shuffleDataSegment's blocks should
      * be continuous
      */
+    int[] storageIds = shuffleIndexResult.getStorageIds();
+    int storageIndex = 0;
+    long preOffset = -1;
+    int preStorageId = -1;
     int index = 0;
+    int currentStorageId = 0;
     while (indexData.hasRemaining()) {
       try {
         long offset = indexData.getLong();
@@ -94,9 +99,22 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
         long crc = indexData.getLong();
         long blockId = indexData.getLong();
         long taskAttemptId = indexData.getLong();
+        indexTaskIds.add(taskAttemptId);
+        if (storageIds.length == 0) {
+          // if storageIds is empty for old server, default storageId is 0
+          currentStorageId = -1;
+        } else if (preOffset > offset) {
+          storageIndex++;
+          if (storageIndex >= storageIds.length) {
+            LOGGER.warn("storageIds length {} is not enough.", storageIds.length);
+          }
+          currentStorageId = storageIds[storageIndex];
+        } else {
+          currentStorageId = storageIds[storageIndex];
+        }
+        preOffset = offset;
 
         totalLen += length;
-        indexTaskIds.add(taskAttemptId);
 
         // If ShuffleServer is flushing the file at this time, the length in the index file record
         // may be greater
@@ -112,7 +130,6 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
               blockId);
           break;
         }
-
         boolean conditionOfDiscontinuousBlocks =
             lastExpectedBlockIndex != -1
                 && bufferSegments.size() > 0
@@ -120,19 +137,27 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
                 && index - lastExpectedBlockIndex != 1;
 
         boolean conditionOfLimitedBufferSize = bufferOffset >= readBufferSize;
+        boolean storageChanged =
+            preStorageId != -1
+                && currentStorageId != preStorageId
+                && expectTaskIds.contains(taskAttemptId);
 
-        if (conditionOfDiscontinuousBlocks || conditionOfLimitedBufferSize) {
-          ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
+        if (conditionOfDiscontinuousBlocks || conditionOfLimitedBufferSize || storageChanged) {
+          ShuffleDataSegment sds =
+              new ShuffleDataSegment(fileOffset, bufferOffset, preStorageId, bufferSegments);
           dataFileSegments.add(sds);
           bufferSegments = Lists.newArrayList();
           bufferOffset = 0;
           fileOffset = -1;
+          preStorageId = -1;
         }
 
         if (expectTaskIds.contains(taskAttemptId)) {
           if (fileOffset == -1) {
             fileOffset = offset;
           }
+          // Update the previous storage id except
+          preStorageId = currentStorageId;
           bufferSegments.add(
               new BufferSegment(
                   blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
@@ -146,7 +171,8 @@ public class LocalOrderSegmentSplitter implements SegmentSplitter {
     }
 
     if (bufferOffset > 0) {
-      ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
+      ShuffleDataSegment sds =
+          new ShuffleDataSegment(fileOffset, bufferOffset, currentStorageId, bufferSegments);
       dataFileSegments.add(sds);
     }
 

@@ -19,6 +19,7 @@ package org.apache.uniffle.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -1083,6 +1084,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       int partitionNum = request.getPartitionNum();
       long offset = request.getOffset();
       int length = request.getLength();
+      int storageId = request.getStorageId();
 
       auditContext.withAppId(appId).withShuffleId(shuffleId);
       auditContext.withArgs(
@@ -1095,7 +1097,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               + ", offset="
               + offset
               + ", length="
-              + length);
+              + length
+              + ", storageId="
+              + storageId);
 
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
@@ -1144,7 +1148,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       Storage storage =
           shuffleServer
               .getStorageManager()
-              .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
+              .selectStorage(
+                  new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0], storageId));
       if (storage != null) {
         storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
       }
@@ -1163,7 +1168,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                       partitionNum,
                       storageType,
                       offset,
-                      length);
+                      length,
+                      storageId);
           long readTime = System.currentTimeMillis() - start;
           ShuffleServerMetrics.counterTotalReadTime.inc(readTime);
           ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getDataLength());
@@ -1300,6 +1306,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
           builder.setIndexData(UnsafeByteOperations.unsafeWrap(data));
           builder.setDataFileLen(shuffleIndexResult.getDataFileLen());
+          builder.addAllStorageIds(
+              Arrays.stream(shuffleIndexResult.getStorageIds())
+                  .boxed()
+                  .collect(Collectors.toList()));
           auditContext.withReturnValue("len=" + shuffleIndexResult.getDataFileLen());
           reply = builder.build();
         } catch (FileNotFoundException indexFileNotFoundException) {

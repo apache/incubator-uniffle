@@ -26,6 +26,7 @@ import org.apache.uniffle.common.config.ConfigOptions;
 import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.server.buffer.ShuffleBufferType;
+import org.apache.uniffle.server.storage.LocalStorageManager;
 
 public class ShuffleServerConf extends RssBaseConf {
 
@@ -743,6 +744,12 @@ public class ShuffleServerConf extends RssBaseConf {
           .booleanType()
           .defaultValue(false)
           .withDescription("Whether to enable app detail log");
+
+  public static final ConfigOption<String> SERVER_LOCAL_STORAGE_MANAGER_CLASS =
+      ConfigOptions.key("rss.server.localStorageManagerClass")
+          .stringType()
+          .defaultValue(LocalStorageManager.class.getName())
+          .withDescription("The class of local storage manager implementation");
 
   public ShuffleServerConf() {}
 

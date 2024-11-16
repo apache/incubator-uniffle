@@ -47,17 +47,22 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
 
     ByteBuffer indexData = shuffleIndexResult.getIndexData();
     long dataFileLen = shuffleIndexResult.getDataFileLen();
-    return transIndexDataToSegments(indexData, readBufferSize, dataFileLen);
+    int[] storageIds = shuffleIndexResult.getStorageIds();
+    return transIndexDataToSegments(indexData, readBufferSize, dataFileLen, storageIds);
   }
 
   private static List<ShuffleDataSegment> transIndexDataToSegments(
-      ByteBuffer indexData, int readBufferSize, long dataFileLen) {
+      ByteBuffer indexData, int readBufferSize, long dataFileLen, int[] storageIds) {
     List<BufferSegment> bufferSegments = Lists.newArrayList();
     List<ShuffleDataSegment> dataFileSegments = Lists.newArrayList();
     int bufferOffset = 0;
     long fileOffset = -1;
     long totalLength = 0;
 
+    int storageIndex = 0;
+    long preOffset = -1;
+    int preStorageId = -1;
+    int currentStorageId = 0;
     while (indexData.hasRemaining()) {
       try {
         final long offset = indexData.getLong();
@@ -66,13 +71,19 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
         final long crc = indexData.getLong();
         final long blockId = indexData.getLong();
         final long taskAttemptId = indexData.getLong();
-
-        // The index file is written, read and parsed sequentially, so these parsed index segments
-        // index a continuous shuffle data in the corresponding data file and the first segment's
-        // offset field is the offset of these shuffle data in the data file.
-        if (fileOffset == -1) {
-          fileOffset = offset;
+        if (storageIds.length == 0) {
+          // if storageIds is empty for old server, default storageId is -1
+          currentStorageId = -1;
+        } else if (preOffset > offset) {
+          storageIndex++;
+          if (storageIndex >= storageIds.length) {
+            LOGGER.warn("storageIds length {} is not enough.", storageIds.length);
+          }
+          currentStorageId = storageIds[storageIndex];
+        } else {
+          currentStorageId = storageIds[storageIndex];
         }
+        preOffset = offset;
 
         totalLength += length;
 
@@ -91,24 +102,35 @@ public class FixedSizeSegmentSplitter implements SegmentSplitter {
           break;
         }
 
-        bufferSegments.add(
-            new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
-        bufferOffset += length;
+        boolean storageChanged = preStorageId != -1 && currentStorageId != preStorageId;
 
-        if (bufferOffset >= readBufferSize) {
-          ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
+        if (bufferOffset >= readBufferSize || storageChanged) {
+          ShuffleDataSegment sds =
+              new ShuffleDataSegment(fileOffset, bufferOffset, preStorageId, bufferSegments);
           dataFileSegments.add(sds);
           bufferSegments = Lists.newArrayList();
           bufferOffset = 0;
           fileOffset = -1;
         }
+
+        // The index file is written, read and parsed sequentially, so these parsed index segments
+        // index a continuous shuffle data in the corresponding data file and the first segment's
+        // offset field is the offset of these shuffle data in the data file.
+        if (fileOffset == -1) {
+          fileOffset = offset;
+        }
+        bufferSegments.add(
+            new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
+        preStorageId = currentStorageId;
+        bufferOffset += length;
       } catch (BufferUnderflowException ue) {
         throw new RssException("Read index data under flow", ue);
       }
     }
 
     if (bufferOffset > 0) {
-      ShuffleDataSegment sds = new ShuffleDataSegment(fileOffset, bufferOffset, bufferSegments);
+      ShuffleDataSegment sds =
+          new ShuffleDataSegment(fileOffset, bufferOffset, currentStorageId, bufferSegments);
       dataFileSegments.add(sds);
     }
 
