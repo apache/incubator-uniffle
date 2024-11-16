@@ -752,7 +752,7 @@ public class ShuffleServerConf extends RssBaseConf {
               "The block id manager class, the implementation of this interface "
                   + "to manage the shuffle block ids");
   public static final ConfigOption<Boolean> SERVER_TRIGGER_REPORT_WHILE_UNREGISTER_ENABLED =
-      ConfigOptions.key("rss.server.trigger.report.while.unregister.enabled")
+      ConfigOptions.key("rss.server.heartbeatReportOnUnregisterEnabled")
           .booleanType()
           .defaultValue(false)
           .withDescription("Whether to trigger report while unregister");
