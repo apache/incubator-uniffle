@@ -431,8 +431,6 @@ public class LocalStorageManager extends SingleStorageManager {
     Map<String, StorageInfo> result = Maps.newHashMap();
     for (LocalStorage storage : localStorages) {
       String mountPoint = storage.getMountPoint();
-      long capacity = storage.getCapacity();
-      long wroteBytes = storage.getServiceUsedBytes();
       StorageStatus status = StorageStatus.NORMAL;
       if (storage.isCorrupted()) {
         status = StorageStatus.UNHEALTHY;
@@ -444,10 +442,12 @@ public class LocalStorageManager extends SingleStorageManager {
         media = StorageMedia.UNKNOWN;
       }
       StorageInfo existingMountPoint = result.get(mountPoint);
+      long wroteBytes = storage.getServiceUsedBytes();
       // if there is already a storage on the mount point, we should sum up the used bytes.
       if (existingMountPoint != null) {
         wroteBytes += existingMountPoint.getUsedBytes();
       }
+      long capacity = storage.getCapacity();
       StorageInfo info = new StorageInfo(mountPoint, media, capacity, wroteBytes, status);
       result.put(mountPoint, info);
     }
