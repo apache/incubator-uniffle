@@ -443,6 +443,11 @@ public class LocalStorageManager extends SingleStorageManager {
       if (media == null) {
         media = StorageMedia.UNKNOWN;
       }
+      StorageInfo existingMountPoint = result.get(mountPoint);
+      // if there is already a storage on the mount point, we should sum up the used bytes.
+      if (existingMountPoint != null) {
+        wroteBytes += existingMountPoint.getUsedBytes();
+      }
       StorageInfo info = new StorageInfo(mountPoint, media, capacity, wroteBytes, status);
       result.put(mountPoint, info);
     }
