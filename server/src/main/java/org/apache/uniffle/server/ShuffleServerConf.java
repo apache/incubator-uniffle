@@ -724,7 +724,9 @@ public class ShuffleServerConf extends RssBaseConf {
       ConfigOptions.key("rss.server.blockIdManagerClass")
           .stringType()
           .defaultValue(DefaultShuffleBlockIdManager.class.getName())
-          .withDescription("The block id manager class");
+          .withDescription(
+              "The block id manager class, the implementation of this interface "
+                  + "to manage the shuffle block ids");
 
   public ShuffleServerConf() {}
 

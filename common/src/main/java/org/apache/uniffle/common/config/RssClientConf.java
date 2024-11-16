@@ -300,5 +300,7 @@ public class RssClientConf {
       ConfigOptions.key("rss.client.blockIdManagerClass")
           .stringType()
           .noDefaultValue()
-          .withDescription("The block id manager class for server");
+          .withDescription(
+              "The block id manager class of server for this application, "
+                  + "the implementation of this interface to manage the shuffle block ids");
 }

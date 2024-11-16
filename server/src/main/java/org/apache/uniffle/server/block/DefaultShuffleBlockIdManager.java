@@ -38,6 +38,9 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.ShuffleTaskInfo;
 
+/**
+ * The default implementation of ShuffleBlockIdManager, manage block id of all partitions together.
+ */
 public class DefaultShuffleBlockIdManager implements ShuffleBlockIdManager {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultShuffleBlockIdManager.class);
 

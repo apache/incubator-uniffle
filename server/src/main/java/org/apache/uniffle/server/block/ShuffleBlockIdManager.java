@@ -25,6 +25,7 @@ import java.util.Set;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.server.ShuffleTaskInfo;
 
+/** The implementation of this interface to manage the shuffle block ids. */
 public interface ShuffleBlockIdManager {
   void registerAppId(String appId);
 

@@ -34,6 +34,7 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.server.ShuffleTaskInfo;
 
+/** Manage the block ids individual for each partition. */
 public class PartitionedShuffleBlockIdManager implements ShuffleBlockIdManager {
   private static final Logger LOG = LoggerFactory.getLogger(PartitionedShuffleBlockIdManager.class);
 
