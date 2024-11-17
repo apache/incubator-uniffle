@@ -37,6 +37,7 @@ import com.google.common.collect.Sets;
 import io.netty.buffer.ByteBuf;
 import org.apache.hadoop.io.IntWritable;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -68,9 +69,11 @@ import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.buffer.ShuffleBufferType;
+import org.apache.uniffle.server.storage.Raid0LocalStorageManager;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.coordinator.CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED;
+import static org.apache.uniffle.server.ShuffleServerConf.SERVER_LOCAL_STORAGE_MANAGER_CLASS;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -88,8 +91,13 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
   public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     coordinatorConf.setBoolean(COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, false);
-    createCoordinatorServer(coordinatorConf);
     ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
+    Assumptions.assumeTrue(
+        !shuffleServerConf
+            .get(SERVER_LOCAL_STORAGE_MANAGER_CLASS)
+            .equals(Raid0LocalStorageManager.class.getName()),
+        Raid0LocalStorageManager.class.getName() + " is not working with remote merge feature");
+    createCoordinatorServer(coordinatorConf);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MERGE_ENABLE, true);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MERGE_DEFAULT_MERGED_BLOCK_SIZE, "1k");
     shuffleServerConf.set(
