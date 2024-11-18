@@ -17,6 +17,8 @@
 
 package org.apache.spark.shuffle;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import scala.Tuple2;
@@ -511,5 +513,16 @@ public class RssSparkConfig {
       rssConf.setString(key, tuple._2);
     }
     return rssConf;
+  }
+
+  public static Map<String, String> sparkConfToMap(SparkConf sparkConf) {
+    Map<String, String> map = new HashMap<>();
+
+    for (Tuple2<String, String> tuple : sparkConf.getAll()) {
+      String key = tuple._1;
+      map.put(key, tuple._2);
+    }
+
+    return map;
   }
 }
