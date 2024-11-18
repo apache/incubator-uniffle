@@ -322,6 +322,9 @@ public class RssSparkConfig {
 
   public static final ConfigEntry<String> RSS_ACCESS_ID =
       createStringBuilder(new ConfigBuilder("spark.rss.access.id")).createWithDefault("");
+  public static final ConfigEntry<String> RSS_ACCESS_ID_PROVIDER_KEY =
+      createStringBuilder(new ConfigBuilder("spark.rss.access.id.providerKey"))
+          .createWithDefault("");
 
   public static final ConfigEntry<Integer> RSS_ACCESS_TIMEOUT_MS =
       createIntegerBuilder(
