@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -281,20 +283,39 @@ public class LocalStorageManagerTest {
   }
 
   @Test
-  public void testGetLocalStorageInfo() {
-    String[] storagePaths = {"/tmp/rss-data1", "/tmp/rss-data2", "/tmp/rss-data3"};
-
+  public void testGetLocalStorageInfo() throws IOException {
+    Path testBaseDir = Files.createTempDirectory("rss-test");
+    final Path storageBaseDir1 =
+        Files.createDirectory(Paths.get(testBaseDir.toString(), "rss-data-1"));
+    final Path storageBaseDir2 =
+        Files.createDirectory(Paths.get(testBaseDir.toString(), "rss-data-2"));
+    final Path storageBaseDir3 =
+        Files.createDirectory(Paths.get(testBaseDir.toString(), "rss-data-3"));
+    String[] storagePaths = {
+      storageBaseDir1.toString(), storageBaseDir2.toString(), storageBaseDir3.toString(),
+    };
     ShuffleServerConf conf = new ShuffleServerConf();
     conf.set(ShuffleServerConf.RSS_STORAGE_BASE_PATH, Arrays.asList(storagePaths));
     conf.setLong(ShuffleServerConf.DISK_CAPACITY, 1024L);
     conf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(),
         org.apache.uniffle.storage.util.StorageType.LOCALFILE.name());
+    conf.setDouble(ShuffleServerConf.HEALTH_STORAGE_MAX_USAGE_PERCENTAGE, 100.0D);
     LocalStorageManager localStorageManager = new LocalStorageManager(conf);
+    // Create and write 3 files in each storage dir
+    final Path file1 = Files.createFile(Paths.get(storageBaseDir1.toString(), "partition1.data"));
+    final Path file2 = Files.createFile(Paths.get(storageBaseDir2.toString(), "partition2.data"));
+    final Path file3 = Files.createFile(Paths.get(storageBaseDir3.toString(), "partition3.data"));
+    FileUtils.writeByteArrayToFile(file1.toFile(), new byte[] {0x1});
+    FileUtils.writeByteArrayToFile(file2.toFile(), new byte[] {0x2});
+    FileUtils.writeByteArrayToFile(file3.toFile(), new byte[] {0x3});
+
+    boolean healthy = localStorageManager.getStorageChecker().checkIsHealthy();
+    assertTrue(healthy, "should be healthy");
     Map<String, StorageInfo> storageInfo = localStorageManager.getStorageInfo();
     assertEquals(1, storageInfo.size());
     try {
-      final String path = "/tmp";
+      final String path = testBaseDir.toString();
       final String mountPoint = Files.getFileStore(new File(path).toPath()).name();
       assertNotNull(storageInfo.get(mountPoint));
       // on Linux environment, it can detect SSD as local storage type
@@ -315,6 +336,7 @@ public class LocalStorageManagerTest {
         assertEquals(StorageMedia.HDD, storageInfo.get(mountPoint).getType());
       }
       assertEquals(StorageStatus.NORMAL, storageInfo.get(mountPoint).getStatus());
+      assertEquals(3L, storageInfo.get(mountPoint).getUsedBytes());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
