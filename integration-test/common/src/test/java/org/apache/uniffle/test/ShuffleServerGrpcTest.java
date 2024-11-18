@@ -352,14 +352,13 @@ public class ShuffleServerGrpcTest extends IntegrationTestBase {
     request = new RssReportShuffleResultRequest("shuffleResultTest", 2, 1L, partitionToBlockIds, 3);
     grpcShuffleServerClient.reportShuffleResult(request);
     // validate bitmap in shuffleTaskManager
-    Roaring64NavigableMap[] bitmaps =
+    long bitmapNum =
         grpcShuffleServers
             .get(0)
             .getShuffleTaskManager()
-            .getPartitionsToBlockIds()
-            .get("shuffleResultTest")
-            .get(2);
-    assertEquals(3, bitmaps.length);
+            .getShuffleBlockIdManager()
+            .getBitmapNum("shuffleResultTest", 2);
+    assertEquals(3, bitmapNum);
 
     req = new RssGetShuffleResultRequest("shuffleResultTest", 2, 1, layout);
     result = grpcShuffleServerClient.getShuffleResult(req);
