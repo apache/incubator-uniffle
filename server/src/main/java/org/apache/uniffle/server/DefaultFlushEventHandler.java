@@ -103,7 +103,8 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
           }
           return null;
         };
-    CompletableFutureUtils.withTimeoutCancel(supplier, flushMaxWaitTimeoutSec * 1000);
+    CompletableFutureUtils.withTimeoutCancel(
+        supplier, flushMaxWaitTimeoutSec * 1000, "event-flushing");
   }
 
   /**
