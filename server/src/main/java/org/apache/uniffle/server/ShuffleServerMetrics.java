@@ -539,4 +539,13 @@ public class ShuffleServerMetrics {
     }
     metricsManager.addLabeledCacheGauge(name, supplier, updateInterval);
   }
+
+  public static Double getMetricsValue(String metricName) {
+    return metricsManager
+        .getCollectorRegistry()
+        .getSampleValue(
+            metricName,
+            metricsManager.getDefaultLabelNames(),
+            metricsManager.getDefaultLabelValues());
+  }
 }

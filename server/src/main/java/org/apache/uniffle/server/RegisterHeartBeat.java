@@ -17,9 +17,6 @@
 
 package org.apache.uniffle.server;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -30,11 +27,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.factory.CoordinatorClientFactory;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryableClient;
 import org.apache.uniffle.client.request.RssSendHeartBeatRequest;
-import org.apache.uniffle.common.ServerStatus;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.storage.StorageInfo;
 import org.apache.uniffle.common.util.ThreadUtils;
-import org.apache.uniffle.proto.RssProtos;
 
 public class RegisterHeartBeat {
 
@@ -73,21 +67,26 @@ public class RegisterHeartBeat {
     Runnable runnable =
         () -> {
           try {
-            sendHeartBeat(
-                shuffleServer.getId(),
-                shuffleServer.getIp(),
-                shuffleServer.getGrpcPort(),
-                shuffleServer.getUsedMemory(),
-                shuffleServer.getPreAllocatedMemory(),
-                shuffleServer.getAvailableMemory(),
-                shuffleServer.getEventNumInFlush(),
-                shuffleServer.getTags(),
-                shuffleServer.getServerStatus(),
-                shuffleServer.getStorageManager().getStorageInfo(),
-                shuffleServer.getNettyPort(),
-                shuffleServer.getJettyPort(),
-                shuffleServer.getStartTimeMs(),
-                shuffleServer.getAppInfos());
+            // use `rss.server.heartbeat.interval` as the timeout option
+            RssSendHeartBeatRequest request =
+                new RssSendHeartBeatRequest(
+                    shuffleServer.getId(),
+                    shuffleServer.getIp(),
+                    shuffleServer.getGrpcPort(),
+                    shuffleServer.getUsedMemory(),
+                    shuffleServer.getPreAllocatedMemory(),
+                    shuffleServer.getAvailableMemory(),
+                    shuffleServer.getEventNumInFlush(),
+                    heartBeatInterval,
+                    shuffleServer.getTags(),
+                    shuffleServer.getServerStatus(),
+                    shuffleServer.getStorageManager().getStorageInfo(),
+                    shuffleServer.getNettyPort(),
+                    shuffleServer.getJettyPort(),
+                    shuffleServer.getStartTimeMs(),
+                    shuffleServer.getAppInfos(),
+                    shuffleServer.getDisplayMetrics());
+            sendHeartBeat(request);
           } catch (Exception e) {
             LOG.warn("Error happened when send heart beat to coordinator");
           }
@@ -97,44 +96,15 @@ public class RegisterHeartBeat {
   }
 
   @VisibleForTesting
-  public boolean sendHeartBeat(
-      String id,
-      String ip,
-      int grpcPort,
-      long usedMemory,
-      long preAllocatedMemory,
-      long availableMemory,
-      int eventNumInFlush,
-      Set<String> tags,
-      ServerStatus serverStatus,
-      Map<String, StorageInfo> localStorageInfo,
-      int nettyPort,
-      int jettyPort,
-      long startTimeMs,
-      List<RssProtos.ApplicationInfo> appInfos) {
-    // use `rss.server.heartbeat.interval` as the timeout option
-    RssSendHeartBeatRequest request =
-        new RssSendHeartBeatRequest(
-            id,
-            ip,
-            grpcPort,
-            usedMemory,
-            preAllocatedMemory,
-            availableMemory,
-            eventNumInFlush,
-            heartBeatInterval,
-            tags,
-            serverStatus,
-            localStorageInfo,
-            nettyPort,
-            jettyPort,
-            startTimeMs,
-            appInfos);
-
+  public boolean sendHeartBeat(RssSendHeartBeatRequest request) {
     if (coordinatorClient.sendHeartBeat(request).getStatusCode() == StatusCode.SUCCESS) {
       return true;
     }
     return false;
+  }
+
+  public long getHeartBeatInterval() {
+    return heartBeatInterval;
   }
 
   public void shutdown() {
