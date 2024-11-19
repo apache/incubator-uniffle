@@ -751,6 +751,13 @@ public class ShuffleServerConf extends RssBaseConf {
           .withDescription(
               "The block id manager class, the implementation of this interface "
                   + "to manage the shuffle block ids");
+  public static final ConfigOption<List<String>> SERVER_DISPLAY_METRICS_LIST =
+      ConfigOptions.key("rss.server.displayMetricsList")
+          .stringType()
+          .asList()
+          .defaultValues("app:app_num_with_node", "partition:partition_num_with_node")
+          .withDescription(
+              "A list of metrics will report to coordinator and dashboard, format in \"displayName:metricsName\", separated by ','");
 
   public ShuffleServerConf() {}
 

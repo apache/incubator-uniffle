@@ -150,4 +150,12 @@ public class MetricsManager {
       supplierGaugeMap.remove(name);
     }
   }
+
+  public String[] getDefaultLabelNames() {
+    return defaultLabelNames;
+  }
+
+  public String[] getDefaultLabelValues() {
+    return defaultLabelValues;
+  }
 }

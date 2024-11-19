@@ -33,6 +33,7 @@ import org.apache.uniffle.proto.RssProtos.ShuffleServerId;
 
 public class ServerNode implements Comparable<ServerNode> {
 
+  private final Map<String, String> displayMetrics;
   private String id;
   private String ip;
   private int grpcPort;
@@ -187,7 +188,8 @@ public class ServerNode implements Comparable<ServerNode> {
         startTime,
         "",
         "",
-        Collections.EMPTY_LIST);
+        Collections.EMPTY_LIST,
+        Collections.EMPTY_MAP);
   }
 
   public ServerNode(
@@ -206,7 +208,8 @@ public class ServerNode implements Comparable<ServerNode> {
       long startTime,
       String version,
       String gitCommitId,
-      List<RssProtos.ApplicationInfo> appInfos) {
+      List<RssProtos.ApplicationInfo> appInfos,
+      Map<String, String> displayMetrics) {
     this.id = id;
     this.ip = ip;
     this.grpcPort = grpcPort;
@@ -230,6 +233,7 @@ public class ServerNode implements Comparable<ServerNode> {
     this.gitCommitId = gitCommitId;
     this.appIdToInfos = new ConcurrentHashMap<>();
     appInfos.forEach(appInfo -> appIdToInfos.put(appInfo.getAppId(), appInfo));
+    this.displayMetrics = displayMetrics;
   }
 
   public ShuffleServerId convertToGrpcProto() {
@@ -387,5 +391,9 @@ public class ServerNode implements Comparable<ServerNode> {
 
   public Map<String, RssProtos.ApplicationInfo> getAppIdToInfos() {
     return appIdToInfos;
+  }
+
+  public Map<String, String> getDisplayMetrics() {
+    return displayMetrics;
   }
 }

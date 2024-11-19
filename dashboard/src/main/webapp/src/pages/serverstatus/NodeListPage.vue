@@ -101,6 +101,13 @@
           </el-button>
         </template>
       </el-table-column>
+      <el-table-column prop="displayMetrics" label="DisplayMetrics" min-width="120">
+        <template v-slot="{ row }">
+          <div v-for="(value, key) in row.displayMetrics" :key="key">
+            <span>{{ key }}:{{ value }}</span>
+          </div>
+        </template>
+      </el-table-column>
     </el-table>
   </div>
 </template>
