@@ -123,7 +123,11 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     Map<String, String> extraProperties = Maps.newHashMap();
     extraProperties.put(
         ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, String.valueOf(assignmentShuffleNodesNum));
-    extraProperties.putAll(RssSparkConfig.sparkConfToMap(sparkConf));
+    // Put all spark conf into extra properties, except which length is longer than 100
+    // to avoid extra properties too long.
+    RssSparkConfig.toRssConf(sparkConf).getAll().stream()
+        .filter(entry -> StringUtils.length((String) entry.getValue()) < 100)
+        .forEach(entry -> extraProperties.put(entry.getKey(), (String) entry.getValue()));
 
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
     try {
