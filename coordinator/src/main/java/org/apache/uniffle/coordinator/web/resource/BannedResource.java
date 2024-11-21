@@ -35,6 +35,8 @@ import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.BannedManager;
 import org.apache.uniffle.coordinator.web.vo.BannedReloadVO;
 
+import java.util.Set;
+
 @Path("/banned")
 public class BannedResource extends BaseResource {
   private static final Logger LOG = LoggerFactory.getLogger(BannedResource.class);
@@ -60,9 +62,22 @@ public class BannedResource extends BaseResource {
   public Response<String> version() {
     BannedManager bannedManager = getAccessManager().getBannedManager();
     if (bannedManager != null) {
-      String version = bannedManager.getBannedIdsFromRestVersion();
+      String version = bannedManager.getVersion();
       LOG.info("Get version of banned ids is {}.", version);
       return Response.success(version);
+    } else {
+      return Response.fail("bannedManager is not initialized.");
+    }
+  }
+
+  @GET
+  @Path("get")
+  public Response<Set<String>> get() {
+    BannedManager bannedManager = getAccessManager().getBannedManager();
+    if (bannedManager != null) {
+      Set<String> bannedIds = bannedManager.getBannedIds();
+      LOG.info("Get {} bannedIds ", bannedIds.size());
+      return Response.success(bannedIds);
     } else {
       return Response.fail("bannedManager is not initialized.");
     }

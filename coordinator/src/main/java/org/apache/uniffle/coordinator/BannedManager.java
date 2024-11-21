@@ -46,7 +46,11 @@ public class BannedManager {
     bannedIdsFromRest = newBannedIds;
   }
 
-  public String getBannedIdsFromRestVersion() {
+  public String getVersion() {
     return bannedIdsFromRest.getKey();
+  }
+
+  public Set<String> getBannedIds() {
+    return bannedIdsFromRest.getValue();
   }
 }
