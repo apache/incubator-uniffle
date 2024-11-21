@@ -69,7 +69,7 @@ import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.buffer.ShuffleBufferType;
-import org.apache.uniffle.server.storage.Raid0LocalStorageManager;
+import org.apache.uniffle.server.storage.MultiPartLocalStorageManager;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.coordinator.CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED;
@@ -95,8 +95,8 @@ public class RemoteMergeShuffleWithRssClientTestWhenShuffleFlushed extends Shuff
     Assumptions.assumeTrue(
         !shuffleServerConf
             .get(SERVER_LOCAL_STORAGE_MANAGER_CLASS)
-            .equals(Raid0LocalStorageManager.class.getName()),
-        Raid0LocalStorageManager.class.getName() + " is not working with remote merge feature");
+            .equals(MultiPartLocalStorageManager.class.getName()),
+        MultiPartLocalStorageManager.class.getName() + " is not working with remote merge feature");
     createCoordinatorServer(coordinatorConf);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MERGE_ENABLE, true);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MERGE_DEFAULT_MERGED_BLOCK_SIZE, "1k");

@@ -33,14 +33,14 @@ import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
 
-public class Raid0LocalStorageManager extends LocalStorageManager {
-  private static final Logger LOG = LoggerFactory.getLogger(Raid0LocalStorageManager.class);
+public class MultiPartLocalStorageManager extends LocalStorageManager {
+  private static final Logger LOG = LoggerFactory.getLogger(MultiPartLocalStorageManager.class);
   // id -> storage
   private final Map<Integer, LocalStorage> idToStorages;
 
   private final CompositeStorage compositeStorage;
 
-  public Raid0LocalStorageManager(ShuffleServerConf conf) {
+  public MultiPartLocalStorageManager(ShuffleServerConf conf) {
     super(conf);
     idToStorages = new ConcurrentSkipListMap<>();
     for (LocalStorage storage : getStorages()) {
