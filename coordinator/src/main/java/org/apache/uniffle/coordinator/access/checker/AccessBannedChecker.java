@@ -20,9 +20,12 @@ package org.apache.uniffle.coordinator.access.checker;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.ReconfigurableRegistry;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -37,27 +40,44 @@ import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
 public class AccessBannedChecker extends AbstractAccessChecker {
   private static final Logger LOG = LoggerFactory.getLogger(AccessBannedChecker.class);
   private final AccessManager accessManager;
-  private final String bannedIdProviderKey;
-  private final Pattern bannedIdProviderPattern;
+  private String bannedIdProviderKey;
+  private Pattern bannedIdProviderPattern;
 
   public AccessBannedChecker(AccessManager accessManager) throws Exception {
     super(accessManager);
     this.accessManager = accessManager;
     CoordinatorConf conf = accessManager.getCoordinatorConf();
     bannedIdProviderKey = conf.get(CoordinatorConf.COORDINATOR_ACCESS_BANNED_ID_PROVIDER);
-    String bannedIdProviderRegex =
-        conf.get(CoordinatorConf.COORDINATOR_ACCESS_BANNED_ID_PROVIDER_REG_PATTERN);
-    bannedIdProviderPattern = Pattern.compile(bannedIdProviderRegex);
+    updateBannedIdProviderPattern(conf);
 
     LOG.info(
         "Construct BannedChecker. BannedIdProviderKey is {}, pattern is {}",
         bannedIdProviderKey,
-        bannedIdProviderRegex);
+        bannedIdProviderPattern.pattern());
+    ReconfigurableRegistry.register(
+        Sets.newHashSet(
+            CoordinatorConf.COORDINATOR_ACCESS_BANNED_ID_PROVIDER.key(),
+            CoordinatorConf.COORDINATOR_ACCESS_BANNED_ID_PROVIDER_REG_PATTERN.key()),
+        (theConf, changedProperties) -> {
+          if (changedProperties == null) {
+            return;
+          }
+          if (changedProperties.contains(
+              CoordinatorConf.COORDINATOR_ACCESS_BANNED_ID_PROVIDER.key())) {
+            this.bannedIdProviderKey =
+                conf.get(CoordinatorConf.COORDINATOR_ACCESS_BANNED_ID_PROVIDER);
+          }
+          if (changedProperties.contains(
+              CoordinatorConf.COORDINATOR_ACCESS_BANNED_ID_PROVIDER.key())) {
+            updateBannedIdProviderPattern(conf);
+          }
+        });
   }
 
   @Override
   public AccessCheckResult check(AccessInfo accessInfo) {
     if (accessInfo.getExtraProperties() != null
+        && bannedIdProviderKey != null
         && accessInfo.getExtraProperties().containsKey(bannedIdProviderKey)) {
       String bannedIdPropertyValue = accessInfo.getExtraProperties().get(bannedIdProviderKey);
       Matcher matcher = bannedIdProviderPattern.matcher(bannedIdPropertyValue);
@@ -76,6 +96,12 @@ public class AccessBannedChecker extends AbstractAccessChecker {
     }
 
     return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE);
+  }
+
+  private void updateBannedIdProviderPattern(RssConf conf) {
+    String bannedIdProviderRegex =
+        conf.get(CoordinatorConf.COORDINATOR_ACCESS_BANNED_ID_PROVIDER_REG_PATTERN);
+    bannedIdProviderPattern = Pattern.compile(bannedIdProviderRegex);
   }
 
   @Override

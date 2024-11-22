@@ -17,6 +17,7 @@
 
 package org.apache.uniffle.coordinator.web.resource;
 
+import java.util.Set;
 import javax.servlet.ServletContext;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -34,8 +35,6 @@ import org.apache.uniffle.common.web.resource.Response;
 import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.BannedManager;
 import org.apache.uniffle.coordinator.web.vo.BannedReloadVO;
-
-import java.util.Set;
 
 @Path("/banned")
 public class BannedResource extends BaseResource {

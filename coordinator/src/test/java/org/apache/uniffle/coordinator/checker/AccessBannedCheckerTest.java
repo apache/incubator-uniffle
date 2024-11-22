@@ -17,7 +17,6 @@
 
 package org.apache.uniffle.coordinator.checker;
 
-import java.io.File;
 import java.util.Collections;
 
 import com.google.common.collect.Sets;
@@ -26,7 +25,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.coordinator.AccessManager;
 import org.apache.uniffle.coordinator.BannedManager;
@@ -52,7 +50,7 @@ public class AccessBannedCheckerTest {
   }
 
   @Test
-  public void test(@TempDir File tempDir) throws Exception {
+  public void test() throws Exception {
     CoordinatorConf conf = new CoordinatorConf();
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_BANNED_ID_PROVIDER, "test.key");
     conf.set(CoordinatorConf.COORDINATOR_ACCESS_BANNED_ID_PROVIDER_REG_PATTERN, "(.*)_.*");
@@ -109,6 +107,27 @@ public class AccessBannedCheckerTest {
                     ""))
             .isSuccess());
 
+    checker.close();
+  }
+
+  @Test
+  public void testAbnormal() throws Exception {
+    CoordinatorConf conf = new CoordinatorConf();
+    String checkerClassName = AccessBannedChecker.class.getName();
+    conf.setString(CoordinatorConf.COORDINATOR_ACCESS_CHECKERS.key(), checkerClassName);
+    AccessManager accessManager = new AccessManager(conf, null, null, new Configuration());
+    AccessBannedChecker checker = (AccessBannedChecker) accessManager.getAccessCheckers().get(0);
+    sleep(1200);
+    // any access is passed for default config.
+    assertTrue(
+        checker
+            .check(
+                new AccessInfo(
+                    "DummyAccessId",
+                    Sets.newHashSet(),
+                    Collections.singletonMap("test.key", "9527_1234"),
+                    ""))
+            .isSuccess());
     checker.close();
   }
 }
