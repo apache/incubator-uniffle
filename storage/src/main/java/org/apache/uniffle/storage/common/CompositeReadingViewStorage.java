@@ -30,12 +30,12 @@ import org.apache.uniffle.storage.handler.impl.CompositeLocalFileServerReadHandl
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
 
-public class CompositeStorage extends AbstractStorage {
+public class CompositeReadingViewStorage extends AbstractStorage {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CompositeStorage.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CompositeReadingViewStorage.class);
   private final List<LocalStorage> localStorages;
 
-  public CompositeStorage(List<LocalStorage> localStorages) {
+  public CompositeReadingViewStorage(List<LocalStorage> localStorages) {
     super();
     this.localStorages = localStorages;
   }

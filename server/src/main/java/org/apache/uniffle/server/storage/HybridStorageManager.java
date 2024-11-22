@@ -116,8 +116,8 @@ public class HybridStorageManager implements StorageManager {
   }
 
   @Override
-  public Storage selectStorageForIndex(ShuffleDataReadEvent event) {
-    return warmStorageManager.selectStorageForIndex(event);
+  public Storage selectStorageById(ShuffleDataReadEvent event) {
+    return warmStorageManager.selectStorageById(event);
   }
 
   @Override

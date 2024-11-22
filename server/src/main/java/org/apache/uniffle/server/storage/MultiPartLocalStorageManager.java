@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.server.ShuffleDataFlushEvent;
 import org.apache.uniffle.server.ShuffleDataReadEvent;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.storage.common.CompositeStorage;
+import org.apache.uniffle.storage.common.CompositeReadingViewStorage;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -38,7 +38,7 @@ public class MultiPartLocalStorageManager extends LocalStorageManager {
   // id -> storage
   private final Map<Integer, LocalStorage> idToStorages;
 
-  private final CompositeStorage compositeStorage;
+  private final CompositeReadingViewStorage compositeStorage;
 
   public MultiPartLocalStorageManager(ShuffleServerConf conf) {
     super(conf);
@@ -47,7 +47,7 @@ public class MultiPartLocalStorageManager extends LocalStorageManager {
       idToStorages.put(storage.getId(), storage);
     }
 
-    compositeStorage = new CompositeStorage(getStorages());
+    compositeStorage = new CompositeReadingViewStorage(getStorages());
   }
 
   @Override
@@ -106,14 +106,13 @@ public class MultiPartLocalStorageManager extends LocalStorageManager {
       return getStorages().get(0);
     }
 
-    // Use higher 8 bit to storage the storage id, and use lower 56 bit to storage the offset.
     int storageId = event.getStorageId();
     // TODO(baoloongmao): check AOOB exception
     return idToStorages.get(storageId);
   }
 
   @Override
-  public Storage selectStorageForIndex(ShuffleDataReadEvent event) {
+  public Storage selectStorageById(ShuffleDataReadEvent event) {
     return compositeStorage;
   }
 }

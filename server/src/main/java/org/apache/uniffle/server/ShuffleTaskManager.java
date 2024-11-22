@@ -844,7 +844,7 @@ public class ShuffleTaskManager {
     int[] range =
         ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
     Storage storage =
-        storageManager.selectStorageForIndex(
+        storageManager.selectStorageById(
             new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
     if (storage == null) {
       throw new FileNotFoundException("No such data in current storage manager.");
