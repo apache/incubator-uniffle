@@ -27,30 +27,29 @@ import org.slf4j.LoggerFactory;
 /** BannedManager is a manager for ban the abnormal app. */
 public class BannedManager {
   private static final Logger LOG = LoggerFactory.getLogger(BannedManager.class);
-  // versionId -> bannedIds
-  private volatile Pair<String, Set<String>> bannedIdsFromRest =
-      Pair.of("0", Collections.emptySet());
+  // version, bannedIds
+  private volatile Pair<String, Set<String>> bannedInfo = Pair.of("0", Collections.emptySet());
 
   public BannedManager(CoordinatorConf conf) {
     LOG.info("BannedManager initialized successfully.");
   }
 
   public boolean checkBanned(String id) {
-    return bannedIdsFromRest.getValue().contains(id);
+    return bannedInfo.getValue().contains(id);
   }
 
   public void reloadBannedIdsFromRest(Pair<String, Set<String>> newBannedIds) {
-    if (newBannedIds.getKey().equals(bannedIdsFromRest.getKey())) {
+    if (newBannedIds.getKey().equals(bannedInfo.getKey())) {
       LOG.warn("receive bannedIds from rest with the same version: {}", newBannedIds.getKey());
     }
-    bannedIdsFromRest = newBannedIds;
+    bannedInfo = newBannedIds;
   }
 
   public String getVersion() {
-    return bannedIdsFromRest.getKey();
+    return bannedInfo.getKey();
   }
 
-  public Set<String> getBannedIds() {
-    return bannedIdsFromRest.getValue();
+  public Pair<String, Set<String>> getBannedInfo() {
+    return bannedInfo;
   }
 }

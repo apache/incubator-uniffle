@@ -71,12 +71,15 @@ public class BannedResource extends BaseResource {
 
   @GET
   @Path("get")
-  public Response<Set<String>> get() {
+  public Response<Pair<String, Set<String>>> get() {
     BannedManager bannedManager = getAccessManager().getBannedManager();
     if (bannedManager != null) {
-      Set<String> bannedIds = bannedManager.getBannedIds();
-      LOG.info("Get {} bannedIds ", bannedIds.size());
-      return Response.success(bannedIds);
+      Pair<String, Set<String>> bannedInfo = bannedManager.getBannedInfo();
+      LOG.info(
+          "Get version:{} include {} bannedIds ",
+          bannedInfo.getKey(),
+          bannedInfo.getValue().size());
+      return Response.success(bannedInfo);
     } else {
       return Response.fail("bannedManager is not initialized.");
     }
