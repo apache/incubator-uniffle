@@ -211,7 +211,7 @@ public class CoordinatorGrpcRetryableClient implements CoordinatorClient {
           request.getRetryIntervalMs(),
           request.getRetryTimes());
     } catch (Throwable throwable) {
-      throw new RssException("getShuffleAssignments failed!", throwable);
+      throw new RssException("accessCluster failed!", throwable);
     }
   }
 
