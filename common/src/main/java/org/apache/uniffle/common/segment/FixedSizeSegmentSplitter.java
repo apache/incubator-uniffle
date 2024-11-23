@@ -17,123 +17,19 @@
 
 package org.apache.uniffle.common.segment;
 
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
 import java.util.List;
 
-import com.google.common.collect.Lists;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.uniffle.common.BufferSegment;
 import org.apache.uniffle.common.ShuffleDataSegment;
 import org.apache.uniffle.common.ShuffleIndexResult;
-import org.apache.uniffle.common.exception.RssException;
 
-public class FixedSizeSegmentSplitter implements SegmentSplitter {
-  private static final Logger LOGGER = LoggerFactory.getLogger(FixedSizeSegmentSplitter.class);
-
-  private int readBufferSize;
-
+public class FixedSizeSegmentSplitter extends AbstractSegmentSplitter {
   public FixedSizeSegmentSplitter(int readBufferSize) {
-    this.readBufferSize = readBufferSize;
+    super(readBufferSize);
   }
 
   @Override
   public List<ShuffleDataSegment> split(ShuffleIndexResult shuffleIndexResult) {
-    if (shuffleIndexResult == null || shuffleIndexResult.isEmpty()) {
-      return Lists.newArrayList();
-    }
-
-    ByteBuffer indexData = shuffleIndexResult.getIndexData();
-    long dataFileLen = shuffleIndexResult.getDataFileLen();
-    int[] storageIds = shuffleIndexResult.getStorageIds();
-    return transIndexDataToSegments(indexData, readBufferSize, dataFileLen, storageIds);
-  }
-
-  private static List<ShuffleDataSegment> transIndexDataToSegments(
-      ByteBuffer indexData, int readBufferSize, long dataFileLen, int[] storageIds) {
-    List<BufferSegment> bufferSegments = Lists.newArrayList();
-    List<ShuffleDataSegment> dataFileSegments = Lists.newArrayList();
-    int bufferOffset = 0;
-    long fileOffset = -1;
-    long totalLength = 0;
-
-    int storageIndex = 0;
-    long preOffset = -1;
-    int preStorageId = -1;
-    int currentStorageId = 0;
-    while (indexData.hasRemaining()) {
-      try {
-        final long offset = indexData.getLong();
-        final int length = indexData.getInt();
-        final int uncompressLength = indexData.getInt();
-        final long crc = indexData.getLong();
-        final long blockId = indexData.getLong();
-        final long taskAttemptId = indexData.getLong();
-        if (storageIds.length == 0) {
-          // if storageIds is empty for old server, default storageId is -1
-          currentStorageId = -1;
-        } else if (preOffset > offset) {
-          storageIndex++;
-          if (storageIndex >= storageIds.length) {
-            LOGGER.warn("storageIds length {} is not enough.", storageIds.length);
-          }
-          currentStorageId = storageIds[storageIndex];
-        } else {
-          currentStorageId = storageIds[storageIndex];
-        }
-        preOffset = offset;
-
-        totalLength += length;
-
-        // If ShuffleServer is flushing the file at this time, the length in the index file record
-        // may be greater
-        // than the length in the actual data file, and it needs to be returned at this time to
-        // avoid EOFException
-        if (dataFileLen != -1 && totalLength > dataFileLen) {
-          LOGGER.info(
-              "Abort inconsistent data, the data length: {}(bytes) recorded in index file is greater than "
-                  + "the real data file length: {}(bytes). Block id: {}"
-                  + "This may happen when the data is flushing, please ignore.",
-              totalLength,
-              dataFileLen,
-              blockId);
-          break;
-        }
-
-        boolean storageChanged = preStorageId != -1 && currentStorageId != preStorageId;
-
-        if (bufferOffset >= readBufferSize || storageChanged) {
-          ShuffleDataSegment sds =
-              new ShuffleDataSegment(fileOffset, bufferOffset, preStorageId, bufferSegments);
-          dataFileSegments.add(sds);
-          bufferSegments = Lists.newArrayList();
-          bufferOffset = 0;
-          fileOffset = -1;
-        }
-
-        // The index file is written, read and parsed sequentially, so these parsed index segments
-        // index a continuous shuffle data in the corresponding data file and the first segment's
-        // offset field is the offset of these shuffle data in the data file.
-        if (fileOffset == -1) {
-          fileOffset = offset;
-        }
-        bufferSegments.add(
-            new BufferSegment(blockId, bufferOffset, length, uncompressLength, crc, taskAttemptId));
-        preStorageId = currentStorageId;
-        bufferOffset += length;
-      } catch (BufferUnderflowException ue) {
-        throw new RssException("Read index data under flow", ue);
-      }
-    }
-
-    if (bufferOffset > 0) {
-      ShuffleDataSegment sds =
-          new ShuffleDataSegment(fileOffset, bufferOffset, currentStorageId, bufferSegments);
-      dataFileSegments.add(sds);
-    }
-
-    return dataFileSegments;
+    // For FixedSizeSegmentSplitter, we do not filter by taskAttemptId, so pass null for the filter.
+    return splitCommon(shuffleIndexResult, null);
   }
 }
