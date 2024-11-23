@@ -79,6 +79,11 @@ public class ShuffleBufferWithLinkedListTest extends BufferTestBase {
     assertEquals(42, shuffleBuffer.getEncodedLength());
     event = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
     assertEquals(42, event.getEncodedLength());
+    assertEquals(10, event.getDataLength());
+    shuffleBuffer.append(createData(10));
+    event = shuffleBuffer.toFlushEvent("appId", 0, 0, 1, null);
+    assertEquals(42, event.getEncodedLength());
+    assertEquals(10, event.getDataLength());
     assertEquals(0, shuffleBuffer.getEncodedLength());
     assertEquals(0, shuffleBuffer.getBlocks().size());
   }
