@@ -307,6 +307,6 @@ public class RssClientConf {
       ConfigOptions.key("rss.client.reportExcludeProperties")
           .stringType()
           .asList()
-          .noDefaultValue()
+          .defaultValues("hdfs.inputPaths")
           .withDescription("the report exclude properties could be configured by this option");
 }
