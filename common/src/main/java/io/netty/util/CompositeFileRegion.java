@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.common.netty.protocol;
+package io.netty.util;
 
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
 
 import io.netty.channel.FileRegion;
 
+import org.apache.uniffle.common.netty.protocol.AbstractFileRegion;
+
 public class CompositeFileRegion extends AbstractFileRegion {
   private final FileRegion[] regions;
   private long totalSize = 0;
-  private long transferred = 0;
+  private long bytesTransferred = 0;
 
   public CompositeFileRegion(FileRegion... regions) {
     this.regions = regions;
@@ -36,7 +38,7 @@ public class CompositeFileRegion extends AbstractFileRegion {
 
   @Override
   public long position() {
-    return transferred;
+    return bytesTransferred;
   }
 
   @Override
@@ -46,29 +48,29 @@ public class CompositeFileRegion extends AbstractFileRegion {
 
   @Override
   public long transferTo(WritableByteChannel target, long position) throws IOException {
-    long totalTransferred = 0;
+    long totalBytesTransferred = 0;
 
     for (FileRegion region : regions) {
       if (position >= region.count()) {
         position -= region.count();
       } else {
-        long transferredNow = region.transferTo(target, position);
-        totalTransferred += transferredNow;
-        transferred += transferredNow;
+        long currentBytesTransferred = region.transferTo(target, position);
+        totalBytesTransferred += currentBytesTransferred;
+        bytesTransferred += currentBytesTransferred;
 
-        if (transferredNow < region.count() - position) {
+        if (currentBytesTransferred < region.count() - position) {
           break;
         }
         position = 0;
       }
     }
 
-    return totalTransferred;
+    return totalBytesTransferred;
   }
 
   @Override
   public long transferred() {
-    return transferred;
+    return bytesTransferred;
   }
 
   @Override
@@ -91,8 +93,7 @@ public class CompositeFileRegion extends AbstractFileRegion {
 
   @Override
   public boolean release() {
-    super.release();
-    boolean released = true;
+    boolean released = super.release();
     for (FileRegion region : regions) {
       if (!region.release()) {
         released = false;
@@ -103,8 +104,7 @@ public class CompositeFileRegion extends AbstractFileRegion {
 
   @Override
   public boolean release(int decrement) {
-    super.release(decrement);
-    boolean released = true;
+    boolean released = super.release(decrement);
     for (FileRegion region : regions) {
       if (!region.release(decrement)) {
         released = false;
@@ -114,7 +114,13 @@ public class CompositeFileRegion extends AbstractFileRegion {
   }
 
   @Override
-  protected void deallocate() {}
+  protected void deallocate() {
+    for (FileRegion region : regions) {
+      if (region instanceof AbstractReferenceCounted) {
+        ((AbstractReferenceCounted) region).deallocate();
+      }
+    }
+  }
 
   @Override
   public AbstractFileRegion touch() {
