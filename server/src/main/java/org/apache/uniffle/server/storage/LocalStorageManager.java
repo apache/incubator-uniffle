@@ -94,7 +94,7 @@ public class LocalStorageManager extends SingleStorageManager {
   private boolean isStorageAuditLogEnabled;
 
   @VisibleForTesting
-  LocalStorageManager(ShuffleServerConf conf) {
+  public LocalStorageManager(ShuffleServerConf conf) {
     super(conf);
     storageBasePaths = RssUtils.getConfiguredLocalDirs(conf);
     if (CollectionUtils.isEmpty(storageBasePaths)) {

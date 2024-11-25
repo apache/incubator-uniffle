@@ -52,13 +52,9 @@ import org.apache.uniffle.common.util.BlockId;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.server.ShuffleDataReadEvent;
-import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
-import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -493,50 +489,6 @@ public class SparkClientWithLocalTest extends ShuffleReadWriteBase {
         baseReadBuilder(isNettyMode)
             .appId(testAppId)
             .blockIdBitmap(expectedBlockIds)
-            .taskIdBitmap(taskIdBitmap)
-            .build();
-
-    validateResult(readClient, expectedData);
-    readClient.checkProcessedBlockIds();
-    readClient.close();
-  }
-
-  @ParameterizedTest
-  @MethodSource("isNettyModeProvider")
-  public void testClientRemoteReadFromMultipleDisk(boolean isNettyMode) {
-    String testAppId = "testClientRemoteReadFromMultipleDisk_appId";
-    registerApp(testAppId, Lists.newArrayList(new PartitionRange(0, 0)), isNettyMode);
-
-    // Send shuffle data
-    Map<Long, byte[]> expectedData = Maps.newHashMap();
-    Roaring64NavigableMap blockIdBitmap = Roaring64NavigableMap.bitmapOf();
-
-    List<ShuffleBlockInfo> blocks =
-        createShuffleBlockList(0, 0, 0, 5, 30, blockIdBitmap, expectedData, mockSSI);
-    sendTestData(testAppId, blocks, isNettyMode);
-
-    List<ShuffleServer> shuffleServers = isNettyMode ? nettyShuffleServers : grpcShuffleServers;
-    // Mark one storage reaching high watermark, it should switch another storage for next writing
-    ShuffleServer shuffleServer = shuffleServers.get(0);
-    ShuffleDataReadEvent readEvent = new ShuffleDataReadEvent(testAppId, 0, 0, 0, 0);
-    LocalStorage storage1 =
-        (LocalStorage) shuffleServer.getStorageManager().selectStorage(readEvent);
-    storage1.getMetaData().setSize(20 * 1024 * 1024);
-
-    blocks = createShuffleBlockList(0, 0, 0, 3, 25, blockIdBitmap, expectedData, mockSSI);
-    sendTestData(testAppId, blocks, isNettyMode);
-
-    readEvent = new ShuffleDataReadEvent(testAppId, 0, 0, 0, 1);
-    LocalStorage storage2 =
-        (LocalStorage) shuffleServer.getStorageManager().selectStorage(readEvent);
-    assertNotEquals(storage1, storage2);
-
-    Roaring64NavigableMap taskIdBitmap = Roaring64NavigableMap.bitmapOf(0);
-    // unexpected taskAttemptId should be filtered
-    ShuffleReadClientImpl readClient =
-        baseReadBuilder(isNettyMode)
-            .appId(testAppId)
-            .blockIdBitmap(blockIdBitmap)
             .taskIdBitmap(taskIdBitmap)
             .build();
 
