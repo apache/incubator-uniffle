@@ -120,6 +120,7 @@ public class ShuffleBufferWithLinkedList extends AbstractShuffleBuffer {
     blocks = new LinkedHashSet<>();
     inFlushSize.addAndGet(encodedLength);
     encodedLength = 0;
+    dataLength = 0;
     return event;
   }
 
