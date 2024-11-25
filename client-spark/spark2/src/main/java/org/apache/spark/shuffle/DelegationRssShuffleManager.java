@@ -130,10 +130,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     List<String> excludeProperties =
         rssConf.get(RssClientConf.RSS_CLIENT_REPORT_EXCLUDE_PROPERTIES);
-    // Put all spark conf into extra properties, except which length is longer than 100
-    // to avoid extra properties too long.
     rssConf.getAll().stream()
-        .filter(entry -> StringUtils.length((String) entry.getValue()) < 100)
         .filter(entry -> !excludeProperties.contains(entry.getKey()))
         .forEach(entry -> extraProperties.put(entry.getKey(), (String) entry.getValue()));
 
