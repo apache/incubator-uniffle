@@ -303,6 +303,7 @@ public class RssClientConf {
           .withDescription(
               "The block id manager class of server for this application, "
                   + "the implementation of this interface to manage the shuffle block ids");
+
   public static final ConfigOption<List<String>> RSS_CLIENT_REPORT_EXCLUDE_PROPERTIES =
       ConfigOptions.key("rss.client.reportExcludeProperties")
           .stringType()
