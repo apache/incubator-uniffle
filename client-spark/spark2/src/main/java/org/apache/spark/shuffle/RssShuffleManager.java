@@ -103,8 +103,6 @@ public class RssShuffleManager extends RssShuffleManagerBase {
   private final String user;
   private final String uuid;
   private DataPusher dataPusher;
-  private final Map<Integer, Integer> shuffleIdToPartitionNum = JavaUtils.newConcurrentMap();
-  private final Map<Integer, Integer> shuffleIdToNumMapTasks = JavaUtils.newConcurrentMap();
   private GrpcServer shuffleManagerServer;
   private ShuffleManagerGrpcService service;
 
@@ -170,6 +168,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
     sparkConf.set("spark.shuffle.reduceLocality.enabled", "false");
     LOG.info("Disable shuffle data locality in RssShuffleManager.");
 
+    this.shuffleIdToPartitionNum = JavaUtils.newConcurrentMap();
+    this.shuffleIdToNumMapTasks = JavaUtils.newConcurrentMap();
     // stage retry for write/fetch failure
     rssStageRetryForFetchFailureEnabled =
         rssConf.get(RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED);
@@ -353,7 +353,7 @@ public class RssShuffleManager extends RssShuffleManagerBase {
 
     shuffleIdToPartitionNum.putIfAbsent(shuffleId, dependency.partitioner().numPartitions());
     shuffleIdToNumMapTasks.putIfAbsent(shuffleId, dependency.rdd().partitions().length);
-    if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
+    if (shuffleManagerRpcServiceEnabled && rssStageRetryForWriteFailureEnabled) {
       ShuffleHandleInfo handleInfo =
           new MutableShuffleHandleInfo(shuffleId, partitionToServers, remoteStorage);
       StageAttemptShuffleHandleInfo stageAttemptShuffleHandleInfo =
@@ -375,7 +375,8 @@ public class RssShuffleManager extends RssShuffleManagerBase {
             + shuffleId
             + "], partitionNum["
             + partitionToServers.size()
-            + "]");
+            + "], server:{}",
+        partitionToServers);
     return new RssShuffleHandle(shuffleId, appId, numMaps, dependency, hdlInfoBd);
   }
 
@@ -489,12 +490,16 @@ public class RssShuffleManager extends RssShuffleManagerBase {
               + "]");
       start = System.currentTimeMillis();
       ShuffleHandleInfo shuffleHandleInfo;
-      if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
+      if (shuffleManagerRpcServiceEnabled && rssStageRetryForWriteFailureEnabled) {
         // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
-        shuffleHandleInfo = getRemoteShuffleHandleInfoWithStageRetry(shuffleId);
+        shuffleHandleInfo =
+            getRemoteShuffleHandleInfoWithStageRetry(
+                context.stageId(), context.stageAttemptNumber(), shuffleId, partitionNum);
       } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
         // In Block Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId
-        shuffleHandleInfo = getRemoteShuffleHandleInfoWithBlockRetry(shuffleId);
+        shuffleHandleInfo =
+            getRemoteShuffleHandleInfoWithBlockRetry(
+                context.stageId(), context.stageAttemptNumber(), shuffleId, partitionNum);
       } else {
         shuffleHandleInfo =
             new SimpleShuffleHandleInfo(

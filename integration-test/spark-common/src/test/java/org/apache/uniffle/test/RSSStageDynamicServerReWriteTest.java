@@ -29,10 +29,7 @@ import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.client.util.RssClientConfig;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.MockedGrpcServer;
@@ -40,9 +37,6 @@ import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
 public class RSSStageDynamicServerReWriteTest extends SparkTaskFailureIntegrationTestBase {
-
-  private static final Logger LOG = LoggerFactory.getLogger(RSSStageDynamicServerReWriteTest.class);
-
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
@@ -69,11 +63,13 @@ public class RSSStageDynamicServerReWriteTest extends SparkTaskFailureIntegratio
     File dataDir2 = new File(tmpDir, id + "_2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     shuffleServerConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE.name());
+    shuffleServerConf.set(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED, false);
     shuffleServerConf.setInteger(
         "rss.rpc.server.port",
         shuffleServerConf.getInteger(ShuffleServerConf.RPC_SERVER_PORT) + id);
     shuffleServerConf.setInteger("rss.jetty.http.port", 19081 + id * 100);
     shuffleServerConf.setString("rss.storage.basePath", basePath);
+
     if (abnormalFlag) {
       createMockedShuffleServer(shuffleServerConf);
       // Set the sending block data timeout for the first shuffleServer
@@ -111,7 +107,9 @@ public class RSSStageDynamicServerReWriteTest extends SparkTaskFailureIntegratio
   public void updateSparkConfCustomer(SparkConf sparkConf) {
     super.updateSparkConfCustomer(sparkConf);
     sparkConf.set(
-        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX + RssClientConfig.RSS_RESUBMIT_STAGE, "true");
+        RssSparkConfig.SPARK_RSS_CONFIG_PREFIX
+            + RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED.key(),
+        "true");
   }
 
   @Test

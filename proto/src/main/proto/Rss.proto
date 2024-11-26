@@ -579,8 +579,6 @@ service ShuffleManager {
   rpc getPartitionToShufflerServerWithBlockRetry(PartitionToShuffleServerRequest) returns (ReassignOnBlockSendFailureResponse);
   // Report write failures to ShuffleManager
   rpc reportShuffleWriteFailure (ReportShuffleWriteFailureRequest) returns (ReportShuffleWriteFailureResponse);
-  // Reassign on stage resubmit
-  rpc reassignOnStageResubmit(ReassignServersRequest) returns (ReassignServersResponse);
   // Reassign on block send failure that occurs in writer
   rpc reassignOnBlockSendFailure(RssReassignOnBlockSendFailureRequest) returns (ReassignOnBlockSendFailureResponse);
   rpc reportShuffleResult (ReportShuffleResultRequest) returns (ReportShuffleResultResponse);
@@ -607,7 +605,10 @@ message ReportShuffleFetchFailureResponse {
 }
 
 message PartitionToShuffleServerRequest {
-  int32 shuffleId = 2;
+  int32 stageAttemptId = 1;
+  int32 stageAttemptNumber = 2;
+  int32 shuffleId = 3;
+  int32 numPartitions = 4;
 }
 
 message ReassignOnStageRetryResponse {
@@ -643,7 +644,8 @@ message RemoteStorageInfo{
 message ReportShuffleWriteFailureRequest {
   string appId = 1;
   int32 shuffleId = 2;
-  int32 stageAttemptNumber = 3;
+  int32 stageAttemptId = 3;
+  int32 stageAttemptNumber = 4;
   repeated ShuffleServerId shuffleServerIds= 5;
   string exception = 6;
 }
@@ -651,19 +653,6 @@ message ReportShuffleWriteFailureRequest {
 message ReportShuffleWriteFailureResponse {
   StatusCode status = 1;
   bool reSubmitWholeStage = 2;
-  string msg = 3;
-}
-
-message ReassignServersRequest{
-  int32 stageId = 1;
-  int32 stageAttemptNumber = 2;
-  int32 shuffleId = 3;
-  int32 numPartitions = 4;
-}
-
-message ReassignServersResponse {
-  StatusCode status = 1;
-  bool needReassign = 2;
   string msg = 3;
 }
 

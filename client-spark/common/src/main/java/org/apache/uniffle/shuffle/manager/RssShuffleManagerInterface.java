@@ -80,7 +80,7 @@ public interface RssShuffleManagerInterface {
    */
   void addFailuresShuffleServerInfos(String shuffleServerId);
 
-  boolean reassignOnStageResubmit(int stageId, int stageAttemptNumber, int shuffleId, int numMaps);
+  boolean reassignOnStageResubmit(int shuffleId, int stageAttemptId, int stageAttemptNumber);
 
   MutableShuffleHandleInfo reassignOnBlockSendFailure(
       int stageId,

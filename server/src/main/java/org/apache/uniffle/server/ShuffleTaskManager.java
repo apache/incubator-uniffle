@@ -301,6 +301,7 @@ public class ShuffleTaskManager {
     return registerShuffle(
         appId,
         shuffleId,
+        0,
         partitionRanges,
         remoteStorageInfo,
         user,
@@ -312,6 +313,7 @@ public class ShuffleTaskManager {
   public StatusCode registerShuffle(
       String appId,
       int shuffleId,
+      int stageAttemptNumber,
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorageInfo,
       String user,
@@ -333,7 +335,7 @@ public class ShuffleTaskManager {
               .dataDistributionType(dataDistType)
               .build());
       taskInfo.setShuffleBlockIdManagerIfNeeded(shuffleBlockIdManager);
-
+      taskInfo.refreshLatestStageAttemptNumber(shuffleId, stageAttemptNumber);
       taskInfo.getShuffleBlockIdManager().registerAppId(appId);
       for (PartitionRange partitionRange : partitionRanges) {
         shuffleBufferManager.registerBuffer(

@@ -71,7 +71,7 @@ public class DummyRssShuffleManager implements RssShuffleManagerInterface {
 
   @Override
   public boolean reassignOnStageResubmit(
-      int stageId, int stageAttemptNumber, int shuffleId, int numMaps) {
+      int shuffleId, int stageAttemptId, int stageAttemptNumber) {
     return false;
   }
 

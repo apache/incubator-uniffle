@@ -238,9 +238,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       ShuffleRegisterResponse reply;
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
+      int stageAttemptNumber = req.getStageAttemptNumber();
       String remoteStoragePath = req.getRemoteStorage().getPath();
       String user = req.getUser();
-      int stageAttemptNumber = req.getStageAttemptNumber();
       auditContext.withAppId(appId).withShuffleId(shuffleId);
       auditContext.withArgs(
           "remoteStoragePath="
@@ -251,27 +251,29 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               + stageAttemptNumber);
       // If the Stage is registered for the first time, you do not need to consider the Stage retry
       // and delete the Block data that has been sent.
-      if (stageAttemptNumber > 0) {
-        ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
+      ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
+      if (taskInfo != null) {
         // Prevents AttemptNumber of multiple stages from modifying the latest AttemptNumber.
         synchronized (taskInfo) {
-          int attemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
-          if (stageAttemptNumber > attemptNumber) {
+          int lastAttemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
+          if (stageAttemptNumber > 0 && stageAttemptNumber > lastAttemptNumber) {
             taskInfo.refreshLatestStageAttemptNumber(shuffleId, stageAttemptNumber);
             try {
               long start = System.currentTimeMillis();
               shuffleServer.getShuffleTaskManager().removeShuffleDataSync(appId, shuffleId);
               LOG.info(
                   "Deleted the previous stage attempt data due to stage recomputing for app: {}, "
-                      + "shuffleId: {}. It costs {} ms",
+                      + "shuffleId: {}, stageAttemptNumber: {}. It costs {} ms",
                   appId,
                   shuffleId,
+                  lastAttemptNumber,
                   System.currentTimeMillis() - start);
             } catch (Exception e) {
               LOG.error(
-                  "Errors on clearing previous stage attempt data for app: {}, shuffleId: {}",
+                  "Errors on clearing previous stage attempt data for app: {}, shuffleId: {}, stageAttemptNumber: {}",
                   appId,
                   shuffleId,
+                  lastAttemptNumber,
                   e);
               StatusCode code = StatusCode.INTERNAL_ERROR;
               auditContext.withStatusCode(code);
@@ -280,7 +282,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               responseObserver.onCompleted();
               return;
             }
-          } else if (stageAttemptNumber < attemptNumber) {
+          } else if (stageAttemptNumber > 0 && stageAttemptNumber <= lastAttemptNumber) {
+            LOG.info(
+                "The registration failed. The latest retry count is smaller than the existing retry count. This situation should not exist.");
             // When a Stage retry occurs, the first or last registration of a Stage may need to be
             // ignored and the ignored status quickly returned.
             StatusCode code = StatusCode.STAGE_RETRY_IGNORE;
@@ -325,6 +329,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               .registerShuffle(
                   appId,
                   shuffleId,
+                  stageAttemptNumber,
                   partitionRanges,
                   new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
                   user,
@@ -342,6 +347,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 .registerShuffle(
                     appId + MERGE_APP_SUFFIX,
                     shuffleId,
+                    stageAttemptNumber,
                     partitionRanges,
                     new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
                     user,
@@ -849,7 +855,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       int bitmapNum = request.getBitmapNum();
       Map<Integer, long[]> partitionToBlockIds =
           toPartitionBlocksMap(request.getPartitionToBlockIdsList());
-
       auditContext.withAppId(appId).withShuffleId(shuffleId);
       auditContext.withArgs(
           "taskAttemptId="
