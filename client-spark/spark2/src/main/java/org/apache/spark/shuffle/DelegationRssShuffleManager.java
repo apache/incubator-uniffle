@@ -133,7 +133,10 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
     List<String> excludeProperties =
         rssConf.get(RssClientConf.RSS_CLIENT_REPORT_EXCLUDE_PROPERTIES);
+    List<String> includeProperties =
+        rssConf.get(RssClientConf.RSS_CLIENT_REPORT_INCLUDE_PROPERTIES);
     rssConf.getAll().stream()
+        .filter(entry -> includeProperties.isEmpty() || includeProperties.contains(entry.getKey()))
         .filter(entry -> !excludeProperties.contains(entry.getKey()))
         .forEach(entry -> extraProperties.put(entry.getKey(), (String) entry.getValue()));
 

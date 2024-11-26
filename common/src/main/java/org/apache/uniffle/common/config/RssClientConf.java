@@ -310,4 +310,11 @@ public class RssClientConf {
           .asList()
           .defaultValues()
           .withDescription("the report exclude properties could be configured by this option");
+
+  public static final ConfigOption<List<String>> RSS_CLIENT_REPORT_INCLUDE_PROPERTIES =
+      ConfigOptions.key("rss.client.reportIncludeProperties")
+          .stringType()
+          .asList()
+          .defaultValues()
+          .withDescription("the report include properties could be configured by this option");
 }
