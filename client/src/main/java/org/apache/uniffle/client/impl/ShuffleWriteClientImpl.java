@@ -1093,6 +1093,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         executorService.shutdownNow();
       }
       shuffleServerInfoMap.remove(appId);
+      ShuffleServerClientFactory.getInstance()
+          .cleanUselessShuffleServerClients(getAllShuffleServers());
     }
   }
 
@@ -1163,6 +1165,14 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
     return serverInfos;
   }
 
+  Set<ShuffleServerInfo> getAllShuffleServers() {
+    Set<ShuffleServerInfo> serverInfos = Sets.newHashSet();
+    shuffleServerInfoMap
+        .values()
+        .forEach(appServerMap -> appServerMap.values().forEach(serverInfos::addAll));
+    return serverInfos;
+  }
+
   @VisibleForTesting
   public ShuffleServerClient getShuffleServerClient(ShuffleServerInfo shuffleServerInfo) {
     return ShuffleServerClientFactory.getInstance()
@@ -1192,7 +1202,11 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   void removeShuffleServer(String appId, int shuffleId) {
     Map<Integer, Set<ShuffleServerInfo>> appServerMap = shuffleServerInfoMap.get(appId);
     if (appServerMap != null) {
-      appServerMap.remove(shuffleId);
+      Set<ShuffleServerInfo> removed = appServerMap.remove(shuffleId);
+      if (removed != null) {
+        ShuffleServerClientFactory.getInstance()
+            .cleanUselessShuffleServerClients(getAllShuffleServers());
+      }
     }
   }
 }
