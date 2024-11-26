@@ -30,8 +30,10 @@ import org.apache.uniffle.common.util.ByteBufUtils;
 
 public class ShuffleIndexResult {
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleIndexResult.class);
+  private static final int[] DEFAULT_STORAGE_IDS = new int[] {0};
 
   private final ManagedBuffer buffer;
+  private final int[] storageIds;
   private long dataFileLen;
   private String dataFileName;
 
@@ -44,15 +46,28 @@ public class ShuffleIndexResult {
   }
 
   public ShuffleIndexResult(ByteBuffer data, long dataFileLen) {
-    this.buffer =
-        new NettyManagedBuffer(data != null ? Unpooled.wrappedBuffer(data) : Unpooled.EMPTY_BUFFER);
-    this.dataFileLen = dataFileLen;
+    this(
+        new NettyManagedBuffer(data != null ? Unpooled.wrappedBuffer(data) : Unpooled.EMPTY_BUFFER),
+        dataFileLen,
+        null,
+        DEFAULT_STORAGE_IDS);
   }
 
   public ShuffleIndexResult(ManagedBuffer buffer, long dataFileLen, String dataFileName) {
+    this(buffer, dataFileLen, dataFileName, DEFAULT_STORAGE_IDS);
+  }
+
+  public ShuffleIndexResult(
+      ManagedBuffer buffer, long dataFileLen, String dataFileName, int storageId) {
+    this(buffer, dataFileLen, dataFileName, new int[] {storageId});
+  }
+
+  public ShuffleIndexResult(
+      ManagedBuffer buffer, long dataFileLen, String dataFileName, int[] storageIds) {
     this.buffer = buffer;
     this.dataFileLen = dataFileLen;
     this.dataFileName = dataFileName;
+    this.storageIds = storageIds;
   }
 
   public byte[] getData() {
@@ -98,5 +113,9 @@ public class ShuffleIndexResult {
 
   public String getDataFileName() {
     return dataFileName;
+  }
+
+  public int[] getStorageIds() {
+    return storageIds;
   }
 }

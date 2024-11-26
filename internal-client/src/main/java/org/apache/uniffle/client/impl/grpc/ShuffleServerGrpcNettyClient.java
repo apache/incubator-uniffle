@@ -52,6 +52,7 @@ import org.apache.uniffle.common.netty.client.TransportConf;
 import org.apache.uniffle.common.netty.client.TransportContext;
 import org.apache.uniffle.common.netty.protocol.GetLocalShuffleDataRequest;
 import org.apache.uniffle.common.netty.protocol.GetLocalShuffleDataResponse;
+import org.apache.uniffle.common.netty.protocol.GetLocalShuffleDataV2Request;
 import org.apache.uniffle.common.netty.protocol.GetLocalShuffleIndexRequest;
 import org.apache.uniffle.common.netty.protocol.GetLocalShuffleIndexResponse;
 import org.apache.uniffle.common.netty.protocol.GetMemoryShuffleDataRequest;
@@ -350,7 +351,8 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
         return new RssGetShuffleIndexResponse(
             StatusCode.SUCCESS,
             getLocalShuffleIndexResponse.body(),
-            getLocalShuffleIndexResponse.getFileLength());
+            getLocalShuffleIndexResponse.getFileLength(),
+            getLocalShuffleIndexResponse.getStorageIds());
       default:
         String msg =
             "Can't get shuffle index from "
@@ -369,17 +371,30 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
   @Override
   public RssGetShuffleDataResponse getShuffleData(RssGetShuffleDataRequest request) {
     TransportClient transportClient = getTransportClient();
+    // Construct old version or v2 get shuffle data request to compatible with old server
     GetLocalShuffleDataRequest getLocalShuffleIndexRequest =
-        new GetLocalShuffleDataRequest(
-            requestId(),
-            request.getAppId(),
-            request.getShuffleId(),
-            request.getPartitionId(),
-            request.getPartitionNumPerRange(),
-            request.getPartitionNum(),
-            request.getOffset(),
-            request.getLength(),
-            System.currentTimeMillis());
+        request.storageIdSpecified()
+            ? new GetLocalShuffleDataV2Request(
+                requestId(),
+                request.getAppId(),
+                request.getShuffleId(),
+                request.getPartitionId(),
+                request.getPartitionNumPerRange(),
+                request.getPartitionNum(),
+                request.getOffset(),
+                request.getLength(),
+                request.getStorageId(),
+                System.currentTimeMillis())
+            : new GetLocalShuffleDataRequest(
+                requestId(),
+                request.getAppId(),
+                request.getShuffleId(),
+                request.getPartitionId(),
+                request.getPartitionNumPerRange(),
+                request.getPartitionNum(),
+                request.getOffset(),
+                request.getLength(),
+                System.currentTimeMillis());
     String requestInfo =
         "appId["
             + request.getAppId()

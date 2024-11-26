@@ -26,11 +26,11 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.common.util.Constants;
 
-public class GetLocalShuffleIndexResponse extends RpcResponse {
+public class GetLocalShuffleIndexV2Response extends GetLocalShuffleIndexResponse {
 
-  private long fileLength;
+  private final int[] storageIds;
 
-  public GetLocalShuffleIndexResponse(
+  public GetLocalShuffleIndexV2Response(
       long requestId, StatusCode statusCode, String retMessage, byte[] indexData, long fileLength) {
     this(
         requestId,
@@ -40,61 +40,78 @@ public class GetLocalShuffleIndexResponse extends RpcResponse {
         fileLength);
   }
 
-  public GetLocalShuffleIndexResponse(
+  public GetLocalShuffleIndexV2Response(
       long requestId,
       StatusCode statusCode,
       String retMessage,
       ByteBuf indexData,
       long fileLength) {
-    this(requestId, statusCode, retMessage, new NettyManagedBuffer(indexData), fileLength);
+    this(
+        requestId,
+        statusCode,
+        retMessage,
+        new NettyManagedBuffer(indexData),
+        fileLength,
+        Constants.EMPTY_INT_ARRAY);
   }
 
-  public GetLocalShuffleIndexResponse(
+  public GetLocalShuffleIndexV2Response(
       long requestId,
       StatusCode statusCode,
       String retMessage,
       ManagedBuffer managedBuffer,
-      long fileLength) {
-    super(requestId, statusCode, retMessage, managedBuffer);
-    this.fileLength = fileLength;
+      long fileLength,
+      int[] storageIds) {
+    super(requestId, statusCode, retMessage, managedBuffer, fileLength);
+    this.storageIds = storageIds;
   }
 
   @Override
   public int encodedLength() {
-    return super.encodedLength() + Long.BYTES;
+    // super encodedLength + 4(storageIds.length) + 4 * storageIds.length
+    return super.encodedLength() + Integer.BYTES + Integer.BYTES * storageIds.length;
   }
 
   @Override
   public void encode(ByteBuf buf) {
     super.encode(buf);
-    buf.writeLong(fileLength);
+    buf.writeInt(storageIds.length);
+    for (int storageId : storageIds) {
+      buf.writeInt(storageId);
+    }
   }
 
-  public static GetLocalShuffleIndexResponse decode(ByteBuf byteBuf, boolean decodeBody) {
+  public static GetLocalShuffleIndexV2Response decode(ByteBuf byteBuf, boolean decodeBody) {
     long requestId = byteBuf.readLong();
     StatusCode statusCode = StatusCode.fromCode(byteBuf.readInt());
     String retMessage = ByteBufUtils.readLengthAndString(byteBuf);
     long fileLength = byteBuf.readLong();
+    int[] storageIds = new int[byteBuf.readInt()];
+    for (int i = 0; i < storageIds.length; i++) {
+      storageIds[i] = byteBuf.readInt();
+    }
     if (decodeBody) {
       NettyManagedBuffer nettyManagedBuffer = new NettyManagedBuffer(byteBuf);
-      return new GetLocalShuffleIndexResponse(
-          requestId, statusCode, retMessage, nettyManagedBuffer, fileLength);
+      return new GetLocalShuffleIndexV2Response(
+          requestId, statusCode, retMessage, nettyManagedBuffer, fileLength, storageIds);
     } else {
-      return new GetLocalShuffleIndexResponse(
-          requestId, statusCode, retMessage, NettyManagedBuffer.EMPTY_BUFFER, fileLength);
+      return new GetLocalShuffleIndexV2Response(
+          requestId,
+          statusCode,
+          retMessage,
+          NettyManagedBuffer.EMPTY_BUFFER,
+          fileLength,
+          storageIds);
     }
   }
 
   @Override
   public Type type() {
-    return Type.GET_LOCAL_SHUFFLE_INDEX_RESPONSE;
+    return Type.GET_LOCAL_SHUFFLE_INDEX_V2_RESPONSE;
   }
 
-  public long getFileLength() {
-    return fileLength;
-  }
-
+  @Override
   public int[] getStorageIds() {
-    return Constants.EMPTY_INT_ARRAY;
+    return storageIds;
   }
 }
