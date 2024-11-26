@@ -34,8 +34,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import scala.Tuple2;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -1064,7 +1062,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     }
     LOG.info("Start to register shuffleId {}", shuffleId);
     long start = System.currentTimeMillis();
-    Map<String, String> sparkConfMap = sparkConfToMap(getSparkConf());
+    Map<String, String> sparkConfMap = RssSparkConfig.sparkConfToMap(getSparkConf());
     serverToPartitionRanges.entrySet().stream()
         .forEach(
             entry -> {
@@ -1095,7 +1093,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     }
     LOG.info("Start to register shuffleId[{}]", shuffleId);
     long start = System.currentTimeMillis();
-    Map<String, String> sparkConfMap = sparkConfToMap(getSparkConf());
+    Map<String, String> sparkConfMap = RssSparkConfig.sparkConfToMap(getSparkConf());
     Set<Map.Entry<ShuffleServerInfo, List<PartitionRange>>> entries =
         serverToPartitionRanges.entrySet();
     entries.stream()
@@ -1140,16 +1138,5 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   @VisibleForTesting
   public SparkConf getSparkConf() {
     return sparkConf;
-  }
-
-  public Map<String, String> sparkConfToMap(SparkConf sparkConf) {
-    Map<String, String> map = new HashMap<>();
-
-    for (Tuple2<String, String> tuple : sparkConf.getAll()) {
-      String key = tuple._1;
-      map.put(key, tuple._2);
-    }
-
-    return map;
   }
 }
