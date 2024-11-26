@@ -64,7 +64,10 @@ public abstract class Message implements Encodable {
     GET_SHUFFLE_RESULT_FOR_MULTI_PART_RESPONSE(19),
     REQUIRE_BUFFER_RESPONSE(20),
     GET_SORTED_SHUFFLE_DATA_REQUEST(21),
-    GET_SORTED_SHUFFLE_DATA_RESPONSE(22);
+    GET_SORTED_SHUFFLE_DATA_RESPONSE(22),
+    GET_LOCAL_SHUFFLE_INDEX_V2_RESPONSE(23),
+    GET_LOCAL_SHUFFLE_DATA_V2_REQUEST(24),
+    ;
 
     private final byte id;
 
@@ -138,6 +141,10 @@ public abstract class Message implements Encodable {
           return GET_SORTED_SHUFFLE_DATA_REQUEST;
         case 22:
           return GET_SORTED_SHUFFLE_DATA_RESPONSE;
+        case 23:
+          return GET_LOCAL_SHUFFLE_INDEX_V2_RESPONSE;
+        case 24:
+          return GET_LOCAL_SHUFFLE_DATA_V2_REQUEST;
         case -1:
           throw new IllegalArgumentException("User type messages cannot be decoded.");
         default:
@@ -154,12 +161,16 @@ public abstract class Message implements Encodable {
         return SendShuffleDataRequestV1.decode(in);
       case GET_LOCAL_SHUFFLE_DATA_REQUEST:
         return GetLocalShuffleDataRequest.decode(in);
+      case GET_LOCAL_SHUFFLE_DATA_V2_REQUEST:
+        return GetLocalShuffleDataV2Request.decode(in);
       case GET_LOCAL_SHUFFLE_DATA_RESPONSE:
         return GetLocalShuffleDataResponse.decode(in, true);
       case GET_LOCAL_SHUFFLE_INDEX_REQUEST:
         return GetLocalShuffleIndexRequest.decode(in);
       case GET_LOCAL_SHUFFLE_INDEX_RESPONSE:
         return GetLocalShuffleIndexResponse.decode(in, true);
+      case GET_LOCAL_SHUFFLE_INDEX_V2_RESPONSE:
+        return GetLocalShuffleIndexV2Response.decode(in, true);
       case GET_MEMORY_SHUFFLE_DATA_REQUEST:
         return GetMemoryShuffleDataRequest.decode(in);
       case GET_MEMORY_SHUFFLE_DATA_RESPONSE:

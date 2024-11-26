@@ -157,6 +157,7 @@ public class LocalFileClientReadHandler extends DataSkippableReadHandler {
             partitionNum,
             shuffleDataSegment.getOffset(),
             expectedLength,
+            shuffleDataSegment.getStorageId(),
             retryMax,
             retryIntervalMax);
     try {

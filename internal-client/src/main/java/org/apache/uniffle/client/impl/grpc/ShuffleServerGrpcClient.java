@@ -923,6 +923,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             .setOffset(request.getOffset())
             .setLength(request.getLength())
             .setTimestamp(start)
+            .setStorageId(request.getStorageId())
             .build();
     String requestInfo =
         "appId["
@@ -931,6 +932,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
             + request.getShuffleId()
             + "], partitionId["
             + request.getPartitionId()
+            + "], storageId["
+            + request.getStorageId()
             + "]";
     int retry = 0;
     GetLocalShuffleDataResponse rpcResponse;
@@ -1016,7 +1019,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                 StatusCode.SUCCESS,
                 new NettyManagedBuffer(
                     Unpooled.wrappedBuffer(rpcResponse.getIndexData().toByteArray())),
-                rpcResponse.getDataFileLen());
+                rpcResponse.getDataFileLen(),
+                rpcResponse.getStorageIdsList().stream().mapToInt(Integer::intValue).toArray());
 
         break;
       default:

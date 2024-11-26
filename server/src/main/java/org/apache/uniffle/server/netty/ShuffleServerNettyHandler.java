@@ -53,6 +53,7 @@ import org.apache.uniffle.common.netty.protocol.GetLocalShuffleDataRequest;
 import org.apache.uniffle.common.netty.protocol.GetLocalShuffleDataResponse;
 import org.apache.uniffle.common.netty.protocol.GetLocalShuffleIndexRequest;
 import org.apache.uniffle.common.netty.protocol.GetLocalShuffleIndexResponse;
+import org.apache.uniffle.common.netty.protocol.GetLocalShuffleIndexV2Response;
 import org.apache.uniffle.common.netty.protocol.GetMemoryShuffleDataRequest;
 import org.apache.uniffle.common.netty.protocol.GetMemoryShuffleDataResponse;
 import org.apache.uniffle.common.netty.protocol.GetSortedShuffleDataRequest;
@@ -552,7 +553,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       }
 
       String msg = "OK";
-      GetLocalShuffleIndexResponse response;
+      GetLocalShuffleIndexV2Response response;
       int[] range =
           ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
       Storage storage =
@@ -587,8 +588,13 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           auditContext.withStatusCode(status);
           auditContext.withReturnValue("len=" + data.size());
           response =
-              new GetLocalShuffleIndexResponse(
-                  req.getRequestId(), status, msg, data, shuffleIndexResult.getDataFileLen());
+              new GetLocalShuffleIndexV2Response(
+                  req.getRequestId(),
+                  status,
+                  msg,
+                  data,
+                  shuffleIndexResult.getDataFileLen(),
+                  shuffleIndexResult.getStorageIds());
           ReleaseMemoryAndRecordReadTimeListener listener =
               new ReleaseMemoryAndRecordReadTimeListener(
                   start, assumedFileSize, data.size(), requestInfo, req, response, client);
@@ -605,7 +611,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               requestInfo,
               indexFileNotFoundException);
           response =
-              new GetLocalShuffleIndexResponse(
+              new GetLocalShuffleIndexV2Response(
                   req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER, 0L);
         } catch (Exception e) {
           shuffleServer.getShuffleBufferManager().releaseReadMemory(assumedFileSize);
@@ -616,7 +622,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
           msg = "Error happened when get shuffle index for " + requestInfo + ", " + e.getMessage();
           LOG.error(msg, e);
           response =
-              new GetLocalShuffleIndexResponse(
+              new GetLocalShuffleIndexV2Response(
                   req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER, 0L);
         }
       } else {
@@ -624,7 +630,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
         msg = "Can't require memory to get shuffle index";
         LOG.warn("{} for {}", msg, requestInfo);
         response =
-            new GetLocalShuffleIndexResponse(
+            new GetLocalShuffleIndexV2Response(
                 req.getRequestId(), status, msg, Unpooled.EMPTY_BUFFER, 0L);
       }
       auditContext.withStatusCode(response.getStatusCode());
@@ -642,6 +648,7 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       int partitionNum = req.getPartitionNum();
       long offset = req.getOffset();
       int length = req.getLength();
+      int storageId = req.getStorageId();
       auditContext.withAppId(appId);
       auditContext.withShuffleId(shuffleId);
       auditContext.withArgs(
@@ -656,7 +663,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
               + ", offset="
               + offset
               + ", length="
-              + length);
+              + length
+              + ", storageId="
+              + storageId);
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
         auditContext.withStatusCode(status);
@@ -699,7 +708,9 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
       Storage storage =
           shuffleServer
               .getStorageManager()
-              .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
+              .selectStorage(
+                  new ShuffleDataReadEvent(
+                      appId, shuffleId, partitionId, range[0], req.getStorageId()));
       if (storage != null) {
         storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
       }
@@ -719,7 +730,8 @@ public class ShuffleServerNettyHandler implements BaseMessageHandler {
                       partitionNum,
                       storageType,
                       offset,
-                      length);
+                      length,
+                      storageId);
           ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getDataLength());
           ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getDataLength());
           ShuffleServerMetrics.gaugeReadLocalDataFileThreadNum.inc();

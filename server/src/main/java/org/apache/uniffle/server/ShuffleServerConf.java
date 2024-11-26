@@ -27,6 +27,7 @@ import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.server.block.DefaultShuffleBlockIdManager;
 import org.apache.uniffle.server.buffer.ShuffleBufferType;
+import org.apache.uniffle.server.storage.LocalStorageManager;
 
 public class ShuffleServerConf extends RssBaseConf {
 
@@ -758,6 +759,12 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValues("app:app_num_with_node", "partition:partition_num_with_node")
           .withDescription(
               "A list of metrics will report to coordinator and dashboard, format in \"displayName:metricsName\", separated by ','");
+
+  public static final ConfigOption<String> SERVER_LOCAL_STORAGE_MANAGER_CLASS =
+      ConfigOptions.key("rss.server.localStorageManagerClass")
+          .stringType()
+          .defaultValue(LocalStorageManager.class.getName())
+          .withDescription("The class of local storage manager implementation");
 
   public ShuffleServerConf() {}
 

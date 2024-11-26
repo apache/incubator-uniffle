@@ -36,6 +36,10 @@ public interface StorageManager {
 
   Storage selectStorage(ShuffleDataReadEvent event);
 
+  default Storage selectStorageById(ShuffleDataReadEvent event) {
+    return selectStorage(event);
+  }
+
   boolean write(Storage storage, ShuffleWriteHandler handler, ShuffleDataFlushEvent event);
 
   void updateWriteMetrics(ShuffleDataFlushEvent event, long writeTime);

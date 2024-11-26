@@ -94,7 +94,7 @@ public class LocalStorageManager extends SingleStorageManager {
   private boolean isStorageAuditLogEnabled;
 
   @VisibleForTesting
-  LocalStorageManager(ShuffleServerConf conf) {
+  public LocalStorageManager(ShuffleServerConf conf) {
     super(conf);
     storageBasePaths = RssUtils.getConfiguredLocalDirs(conf);
     if (CollectionUtils.isEmpty(storageBasePaths)) {
@@ -136,6 +136,7 @@ public class LocalStorageManager extends SingleStorageManager {
                       .ratio(ratio)
                       .lowWaterMarkOfWrite(lowWaterMarkOfWrite)
                       .highWaterMarkOfWrite(highWaterMarkOfWrite)
+                      .setId(idx)
                       .localStorageMedia(storageType);
               if (isDiskCapacityWatermarkCheckEnabled) {
                 builder.enableDiskCapacityWatermarkCheck();
