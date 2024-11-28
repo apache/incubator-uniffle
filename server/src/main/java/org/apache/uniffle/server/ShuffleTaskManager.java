@@ -838,7 +838,7 @@ public class ShuffleTaskManager {
   }
 
   public void removeResourcesByShuffleIds(
-      String appId, List<Integer> shuffleIds, boolean isTwoPhases) {
+      String appId, List<Integer> shuffleIds, boolean isRenameAndDelete) {
     Lock writeLock = getAppWriteLock(appId);
     writeLock.lock();
     try {
@@ -871,7 +871,7 @@ public class ShuffleTaskManager {
       withTimeoutExecution(
           () -> {
             storageManager.removeResources(
-                new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds, isTwoPhases));
+                new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds, isRenameAndDelete));
             return null;
           },
           storageRemoveOperationTimeoutSec,
@@ -1079,7 +1079,7 @@ public class ShuffleTaskManager {
     removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId));
   }
 
-  public void removeShuffleDataSyncTwoPhases(String appId, int shuffleId) {
+  public void removeShuffleDataSyncRenameAndDelete(String appId, int shuffleId) {
     removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId), true);
   }
 

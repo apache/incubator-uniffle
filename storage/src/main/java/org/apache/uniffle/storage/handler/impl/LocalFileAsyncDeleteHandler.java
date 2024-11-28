@@ -83,9 +83,9 @@ public class LocalFileAsyncDeleteHandler implements ShuffleDeleteHandler {
             e);
       }
     }
-    if (!asynDeletionEventManager.handlerDeletionQueue(asynDeletionEvent)) {
+    if (!asynDeletionEventManager.handlerAsynDelete(asynDeletionEvent)) {
       LOG.warn(
-          "Remove the case where the twoPhasesDeletionEventQueue queue is full and cannot accept elements.");
+          "Remove the case where the renameAndDeletionEventQueue queue is full and cannot accept elements.");
       return false;
     }
     return true;

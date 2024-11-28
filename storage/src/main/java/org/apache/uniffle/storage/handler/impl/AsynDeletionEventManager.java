@@ -30,6 +30,11 @@ import org.apache.uniffle.storage.handler.api.ShuffleDeleteHandler;
 import org.apache.uniffle.storage.request.CreateShuffleDeleteHandlerRequest;
 import org.apache.uniffle.storage.util.StorageType;
 
+/**
+ * To quickly delete the Shuffle Data that has been dropped to the disk, you need to rename the data
+ * first and then encapsulate the data into an asynchronous deletion event. This function is used to
+ * manage the actual execution of the asynchronous deletion event.
+ */
 public class AsynDeletionEventManager {
   private static final Logger LOG = LoggerFactory.getLogger(AsynDeletionEventManager.class);
 
@@ -42,17 +47,17 @@ public class AsynDeletionEventManager {
     return INSTANCE;
   }
 
-  protected final BlockingQueue<AsynDeletionEvent> twoPhasesDeletionEventQueue =
+  protected final BlockingQueue<AsynDeletionEvent> renameAndAsynDeleteEventQueue =
       Queues.newLinkedBlockingQueue();
-  protected Thread twoPhasesDeletionThread;
+  protected Thread renameAndAsynDeleteThread;
 
   public AsynDeletionEventManager() {
-    Runnable twoPhasesDeletionTask =
+    Runnable renameAndDeletionTask =
         () -> {
           while (true) {
             AsynDeletionEvent asynDeletionEvent = null;
             try {
-              asynDeletionEvent = twoPhasesDeletionEventQueue.take();
+              asynDeletionEvent = renameAndAsynDeleteEventQueue.take();
               if (asynDeletionEvent
                   .getStorageType()
                   .equalsIgnoreCase(StorageType.LOCALFILE.name())) {
@@ -85,18 +90,18 @@ public class AsynDeletionEventManager {
                 LOG.error(
                     "Delete Paths of {} failed.", asynDeletionEvent.getNeedDeleteRenamePaths(), e);
               } else {
-                LOG.error("Failed to delete a directory in twoPhasesDeletionThread.", e);
+                LOG.error("Failed to delete a directory in renameAndAsynDeleteThread.", e);
               }
             }
           }
         };
-    twoPhasesDeletionThread = new Thread(twoPhasesDeletionTask);
-    twoPhasesDeletionThread.setName("twoPhasesDeletionThread");
-    twoPhasesDeletionThread.setDaemon(true);
-    twoPhasesDeletionThread.start();
+    renameAndAsynDeleteThread = new Thread(renameAndDeletionTask);
+    renameAndAsynDeleteThread.setName("renameAndAsynDeleteThread");
+    renameAndAsynDeleteThread.setDaemon(true);
+    renameAndAsynDeleteThread.start();
   }
 
-  public synchronized boolean handlerDeletionQueue(AsynDeletionEvent asynDeletionEvent) {
-    return twoPhasesDeletionEventQueue.offer(asynDeletionEvent);
+  public synchronized boolean handlerAsynDelete(AsynDeletionEvent asynDeletionEvent) {
+    return renameAndAsynDeleteEventQueue.offer(asynDeletionEvent);
   }
 }

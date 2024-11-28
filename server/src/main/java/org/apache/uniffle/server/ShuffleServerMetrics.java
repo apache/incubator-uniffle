@@ -170,10 +170,8 @@ public class ShuffleServerMetrics {
   public static final String REPORTED_BLOCK_COUNT = "reported_block_count";
   public static final String CACHED_BLOCK_COUNT = "cached_block_count";
 
-  private static final String TOTAL_HADOOP_TWO_PHASES_DELETION_FAILED =
-      "total_hadoop_two_phases_deletion_failed";
-  private static final String TOTAL_LOCAL_TWO_PHASES_DELETION_FAILED =
-      "total_local_two_phases_deletion_failed";
+  private static final String TOTAL_LOCAL_RENAME_AND_DELETION_FAILED =
+      "total_local_rename_and_deletion_failed";
 
   public static Counter.Child counterTotalAppNum;
   public static Counter.Child counterTotalAppWithHugePartitionNum;
@@ -250,8 +248,7 @@ public class ShuffleServerMetrics {
   public static Gauge.Child gaugeReadLocalDataFileBufferSize;
   public static Gauge.Child gaugeReadLocalIndexFileBufferSize;
   public static Gauge.Child gaugeReadMemoryDataBufferSize;
-  public static Counter.Child counterLocalTwoPhasesDeletionFaileTd;
-  public static Counter.Child counterHadoopTwoPhasesDeletionFailed;
+  public static Counter.Child counterLocalRenameAndDeletionFaileTd;
 
   public static Gauge gaugeTotalDataSizeUsage;
   public static Gauge gaugeInMemoryDataSizeUsage;
@@ -447,10 +444,8 @@ public class ShuffleServerMetrics {
     counterTotalHugePartitionNum = metricsManager.addLabeledCounter(TOTAL_HUGE_PARTITION_NUM);
     counterTotalHugePartitionExceedHardLimitNum =
         metricsManager.addLabeledCounter(TOTAL_HUGE_PARTITION_EXCEED_HARD_LIMIT_NUM);
-    counterLocalTwoPhasesDeletionFaileTd =
-        metricsManager.addLabeledCounter(TOTAL_LOCAL_TWO_PHASES_DELETION_FAILED);
-    counterHadoopTwoPhasesDeletionFailed =
-        metricsManager.addLabeledCounter(TOTAL_HADOOP_TWO_PHASES_DELETION_FAILED);
+    counterLocalRenameAndDeletionFaileTd =
+        metricsManager.addLabeledCounter(TOTAL_LOCAL_RENAME_AND_DELETION_FAILED);
 
     gaugeLocalStorageIsWritable =
         metricsManager.addGauge(LOCAL_STORAGE_IS_WRITABLE, LOCAL_DISK_PATH_LABEL);

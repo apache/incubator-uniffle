@@ -26,7 +26,7 @@ public class ShufflePurgeEvent extends PurgeEvent {
   }
 
   public ShufflePurgeEvent(
-      String appId, String user, List<Integer> shuffleIds, boolean isTwoPhases) {
-    super(appId, user, shuffleIds, isTwoPhases);
+      String appId, String user, List<Integer> shuffleIds, boolean isRenameAndDelete) {
+    super(appId, user, shuffleIds, isRenameAndDelete);
   }
 }

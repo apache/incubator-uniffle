@@ -25,19 +25,19 @@ public abstract class PurgeEvent {
   private String appId;
   private String user;
   private List<Integer> shuffleIds;
-  // Quick Delete or not.
-  private boolean isTwoPhasesDeletion;
+  // Whether to enable the deletion mode: Rename files and then delete them asynchronously.
+  private boolean isRenameAndDelete;
 
   public PurgeEvent(String appId, String user, List<Integer> shuffleIds) {
     this(appId, user, shuffleIds, false);
   }
 
   public PurgeEvent(
-      String appId, String user, List<Integer> shuffleIds, boolean isTwoPhasesDeletion) {
+      String appId, String user, List<Integer> shuffleIds, boolean isRenameAndDelete) {
     this.appId = appId;
     this.user = user;
     this.shuffleIds = shuffleIds;
-    this.isTwoPhasesDeletion = isTwoPhasesDeletion;
+    this.isRenameAndDelete = isRenameAndDelete;
   }
 
   public String getAppId() {
@@ -52,8 +52,8 @@ public abstract class PurgeEvent {
     return shuffleIds;
   }
 
-  public boolean isTwoPhasesDeletion() {
-    return isTwoPhasesDeletion;
+  public boolean isRenameAndDelete() {
+    return isRenameAndDelete;
   }
 
   @Override
@@ -68,8 +68,8 @@ public abstract class PurgeEvent {
         + '\''
         + ", shuffleIds="
         + shuffleIds
-        + ", isTwoPhasesDeletion="
-        + isTwoPhasesDeletion
+        + ", isRenameAndDelete="
+        + isRenameAndDelete
         + '}';
   }
 }

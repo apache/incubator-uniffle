@@ -256,7 +256,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               long start = System.currentTimeMillis();
               shuffleServer
                   .getShuffleTaskManager()
-                  .removeShuffleDataSyncTwoPhases(appId, shuffleId);
+                  .removeShuffleDataSyncRenameAndDelete(appId, shuffleId);
               LOG.info(
                   "Deleted the previous stage attempt data due to stage recomputing for app: {}, "
                       + "shuffleId: {}. It costs {} ms",
