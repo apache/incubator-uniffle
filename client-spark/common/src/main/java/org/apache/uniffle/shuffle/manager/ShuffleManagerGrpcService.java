@@ -118,6 +118,8 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
                 // Clear the metadata of the completed task, otherwise some of the stage's data will
                 // be lost.
                 shuffleManager.unregisterAllMapOutput(shuffleId);
+                // Deregister the shuffleId corresponding to the Shuffle Server.
+                shuffleManager.getShuffleWriteClient().unregisterShuffle(appId, shuffleId);
                 shuffleServerWriterFailureRecord.setClearedMapTrackerBlock(true);
                 LOG.info(
                     "Clear shuffle result in shuffleId:{}, stageId:{}, stageAttemptNumber:{}.",
