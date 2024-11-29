@@ -571,7 +571,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   public ShuffleHandleInfo getShuffleHandleInfo(
       int stageAttemptId, int stageAttemptNumber, RssShuffleHandle<?, ?, ?> rssHandle) {
     int shuffleId = rssHandle.getShuffleId();
-    if (shuffleManagerRpcServiceEnabled && rssStageRetryEnabled) {
+    if (shuffleManagerRpcServiceEnabled && rssStageRetryForWriteFailureEnabled) {
       // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
       return getRemoteShuffleHandleInfoWithStageRetry(
           stageAttemptId,

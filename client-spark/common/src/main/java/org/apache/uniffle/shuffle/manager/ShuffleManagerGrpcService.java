@@ -101,40 +101,42 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
         code = RssProtos.StatusCode.INVALID_REQUEST;
         reSubmitWholeStage = false;
       } else {
-        code = RssProtos.StatusCode.SUCCESS;
-        // update the stage shuffleServer write failed count
-        boolean isFetchFailed =
-            shuffleServerWriterFailureRecord.incWriteFailureForShuffleServer(
-                stageAttemptNumber, shuffleServerInfos, shuffleManager);
-        if (isFetchFailed) {
-          reSubmitWholeStage = true;
-          msg =
-              String.format(
-                  "Report shuffle write failure as maximum number(%d) of shuffle write is occurred.",
-                  shuffleManager.getMaxFetchFailures());
-          if (!shuffleServerWriterFailureRecord.isClearedMapTrackerBlock()) {
-            try {
-              // Clear the metadata of the completed task, otherwise some of the stage's data will
-              // be lost.
-              shuffleManager.unregisterAllMapOutput(shuffleId);
-              shuffleServerWriterFailureRecord.setClearedMapTrackerBlock(true);
-              LOG.info(
-                  "Clear shuffle result in shuffleId:{}, stageId:{}, stageAttemptNumber:{}.",
-                  shuffleId,
-                  stageAttemptId,
-                  stageAttemptNumber);
-            } catch (SparkException e) {
-              LOG.error(
-                  "Clear MapoutTracker Meta failed in shuffleId:{}, stageAttemptId:{}, stageAttemptNumber:{}.",
-                  shuffleId,
-                  stageAttemptId,
-                  stageAttemptNumber);
-              throw new RssException("Clear MapoutTracker Meta failed!", e);
+        synchronized (shuffleServerWriterFailureRecord) {
+          code = RssProtos.StatusCode.SUCCESS;
+          // update the stage shuffleServer write failed count
+          boolean isFetchFailed =
+              shuffleServerWriterFailureRecord.incWriteFailureForShuffleServer(
+                  stageAttemptNumber, shuffleServerInfos, shuffleManager);
+          if (isFetchFailed) {
+            reSubmitWholeStage = true;
+            msg =
+                String.format(
+                    "Report shuffle write failure as maximum number(%d) of shuffle write is occurred.",
+                    shuffleManager.getMaxFetchFailures());
+            if (!shuffleServerWriterFailureRecord.isClearedMapTrackerBlock()) {
+              try {
+                // Clear the metadata of the completed task, otherwise some of the stage's data will
+                // be lost.
+                shuffleManager.unregisterAllMapOutput(shuffleId);
+                shuffleServerWriterFailureRecord.setClearedMapTrackerBlock(true);
+                LOG.info(
+                    "Clear shuffle result in shuffleId:{}, stageId:{}, stageAttemptNumber:{}.",
+                    shuffleId,
+                    stageAttemptId,
+                    stageAttemptNumber);
+              } catch (SparkException e) {
+                LOG.error(
+                    "Clear MapoutTracker Meta failed in shuffleId:{}, stageAttemptId:{}, stageAttemptNumber:{}.",
+                    shuffleId,
+                    stageAttemptId,
+                    stageAttemptNumber);
+                throw new RssException("Clear MapoutTracker Meta failed!", e);
+              }
             }
+          } else {
+            reSubmitWholeStage = false;
+            msg = "The maximum number of failures was not reached.";
           }
-        } else {
-          reSubmitWholeStage = false;
-          msg = "The maximum number of failures was not reached.";
         }
       }
     }

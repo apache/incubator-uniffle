@@ -46,16 +46,13 @@ public class BlockIdManager {
     }
     Map<Integer, Roaring64NavigableMap> partitionedBlockIds =
         blockIds.computeIfAbsent(shuffleId, k -> JavaUtils.newConcurrentMap());
-    synchronized (partitionedBlockIds) {
-      partitionedBlockIds.compute(
-          partitionId,
-          (id, bitmap) -> {
-            Roaring64NavigableMap store =
-                bitmap == null ? Roaring64NavigableMap.bitmapOf() : bitmap;
-            ids.stream().forEach(x -> store.add(x));
-            return store;
-          });
-    }
+    partitionedBlockIds.compute(
+        partitionId,
+        (id, bitmap) -> {
+          Roaring64NavigableMap store = bitmap == null ? Roaring64NavigableMap.bitmapOf() : bitmap;
+          ids.stream().forEach(x -> store.add(x));
+          return store;
+        });
   }
 
   public Roaring64NavigableMap get(int shuffleId, int partitionId) {
