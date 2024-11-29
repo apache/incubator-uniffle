@@ -97,6 +97,7 @@ import org.apache.uniffle.proto.RssProtos.ShuffleRegisterRequest;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerImplBase;
 import org.apache.uniffle.server.audit.ServerRpcAuditContext;
+import org.apache.uniffle.server.block.ShuffleBlockIdManager;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.merge.MergeStatus;
 import org.apache.uniffle.storage.common.Storage;
@@ -268,6 +269,28 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                   shuffleId,
                   lastAttemptNumber,
                   System.currentTimeMillis() - start);
+              // Add a check to prevent undeleted metadata.
+              ShuffleBlockIdManager shuffleBlockIdManager =
+                  shuffleServer
+                      .getShuffleTaskManager()
+                      .getShuffleTaskInfo(appId)
+                      .getShuffleBlockIdManager();
+              long blockCountByShuffleId =
+                  shuffleBlockIdManager.getBlockCountByShuffleId(
+                      appId, Lists.newArrayList(shuffleId));
+              if (blockCountByShuffleId != 0) {
+                LOG.error(
+                    "Metadata is not deleted on clearing previous stage attempt data for app: {}, shuffleId: {}, stageAttemptNumber: {}",
+                    appId,
+                    shuffleId,
+                    lastAttemptNumber);
+                StatusCode code = StatusCode.INTERNAL_ERROR;
+                auditContext.withStatusCode(code);
+                reply = ShuffleRegisterResponse.newBuilder().setStatus(code.toProto()).build();
+                responseObserver.onNext(reply);
+                responseObserver.onCompleted();
+                return;
+              }
             } catch (Exception e) {
               LOG.error(
                   "Errors on clearing previous stage attempt data for app: {}, shuffleId: {}, stageAttemptNumber: {}",
