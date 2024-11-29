@@ -224,14 +224,18 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     int stageAttemptId = request.getStageAttemptId();
     int stageAttemptNumber = request.getStageAttemptNumber();
     int shuffleId = request.getShuffleId();
+    boolean isWritePhase = request.getIsWritePhase();
     StageAttemptShuffleHandleInfo shuffleHandle;
-    ShuffleServerWriterFailureRecord shuffleServerWriterFailureRecord =
-        shuffleWriteStatus.get(shuffleId);
-    if (shuffleServerWriterFailureRecord != null) {
-      synchronized (shuffleServerWriterFailureRecord) {
-        if (shuffleServerWriterFailureRecord.isNeedReassignForLastStageNumber(stageAttemptNumber)) {
-          shuffleManager.reassignOnStageResubmit(shuffleId, stageAttemptId, stageAttemptNumber);
-          shuffleServerWriterFailureRecord.setShuffleServerAssignmented(true);
+    if (isWritePhase) {
+      ShuffleServerWriterFailureRecord shuffleServerWriterFailureRecord =
+          shuffleWriteStatus.get(shuffleId);
+      if (shuffleServerWriterFailureRecord != null) {
+        synchronized (shuffleServerWriterFailureRecord) {
+          if (shuffleServerWriterFailureRecord.isNeedReassignForLastStageNumber(
+              stageAttemptNumber)) {
+            shuffleManager.reassignOnStageResubmit(shuffleId, stageAttemptId, stageAttemptNumber);
+            shuffleServerWriterFailureRecord.setShuffleServerAssignmented(true);
+          }
         }
       }
     }

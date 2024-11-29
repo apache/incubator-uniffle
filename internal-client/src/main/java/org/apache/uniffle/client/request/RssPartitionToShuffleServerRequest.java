@@ -23,14 +23,14 @@ public class RssPartitionToShuffleServerRequest {
   private int stageAttemptId;
   private int stageAttemptNumber;
   private int shuffleId;
-  private int numPartitions;
+  private boolean isWritePhase;
 
   public RssPartitionToShuffleServerRequest(
-      int stageAttemptId, int stageAttemptNumber, int shuffleId, int numPartitions) {
+      int stageAttemptId, int stageAttemptNumber, int shuffleId, boolean isWritePhase) {
     this.stageAttemptId = stageAttemptId;
     this.stageAttemptNumber = stageAttemptNumber;
     this.shuffleId = shuffleId;
-    this.numPartitions = numPartitions;
+    this.isWritePhase = isWritePhase;
   }
 
   public int getShuffleId() {
@@ -47,7 +47,7 @@ public class RssPartitionToShuffleServerRequest {
     builder.setStageAttemptId(stageAttemptId);
     builder.setStageAttemptNumber(stageAttemptNumber);
     builder.setShuffleId(shuffleId);
-    builder.setNumPartitions(numPartitions);
+    builder.setIsWritePhase(isWritePhase);
     return builder.build();
   }
 }

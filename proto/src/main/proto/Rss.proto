@@ -608,7 +608,7 @@ message PartitionToShuffleServerRequest {
   int32 stageAttemptId = 1;
   int32 stageAttemptNumber = 2;
   int32 shuffleId = 3;
-  int32 numPartitions = 4;
+  bool isWritePhase = 4;
 }
 
 message ReassignOnStageRetryResponse {

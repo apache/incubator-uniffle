@@ -648,12 +648,12 @@ public class RssShuffleManager extends RssShuffleManagerBase {
       // In Stage Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
       shuffleHandleInfo =
           getRemoteShuffleHandleInfoWithStageRetry(
-              context.stageId(), context.stageAttemptNumber(), shuffleId, partitionNum);
+              context.stageId(), context.stageAttemptNumber(), shuffleId, false);
     } else if (shuffleManagerRpcServiceEnabled && partitionReassignEnabled) {
       // In Block Retry mode, Get the ShuffleServer list from the Driver based on the shuffleId.
       shuffleHandleInfo =
           getRemoteShuffleHandleInfoWithBlockRetry(
-              context.stageId(), context.stageAttemptNumber(), shuffleId, partitionNum);
+              context.stageId(), context.stageAttemptNumber(), shuffleId, false);
     } else {
       shuffleHandleInfo =
           new SimpleShuffleHandleInfo(

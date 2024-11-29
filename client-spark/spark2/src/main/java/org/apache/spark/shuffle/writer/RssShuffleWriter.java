@@ -212,7 +212,7 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         rssHandle,
         taskFailureCallback,
         shuffleManager.getShuffleHandleInfo(
-            context.stageId(), context.stageAttemptNumber(), rssHandle),
+            context.stageId(), context.stageAttemptNumber(), rssHandle, true),
         context);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
     final WriteBufferManager bufferManager =
