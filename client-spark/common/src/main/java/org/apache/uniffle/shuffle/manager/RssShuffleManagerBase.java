@@ -684,6 +684,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     int requiredShuffleServerNumber =
         RssSparkShuffleUtils.getRequiredShuffleServerNumber(sparkConf);
     int estimateTaskConcurrency = RssSparkShuffleUtils.estimateTaskConcurrency(sparkConf);
+    // Deregister the shuffleId corresponding to the Shuffle Server.
+    shuffleWriteClient.unregisterShuffle(appId, shuffleId);
     Map<Integer, List<ShuffleServerInfo>> partitionToServers =
         requestShuffleAssignment(
             shuffleId,
