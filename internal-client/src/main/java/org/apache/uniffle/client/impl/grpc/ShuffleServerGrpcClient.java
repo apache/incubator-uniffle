@@ -30,6 +30,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
+import io.grpc.StatusRuntimeException;
 import io.netty.buffer.Unpooled;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -797,6 +798,11 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       try {
         ReportShuffleResultResponse response = getBlockingStub().reportShuffleResult(rpcRequest);
         return response;
+      } catch (StatusRuntimeException e) {
+        if (e.getCause() instanceof InterruptedException) {
+          throw new RssException(
+              "Report shuffle result to host[" + host + "], port[" + port + "] cancelled", e);
+        }
       } catch (Exception e) {
         retryNum++;
         LOG.warn(
