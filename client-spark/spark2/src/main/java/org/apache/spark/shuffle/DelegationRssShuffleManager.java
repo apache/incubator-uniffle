@@ -136,7 +136,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     List<String> includeProperties =
         rssConf.get(RssClientConf.RSS_CLIENT_REPORT_INCLUDE_PROPERTIES);
     rssConf.getAll().stream()
-        .filter(entry -> includeProperties.isEmpty() || includeProperties.contains(entry.getKey()))
+        .filter(entry -> includeProperties == null || includeProperties.contains(entry.getKey()))
         .filter(entry -> !excludeProperties.contains(entry.getKey()))
         .forEach(entry -> extraProperties.put(entry.getKey(), (String) entry.getValue()));
 

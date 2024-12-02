@@ -315,6 +315,6 @@ public class RssClientConf {
       ConfigOptions.key("rss.client.reportIncludeProperties")
           .stringType()
           .asList()
-          .defaultValues()
+          .noDefaultValue()
           .withDescription("the report include properties could be configured by this option");
 }

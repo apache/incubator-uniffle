@@ -56,7 +56,7 @@ public class RssShuffleManagerTestBase {
     return mockedCoordinatorClient;
   }
 
-  void setupMockedRssShuffleUtils(StatusCode status) {
+  CoordinatorClient setupMockedRssShuffleUtils(StatusCode status) {
     CoordinatorClient mockCoordinatorClient = createCoordinatorClient(status);
     List<CoordinatorClient> coordinatorClients = Lists.newArrayList();
     coordinatorClients.add(mockCoordinatorClient);
@@ -65,5 +65,6 @@ public class RssShuffleManagerTestBase {
     mockedStaticRssShuffleUtils
         .when(() -> RssSparkShuffleUtils.createCoordinatorClients(any()))
         .thenReturn(client);
+    return mockCoordinatorClient;
   }
 }
