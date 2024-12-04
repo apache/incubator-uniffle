@@ -796,6 +796,11 @@ public class ShuffleTaskManager {
    * @param shuffleIds
    */
   public void removeResourcesByShuffleIds(String appId, List<Integer> shuffleIds) {
+    removeResourcesByShuffleIds(appId, shuffleIds, false);
+  }
+
+  public void removeResourcesByShuffleIds(
+      String appId, List<Integer> shuffleIds, boolean isRenameAndDelete) {
     Lock writeLock = getAppWriteLock(appId);
     writeLock.lock();
     try {
@@ -828,7 +833,7 @@ public class ShuffleTaskManager {
       withTimeoutExecution(
           () -> {
             storageManager.removeResources(
-                new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds));
+                new ShufflePurgeEvent(appId, getUserByAppId(appId), shuffleIds, isRenameAndDelete));
             return null;
           },
           storageRemoveOperationTimeoutSec,
@@ -1033,6 +1038,10 @@ public class ShuffleTaskManager {
   @VisibleForTesting
   public void removeShuffleDataSync(String appId, int shuffleId) {
     removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId));
+  }
+
+  public void removeShuffleDataSyncRenameAndDelete(String appId, int shuffleId) {
+    removeResourcesByShuffleIds(appId, Arrays.asList(shuffleId), true);
   }
 
   public ShuffleDataDistributionType getDataDistributionType(String appId) {
