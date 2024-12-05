@@ -27,12 +27,11 @@ import io.netty.buffer.EmptyByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-
-import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
-import org.apache.uniffle.common.netty.protocol.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.netty.protocol.Message;
 
 /**
  * A customized frame decoder that allows intercepting raw data.
