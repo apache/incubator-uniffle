@@ -29,7 +29,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import org.apache.uniffle.common.exception.RssException;
+import org.apache.uniffle.common.netty.buffer.NettyManagedBuffer;
 import org.apache.uniffle.common.netty.protocol.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A customized frame decoder that allows intercepting raw data.
@@ -47,6 +50,7 @@ import org.apache.uniffle.common.netty.protocol.Message;
  * method.
  */
 public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implements FrameDecoder {
+  private static final Logger LOG = LoggerFactory.getLogger(TransportFrameDecoder.class);
   private int msgSize = -1;
   private int bodySize = -1;
   private Message.Type curType = Message.Type.UNKNOWN_TYPE;
@@ -199,6 +203,12 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter implemen
     //     - When the Channel becomes inactive
     //     - When the decoder is removed from the ChannelPipeline
     for (ByteBuf b : buffers) {
+      LOG.warn("Check NettyManagedBuffer release");
+      LOG.warn(Thread.currentThread().getName());
+      LOG.warn(this.toString());
+      LOG.warn(b.toString());
+      LOG.warn("size: " + b.readableBytes());
+      LOG.warn("Check decoder release stack tree", new Throwable());
       b.release();
     }
     buffers.clear();
