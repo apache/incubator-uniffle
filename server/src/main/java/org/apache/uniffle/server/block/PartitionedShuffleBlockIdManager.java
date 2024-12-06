@@ -148,6 +148,17 @@ public class PartitionedShuffleBlockIdManager implements ShuffleBlockIdManager {
   }
 
   @Override
+  public long getBlockCountByShuffleId(String appId, List<Integer> shuffleIds) {
+
+    return partitionsToBlockIds.values().stream()
+        .filter(k -> shuffleIds.contains(k.keySet()))
+        .flatMap(innerMap -> innerMap.values().stream())
+        .flatMap(innerMap -> innerMap.values().stream())
+        .mapToLong(roaringMap -> roaringMap.getLongCardinality())
+        .sum();
+  }
+
+  @Override
   public boolean contains(String appId) {
     return partitionsToBlockIds.containsKey(appId);
   }

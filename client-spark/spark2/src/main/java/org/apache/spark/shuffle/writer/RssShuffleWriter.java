@@ -65,9 +65,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.api.ShuffleManagerClient;
 import org.apache.uniffle.client.api.ShuffleWriteClient;
 import org.apache.uniffle.client.impl.FailedBlockSendTracker;
-import org.apache.uniffle.client.request.RssReassignServersRequest;
 import org.apache.uniffle.client.request.RssReportShuffleWriteFailureRequest;
-import org.apache.uniffle.client.response.RssReassignServersResponse;
 import org.apache.uniffle.client.response.RssReportShuffleWriteFailureResponse;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -111,6 +109,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
   private TaskContext taskContext;
   private SparkConf sparkConf;
   private Supplier<ShuffleManagerClient> managerClientSupplier;
+  private boolean enableWriteFailureRetry;
+  private Set<ShuffleServerInfo> recordReportFailedShuffleservers;
 
   public RssShuffleWriter(
       String appId,
@@ -181,6 +181,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     this.shuffleHandleInfo = shuffleHandleInfo;
     this.taskContext = context;
     this.sparkConf = sparkConf;
+    this.enableWriteFailureRetry =
+        RssSparkConfig.toRssConf(sparkConf).get(RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED);
+    this.recordReportFailedShuffleservers = Sets.newConcurrentHashSet();
   }
 
   public RssShuffleWriter(
@@ -208,7 +211,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         managerClientSupplier,
         rssHandle,
         taskFailureCallback,
-        shuffleManager.getShuffleHandleInfo(rssHandle),
+        shuffleManager.getShuffleHandleInfo(
+            context.stageId(), context.stageAttemptNumber(), rssHandle, true),
         context);
     BufferManagerOptions bufferOptions = new BufferManagerOptions(sparkConf);
     final WriteBufferManager bufferManager =
@@ -222,7 +226,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             context.taskMemoryManager(),
             shuffleWriteMetrics,
             RssSparkConfig.toRssConf(sparkConf),
-            this::processShuffleBlockInfos);
+            this::processShuffleBlockInfos,
+            context.stageAttemptNumber());
     this.bufferManager = bufferManager;
   }
 
@@ -244,8 +249,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       writeImpl(records);
     } catch (Exception e) {
       taskFailureCallback.apply(taskId);
-      if (RssSparkConfig.toRssConf(sparkConf).get(RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED)) {
-        throwFetchFailedIfNecessary(e);
+      if (enableWriteFailureRetry) {
+        throwFetchFailedIfNecessary(e, Sets.newConcurrentHashSet());
       } else {
         throw e;
       }
@@ -480,7 +485,13 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             createDummyBlockManagerId(appId + "_" + taskId, taskAttemptId);
         long start = System.currentTimeMillis();
         shuffleWriteClient.reportShuffleResult(
-            serverToPartitionToBlockIds, appId, shuffleId, taskAttemptId, bitmapSplitNum);
+            serverToPartitionToBlockIds,
+            appId,
+            shuffleId,
+            taskAttemptId,
+            bitmapSplitNum,
+            recordReportFailedShuffleservers,
+            enableWriteFailureRetry);
         LOG.info(
             "Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
             taskAttemptId,
@@ -490,6 +501,14 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         return Option.apply(mapStatus);
       } else {
         return Option.empty();
+      }
+    } catch (Exception e) {
+      // If an exception is thrown during the reporting process, it should be judged as a failure
+      // and Stage retry should be triggered.
+      if (enableWriteFailureRetry) {
+        throw throwFetchFailedIfNecessary(e, recordReportFailedShuffleservers);
+      } else {
+        throw e;
       }
     } finally {
       // free all memory & metadata, or memory leak happen in executor
@@ -531,35 +550,27 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     return shuffleWriteMetrics;
   }
 
-  private void throwFetchFailedIfNecessary(Exception e) {
+  private RssException throwFetchFailedIfNecessary(
+      Exception e, Set<ShuffleServerInfo> reportFailuredServers) {
     // The shuffleServer is registered only when a Block fails to be sent
     if (e instanceof RssSendFailedException) {
       FailedBlockSendTracker blockIdsFailedSendTracker =
           shuffleManager.getBlockIdsFailedSendTracker(taskId);
       List<ShuffleServerInfo> shuffleServerInfos =
           Lists.newArrayList(blockIdsFailedSendTracker.getFaultyShuffleServers());
+      shuffleServerInfos.addAll(reportFailuredServers);
       RssReportShuffleWriteFailureRequest req =
           new RssReportShuffleWriteFailureRequest(
               appId,
               shuffleId,
+              taskContext.stageId(),
               taskContext.stageAttemptNumber(),
               shuffleServerInfos,
               e.getMessage());
       RssReportShuffleWriteFailureResponse response =
           managerClientSupplier.get().reportShuffleWriteFailure(req);
       if (response.getReSubmitWholeStage()) {
-        // The shuffle server is reassigned.
-        RssReassignServersRequest rssReassignServersRequest =
-            new RssReassignServersRequest(
-                taskContext.stageId(),
-                taskContext.stageAttemptNumber(),
-                shuffleId,
-                partitioner.numPartitions());
-        RssReassignServersResponse rssReassignServersResponse =
-            managerClientSupplier.get().reassignOnStageResubmit(rssReassignServersRequest);
-        LOG.info(
-            "Whether the reassignment is successful: {}",
-            rssReassignServersResponse.isNeedReassign());
+        LOG.warn("Multiple task failures trigger Stage retry.");
         // since we are going to roll out the whole stage, mapIndex shouldn't matter, hence -1
         // is
         // provided.

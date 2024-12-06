@@ -50,6 +50,8 @@ public interface ShuffleBlockIdManager {
 
   long getTotalBlockCount();
 
+  long getBlockCountByShuffleId(String appId, List<Integer> shuffleIds);
+
   boolean contains(String testAppId);
 
   long getBitmapNum(String appId, int shuffleId);

@@ -209,6 +209,18 @@ public class DefaultShuffleBlockIdManager implements ShuffleBlockIdManager {
   }
 
   @Override
+  public long getBlockCountByShuffleId(String appId, List<Integer> shuffleIds) {
+
+    return partitionsToBlockIds.values().stream()
+        .filter(k -> shuffleIds.contains(k.keySet()))
+        .flatMap(innerMap -> innerMap.values().stream())
+        .flatMapToLong(
+            arr ->
+                java.util.Arrays.stream(arr).mapToLong(Roaring64NavigableMap::getLongCardinality))
+        .sum();
+  }
+
+  @Override
   public boolean contains(String appId) {
     return partitionsToBlockIds.containsKey(appId);
   }
