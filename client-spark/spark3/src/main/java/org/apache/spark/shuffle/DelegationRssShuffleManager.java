@@ -30,7 +30,7 @@ import org.apache.spark.TaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryableClient;
+import org.apache.uniffle.client.api.CoordinatorClient;
 import org.apache.uniffle.client.request.RssAccessClusterRequest;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
 import org.apache.uniffle.common.config.RssClientConf;
@@ -46,7 +46,6 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   private static final Logger LOG = LoggerFactory.getLogger(DelegationRssShuffleManager.class);
 
   private final ShuffleManager delegate;
-  private final CoordinatorGrpcRetryableClient coordinatorClient;
   private final int accessTimeoutMs;
   private final SparkConf sparkConf;
   private String user;
@@ -58,10 +57,11 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     this.sparkConf = sparkConf;
     accessTimeoutMs = sparkConf.get(RssSparkConfig.RSS_ACCESS_TIMEOUT_MS);
     if (isDriver) {
-      coordinatorClient = RssSparkShuffleUtils.createCoordinatorClients(sparkConf);
-      delegate = createShuffleManagerInDriver();
+      try (CoordinatorClient coordinatorClient =
+          RssSparkShuffleUtils.createCoordinatorClientsForAccessCluster(sparkConf)) {
+        delegate = createShuffleManagerInDriver(coordinatorClient);
+      }
     } else {
-      coordinatorClient = null;
       delegate = createShuffleManagerInExecutor();
     }
 
@@ -70,7 +70,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     }
   }
 
-  private ShuffleManager createShuffleManagerInDriver() throws RssException {
+  private ShuffleManager createShuffleManagerInDriver(CoordinatorClient coordinatorClient) throws RssException {
     ShuffleManager shuffleManager;
     user = "user";
     try {
@@ -78,7 +78,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     } catch (Exception e) {
       LOG.error("Error on getting user from ugi." + e);
     }
-    boolean canAccess = tryAccessCluster();
+    boolean canAccess = tryAccessCluster(coordinatorClient);
     if (uuid == null || "".equals(uuid)) {
       uuid = String.valueOf(System.currentTimeMillis());
     }
@@ -112,7 +112,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     return shuffleManager;
   }
 
-  private boolean tryAccessCluster() {
+  private boolean tryAccessCluster(CoordinatorClient coordinatorClient) {
     String accessId = sparkConf.get(RssSparkConfig.RSS_ACCESS_ID.key(), "").trim();
     if (StringUtils.isEmpty(accessId)) {
       String providerKey = sparkConf.get(RssSparkConfig.RSS_ACCESS_ID_PROVIDER_KEY.key(), "");
@@ -311,9 +311,6 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   @Override
   public void stop() {
     delegate.stop();
-    if (coordinatorClient != null) {
-      coordinatorClient.close();
-    }
   }
 
   @Override
