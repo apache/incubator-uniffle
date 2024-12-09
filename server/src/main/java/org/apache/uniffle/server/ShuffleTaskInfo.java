@@ -284,7 +284,7 @@ public class ShuffleTaskInfo {
   }
 
   public Integer getLatestStageAttemptNumber(int shuffleId) {
-    return latestStageAttemptNumbers.computeIfAbsent(shuffleId, key -> 0);
+    return latestStageAttemptNumbers.getOrDefault(shuffleId, 0);
   }
 
   public void refreshLatestStageAttemptNumber(int shuffleId, int stageAttemptNumber) {
