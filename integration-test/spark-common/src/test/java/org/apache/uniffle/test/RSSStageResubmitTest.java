@@ -79,7 +79,7 @@ public class RSSStageResubmitTest extends SparkTaskFailureIntegrationTestBase {
     super.updateSparkConfCustomer(sparkConf);
     sparkConf.set(
         RssSparkConfig.SPARK_RSS_CONFIG_PREFIX
-            + RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_WRITE_FAILURE_ENABLED,
+            + RssSparkConfig.RSS_RESUBMIT_STAGE_WITH_FETCH_FAILURE_ENABLED,
         "true");
   }
 

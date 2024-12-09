@@ -122,13 +122,13 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
                 shuffleManager.getShuffleWriteClient().unregisterShuffle(appId, shuffleId);
                 shuffleServerWriterFailureRecord.setClearedMapTrackerBlock(true);
                 LOG.info(
-                    "Clear shuffle result in shuffleId:{}, stageId:{}, stageAttemptNumber:{}.",
+                    "Clear shuffle result in shuffleId:{}, stageId:{}, stageAttemptNumber:{} in the write failure phase.",
                     shuffleId,
                     stageAttemptId,
                     stageAttemptNumber);
               } catch (SparkException e) {
                 LOG.error(
-                    "Clear MapoutTracker Meta failed in shuffleId:{}, stageAttemptId:{}, stageAttemptNumber:{}.",
+                    "Clear MapoutTracker Meta failed in shuffleId:{}, stageAttemptId:{}, stageAttemptNumber:{} in the write failure phase.",
                     shuffleId,
                     stageAttemptId,
                     stageAttemptNumber);
@@ -158,6 +158,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
       RssProtos.ReportShuffleFetchFailureRequest request,
       StreamObserver<RssProtos.ReportShuffleFetchFailureResponse> responseObserver) {
     String appId = request.getAppId();
+    int shuffleId = request.getShuffleId();
     int stageAttempt = request.getStageAttemptId();
     int partitionId = request.getPartitionId();
     RssProtos.StatusCode code;
@@ -189,18 +190,37 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
         code = RssProtos.StatusCode.INVALID_REQUEST;
         reSubmitWholeStage = false;
       } else { // update the stage partition fetch failure count
-        code = RssProtos.StatusCode.SUCCESS;
-        status.incPartitionFetchFailure(stageAttempt, partitionId);
-        int fetchFailureNum = status.getPartitionFetchFailureNum(stageAttempt, partitionId);
-        if (fetchFailureNum >= shuffleManager.getMaxFetchFailures()) {
-          reSubmitWholeStage = true;
-          msg =
-              String.format(
-                  "report shuffle fetch failure as maximum number(%d) of shuffle fetch is occurred",
-                  shuffleManager.getMaxFetchFailures());
-        } else {
-          reSubmitWholeStage = false;
-          msg = "don't report shuffle fetch failure";
+        synchronized (status) {
+          code = RssProtos.StatusCode.SUCCESS;
+          status.incPartitionFetchFailure(stageAttempt, partitionId);
+          if (status.getPartitionFetchFailureNum(stageAttempt, partitionId, shuffleManager)) {
+            reSubmitWholeStage = true;
+            if (!status.isClearedMapTrackerBlock()) {
+              try {
+                // Clear the metadata of the completed task, after the upstream ShuffleId is
+                // cleared, the write Stage can be triggered again.
+                shuffleManager.unregisterAllMapOutput(shuffleId);
+                status.setClearedMapTrackerBlock(true);
+                LOG.info(
+                    "Clear shuffle result in shuffleId:{}, stageId:{} in the write failure phase.",
+                    shuffleId,
+                    stageAttempt);
+              } catch (SparkException e) {
+                LOG.error(
+                    "Clear MapoutTracker Meta failed in shuffleId:{}, stageAttemptId:{} in the write failure phase.",
+                    shuffleId,
+                    stageAttempt);
+                throw new RssException("Clear MapoutTracker Meta failed!", e);
+              }
+            }
+            msg =
+                String.format(
+                    "report shuffle fetch failure as maximum number(%d) of shuffle fetch is occurred",
+                    shuffleManager.getMaxFetchFailures());
+          } else {
+            reSubmitWholeStage = false;
+            msg = "don't report shuffle fetch failure";
+          }
         }
       }
     }
@@ -489,10 +509,13 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
     private final int[] partitions;
     private int stageAttempt;
+    // Whether the Shuffle result has been cleared for the current number of attempts.
+    private boolean isClearedMapTrackerBlock;
 
     private RssShuffleStatus(int partitionNum, int stageAttempt) {
       this.stageAttempt = stageAttempt;
       this.partitions = new int[partitionNum];
+      this.isClearedMapTrackerBlock = false;
     }
 
     private <T> T withReadLock(Supplier<T> fn) {
@@ -553,14 +576,34 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
           });
     }
 
-    public int getPartitionFetchFailureNum(int stageAttempt, int partition) {
+    public boolean getPartitionFetchFailureNum(
+        int stageAttempt, int partition, RssShuffleManagerInterface shuffleManager) {
       return withReadLock(
           () -> {
             if (this.stageAttempt != stageAttempt) {
-              return 0;
+              return false;
             } else {
-              return this.partitions[partition];
+              if (this.partitions[partition] >= shuffleManager.getMaxFetchFailures()) {
+                return true;
+              } else {
+                return false;
+              }
             }
+          });
+    }
+
+    public void setClearedMapTrackerBlock(boolean isCleared) {
+      withWriteLock(
+          () -> {
+            this.isClearedMapTrackerBlock = isCleared;
+            return null;
+          });
+    }
+
+    public boolean isClearedMapTrackerBlock() {
+      return withReadLock(
+          () -> {
+            return isClearedMapTrackerBlock;
           });
     }
   }
