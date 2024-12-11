@@ -247,6 +247,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
                       TaskContext.class,
                       ShuffleReadMetricsReporter.class)
                   .invoke(
+                      delegate,
                       handle,
                       startMapIndex,
                       endMapIndex,
@@ -285,6 +286,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
                       TaskContext.class,
                       ShuffleReadMetricsReporter.class)
                   .invoke(
+                      delegate,
                       handle,
                       startMapIndex,
                       endMapIndex,
