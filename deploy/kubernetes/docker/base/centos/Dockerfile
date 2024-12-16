@@ -25,6 +25,6 @@ RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && \
     yum clean all && \
     yum makecache
 
-RUN yum install lzo zlib zlib-devel lzop lsof netcat dnsutils less procps iputils-ping -y && \
+RUN yum install lzo zlib zlib-devel lzop lsof netcat dnsutils less procps iputils-ping which -y && \
     yum clean all && \
     rm -rf /var/cache/yum
