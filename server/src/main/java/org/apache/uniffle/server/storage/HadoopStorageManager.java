@@ -114,7 +114,8 @@ public class HadoopStorageManager extends SingleStorageManager {
                   new CreateShuffleDeleteHandlerRequest(
                       StorageType.HDFS.name(),
                       storage.getConf(),
-                      purgeForExpired ? shuffleServerId : null));
+                      purgeForExpired ? shuffleServerId : null,
+                      event.isRenameAndDelete()));
 
       String basicPath =
           ShuffleStorageUtils.getFullShuffleDataFolder(storage.getStoragePath(), appId);
