@@ -112,7 +112,8 @@ public class PooledHadoopShuffleWriteHandler implements ShuffleWriteHandler {
     if (queue.isEmpty() && initializedHandlerCnt < maxConcurrency) {
       synchronized (this) {
         if (initializedHandlerCnt < maxConcurrency) {
-          queue.add(createWriterFunc.apply(initializedHandlerCnt++));
+          queue.add(createWriterFunc.apply(initializedHandlerCnt));
+          initializedHandlerCnt += 1;
         }
       }
     }
