@@ -193,14 +193,14 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
         synchronized (status) {
           code = RssProtos.StatusCode.SUCCESS;
           status.incPartitionFetchFailure(stageAttempt, partitionId);
-          if (status.getPartitionFetchFailureNum(stageAttempt, partitionId, shuffleManager)) {
+          if (status.currentPartitionIsFetchFailed(stageAttempt, partitionId, shuffleManager)) {
             reSubmitWholeStage = true;
-            if (!status.isClearedMapTrackerBlock()) {
+            if (!status.hasClearedMapTrackerBlock()) {
               try {
                 // Clear the metadata of the completed task, after the upstream ShuffleId is
                 // cleared, the write Stage can be triggered again.
                 shuffleManager.unregisterAllMapOutput(shuffleId);
-                status.clearedMapTrackerBlock(true);
+                status.clearedMapTrackerBlock();
                 LOG.info(
                     "Clear shuffle result in shuffleId:{}, stageId:{} in the write failure phase.",
                     shuffleId,
@@ -510,12 +510,12 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     private final int[] partitions;
     private int stageAttempt;
     // Whether the Shuffle result has been cleared for the current number of attempts.
-    private boolean isClearedMapTrackerBlock;
+    private boolean hasClearedMapTrackerBlock;
 
     private RssShuffleStatus(int partitionNum, int stageAttempt) {
       this.stageAttempt = stageAttempt;
       this.partitions = new int[partitionNum];
-      this.isClearedMapTrackerBlock = false;
+      this.hasClearedMapTrackerBlock = false;
     }
 
     private <T> T withReadLock(Supplier<T> fn) {
@@ -576,7 +576,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
           });
     }
 
-    public boolean getPartitionFetchFailureNum(
+    public boolean currentPartitionIsFetchFailed(
         int stageAttempt, int partition, RssShuffleManagerInterface shuffleManager) {
       return withReadLock(
           () -> {
@@ -592,18 +592,18 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
           });
     }
 
-    public void clearedMapTrackerBlock(boolean isCleared) {
+    public void clearedMapTrackerBlock() {
       withWriteLock(
           () -> {
-            this.isClearedMapTrackerBlock = isCleared;
+            this.hasClearedMapTrackerBlock = true;
             return null;
           });
     }
 
-    public boolean isClearedMapTrackerBlock() {
+    public boolean hasClearedMapTrackerBlock() {
       return withReadLock(
           () -> {
-            return isClearedMapTrackerBlock;
+            return hasClearedMapTrackerBlock;
           });
     }
   }
