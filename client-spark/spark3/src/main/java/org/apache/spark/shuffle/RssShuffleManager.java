@@ -799,6 +799,11 @@ public class RssShuffleManager extends RssShuffleManagerBase {
                         SparkEnv.get().mapOutputTracker(), shuffleId, startPartition, endPartition);
       }
     } catch (Exception e) {
+      // If here is a MetadataFetchFailedException abnormalities, packaging needs to be a new
+      // exception, prevent Stage retry, loss of data.
+      if (e instanceof MetadataFetchFailedException) {
+        throw new RssException("Unable to obtained map statuses data.");
+      }
       throw new RssException(e);
     }
     while (mapStatusIter.hasNext()) {
