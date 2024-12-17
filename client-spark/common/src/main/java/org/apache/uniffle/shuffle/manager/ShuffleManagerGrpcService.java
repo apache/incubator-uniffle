@@ -200,7 +200,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
                 // Clear the metadata of the completed task, after the upstream ShuffleId is
                 // cleared, the write Stage can be triggered again.
                 shuffleManager.unregisterAllMapOutput(shuffleId);
-                status.setClearedMapTrackerBlock(true);
+                status.clearedMapTrackerBlock(true);
                 LOG.info(
                     "Clear shuffle result in shuffleId:{}, stageId:{} in the write failure phase.",
                     shuffleId,
@@ -592,7 +592,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
           });
     }
 
-    public void setClearedMapTrackerBlock(boolean isCleared) {
+    public void clearedMapTrackerBlock(boolean isCleared) {
       withWriteLock(
           () -> {
             this.isClearedMapTrackerBlock = isCleared;
