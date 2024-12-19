@@ -23,6 +23,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.shuffle.sort.SortShuffleManager;
 import org.junit.jupiter.api.Test;
 
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.common.rpc.StatusCode.ACCESS_DENIED;
@@ -30,6 +31,10 @@ import static org.apache.uniffle.common.rpc.StatusCode.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 public class DelegationRssShuffleManagerTest extends RssShuffleManagerTestBase {
 
@@ -129,6 +134,31 @@ public class DelegationRssShuffleManagerTest extends RssShuffleManagerTestBase {
     secondConf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "m1:8001,m2:8002");
     secondConf.set("spark.rss.storage.type", StorageType.LOCALFILE.name());
     assertCreateSortShuffleManager(secondConf);
+  }
+
+  @Test
+  public void testGetReader() throws Exception {
+    ShuffleReader mockReader = mock(ShuffleReader.class);
+    ShuffleManager mockShuffleManager = mock(ShuffleManager.class);
+    doReturn(mockReader)
+        .when(mockShuffleManager)
+        .getReader(any(), anyInt(), anyInt(), anyInt(), anyInt(), any(), any());
+    DelegationRssShuffleManager delegationRssShuffleManager;
+    SparkConf conf = new SparkConf();
+    conf.set(RssSparkConfig.RSS_COORDINATOR_QUORUM.key(), "m1:8001,m2:8002");
+    delegationRssShuffleManager =
+        new DelegationRssShuffleManager(conf, false) {
+          @Override
+          protected ShuffleManager createShuffleManagerInExecutor() throws RssException {
+            return mockShuffleManager;
+          }
+        };
+    assertEquals(mockShuffleManager, delegationRssShuffleManager.getDelegate());
+    ShuffleReader<Object, Object> reader =
+        delegationRssShuffleManager.getReader(
+            new BaseShuffleHandle(0, null), 1, 1, 1, 1, null, null);
+
+    assertEquals(mockReader, reader);
   }
 
   private void assertCreateSortShuffleManager(SparkConf conf) throws Exception {
