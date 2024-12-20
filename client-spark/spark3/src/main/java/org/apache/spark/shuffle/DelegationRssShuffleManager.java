@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -175,7 +176,8 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     return false;
   }
 
-  private ShuffleManager createShuffleManagerInExecutor() throws RssException {
+  @VisibleForTesting
+  protected ShuffleManager createShuffleManagerInExecutor() throws RssException {
     ShuffleManager shuffleManager;
     // get useRSS from spark conf
     boolean useRSS = sparkConf.get(RssSparkConfig.RSS_ENABLED);
