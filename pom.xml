@@ -23,7 +23,7 @@
 
   <groupId>org.apache.uniffle</groupId>
   <artifactId>uniffle-parent</artifactId>
-  <version>0.9.1</version>
+  <version>0.9.2</version>
   <packaging>pom</packaging>
   <name>Apache Uniffle</name>
   <description>A high performance, general purpose Remote Shuffle Service.</description>
