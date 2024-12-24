@@ -1294,6 +1294,12 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           ShuffleServerMetrics.gaugeReadLocalIndexFileBufferSize.inc(assumedFileSize);
           GetLocalShuffleIndexResponse.Builder builder =
               GetLocalShuffleIndexResponse.newBuilder().setStatus(status.toProto()).setRetMsg(msg);
+          builder.setIndexData(UnsafeByteOperations.unsafeWrap(data));
+          builder.setDataFileLen(shuffleIndexResult.getDataFileLen());
+          builder.addAllStorageIds(
+              Arrays.stream(shuffleIndexResult.getStorageIds())
+                  .boxed()
+                  .collect(Collectors.toList()));
           long readTime = System.currentTimeMillis() - start;
           shuffleServer
               .getGrpcMetrics()
@@ -1303,13 +1309,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               readTime,
               data.remaining(),
               requestInfo);
-
-          builder.setIndexData(UnsafeByteOperations.unsafeWrap(data));
-          builder.setDataFileLen(shuffleIndexResult.getDataFileLen());
-          builder.addAllStorageIds(
-              Arrays.stream(shuffleIndexResult.getStorageIds())
-                  .boxed()
-                  .collect(Collectors.toList()));
           auditContext.withReturnValue("len=" + shuffleIndexResult.getDataFileLen());
           reply = builder.build();
         } catch (FileNotFoundException indexFileNotFoundException) {
