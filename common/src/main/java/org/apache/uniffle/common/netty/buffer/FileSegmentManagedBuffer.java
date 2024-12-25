@@ -39,6 +39,8 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
   private final File file;
   private final long offset;
   private final int length;
+  private volatile boolean isFilled;
+  private ByteBuffer readByteBuffer;
 
   public FileSegmentManagedBuffer(File file, long offset, int length) {
     this.file = file;
@@ -58,33 +60,40 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
 
   @Override
   public ByteBuffer nioByteBuffer() {
+    if (isFilled) {
+      return readByteBuffer;
+    }
     FileChannel channel = null;
     try {
       channel = new RandomAccessFile(file, "r").getChannel();
-      ByteBuffer buf = ByteBuffer.allocate(length);
+      readByteBuffer = ByteBuffer.allocate(length);
       channel.position(offset);
-      while (buf.remaining() != 0) {
-        if (channel.read(buf) == -1) {
+      while (readByteBuffer.remaining() != 0) {
+        if (channel.read(readByteBuffer) == -1) {
           throw new IOException(
               String.format(
                   "Reached EOF before filling buffer.offset=%s,file=%s,buf.remaining=%s",
-                  offset, file.getAbsoluteFile(), buf.remaining()));
+                  offset, file.getAbsoluteFile(), readByteBuffer.remaining()));
         }
       }
-      buf.flip();
-      return buf;
+      readByteBuffer.flip();
+      isFilled = true;
+      return readByteBuffer;
     } catch (IOException e) {
-      String errorMessage = "Error in reading " + this;
+      StringBuilder errorMessage =
+          new StringBuilder(
+              String.format(
+                  "Error in reading file %s. offset=%s length=%s",
+                  file.getAbsoluteFile(), this.offset, this.length));
       try {
         if (channel != null) {
           long size = channel.size();
-          errorMessage = "Error in reading " + this + " (actual file length " + size + ")";
+          errorMessage.append(String.format("(actual file length=%s)", size));
         }
       } catch (IOException ignored) {
         // ignore
       }
-
-      LOG.error(errorMessage, e);
+      LOG.error(errorMessage.toString(), e);
       return ByteBuffer.allocate(0);
     } finally {
       JavaUtils.closeQuietly(channel);
@@ -98,6 +107,9 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
 
   @Override
   public ManagedBuffer release() {
+    readByteBuffer.clear();
+    readByteBuffer = null;
+    isFilled = false;
     return this;
   }
 
