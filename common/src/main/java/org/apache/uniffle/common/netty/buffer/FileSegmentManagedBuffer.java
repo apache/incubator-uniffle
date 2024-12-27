@@ -75,7 +75,10 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
       return buf;
     } catch (IOException e) {
       String fileName = file.getAbsolutePath();
-      String errorMessage = String.format("Errors on reading localfile data with offset[%s] length[%s] from [%s]. ", offset, length, fileName);
+      String errorMessage =
+          String.format(
+              "Errors on reading localfile data with offset[%s] length[%s] from [%s]. ",
+              offset, length, fileName);
       try {
         if (channel != null) {
           long size = channel.size();
