@@ -346,5 +346,6 @@ The ISC License
 rimraf
 
 The Apache Software License, Version 2.0, LGPL License or MPL License
+--------------------------------------------------------------------
 org.javassist:javassist
 
