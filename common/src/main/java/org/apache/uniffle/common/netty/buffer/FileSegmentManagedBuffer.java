@@ -74,11 +74,12 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
       buf.flip();
       return buf;
     } catch (IOException e) {
-      String errorMessage = "Error in reading " + this;
+      String fileName = file.getAbsolutePath();
+      String errorMessage = String.format("Errors on reading localfile data with offset[%s] length[%s] from [%s]. ", offset, length, fileName);
       try {
         if (channel != null) {
           long size = channel.size();
-          errorMessage = "Error in reading " + this + " (actual file length " + size + ")";
+          errorMessage += String.format("The actual file length: %s", size);
         }
       } catch (IOException ignored) {
         // ignore
@@ -107,7 +108,7 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
     try {
       fileChannel = FileChannel.open(file.toPath(), StandardOpenOption.READ);
     } catch (IOException e) {
-      throw new RssException("Error in reading " + file);
+      throw new RssException("Errors on reading " + file.getAbsolutePath(), e);
     }
     return new DefaultFileRegion(fileChannel, offset, length);
   }
