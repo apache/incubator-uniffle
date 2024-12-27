@@ -287,7 +287,6 @@ org.eclipse.jetty:jetty-security
 org.eclipse.jetty:jetty-server
 org.eclipse.jetty:jetty-servlet
 org.eclipse.jetty:jetty-util
-org.javassist:javassist
 org.roaringbitmap:RoaringBitmap
 org.roaringbitmap:shims
 org.xerial.snappy:snappy-java
@@ -345,3 +344,7 @@ org.apache.hbase.thirdparty:hbase-shaded-jersey
 The ISC License
 ---------------
 rimraf
+
+The Apache Software License, Version 2.0, LGPL License or MPL License
+org.javassist:javassist
+
