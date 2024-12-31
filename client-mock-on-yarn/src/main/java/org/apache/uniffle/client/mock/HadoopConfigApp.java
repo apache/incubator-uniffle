@@ -103,7 +103,9 @@ public class HadoopConfigApp {
       String line;
       while ((line = reader.readLine()) != null) {
         line = line.trim();
-        if (line.isEmpty() || line.startsWith("#")) continue; // Skip empty lines and comments
+        if (line.isEmpty() || line.startsWith("#")) {
+          continue; // Skip empty lines and comments
+        }
         int eq = line.indexOf('=');
         if (eq > 0) {
           String key = line.substring(0, eq).trim();

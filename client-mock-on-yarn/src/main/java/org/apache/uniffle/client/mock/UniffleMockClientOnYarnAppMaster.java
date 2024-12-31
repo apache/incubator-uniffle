@@ -80,7 +80,7 @@ public class UniffleMockClientOnYarnAppMaster {
     childTaskNum = conf.getInt(Constants.KEY_CONTAINER_NUM, Constants.CONTAINER_NUM_DEFAULT);
   }
 
-  public void run() {
+  private void run() {
     try {
       String serverId = conf.get(Constants.KEY_SERVER_ID);
       System.out.println("serverId:" + serverId);
@@ -223,19 +223,6 @@ public class UniffleMockClientOnYarnAppMaster {
         for (Container container : containers) {
           System.out.println("container allocated, Node=" + container.getNodeHttpAddress());
           // build AM<->NM client and start container
-          Map<String, LocalResource> localResources =
-              new HashMap<String, LocalResource>() {
-                {
-                  String[] extraJarPathList = conf.getStrings(Constants.KEY_EXTRA_JAR_PATH_LIST);
-                  if (extraJarPathList != null) {
-                    for (String extraJarPath : extraJarPathList) {
-                      Path path = new Path(extraJarPath);
-                      String name = path.getName();
-                      put(name, Utils.addHdfsToResource(conf, path));
-                    }
-                  }
-                }
-              };
           Map<String, String> env = new HashMap<>();
           StringBuilder classPathEnv =
               new StringBuilder(ApplicationConstants.Environment.CLASSPATH.$$())
@@ -265,6 +252,20 @@ public class UniffleMockClientOnYarnAppMaster {
                   + Constants.KEY_CONTAINER_INDEX
                   + "="
                   + index);
+
+          Map<String, LocalResource> localResources =
+              new HashMap<String, LocalResource>() {
+                {
+                  String[] extraJarPathList = conf.getStrings(Constants.KEY_EXTRA_JAR_PATH_LIST);
+                  if (extraJarPathList != null) {
+                    for (String extraJarPath : extraJarPathList) {
+                      Path path = new Path(extraJarPath);
+                      String name = path.getName();
+                      put(name, Utils.addHdfsToResource(conf, path));
+                    }
+                  }
+                }
+              };
           ContainerLaunchContext containerLaunchContext =
               ContainerLaunchContext.newInstance(localResources, env, commands, null, null, null);
           // request nm to start container

@@ -58,11 +58,11 @@ public class UniffleTask {
     }
 
     Configuration conf = new Configuration();
-    HadoopConfigApp hadoopConfigApp = new HadoopConfigApp(conf);
     List<String> combinedArgs = new ArrayList<>(args.length);
     combinedArgs.addAll(Arrays.asList(args));
     combinedArgs.add("--conf");
     combinedArgs.add("./" + Constants.JOB_CONF_NAME);
+    HadoopConfigApp hadoopConfigApp = new HadoopConfigApp(conf);
     hadoopConfigApp.run(combinedArgs.toArray(new String[0]));
     System.out.println(hadoopConfigApp.getLocalConf());
     String appId = conf.get(Constants.KEY_YARN_APP_ID);

@@ -33,8 +33,7 @@ import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
 import org.apache.hadoop.yarn.api.records.URL;
 
 public final class Utils {
-  public static Path copyToHdfs(Configuration conf, Path srcPath, Path dstPath)
-      throws IOException {
+  public static Path copyToHdfs(Configuration conf, Path srcPath, Path dstPath) throws IOException {
     try (FileSystem fs = FileSystem.get(dstPath.toUri(), conf)) {
       // upload
       fs.copyFromLocalFile(srcPath, dstPath);
