@@ -71,14 +71,10 @@ public final class Utils {
     }
   }
 
-  public static String getCurrentJarPath(Class clazz) {
-    try {
-      CodeSource codeSource = clazz.getProtectionDomain().getCodeSource();
-      if (codeSource != null && codeSource.getLocation() != null) {
-        return new File(codeSource.getLocation().toURI()).getPath();
-      }
-    } catch (URISyntaxException e) {
-      throw new RuntimeException("Error when getting current JAR path", e);
+  public static String getCurrentJarPath(Class clazz) throws URISyntaxException {
+    CodeSource codeSource = clazz.getProtectionDomain().getCodeSource();
+    if (codeSource != null && codeSource.getLocation() != null) {
+      return new File(codeSource.getLocation().toURI()).getPath();
     }
     return null;
   }

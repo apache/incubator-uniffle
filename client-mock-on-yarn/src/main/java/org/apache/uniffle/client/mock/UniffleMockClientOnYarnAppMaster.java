@@ -127,8 +127,9 @@ public class UniffleMockClientOnYarnAppMaster {
       amRmClient.addContainerRequest(containerRequest);
     }
     synchronized (lock) {
-      // wait until all child tasks are completed
-      lock.wait();
+      while (childTaskCompletedNum < childTaskNum) {
+        lock.wait(1000);
+      }
     }
     System.out.println("AM: Finish main logic");
   }
@@ -207,7 +208,8 @@ public class UniffleMockClientOnYarnAppMaster {
           try {
             Thread.sleep(10_000);
           } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            Thread.currentThread().interrupt();
+            return;
           }
           // notify main thread when all child tasks are completed
           if (childTaskCompletedNum == childTaskNum) {
