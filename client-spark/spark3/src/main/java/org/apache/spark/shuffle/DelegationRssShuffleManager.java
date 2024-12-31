@@ -17,6 +17,7 @@
 
 package org.apache.spark.shuffle;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,6 +33,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.client.impl.grpc.CoordinatorGrpcRetryableClient;
 import org.apache.uniffle.client.request.RssAccessClusterRequest;
 import org.apache.uniffle.client.response.RssAccessClusterResponse;
+import org.apache.uniffle.common.config.RssClientConf;
+import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.Constants;
@@ -112,6 +115,13 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   private boolean tryAccessCluster() {
     String accessId = sparkConf.get(RssSparkConfig.RSS_ACCESS_ID.key(), "").trim();
     if (StringUtils.isEmpty(accessId)) {
+      String providerKey = sparkConf.get(RssSparkConfig.RSS_ACCESS_ID_PROVIDER_KEY.key(), "");
+      if (StringUtils.isNotEmpty(accessId)) {
+        accessId = sparkConf.get(providerKey, "");
+        LOG.info("Get access id {} from provider key: {}", accessId, providerKey);
+      }
+    }
+    if (StringUtils.isEmpty(accessId)) {
       LOG.warn("Access id key is empty");
       return false;
     }
@@ -123,6 +133,13 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     Map<String, String> extraProperties = Maps.newHashMap();
     extraProperties.put(
         ACCESS_INFO_REQUIRED_SHUFFLE_NODES_NUM, String.valueOf(assignmentShuffleNodesNum));
+
+    RssConf rssConf = RssSparkConfig.toRssConf(sparkConf);
+    List<String> excludeProperties =
+        rssConf.get(RssClientConf.RSS_CLIENT_REPORT_EXCLUDE_PROPERTIES);
+    rssConf.getAll().stream()
+        .filter(entry -> !excludeProperties.contains(entry.getKey()))
+        .forEach(entry -> extraProperties.put(entry.getKey(), (String) entry.getValue()));
 
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
     try {
@@ -230,6 +247,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
                       TaskContext.class,
                       ShuffleReadMetricsReporter.class)
                   .invoke(
+                      delegate,
                       handle,
                       startMapIndex,
                       endMapIndex,
@@ -268,6 +286,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
                       TaskContext.class,
                       ShuffleReadMetricsReporter.class)
                   .invoke(
+                      delegate,
                       handle,
                       startMapIndex,
                       endMapIndex,
@@ -289,7 +308,9 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   @Override
   public void stop() {
     delegate.stop();
-    coordinatorClient.close();
+    if (coordinatorClient != null) {
+      coordinatorClient.close();
+    }
   }
 
   @Override

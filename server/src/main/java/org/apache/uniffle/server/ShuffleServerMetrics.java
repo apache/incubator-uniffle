@@ -166,6 +166,10 @@ public class ShuffleServerMetrics {
   public static final String BUFFER_COUNT_IN_BUFFER_POOL = "buffer_count_in_buffer_pool";
   public static final String SHUFFLE_COUNT_IN_BUFFER_POOL = "shuffle_count_in_buffer_pool";
 
+  public static final String COMMITTED_BLOCK_COUNT = "committed_block_count";
+  public static final String REPORTED_BLOCK_COUNT = "reported_block_count";
+  public static final String CACHED_BLOCK_COUNT = "cached_block_count";
+
   public static Counter.Child counterTotalAppNum;
   public static Counter.Child counterTotalAppWithHugePartitionNum;
   public static Counter.Child counterTotalPartitionNum;
@@ -534,5 +538,14 @@ public class ShuffleServerMetrics {
       return;
     }
     metricsManager.addLabeledCacheGauge(name, supplier, updateInterval);
+  }
+
+  public static Double getMetricsValue(String metricName) {
+    return metricsManager
+        .getCollectorRegistry()
+        .getSampleValue(
+            metricName,
+            metricsManager.getDefaultLabelNames(),
+            metricsManager.getDefaultLabelValues());
   }
 }

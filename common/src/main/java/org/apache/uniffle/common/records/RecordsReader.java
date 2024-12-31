@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.serializer.DeserializationStream;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.SerInputStream;
 import org.apache.uniffle.common.serializer.Serializer;
 import org.apache.uniffle.common.serializer.SerializerFactory;
 import org.apache.uniffle.common.serializer.SerializerInstance;
@@ -34,15 +34,20 @@ public class RecordsReader<K, V> {
 
   public RecordsReader(
       RssConf rssConf,
-      PartialInputStream input,
+      SerInputStream input,
       Class<K> keyClass,
       Class<V> valueClass,
-      boolean raw) {
+      boolean raw,
+      boolean buffered) {
     SerializerFactory factory = new SerializerFactory(rssConf);
     Serializer serializer = factory.getSerializer(keyClass);
     assert factory.getSerializer(valueClass).getClass().equals(serializer.getClass());
     SerializerInstance instance = serializer.newInstance();
-    stream = instance.deserializeStream(input, keyClass, valueClass, raw);
+    stream = instance.deserializeStream(input, keyClass, valueClass, raw, buffered);
+  }
+
+  public void init() {
+    this.stream.init();
   }
 
   public boolean next() throws IOException {

@@ -31,6 +31,13 @@ public class AppInfoVO implements Comparable<AppInfoVO> {
   private long registrationTime;
   private String version;
   private String gitCommitId;
+  private long partitionNum;
+  private long memorySize;
+  private long localFileNum;
+  private long localTotalSize;
+  private long hadoopFileNum;
+  private long hadoopTotalSize;
+  private long totalSize;
 
   @Override
   public int compareTo(AppInfoVO appInfoVO) {

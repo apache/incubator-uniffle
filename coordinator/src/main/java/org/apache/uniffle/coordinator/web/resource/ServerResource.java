@@ -79,8 +79,8 @@ public class ServerResource extends BaseResource {
       serverList = clusterManager.getLostServerList();
     } else if (ServerStatus.EXCLUDED.name().equalsIgnoreCase(status)) {
       serverList =
-          clusterManager.getExcludedNodes().stream()
-              .map(ServerNode::new)
+          clusterManager.list().stream()
+              .filter(node -> clusterManager.getExcludedNodes().contains(node.getId()))
               .collect(Collectors.toList());
     } else {
       List<ServerNode> serverAllList = clusterManager.list();
@@ -92,9 +92,10 @@ public class ServerResource extends BaseResource {
     serverList =
         serverList.stream()
             .filter(
-                server -> {
-                  return status == null || server.getStatus().name().equalsIgnoreCase(status);
-                })
+                server ->
+                    status == null
+                        || server.getStatus().name().equalsIgnoreCase(status)
+                        || ServerStatus.EXCLUDED.name().equalsIgnoreCase(status))
             .collect(Collectors.toList());
     serverList.sort(Comparator.comparing(ServerNode::getId));
     return Response.success(serverList);

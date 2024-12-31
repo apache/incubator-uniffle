@@ -19,6 +19,8 @@ package org.apache.uniffle.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,6 +36,7 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +62,7 @@ import org.apache.uniffle.common.rpc.ClientContextServerInterceptor;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ByteBufUtils;
+import org.apache.uniffle.common.util.OutputUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.proto.RssProtos;
 import org.apache.uniffle.proto.RssProtos.AppHeartBeatRequest;
@@ -93,11 +97,13 @@ import org.apache.uniffle.proto.RssProtos.ShuffleRegisterRequest;
 import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerImplBase;
 import org.apache.uniffle.server.audit.ServerRpcAuditContext;
+import org.apache.uniffle.server.block.ShuffleBlockIdManager;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.merge.MergeStatus;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.server.merge.ShuffleMergeManager.MERGE_APP_SUFFIX;
 
@@ -164,7 +170,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       try {
         if (shuffleServer
             .getShuffleServerConf()
-            .getBoolean(ShuffleServerConf.SERVER_HEARTBEAT_REPORT_ON_UNREGISTER_ENABLED)) {
+            .getBoolean(ShuffleServerConf.SERVER_TRIGGER_REPORT_WHILE_UNREGISTER_ENABLED)) {
           shuffleServer.sendHeartbeat();
         }
         shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId);
@@ -173,6 +179,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         }
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
+        LOG.error("App {} exception while unregisterShuffleByAppId", appId, e);
       }
 
       auditContext.withStatusCode(status);
@@ -210,7 +217,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       try {
         if (shuffleServer
             .getShuffleServerConf()
-            .getBoolean(ShuffleServerConf.SERVER_HEARTBEAT_REPORT_ON_UNREGISTER_ENABLED)) {
+            .getBoolean(ShuffleServerConf.SERVER_TRIGGER_REPORT_WHILE_UNREGISTER_ENABLED)) {
           shuffleServer.sendHeartbeat();
         }
         shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId, shuffleId);
@@ -221,6 +228,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         }
       } catch (Exception e) {
         status = StatusCode.INTERNAL_ERROR;
+        LOG.error("App {} exception while unregisterShuffle", appId, e);
       }
 
       auditContext.withStatusCode(status);
@@ -241,9 +249,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       ShuffleRegisterResponse reply;
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
+      int stageAttemptNumber = req.getStageAttemptNumber();
       String remoteStoragePath = req.getRemoteStorage().getPath();
       String user = req.getUser();
-      int stageAttemptNumber = req.getStageAttemptNumber();
       auditContext.withAppId(appId).withShuffleId(shuffleId);
       auditContext.withArgs(
           "remoteStoragePath="
@@ -254,27 +262,51 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               + stageAttemptNumber);
       // If the Stage is registered for the first time, you do not need to consider the Stage retry
       // and delete the Block data that has been sent.
-      if (stageAttemptNumber > 0) {
-        ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
+      ShuffleTaskInfo taskInfo = shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(appId);
+      if (taskInfo != null) {
         // Prevents AttemptNumber of multiple stages from modifying the latest AttemptNumber.
         synchronized (taskInfo) {
-          int attemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
-          if (stageAttemptNumber > attemptNumber) {
+          int lastAttemptNumber = taskInfo.getLatestStageAttemptNumber(shuffleId);
+          if (stageAttemptNumber > 0 && stageAttemptNumber > lastAttemptNumber) {
             taskInfo.refreshLatestStageAttemptNumber(shuffleId, stageAttemptNumber);
             try {
               long start = System.currentTimeMillis();
               shuffleServer.getShuffleTaskManager().removeShuffleDataSync(appId, shuffleId);
               LOG.info(
                   "Deleted the previous stage attempt data due to stage recomputing for app: {}, "
-                      + "shuffleId: {}. It costs {} ms",
+                      + "shuffleId: {}, stageAttemptNumber: {}. It costs {} ms",
                   appId,
                   shuffleId,
+                  lastAttemptNumber,
                   System.currentTimeMillis() - start);
+              // Add a check to prevent undeleted metadata.
+              ShuffleBlockIdManager shuffleBlockIdManager =
+                  shuffleServer
+                      .getShuffleTaskManager()
+                      .getShuffleTaskInfo(appId)
+                      .getShuffleBlockIdManager();
+              long blockCountByShuffleId =
+                  shuffleBlockIdManager.getBlockCountByShuffleId(
+                      appId, Lists.newArrayList(shuffleId));
+              if (blockCountByShuffleId != 0) {
+                LOG.error(
+                    "Metadata is not deleted on clearing previous stage attempt data for app: {}, shuffleId: {}, stageAttemptNumber: {}",
+                    appId,
+                    shuffleId,
+                    lastAttemptNumber);
+                StatusCode code = StatusCode.INTERNAL_ERROR;
+                auditContext.withStatusCode(code);
+                reply = ShuffleRegisterResponse.newBuilder().setStatus(code.toProto()).build();
+                responseObserver.onNext(reply);
+                responseObserver.onCompleted();
+                return;
+              }
             } catch (Exception e) {
               LOG.error(
-                  "Errors on clearing previous stage attempt data for app: {}, shuffleId: {}",
+                  "Errors on clearing previous stage attempt data for app: {}, shuffleId: {}, stageAttemptNumber: {}",
                   appId,
                   shuffleId,
+                  lastAttemptNumber,
                   e);
               StatusCode code = StatusCode.INTERNAL_ERROR;
               auditContext.withStatusCode(code);
@@ -283,7 +315,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               responseObserver.onCompleted();
               return;
             }
-          } else if (stageAttemptNumber < attemptNumber) {
+          } else if (stageAttemptNumber > 0 && stageAttemptNumber <= lastAttemptNumber) {
+            LOG.info(
+                "The registration failed. The latest retry count is smaller than the existing retry count. This situation should not exist.");
             // When a Stage retry occurs, the first or last registration of a Stage may need to be
             // ignored and the ignored status quickly returned.
             StatusCode code = StatusCode.STAGE_RETRY_IGNORE;
@@ -328,11 +362,13 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               .registerShuffle(
                   appId,
                   shuffleId,
+                  stageAttemptNumber,
                   partitionRanges,
                   new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
                   user,
                   shuffleDataDistributionType,
-                  maxConcurrencyPerPartitionToWrite);
+                  maxConcurrencyPerPartitionToWrite,
+                  req.getPropertiesMap());
       if (StatusCode.SUCCESS == result
           && shuffleServer.isRemoteMergeEnable()
           && req.hasMergeContext()) {
@@ -344,11 +380,13 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                 .registerShuffle(
                     appId + MERGE_APP_SUFFIX,
                     shuffleId,
+                    stageAttemptNumber,
                     partitionRanges,
                     new RemoteStorageInfo(remoteStoragePath, remoteStorageConf),
                     user,
                     shuffleDataDistributionType,
-                    maxConcurrencyPerPartitionToWrite);
+                    maxConcurrencyPerPartitionToWrite,
+                    req.getPropertiesMap());
         if (result == StatusCode.SUCCESS) {
           result =
               shuffleServer
@@ -494,6 +532,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               hasFailureOccurred = true;
               break;
             } else {
+              if (shuffleServer.isRemoteMergeEnable()) {
+                shuffleServer.getShuffleMergeManager().setDirect(appId, shuffleId, false);
+              }
               long toReleasedSize = spd.getTotalBlockEncodedLength();
               // after each cacheShuffleData call, the `preAllocatedSize` is updated timely.
               manager.releasePreAllocatedSize(toReleasedSize);
@@ -583,6 +624,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
       auditContext.withAppId(appId).withShuffleId(shuffleId);
+      org.apache.uniffle.common.StorageType storageType =
+          shuffleServer.getShuffleServerConf().get(ShuffleServerConf.RSS_STORAGE_TYPE);
+      boolean storageTypeWithMemory =
+          StorageType.withMemory(StorageType.valueOf(storageType.name()));
+      if (storageTypeWithMemory) {
+        String errorMessage =
+            String.format(
+                "commitShuffleTask should not be called while server-side configured StorageType to %s for appId %s",
+                storageType, appId);
+        LOG.error(errorMessage);
+        throw new UnsupportedOperationException(errorMessage);
+      }
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
         auditContext.withStatusCode(status);
@@ -640,6 +693,18 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       String appId = req.getAppId();
       int shuffleId = req.getShuffleId();
       auditContext.withAppId(appId).withShuffleId(shuffleId);
+      org.apache.uniffle.common.StorageType storageType =
+          shuffleServer.getShuffleServerConf().get(ShuffleServerConf.RSS_STORAGE_TYPE);
+      boolean storageTypeWithMemory =
+          StorageType.withMemory(StorageType.valueOf(storageType.name()));
+      if (storageTypeWithMemory) {
+        String errorMessage =
+            String.format(
+                "finishShuffle should not be called while server-side configured StorageType to %s for appId %s",
+                storageType, appId);
+        LOG.error(errorMessage);
+        throw new UnsupportedOperationException(errorMessage);
+      }
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
         auditContext.withStatusCode(status);
@@ -691,6 +756,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       if (request.getPartitionIdsList() != null) {
         auditArgs += ", partitionIdsSize=" + request.getPartitionIdsList().size();
       }
+      if (request.getPartitionIdsList() != null) {
+        auditArgs +=
+            ", partitionIds=" + OutputUtils.listToSegment(request.getPartitionIdsList(), 1, 10);
+      }
       auditContext.withArgs(auditArgs);
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
@@ -707,21 +776,24 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       long requireBufferId = -1;
       String responseMessage = "";
       String shuffleDataInfo = "appId[" + appId + "], shuffleId[" + request.getShuffleId() + "]";
+      List<Integer> needSplitPartitionIds = Collections.emptyList();
       try {
         if (StringUtils.isEmpty(appId)) {
           // To be compatible with older client version
           requireBufferId =
               shuffleServer.getShuffleTaskManager().requireBuffer(request.getRequireSize());
         } else {
-          requireBufferId =
+          Pair<Long, List<Integer>> pair =
               shuffleServer
                   .getShuffleTaskManager()
-                  .requireBuffer(
+                  .requireBufferReturnPair(
                       appId,
                       request.getShuffleId(),
                       request.getPartitionIdsList(),
                       request.getPartitionRequireSizesList(),
                       request.getRequireSize());
+          requireBufferId = pair.getLeft();
+          needSplitPartitionIds = pair.getRight();
         }
       } catch (NoBufferException e) {
         responseMessage = e.getMessage();
@@ -755,6 +827,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               .setStatus(status.toProto())
               .setRequireBufferId(requireBufferId)
               .setRetMsg(responseMessage)
+              .addAllNeedSplitPartitionIds(needSplitPartitionIds)
               .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
@@ -815,7 +888,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       int bitmapNum = request.getBitmapNum();
       Map<Integer, long[]> partitionToBlockIds =
           toPartitionBlocksMap(request.getPartitionToBlockIdsList());
-
       auditContext.withAppId(appId).withShuffleId(shuffleId);
       auditContext.withArgs(
           "taskAttemptId="
@@ -853,7 +925,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         long start = System.currentTimeMillis();
         int expectedBlockCount =
             partitionToBlockIds.values().stream().mapToInt(x -> x.length).sum();
-        LOG.info(
+        LOG.debug(
             "Accepted blockIds report for {} blocks across {} partitions as shuffle result for task {}",
             expectedBlockCount,
             partitionToBlockIds.size(),
@@ -972,8 +1044,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               request.getBlockIdLayout().getTaskAttemptIdBits());
 
       auditContext.withAppId(appId).withShuffleId(shuffleId);
+      String partitionIdsOutput = OutputUtils.listToSegment(partitionsList, 1, 10);
       auditContext.withArgs(
-          "partitionsListSize=" + partitionsList.size() + ", blockIdLayout=" + blockIdLayout);
+          "partitionsListSize="
+              + partitionsList.size()
+              + ", partitionIds="
+              + partitionIdsOutput
+              + ", blockIdLayout="
+              + blockIdLayout);
 
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
@@ -992,7 +1070,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       GetShuffleResultForMultiPartResponse reply;
       byte[] serializedBlockIds = null;
       String requestInfo =
-          "appId[" + appId + "], shuffleId[" + shuffleId + "], partitions" + partitionsList;
+          "appId[" + appId + "], shuffleId[" + shuffleId + "], partitions=" + partitionIdsOutput;
       ByteString serializedBlockIdsBytes = ByteString.EMPTY;
 
       try {
@@ -1044,6 +1122,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       int partitionNum = request.getPartitionNum();
       long offset = request.getOffset();
       int length = request.getLength();
+      int storageId = request.getStorageId();
 
       auditContext.withAppId(appId).withShuffleId(shuffleId);
       auditContext.withArgs(
@@ -1056,7 +1135,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               + ", offset="
               + offset
               + ", length="
-              + length);
+              + length
+              + ", storageId="
+              + storageId);
 
       StatusCode status = verifyRequest(appId);
       if (status != StatusCode.SUCCESS) {
@@ -1105,7 +1186,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       Storage storage =
           shuffleServer
               .getStorageManager()
-              .selectStorage(new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
+              .selectStorage(
+                  new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0], storageId));
       if (storage != null) {
         storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
       }
@@ -1124,7 +1206,14 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                       partitionNum,
                       storageType,
                       offset,
-                      length);
+                      length,
+                      storageId);
+          reply =
+              GetLocalShuffleDataResponse.newBuilder()
+                  .setStatus(status.toProto())
+                  .setRetMsg(msg)
+                  .setData(UnsafeByteOperations.unsafeWrap(sdr.getData()))
+                  .build();
           long readTime = System.currentTimeMillis() - start;
           ShuffleServerMetrics.counterTotalReadTime.inc(readTime);
           ShuffleServerMetrics.counterTotalReadDataSize.inc(sdr.getDataLength());
@@ -1138,12 +1227,6 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
               "Successfully getShuffleData cost {} ms for shuffle data with {}",
               readTime,
               requestInfo);
-          reply =
-              GetLocalShuffleDataResponse.newBuilder()
-                  .setStatus(status.toProto())
-                  .setRetMsg(msg)
-                  .setData(UnsafeByteOperations.unsafeWrap(sdr.getData()))
-                  .build();
         } catch (Exception e) {
           status = StatusCode.INTERNAL_ERROR;
           msg = "Error happened when get shuffle data for " + requestInfo + ", " + e.getMessage();
@@ -1261,6 +1344,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
 
           builder.setIndexData(UnsafeByteOperations.unsafeWrap(data));
           builder.setDataFileLen(shuffleIndexResult.getDataFileLen());
+          builder.addAllStorageIds(
+              Arrays.stream(shuffleIndexResult.getStorageIds())
+                  .boxed()
+                  .collect(Collectors.toList()));
           auditContext.withReturnValue("len=" + shuffleIndexResult.getDataFileLen());
           reply = builder.build();
         } catch (FileNotFoundException indexFileNotFoundException) {
@@ -1508,7 +1595,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
         if (transportTime > 0) {
           shuffleServer
               .getGrpcMetrics()
-              .recordTransportTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, transportTime);
+              .recordTransportTime(
+                  ShuffleServerGrpcMetrics.GET_SORTED_SHUFFLE_DATA_METHOD, transportTime);
         }
       }
       StatusCode status = StatusCode.SUCCESS;
@@ -1611,7 +1699,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           ShuffleServerMetrics.counterTotalReadLocalDataFileSize.inc(sdr.getDataLength());
           shuffleServer
               .getGrpcMetrics()
-              .recordProcessTime(ShuffleServerGrpcMetrics.GET_SHUFFLE_DATA_METHOD, readTime);
+              .recordProcessTime(ShuffleServerGrpcMetrics.GET_SORTED_SHUFFLE_DATA_METHOD, readTime);
           LOG.info(
               "Successfully getSortedShuffleData cost {} ms for shuffle"
                   + " data with {}, length is {}, state is {}",
@@ -1626,7 +1714,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
                   .setMState(mergeState.code())
                   .setStatus(status.toProto())
                   .setRetMsg(msg)
-                  .setData(UnsafeByteOperations.unsafeWrap(sdr.getData()))
+                  .setData(UnsafeByteOperations.unsafeWrap(sdr.getData(), 0, sdr.getDataLength()))
                   .build();
         } catch (Exception e) {
           status = StatusCode.INTERNAL_ERROR;
@@ -1644,8 +1732,8 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
           shuffleServer.getShuffleBufferManager().releaseReadMemory(blockSize);
         }
       } else {
-        status = StatusCode.INTERNAL_ERROR;
-        msg = "Can't require memory to get shuffle data";
+        status = StatusCode.NO_BUFFER;
+        msg = "Can't require read memory to get sorted shuffle data";
         LOG.error(msg + " for " + requestInfo);
         reply =
             RssProtos.GetSortedShuffleDataResponse.newBuilder()

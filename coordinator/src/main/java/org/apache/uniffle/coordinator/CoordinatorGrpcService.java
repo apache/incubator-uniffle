@@ -538,7 +538,8 @@ public class CoordinatorGrpcService extends CoordinatorServerGrpc.CoordinatorSer
         request.getStartTimeMs(),
         request.getVersion(),
         request.getGitCommitId(),
-        request.getApplicationInfoList());
+        request.getApplicationInfoList(),
+        request.getDisplayMetricsMap());
   }
 
   /**

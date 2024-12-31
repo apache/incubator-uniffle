@@ -134,7 +134,7 @@ public class TestLoggerExtension implements BeforeEachCallback, AfterEachCallbac
     }
 
     @Override
-    public void append(LogEvent event) {
+    public synchronized void append(LogEvent event) {
       events.add(event);
     }
   }

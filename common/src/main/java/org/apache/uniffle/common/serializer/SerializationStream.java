@@ -21,6 +21,8 @@ import java.io.IOException;
 
 public abstract class SerializationStream {
 
+  public abstract void init();
+
   public abstract void writeRecord(Object key, Object value) throws IOException;
 
   public abstract void flush() throws IOException;

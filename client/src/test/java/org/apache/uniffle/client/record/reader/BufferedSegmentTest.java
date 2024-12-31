@@ -65,7 +65,8 @@ public class BufferedSegmentTest {
       }
     }
     Merger.MergeQueue mergeQueue =
-        new Merger.MergeQueue(rssConf, segments, Text.class, IntWritable.class, comparator, false);
+        new Merger.MergeQueue(
+            rssConf, segments, Text.class, IntWritable.class, comparator, false, false);
     mergeQueue.init();
     mergeQueue.setPopSegmentHook(
         id -> {

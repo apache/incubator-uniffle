@@ -15,29 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.response;
+package org.apache.uniffle.storage.handler.api;
 
-import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.proto.RssProtos;
+public class ShuffleWriteHandlerWrapper {
+  private final ShuffleWriteHandler handler;
+  private final boolean isNewlyCreated;
 
-public class RssReassignServersResponse extends ClientResponse {
-
-  private boolean needReassign;
-
-  public RssReassignServersResponse(StatusCode statusCode, String message, boolean needReassign) {
-    super(statusCode, message);
-    this.needReassign = needReassign;
+  public ShuffleWriteHandlerWrapper(ShuffleWriteHandler handler, boolean isNewlyCreated) {
+    this.handler = handler;
+    this.isNewlyCreated = isNewlyCreated;
   }
 
-  public boolean isNeedReassign() {
-    return needReassign;
+  public ShuffleWriteHandler getHandler() {
+    return handler;
   }
 
-  public static RssReassignServersResponse fromProto(RssProtos.ReassignServersResponse response) {
-    return new RssReassignServersResponse(
-        // todo: [issue#780] add fromProto for StatusCode issue
-        StatusCode.valueOf(response.getStatus().name()),
-        response.getMsg(),
-        response.getNeedReassign());
+  public boolean isNewlyCreated() {
+    return isNewlyCreated;
   }
 }

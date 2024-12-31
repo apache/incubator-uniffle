@@ -18,9 +18,9 @@
 package org.apache.uniffle.common.records;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 import org.apache.uniffle.common.config.RssConf;
+import org.apache.uniffle.common.serializer.SerOutputStream;
 import org.apache.uniffle.common.serializer.SerializationStream;
 import org.apache.uniffle.common.serializer.Serializer;
 import org.apache.uniffle.common.serializer.SerializerFactory;
@@ -31,12 +31,21 @@ public class RecordsWriter<K, V> {
   private SerializationStream stream;
 
   public RecordsWriter(
-      RssConf rssConf, OutputStream out, Class keyClass, Class valueClass, boolean raw) {
+      RssConf rssConf,
+      SerOutputStream out,
+      Class keyClass,
+      Class valueClass,
+      boolean raw,
+      boolean buffered) {
     SerializerFactory factory = new SerializerFactory(rssConf);
     Serializer serializer = factory.getSerializer(keyClass);
     assert factory.getSerializer(valueClass).getClass().equals(serializer.getClass());
     SerializerInstance instance = serializer.newInstance();
-    stream = instance.serializeStream(out, raw);
+    stream = instance.serializeStream(out, raw, buffered);
+  }
+
+  public void init() {
+    this.stream.init();
   }
 
   public void append(Object key, Object value) throws IOException {

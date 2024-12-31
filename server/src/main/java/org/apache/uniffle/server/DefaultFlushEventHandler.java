@@ -30,8 +30,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.executor.ThreadPoolManager;
 import org.apache.uniffle.common.function.ConsumerWithException;
+import org.apache.uniffle.common.future.CompletableFutureUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.server.flush.EventDiscardException;
 import org.apache.uniffle.server.flush.EventInvalidException;
@@ -42,6 +44,7 @@ import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.util.StorageType;
 
+import static org.apache.uniffle.server.ShuffleServerConf.STORAGE_FLUSH_OPERATION_TIMEOUT_SEC;
 import static org.apache.uniffle.server.ShuffleServerMetrics.EVENT_QUEUE_SIZE;
 
 public class DefaultFlushEventHandler implements FlushEventHandler {
@@ -56,6 +59,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
   protected final BlockingQueue<ShuffleDataFlushEvent> flushQueue = Queues.newLinkedBlockingQueue();
   private ConsumerWithException<ShuffleDataFlushEvent> eventConsumer;
   private final ShuffleServer shuffleServer;
+  private final long flushMaxWaitTimeoutSec;
 
   private volatile boolean stopped = false;
 
@@ -65,6 +69,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       ShuffleServer shuffleServer,
       ConsumerWithException<ShuffleDataFlushEvent> eventConsumer) {
     this.shuffleServerConf = conf;
+    this.flushMaxWaitTimeoutSec = conf.getLong(STORAGE_FLUSH_OPERATION_TIMEOUT_SEC);
     this.storageType =
         StorageType.valueOf(shuffleServerConf.get(RssBaseConf.RSS_STORAGE_TYPE).name());
     this.storageManager = storageManager;
@@ -83,6 +88,25 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
     }
   }
 
+  private void consumeEvent(ShuffleDataFlushEvent event) throws Exception {
+    if (flushMaxWaitTimeoutSec <= 0) {
+      eventConsumer.accept(event);
+      return;
+    }
+
+    Supplier<Void> supplier =
+        () -> {
+          try {
+            this.eventConsumer.accept(event);
+          } catch (Exception e) {
+            throw new RssException(e);
+          }
+          return null;
+        };
+    CompletableFutureUtils.withTimeoutCancel(
+        supplier, flushMaxWaitTimeoutSec * 1000, "event-flushing");
+  }
+
   /**
    * @param event
    * @param storage
@@ -95,7 +119,7 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
     try {
       readLock.lock();
       try {
-        eventConsumer.accept(event);
+        consumeEvent(event);
       } finally {
         readLock.unlock();
       }
@@ -144,7 +168,10 @@ public class DefaultFlushEventHandler implements FlushEventHandler {
       }
 
       LOG.error(
-          "Unexpected exceptions happened when handling the flush event: {}, due to ", event, e);
+          "Unexpected exceptions happened when handling the flush event: [{}] (it cost {} ms), due to ",
+          event,
+          System.currentTimeMillis() - start,
+          e);
       // We need to release the memory when unexpected exceptions happened
       event.doCleanup();
     } finally {

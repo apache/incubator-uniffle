@@ -20,20 +20,25 @@ package org.apache.uniffle.client.impl.grpc;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hbase.thirdparty.org.glassfish.jersey.internal.guava.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.request.RssGetInMemoryShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleDataRequest;
 import org.apache.uniffle.client.request.RssGetShuffleIndexRequest;
+import org.apache.uniffle.client.request.RssGetSortedShuffleDataRequest;
 import org.apache.uniffle.client.request.RssSendShuffleDataRequest;
 import org.apache.uniffle.client.response.RssGetInMemoryShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleDataResponse;
 import org.apache.uniffle.client.response.RssGetShuffleIndexResponse;
+import org.apache.uniffle.client.response.RssGetSortedShuffleDataResponse;
 import org.apache.uniffle.client.response.RssSendShuffleDataResponse;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.config.RssClientConf;
@@ -47,10 +52,13 @@ import org.apache.uniffle.common.netty.client.TransportConf;
 import org.apache.uniffle.common.netty.client.TransportContext;
 import org.apache.uniffle.common.netty.protocol.GetLocalShuffleDataRequest;
 import org.apache.uniffle.common.netty.protocol.GetLocalShuffleDataResponse;
+import org.apache.uniffle.common.netty.protocol.GetLocalShuffleDataV2Request;
 import org.apache.uniffle.common.netty.protocol.GetLocalShuffleIndexRequest;
 import org.apache.uniffle.common.netty.protocol.GetLocalShuffleIndexResponse;
 import org.apache.uniffle.common.netty.protocol.GetMemoryShuffleDataRequest;
 import org.apache.uniffle.common.netty.protocol.GetMemoryShuffleDataResponse;
+import org.apache.uniffle.common.netty.protocol.GetSortedShuffleDataRequest;
+import org.apache.uniffle.common.netty.protocol.GetSortedShuffleDataResponse;
 import org.apache.uniffle.common.netty.protocol.RpcResponse;
 import org.apache.uniffle.common.netty.protocol.SendShuffleDataRequest;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -123,7 +131,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     int stageAttemptNumber = request.getStageAttemptNumber();
     boolean isSuccessful = true;
     AtomicReference<StatusCode> failedStatusCode = new AtomicReference<>(StatusCode.INTERNAL_ERROR);
-
+    Set<Integer> needSplitPartitionIds = Sets.newHashSet();
     for (Map.Entry<Integer, Map<Integer, List<ShuffleBlockInfo>>> stb :
         shuffleIdToBlocks.entrySet()) {
       int shuffleId = stb.getKey();
@@ -157,7 +165,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
         RetryUtils.retryWithCondition(
             () -> {
               final TransportClient transportClient = getTransportClient();
-              long requireId =
+              Pair<Long, List<Integer>> result =
                   requirePreAllocation(
                       request.getAppId(),
                       shuffleId,
@@ -167,6 +175,8 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
                       request.getRetryMax(),
                       request.getRetryIntervalMax(),
                       failedStatusCode);
+              long requireId = result.getLeft();
+              needSplitPartitionIds.addAll(result.getRight());
               if (requireId == FAILED_REQUIRE_ID) {
                 throw new RssException(
                     String.format(
@@ -228,6 +238,7 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
     } else {
       response = new RssSendShuffleDataResponse(failedStatusCode.get());
     }
+    response.setNeedSplitPartitionIds(needSplitPartitionIds);
     return response;
   }
 
@@ -340,7 +351,8 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
         return new RssGetShuffleIndexResponse(
             StatusCode.SUCCESS,
             getLocalShuffleIndexResponse.body(),
-            getLocalShuffleIndexResponse.getFileLength());
+            getLocalShuffleIndexResponse.getFileLength(),
+            getLocalShuffleIndexResponse.getStorageIds());
       default:
         String msg =
             "Can't get shuffle index from "
@@ -359,17 +371,30 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
   @Override
   public RssGetShuffleDataResponse getShuffleData(RssGetShuffleDataRequest request) {
     TransportClient transportClient = getTransportClient();
+    // Construct old version or v2 get shuffle data request to compatible with old server
     GetLocalShuffleDataRequest getLocalShuffleIndexRequest =
-        new GetLocalShuffleDataRequest(
-            requestId(),
-            request.getAppId(),
-            request.getShuffleId(),
-            request.getPartitionId(),
-            request.getPartitionNumPerRange(),
-            request.getPartitionNum(),
-            request.getOffset(),
-            request.getLength(),
-            System.currentTimeMillis());
+        request.storageIdSpecified()
+            ? new GetLocalShuffleDataV2Request(
+                requestId(),
+                request.getAppId(),
+                request.getShuffleId(),
+                request.getPartitionId(),
+                request.getPartitionNumPerRange(),
+                request.getPartitionNum(),
+                request.getOffset(),
+                request.getLength(),
+                request.getStorageId(),
+                System.currentTimeMillis())
+            : new GetLocalShuffleDataRequest(
+                requestId(),
+                request.getAppId(),
+                request.getShuffleId(),
+                request.getPartitionId(),
+                request.getPartitionNumPerRange(),
+                request.getPartitionNum(),
+                request.getOffset(),
+                request.getLength(),
+                System.currentTimeMillis());
     String requestInfo =
         "appId["
             + request.getAppId()
@@ -412,6 +437,67 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
                 + requestInfo
                 + ", errorMsg:"
                 + getLocalShuffleDataResponse.getRetMessage();
+        LOG.error(msg);
+        throw new RssFetchFailedException(msg);
+    }
+  }
+
+  @Override
+  public RssGetSortedShuffleDataResponse getSortedShuffleData(
+      RssGetSortedShuffleDataRequest request) {
+    TransportClient transportClient = getTransportClient();
+    GetSortedShuffleDataRequest getSortedShuffleDataRequest =
+        new GetSortedShuffleDataRequest(
+            requestId(),
+            request.getAppId(),
+            request.getShuffleId(),
+            request.getPartitionId(),
+            request.getBlockId(),
+            0,
+            System.currentTimeMillis());
+
+    String requestInfo =
+        String.format(
+            "appId[%s], shuffleId[%d], partitionId[%d], blockId[%d]",
+            request.getAppId(),
+            request.getShuffleId(),
+            request.getPartitionId(),
+            request.getBlockId());
+
+    long start = System.currentTimeMillis();
+    int retry = 0;
+    RpcResponse rpcResponse;
+    GetSortedShuffleDataResponse getSortedShuffleDataResponse;
+
+    while (true) {
+      rpcResponse = transportClient.sendRpcSync(getSortedShuffleDataRequest, rpcTimeout);
+      getSortedShuffleDataResponse = (GetSortedShuffleDataResponse) rpcResponse;
+      if (rpcResponse.getStatusCode() != StatusCode.NO_BUFFER) {
+        break;
+      }
+      waitOrThrow(request, retry, requestInfo, rpcResponse.getStatusCode(), start);
+      retry++;
+    }
+
+    switch (rpcResponse.getStatusCode()) {
+      case SUCCESS:
+        LOG.info(
+            "GetSortedShuffleData from {}:{} for {} cost {} ms",
+            host,
+            nettyPort,
+            requestInfo,
+            System.currentTimeMillis() - start);
+        return new RssGetSortedShuffleDataResponse(
+            StatusCode.SUCCESS,
+            getSortedShuffleDataResponse.getRetMessage(),
+            getSortedShuffleDataResponse.body(),
+            getSortedShuffleDataResponse.getNextBlockId(),
+            getSortedShuffleDataResponse.getMergeState());
+      default:
+        String msg =
+            String.format(
+                "Can't get sorted shuffle data from %s:%d for %s, errorMsg: %s",
+                host, nettyPort, requestInfo, getSortedShuffleDataResponse.getRetMessage());
         LOG.error(msg);
         throw new RssFetchFailedException(msg);
     }

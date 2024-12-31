@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.uniffle.common.ShufflePartitionedBlock;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.exception.RssException;
-import org.apache.uniffle.common.util.ByteBufUtils;
+import org.apache.uniffle.storage.api.FileWriter;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
@@ -130,15 +130,17 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
     String dataFileName = ShuffleStorageUtils.generateDataFileName(fileNamePrefix);
     String indexFileName = ShuffleStorageUtils.generateIndexFileName(fileNamePrefix);
 
-    try (LocalFileWriter dataWriter = createWriter(dataFileName, dataBufferSize);
-        LocalFileWriter indexWriter = createWriter(indexFileName, indexBufferSize); ) {
+    try (FileWriter dataWriter =
+            LocalFileWriterFactory.getLocalFileWriter(
+                rssBaseConf, new File(basePath, dataFileName), dataBufferSize);
+        FileWriter indexWriter = createWriter(indexFileName, indexBufferSize)) {
 
       long startTime = System.currentTimeMillis();
       for (ShufflePartitionedBlock block : shuffleBlocks) {
         long blockId = block.getBlockId();
         long crc = block.getCrc();
         long startOffset = dataWriter.nextOffset();
-        dataWriter.writeData(ByteBufUtils.readBytes(block.getData()));
+        dataWriter.writeData(block.getData());
 
         FileBasedShuffleSegment segment =
             new FileBasedShuffleSegment(
@@ -165,7 +167,7 @@ public class LocalFileWriteHandler implements ShuffleWriteHandler {
     }
   }
 
-  private LocalFileWriter createWriter(String fileName, int bufferSize)
+  private FileWriter createWriter(String fileName, int bufferSize)
       throws IOException, IllegalStateException {
     File file = new File(basePath, fileName);
     return new LocalFileWriter(file, bufferSize);

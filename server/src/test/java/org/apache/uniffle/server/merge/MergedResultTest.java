@@ -19,14 +19,13 @@ package org.apache.uniffle.server.merge;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hadoop.io.RawComparator;
+import org.apache.hadoop.io.DataInputBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,15 +33,20 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.merger.Merger;
-import org.apache.uniffle.common.merger.Recordable;
 import org.apache.uniffle.common.merger.Segment;
 import org.apache.uniffle.common.records.RecordsReader;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.SerInputStream;
+import org.apache.uniffle.common.serializer.SerOutputStream;
+import org.apache.uniffle.common.serializer.Serializer;
+import org.apache.uniffle.common.serializer.SerializerFactory;
+import org.apache.uniffle.common.serializer.SerializerInstance;
 import org.apache.uniffle.common.serializer.SerializerUtils;
 
+import static org.apache.uniffle.common.serializer.SerializerUtils.genData;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MERGE_DEFAULT_MERGED_BLOCK_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class MergedResultTest {
 
@@ -53,61 +57,70 @@ public class MergedResultTest {
   @Test
   public void testMergedResult() throws IOException {
     // 1 Construct cache
-    List<Pair<Integer, byte[]>> blocks = new ArrayList<>();
+    List<Pair<Integer, ByteBuf>> blocks = new ArrayList<>();
     MergedResult.CacheMergedBlockFuntion cache =
-        (byte[] buffer, long blockId, int length) -> {
+        (ByteBuf byteBuf, long blockId, int length) -> {
+          byteBuf.retain();
           assertEquals(blockId - 1, blocks.size());
-          blocks.add(Pair.of(length, buffer));
+          blocks.add(Pair.of(length, byteBuf));
+          return true;
         };
 
     // 2 Write to merged result
     RssConf rssConf = new RssConf();
     rssConf.set(SERVER_MERGE_DEFAULT_MERGED_BLOCK_SIZE, String.valueOf(BYTES_LEN / 10));
-    MergedResult result = new MergedResult(rssConf, cache, -1);
-    OutputStream output = result.getOutputStream();
+    Partition partition = mock(Partition.class);
+    MergedResult result = new MergedResult(rssConf, cache, -1, partition);
+    SerOutputStream output = result.getOutputStream(false, BYTES_LEN);
     for (int i = 0; i < BYTES_LEN; i++) {
       output.write((byte) (i & 0x7F));
-      if (output instanceof Recordable) {
-        ((Recordable) output).record(i + 1, null, false);
-      }
     }
+    output.flush();
     output.close();
 
     // 3 check blocks number
-    //  Max merged block is 1024, every record have 2 bytes, so will result to 10 block
+    //  Max merged block is 1024, every record have one byte, so will result to 10 block
     assertEquals(10, blocks.size());
 
     // 4 check the blocks
     int index = 0;
     for (int i = 0; i < blocks.size(); i++) {
       int length = blocks.get(i).getLeft();
-      byte[] buffer = blocks.get(i).getRight();
-      assertTrue(buffer.length >= length);
+      ByteBuf byteBuf = blocks.get(i).getRight();
+      assertTrue(byteBuf.readableBytes() >= length);
       for (int j = 0; j < length; j++) {
-        assertEquals(index & 0x7F, buffer[j]);
+        assertEquals(index & 0x7F, byteBuf.readByte());
         index++;
       }
     }
     assertEquals(BYTES_LEN, index);
+    blocks.forEach(block -> block.getRight().release());
   }
 
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,true,true",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,true,false",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false,true",
+        "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false,false",
       })
   public void testMergeSegmentToMergeResult(String classes, @TempDir File tmpDir) throws Exception {
     // 1 Parse arguments
     String[] classArray = classes.split(",");
     Class keyClass = SerializerUtils.getClassByName(classArray[0]);
     Class valueClass = SerializerUtils.getClassByName(classArray[1]);
+    boolean raw = classArray.length > 2 ? Boolean.parseBoolean(classArray[2]) : false;
+    boolean direct = classArray.length > 3 ? Boolean.parseBoolean(classArray[3]) : false;
 
     // 2 Construct cache
-    List<Pair<Integer, byte[]>> blocks = new ArrayList<>();
+    List<Pair<Integer, ByteBuf>> blocks = new ArrayList<>();
     MergedResult.CacheMergedBlockFuntion cache =
-        (byte[] buffer, long blockId, int length) -> {
+        (ByteBuf byteBuf, long blockId, int length) -> {
           assertEquals(blockId - 1, blocks.size());
-          blocks.add(Pair.of(length, buffer));
+          byteBuf.retain();
+          blocks.add(Pair.of(length, byteBuf));
+          return true;
         };
 
     // 3 Construct segments, then merge
@@ -115,63 +128,62 @@ public class MergedResultTest {
     List<Segment> segments = new ArrayList<>();
     Comparator comparator = SerializerUtils.getComparator(keyClass);
     for (int i = 0; i < SEGMENTS; i++) {
-      if (i % 2 == 0) {
-        segments.add(
-            SerializerUtils.genMemorySegment(
-                rssConf,
-                keyClass,
-                valueClass,
-                i,
-                i,
-                SEGMENTS,
-                RECORDS,
-                comparator instanceof RawComparator));
-      } else {
-        segments.add(
-            SerializerUtils.genFileSegment(
-                rssConf,
-                keyClass,
-                valueClass,
-                i,
-                i,
-                SEGMENTS,
-                RECORDS,
-                tmpDir,
-                comparator instanceof RawComparator));
-      }
+      Segment segment =
+          i % 2 == 0
+              ? SerializerUtils.genMemorySegment(
+                  rssConf, keyClass, valueClass, i, i, SEGMENTS, RECORDS, raw, direct)
+              : SerializerUtils.genFileSegment(
+                  rssConf, keyClass, valueClass, i, i, SEGMENTS, RECORDS, tmpDir, raw);
+      segment.init();
+      segments.add(segment);
     }
-    MergedResult result = new MergedResult(rssConf, cache, -1);
-    OutputStream mergedOutputStream = result.getOutputStream();
-    Merger.merge(
-        rssConf,
-        mergedOutputStream,
-        segments,
-        keyClass,
-        valueClass,
-        comparator,
-        comparator instanceof RawComparator);
-    mergedOutputStream.flush();
+    Partition partition = mock(Partition.class);
+    MergedResult result = new MergedResult(rssConf, cache, -1, partition);
+    long totalBytes = segments.stream().mapToLong(segment -> segment.getSize()).sum();
+    SerOutputStream mergedOutputStream = result.getOutputStream(direct, totalBytes);
+    Merger.merge(rssConf, mergedOutputStream, segments, keyClass, valueClass, comparator, raw);
     mergedOutputStream.close();
 
     // 4 check merged blocks
     int index = 0;
+    SerializerFactory factory = new SerializerFactory(rssConf);
+    Serializer serializer = factory.getSerializer(keyClass);
+    assert factory.getSerializer(valueClass).getClass().equals(serializer.getClass());
+    SerializerInstance instance = serializer.newInstance();
     for (int i = 0; i < blocks.size(); i++) {
-      int length = blocks.get(i).getLeft();
-      byte[] buffer = blocks.get(i).getRight();
       RecordsReader reader =
           new RecordsReader(
               rssConf,
-              PartialInputStream.newInputStream(ByteBuffer.wrap(buffer)),
+              SerInputStream.newInputStream(blocks.get(i).getRight()),
               keyClass,
               valueClass,
-              false);
+              raw,
+              true);
+      reader.init();
       while (reader.next()) {
-        assertEquals(SerializerUtils.genData(keyClass, index), reader.getCurrentKey());
-        assertEquals(SerializerUtils.genData(valueClass, index), reader.getCurrentValue());
+        if (raw) {
+          ByteBuf keyByteBuf = (ByteBuf) reader.getCurrentKey();
+          ByteBuf valueByteBuf = (ByteBuf) reader.getCurrentValue();
+          byte[] keyBytes = new byte[keyByteBuf.readableBytes()];
+          byte[] valueBytes = new byte[valueByteBuf.readableBytes()];
+          keyByteBuf.readBytes(keyBytes);
+          valueByteBuf.readBytes(valueBytes);
+          DataInputBuffer keyInputBuffer = new DataInputBuffer();
+          keyInputBuffer.reset(keyBytes, 0, keyBytes.length);
+          assertEquals(genData(keyClass, index), instance.deserialize(keyInputBuffer, keyClass));
+          DataInputBuffer valueInputBuffer = new DataInputBuffer();
+          valueInputBuffer.reset(valueBytes, 0, valueBytes.length);
+          assertEquals(
+              genData(valueClass, index), instance.deserialize(valueInputBuffer, valueClass));
+        } else {
+          assertEquals(SerializerUtils.genData(keyClass, index), reader.getCurrentKey());
+          assertEquals(SerializerUtils.genData(valueClass, index), reader.getCurrentValue());
+        }
         index++;
       }
       reader.close();
     }
     assertEquals(RECORDS * SEGMENTS, index);
+    blocks.forEach(block -> block.getRight().release());
   }
 }

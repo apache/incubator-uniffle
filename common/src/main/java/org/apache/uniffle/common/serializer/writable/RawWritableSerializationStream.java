@@ -19,29 +19,30 @@ package org.apache.uniffle.common.serializer.writable;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.WritableUtils;
 
+import org.apache.uniffle.common.serializer.SerOutputStream;
 import org.apache.uniffle.common.serializer.SerializationStream;
 
 public class RawWritableSerializationStream<K, V> extends SerializationStream {
 
-  public static final int EOF_MARKER = -1; // End of File Marker
-
   private DataOutputStream dataOut;
+  private SerOutputStream output;
   // DataOutputStream::size return int, can not support big file which is larger than
   // Integer.MAX_VALUE.
   // Here introduce totalBytesWritten to record the written bytes.
   private long totalBytesWritten = 0;
 
-  public RawWritableSerializationStream(WritableSerializerInstance instance, OutputStream out) {
-    if (out instanceof DataOutputStream) {
-      dataOut = (DataOutputStream) out;
-    } else {
-      dataOut = new DataOutputStream(out);
-    }
+  public RawWritableSerializationStream(
+      WritableSerializerInstance instance, SerOutputStream output) {
+    this.output = output;
+  }
+
+  @Override
+  public void init() {
+    this.dataOut = new DataOutputStream(this.output);
   }
 
   @Override
@@ -50,16 +51,18 @@ public class RawWritableSerializationStream<K, V> extends SerializationStream {
     DataOutputBuffer valueBuffer = (DataOutputBuffer) value;
     int keyLength = keyBuffer.getLength();
     int valueLength = valueBuffer.getLength();
+    int toWriteLength =
+        WritableUtils.getVIntSize(keyLength)
+            + WritableUtils.getVIntSize(valueLength)
+            + keyBuffer.getLength()
+            + valueBuffer.getLength();
+    output.preAllocate(toWriteLength);
     // write size and buffer to output
     WritableUtils.writeVInt(dataOut, keyLength);
     WritableUtils.writeVInt(dataOut, valueLength);
     keyBuffer.writeTo(dataOut);
     valueBuffer.writeTo(dataOut);
-    totalBytesWritten +=
-        WritableUtils.getVIntSize(keyLength)
-            + WritableUtils.getVIntSize(valueLength)
-            + keyBuffer.getLength()
-            + valueBuffer.getLength();
+    totalBytesWritten += toWriteLength;
   }
 
   @Override
@@ -70,9 +73,6 @@ public class RawWritableSerializationStream<K, V> extends SerializationStream {
   @Override
   public void close() throws IOException {
     if (dataOut != null) {
-      WritableUtils.writeVInt(dataOut, EOF_MARKER);
-      WritableUtils.writeVInt(dataOut, EOF_MARKER);
-      totalBytesWritten += 2 * WritableUtils.getVIntSize(EOF_MARKER);
       dataOut.close();
       dataOut = null;
     }

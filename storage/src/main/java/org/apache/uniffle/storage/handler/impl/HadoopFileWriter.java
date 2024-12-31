@@ -17,12 +17,12 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
-import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.netty.buffer.ByteBuf;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -31,10 +31,11 @@ import org.apache.hadoop.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.uniffle.common.util.ByteBufUtils;
 import org.apache.uniffle.storage.api.FileWriter;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
-public class HadoopFileWriter implements FileWriter, Closeable {
+public class HadoopFileWriter implements FileWriter {
 
   private static final Logger LOG = LoggerFactory.getLogger(HadoopFileWriter.class);
 
@@ -86,6 +87,11 @@ public class HadoopFileWriter implements FileWriter, Closeable {
       fsDataOutputStream.write(data);
       nextOffset = fsDataOutputStream.getPos();
     }
+  }
+
+  public void writeData(ByteBuf buf) throws IOException {
+    byte[] data = ByteBufUtils.readBytes(buf);
+    writeData(data);
   }
 
   public void writeData(ByteBuffer byteBuffer) throws IOException {

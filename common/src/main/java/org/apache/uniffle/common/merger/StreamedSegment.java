@@ -17,62 +17,33 @@
 
 package org.apache.uniffle.common.merger;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.records.RecordsReader;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.SerInputStream;
 
 public class StreamedSegment<K, V> extends Segment {
 
   private RecordsReader<K, V> reader;
+  private final long size;
 
   public StreamedSegment(
       RssConf rssConf,
-      PartialInputStream inputStream,
+      SerInputStream inputStream,
       long blockId,
       Class keyClass,
       Class valueClass,
+      long size,
       boolean raw) {
     super(blockId);
-    this.reader = new RecordsReader<>(rssConf, inputStream, keyClass, valueClass, raw);
+    this.reader = new RecordsReader<>(rssConf, inputStream, keyClass, valueClass, raw, true);
+    this.size = size;
   }
 
-  // The buffer must be sorted by key
-  public StreamedSegment(
-      RssConf rssConf,
-      ByteBuffer byteBuffer,
-      long blockId,
-      Class keyClass,
-      Class valueClass,
-      boolean raw)
-      throws IOException {
-    super(blockId);
-    this.reader =
-        new RecordsReader<>(
-            rssConf, PartialInputStream.newInputStream(byteBuffer), keyClass, valueClass, raw);
-  }
-
-  public StreamedSegment(
-      RssConf rssConf,
-      File file,
-      long start,
-      long end,
-      long blockId,
-      Class keyClass,
-      Class valueClass,
-      boolean raw)
-      throws IOException {
-    super(blockId);
-    this.reader =
-        new RecordsReader<K, V>(
-            rssConf,
-            PartialInputStream.newInputStream(file, start, end),
-            keyClass,
-            valueClass,
-            raw);
+  @Override
+  public void init() {
+    this.reader.init();
   }
 
   @Override
@@ -96,5 +67,9 @@ public class StreamedSegment<K, V> extends Segment {
       this.reader.close();
       this.reader = null;
     }
+  }
+
+  public long getSize() {
+    return size;
   }
 }

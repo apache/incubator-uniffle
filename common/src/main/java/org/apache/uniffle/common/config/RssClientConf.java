@@ -295,4 +295,19 @@ public class RssClientConf {
           .asList()
           .noDefaultValue()
           .withDescription("the extra java properties could be configured by this option");
+
+  public static final ConfigOption<String> RSS_CLIENT_BLOCK_ID_MANAGER_CLASS =
+      ConfigOptions.key("rss.client.blockIdManagerClass")
+          .stringType()
+          .noDefaultValue()
+          .withDescription(
+              "The block id manager class of server for this application, "
+                  + "the implementation of this interface to manage the shuffle block ids");
+
+  public static final ConfigOption<List<String>> RSS_CLIENT_REPORT_EXCLUDE_PROPERTIES =
+      ConfigOptions.key("rss.client.reportExcludeProperties")
+          .stringType()
+          .asList()
+          .defaultValues()
+          .withDescription("the report exclude properties could be configured by this option");
 }

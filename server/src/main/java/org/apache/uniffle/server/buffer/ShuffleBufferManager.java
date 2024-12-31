@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.ReconfigurableConfManager;
+import org.apache.uniffle.common.ReconfigurableRegistry;
 import org.apache.uniffle.common.ShuffleDataResult;
 import org.apache.uniffle.common.ShufflePartitionedData;
 import org.apache.uniffle.common.rpc.StatusCode;
@@ -80,6 +81,7 @@ public class ShuffleBufferManager {
   // Huge partition vars
   private ReconfigurableConfManager.Reconfigurable<Long> hugePartitionSizeThresholdRef;
   private ReconfigurableConfManager.Reconfigurable<Long> hugePartitionSizeHardLimitRef;
+  private ReconfigurableConfManager.Reconfigurable<Long> hugePartitionSplitLimitRef;
   private long hugePartitionMemoryLimitSize;
   protected AtomicLong preAllocatedSize = new AtomicLong(0L);
   protected AtomicLong inFlushSize = new AtomicLong(0L);
@@ -140,6 +142,8 @@ public class ShuffleBufferManager {
         conf.getReconfigurableConf(ShuffleServerConf.HUGE_PARTITION_SIZE_THRESHOLD);
     this.hugePartitionSizeHardLimitRef =
         conf.getReconfigurableConf(ShuffleServerConf.HUGE_PARTITION_SIZE_HARD_LIMIT);
+    this.hugePartitionSplitLimitRef =
+        conf.getReconfigurableConf(ShuffleServerConf.HUGE_PARTITION_SPLIT_LIMIT);
     this.hugePartitionMemoryLimitSize =
         Math.round(
             capacity * conf.get(ShuffleServerConf.HUGE_PARTITION_MEMORY_USAGE_LIMITATION_RATIO));
@@ -176,6 +180,33 @@ public class ShuffleBufferManager {
     ShuffleServerMetrics.addLabeledGauge(
         SHUFFLE_COUNT_IN_BUFFER_POOL,
         () -> bufferPool.values().stream().mapToLong(innerMap -> innerMap.size()).sum());
+    ReconfigurableRegistry.register(
+        Sets.newHashSet(
+            ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE.key(),
+            ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE.key()),
+        (theConf, changedProperties) -> {
+          if (changedProperties == null) {
+            return;
+          }
+          if (changedProperties.contains(
+              ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE.key())) {
+            this.highWaterMark =
+                (long)
+                    (capacity
+                        / 100.0
+                        * conf.get(
+                            ShuffleServerConf.SERVER_MEMORY_SHUFFLE_HIGHWATERMARK_PERCENTAGE));
+          }
+          if (changedProperties.contains(
+              ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE.key())) {
+            this.lowWaterMark =
+                (long)
+                    (capacity
+                        / 100.0
+                        * conf.get(
+                            ShuffleServerConf.SERVER_MEMORY_SHUFFLE_LOWWATERMARK_PERCENTAGE));
+          }
+        });
   }
 
   public void setShuffleTaskManager(ShuffleTaskManager taskManager) {
@@ -810,5 +841,9 @@ public class ShuffleBufferManager {
 
   public ShuffleBufferType getShuffleBufferType() {
     return shuffleBufferType;
+  }
+
+  public long getHugePartitionSplitLimit() {
+    return hugePartitionSplitLimitRef.getSizeAsBytes();
   }
 }

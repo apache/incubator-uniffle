@@ -147,4 +147,9 @@ public class HugePartitionUtils {
     }
     return false;
   }
+
+  public static boolean hasExceedPartitionSplitLimit(
+      ShuffleBufferManager shuffleBufferManager, long usedPartitionDataSize) {
+    return usedPartitionDataSize > shuffleBufferManager.getHugePartitionSplitLimit();
+  }
 }

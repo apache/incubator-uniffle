@@ -25,7 +25,9 @@ import org.apache.uniffle.common.config.ConfigOption;
 import org.apache.uniffle.common.config.ConfigOptions;
 import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.server.block.DefaultShuffleBlockIdManager;
 import org.apache.uniffle.server.buffer.ShuffleBufferType;
+import org.apache.uniffle.server.storage.LocalStorageManager;
 
 public class ShuffleServerConf extends RssBaseConf {
 
@@ -266,6 +268,13 @@ public class ShuffleServerConf extends RssBaseConf {
           .longType()
           .defaultValue(2 * 1024L * 1024L)
           .withDescription("The index file size hint");
+
+  public static final ConfigOption<Boolean> SERVER_UNHEALTHY_ONCE_STORAGE_CORRUPTION =
+      ConfigOptions.key("rss.server.health.markUnhealthyOnceStorageCorruption")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "Mark server unhealthy once any storage corrupted. Default value is false");
 
   public static final ConfigOption<Double> HEALTH_STORAGE_MAX_USAGE_PERCENTAGE =
       ConfigOptions.key("rss.server.health.max.storage.usage.percentage")
@@ -516,6 +525,16 @@ public class ShuffleServerConf extends RssBaseConf {
                   + "will be terminated. This helps to significantly improve the "
                   + "stability of the cluster by preventing partitions from becoming too large.");
 
+  public static final ConfigOption<Long> HUGE_PARTITION_SPLIT_LIMIT =
+      ConfigOptions.key("rss.server.huge-partition.split.limit")
+          .longType()
+          .defaultValue(Long.MAX_VALUE)
+          .withDescription(
+              "This option sets the maximum partition slice size threshold. "
+                  + "If the partition size exceeds this threshold, the rss client will "
+                  + "receive the need split partition list and resend the failed blocks to "
+                  + "new servers through reassign mechanism.");
+
   public static final ConfigOption<Long> SERVER_DECOMMISSION_CHECK_INTERVAL =
       ConfigOptions.key("rss.server.decommission.check.interval")
           .longType()
@@ -659,6 +678,13 @@ public class ShuffleServerConf extends RssBaseConf {
           .defaultValue(10 * 60L)
           .withDescription("The storage remove resource operation timeout.");
 
+  public static final ConfigOption<Long> STORAGE_FLUSH_OPERATION_TIMEOUT_SEC =
+      ConfigOptions.key("rss.server.storage.flushOperationTimeoutSec")
+          .longType()
+          .defaultValue(-1L)
+          .withDescription(
+              "The storage flush max timeout second, this will not be activated by default");
+
   public static final ConfigOption<Boolean> SERVER_MERGE_ENABLE =
       ConfigOptions.key("rss.server.merge.enable")
           .booleanType()
@@ -719,6 +745,31 @@ public class ShuffleServerConf extends RssBaseConf {
           .booleanType()
           .defaultValue(false)
           .withDescription("Whether to enable app detail log");
+  public static final ConfigOption<String> SERVER_BLOCK_ID_MANAGER_CLASS =
+      ConfigOptions.key("rss.server.blockIdManagerClass")
+          .stringType()
+          .defaultValue(DefaultShuffleBlockIdManager.class.getName())
+          .withDescription(
+              "The block id manager class, the implementation of this interface "
+                  + "to manage the shuffle block ids");
+  public static final ConfigOption<List<String>> SERVER_DISPLAY_METRICS_LIST =
+      ConfigOptions.key("rss.server.displayMetricsList")
+          .stringType()
+          .asList()
+          .defaultValues("app:app_num_with_node", "partition:partition_num_with_node")
+          .withDescription(
+              "A list of metrics will report to coordinator and dashboard, format in \"displayName:metricsName\", separated by ','");
+
+  public static final ConfigOption<String> SERVER_LOCAL_STORAGE_MANAGER_CLASS =
+      ConfigOptions.key("rss.server.localStorageManagerClass")
+          .stringType()
+          .defaultValue(LocalStorageManager.class.getName())
+          .withDescription("The class of local storage manager implementation");
+  public static final ConfigOption<Boolean> SERVER_TRIGGER_REPORT_WHILE_UNREGISTER_ENABLED =
+      ConfigOptions.key("rss.server.heartbeatReportOnUnregisterEnabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Whether to trigger report while unregister");
   public static final ConfigOption<Boolean> SERVER_HEARTBEAT_REPORT_ON_UNREGISTER_ENABLED =
       ConfigOptions.key("rss.server.heartbeatReportOnUnregisterEnabled")
           .booleanType()

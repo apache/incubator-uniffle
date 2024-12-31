@@ -6812,6 +6812,11 @@ spec:
                     description: Parameters holds the optional parameters used by
                       coordinators or shuffle servers.
                     type: object
+                  podManagementPolicy:
+                    description: PodManagementPolicy defines the policy used to manage
+                      shuffle servers' pods, options are OrderedReady and Parallel,
+                      default is OrderedReady.
+                    type: string
                   ports:
                     description: Ports represents ports used by coordinators or shuffle
                       servers.

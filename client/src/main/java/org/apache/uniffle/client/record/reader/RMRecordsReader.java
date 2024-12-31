@@ -18,7 +18,6 @@
 package org.apache.uniffle.client.record.reader;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -29,6 +28,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.netty.buffer.ByteBuf;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.RawComparator;
 import org.slf4j.Logger;
@@ -43,21 +43,23 @@ import org.apache.uniffle.client.record.metrics.MetricsReporter;
 import org.apache.uniffle.client.record.writer.Combiner;
 import org.apache.uniffle.client.request.RssGetSortedShuffleDataRequest;
 import org.apache.uniffle.client.response.RssGetSortedShuffleDataResponse;
+import org.apache.uniffle.client.util.RssClientConfig;
+import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.merger.MergeState;
 import org.apache.uniffle.common.merger.Merger;
+import org.apache.uniffle.common.netty.buffer.ManagedBuffer;
 import org.apache.uniffle.common.records.RecordsReader;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.common.serializer.PartialInputStream;
+import org.apache.uniffle.common.serializer.SerInputStream;
 import org.apache.uniffle.common.serializer.Serializer;
 import org.apache.uniffle.common.serializer.SerializerFactory;
 import org.apache.uniffle.common.serializer.SerializerInstance;
 import org.apache.uniffle.common.serializer.writable.ComparativeOutputBuffer;
 import org.apache.uniffle.common.util.JavaUtils;
 
-import static org.apache.uniffle.client.util.RssClientConfig.RSS_CLIENT_TYPE_DEFAULT_VALUE;
 import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_REMOTE_MERGE_FETCH_INIT_SLEEP_MS;
 import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_REMOTE_MERGE_FETCH_MAX_SLEEP_MS;
 import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_REMOTE_MERGE_READER_MAX_BUFFER;
@@ -78,8 +80,11 @@ public class RMRecordsReader<K, V, C> {
   private final Combiner combiner;
   private boolean isMapCombine;
   private final MetricsReporter metrics;
+  private final String clientType;
   private SerializerInstance serializerInstance;
 
+  private final int retryMax;
+  private final long retryIntervalMax;
   private final long initFetchSleepTime;
   private final long maxFetchSleepTime;
   private final int maxBufferPerPartition;
@@ -87,7 +92,7 @@ public class RMRecordsReader<K, V, C> {
 
   private Map<Integer, List<ShuffleServerInfo>> shuffleServerInfoMap;
   private volatile boolean stop = false;
-  private volatile String errorMessage = null;
+  private volatile Throwable error = null;
 
   private Map<Integer, Queue<RecordBuffer>> combineBuffers = JavaUtils.newConcurrentMap();
   private Map<Integer, Queue<RecordBuffer>> mergeBuffers = JavaUtils.newConcurrentMap();
@@ -106,6 +111,36 @@ public class RMRecordsReader<K, V, C> {
       Combiner combiner,
       boolean isMapCombine,
       MetricsReporter metrics) {
+    this(
+        appId,
+        shuffleId,
+        partitionIds,
+        shuffleServerInfoMap,
+        rssConf,
+        keyClass,
+        valueClass,
+        comparator,
+        raw,
+        combiner,
+        isMapCombine,
+        metrics,
+        ClientType.GRPC.name());
+  }
+
+  public RMRecordsReader(
+      String appId,
+      int shuffleId,
+      Set<Integer> partitionIds,
+      Map<Integer, List<ShuffleServerInfo>> shuffleServerInfoMap,
+      RssConf rssConf,
+      Class<K> keyClass,
+      Class<V> valueClass,
+      Comparator<K> comparator,
+      boolean raw,
+      Combiner combiner,
+      boolean isMapCombine,
+      MetricsReporter metrics,
+      String clientType) {
     this.appId = appId;
     this.shuffleId = shuffleId;
     this.partitionIds = partitionIds;
@@ -131,6 +166,7 @@ public class RMRecordsReader<K, V, C> {
     this.combiner = combiner;
     this.isMapCombine = isMapCombine;
     this.metrics = metrics;
+    this.clientType = clientType;
     if (this.raw) {
       SerializerFactory factory = new SerializerFactory(rssConf);
       Serializer serializer = factory.getSerializer(keyClass);
@@ -145,6 +181,14 @@ public class RMRecordsReader<K, V, C> {
     this.maxRecordsNumPerBuffer =
         rssConf.get(RSS_CLIENT_REMOTE_MERGE_READER_MAX_RECORDS_PER_BUFFER);
     this.results = new Queue(maxBufferPerPartition * maxRecordsNumPerBuffer * partitionIds.size());
+    this.retryMax =
+        rssConf.getInteger(
+            RssClientConfig.RSS_CLIENT_RETRY_MAX,
+            RssClientConfig.RSS_CLIENT_RETRY_MAX_DEFAULT_VALUE);
+    this.retryIntervalMax =
+        rssConf.getLong(
+            RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX,
+            RssClientConfig.RSS_CLIENT_RETRY_INTERVAL_MAX_DEFAULT_VALUE);
     LOG.info("RMRecordsReader constructed for partitions {}", partitionIds);
   }
 
@@ -167,7 +211,7 @@ public class RMRecordsReader<K, V, C> {
   }
 
   public void close() {
-    errorMessage = null;
+    error = null;
     stop = true;
     for (Queue<RecordBuffer> buffer : mergeBuffers.values()) {
       buffer.clear();
@@ -376,8 +420,8 @@ public class RMRecordsReader<K, V, C> {
           return e;
         }
       }
-      if (errorMessage != null) {
-        throw new RssException("RMShuffleReader fetch record failed, caused by " + errorMessage);
+      if (error != null) {
+        throw new RssException("RMShuffleReader fetch record failed, caused by " + error);
       }
       return this.queue.poll(100, TimeUnit.MILLISECONDS);
     }
@@ -425,7 +469,8 @@ public class RMRecordsReader<K, V, C> {
       while (!stop) {
         try {
           RssGetSortedShuffleDataRequest request =
-              new RssGetSortedShuffleDataRequest(appId, shuffleId, partitionId, blockId);
+              new RssGetSortedShuffleDataRequest(
+                  appId, shuffleId, partitionId, blockId, retryMax, retryIntervalMax);
           RssGetSortedShuffleDataResponse response = client.getSortedShuffleData(request);
           if (response.getStatusCode() != StatusCode.SUCCESS
               || response.getMergeState() == MergeState.INTERNAL_ERROR.code()) {
@@ -455,37 +500,53 @@ public class RMRecordsReader<K, V, C> {
           } else if (response.getMergeState() == MergeState.DONE.code()
               || response.getMergeState() == MergeState.MERGING.code()) {
             this.sleepTime = initFetchSleepTime;
-            ByteBuffer byteBuffer = response.getData();
             blockId = response.getNextBlockId();
-            // Fetch blocks and parsing blocks are a synchronous process. If the two processes are
-            // split into two
-            // different threads, then will be asynchronous processes. Although it seems to save
-            // time, it actually
-            // consumes more memory.
-            RecordsReader<K, V> reader =
-                new RecordsReader(
-                    rssConf,
-                    PartialInputStream.newInputStream(byteBuffer),
-                    keyClass,
-                    valueClass,
-                    raw);
-            while (reader.next()) {
-              if (metrics != null) {
-                metrics.incRecordsRead(1);
+            ManagedBuffer managedBuffer = null;
+            ByteBuf byteBuf = null;
+            RecordsReader<K, V> reader = null;
+            try {
+              managedBuffer = response.getData();
+              byteBuf = managedBuffer.byteBuf();
+              // Fetch blocks and parsing blocks are a synchronous process. If the two processes are
+              // split into two different threads, then will be asynchronous processes. Although it
+              // seems to save time, it actually consumes more memory.
+              reader =
+                  new RecordsReader(
+                      rssConf,
+                      SerInputStream.newInputStream(byteBuf),
+                      keyClass,
+                      valueClass,
+                      raw,
+                      false);
+              reader.init();
+              while (reader.next()) {
+                if (metrics != null) {
+                  metrics.incRecordsRead(1);
+                }
+                if (recordBuffer.size() >= maxRecordsNumPerBuffer) {
+                  nextQueue.put(recordBuffer);
+                  recordBuffer = new RecordBuffer(partitionId);
+                }
+                recordBuffer.addRecord(reader.getCurrentKey(), reader.getCurrentValue());
               }
-              if (recordBuffer.size() >= maxRecordsNumPerBuffer) {
-                nextQueue.put(recordBuffer);
-                recordBuffer = new RecordBuffer(partitionId);
+            } finally {
+              if (reader != null) {
+                reader.close();
               }
-              recordBuffer.addRecord(reader.getCurrentKey(), reader.getCurrentValue());
+              if (byteBuf != null) {
+                byteBuf.release();
+              }
+              if (managedBuffer != null) {
+                managedBuffer.release();
+              }
             }
           } else {
             fetchError = "Receive wrong offset from server, offset is " + response.getNextBlockId();
             nextShuffleServerInfo();
             break;
           }
-        } catch (Exception e) {
-          errorMessage = e.getMessage();
+        } catch (Throwable e) {
+          error = e;
           stop = true;
           LOG.info("Found exception when fetch sorted record, caused by ", e);
         }
@@ -581,28 +642,33 @@ public class RMRecordsReader<K, V, C> {
           }
         }
         Merger.MergeQueue mergeQueue =
-            new Merger.MergeQueue(rssConf, segments, keyClass, valueClass, comparator, raw);
-        mergeQueue.init();
-        mergeQueue.setPopSegmentHook(
-            pid -> {
-              try {
-                RecordBuffer recordBuffer = mergeBuffers.get(pid).take();
-                if (recordBuffer == null) {
-                  return null;
+            new Merger.MergeQueue(rssConf, segments, keyClass, valueClass, comparator, raw, false);
+        try {
+          // Here are BufferedSegment, no need to init
+          mergeQueue.init();
+          mergeQueue.setPopSegmentHook(
+              pid -> {
+                try {
+                  RecordBuffer recordBuffer = mergeBuffers.get(pid).take();
+                  if (recordBuffer == null) {
+                    return null;
+                  }
+                  return new BufferedSegment(recordBuffer);
+                } catch (InterruptedException ex) {
+                  throw new RssException(ex);
                 }
-                return new BufferedSegment(recordBuffer);
-              } catch (InterruptedException ex) {
-                throw new RssException(ex);
-              }
-            });
-        while (!stop && mergeQueue.next()) {
-          results.put(Record.create(mergeQueue.getCurrentKey(), mergeQueue.getCurrentValue()));
+              });
+          while (!stop && mergeQueue.next()) {
+            results.put(Record.create(mergeQueue.getCurrentKey(), mergeQueue.getCurrentValue()));
+          }
+        } finally {
+          mergeQueue.close();
         }
         if (!stop) {
           results.setProducerDone(true);
         }
       } catch (InterruptedException | IOException e) {
-        errorMessage = e.getMessage();
+        error = e;
         stop = true;
       }
     }
@@ -611,6 +677,6 @@ public class RMRecordsReader<K, V, C> {
   @VisibleForTesting
   public ShuffleServerClient createShuffleServerClient(ShuffleServerInfo shuffleServerInfo) {
     return ShuffleServerClientFactory.getInstance()
-        .getShuffleServerClient(RSS_CLIENT_TYPE_DEFAULT_VALUE, shuffleServerInfo, rssConf);
+        .getShuffleServerClient(this.clientType, shuffleServerInfo, rssConf);
   }
 }

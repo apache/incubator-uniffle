@@ -46,7 +46,7 @@ public class HybridStorageManager implements StorageManager {
   private final StorageManagerSelector storageManagerSelector;
 
   HybridStorageManager(ShuffleServerConf conf) {
-    warmStorageManager = new LocalStorageManager(conf);
+    warmStorageManager = LocalStorageManagerFactory.get(conf);
     coldStorageManager = new HadoopStorageManager(conf);
 
     try {
@@ -113,6 +113,11 @@ public class HybridStorageManager implements StorageManager {
   @Override
   public Storage selectStorage(ShuffleDataReadEvent event) {
     return warmStorageManager.selectStorage(event);
+  }
+
+  @Override
+  public Storage selectStorageById(ShuffleDataReadEvent event) {
+    return warmStorageManager.selectStorageById(event);
   }
 
   @Override

@@ -91,6 +91,7 @@ import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.exception.RssException;
 import org.apache.uniffle.common.exception.RssFetchFailedException;
+import org.apache.uniffle.common.exception.RssSendFailedException;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.JavaUtils;
@@ -218,6 +219,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                             .forEach(
                                 blockId ->
                                     blockIdsSendSuccessTracker.get(blockId).incrementAndGet());
+                        recordNeedSplitPartition(
+                            failedBlockSendTracker, ssi, response.getNeedSplitPartitionIds());
                         if (defectiveServers != null) {
                           defectiveServers.remove(ssi);
                         }
@@ -281,6 +284,16 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
         .forEach(block -> blockIdsSendFailTracker.add(block, shuffleServerInfo, statusCode));
   }
 
+  void recordNeedSplitPartition(
+      FailedBlockSendTracker blockIdsSendFailTracker,
+      ShuffleServerInfo shuffleServerInfo,
+      Set<Integer> needSplitPartitions) {
+    if (needSplitPartitions != null) {
+      needSplitPartitions.forEach(
+          partition -> blockIdsSendFailTracker.addNeedSplitPartition(partition, shuffleServerInfo));
+    }
+  }
+
   void genServerToBlocks(
       ShuffleBlockInfo sbi,
       List<ShuffleServerInfo> serverList,
@@ -322,6 +335,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
   }
 
   @Override
+  @VisibleForTesting
   public SendShuffleDataResult sendShuffleData(
       String appId,
       List<ShuffleBlockInfo> shuffleBlockInfoList,
@@ -565,7 +579,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       ShuffleDataDistributionType dataDistributionType,
       int maxConcurrencyPerPartitionToWrite,
       int stageAttemptNumber,
-      MergeContext mergeContext) {
+      MergeContext mergeContext,
+      Map<String, String> properties) {
     String user = null;
     try {
       user = UserGroupInformation.getCurrentUser().getShortUserName();
@@ -583,7 +598,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
             dataDistributionType,
             maxConcurrencyPerPartitionToWrite,
             stageAttemptNumber,
-            mergeContext);
+            mergeContext,
+            properties);
     RssRegisterShuffleResponse response =
         getShuffleServerClient(shuffleServerInfo).registerShuffle(request);
 
@@ -703,6 +719,25 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
       int shuffleId,
       long taskAttemptId,
       int bitmapNum) {
+    reportShuffleResult(
+        serverToPartitionToBlockIds,
+        appId,
+        shuffleId,
+        taskAttemptId,
+        bitmapNum,
+        Sets.newConcurrentHashSet(),
+        false);
+  }
+
+  @Override
+  public void reportShuffleResult(
+      Map<ShuffleServerInfo, Map<Integer, Set<Long>>> serverToPartitionToBlockIds,
+      String appId,
+      int shuffleId,
+      long taskAttemptId,
+      int bitmapNum,
+      Set<ShuffleServerInfo> reportFailureServers,
+      boolean enableWriteFailureRetry) {
     // record blockId count for quora check,but this is not a good realization.
     Map<Long, Integer> blockReportTracker = createBlockReportTracker(serverToPartitionToBlockIds);
     for (Map.Entry<ShuffleServerInfo, Map<Integer, Set<Long>>> entry :
@@ -743,6 +778,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                   + "] failed with "
                   + response.getStatusCode());
           recordFailedBlockIds(blockReportTracker, requestBlockIds);
+          if (enableWriteFailureRetry) {
+            // The failed Shuffle Server is recorded and corresponding exceptions are raised only
+            // when the retry function is started.
+            reportFailureServers.add(ssi);
+            throw new RssSendFailedException(
+                "Throw an exception because the report shuffle result status code is not SUCCESS.");
+          }
         }
       } catch (Exception e) {
         LOG.warn(
@@ -754,6 +796,13 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                 + shuffleId
                 + "]");
         recordFailedBlockIds(blockReportTracker, requestBlockIds);
+        if (enableWriteFailureRetry) {
+          // The failed Shuffle Server is recorded and corresponding exceptions are raised only when
+          // the retry function is started.
+          reportFailureServers.add(ssi);
+          throw new RssSendFailedException(
+              "Throw an exception because the report shuffle result status code is not SUCCESS.");
+        }
       }
     }
     if (blockReportTracker.values().stream().anyMatch(cnt -> cnt < replicaWrite)) {
@@ -919,7 +968,7 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
           }
           return null;
         },
-        timeoutMs,
+        timeoutMs * allShuffleServers.size() / heartBeatThreadNum,
         "send heartbeat to shuffle server");
     if (coordinatorClient != null) {
       coordinatorClient.scheduleAtFixedRateToSendAppHeartBeat(request);

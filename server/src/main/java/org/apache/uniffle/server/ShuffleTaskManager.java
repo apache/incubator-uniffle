@@ -20,10 +20,9 @@ package org.apache.uniffle.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
@@ -42,11 +41,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,9 +69,12 @@ import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.common.util.JavaUtils;
+import org.apache.uniffle.common.util.OutputUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.common.util.UnitConverter;
+import org.apache.uniffle.server.block.ShuffleBlockIdManager;
+import org.apache.uniffle.server.block.ShuffleBlockIdManagerFactory;
 import org.apache.uniffle.server.buffer.PreAllocatedBufferInfo;
 import org.apache.uniffle.server.buffer.ShuffleBuffer;
 import org.apache.uniffle.server.buffer.ShuffleBufferManager;
@@ -86,14 +88,18 @@ import org.apache.uniffle.storage.common.Storage;
 import org.apache.uniffle.storage.common.StorageReadMetrics;
 import org.apache.uniffle.storage.request.CreateShuffleReadHandlerRequest;
 import org.apache.uniffle.storage.util.ShuffleStorageUtils;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.server.ShuffleServerConf.CLIENT_MAX_CONCURRENCY_LIMITATION_OF_ONE_PARTITION;
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
+import static org.apache.uniffle.server.ShuffleServerMetrics.CACHED_BLOCK_COUNT;
+import static org.apache.uniffle.server.ShuffleServerMetrics.REPORTED_BLOCK_COUNT;
 import static org.apache.uniffle.server.ShuffleServerMetrics.REQUIRE_BUFFER_COUNT;
 
 public class ShuffleTaskManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleTaskManager.class);
+  private final boolean storageTypeWithMemory;
   private ShuffleFlushManager shuffleFlushManager;
   private final ScheduledExecutorService scheduledExecutorService;
   private final ScheduledExecutorService expiredAppCleanupExecutorService;
@@ -108,13 +114,6 @@ public class ShuffleTaskManager {
   private long commitCheckIntervalMax;
   private long leakShuffleDataCheckInterval;
   private long triggerFlushInterval;
-  // appId -> shuffleId -> blockIds to avoid too many appId
-  // store taskAttemptId info to filter speculation task
-  // Roaring64NavigableMap instance will cost much memory,
-  // merge different blockId of partition to one bitmap can reduce memory cost,
-  // but when get blockId, performance will degrade a little which can be optimized by client
-  // configuration
-  private Map<String, Map<Integer, Roaring64NavigableMap[]>> partitionsToBlockIds;
   private final ShuffleBufferManager shuffleBufferManager;
   private Map<String, ShuffleTaskInfo> shuffleTaskInfos = JavaUtils.newConcurrentMap();
   private Map<Long, PreAllocatedBufferInfo> requireBufferIds = JavaUtils.newConcurrentMap();
@@ -123,6 +122,7 @@ public class ShuffleTaskManager {
   private final Cache<String, ReentrantReadWriteLock> appLocks;
   private final long storageRemoveOperationTimeoutSec;
   private ShuffleMergeManager shuffleMergeManager;
+  private ShuffleBlockIdManager shuffleBlockIdManager;
 
   public ShuffleTaskManager(
       ShuffleServerConf conf,
@@ -140,10 +140,15 @@ public class ShuffleTaskManager {
       ShuffleMergeManager shuffleMergeManager) {
     this.conf = conf;
     this.shuffleFlushManager = shuffleFlushManager;
-    this.partitionsToBlockIds = JavaUtils.newConcurrentMap();
     this.shuffleBufferManager = shuffleBufferManager;
     this.storageManager = storageManager;
     this.shuffleMergeManager = shuffleMergeManager;
+    org.apache.uniffle.common.StorageType storageType =
+        conf.get(ShuffleServerConf.RSS_STORAGE_TYPE);
+    this.storageTypeWithMemory =
+        storageType == null
+            ? false
+            : StorageType.withMemory(StorageType.valueOf(storageType.name()));
     this.appExpiredWithoutHB = conf.getLong(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT);
     this.commitCheckIntervalMax = conf.getLong(ShuffleServerConf.SERVER_COMMIT_CHECK_INTERVAL_MAX);
     this.preAllocationExpired = conf.getLong(ShuffleServerConf.SERVER_PRE_ALLOCATION_EXPIRED);
@@ -186,6 +191,8 @@ public class ShuffleTaskManager {
     if (shuffleBufferManager != null) {
       shuffleBufferManager.setShuffleTaskManager(this);
     }
+
+    shuffleBlockIdManager = ShuffleBlockIdManagerFactory.createShuffleBlockIdManager(conf);
 
     appLocks =
         CacheBuilder.newBuilder()
@@ -244,6 +251,25 @@ public class ShuffleTaskManager {
     topNShuffleDataSizeOfAppCalcTask.start();
 
     ShuffleServerMetrics.addLabeledGauge(REQUIRE_BUFFER_COUNT, requireBufferIds::size);
+    ShuffleServerMetrics.addLabeledCacheGauge(
+        REPORTED_BLOCK_COUNT,
+        () ->
+            shuffleBlockIdManager.getTotalBlockCount()
+                + shuffleTaskInfos.values().stream()
+                    .map(ShuffleTaskInfo::getShuffleBlockIdManager)
+                    .filter(manager -> manager != null && manager != shuffleBlockIdManager)
+                    .mapToLong(ShuffleBlockIdManager::getTotalBlockCount)
+                    .sum(),
+        2 * 60 * 1000L /* 2 minutes */);
+    ShuffleServerMetrics.addLabeledCacheGauge(
+        CACHED_BLOCK_COUNT,
+        () ->
+            shuffleTaskInfos.values().stream()
+                .map(ShuffleTaskInfo::getCachedBlockIds)
+                .flatMap(map -> map.values().stream())
+                .mapToLong(Roaring64NavigableMap::getLongCardinality)
+                .sum(),
+        2 * 60 * 1000L /* 2 minutes */);
   }
 
   public ReentrantReadWriteLock.WriteLock getAppWriteLock(String appId) {
@@ -275,27 +301,32 @@ public class ShuffleTaskManager {
     return registerShuffle(
         appId,
         shuffleId,
+        0,
         partitionRanges,
         remoteStorageInfo,
         user,
         ShuffleDataDistributionType.NORMAL,
-        -1);
+        -1,
+        Collections.emptyMap());
   }
 
   public StatusCode registerShuffle(
       String appId,
       int shuffleId,
+      int stageAttemptNumber,
       List<PartitionRange> partitionRanges,
       RemoteStorageInfo remoteStorageInfo,
       String user,
       ShuffleDataDistributionType dataDistType,
-      int maxConcurrencyPerPartitionToWrite) {
+      int maxConcurrencyPerPartitionToWrite,
+      Map<String, String> properties) {
     ReentrantReadWriteLock.WriteLock lock = getAppWriteLock(appId);
     lock.lock();
     try {
       refreshAppId(appId);
 
       ShuffleTaskInfo taskInfo = shuffleTaskInfos.get(appId);
+      taskInfo.setProperties(properties);
       taskInfo.setUser(user);
       taskInfo.setSpecification(
           ShuffleSpecification.builder()
@@ -303,8 +334,9 @@ public class ShuffleTaskManager {
                   getMaxConcurrencyWriting(maxConcurrencyPerPartitionToWrite, conf))
               .dataDistributionType(dataDistType)
               .build());
-
-      partitionsToBlockIds.computeIfAbsent(appId, key -> JavaUtils.newConcurrentMap());
+      taskInfo.setShuffleBlockIdManagerIfNeeded(shuffleBlockIdManager);
+      taskInfo.refreshLatestStageAttemptNumber(shuffleId, stageAttemptNumber);
+      taskInfo.getShuffleBlockIdManager().registerAppId(appId);
       for (PartitionRange partitionRange : partitionRanges) {
         shuffleBufferManager.registerBuffer(
             appId, shuffleId, partitionRange.getStart(), partitionRange.getEnd());
@@ -431,51 +463,16 @@ public class ShuffleTaskManager {
   public int addFinishedBlockIds(
       String appId, Integer shuffleId, Map<Integer, long[]> partitionToBlockIds, int bitmapNum) {
     refreshAppId(appId);
-    Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
-    if (shuffleIdToPartitions == null) {
-      throw new RssException("appId[" + appId + "] is expired!");
-    }
-    shuffleIdToPartitions.computeIfAbsent(
-        shuffleId,
-        key -> {
-          Roaring64NavigableMap[] blockIds = new Roaring64NavigableMap[bitmapNum];
-          for (int i = 0; i < bitmapNum; i++) {
-            blockIds[i] = Roaring64NavigableMap.bitmapOf();
-          }
-          return blockIds;
-        });
-    Roaring64NavigableMap[] blockIds = shuffleIdToPartitions.get(shuffleId);
-    if (blockIds.length != bitmapNum) {
-      throw new InvalidRequestException(
-          "Request expects "
-              + bitmapNum
-              + " bitmaps, but there are "
-              + blockIds.length
-              + " bitmaps!");
-    }
-
     ShuffleTaskInfo taskInfo = getShuffleTaskInfo(appId);
     if (taskInfo == null) {
       throw new InvalidRequestException(
           "ShuffleTaskInfo is not found that should not happen for appId: " + appId);
     }
-    int totalUpdatedBlockCount = 0;
-    for (Map.Entry<Integer, long[]> entry : partitionToBlockIds.entrySet()) {
-      Integer partitionId = entry.getKey();
-      Roaring64NavigableMap bitmap = blockIds[partitionId % bitmapNum];
-      int updatedBlockCount = 0;
-      synchronized (bitmap) {
-        for (long blockId : entry.getValue()) {
-          if (!bitmap.contains(blockId)) {
-            bitmap.addLong(blockId);
-            updatedBlockCount++;
-            totalUpdatedBlockCount++;
-          }
-        }
-      }
-      taskInfo.incBlockNumber(shuffleId, partitionId, updatedBlockCount);
+    ShuffleBlockIdManager manager = taskInfo.getShuffleBlockIdManager();
+    if (manager == null) {
+      throw new RssException("appId[" + appId + "] is expired!");
     }
-    return totalUpdatedBlockCount;
+    return manager.addFinishedBlockIds(taskInfo, appId, shuffleId, partitionToBlockIds, bitmapNum);
   }
 
   public int updateAndGetCommitCount(String appId, int shuffleId) {
@@ -498,15 +495,23 @@ public class ShuffleTaskManager {
     }
     ShuffleTaskInfo shuffleTaskInfo =
         shuffleTaskInfos.computeIfAbsent(appId, x -> new ShuffleTaskInfo(appId));
-    Roaring64NavigableMap bitmap =
-        shuffleTaskInfo
-            .getCachedBlockIds()
-            .computeIfAbsent(shuffleId, x -> Roaring64NavigableMap.bitmapOf());
-
     long size = 0L;
-    synchronized (bitmap) {
+    // With memory storage type should never need cachedBlockIds,
+    // since client do not need call finish shuffle rpc
+    if (!storageTypeWithMemory) {
+      Roaring64NavigableMap bitmap =
+          shuffleTaskInfo
+              .getCachedBlockIds()
+              .computeIfAbsent(shuffleId, x -> Roaring64NavigableMap.bitmapOf());
+
+      synchronized (bitmap) {
+        for (ShufflePartitionedBlock spb : spbs) {
+          bitmap.addLong(spb.getBlockId());
+          size += spb.getEncodedLength();
+        }
+      }
+    } else {
       for (ShufflePartitionedBlock spb : spbs) {
-        bitmap.addLong(spb.getBlockId());
         size += spb.getEncodedLength();
       }
     }
@@ -539,7 +544,17 @@ public class ShuffleTaskManager {
     return shuffleTaskInfo.getPartitionDataSize(shuffleId, partitionId);
   }
 
-  public long requireBuffer(
+  /**
+   * Require buffer for shuffle data
+   *
+   * @param appId the appId
+   * @param shuffleId the shuffleId
+   * @param partitionIds the partitionIds
+   * @param partitionRequireSizes the partitionRequireSizes
+   * @param requireSize the requireSize
+   * @return returns (requireId, splitPartitionIds)
+   */
+  public Pair<Long, List<Integer>> requireBufferReturnPair(
       String appId,
       int shuffleId,
       List<Integer> partitionIds,
@@ -550,6 +565,7 @@ public class ShuffleTaskManager {
       LOG.error("No such app is registered. appId: {}, shuffleId: {}", appId, shuffleId);
       throw new NoRegisterException("No such app is registered. appId: " + appId);
     }
+    List<Integer> splitPartitionIds = new ArrayList<>();
     // To be compatible with legacy clients which have empty partitionRequireSizes
     if (partitionIds.size() == partitionRequireSizes.size()) {
       for (int i = 0; i < partitionIds.size(); i++) {
@@ -562,15 +578,42 @@ public class ShuffleTaskManager {
           String errorMessage =
               String.format(
                   "Huge partition is limited to writing. appId: %s, shuffleId: %s, partitionIds: %s, partitionUsedDataSize: %s",
-                  appId, shuffleId, partitionIds, partitionUsedDataSize);
+                  appId,
+                  shuffleId,
+                  OutputUtils.listToSegment(partitionIds, 10),
+                  partitionUsedDataSize);
           LOG.error(errorMessage);
           throw new NoBufferForHugePartitionException(errorMessage);
         }
         HugePartitionUtils.checkExceedPartitionHardLimit(
             "requireBuffer", shuffleBufferManager, partitionUsedDataSize, partitionRequireSize);
+        if (HugePartitionUtils.hasExceedPartitionSplitLimit(
+            shuffleBufferManager, partitionUsedDataSize)) {
+          LOG.info(
+              "Need split partition. appId: {}, shuffleId: {}, partitionIds: {}, partitionUsedDataSize: {}",
+              appId,
+              shuffleId,
+              partitionIds,
+              partitionUsedDataSize);
+          splitPartitionIds.add(partitionId);
+          // We do not mind to reduce the partitionRequireSize from the requireSize for soft
+          // partition split
+        }
       }
     }
-    return requireBuffer(appId, requireSize);
+    return Pair.of(requireBuffer(appId, requireSize), splitPartitionIds);
+  }
+
+  @VisibleForTesting
+  public long requireBuffer(
+      String appId,
+      int shuffleId,
+      List<Integer> partitionIds,
+      List<Integer> partitionRequireSizes,
+      int requireSize) {
+    return requireBufferReturnPair(
+            appId, shuffleId, partitionIds, partitionRequireSizes, requireSize)
+        .getLeft();
   }
 
   public long requireBuffer(String appId, int requireSize) {
@@ -589,6 +632,15 @@ public class ShuffleTaskManager {
   public long requireBuffer(int requireSize) {
     // appId of EMPTY means the client uses the old version that should be upgraded.
     return requireBuffer("EMPTY", requireSize);
+  }
+
+  public boolean requireMemory(int requireSize, boolean isPreAllocated) {
+    return shuffleBufferManager.requireMemory(requireSize, isPreAllocated);
+  }
+
+  public void releaseMemory(
+      int requireSize, boolean isReleaseFlushMemory, boolean isReleasePreAllocation) {
+    shuffleBufferManager.releaseMemory(requireSize, isReleaseFlushMemory, isReleasePreAllocation);
   }
 
   public byte[] getFinishedBlockIds(
@@ -616,66 +668,12 @@ public class ShuffleTaskManager {
         storage.updateReadMetrics(new StorageReadMetrics(appId, shuffleId));
       }
     }
-    Map<Integer, Roaring64NavigableMap[]> shuffleIdToPartitions = partitionsToBlockIds.get(appId);
-    if (shuffleIdToPartitions == null) {
-      LOG.warn("Empty blockIds for app: {}. This should not happen", appId);
-      return null;
-    }
-
-    Roaring64NavigableMap[] blockIds = shuffleIdToPartitions.get(shuffleId);
-    if (blockIds == null) {
-      LOG.warn("Empty blockIds for app: {}, shuffleId: {}", appId, shuffleId);
-      return new byte[] {};
-    }
-
     ShuffleTaskInfo taskInfo = getShuffleTaskInfo(appId);
-    long expectedBlockNumber = 0;
-    Map<Integer, Set<Integer>> bitmapIndexToPartitions = Maps.newHashMap();
-    for (int partitionId : partitions) {
-      int bitmapIndex = partitionId % blockIds.length;
-      if (bitmapIndexToPartitions.containsKey(bitmapIndex)) {
-        bitmapIndexToPartitions.get(bitmapIndex).add(partitionId);
-      } else {
-        HashSet<Integer> newHashSet = Sets.newHashSet(partitionId);
-        bitmapIndexToPartitions.put(bitmapIndex, newHashSet);
-      }
-      expectedBlockNumber += taskInfo.getBlockNumber(shuffleId, partitionId);
+    ShuffleBlockIdManager manager = taskInfo.getShuffleBlockIdManager();
+    if (manager == null) {
+      throw new RssException("appId[" + appId + "] is expired!");
     }
-
-    Roaring64NavigableMap res = Roaring64NavigableMap.bitmapOf();
-    for (Map.Entry<Integer, Set<Integer>> entry : bitmapIndexToPartitions.entrySet()) {
-      Set<Integer> requestPartitions = entry.getValue();
-      Roaring64NavigableMap bitmap = blockIds[entry.getKey()];
-      getBlockIdsByPartitionId(requestPartitions, bitmap, res, blockIdLayout);
-    }
-
-    if (res.getLongCardinality() != expectedBlockNumber) {
-      throw new RssException(
-          "Inconsistent block number for partitions: "
-              + partitions
-              + ". Excepted: "
-              + expectedBlockNumber
-              + ", actual: "
-              + res.getLongCardinality());
-    }
-
-    return RssUtils.serializeBitMap(res);
-  }
-
-  // filter the specific partition blockId in the bitmap to the resultBitmap
-  protected Roaring64NavigableMap getBlockIdsByPartitionId(
-      Set<Integer> requestPartitions,
-      Roaring64NavigableMap bitmap,
-      Roaring64NavigableMap resultBitmap,
-      BlockIdLayout blockIdLayout) {
-    bitmap.forEach(
-        blockId -> {
-          int partitionId = blockIdLayout.getPartitionId(blockId);
-          if (requestPartitions.contains(partitionId)) {
-            resultBitmap.addLong(blockId);
-          }
-        });
-    return resultBitmap;
+    return manager.getFinishedBlockIds(taskInfo, appId, shuffleId, partitions, blockIdLayout);
   }
 
   public ShuffleDataResult getInMemoryShuffleData(
@@ -698,7 +696,8 @@ public class ShuffleTaskManager {
       int partitionNum,
       String storageType,
       long offset,
-      int length) {
+      int length,
+      int storageId) {
     refreshAppId(appId);
 
     CreateShuffleReadHandlerRequest request = new CreateShuffleReadHandlerRequest();
@@ -713,12 +712,24 @@ public class ShuffleTaskManager {
         ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
     Storage storage =
         storageManager.selectStorage(
-            new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
+            new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0], storageId));
     if (storage == null) {
       throw new FileNotFoundException("No such data stored in current storage manager.");
     }
 
-    return storage.getOrCreateReadHandler(request).getShuffleData(offset, length);
+    // only one partition part in one storage
+    try {
+      return storage.getOrCreateReadHandler(request).getShuffleData(offset, length);
+    } catch (FileNotFoundException e) {
+      LOG.warn(
+          "shuffle file not found {}-{}-{} in {}",
+          appId,
+          shuffleId,
+          partitionId,
+          storage.getStoragePath(),
+          e);
+      throw e;
+    }
   }
 
   public ShuffleIndexResult getShuffleIndex(
@@ -740,12 +751,16 @@ public class ShuffleTaskManager {
     int[] range =
         ShuffleStorageUtils.getPartitionRange(partitionId, partitionNumPerRange, partitionNum);
     Storage storage =
-        storageManager.selectStorage(
+        storageManager.selectStorageById(
             new ShuffleDataReadEvent(appId, shuffleId, partitionId, range[0]));
     if (storage == null) {
       throw new FileNotFoundException("No such data in current storage manager.");
     }
-    return storage.getOrCreateReadHandler(request).getShuffleIndex();
+    ShuffleIndexResult result = storage.getOrCreateReadHandler(request).getShuffleIndex();
+    if (result == null) {
+      throw new FileNotFoundException("No such data in current storage manager.");
+    }
+    return result;
   }
 
   public void checkResourceStatus() {
@@ -799,14 +814,14 @@ public class ShuffleTaskManager {
           taskInfo.getCommitCounts().remove(shuffleId);
           taskInfo.getCommitLocks().remove(shuffleId);
         }
+        ShuffleBlockIdManager manager = taskInfo.getShuffleBlockIdManager();
+        if (manager == null) {
+          throw new RssException("appId[" + appId + "] is expired!");
+        }
+        manager.removeBlockIdByShuffleId(appId, shuffleIds);
+      } else {
+        shuffleBlockIdManager.removeBlockIdByShuffleId(appId, shuffleIds);
       }
-      Optional.ofNullable(partitionsToBlockIds.get(appId))
-          .ifPresent(
-              x -> {
-                for (Integer shuffleId : shuffleIds) {
-                  x.remove(shuffleId);
-                }
-              });
       shuffleBufferManager.removeBufferByShuffleId(appId, shuffleIds);
       shuffleFlushManager.removeResourcesOfShuffleId(appId, shuffleIds);
 
@@ -884,7 +899,11 @@ public class ShuffleTaskManager {
       partitionInfoSummary.append("The app task info: ").append(shuffleTaskInfo);
       LOG.info("Removing app summary info: {}", partitionInfoSummary);
 
-      partitionsToBlockIds.remove(appId);
+      ShuffleBlockIdManager manager = shuffleTaskInfo.getShuffleBlockIdManager();
+      if (manager != null) {
+        manager.removeBlockIdByAppId(appId);
+      }
+      shuffleBlockIdManager.removeBlockIdByAppId(appId);
       shuffleBufferManager.removeBuffer(appId);
       shuffleFlushManager.removeResources(appId);
 
@@ -1004,11 +1023,6 @@ public class ShuffleTaskManager {
     return requireBufferIds;
   }
 
-  @VisibleForTesting
-  public Map<String, Map<Integer, Roaring64NavigableMap[]>> getPartitionsToBlockIds() {
-    return partitionsToBlockIds;
-  }
-
   public void removeShuffleDataAsync(String appId, int shuffleId) {
     expiredAppIdQueue.add(
         new ShufflePurgeEvent(appId, getUserByAppId(appId), Arrays.asList(shuffleId)));
@@ -1060,5 +1074,10 @@ public class ShuffleTaskManager {
   @VisibleForTesting
   protected void setShuffleFlushManager(ShuffleFlushManager flushManager) {
     this.shuffleFlushManager = flushManager;
+  }
+
+  @VisibleForTesting
+  public ShuffleBlockIdManager getShuffleBlockIdManager() {
+    return shuffleBlockIdManager;
   }
 }

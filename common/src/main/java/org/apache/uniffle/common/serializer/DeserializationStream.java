@@ -21,6 +21,8 @@ import java.io.IOException;
 
 public abstract class DeserializationStream<K, V> {
 
+  public abstract void init();
+
   public abstract boolean nextRecord() throws IOException;
 
   public abstract K getCurrentKey() throws IOException;

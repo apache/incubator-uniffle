@@ -77,7 +77,7 @@ public class ServerResource extends BaseResource {
     return builder.toString();
   }
 
-  @Path("/confOps")
+  @Path("/conf/ops")
   public Class<ConfOpsResource> getConfOps() {
     return ConfOpsResource.class;
   }

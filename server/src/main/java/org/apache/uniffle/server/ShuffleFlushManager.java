@@ -44,10 +44,12 @@ import org.apache.uniffle.server.flush.EventRetryException;
 import org.apache.uniffle.server.storage.StorageManager;
 import org.apache.uniffle.storage.common.LocalStorage;
 import org.apache.uniffle.storage.common.Storage;
-import org.apache.uniffle.storage.handler.api.ShuffleWriteHandler;
+import org.apache.uniffle.storage.handler.api.ShuffleWriteHandlerWrapper;
 import org.apache.uniffle.storage.request.CreateShuffleWriteHandlerRequest;
+import org.apache.uniffle.storage.util.StorageType;
 
 import static org.apache.uniffle.server.ShuffleServerConf.SERVER_MAX_CONCURRENCY_OF_ONE_PARTITION;
+import static org.apache.uniffle.server.ShuffleServerMetrics.COMMITTED_BLOCK_COUNT;
 
 public class ShuffleFlushManager {
 
@@ -61,6 +63,7 @@ public class ShuffleFlushManager {
   private final String storageType;
   private final int storageDataReplica;
   private final ShuffleServerConf shuffleServerConf;
+  private final boolean storageTypeWithMemory;
   private Configuration hadoopConf;
   // appId -> shuffleId -> committed shuffle blockIds
   private Map<String, Map<Integer, Roaring64NavigableMap>> committedBlockIds =
@@ -91,6 +94,16 @@ public class ShuffleFlushManager {
             shuffleServerConf, storageManager, shuffleServer, this::processFlushEvent);
     isStorageAuditLogEnabled =
         this.shuffleServerConf.getBoolean(ShuffleServerConf.SERVER_STORAGE_AUDIT_LOG_ENABLED);
+
+    ShuffleServerMetrics.addLabeledCacheGauge(
+        COMMITTED_BLOCK_COUNT,
+        () ->
+            committedBlockIds.values().stream()
+                .flatMap(innerMap -> innerMap.values().stream())
+                .mapToLong(bitmap -> bitmap.getLongCardinality())
+                .sum(),
+        2 * 60 * 1000L /* 2 minutes */);
+    this.storageTypeWithMemory = StorageType.withMemory(StorageType.valueOf(storageType));
   }
 
   public void addToFlushQueue(ShuffleDataFlushEvent event) {
@@ -170,25 +183,28 @@ public class ShuffleFlushManager {
               storageDataReplica,
               user,
               maxConcurrencyPerPartitionToWrite);
-      ShuffleWriteHandler handler;
+      ShuffleWriteHandlerWrapper handlerWrapper;
       try {
-        handler = storage.getOrCreateWriteHandler(request);
+        handlerWrapper = storage.getOrCreateWriteHandler(request);
       } catch (Exception e) {
-        LOG.warn("Failed to create write handler for event: {}", event, e);
+        LOG.warn("Failed to create write handlerWrapper for event: {}", event, e);
         throw new EventRetryException(e);
       }
 
       long startTime = System.currentTimeMillis();
-      boolean writeSuccess = storageManager.write(storage, handler, event);
+      boolean writeSuccess = storageManager.write(storage, handlerWrapper.getHandler(), event);
       if (!writeSuccess) {
         throw new EventRetryException();
       }
       long endTime = System.currentTimeMillis();
-
-      // update some metrics for shuffle task
-      updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
       ShuffleTaskInfo shuffleTaskInfo =
           shuffleServer.getShuffleTaskManager().getShuffleTaskInfo(event.getAppId());
+      if (shuffleTaskInfo == null || !storageTypeWithMemory) {
+        // With memory storage type should never need cachedBlockIds,
+        // since client do not need call finish shuffle rpc
+        // update some metrics for shuffle task
+        updateCommittedBlockIds(event.getAppId(), event.getShuffleId(), event.getShuffleBlocks());
+      }
       if (isStorageAuditLogEnabled) {
         AUDIT_LOGGER.info(
             String.format(
@@ -207,9 +223,11 @@ public class ShuffleFlushManager {
       if (null != shuffleTaskInfo) {
         String storageHost = event.getUnderStorage().getStorageHost();
         if (LocalStorage.STORAGE_HOST.equals(storageHost)) {
-          shuffleTaskInfo.addOnLocalFileDataSize(event.getEncodedLength());
+          shuffleTaskInfo.addOnLocalFileDataSize(
+              event.getEncodedLength(), handlerWrapper.isNewlyCreated());
         } else {
-          shuffleTaskInfo.addOnHadoopDataSize(event.getEncodedLength());
+          shuffleTaskInfo.addOnHadoopDataSize(
+              event.getEncodedLength(), handlerWrapper.isNewlyCreated());
         }
       }
     } finally {

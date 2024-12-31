@@ -287,7 +287,8 @@ public class RssShuffleWriterTest {
             mockTaskMemoryManager,
             shuffleWriteMetrics,
             new RssConf(),
-            null);
+            null,
+            0);
     WriteBufferManager bufferManagerSpy = spy(bufferManager);
     doReturn(1000000L).when(bufferManagerSpy).acquireMemory(anyLong());
     TaskContext contextMock = mock(TaskContext.class);
