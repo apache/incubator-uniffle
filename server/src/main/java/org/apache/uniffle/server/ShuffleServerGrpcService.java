@@ -210,7 +210,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       try {
         if (shuffleServer
             .getShuffleServerConf()
-            .getBoolean(ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED)) {
+            .getBoolean(ShuffleServerConf.SERVER_HEARTBEAT_REPORT_ON_UNREGISTER_ENABLED)) {
           shuffleServer.sendHeartbeat();
         }
         shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId, shuffleId);
