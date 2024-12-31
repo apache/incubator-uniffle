@@ -18,8 +18,10 @@
 package org.apache.uniffle.client.mock;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -99,7 +101,9 @@ public class HadoopConfigApp {
 
   protected void loadConfigurationFromFile(Map<String, String> map, String filePath)
       throws IOException {
-    try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+    try (BufferedReader reader =
+        new BufferedReader(
+            new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8))) {
       String line;
       while ((line = reader.readLine()) != null) {
         line = line.trim();

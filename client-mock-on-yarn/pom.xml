@@ -47,8 +47,7 @@
 
     <dependency>
       <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-client</artifactId>
-      <version>${hadoop.version}</version>
+      <artifactId>hadoop-yarn-client</artifactId>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -56,6 +55,11 @@
           <groupId>com.google.protobuf</groupId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 

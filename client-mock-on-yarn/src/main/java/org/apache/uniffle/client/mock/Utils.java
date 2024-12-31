@@ -20,6 +20,7 @@ package org.apache.uniffle.client.mock;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.security.CodeSource;
 
 import org.apache.hadoop.conf.Configuration;
@@ -65,7 +66,7 @@ public final class Utils {
     try (FileSystem fs = FileSystem.get(path.toUri(), conf)) {
       // upload
       try (FSDataOutputStream os = fs.create(path)) {
-        os.write(content.getBytes());
+        os.write(content.getBytes(StandardCharsets.UTF_8));
       }
     }
   }
