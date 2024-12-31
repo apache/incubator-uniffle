@@ -765,11 +765,7 @@ public class ShuffleServerConf extends RssBaseConf {
           .stringType()
           .defaultValue(LocalStorageManager.class.getName())
           .withDescription("The class of local storage manager implementation");
-  public static final ConfigOption<Boolean> SERVER_TRIGGER_REPORT_WHILE_UNREGISTER_ENABLED =
-      ConfigOptions.key("rss.server.heartbeatReportOnUnregisterEnabled")
-          .booleanType()
-          .defaultValue(false)
-          .withDescription("Whether to trigger report while unregister");
+
   public static final ConfigOption<Boolean> SERVER_HEARTBEAT_REPORT_ON_UNREGISTER_ENABLED =
       ConfigOptions.key("rss.server.heartbeatReportOnUnregisterEnabled")
           .booleanType()
