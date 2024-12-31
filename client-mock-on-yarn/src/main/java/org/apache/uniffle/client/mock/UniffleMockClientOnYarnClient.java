@@ -38,7 +38,6 @@ import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.Signal;
 
 public class UniffleMockClientOnYarnClient {
 
@@ -81,27 +80,23 @@ public class UniffleMockClientOnYarnClient {
     localConf.put(Constants.KEY_YARN_APP_ID, appId.toString());
     applicationSubmissionContext.setApplicationName("UniffleMockClientOnYarn");
 
-    Signal.handle(
-        new Signal("INT"),
-        sig -> {
-          System.out.println("Received Ctrl+C, terminating application...");
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      System.out.println("Received Ctrl+C, terminating application...");
 
-          try {
-            yarnClient.killApplication(appId);
-            System.out.println("Application killed: " + appId);
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
+      try {
+        yarnClient.killApplication(appId);
+        System.out.println("Application killed: " + appId);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
 
-          try {
-            ApplicationReport report = yarnClient.getApplicationReport(appId);
-            System.out.println("Application status: " + report.getYarnApplicationState());
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-
-          System.exit(0);
-        });
+      try {
+        ApplicationReport report = yarnClient.getApplicationReport(appId);
+        System.out.println("Application status: " + report.getYarnApplicationState());
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }));
 
     // copy jar to hdfs
     String jarLocalPathStr = Utils.getCurrentJarPath(UniffleMockClientOnYarnClient.class);
