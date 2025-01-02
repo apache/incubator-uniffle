@@ -54,7 +54,7 @@ cd $HADOOP_HOME
 2. Execute the example command:
 
 ```bash
-$ bin/yarn jar rss-client-simulation-yarn-1.0-SNAPSHOT.jar \
+$ bin/yarn jar rss-client-simulation-yarn-0.11.0-SNAPSHOT.jar \
 -Duniffle.client.sim.serverId=<UNIFFLE_SERVER_ID> \
 -Duniffle.client.sim.container.num=1000 \
 -Duniffle.client.sim.queueName=<YOUR_QUEUE_NAME>  \
@@ -70,7 +70,7 @@ $ bin/yarn jar rss-client-simulation-yarn-1.0-SNAPSHOT.jar \
 3. Example Output:
 
 ```plaintext
-24/12/30 15:03:47 INFO client.UniffleClientSimOnYarnClient: appId: application_1729845342052_5295913
+24/12/30 15:03:47 INFO simulator.UniffleClientSimOnYarnClient: appId: application_1729845342052_5295913
 ...
 Application killed: application_1729845342052_5295913
 Application status: KILLED
