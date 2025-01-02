@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.mock;
+package org.apache.uniffle.client.simulator;
 
 import java.io.File;
 import java.io.IOException;

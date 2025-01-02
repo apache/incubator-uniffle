@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.mock;
+package org.apache.uniffle.client.simulator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,12 +39,12 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UniffleMockClientOnYarnClient {
+public class UniffleClientSimOnYarnClient {
 
-  private static final Logger LOG = LoggerFactory.getLogger(UniffleMockClientOnYarnClient.class);
+  private static final Logger LOG = LoggerFactory.getLogger(UniffleClientSimOnYarnClient.class);
   private final Configuration conf;
 
-  public UniffleMockClientOnYarnClient(Configuration conf) {
+  public UniffleClientSimOnYarnClient(Configuration conf) {
     this.conf = conf;
   }
 
@@ -56,7 +56,7 @@ public class UniffleMockClientOnYarnClient {
     if (exitCode != 0) {
       System.exit(exitCode);
     }
-    UniffleMockClientOnYarnClient client = new UniffleMockClientOnYarnClient(conf);
+    UniffleClientSimOnYarnClient client = new UniffleClientSimOnYarnClient(conf);
     try {
       client.run(hadoopConfigApp.getLocalConf());
     } catch (Exception e) {
@@ -78,7 +78,7 @@ public class UniffleMockClientOnYarnClient {
     ApplicationId appId = applicationSubmissionContext.getApplicationId();
     LOG.info("appId: {}", appId);
     localConf.put(Constants.KEY_YARN_APP_ID, appId.toString());
-    applicationSubmissionContext.setApplicationName("UniffleMockClientOnYarn");
+    applicationSubmissionContext.setApplicationName("UniffleClientSimOnYarn");
 
     Runtime.getRuntime()
         .addShutdownHook(
@@ -102,7 +102,7 @@ public class UniffleMockClientOnYarnClient {
                 }));
 
     // copy jar to hdfs
-    String jarLocalPathStr = Utils.getCurrentJarPath(UniffleMockClientOnYarnClient.class);
+    String jarLocalPathStr = Utils.getCurrentJarPath(UniffleClientSimOnYarnClient.class);
     System.out.println("jarLocalPath: " + jarLocalPathStr);
     if (jarLocalPathStr == null || !jarLocalPathStr.endsWith(".jar")) {
       String cmdline = System.getProperty("sun.java.command");
@@ -177,7 +177,7 @@ public class UniffleMockClientOnYarnClient {
                     + " "
                     + extraJvmOpts
                     + " "
-                    + UniffleMockClientOnYarnAppMaster.class.getName());
+                    + UniffleClientSimOnYarnAppMaster.class.getName());
           }
         };
 

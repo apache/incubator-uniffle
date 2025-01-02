@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.uniffle.client.mock;
+package org.apache.uniffle.client.simulator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -54,8 +54,8 @@ import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.util.ThreadUtils;
 
-public class UniffleMockClientOnYarnAppMaster {
-  private static final Logger LOG = LoggerFactory.getLogger(UniffleMockClientOnYarnAppMaster.class);
+public class UniffleClientSimOnYarnAppMaster {
+  private static final Logger LOG = LoggerFactory.getLogger(UniffleClientSimOnYarnAppMaster.class);
   private final Configuration conf;
   private final String appId;
   // object lock
@@ -68,11 +68,11 @@ public class UniffleMockClientOnYarnAppMaster {
   NMClientAsyncImpl nmClientAsync;
 
   public static void main(String[] args) {
-    UniffleMockClientOnYarnAppMaster master = new UniffleMockClientOnYarnAppMaster();
+    UniffleClientSimOnYarnAppMaster master = new UniffleClientSimOnYarnAppMaster();
     master.run();
   }
 
-  public UniffleMockClientOnYarnAppMaster() {
+  public UniffleClientSimOnYarnAppMaster() {
     conf = new Configuration();
     HadoopConfigApp hadoopConfigApp = new HadoopConfigApp(conf);
     hadoopConfigApp.run(new String[] {"--conf", "./" + Constants.JOB_CONF_NAME});

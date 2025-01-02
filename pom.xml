@@ -144,7 +144,7 @@
     <module>integration-test/common</module>
     <module>cli</module>
     <module>server-common</module>
-    <module>client-mock-on-yarn</module>
+    <module>tools/client-simulation-yarn</module>
   </modules>
 
   <dependencies>

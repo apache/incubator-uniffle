@@ -22,11 +22,12 @@
     <groupId>org.apache.uniffle</groupId>
     <artifactId>uniffle-parent</artifactId>
     <version>0.11.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
 
-  <artifactId>rss-client-mock-on-yarn</artifactId>
+  <artifactId>rss-client-simulation-yarn</artifactId>
   <packaging>jar</packaging>
-  <name>Apache Uniffle Mock Client On Yarn</name>
+  <name>Apache Uniffle Client Simulation On Yarn</name>
   <properties>
     <uniffle.version>0.9.1</uniffle.version>
   </properties>
@@ -62,5 +63,4 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
-
 </project>
