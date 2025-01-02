@@ -80,23 +80,26 @@ public class UniffleMockClientOnYarnClient {
     localConf.put(Constants.KEY_YARN_APP_ID, appId.toString());
     applicationSubmissionContext.setApplicationName("UniffleMockClientOnYarn");
 
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      System.out.println("Received Ctrl+C, terminating application...");
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  System.out.println("Received Ctrl+C, terminating application...");
 
-      try {
-        yarnClient.killApplication(appId);
-        System.out.println("Application killed: " + appId);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+                  try {
+                    yarnClient.killApplication(appId);
+                    System.out.println("Application killed: " + appId);
+                  } catch (Exception e) {
+                    e.printStackTrace();
+                  }
 
-      try {
-        ApplicationReport report = yarnClient.getApplicationReport(appId);
-        System.out.println("Application status: " + report.getYarnApplicationState());
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    }));
+                  try {
+                    ApplicationReport report = yarnClient.getApplicationReport(appId);
+                    System.out.println("Application status: " + report.getYarnApplicationState());
+                  } catch (Exception e) {
+                    e.printStackTrace();
+                  }
+                }));
 
     // copy jar to hdfs
     String jarLocalPathStr = Utils.getCurrentJarPath(UniffleMockClientOnYarnClient.class);
