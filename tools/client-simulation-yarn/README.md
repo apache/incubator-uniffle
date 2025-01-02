@@ -17,6 +17,11 @@
 
 # Uniffle Client Simulation On Yarn - Usage Guide
 
+Currently, we have evaluated the performance of the flush operation using the Uniffle server's flush event recording and flush benchmark feature.
+This allows us to assess the server's maximum capability to handle flush block requests for small blocks (e.g., 1 KiB) and the write throughput limit for large blocks (e.g., 1 MiB).
+
+However, there may also be performance bottlenecks between the server receiving requests and the actual flush operation. Therefore, we need a simulated client that continuously sends data to the server.
+
 ## Parameter Description
 
 | Parameter Name                               | Default Value | Description                                                                                                                                               |
