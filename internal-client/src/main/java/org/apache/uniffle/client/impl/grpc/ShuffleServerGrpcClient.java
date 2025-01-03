@@ -807,7 +807,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
           });
     } catch (Throwable t) {
       // Handle or rethrow the exception as appropriate
-      throw new RuntimeException(
+      throw new RssException(
           "Failed to report shuffle result to host[" + host + "], port[" + port + "]", t);
     }
   }
