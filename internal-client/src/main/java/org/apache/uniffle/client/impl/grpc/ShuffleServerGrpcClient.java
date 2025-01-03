@@ -30,6 +30,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
+import io.grpc.StatusRuntimeException;
 import io.netty.buffer.Unpooled;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -792,26 +793,23 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
   }
 
   private ReportShuffleResultResponse doReportShuffleResult(ReportShuffleResultRequest rpcRequest) {
-    int retryNum = 0;
-    while (retryNum < maxRetryAttempts) {
-      try {
-        ReportShuffleResultResponse response = getBlockingStub().reportShuffleResult(rpcRequest);
-        return response;
-      } catch (Exception e) {
-        retryNum++;
-        LOG.warn(
-            "Report shuffle result to host["
-                + host
-                + "], port["
-                + port
-                + "] failed, try again, retryNum["
-                + retryNum
-                + "]",
-            e);
-      }
+    try {
+      return RetryUtils.retryWithCondition(
+          () -> getBlockingStub().reportShuffleResult(rpcRequest),
+          null, // No specific callback to execute
+          0, // No delay between retries, retry immediately
+          maxRetryAttempts, // Maximum number of retry attempts
+          t -> { // Define retry condition directly in the method call
+            if (t instanceof StatusRuntimeException) {
+              return !(t.getCause() instanceof InterruptedException);
+            }
+            return t instanceof Exception; // Retry for all other Exceptions
+          });
+    } catch (Throwable t) {
+      // Handle or rethrow the exception as appropriate
+      throw new RssException(
+          "Failed to report shuffle result to host[" + host + "], port[" + port + "]", t);
     }
-    throw new RssException(
-        "Report shuffle result to host[" + host + "], port[" + port + "] failed");
   }
 
   @Override
