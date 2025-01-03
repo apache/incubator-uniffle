@@ -45,7 +45,7 @@ public class AccessSupportRssChecker extends AbstractAccessChecker {
     super(accessManager);
     List<String> unsupportedConfigs =
         accessManager.getCoordinatorConf().get(CoordinatorConf.COORDINATOR_UNSUPPORTED_CONFIGS);
-    unsupportedConfigMap = new HashMap<>(unsupportedConfigs.size());
+    unsupportedConfigMap = new HashMap<>();
     if (unsupportedConfigs != null && !unsupportedConfigs.isEmpty()) {
       for (String keyValue : unsupportedConfigs) {
         String[] pair = keyValue.split(":", 2);
@@ -60,9 +60,6 @@ public class AccessSupportRssChecker extends AbstractAccessChecker {
 
   @Override
   public AccessCheckResult check(AccessInfo accessInfo) {
-    if (unsupportedConfigMap == null || unsupportedConfigMap.isEmpty()) {
-      return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE);
-    }
     for (Map.Entry<String, String> entry : unsupportedConfigMap.entrySet()) {
       String unsupportedConfKey = entry.getKey();
       String unsupportedConfValue = entry.getValue();
