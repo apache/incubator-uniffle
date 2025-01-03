@@ -23,6 +23,8 @@ import org.apache.uniffle.common.config.ConfigOption;
 import org.apache.uniffle.common.config.ConfigOptions;
 import org.apache.uniffle.common.config.ConfigUtils;
 import org.apache.uniffle.common.config.RssBaseConf;
+import org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker;
+import org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker;
 import org.apache.uniffle.coordinator.access.checker.AccessSupportRssChecker;
 import org.apache.uniffle.coordinator.conf.ClientConfParser;
 import org.apache.uniffle.coordinator.strategy.assignment.AbstractAssignmentStrategy;
@@ -92,8 +94,8 @@ public class CoordinatorConf extends RssBaseConf {
           .stringType()
           .asList()
           .defaultValues(
-              "org.apache.uniffle.coordinator.access.checker.AccessClusterLoadChecker",
-              "org.apache.uniffle.coordinator.access.checker.AccessQuotaChecker",
+              AccessClusterLoadChecker.class.getCanonicalName(),
+              AccessQuotaChecker.class.getCanonicalName(),
               AccessSupportRssChecker.class.getCanonicalName())
           .withDescription("Access checkers");
   public static final ConfigOption<Integer> COORDINATOR_ACCESS_CANDIDATES_UPDATE_INTERVAL_SEC =
