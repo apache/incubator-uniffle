@@ -259,6 +259,15 @@ public class CoordinatorConf extends RssBaseConf {
           .defaultValues("appHeartbeat", "heartbeat")
           .withDescription("Exclude record rpc audit operation list, separated by ','");
 
+  public static final ConfigOption<List<String>> COORDINATOR_UNSUPPORTED_CONFIGS =
+      ConfigOptions.key("rss.coordinator.unsupportedConfigs")
+          .stringType()
+          .asList()
+          .defaultValues("serializer:org.apache.hadoop.io.serializer.JavaSerialization")
+          .withDescription(
+              "The unsupported config list separated by ',', the key value separated by ':'. If the client configures these properties "
+                  + "and they are set to be denied access, the client's access will be rejected.");
+
   public CoordinatorConf() {}
 
   public CoordinatorConf(String fileName) {

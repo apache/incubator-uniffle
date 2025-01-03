@@ -18,13 +18,17 @@
 package org.apache.uniffle.coordinator.access.checker;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
-import org.apache.hadoop.io.serializer.JavaSerialization;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.AccessManager;
+import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.coordinator.access.AccessCheckResult;
 import org.apache.uniffle.coordinator.access.AccessInfo;
 import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
@@ -35,21 +39,43 @@ import org.apache.uniffle.coordinator.metric.CoordinatorMetrics;
  */
 public class AccessSupportRssChecker extends AbstractAccessChecker {
   private static final Logger LOG = LoggerFactory.getLogger(AccessSupportRssChecker.class);
+  private final HashMap<String, String> unsupportedConfigMap;
 
   public AccessSupportRssChecker(AccessManager accessManager) throws Exception {
     super(accessManager);
+    List<String> unsupportedConfigs =
+        accessManager.getCoordinatorConf().get(CoordinatorConf.COORDINATOR_UNSUPPORTED_CONFIGS);
+    unsupportedConfigMap = new HashMap<>(unsupportedConfigs.size());
+    if (unsupportedConfigs != null && !unsupportedConfigs.isEmpty()) {
+      for (String keyValue : unsupportedConfigs) {
+        String[] pair = keyValue.split(":", 2);
+        if (pair.length == 2) {
+          unsupportedConfigMap.put(pair[0], pair[1]);
+        } else {
+          LOG.error("Unsupported config {} has wrong format, skip it.", keyValue);
+        }
+      }
+    }
   }
 
   @Override
   public AccessCheckResult check(AccessInfo accessInfo) {
-    String serializer = accessInfo.getExtraProperties().get("serializer");
-    if (JavaSerialization.class.getName().equals(serializer)) {
-      String msg = String.format("Denied by AccessSupportRssChecker, accessInfo[%s].", accessInfo);
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("serializer is {}, {}", serializer, msg);
+    if (unsupportedConfigMap == null || unsupportedConfigMap.isEmpty()) {
+      return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE);
+    }
+    for (Map.Entry<String, String> entry : unsupportedConfigMap.entrySet()) {
+      String unsupportedConfKey = entry.getKey();
+      String unsupportedConfValue = entry.getValue();
+      String actualConfValue = accessInfo.getExtraProperties().get(unsupportedConfKey);
+      if (Objects.equals(actualConfValue, unsupportedConfValue)) {
+        String msg =
+            String.format(
+                "Denied by AccessSupportRssChecker, %s is %s, AccessSupportRssChecker does not supported.",
+                unsupportedConfKey, actualConfValue);
+        LOG.debug(msg);
+        CoordinatorMetrics.counterTotalSupportRssDeniedRequest.inc();
+        return new AccessCheckResult(false, msg);
       }
-      CoordinatorMetrics.counterTotalSupportRssDeniedRequest.inc();
-      return new AccessCheckResult(false, msg);
     }
 
     return new AccessCheckResult(true, Constants.COMMON_SUCCESS_MESSAGE);
