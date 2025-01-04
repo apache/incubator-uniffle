@@ -17,6 +17,8 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -30,6 +32,7 @@ import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
 public class LocalFileNioWriter implements FileWriter {
 
+  private DataOutputStream dataOutputStream;
   private FileOutputStream fileOutputStream;
   private long nextOffset;
 
@@ -40,6 +43,8 @@ public class LocalFileNioWriter implements FileWriter {
 
   public LocalFileNioWriter(File file, int bufferSize) throws IOException {
     fileOutputStream = new FileOutputStream(file, true);
+    // init fsDataOutputStream
+    dataOutputStream = new DataOutputStream(new BufferedOutputStream(fileOutputStream, bufferSize));
     nextOffset = file.length();
   }
 
@@ -61,7 +66,12 @@ public class LocalFileNioWriter implements FileWriter {
 
   @Override
   public void writeIndex(FileBasedShuffleSegment segment) throws IOException {
-    throw new UnsupportedOperationException("LocalFileNioWriter does not support index");
+    dataOutputStream.writeLong(segment.getOffset());
+    dataOutputStream.writeInt(segment.getLength());
+    dataOutputStream.writeInt(segment.getUncompressLength());
+    dataOutputStream.writeLong(segment.getCrc());
+    dataOutputStream.writeLong(segment.getBlockId());
+    dataOutputStream.writeLong(segment.getTaskAttemptId());
   }
 
   @Override
