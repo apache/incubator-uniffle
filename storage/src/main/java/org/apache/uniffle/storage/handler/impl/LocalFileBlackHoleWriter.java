@@ -17,12 +17,13 @@
 
 package org.apache.uniffle.storage.handler.impl;
 
-import io.netty.buffer.ByteBuf;
-import org.apache.uniffle.storage.api.FileWriter;
-import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
-
 import java.io.File;
 import java.io.IOException;
+
+import io.netty.buffer.ByteBuf;
+
+import org.apache.uniffle.storage.api.FileWriter;
+import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
 /** A shuffle writer that write data into black hole. */
 public class LocalFileBlackHoleWriter implements FileWriter {
