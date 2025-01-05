@@ -131,9 +131,11 @@ public class CoordinatorReconfigureNodeMaxTest extends CoordinatorTestBase {
     assertEquals(5, info.getServerToPartitionRanges().keySet().size());
 
     // case3: recover its value to 10
+    Thread.sleep(1000L);
     try (FileWriter fileWriter = new FileWriter(tempConfFilePath)) {
       fileWriter.append(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key() + " " + 10);
     }
+    Thread.sleep(1000L);
     Awaitility.await().timeout(2, TimeUnit.SECONDS).until(() -> nodeMax.get() == 10);
     info = shuffleWriteClient.getShuffleAssignments("app1", 0, 10, 1, TAGS, SERVER_NUM + 10, -1);
     assertEquals(10, info.getServerToPartitionRanges().keySet().size());
