@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Maps;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;

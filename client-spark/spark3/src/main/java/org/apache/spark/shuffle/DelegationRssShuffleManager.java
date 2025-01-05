@@ -70,7 +70,8 @@ public class DelegationRssShuffleManager implements ShuffleManager {
     }
   }
 
-  private ShuffleManager createShuffleManagerInDriver(CoordinatorClient coordinatorClient) throws RssException {
+  private ShuffleManager createShuffleManagerInDriver(CoordinatorClient coordinatorClient)
+      throws RssException {
     ShuffleManager shuffleManager;
     user = "user";
     try {
