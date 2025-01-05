@@ -104,8 +104,6 @@ public class DelegationRssShuffleManager implements ShuffleManager {
               Constants.SORT_SHUFFLE_MANAGER_NAME, sparkConf, true);
       sparkConf.set(RssSparkConfig.RSS_ENABLED.key(), "false");
       sparkConf.set("spark.shuffle.manager", "sort");
-      sparkConf.set("spark.shuffle.service.enabled", "true");
-      DelegationRssShuffleManagerUtils.configSparkConfForDeny(sparkConf);
       LOG.info("Use SortShuffleManager");
     } catch (Exception e) {
       throw new RssException(e.getMessage());
