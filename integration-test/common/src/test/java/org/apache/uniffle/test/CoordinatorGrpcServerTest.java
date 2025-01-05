@@ -78,9 +78,9 @@ public class CoordinatorGrpcServerTest {
 
       // case2: test the multiple connections
       try (CoordinatorGrpcClient coordinatorGrpcClient =
-               new CoordinatorGrpcClient("localhost", 20001);
-           CoordinatorGrpcClient client1 = new CoordinatorGrpcClient("localhost", 20001);
-           CoordinatorGrpcClient client2 = new CoordinatorGrpcClient("localhost", 20001)) {
+              new CoordinatorGrpcClient("localhost", 20001);
+          CoordinatorGrpcClient client1 = new CoordinatorGrpcClient("localhost", 20001);
+          CoordinatorGrpcClient client2 = new CoordinatorGrpcClient("localhost", 20001)) {
         coordinatorGrpcClient.registerApplicationInfo(
             new RssApplicationInfoRequest("testGrpcConnectionSize", 10000, "user"));
 
