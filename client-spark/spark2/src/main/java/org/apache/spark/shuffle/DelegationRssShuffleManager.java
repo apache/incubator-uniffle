@@ -117,6 +117,7 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   private boolean tryAccessCluster(CoordinatorClient coordinatorClient) {
     String accessId = DelegationRssShuffleManagerUtils.acquireAccessId(sparkConf);
     if (accessId == null) {
+      LOG.warn("Access id key is null");
       return false;
     }
     long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS);

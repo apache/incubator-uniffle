@@ -114,16 +114,9 @@ public class DelegationRssShuffleManager implements ShuffleManager {
   }
 
   private boolean tryAccessCluster(CoordinatorClient coordinatorClient) {
-    String accessId = sparkConf.get(RssSparkConfig.RSS_ACCESS_ID.key(), "").trim();
-    if (StringUtils.isEmpty(accessId)) {
-      String providerKey = sparkConf.get(RssSparkConfig.RSS_ACCESS_ID_PROVIDER_KEY.key(), "");
-      if (StringUtils.isNotEmpty(accessId)) {
-        accessId = sparkConf.get(providerKey, "");
-        LOG.info("Get access id {} from provider key: {}", accessId, providerKey);
-      }
-    }
-    if (StringUtils.isEmpty(accessId)) {
-      LOG.warn("Access id key is empty");
+    String accessId = DelegationRssShuffleManagerUtils.acquireAccessId(sparkConf);
+    if (accessId == null) {
+      LOG.warn("Access id key is null");
       return false;
     }
     long retryInterval = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS);
