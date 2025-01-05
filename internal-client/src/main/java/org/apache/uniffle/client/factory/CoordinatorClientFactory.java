@@ -100,4 +100,10 @@ public class CoordinatorClientFactory {
     return new CoordinatorGrpcRetryableClient(
         coordinatorClients, retryIntervalMs, retryTimes, heartBeatThreadNum);
   }
+
+  public synchronized CoordinatorGrpcRetryableClient createCoordinatorClientWithoutHeartbeat(
+      ClientType clientType, String coordinators, long retryIntervalMs, int retryTimes) {
+    List<CoordinatorClient> coordinatorClients = createCoordinatorClient(clientType, coordinators);
+    return new CoordinatorGrpcRetryableClient(coordinatorClients, retryIntervalMs, retryTimes, 0);
+  }
 }
