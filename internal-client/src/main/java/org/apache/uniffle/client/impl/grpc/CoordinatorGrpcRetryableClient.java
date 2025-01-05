@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,8 +62,10 @@ public class CoordinatorGrpcRetryableClient implements CoordinatorClient {
     this.coordinatorClients = coordinatorClients;
     this.retryIntervalMs = retryIntervalMs;
     this.retryTimes = retryTimes;
-    this.heartBeatExecutorService =
-        ThreadUtils.getDaemonFixedThreadPool(heartBeatThreadNum, "client-heartbeat");
+    if (heartBeatThreadNum > 0) {
+      this.heartBeatExecutorService =
+          ThreadUtils.getDaemonFixedThreadPool(heartBeatThreadNum, "client-heartbeat");
+    }
   }
 
   @Override
@@ -70,6 +73,7 @@ public class CoordinatorGrpcRetryableClient implements CoordinatorClient {
       RssAppHeartBeatRequest request) {
     AtomicReference<RssAppHeartBeatResponse> rssResponse = new AtomicReference<>();
     rssResponse.set(new RssAppHeartBeatResponse(StatusCode.INTERNAL_ERROR));
+    Preconditions.checkNotNull(heartBeatExecutorService);
     ThreadUtils.executeTasks(
         heartBeatExecutorService,
         coordinatorClients,
@@ -97,6 +101,7 @@ public class CoordinatorGrpcRetryableClient implements CoordinatorClient {
   public RssApplicationInfoResponse registerApplicationInfo(RssApplicationInfoRequest request) {
     AtomicReference<RssApplicationInfoResponse> rssResponse = new AtomicReference<>();
     rssResponse.set(new RssApplicationInfoResponse(StatusCode.INTERNAL_ERROR));
+    Preconditions.checkNotNull(heartBeatExecutorService);
     ThreadUtils.executeTasks(
         heartBeatExecutorService,
         coordinatorClients,
@@ -124,6 +129,7 @@ public class CoordinatorGrpcRetryableClient implements CoordinatorClient {
   @Override
   public RssSendHeartBeatResponse sendHeartBeat(RssSendHeartBeatRequest request) {
     AtomicBoolean sendSuccessfully = new AtomicBoolean(false);
+    Preconditions.checkNotNull(heartBeatExecutorService);
     ThreadUtils.executeTasks(
         heartBeatExecutorService,
         coordinatorClients,
@@ -280,7 +286,9 @@ public class CoordinatorGrpcRetryableClient implements CoordinatorClient {
 
   @Override
   public void close() {
-    heartBeatExecutorService.shutdownNow();
+    if (heartBeatExecutorService != null) {
+      heartBeatExecutorService.shutdownNow();
+    }
     coordinatorClients.forEach(CoordinatorClient::close);
   }
 }
