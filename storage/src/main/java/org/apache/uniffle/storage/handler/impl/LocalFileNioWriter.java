@@ -81,8 +81,8 @@ public class LocalFileNioWriter implements FileWriter {
 
   @Override
   public synchronized void close() throws IOException {
-    if (fileOutputStream != null) {
-      fileOutputStream.close();
+    if (dataOutputStream != null) {
+      dataOutputStream.close();
     }
   }
 }
