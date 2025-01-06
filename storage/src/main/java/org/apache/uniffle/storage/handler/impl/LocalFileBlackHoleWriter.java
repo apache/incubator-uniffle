@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 import org.apache.uniffle.storage.api.FileWriter;
 import org.apache.uniffle.storage.common.FileBasedShuffleSegment;
 
-/** A shuffle writer that write data into black hole. */
+/** A shuffle writer that write data into black hole for performance test purpose only. */
 public class LocalFileBlackHoleWriter implements FileWriter {
 
   private long nextOffset;
