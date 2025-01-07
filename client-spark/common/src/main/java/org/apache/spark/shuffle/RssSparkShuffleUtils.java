@@ -103,15 +103,30 @@ public class RssSparkShuffleUtils {
     return instance;
   }
 
-  public static CoordinatorGrpcRetryableClient createCoordinatorClients(SparkConf sparkConf) {
+  public static CoordinatorGrpcRetryableClient createCoordinatorClientsWithoutHeartbeat(
+      SparkConf sparkConf) {
     String clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
-    String coordinators = sparkConf.get(RssSparkConfig.RSS_COORDINATOR_QUORUM);
+    String coordinators = getCoordinatorQuorumStr(sparkConf);
     long retryIntervalMs = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_INTERVAL_MAX);
     int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_RETRY_MAX);
-    int heartbeatThread = sparkConf.get(RssSparkConfig.RSS_CLIENT_HEARTBEAT_THREAD_NUM);
     CoordinatorClientFactory coordinatorClientFactory = CoordinatorClientFactory.getInstance();
-    return coordinatorClientFactory.createCoordinatorClient(
-        ClientType.valueOf(clientType), coordinators, retryIntervalMs, retryTimes, heartbeatThread);
+    return coordinatorClientFactory.createCoordinatorClientWithoutHeartbeat(
+        ClientType.valueOf(clientType), coordinators, retryIntervalMs, retryTimes);
+  }
+
+  public static CoordinatorGrpcRetryableClient createCoordinatorClientsForAccessCluster(
+      SparkConf sparkConf) {
+    String clientType = sparkConf.get(RssSparkConfig.RSS_CLIENT_TYPE);
+    String coordinators = getCoordinatorQuorumStr(sparkConf);
+    long retryIntervalMs = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_INTERVAL_MS);
+    int retryTimes = sparkConf.get(RssSparkConfig.RSS_CLIENT_ACCESS_RETRY_TIMES);
+    CoordinatorClientFactory coordinatorClientFactory = CoordinatorClientFactory.getInstance();
+    return coordinatorClientFactory.createCoordinatorClientWithoutHeartbeat(
+        ClientType.valueOf(clientType), coordinators, retryIntervalMs, retryTimes);
+  }
+
+  public static String getCoordinatorQuorumStr(SparkConf sparkConf) {
+    return sparkConf.get(RssSparkConfig.RSS_COORDINATOR_QUORUM);
   }
 
   public static void applyDynamicClientConf(SparkConf sparkConf, Map<String, String> confItems) {

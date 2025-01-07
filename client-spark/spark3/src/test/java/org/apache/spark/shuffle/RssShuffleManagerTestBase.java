@@ -63,7 +63,7 @@ public class RssShuffleManagerTestBase {
     CoordinatorGrpcRetryableClient client =
         new CoordinatorGrpcRetryableClient(coordinatorClients, 0, 1, 1);
     mockedStaticRssShuffleUtils
-        .when(() -> RssSparkShuffleUtils.createCoordinatorClients(any()))
+        .when(() -> RssSparkShuffleUtils.createCoordinatorClientsForAccessCluster(any()))
         .thenReturn(client);
     return mockCoordinatorClient;
   }
