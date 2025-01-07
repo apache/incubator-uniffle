@@ -115,6 +115,7 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
   private final ShuffleServer shuffleServer;
   private boolean isRpcAuditLogEnabled;
   private List<String> rpcAuditExcludeOpList;
+  private boolean reportOnUnregisterEnabled;
 
   public ShuffleServerGrpcService(ShuffleServer shuffleServer) {
     this.shuffleServer = shuffleServer;
@@ -128,6 +129,10 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
             .getShuffleServerConf()
             .getReconfigurableConf(ShuffleServerConf.SERVER_RPC_RPC_AUDIT_LOG_EXCLUDE_LIST)
             .get();
+    reportOnUnregisterEnabled =
+        shuffleServer
+            .getShuffleServerConf()
+            .getBoolean(ShuffleServerConf.SERVER_HEARTBEAT_REPORT_ON_UNREGISTER_ENABLED);
     ReconfigurableRegistry.register(
         Sets.newHashSet(
             ShuffleServerConf.SERVER_RPC_AUDIT_LOG_ENABLED.key(),
@@ -168,6 +173,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
       String responseMessage = "OK";
       try {
+        if (reportOnUnregisterEnabled) {
+          shuffleServer.sendHeartbeat();
+        }
         shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId);
         if (shuffleServer.isRemoteMergeEnable()) {
           shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId + MERGE_APP_SUFFIX);
@@ -210,6 +218,9 @@ public class ShuffleServerGrpcService extends ShuffleServerImplBase {
       }
       String responseMessage = "OK";
       try {
+        if (reportOnUnregisterEnabled) {
+          shuffleServer.sendHeartbeat();
+        }
         shuffleServer.getShuffleTaskManager().removeShuffleDataAsync(appId, shuffleId);
         if (shuffleServer.isRemoteMergeEnable()) {
           shuffleServer
