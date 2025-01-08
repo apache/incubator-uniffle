@@ -36,43 +36,52 @@ public class CoordinatorServerTest {
 
     CoordinatorServer cs1 = new CoordinatorServer(coordinatorConf);
     CoordinatorServer cs2 = new CoordinatorServer(coordinatorConf);
-    cs1.start();
-
-    ExitUtils.disableSystemExit();
-    String expectMessage = "Fail to start jetty http server";
-    final int expectStatus = 1;
+    CoordinatorServer cs3 = null;
     try {
-      cs2.start();
-    } catch (Exception e) {
-      assertTrue(e.getMessage().startsWith(expectMessage));
-      assertEquals(expectStatus, ((ExitException) e).getStatus());
-    } finally {
-      // Always call stopServer after new CoordinatorServer to shut down ExecutorService
-      cs2.stopServer();
-    }
+      cs1.start();
 
-    coordinatorConf.setInteger("rss.jetty.http.port", 9529);
-    cs2 = new CoordinatorServer(coordinatorConf);
-    expectMessage = "Fail to start grpc server";
-    try {
-      cs2.start();
-    } catch (Exception e) {
-      assertEquals(expectMessage, e.getMessage());
-      assertEquals(expectStatus, ((ExitException) e).getStatus());
+      ExitUtils.disableSystemExit();
+      String expectMessage = "Fail to start jetty http server";
+      final int expectStatus = 1;
+      try {
+        cs2.start();
+      } catch (Exception e) {
+        assertTrue(e.getMessage().startsWith(expectMessage));
+        assertEquals(expectStatus, ((ExitException) e).getStatus());
+      } finally {
+        // Always call stopServer after new CoordinatorServer to shut down ExecutorService
+        cs2.stopServer();
+      }
+
+      coordinatorConf.setInteger("rss.jetty.http.port", 9529);
+      cs3 = new CoordinatorServer(coordinatorConf);
+      expectMessage = "Fail to start grpc server";
+      try {
+        cs3.start();
+      } catch (Exception e) {
+        assertEquals(expectMessage, e.getMessage());
+        assertEquals(expectStatus, ((ExitException) e).getStatus());
+      } finally {
+        // Always call stopServer after new CoordinatorServer to shut down ExecutorService
+        cs2.stopServer();
+        cs1.stopServer();
+      }
+
+      final Thread t =
+          new Thread(
+              null,
+              () -> {
+                throw new AssertionError("TestUncaughtException");
+              },
+              "testThread");
+      t.start();
+      t.join();
     } finally {
-      // Always call stopServer after new CoordinatorServer to shut down ExecutorService
-      cs2.stopServer();
       cs1.stopServer();
+      cs2.stopServer();
+      if (cs3 != null) {
+        cs3.stopServer();
+      }
     }
-
-    final Thread t =
-        new Thread(
-            null,
-            () -> {
-              throw new AssertionError("TestUncaughtException");
-            },
-            "testThread");
-    t.start();
-    t.join();
   }
 }
