@@ -132,7 +132,12 @@ public class CoordinatorReconfigureNodeMaxTest extends CoordinatorTestBase {
 
     // case3: recover its value to 10
     // Make sure last modification time change
-    Thread.sleep(1000L);
+    File tempConfFile = new File(tempConfFilePath);
+    long currentTime = System.currentTimeMillis();
+    if (currentTime - tempConfFile.lastModified() < 1000) {
+      Thread.sleep(1000 - (currentTime - tempConfFile.lastModified()));
+    }
+
     try (FileWriter fileWriter = new FileWriter(tempConfFilePath)) {
       fileWriter.append(CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX.key() + " " + 10);
     }
