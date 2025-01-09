@@ -38,7 +38,6 @@ public class Encoders {
   public static void encodeShuffleBlockInfo(ShuffleBlockInfo shuffleBlockInfo, ByteBuf byteBuf) {
     byteBuf.writeInt(shuffleBlockInfo.getPartitionId());
     byteBuf.writeLong(shuffleBlockInfo.getBlockId());
-    byteBuf.writeInt(shuffleBlockInfo.getLength());
     byteBuf.writeInt(shuffleBlockInfo.getShuffleId());
     byteBuf.writeLong(shuffleBlockInfo.getCrc());
     byteBuf.writeLong(shuffleBlockInfo.getTaskAttemptId());
