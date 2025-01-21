@@ -720,8 +720,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
             Lists.newArrayList(shuffleServerInfo2, shuffleServerInfo3, shuffleServerInfo4));
 
     // server 0,1,2 are ok, server 3,4 are timout
-    enableTimeout((MockedShuffleServer) grpcShuffleServers.get(3), 500);
-    enableTimeout((MockedShuffleServer) grpcShuffleServers.get(4), 500);
+    enableTimeout((MockedShuffleServer) grpcShuffleServers.get(3), 2000);
+    enableTimeout((MockedShuffleServer) grpcShuffleServers.get(4), 2000);
 
     Map<Integer, Set<Long>> partitionToBlockIds = Maps.newHashMap();
     partitionToBlockIds.put(0, Sets.newHashSet(blockIdBitmap0.stream().iterator()));
