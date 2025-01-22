@@ -235,7 +235,7 @@ public class SimpleClusterManager implements ClusterManager {
       String tempExcludedNodesPath = excludedNodesPath.concat("_tmp");
       Path tmpHadoopPath = new Path(tempExcludedNodesPath);
       if (hadoopFileSystem.exists(tmpHadoopPath)) {
-        hadoopFileSystem.delete(tmpHadoopPath);
+        hadoopFileSystem.delete(tmpHadoopPath, true);
       }
       try (BufferedWriter bufferedWriter =
           new BufferedWriter(
@@ -246,7 +246,7 @@ public class SimpleClusterManager implements ClusterManager {
           bufferedWriter.newLine();
         }
       }
-      hadoopFileSystem.delete(hadoopPath);
+      hadoopFileSystem.delete(hadoopPath, true);
       hadoopFileSystem.rename(tmpHadoopPath, hadoopPath);
     }
   }
