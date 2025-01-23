@@ -39,6 +39,8 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
   private final File file;
   private final long offset;
   private final int length;
+  private volatile boolean isFilled;
+  private ByteBuffer cachedBuffer;
 
   public FileSegmentManagedBuffer(File file, long offset, int length) {
     this.file = file;
@@ -58,21 +60,25 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
 
   @Override
   public ByteBuffer nioByteBuffer() {
+    if (isFilled) {
+      return cachedBuffer;
+    }
     FileChannel channel = null;
     try {
       channel = new RandomAccessFile(file, "r").getChannel();
-      ByteBuffer buf = ByteBuffer.allocate(length);
+      cachedBuffer = ByteBuffer.allocate(length);
       channel.position(offset);
-      while (buf.remaining() != 0) {
-        if (channel.read(buf) == -1) {
+      while (cachedBuffer.remaining() != 0) {
+        if (channel.read(cachedBuffer) == -1) {
           throw new IOException(
               String.format(
                   "Reached EOF before filling buffer.offset=%s,file=%s,buf.remaining=%s",
-                  offset, file.getAbsoluteFile(), buf.remaining()));
+                  offset, file.getAbsoluteFile(), cachedBuffer.remaining()));
         }
       }
-      buf.flip();
-      return buf;
+      cachedBuffer.flip();
+      isFilled = true;
+      return cachedBuffer;
     } catch (IOException e) {
       String fileName = file.getAbsolutePath();
       String errorMessage =
@@ -102,6 +108,9 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
 
   @Override
   public ManagedBuffer release() {
+    cachedBuffer.clear();
+    cachedBuffer = null;
+    isFilled = false;
     return this;
   }
 
