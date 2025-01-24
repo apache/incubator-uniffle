@@ -177,7 +177,9 @@ public class SimpleClusterManager implements ClusterManager {
       // get the active server num.
       Set<String> allServers = new HashSet<>(servers.keySet());
       allServers.removeAll(excludedNodes);
-      allServers.removeAll(unhealthyNodes);
+      for (ServerNode unhealthyNode : unhealthyNodes) {
+        allServers.remove(unhealthyNode.getId());
+      }
       CoordinatorMetrics.gaugeActiveServerNum.set(allServers.size());
 
     } catch (Exception e) {
