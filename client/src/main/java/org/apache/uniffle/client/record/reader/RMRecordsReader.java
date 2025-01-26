@@ -194,9 +194,9 @@ public class RMRecordsReader<K, V, C> {
 
   public void start() {
     for (int partitionId : partitionIds) {
-      mergeBuffers.put(partitionId, new Queue(maxBufferPerPartition));
+      mergeBuffers.put(partitionId, new Queue<>(maxBufferPerPartition));
       if (this.combiner != null) {
-        combineBuffers.put(partitionId, new Queue(maxBufferPerPartition));
+        combineBuffers.put(partitionId, new Queue<>(maxBufferPerPartition));
       }
       RecordsFetcher fetcher = new RecordsFetcher(partitionId);
       fetcher.start();

@@ -641,7 +641,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     Map<Integer, Set<Long>> ptb = new HashMap<>();
     for (int i = PARTITION_ID; i < PARTITION_ID + 3; i++) {
       final int partitionId = i;
-      ptb.put(partitionId, new HashSet());
+      ptb.put(partitionId, new HashSet<>());
       ptb.get(partitionId)
           .addAll(
               blocks1.stream()
@@ -854,7 +854,7 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
     Map<Integer, Set<Long>> ptb = new HashMap<>();
     for (int i = PARTITION_ID; i < PARTITION_ID + 3; i++) {
       final int partitionId = i;
-      ptb.put(partitionId, new HashSet());
+      ptb.put(partitionId, new HashSet<>());
       ptb.get(partitionId)
           .addAll(
               blocks1.stream()
