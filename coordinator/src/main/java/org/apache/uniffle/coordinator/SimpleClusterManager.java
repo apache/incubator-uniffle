@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -171,6 +172,16 @@ public class SimpleClusterManager implements ClusterManager {
 
       CoordinatorMetrics.gaugeUnhealthyServerNum.set(unhealthyNodes.size());
       CoordinatorMetrics.gaugeTotalServerNum.set(servers.size());
+      CoordinatorMetrics.gaugeLostServerNum.set(lostNodes.size());
+
+      // get the active server num.
+      Set<String> allServers = new HashSet<>(servers.keySet());
+      allServers.removeAll(excludedNodes);
+      for (ServerNode unhealthyNode : unhealthyNodes) {
+        allServers.remove(unhealthyNode.getId());
+      }
+      CoordinatorMetrics.gaugeActiveServerNum.set(allServers.size());
+
     } catch (Exception e) {
       LOG.warn("Error happened in nodesCheck", e);
     }
