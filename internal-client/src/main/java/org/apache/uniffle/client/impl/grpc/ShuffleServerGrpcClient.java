@@ -174,7 +174,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         0,
         0,
         0,
-        rssConf.get(RSS_CLIENT_GRPC_EVENT_LOOP_THREADS));
+        rssConf == null ? -1 : rssConf.get(RSS_CLIENT_GRPC_EVENT_LOOP_THREADS));
   }
 
   public ShuffleServerGrpcClient(
