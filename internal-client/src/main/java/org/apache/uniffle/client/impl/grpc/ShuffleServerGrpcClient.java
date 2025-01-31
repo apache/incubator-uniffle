@@ -118,6 +118,7 @@ import org.apache.uniffle.proto.RssProtos.ShuffleRegisterResponse;
 import org.apache.uniffle.proto.ShuffleServerGrpc;
 import org.apache.uniffle.proto.ShuffleServerGrpc.ShuffleServerBlockingStub;
 
+import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_GRPC_EVENT_LOOP_THREADS;
 import static org.apache.uniffle.proto.RssProtos.StatusCode.NO_BUFFER;
 
 public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServerClient {
@@ -155,7 +156,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         true,
         0,
         0,
-        0);
+        0,
+        -1);
   }
 
   public ShuffleServerGrpcClient(RssConf rssConf, String host, int port) {
@@ -171,7 +173,8 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         true,
         0,
         0,
-        0);
+        0,
+        rssConf == null ? -1 : rssConf.get(RSS_CLIENT_GRPC_EVENT_LOOP_THREADS));
   }
 
   public ShuffleServerGrpcClient(
@@ -182,8 +185,17 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
       boolean usePlaintext,
       int pageSize,
       int maxOrder,
-      int smallCacheSize) {
-    super(host, port, maxRetryAttempts, usePlaintext, pageSize, maxOrder, smallCacheSize);
+      int smallCacheSize,
+      int nettyEventLoopThreads) {
+    super(
+        host,
+        port,
+        maxRetryAttempts,
+        usePlaintext,
+        pageSize,
+        maxOrder,
+        smallCacheSize,
+        nettyEventLoopThreads);
     blockingStub = ShuffleServerGrpc.newBlockingStub(channel);
     rpcTimeout = rpcTimeoutMs;
   }

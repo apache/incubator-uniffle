@@ -37,7 +37,7 @@ public abstract class GrpcClient {
   protected ManagedChannel channel;
 
   protected GrpcClient(String host, int port, int maxRetryAttempts, boolean usePlaintext) {
-    this(host, port, maxRetryAttempts, usePlaintext, 0, 0, 0);
+    this(host, port, maxRetryAttempts, usePlaintext, 0, 0, 0, -1);
   }
 
   protected GrpcClient(
@@ -47,11 +47,17 @@ public abstract class GrpcClient {
       boolean usePlaintext,
       int pageSize,
       int maxOrder,
-      int smallCacheSize) {
+      int smallCacheSize,
+      int nettyEventLoopThreads) {
     this.host = host;
     this.port = port;
     this.maxRetryAttempts = maxRetryAttempts;
     this.usePlaintext = usePlaintext;
+
+    if (nettyEventLoopThreads > 0) {
+      System.setProperty(
+          "io.grpc.netty.shaded.io.netty.eventLoopThreads", String.valueOf(nettyEventLoopThreads));
+    }
 
     NettyChannelBuilder channelBuilder =
         NettyChannelBuilder.forAddress(host, port)

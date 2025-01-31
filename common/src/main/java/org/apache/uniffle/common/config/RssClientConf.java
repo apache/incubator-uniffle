@@ -317,4 +317,10 @@ public class RssClientConf {
           .asList()
           .noDefaultValue()
           .withDescription("the report include properties could be configured by this option");
+
+  public static final ConfigOption<Integer> RSS_CLIENT_GRPC_EVENT_LOOP_THREADS =
+      ConfigOptions.key("rss.client.grpc.nettyEventLoopThreads")
+          .intType()
+          .defaultValue(-1)
+          .withDescription("the event loop threads of netty impl for grpc");
 }

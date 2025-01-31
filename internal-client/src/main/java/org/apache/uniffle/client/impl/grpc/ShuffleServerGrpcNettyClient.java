@@ -64,6 +64,8 @@ import org.apache.uniffle.common.netty.protocol.SendShuffleDataRequest;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.RetryUtils;
 
+import static org.apache.uniffle.common.config.RssClientConf.RSS_CLIENT_GRPC_EVENT_LOOP_THREADS;
+
 public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
   private static final Logger LOG = LoggerFactory.getLogger(ShuffleServerGrpcNettyClient.class);
   private int nettyPort;
@@ -107,7 +109,16 @@ public class ShuffleServerGrpcNettyClient extends ShuffleServerGrpcClient {
       int pageSize,
       int maxOrder,
       int smallCacheSize) {
-    super(host, grpcPort, maxRetryAttempts, rpcTimeoutMs, true, pageSize, maxOrder, smallCacheSize);
+    super(
+        host,
+        grpcPort,
+        maxRetryAttempts,
+        rpcTimeoutMs,
+        true,
+        pageSize,
+        maxOrder,
+        smallCacheSize,
+        rssConf.get(RSS_CLIENT_GRPC_EVENT_LOOP_THREADS));
     this.nettyPort = nettyPort;
     TransportContext transportContext = new TransportContext(new TransportConf(rssConf));
     this.clientFactory = new TransportClientFactory(transportContext);
