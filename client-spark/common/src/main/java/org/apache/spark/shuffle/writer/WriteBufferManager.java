@@ -85,6 +85,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private long copyTime = 0;
   private long serializeTime = 0;
   private long compressTime = 0;
+  private long sortTime = 0;
   private long writeTime = 0;
   private long estimateTime = 0;
   private long requireMemoryTime = 0;
@@ -372,9 +373,11 @@ public class WriteBufferManager extends MemoryConsumer {
     bufferSpillRatio = Math.max(0.1, Math.min(1.0, bufferSpillRatio));
     List<Integer> partitionList = new ArrayList(buffers.keySet());
     if (Double.compare(bufferSpillRatio, 1.0) < 0) {
+      long start = System.currentTimeMillis();
       partitionList.sort(
           Comparator.comparingInt(o -> buffers.get(o) == null ? 0 : buffers.get(o).getMemoryUsed())
               .reversed());
+      sortTime += start;
       targetSpillSize = (long) ((getUsedBytes() - getInSendListBytes()) * bufferSpillRatio);
     }
 
@@ -643,6 +646,8 @@ public class WriteBufferManager extends MemoryConsumer {
         + writeTime
         + "], serializeTime["
         + serializeTime
+        + "], sortTime["
+        + sortTime
         + "], compressTime["
         + compressTime
         + "], estimateTime["
