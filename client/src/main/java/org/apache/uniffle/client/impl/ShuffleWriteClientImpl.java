@@ -756,27 +756,24 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
               bitmapNum);
       ShuffleServerInfo ssi = entry.getKey();
       try {
+        long start = System.currentTimeMillis();
         RssReportShuffleResultResponse response =
             getShuffleServerClient(ssi).reportShuffleResult(request);
         if (response.getStatusCode() == StatusCode.SUCCESS) {
           LOG.info(
-              "Report shuffle result to "
-                  + ssi
-                  + " for appId["
-                  + appId
-                  + "], shuffleId["
-                  + shuffleId
-                  + "] successfully");
+              "Reported shuffle result to {} for appId[{}], shuffleId[{}] successfully that cost {} ms",
+              ssi,
+              appId,
+              shuffleId,
+              System.currentTimeMillis() - start);
         } else {
-          LOG.warn(
-              "Report shuffle result to "
-                  + ssi
-                  + " for appId["
-                  + appId
-                  + "], shuffleId["
-                  + shuffleId
-                  + "] failed with "
-                  + response.getStatusCode());
+          LOG.info(
+              "Reported shuffle result to {} for appId[{}], shuffleId[{}] failed with [{}] that cost {} ms",
+              ssi,
+              appId,
+              shuffleId,
+              response.getStatusCode(),
+              System.currentTimeMillis() - start);
           recordFailedBlockIds(blockReportTracker, requestBlockIds);
           if (enableWriteFailureRetry) {
             // The failed Shuffle Server is recorded and corresponding exceptions are raised only
