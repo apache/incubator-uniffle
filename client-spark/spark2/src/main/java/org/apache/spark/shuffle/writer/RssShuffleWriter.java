@@ -492,11 +492,14 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             bitmapSplitNum,
             recordReportFailedShuffleservers,
             enableWriteFailureRetry);
+        long reportDuration = System.currentTimeMillis() - start;
         LOG.info(
-            "Report shuffle result for task[{}] with bitmapNum[{}] cost {} ms",
+            "Reported all shuffle result for shuffleId[{}] task[{}] with bitmapNum[{}] cost {} ms",
+            shuffleId,
             taskAttemptId,
             bitmapSplitNum,
-            (System.currentTimeMillis() - start));
+            reportDuration);
+        shuffleWriteMetrics.incWriteTime(TimeUnit.MILLISECONDS.toNanos(reportDuration));
         MapStatus mapStatus = MapStatus$.MODULE$.apply(blockManagerId, partitionLengths);
         return Option.apply(mapStatus);
       } else {

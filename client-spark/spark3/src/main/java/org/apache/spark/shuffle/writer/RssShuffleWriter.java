@@ -818,12 +818,14 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
             bitmapSplitNum,
             recordReportFailedShuffleservers,
             enableWriteFailureRetry);
+        long reportDuration = System.currentTimeMillis() - start;
         LOG.info(
-            "Report shuffle result for shuffleId[{}] task[{}] with bitmapNum[{}] cost {} ms",
+            "Reported all shuffle result for shuffleId[{}] task[{}] with bitmapNum[{}] cost {} ms",
             shuffleId,
             taskAttemptId,
             bitmapSplitNum,
-            (System.currentTimeMillis() - start));
+            reportDuration);
+        shuffleWriteMetrics.incWriteTime(TimeUnit.MILLISECONDS.toNanos(reportDuration));
         // todo: we can replace the dummy host and port with the real shuffle server which we prefer
         // to read
         final BlockManagerId blockManagerId =
