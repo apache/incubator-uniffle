@@ -23,7 +23,6 @@ import java.util.Optional;
 import org.apache.uniffle.common.config.RssConf;
 
 import static org.apache.uniffle.common.config.RssClientConf.COMPRESSION_TYPE;
-import static org.apache.uniffle.common.config.RssClientConf.ZSTD_COMPRESSION_LEVEL;
 
 public abstract class Codec {
 
@@ -33,7 +32,7 @@ public abstract class Codec {
       case NONE:
         return Optional.empty();
       case ZSTD:
-        return Optional.of(ZstdCodec.getInstance(rssConf.get(ZSTD_COMPRESSION_LEVEL)));
+        return Optional.of(ZstdCodec.getInstance(rssConf));
       case SNAPPY:
         return Optional.of(SnappyCodec.getInstance());
       case NOOP:

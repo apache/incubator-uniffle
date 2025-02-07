@@ -52,6 +52,13 @@ public class RssClientConf {
           .defaultValue(3)
           .withDescription("The zstd compression level, the default level is 3");
 
+  public static final ConfigOption<Integer> ZSTD_COMPRESSION_WORKER_NUMBER =
+      ConfigOptions.key("rss.client.io.compression.zstd.workerNumber")
+          .intType()
+          .defaultValue(-1)
+          .withDescription(
+              "Set the parallel compression worker number. This will not enabled by default");
+
   public static final ConfigOption<ShuffleDataDistributionType> DATA_DISTRIBUTION_TYPE =
       ConfigOptions.key("rss.client.shuffle.data.distribution.type")
           .enumType(ShuffleDataDistributionType.class)
