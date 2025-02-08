@@ -23,6 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,7 @@ public abstract class PrefetchableClientReadHandler extends AbstractClientReadHa
   private ExecutorService prefetchExecutors;
   private AtomicBoolean abnormalFetchTag;
   private AtomicBoolean finishedTag;
+  private AtomicInteger queueingNumber;
 
   public PrefetchableClientReadHandler(Optional<PrefetchOption> prefetchOptional) {
     if (prefetchOptional.isPresent()) {
@@ -56,6 +58,7 @@ public abstract class PrefetchableClientReadHandler extends AbstractClientReadHa
       this.prefetchExecutors = Executors.newFixedThreadPool(1);
       this.abnormalFetchTag = new AtomicBoolean(false);
       this.finishedTag = new AtomicBoolean(false);
+      this.queueingNumber = new AtomicInteger(0);
     } else {
       this.prefetchEnabled = false;
     }
@@ -79,15 +82,15 @@ public abstract class PrefetchableClientReadHandler extends AbstractClientReadHa
       return doReadShuffleData();
     }
 
-    int free = prefetchQueueCapacity - prefetchResultQueue.size();
+    int free = prefetchQueueCapacity - prefetchResultQueue.size() - queueingNumber.get();
     for (int i = 0; i < free; i++) {
+      queueingNumber.incrementAndGet();
       prefetchExecutors.submit(
           () -> {
-            // if it has been marked as abnormal/finished state, skip the following fetching.
-            if (abnormalFetchTag.get() || finishedTag.get()) {
-              return;
-            }
             try {
+              if (abnormalFetchTag.get() || finishedTag.get()) {
+                return;
+              }
               ShuffleDataResult result = doReadShuffleData();
               if (result == null) {
                 this.finishedTag.set(true);
@@ -96,6 +99,8 @@ public abstract class PrefetchableClientReadHandler extends AbstractClientReadHa
             } catch (Exception e) {
               abnormalFetchTag.set(true);
               LOG.error("Errors on doing readShuffleData", e);
+            } finally {
+              queueingNumber.decrementAndGet();
             }
           });
     }
