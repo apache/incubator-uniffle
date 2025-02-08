@@ -70,7 +70,7 @@ public class PrefetchableClientReadHandlerTest {
   public void test_with_prefetch() {
     PrefetchableClientReadHandler handler =
         new MockedHandler(
-            Optional.of(new PrefetchableClientReadHandler.PrefetchOption(4, 1)), 10, false, false);
+            Optional.of(new PrefetchableClientReadHandler.PrefetchOption(4, 10)), 10, false, false);
     int counter = 0;
     while (true) {
       if (handler.readShuffleData() != null) {

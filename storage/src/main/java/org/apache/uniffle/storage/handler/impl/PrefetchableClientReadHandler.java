@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
@@ -105,23 +106,22 @@ public abstract class PrefetchableClientReadHandler extends AbstractClientReadHa
         throw new RssException("Fast fail due to the fetch failure");
       }
 
-      Optional<ShuffleDataResult> optionalShuffleDataResult = prefetchResultQueue.poll();
-      if (optionalShuffleDataResult != null) {
-        if (optionalShuffleDataResult.isPresent()) {
-          return optionalShuffleDataResult.get();
-        } else {
-          return null;
+      try {
+        Optional<ShuffleDataResult> optionalShuffleDataResult =
+            prefetchResultQueue.poll(10, TimeUnit.MILLISECONDS);
+        if (optionalShuffleDataResult != null) {
+          if (optionalShuffleDataResult.isPresent()) {
+            return optionalShuffleDataResult.get();
+          } else {
+            return null;
+          }
         }
+      } catch (InterruptedException e) {
+        return null;
       }
 
       if (System.currentTimeMillis() - start > prefetchTimeoutSec * 1000) {
         throw new RssException("Unexpected duration of reading shuffle data. Fast fail!");
-      }
-
-      try {
-        Thread.sleep(10);
-      } catch (InterruptedException e) {
-        throw new RssException(e);
       }
     }
   }
