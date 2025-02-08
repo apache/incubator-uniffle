@@ -34,7 +34,7 @@ public class PrefetchableClientReadHandlerTest {
     private boolean markTimeout;
     private boolean markFetchFailure;
 
-    public MockedHandler(
+    MockedHandler(
         Optional<PrefetchOption> option,
         int readNum,
         boolean markTimeout,
