@@ -323,4 +323,22 @@ public class RssClientConf {
           .intType()
           .defaultValue(-1)
           .withDescription("the event loop threads of netty impl for grpc");
+
+  public static final ConfigOption<Boolean> RSS_CLIENT_PREFETCH_ENABLED =
+      ConfigOptions.key("rss.client.read.prefetch.enabled")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Read prefetch switch that will be disabled by default");
+
+  public static final ConfigOption<Integer> RSS_CLIENT_PREFETCH_CAPACITY =
+      ConfigOptions.key("rss.client.read.prefetch.capacity")
+          .intType()
+          .defaultValue(4)
+          .withDescription("Read prefetch capacity");
+
+  public static final ConfigOption<Integer> READ_CLIENT_PREFETCH_TIMEOUT_SEC =
+      ConfigOptions.key("rss.client.read.prefetch.timeoutSec")
+          .intType()
+          .defaultValue(120)
+          .withDescription("Read prefetch timeout seconds");
 }
