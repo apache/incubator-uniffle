@@ -18,6 +18,7 @@
 package org.apache.uniffle.storage.handler.impl;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class PrefetchableClientReadHandlerTest {
 
   class MockedHandler extends PrefetchableClientReadHandler {
-    private int readNum;
+    private AtomicInteger readNum;
     private boolean markTimeout;
     private boolean markFetchFailure;
 
@@ -40,7 +41,7 @@ public class PrefetchableClientReadHandlerTest {
         boolean markTimeout,
         boolean markFetchFailure) {
       super(option);
-      this.readNum = readNum;
+      this.readNum = new AtomicInteger(readNum);
       this.markTimeout = markTimeout;
       this.markFetchFailure = markFetchFailure;
     }
@@ -58,8 +59,8 @@ public class PrefetchableClientReadHandlerTest {
           // ignore
         }
       }
-      if (readNum > 0) {
-        readNum -= 1;
+      if (readNum.get() > 0) {
+        readNum.decrementAndGet();
         return new ShuffleDataResult();
       }
       return null;
