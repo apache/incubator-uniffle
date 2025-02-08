@@ -452,7 +452,7 @@ public class RMRecordsReader<K, V, C> {
     RecordsFetcher(int partitionId) {
       this.partitionId = partitionId;
       this.sleepTime = initFetchSleepTime;
-      this.recordBuffer = new RecordBuffer(partitionId);
+      this.recordBuffer = new RecordBuffer<>(partitionId);
       this.nextQueue =
           combiner == null ? mergeBuffers.get(partitionId) : combineBuffers.get(partitionId);
       this.serverInfos = shuffleServerInfoMap.get(partitionId);
@@ -530,7 +530,7 @@ public class RMRecordsReader<K, V, C> {
                 }
                 if (recordBuffer.size() >= maxRecordsNumPerBuffer) {
                   nextQueue.put(recordBuffer);
-                  recordBuffer = new RecordBuffer(partitionId);
+                  recordBuffer = new RecordBuffer<>(partitionId);
                 }
                 recordBuffer.addRecord(reader.getCurrentKey(), reader.getCurrentValue());
               }
@@ -570,7 +570,7 @@ public class RMRecordsReader<K, V, C> {
 
     RecordsCombiner(int partitionId) {
       this.partitionId = partitionId;
-      this.cached = new RecordBuffer(partitionId);
+      this.cached = new RecordBuffer<>(partitionId);
       this.nextQueue = mergeBuffers.get(partitionId);
       setName("RecordsCombiner-" + partitionId);
     }
@@ -593,7 +593,7 @@ public class RMRecordsReader<K, V, C> {
             //   we can send the cached to downstream directly.
             if (cached.size() > 0 && !isSameKey(cached.getLastKey(), current.getFirstKey())) {
               sendCachedBuffer(cached);
-              cached = new RecordBuffer(partitionId);
+              cached = new RecordBuffer<>(partitionId);
             }
 
             // 3 combine the current, then cache it. By this way, we can handle the specical case
