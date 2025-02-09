@@ -262,7 +262,6 @@ public class RMRecordsReader<K, V, C> {
           curr = results.take();
           return curr != null;
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
           throw new IOException(e);
         }
       }
@@ -290,7 +289,6 @@ public class RMRecordsReader<K, V, C> {
           curr = results.take();
           return curr != null;
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
           throw new IOException(e);
         }
       }
@@ -336,7 +334,6 @@ public class RMRecordsReader<K, V, C> {
             return true;
           }
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
           throw new IOException(e);
         }
       }
@@ -388,7 +385,6 @@ public class RMRecordsReader<K, V, C> {
                   curr = results.take();
                   return ret;
                 } catch (InterruptedException | IOException e) {
-                  Thread.currentThread().interrupt();
                   throw new RssException(e);
                 }
               }
@@ -612,7 +608,6 @@ public class RMRecordsReader<K, V, C> {
             }
           }
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
           throw new RssException(e);
         }
       }
@@ -661,7 +656,6 @@ public class RMRecordsReader<K, V, C> {
                   }
                   return new BufferedSegment(recordBuffer);
                 } catch (InterruptedException ex) {
-                  Thread.currentThread().interrupt();
                   throw new RssException(ex);
                 }
               });
@@ -677,7 +671,6 @@ public class RMRecordsReader<K, V, C> {
       } catch (InterruptedException | IOException e) {
         error = e;
         stop = true;
-        Thread.currentThread().interrupt();
       }
     }
   }
