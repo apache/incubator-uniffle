@@ -24,6 +24,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ public abstract class PrefetchableClientReadHandler extends AbstractClientReadHa
   private AtomicBoolean abnormalFetchTag;
   private AtomicBoolean finishedTag;
   private AtomicInteger queueingNumber;
+  private AtomicLong fetchTime;
 
   public PrefetchableClientReadHandler(Optional<PrefetchOption> prefetchOptional) {
     if (prefetchOptional.isPresent()) {
@@ -59,6 +61,7 @@ public abstract class PrefetchableClientReadHandler extends AbstractClientReadHa
       this.abnormalFetchTag = new AtomicBoolean(false);
       this.finishedTag = new AtomicBoolean(false);
       this.queueingNumber = new AtomicInteger(0);
+      this.fetchTime = new AtomicLong(0);
     } else {
       this.prefetchEnabled = false;
     }
@@ -87,6 +90,7 @@ public abstract class PrefetchableClientReadHandler extends AbstractClientReadHa
       queueingNumber.incrementAndGet();
       prefetchExecutors.submit(
           () -> {
+            long start = System.currentTimeMillis();
             try {
               if (abnormalFetchTag.get() || finishedTag.get()) {
                 return;
@@ -101,6 +105,7 @@ public abstract class PrefetchableClientReadHandler extends AbstractClientReadHa
               LOG.error("Errors on doing readShuffleData", e);
             } finally {
               queueingNumber.decrementAndGet();
+              fetchTime.addAndGet(System.currentTimeMillis() - start);
             }
           });
     }
@@ -137,5 +142,15 @@ public abstract class PrefetchableClientReadHandler extends AbstractClientReadHa
     if (prefetchExecutors != null) {
       prefetchExecutors.shutdown();
     }
+  }
+
+  @Override
+  public void logConsumedBlockInfo() {
+    LOG.info(
+        "Metrics for shuffleId[{}], partitionId[{}], background fetch cost {} ms",
+        shuffleId,
+        partitionId,
+        fetchTime);
+    super.logConsumedBlockInfo();
   }
 }
