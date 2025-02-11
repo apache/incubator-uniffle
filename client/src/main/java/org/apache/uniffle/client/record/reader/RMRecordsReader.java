@@ -180,7 +180,8 @@ public class RMRecordsReader<K, V, C> {
     this.maxBufferPerPartition = Math.max(1, maxBuffer / partitionIds.size());
     this.maxRecordsNumPerBuffer =
         rssConf.get(RSS_CLIENT_REMOTE_MERGE_READER_MAX_RECORDS_PER_BUFFER);
-    this.results = new Queue(maxBufferPerPartition * maxRecordsNumPerBuffer * partitionIds.size());
+    this.results =
+        new Queue<>(maxBufferPerPartition * maxRecordsNumPerBuffer * partitionIds.size());
     this.retryMax =
         rssConf.getInteger(
             RssClientConfig.RSS_CLIENT_RETRY_MAX,
@@ -400,7 +401,7 @@ public class RMRecordsReader<K, V, C> {
     private volatile boolean producerDone = false;
 
     Queue(int maxBufferPerPartition) {
-      this.queue = new LinkedBlockingQueue(maxBufferPerPartition);
+      this.queue = new LinkedBlockingQueue<>(maxBufferPerPartition);
     }
 
     public void setProducerDone(boolean producerDone) {
@@ -438,7 +439,7 @@ public class RMRecordsReader<K, V, C> {
     private long sleepTime;
     private long blockId = 1; // Merged blockId counting from 1
     private RecordBuffer recordBuffer;
-    private Queue nextQueue;
+    private Queue<RecordBuffer> nextQueue;
     private List<ShuffleServerInfo> serverInfos;
     private ShuffleServerClient client;
     private int choose;
@@ -561,7 +562,7 @@ public class RMRecordsReader<K, V, C> {
     // distributed in different RecordBuffers. So we need a cachedBuffer used
     // to record the buffer of the last combine.
     private RecordBuffer cached;
-    private Queue nextQueue;
+    private Queue<RecordBuffer> nextQueue;
 
     RecordsCombiner(int partitionId) {
       this.partitionId = partitionId;
