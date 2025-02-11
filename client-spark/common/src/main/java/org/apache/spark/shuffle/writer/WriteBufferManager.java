@@ -92,6 +92,7 @@ public class WriteBufferManager extends MemoryConsumer {
   private SerializationStream serializeStream;
   private WrappedByteArrayOutputStream arrayOutputStream;
   private long uncompressedDataLen = 0;
+  private long compressedDataLen = 0;
   private long requireMemoryInterval;
   private int requireMemoryRetryMax;
   private Optional<Codec> codec;
@@ -430,6 +431,7 @@ public class WriteBufferManager extends MemoryConsumer {
         blockIdLayout.getBlockId(getNextSeqNo(partitionId), partitionId, taskAttemptId);
     blockCounter.incrementAndGet();
     uncompressedDataLen += data.length;
+    compressedDataLen += compressed.length;
     shuffleWriteMetrics.incBytesWritten(compressed.length);
     // add memory to indicate bytes which will be sent to shuffle server
     inSendListBytes.addAndGet(wb.getMemoryUsed());
@@ -648,14 +650,18 @@ public class WriteBufferManager extends MemoryConsumer {
         + serializeTime
         + "], sortTime["
         + sortTime
-        + "], compressTime["
-        + compressTime
         + "], estimateTime["
         + estimateTime
         + "], requireMemoryTime["
         + requireMemoryTime
         + "], uncompressedDataLen["
         + uncompressedDataLen
+        + "], compressedDataLen["
+        + compressedDataLen
+        + "], compressTime["
+        + compressTime
+        + "], compressRatio["
+        + (compressedDataLen == 0 ? 0 : (float) uncompressedDataLen / compressedDataLen)
         + "]";
   }
 
