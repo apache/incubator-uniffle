@@ -661,7 +661,7 @@ public class WriteBufferManager extends MemoryConsumer {
         + "], compressTime["
         + compressTime
         + "], compressRatio["
-        + (float) uncompressedDataLen / compressedDataLen
+        + (compressedDataLen == 0 ? 0 : (float) uncompressedDataLen / compressedDataLen)
         + "]";
   }
 
