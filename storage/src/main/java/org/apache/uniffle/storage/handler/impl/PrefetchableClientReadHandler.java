@@ -151,5 +151,6 @@ public abstract class PrefetchableClientReadHandler extends AbstractClientReadHa
         shuffleId,
         partitionId,
         fetchTime);
+    super.logConsumedBlockInfo();
   }
 }
