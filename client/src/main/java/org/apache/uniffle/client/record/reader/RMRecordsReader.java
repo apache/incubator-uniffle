@@ -561,7 +561,7 @@ public class RMRecordsReader<K, V, C> {
     // The RecordBuffer has a capacity limit, records for the same key may be
     // distributed in different RecordBuffers. So we need a cachedBuffer used
     // to record the buffer of the last combine.
-    private RecordBuffer cached;
+    private RecordBuffer<K, C> cached;
     private Queue<RecordBuffer> nextQueue;
 
     RecordsCombiner(int partitionId) {
