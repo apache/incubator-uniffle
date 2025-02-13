@@ -96,8 +96,7 @@ public abstract class DataSkippableReadHandler extends PrefetchableClientReadHan
       blocksOfSegment.and(expectBlockIds);
       if (!blocksOfSegment.isEmpty()) {
         // skip processed blockIds
-        blocksOfSegment.or(processBlockIds);
-        blocksOfSegment.xor(processBlockIds);
+        blocksOfSegment.andNot(processBlockIds);
         if (!blocksOfSegment.isEmpty()) {
           result = readShuffleData(segment);
           segmentIndex++;
