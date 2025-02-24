@@ -312,7 +312,7 @@ public class LocalStorageManager extends SingleStorageManager {
         ShuffleHandlerFactory.getInstance()
             .createShuffleDeleteHandler(
                 new CreateShuffleDeleteHandlerRequest(
-                    StorageType.LOCALFILE.name(), new Configuration()));
+                    StorageType.LOCALFILE.name(), new Configuration(), event.isRenameAndDelete()));
 
     List<String> deletePaths =
         localStorages.stream()
@@ -353,7 +353,11 @@ public class LocalStorageManager extends SingleStorageManager {
                 })
             .collect(Collectors.toList());
 
-    deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user);
+    boolean isSuccess =
+        deleteHandler.delete(deletePaths.toArray(new String[deletePaths.size()]), appId, user);
+    if (!isSuccess && event.isRenameAndDelete()) {
+      ShuffleServerMetrics.counterLocalRenameAndDeletionFaileTd.inc();
+    }
     removeAppStorageInfo(event);
   }
 
