@@ -66,7 +66,8 @@ public class ReconfigurableRegistry {
    * @param listener the given property listener
    */
   public static synchronized void register(Set<String> keys, ReconfigureListener listener) {
-    List listenerList = LISTENER_MAP.computeIfAbsent(keys, k -> new ArrayList<>());
+    List<ReconfigureListener> listenerList =
+        LISTENER_MAP.computeIfAbsent(keys, k -> new ArrayList<>());
     listenerList.add(listener);
   }
 
