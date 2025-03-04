@@ -132,7 +132,7 @@ public class SimpleClusterManagerTest {
   public void getLostServerListTest() throws Exception {
     CoordinatorConf coordinatorConf = new CoordinatorConf();
     // Shorten the heartbeat time
-    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 300L);
+    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 600L);
     try (SimpleClusterManager clusterManager =
         new SimpleClusterManager(coordinatorConf, new Configuration())) {
       ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20, 10, grpcTags);
@@ -174,7 +174,7 @@ public class SimpleClusterManagerTest {
   public void getUnhealthyServerList() throws Exception {
     CoordinatorConf coordinatorConf = new CoordinatorConf();
     // Shorten the heartbeat time
-    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 300L);
+    coordinatorConf.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 600L);
     try (SimpleClusterManager clusterManager =
         new SimpleClusterManager(coordinatorConf, new Configuration())) {
       ServerNode sn1 = new ServerNode("sn1", "ip", 0, 100L, 50L, 20, 10, grpcTags);
@@ -375,7 +375,7 @@ public class SimpleClusterManagerTest {
   @Test
   public void heartbeatTimeoutTest() throws Exception {
     CoordinatorConf ssc = new CoordinatorConf();
-    ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 300L);
+    ssc.setLong(CoordinatorConf.COORDINATOR_HEARTBEAT_TIMEOUT, 600L);
     try (SimpleClusterManager clusterManager = new SimpleClusterManager(ssc, new Configuration())) {
       addNode("sn0", clusterManager);
       addNode("sn1", clusterManager);
