@@ -97,10 +97,7 @@ public class RegisterHeartBeat {
 
   @VisibleForTesting
   public boolean sendHeartBeat(RssSendHeartBeatRequest request) {
-    if (coordinatorClient.sendHeartBeat(request).getStatusCode() == StatusCode.SUCCESS) {
-      return true;
-    }
-    return false;
+    return coordinatorClient.sendHeartBeat(request).getStatusCode() == StatusCode.SUCCESS;
   }
 
   public long getHeartBeatInterval() {
