@@ -945,8 +945,8 @@ public class QuorumTest extends ShuffleReadWriteBase {
                   shuffleServerInfo3,
                   shuffleServerInfo4));
       SendShuffleDataResult result = shuffleWriteClientImpl.sendShuffleData(testAppId, blocks);
-      assertTrue(result.getSuccessBlockIds().size() == 3);
-      assertTrue(result.getFailedBlockIds().size() == 0);
+      assertEquals(3, result.getSuccessBlockIds().size());
+      assertEquals(0, result.getFailedBlockIds().size());
     }
 
     // we cannot read any blocks from server 1 due to failures
