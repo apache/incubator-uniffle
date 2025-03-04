@@ -121,10 +121,7 @@ public abstract class SingleStorageManager implements StorageManager {
     try {
       Storage storage = selectStorage(event);
       // if storage is null, appId may not be registered
-      if (storage == null || !storage.canWrite()) {
-        return false;
-      }
-      return true;
+      return storage != null && storage.canWrite();
     } catch (Exception e) {
       LOG.warn("Exception happened when select storage", e);
       return false;

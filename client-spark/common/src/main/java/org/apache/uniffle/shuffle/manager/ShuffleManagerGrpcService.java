@@ -408,10 +408,8 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
               this.isShuffleServerAssignmented = false;
               this.isClearedMapTrackerBlock = false;
               return false;
-            } else if (this.stageAttemptNumber > stageAttemptNumber) {
-              return true;
             }
-            return false;
+            return this.stageAttemptNumber > stageAttemptNumber;
           });
     }
 
@@ -468,15 +466,10 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
 
     public boolean isNeedReassignForLastStageNumber(int lastStageAttemptNumber) {
       return withReadLock(
-          () -> {
-            if (isStageNeedRetry
-                && !isShuffleServerAssignmented
-                && stageAttemptNumber == lastStageAttemptNumber - 1) {
-              return true;
-            } else {
-              return false;
-            }
-          });
+          () ->
+              isStageNeedRetry
+                  && !isShuffleServerAssignmented
+                  && stageAttemptNumber == lastStageAttemptNumber - 1);
     }
 
     public void setShuffleServerAssignmented(boolean isAssignmented) {
@@ -496,10 +489,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
     }
 
     public boolean isClearedMapTrackerBlock() {
-      return withReadLock(
-          () -> {
-            return isClearedMapTrackerBlock;
-          });
+      return withReadLock(() -> isClearedMapTrackerBlock);
     }
   }
 
@@ -583,11 +573,7 @@ public class ShuffleManagerGrpcService extends ShuffleManagerImplBase {
             if (this.stageAttempt != stageAttempt) {
               return false;
             } else {
-              if (this.partitions[partition] >= shuffleManager.getMaxFetchFailures()) {
-                return true;
-              } else {
-                return false;
-              }
+              return this.partitions[partition] >= shuffleManager.getMaxFetchFailures();
             }
           });
     }
