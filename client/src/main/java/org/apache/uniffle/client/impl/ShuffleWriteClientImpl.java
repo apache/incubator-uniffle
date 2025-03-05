@@ -470,7 +470,6 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                 blockIdsSendFailTracker.remove(successBlockId.getKey());
               }
             });
-    LOG.info("blockIdsSendSuccessSet:" + blockIdsSendSuccessSet);
     return new SendShuffleDataResult(blockIdsSendSuccessSet, blockIdsSendFailTracker);
   }
 
