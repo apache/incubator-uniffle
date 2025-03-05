@@ -106,13 +106,19 @@ public class QuorumTest extends ShuffleReadWriteBase {
     return new MockedShuffleServer(shuffleServerConf);
   }
 
-  private Integer generateFakePort(Set<Integer> portExistsSet) {
-    int port = 1 + ThreadLocalRandom.current().nextInt(65535);
-    while (portExistsSet.contains(port)) {
-      port = 1 + ThreadLocalRandom.current().nextInt(65535);
+  private List<Integer> generateFakePort(int num) {
+    Set<Integer> portExistsSet =
+        grpcShuffleServers.stream().map(ShuffleServer::getGrpcPort).collect(Collectors.toSet());
+    int i = 0;
+    List<Integer> fakePorts = Lists.newArrayList(num);
+    while (i < num) {
+      int port = ThreadLocalRandom.current().nextInt(1, 65535);
+      if (portExistsSet.add(port)) {
+        fakePorts.add(port);
+        i++;
+      }
     }
-    portExistsSet.add(port);
-    return port;
+    return fakePorts;
   }
 
   @BeforeEach
@@ -166,23 +172,22 @@ public class QuorumTest extends ShuffleReadWriteBase {
             grpcShuffleServers.get(4).getGrpcPort());
 
     // simulator of failed servers
-    Set<Integer> portExistsSet =
-        grpcShuffleServers.stream().map(ShuffleServer::getGrpcPort).collect(Collectors.toSet());
+    List<Integer> fakePortList = generateFakePort(5);
     fakedShuffleServerInfo0 =
         new ShuffleServerInfo(
-            "127.0.0.1-20001", grpcShuffleServers.get(0).getIp(), generateFakePort(portExistsSet));
+            "127.0.0.1-20001", grpcShuffleServers.get(0).getIp(), fakePortList.get(0));
     fakedShuffleServerInfo1 =
         new ShuffleServerInfo(
-            "127.0.0.1-20002", grpcShuffleServers.get(1).getIp(), generateFakePort(portExistsSet));
+            "127.0.0.1-20002", grpcShuffleServers.get(1).getIp(), fakePortList.get(1));
     fakedShuffleServerInfo2 =
         new ShuffleServerInfo(
-            "127.0.0.1-20003", grpcShuffleServers.get(2).getIp(), generateFakePort(portExistsSet));
+            "127.0.0.1-20003", grpcShuffleServers.get(2).getIp(), fakePortList.get(2));
     fakedShuffleServerInfo3 =
         new ShuffleServerInfo(
-            "127.0.0.1-20004", grpcShuffleServers.get(2).getIp(), generateFakePort(portExistsSet));
+            "127.0.0.1-20004", grpcShuffleServers.get(2).getIp(), fakePortList.get(3));
     fakedShuffleServerInfo4 =
         new ShuffleServerInfo(
-            "127.0.0.1-20005", grpcShuffleServers.get(2).getIp(), generateFakePort(portExistsSet));
+            "127.0.0.1-20005", grpcShuffleServers.get(2).getIp(), fakePortList.get(4));
 
     // spark.rss.data.replica=3
     // spark.rss.data.replica.write=2
