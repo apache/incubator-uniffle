@@ -18,6 +18,7 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -110,7 +111,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     Set<Integer> portExistsSet =
         grpcShuffleServers.stream().map(ShuffleServer::getGrpcPort).collect(Collectors.toSet());
     int i = 0;
-    List<Integer> fakePorts = Lists.newArrayList(num);
+    List<Integer> fakePorts = new ArrayList<>(num);
     while (i < num) {
       int port = ThreadLocalRandom.current().nextInt(1, 65535);
       if (portExistsSet.add(port)) {
