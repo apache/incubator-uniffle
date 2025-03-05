@@ -111,6 +111,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     while (portExistsSet.contains(port)) {
       port = 1 + ThreadLocalRandom.current().nextInt(65535);
     }
+    portExistsSet.add(port);
     return port;
   }
 
