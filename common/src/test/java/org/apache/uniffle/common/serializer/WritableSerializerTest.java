@@ -57,8 +57,8 @@ public class WritableSerializerTest {
   public void testSerDeKeyValues(String classes, @TempDir File tmpDir) throws Exception {
     // 1 Construct serializer
     String[] classArray = classes.split(",");
-    Class keyClass = SerializerUtils.getClassByName(classArray[0]);
-    Class valueClass = SerializerUtils.getClassByName(classArray[1]);
+    Class<?> keyClass = SerializerUtils.getClassByName(classArray[0]);
+    Class<?> valueClass = SerializerUtils.getClassByName(classArray[1]);
     boolean isFileMode = classArray[2].equals("file");
     boolean serRaw = Boolean.parseBoolean(classArray[3]);
     boolean derRaw = Boolean.parseBoolean(classArray[4]);
@@ -80,11 +80,10 @@ public class WritableSerializerTest {
         instance.serialize(genData(keyClass, i), keyBuffer);
         instance.serialize(genData(valueClass, i), valueBuffer);
         serializationStream.writeRecord(keyBuffer, valueBuffer);
-        offsets[i] = serializationStream.getTotalBytesWritten();
       } else {
         serializationStream.writeRecord(genData(keyClass, i), genData(valueClass, i));
-        offsets[i] = serializationStream.getTotalBytesWritten();
       }
+      offsets[i] = serializationStream.getTotalBytesWritten();
     }
     serializationStream.close();
 
@@ -100,8 +99,8 @@ public class WritableSerializerTest {
           instance.deserializeStream(inputStream, keyClass, valueClass, derRaw, false);
       deserializationStream.init();
       for (int j = i + 1; j < LOOP; j++) {
+        assertTrue(deserializationStream.nextRecord());
         if (derRaw) {
-          assertTrue(deserializationStream.nextRecord());
           DataOutputBuffer keyBuffer = (DataOutputBuffer) deserializationStream.getCurrentKey();
           DataInputBuffer keyInputBuffer = new DataInputBuffer();
           keyInputBuffer.reset(keyBuffer.getData(), 0, keyBuffer.getLength());
@@ -111,7 +110,6 @@ public class WritableSerializerTest {
           valueInputBuffer.reset(valueBuffer.getData(), 0, valueBuffer.getLength());
           assertEquals(genData(valueClass, j), instance.deserialize(valueInputBuffer, valueClass));
         } else {
-          assertTrue(deserializationStream.nextRecord());
           assertEquals(genData(keyClass, j), deserializationStream.getCurrentKey());
           assertEquals(genData(valueClass, j), deserializationStream.getCurrentValue());
         }
@@ -132,8 +130,8 @@ public class WritableSerializerTest {
   public void testSerDeKeyValuesUseDirect(String classes, @TempDir File tmpDir) throws Exception {
     // 1 Construct serializer
     String[] classArray = classes.split(",");
-    Class keyClass = SerializerUtils.getClassByName(classArray[0]);
-    Class valueClass = SerializerUtils.getClassByName(classArray[1]);
+    Class<?> keyClass = SerializerUtils.getClassByName(classArray[0]);
+    Class<?> valueClass = SerializerUtils.getClassByName(classArray[1]);
     boolean isFileMode = classArray[2].equals("file");
     WritableSerializer serializer = new WritableSerializer(rssConf);
     SerializerInstance instance = serializer.newInstance();
@@ -197,7 +195,7 @@ public class WritableSerializerTest {
 
   @ParameterizedTest
   @ValueSource(classes = {Text.class, IntWritable.class})
-  public void testSerDeObject(Class aClass) throws Exception {
+  public void testSerDeObject(Class<?> aClass) throws Exception {
     WritableSerializer serializer = new WritableSerializer(rssConf);
     SerializerInstance instance = serializer.newInstance();
     int number = new Random().nextInt(99999);
