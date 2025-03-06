@@ -200,7 +200,8 @@ public class ShuffleWriteClientImpl implements ShuffleWriteClient {
                               stageAttemptNumber,
                               retryMax,
                               retryIntervalMax,
-                              shuffleIdToBlocks);
+                              shuffleIdToBlocks,
+                              needCancelRequest);
                       long s = System.currentTimeMillis();
                       RssSendShuffleDataResponse response =
                           getShuffleServerClient(ssi).sendShuffleData(request);
