@@ -59,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class RpcClientRetryTest extends ShuffleReadWriteBase {
-  private static List<ShuffleServerInfo> grpcShuffleServerInfoList = Lists.newArrayList();
+  private static List<ShuffleServerInfo> grpcShuffleServerInfoList;
   private static MockedShuffleWriteClientImpl shuffleWriteClientImpl;
 
   private ShuffleClientFactory.ReadClientBuilder baseReadBuilder(StorageType storageType) {
@@ -94,13 +94,13 @@ public class RpcClientRetryTest extends ShuffleReadWriteBase {
   public void initCluster(@TempDir File tmpDir) throws Exception {
     CoordinatorConf coordinatorConf = getCoordinatorConf();
     createCoordinatorServer(coordinatorConf);
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 3; i++) {
       grpcShuffleServers.add(createMockedShuffleServer(i, tmpDir, ServerType.GRPC));
     }
 
     startServers();
-
-    for (int i = 0; i < 1; i++) {
+    grpcShuffleServerInfoList = Lists.newArrayList();
+    for (int i = 0; i < 3; i++) {
       grpcShuffleServerInfoList.add(
           new ShuffleServerInfo(
               String.format("127.0.0.1-%s", grpcShuffleServers.get(i).getGrpcPort()),
@@ -285,6 +285,8 @@ public class RpcClientRetryTest extends ShuffleReadWriteBase {
                 .unregisterTimeSec(10)
                 .unregisterRequestTimeSec(10));
 
+    System.out.println("============");
+    System.out.println(grpcShuffleServerInfoList);
     for (int i = 0; i < replica; i++) {
       shuffleWriteClientImpl.registerShuffle(
           grpcShuffleServerInfoList.get(i),
