@@ -19,6 +19,7 @@ package org.apache.uniffle.client.request;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.apache.uniffle.common.ShuffleBlockInfo;
 
@@ -29,13 +30,14 @@ public class RssSendShuffleDataRequest {
   private int retryMax;
   private long retryIntervalMax;
   private Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks;
+  private Supplier<Boolean> needCancel;
 
   public RssSendShuffleDataRequest(
       String appId,
       int retryMax,
       long retryIntervalMax,
       Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks) {
-    this(appId, 0, retryMax, retryIntervalMax, shuffleIdToBlocks);
+    this(appId, 0, retryMax, retryIntervalMax, shuffleIdToBlocks, () -> false);
   }
 
   public RssSendShuffleDataRequest(
@@ -43,12 +45,14 @@ public class RssSendShuffleDataRequest {
       int stageAttemptNumber,
       int retryMax,
       long retryIntervalMax,
-      Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks) {
+      Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> shuffleIdToBlocks,
+      Supplier<Boolean> needCancel) {
     this.appId = appId;
     this.retryMax = retryMax;
     this.retryIntervalMax = retryIntervalMax;
     this.shuffleIdToBlocks = shuffleIdToBlocks;
     this.stageAttemptNumber = stageAttemptNumber;
+    this.needCancel = needCancel;
   }
 
   public String getAppId() {
@@ -69,5 +73,9 @@ public class RssSendShuffleDataRequest {
 
   public Map<Integer, Map<Integer, List<ShuffleBlockInfo>>> getShuffleIdToBlocks() {
     return shuffleIdToBlocks;
+  }
+
+  public Boolean needCancel() {
+    return needCancel.get();
   }
 }
