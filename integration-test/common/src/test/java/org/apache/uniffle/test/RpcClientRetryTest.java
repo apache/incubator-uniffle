@@ -132,7 +132,6 @@ public class RpcClientRetryTest extends ShuffleReadWriteBase {
     assertEquals(2, result.getSuccessBlockIds().size());
 
     enableFirstNSendDataRequestsToFail(2);
-    System.out.println("1====================");
     CompletableFuture<SendShuffleDataResult> future =
         CompletableFuture.supplyAsync(
             () -> shuffleWriteClientImpl.sendShuffleData(testAppId, blocks, needCancelRequest));
@@ -225,8 +224,7 @@ public class RpcClientRetryTest extends ShuffleReadWriteBase {
   }
 
   private static void enableFirstNReadRequestsToFail(int failedCount) {
-    Lists.newArrayList(grpcShuffleServers, nettyShuffleServers).stream()
-        .flatMap(List::stream)
+    grpcShuffleServers.stream()
         .forEach(
             server ->
                 ((MockedGrpcServer) server.getServer())
@@ -235,8 +233,7 @@ public class RpcClientRetryTest extends ShuffleReadWriteBase {
   }
 
   private static void enableFirstNSendDataRequestsToFail(int failedCount) {
-    Lists.newArrayList(grpcShuffleServers, nettyShuffleServers).stream()
-        .flatMap(List::stream)
+    grpcShuffleServers.stream()
         .forEach(
             server ->
                 ((MockedGrpcServer) server.getServer())
@@ -245,8 +242,7 @@ public class RpcClientRetryTest extends ShuffleReadWriteBase {
   }
 
   private static void disableFirstNReadRequestsToFail() {
-    Lists.newArrayList(grpcShuffleServers, nettyShuffleServers).stream()
-        .flatMap(List::stream)
+    grpcShuffleServers.stream()
         .forEach(
             server ->
                 ((MockedGrpcServer) server.getServer())
@@ -285,8 +281,6 @@ public class RpcClientRetryTest extends ShuffleReadWriteBase {
                 .unregisterTimeSec(10)
                 .unregisterRequestTimeSec(10));
 
-    System.out.println("============");
-    System.out.println(grpcShuffleServerInfoList);
     for (int i = 0; i < replica; i++) {
       shuffleWriteClientImpl.registerShuffle(
           grpcShuffleServerInfoList.get(i),
