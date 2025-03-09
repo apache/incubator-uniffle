@@ -169,6 +169,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     coordinators.clear();
     shuffleServerConfList.clear();
     mockShuffleServerConfList.clear();
+    coordinatorConfList.clear();
     jettyPorts.clear();
     ShuffleServerMetrics.clear();
     CoordinatorMetrics.clear();
