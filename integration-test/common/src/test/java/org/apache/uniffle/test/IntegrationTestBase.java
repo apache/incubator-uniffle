@@ -211,7 +211,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
         getNextJettyServerPort());
   }
 
-  protected static ShuffleServerConf getShuffleServerConf(
+  private static ShuffleServerConf getShuffleServerConf(
       ServerType serverType, String quorum, int grpcPort, int nettyPort, int jettyPort)
       throws Exception {
     ShuffleServerConf serverConf = new ShuffleServerConf();
@@ -240,7 +240,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     return serverConf;
   }
 
-  protected static ShuffleServerConf getShuffleServerConf(
+  protected static ShuffleServerConf shuffleServerConfWithoutPort(
       int subDirIndex, File tmpDir, ServerType serverType) throws Exception {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType, "", 0, 0, 0);
     File dataDir1 = new File(tmpDir, subDirIndex + "_1");

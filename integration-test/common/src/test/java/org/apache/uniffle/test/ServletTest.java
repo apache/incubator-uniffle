@@ -82,7 +82,7 @@ public class ServletTest extends IntegrationTestBase {
 
   private static void prepareShuffleServerConf(int subDirIndex, File tmpDir) throws Exception {
     ShuffleServerConf shuffleServerConf =
-        getShuffleServerConf(subDirIndex, tmpDir, ServerType.GRPC);
+        shuffleServerConfWithoutPort(subDirIndex, tmpDir, ServerType.GRPC);
     shuffleServerConf.set(ShuffleServerConf.SERVER_DECOMMISSION_SHUTDOWN, false);
     storeShuffleServerConf(shuffleServerConf);
   }

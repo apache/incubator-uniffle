@@ -285,7 +285,8 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
 
   public static void prepareShuffleServerConf(int subDirIndex, File tmpDir, ServerType serverType)
       throws Exception {
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(subDirIndex, tmpDir, serverType);
+    ShuffleServerConf shuffleServerConf =
+        shuffleServerConfWithoutPort(subDirIndex, tmpDir, serverType);
     shuffleServerConf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5000L);
