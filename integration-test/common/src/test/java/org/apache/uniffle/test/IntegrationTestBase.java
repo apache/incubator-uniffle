@@ -24,11 +24,13 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.io.TempDir;
 
+import org.apache.uniffle.common.port.PortRegistry;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
@@ -82,11 +84,33 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     for (CoordinatorServer coordinator : coordinators) {
       coordinator.start();
     }
+    startShuffleServers();
+  }
+
+  public static void startShuffleServers() throws Exception {
     for (ShuffleServer shuffleServer : grpcShuffleServers) {
       shuffleServer.start();
     }
     for (ShuffleServer shuffleServer : nettyShuffleServers) {
       shuffleServer.start();
+    }
+  }
+
+  public static String startCoordinators() throws Exception {
+    for (CoordinatorServer coordinator : coordinators) {
+      coordinator.start();
+    }
+    return coordinators.stream()
+        .map(CoordinatorServer::getRpcListenPort)
+        .map(port -> LOCALHOST + ":" + port)
+        .collect(Collectors.joining(","));
+  }
+
+  protected static List<Integer> jettyPorts = Lists.newArrayList();
+
+  public static void reserveJettyPorts(int numPorts) {
+    for (int i = 0; i < numPorts; i++) {
+      jettyPorts.add(PortRegistry.reservePort());
     }
   }
 
@@ -101,17 +125,33 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     for (ShuffleServer shuffleServer : nettyShuffleServers) {
       shuffleServer.stopServer();
     }
-    grpcShuffleServers = Lists.newArrayList();
-    nettyShuffleServers = Lists.newArrayList();
-    coordinators = Lists.newArrayList();
+    for (int port : jettyPorts) {
+      PortRegistry.release(port);
+    }
+    grpcShuffleServers.clear();
+    nettyShuffleServers.clear();
+    coordinators.clear();
+    jettyPorts.clear();
     ShuffleServerMetrics.clear();
     CoordinatorMetrics.clear();
   }
 
   protected static CoordinatorConf getCoordinatorConf() {
+    return coordinatorConf(COORDINATOR_PORT_1, JETTY_PORT_1);
+  }
+
+  protected static CoordinatorConf coordinatorConf() {
+    return coordinatorConf(0);
+  }
+
+  protected static CoordinatorConf coordinatorConf(int jettyPort) {
+    return coordinatorConf(0, jettyPort);
+  }
+
+  protected static CoordinatorConf coordinatorConf(int rpcPort, int jettyPort) {
     CoordinatorConf coordinatorConf = new CoordinatorConf();
-    coordinatorConf.setInteger(CoordinatorConf.RPC_SERVER_PORT, COORDINATOR_PORT_1);
-    coordinatorConf.setInteger(CoordinatorConf.JETTY_HTTP_PORT, JETTY_PORT_1);
+    coordinatorConf.setInteger(CoordinatorConf.RPC_SERVER_PORT, rpcPort);
+    coordinatorConf.setInteger(CoordinatorConf.JETTY_HTTP_PORT, jettyPort);
     coordinatorConf.setInteger(CoordinatorConf.RPC_EXECUTOR_SIZE, 10);
     return coordinatorConf;
   }
@@ -126,19 +166,30 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
         CoordinatorConf.COORDINATOR_DYNAMIC_CLIENT_CONF_UPDATE_INTERVAL_SEC, 5);
   }
 
+  // TODO(summaryzb) when all test use random port,
+  // https://github.com/apache/incubator-uniffle/issues/2064 should be closed, then this method
+  // should be removed
   protected static ShuffleServerConf getShuffleServerConf(ServerType serverType) throws Exception {
+    return getShuffleServerConf(
+        serverType, COORDINATOR_QUORUM, getNextRpcServerPort(), getNextNettyServerPort());
+  }
+
+  protected static ShuffleServerConf getShuffleServerConf(
+      ServerType serverType, String quorum, int grpcPort, int nettyPort) throws Exception {
     ShuffleServerConf serverConf = new ShuffleServerConf();
-    serverConf.setInteger("rss.rpc.server.port", getNextRpcServerPort());
+    serverConf.setInteger("rss.rpc.server.port", grpcPort);
     serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
     serverConf.setString("rss.storage.basePath", tempDir.getAbsolutePath());
     serverConf.setString("rss.server.buffer.capacity", "671088640");
     serverConf.setString("rss.server.memory.shuffle.highWaterMark", "50.0");
     serverConf.setString("rss.server.memory.shuffle.lowWaterMark", "0.0");
     serverConf.setString("rss.server.read.buffer.capacity", "335544320");
-    serverConf.setString("rss.coordinator.quorum", COORDINATOR_QUORUM);
+    serverConf.setString("rss.coordinator.quorum", quorum);
     serverConf.setString("rss.server.heartbeat.delay", "1000");
     serverConf.setString("rss.server.heartbeat.interval", "1000");
-    serverConf.setInteger("rss.jetty.http.port", getNextJettyServerPort());
+    // if http port is not required by client then set it to 0
+    // otherwise use PortRegistry.reservePort to override this
+    serverConf.setInteger("rss.jetty.http.port", 0);
     serverConf.setInteger("rss.jetty.corePool.size", 64);
     serverConf.setInteger("rss.rpc.executor.size", 10);
     serverConf.setString("rss.server.hadoop.dfs.replication", "2");
@@ -148,9 +199,19 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     serverConf.set(ShuffleServerConf.SERVER_TRIGGER_FLUSH_CHECK_INTERVAL, 500L);
     serverConf.set(ShuffleServerConf.RPC_SERVER_TYPE, serverType);
     if (serverType == ServerType.GRPC_NETTY) {
-      serverConf.setInteger(ShuffleServerConf.NETTY_SERVER_PORT, getNextNettyServerPort());
+      serverConf.setInteger(ShuffleServerConf.NETTY_SERVER_PORT, nettyPort);
     }
     return serverConf;
+  }
+
+  protected static ShuffleServerConf getShuffleServerConf(
+      int id, File tmpDir, ServerType serverType, String quorum) throws Exception {
+    File dataDir1 = new File(tmpDir, id + "_1");
+    File dataDir2 = new File(tmpDir, id + "_2");
+    String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType, quorum, 0, 0);
+    shuffleServerConf.setString("rss.storage.basePath", basePath);
+    return shuffleServerConf;
   }
 
   public static int getNextRpcServerPort() {
