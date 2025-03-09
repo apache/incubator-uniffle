@@ -80,29 +80,28 @@ public class ServletTest extends IntegrationTestBase {
   private static CoordinatorServer coordinatorServer;
   private ObjectMapper objectMapper = new ObjectMapper();
 
-  private static void createShuffleServer(int id, File tmpDir, String quorum) throws Exception {
+  private static void prepareShuffleServerConf(int subDirIndex, File tmpDir) throws Exception {
     ShuffleServerConf shuffleServerConf =
-        getShuffleServerConf(id, tmpDir, ServerType.GRPC, quorum, jettyPorts.get(id));
+        getShuffleServerConf(subDirIndex, tmpDir, ServerType.GRPC);
     shuffleServerConf.set(ShuffleServerConf.SERVER_DECOMMISSION_SHUTDOWN, false);
-    createShuffleServer(shuffleServerConf);
+    storeShuffleServerConf(shuffleServerConf);
   }
 
   @BeforeAll
   public static void setUp(@TempDir File tmpDir) throws Exception {
-    reserveJettyPorts(5);
-    coordinatorHttpPort = jettyPorts.get(4);
-    CoordinatorConf coordinatorConf = coordinatorConf(coordinatorHttpPort);
+
+    CoordinatorConf coordinatorConf = coordinatorConfWithoutPort();
     coordinatorConf.set(RssBaseConf.JETTY_CORE_POOL_SIZE, 128);
     coordinatorConf.set(RssBaseConf.REST_AUTHORIZATION_CREDENTIALS, AUTHORIZATION_CREDENTIALS);
-    createCoordinatorServer(coordinatorConf);
-    String quorum = startCoordinators();
+    storeCoordinatorConf(coordinatorConf);
 
-    createShuffleServer(0, tmpDir, quorum);
-    createShuffleServer(1, tmpDir, quorum);
-    createShuffleServer(2, tmpDir, quorum);
-    createShuffleServer(3, tmpDir, quorum);
+    prepareShuffleServerConf(0, tmpDir);
+    prepareShuffleServerConf(1, tmpDir);
+    prepareShuffleServerConf(2, tmpDir);
+    prepareShuffleServerConf(3, tmpDir);
 
-    startShuffleServers();
+    startServersWithRandomPorts();
+    coordinatorHttpPort = jettyPorts.get(0);
     coordinatorServer = coordinators.get(0);
     Awaitility.await()
         .timeout(30, TimeUnit.SECONDS)

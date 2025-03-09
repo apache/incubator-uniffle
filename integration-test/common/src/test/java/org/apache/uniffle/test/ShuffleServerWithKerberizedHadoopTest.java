@@ -100,7 +100,6 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     File dataDir2 = new File(tmpDir, id + "_2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     serverConf.setInteger("rss.rpc.server.port", 0);
-    serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
     serverConf.setString("rss.storage.basePath", basePath);
     serverConf.setString("rss.server.buffer.capacity", "671088640");
     serverConf.setString("rss.server.memory.shuffle.highWaterMark", "50.0");
