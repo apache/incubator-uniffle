@@ -41,7 +41,7 @@ import org.apache.uniffle.common.serializer.SerializerUtils;
 import static org.apache.uniffle.common.serializer.SerializerUtils.genData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class MergerTest {
+class MergerTest {
 
   private static final int RECORDS = 1009;
   private static final int SEGMENTS = 4;
@@ -54,18 +54,18 @@ public class MergerTest {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false,true",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false,false",
       })
-  public void testMergeSegmentToFile(String classes, @TempDir File tmpDir) throws Exception {
+  void testMergeSegmentToFile(String classes, @TempDir File tmpDir) throws Exception {
     // 1 Parse arguments
     String[] classArray = classes.split(",");
-    Class keyClass = SerializerUtils.getClassByName(classArray[0]);
-    Class valueClass = SerializerUtils.getClassByName(classArray[1]);
-    boolean raw = classArray.length > 2 ? Boolean.parseBoolean(classArray[2]) : false;
-    boolean direct = classArray.length > 3 ? Boolean.parseBoolean(classArray[3]) : false;
+    Class<?> keyClass = SerializerUtils.getClassByName(classArray[0]);
+    Class<?> valueClass = SerializerUtils.getClassByName(classArray[1]);
+    boolean raw = classArray.length > 2 && Boolean.parseBoolean(classArray[2]);
+    boolean direct = classArray.length > 3 && Boolean.parseBoolean(classArray[3]);
 
     // 2 Construct segments, then merge
     RssConf rssConf = new RssConf();
     List<Segment> segments = new ArrayList<>();
-    Comparator comparator = SerializerUtils.getComparator(keyClass);
+    Comparator<?> comparator = SerializerUtils.getComparator(keyClass);
     for (int i = 0; i < SEGMENTS; i++) {
       Segment segment =
           i % 2 == 0
@@ -82,8 +82,8 @@ public class MergerTest {
 
     // 3 Check the merged
     ByteBuf byteBuf = outputStream.toByteBuf();
-    RecordsReader reader =
-        new RecordsReader(
+    RecordsReader<?, ?> reader =
+        new RecordsReader<>(
             rssConf, SerInputStream.newInputStream(byteBuf), keyClass, valueClass, raw, true);
     reader.init();
     SerializerFactory factory = new SerializerFactory(rssConf);
