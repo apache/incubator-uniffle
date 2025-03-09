@@ -43,7 +43,7 @@ import static org.apache.uniffle.common.serializer.SerializerUtils.genData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class RecordsReaderWriterTest {
+class RecordsReaderWriterTest {
 
   private static final int RECORDS = 1009;
   private static final int LOOP = 5;
@@ -60,15 +60,15 @@ public class RecordsReaderWriterTest {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,file,false,true",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,file,false,false",
       })
-  public void testWriteAndReadRecordFile(String classes, @TempDir File tmpDir) throws Exception {
+  void testWriteAndReadRecordFile(String classes, @TempDir File tmpDir) throws Exception {
     RssConf rssConf = new RssConf();
     // 1 Parse arguments
     String[] classArray = classes.split(",");
-    Class keyClass = SerializerUtils.getClassByName(classArray[0]);
-    Class valueClass = SerializerUtils.getClassByName(classArray[1]);
+    Class<?> keyClass = SerializerUtils.getClassByName(classArray[0]);
+    Class<?> valueClass = SerializerUtils.getClassByName(classArray[1]);
     boolean isFileMode = classArray[2].equals("file");
-    final boolean serRaw = classArray.length > 3 ? Boolean.parseBoolean(classArray[3]) : false;
-    final boolean derRaw = classArray.length > 4 ? Boolean.parseBoolean(classArray[4]) : false;
+    final boolean serRaw = classArray.length > 3 && Boolean.parseBoolean(classArray[3]);
+    final boolean derRaw = classArray.length > 4 && Boolean.parseBoolean(classArray[4]);
     File tmpFile = new File(tmpDir, "tmp.data");
     SerializerFactory factory = new SerializerFactory(rssConf);
     Serializer serializer = factory.getSerializer(keyClass);
@@ -79,8 +79,8 @@ public class RecordsReaderWriterTest {
     long[] offsets = new long[RECORDS];
     SerOutputStream outputStream =
         isFileMode ? new FileSerOutputStream(tmpFile) : new DynBufferSerOutputStream();
-    RecordsWriter writer =
-        new RecordsWriter(rssConf, outputStream, keyClass, valueClass, serRaw, false);
+    RecordsWriter<?, ?> writer =
+        new RecordsWriter<>(rssConf, outputStream, keyClass, valueClass, serRaw, false);
     writer.init();
     for (int i = 0; i < RECORDS; i++) {
       if (serRaw) {
@@ -89,11 +89,10 @@ public class RecordsReaderWriterTest {
         instance.serialize(genData(keyClass, i), keyBuffer);
         instance.serialize(genData(valueClass, i), valueBuffer);
         writer.append(keyBuffer, valueBuffer);
-        offsets[i] = writer.getTotalBytesWritten();
       } else {
         writer.append(SerializerUtils.genData(keyClass, i), SerializerUtils.genData(valueClass, i));
-        offsets[i] = writer.getTotalBytesWritten();
       }
+      offsets[i] = writer.getTotalBytesWritten();
     }
     writer.close();
 
@@ -104,8 +103,8 @@ public class RecordsReaderWriterTest {
         isFileMode
             ? SerInputStream.newInputStream(tmpFile)
             : SerInputStream.newInputStream(byteBuf);
-    RecordsReader reader =
-        new RecordsReader(rssConf, inputStream, keyClass, valueClass, derRaw, false);
+    RecordsReader<?, ?> reader =
+        new RecordsReader<>(rssConf, inputStream, keyClass, valueClass, derRaw, false);
     reader.init();
     int index = 0;
     while (reader.next()) {
@@ -136,7 +135,7 @@ public class RecordsReaderWriterTest {
         isFileMode
             ? SerInputStream.newInputStream(tmpFile, offsets[RECORDS - 1])
             : SerInputStream.newInputStream(byteBuf, (int) offsets[RECORDS - 1]);
-    reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, derRaw, false);
+    reader = new RecordsReader<>(rssConf, inputStream, keyClass, valueClass, derRaw, false);
     reader.init();
     assertFalse(reader.next());
     reader.close();
@@ -158,7 +157,7 @@ public class RecordsReaderWriterTest {
           isFileMode
               ? SerInputStream.newInputStream(tmpFile, offset)
               : SerInputStream.newInputStream(byteBuf, (int) offset);
-      reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, derRaw, false);
+      reader = new RecordsReader<>(rssConf, inputStream, keyClass, valueClass, derRaw, false);
       reader.init();
       while (reader.next()) {
         if (derRaw) {
@@ -194,13 +193,12 @@ public class RecordsReaderWriterTest {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,mem",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,file",
       })
-  public void testWriteAndReadRecordFileUseDirect(String classes, @TempDir File tmpDir)
-      throws Exception {
+  void testWriteAndReadRecordFileUseDirect(String classes, @TempDir File tmpDir) throws Exception {
     RssConf rssConf = new RssConf();
     // 1 Parse arguments
     String[] classArray = classes.split(",");
-    Class keyClass = SerializerUtils.getClassByName(classArray[0]);
-    Class valueClass = SerializerUtils.getClassByName(classArray[1]);
+    Class<?> keyClass = SerializerUtils.getClassByName(classArray[0]);
+    Class<?> valueClass = SerializerUtils.getClassByName(classArray[1]);
     boolean isFileMode = classArray[2].equals("file");
     File tmpFile = new File(tmpDir, "tmp.data");
     SerializerFactory factory = new SerializerFactory(rssConf);
@@ -212,8 +210,8 @@ public class RecordsReaderWriterTest {
     long[] offsets = new long[RECORDS];
     SerOutputStream outputStream =
         isFileMode ? new FileSerOutputStream(tmpFile) : new DynBufferSerOutputStream();
-    RecordsWriter writer =
-        new RecordsWriter(rssConf, outputStream, keyClass, valueClass, true, true);
+    RecordsWriter<?, ?> writer =
+        new RecordsWriter<>(rssConf, outputStream, keyClass, valueClass, true, true);
     writer.init();
     for (int i = 0; i < RECORDS; i++) {
       DataOutputBuffer keyBuffer = new DataOutputBuffer();
@@ -238,8 +236,8 @@ public class RecordsReaderWriterTest {
         isFileMode
             ? SerInputStream.newInputStream(tmpFile)
             : SerInputStream.newInputStream(byteBuf);
-    RecordsReader reader =
-        new RecordsReader(rssConf, inputStream, keyClass, valueClass, true, true);
+    RecordsReader<?, ?> reader =
+        new RecordsReader<>(rssConf, inputStream, keyClass, valueClass, true, true);
     reader.init();
     int index = 0;
     while (reader.next()) {
@@ -265,7 +263,7 @@ public class RecordsReaderWriterTest {
         isFileMode
             ? SerInputStream.newInputStream(tmpFile, offsets[RECORDS - 1])
             : SerInputStream.newInputStream(byteBuf, (int) offsets[RECORDS - 1]);
-    reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, true, true);
+    reader = new RecordsReader<>(rssConf, inputStream, keyClass, valueClass, true, true);
     reader.init();
     assertFalse(reader.next());
     reader.close();
@@ -287,7 +285,7 @@ public class RecordsReaderWriterTest {
           isFileMode
               ? SerInputStream.newInputStream(tmpFile, offset)
               : SerInputStream.newInputStream(byteBuf, (int) offset);
-      reader = new RecordsReader(rssConf, inputStream, keyClass, valueClass, true, true);
+      reader = new RecordsReader<>(rssConf, inputStream, keyClass, valueClass, true, true);
       reader.init();
       while (reader.next()) {
         ByteBuf keyByteBuf = (ByteBuf) reader.getCurrentKey();
