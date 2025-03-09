@@ -81,9 +81,9 @@ public class ServletTest extends IntegrationTestBase {
   private ObjectMapper objectMapper = new ObjectMapper();
 
   private static void createShuffleServer(int id, File tmpDir, String quorum) throws Exception {
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(id, tmpDir, ServerType.GRPC, quorum);
+    ShuffleServerConf shuffleServerConf =
+        getShuffleServerConf(id, tmpDir, ServerType.GRPC, quorum, jettyPorts.get(id));
     shuffleServerConf.set(ShuffleServerConf.SERVER_DECOMMISSION_SHUTDOWN, false);
-    shuffleServerConf.set(ShuffleServerConf.JETTY_HTTP_PORT, jettyPorts.get(id));
     createShuffleServer(shuffleServerConf);
   }
 

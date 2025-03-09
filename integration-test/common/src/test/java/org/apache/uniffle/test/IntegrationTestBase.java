@@ -30,6 +30,7 @@ import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.io.TempDir;
 
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.port.PortRegistry;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.RssUtils;
@@ -140,10 +141,6 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     return coordinatorConf(COORDINATOR_PORT_1, JETTY_PORT_1);
   }
 
-  protected static CoordinatorConf coordinatorConf() {
-    return coordinatorConf(0);
-  }
-
   protected static CoordinatorConf coordinatorConf(int jettyPort) {
     return coordinatorConf(0, jettyPort);
   }
@@ -171,11 +168,16 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
   // should be removed
   protected static ShuffleServerConf getShuffleServerConf(ServerType serverType) throws Exception {
     return getShuffleServerConf(
-        serverType, COORDINATOR_QUORUM, getNextRpcServerPort(), getNextNettyServerPort());
+        serverType,
+        COORDINATOR_QUORUM,
+        getNextRpcServerPort(),
+        getNextNettyServerPort(),
+        getNextJettyServerPort());
   }
 
   protected static ShuffleServerConf getShuffleServerConf(
-      ServerType serverType, String quorum, int grpcPort, int nettyPort) throws Exception {
+      ServerType serverType, String quorum, int grpcPort, int nettyPort, int jettyPort)
+      throws Exception {
     ShuffleServerConf serverConf = new ShuffleServerConf();
     serverConf.setInteger("rss.rpc.server.port", grpcPort);
     serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
@@ -187,9 +189,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     serverConf.setString("rss.coordinator.quorum", quorum);
     serverConf.setString("rss.server.heartbeat.delay", "1000");
     serverConf.setString("rss.server.heartbeat.interval", "1000");
-    // if http port is not required by client then set it to 0
-    // otherwise use PortRegistry.reservePort to override this
-    serverConf.setInteger("rss.jetty.http.port", 0);
+    serverConf.setInteger(RssBaseConf.JETTY_HTTP_PORT, jettyPort);
     serverConf.setInteger("rss.jetty.corePool.size", 64);
     serverConf.setInteger("rss.rpc.executor.size", 10);
     serverConf.setString("rss.server.hadoop.dfs.replication", "2");
@@ -205,11 +205,11 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
   }
 
   protected static ShuffleServerConf getShuffleServerConf(
-      int id, File tmpDir, ServerType serverType, String quorum) throws Exception {
+      int id, File tmpDir, ServerType serverType, String quorum, int jettyPort) throws Exception {
+    ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType, quorum, 0, 0, jettyPort);
     File dataDir1 = new File(tmpDir, id + "_1");
     File dataDir2 = new File(tmpDir, id + "_2");
     String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType, quorum, 0, 0);
     shuffleServerConf.setString("rss.storage.basePath", basePath);
     return shuffleServerConf;
   }

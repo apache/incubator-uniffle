@@ -54,6 +54,7 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.port.PortRegistry;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.util.RssUtils;
@@ -88,6 +89,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
   private static ShuffleServer nettyShuffleServer;
   private static ShuffleServerConf grpcShuffleServerConfig;
   private static ShuffleServerConf nettyShuffleServerConfig;
+  protected static List<Integer> jettyPorts = Lists.newArrayList();
 
   static @TempDir File tempDir;
 
@@ -107,7 +109,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     serverConf.setString("rss.coordinator.quorum", LOCALHOST + ":" + coordinatorRpcPort);
     serverConf.setString("rss.server.heartbeat.delay", "1000");
     serverConf.setString("rss.server.heartbeat.interval", "1000");
-    serverConf.setInteger("rss.jetty.http.port", 0);
+    serverConf.setInteger("rss.jetty.http.port", jettyPorts.get(id));
     serverConf.setInteger("rss.jetty.corePool.size", 64);
     serverConf.setInteger("rss.rpc.executor.size", 10);
     serverConf.setString("rss.server.hadoop.dfs.replication", "2");
@@ -126,9 +128,13 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
   public static void setup(@TempDir File tempDir) throws Exception {
     testRunner = ShuffleServerWithKerberizedHadoopTest.class;
     KerberizedHadoopBase.init();
+    for (int i = 0; i < 3; i++) {
+      jettyPorts.add(PortRegistry.reservePort());
+    }
+
     CoordinatorConf coordinatorConf = new CoordinatorConf();
     coordinatorConf.setInteger(CoordinatorConf.RPC_SERVER_PORT, 0);
-    coordinatorConf.setInteger(CoordinatorConf.JETTY_HTTP_PORT, 0);
+    coordinatorConf.setInteger(CoordinatorConf.JETTY_HTTP_PORT, jettyPorts.get(3));
     coordinatorConf.setInteger(CoordinatorConf.RPC_EXECUTOR_SIZE, 10);
     coordinatorServer = new CoordinatorServer(coordinatorConf);
     coordinatorServer.start();
@@ -158,6 +164,9 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     }
     if (nettyShuffleServer != null) {
       nettyShuffleServer.stopServer();
+    }
+    for (int port : jettyPorts) {
+      PortRegistry.release(port);
     }
   }
 

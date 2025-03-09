@@ -290,7 +290,8 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
 
   public static MockedShuffleServer createServer(
       int id, File tmpDir, String quorum, ServerType serverType) throws Exception {
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(id, tmpDir, serverType, quorum);
+    ShuffleServerConf shuffleServerConf =
+        getShuffleServerConf(id, tmpDir, serverType, quorum, jettyPorts.get(id));
     shuffleServerConf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.LOCALFILE.name());
     shuffleServerConf.set(ShuffleServerConf.SERVER_APP_EXPIRED_WITHOUT_HEARTBEAT, 5000L);
@@ -303,8 +304,6 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     shuffleServerConf.setString(
         ShuffleServerConf.RSS_STORAGE_TYPE.key(), StorageType.MEMORY_LOCALFILE_HDFS.name());
     shuffleServerConf.setLong(ShuffleServerConf.FLUSH_COLD_STORAGE_THRESHOLD_SIZE, 450L);
-    shuffleServerConf.setInteger(ShuffleServerConf.RPC_SERVER_PORT, 0);
-    shuffleServerConf.setInteger("rss.jetty.http.port", jettyPorts.get(id));
     return new MockedShuffleServer(shuffleServerConf);
   }
 
