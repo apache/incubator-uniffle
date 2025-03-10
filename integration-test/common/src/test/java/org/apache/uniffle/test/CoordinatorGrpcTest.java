@@ -159,7 +159,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
               ss.start();
               grpcShuffleServers.set(0, ss);
             });
-    Thread.sleep(5000);
+    Thread.sleep(4000);
     CoordinatorServer coordinatorServer = coordinators.get(0);
     ((SimpleClusterManager) (coordinatorServer.getClusterManager())).nodesCheckTest();
 
@@ -316,6 +316,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
               ss.start();
               grpcShuffleServers.set(0, ss);
             });
+    Thread.sleep(2000);
     assertEquals(2, coordinators.get(0).getClusterManager().getNodesNum());
     nodes = scm.getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION, "SSD"));
     assertEquals(1, nodes.size());

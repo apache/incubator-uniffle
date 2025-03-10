@@ -600,6 +600,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertEquals(blockIdBitmap, succBlockIdBitmap);
 
     // tricky to reserve port, it'll be released after test
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     List<Integer> ports = reserveJettyPorts(2);
     // when one server is restarted, getShuffleResult should success
     grpcShuffleServers.get(1).stopServer();
