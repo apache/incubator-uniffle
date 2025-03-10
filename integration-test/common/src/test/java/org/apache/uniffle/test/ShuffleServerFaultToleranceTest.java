@@ -283,8 +283,7 @@ public class ShuffleServerFaultToleranceTest extends ShuffleReadWriteBase {
     return new RssSendShuffleDataRequest(appId, 3, 1000, shuffleToBlocks);
   }
 
-  public static void prepareShuffleServerConf(int subDirIndex, File tmpDir, ServerType serverType)
-      throws Exception {
+  public static void prepareShuffleServerConf(int subDirIndex, File tmpDir, ServerType serverType) {
     ShuffleServerConf shuffleServerConf =
         shuffleServerConfWithoutPort(subDirIndex, tmpDir, serverType);
     shuffleServerConf.setString(

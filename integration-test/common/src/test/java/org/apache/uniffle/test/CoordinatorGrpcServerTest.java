@@ -58,7 +58,7 @@ public class CoordinatorGrpcServerTest {
   @Test
   public void testGrpcConnectionSize() throws Exception {
     RssBaseConf baseConf = new RssBaseConf();
-    baseConf.set(RssBaseConf.RPC_SERVER_PORT, 20001);
+    baseConf.set(RssBaseConf.RPC_SERVER_PORT, 0);
     baseConf.set(RssBaseConf.RPC_EXECUTOR_SIZE, 2);
 
     GRPCMetrics grpcMetrics = new CoordinatorGrpcMetrics(baseConf);
@@ -70,7 +70,7 @@ public class CoordinatorGrpcServerTest {
             .addService(new MockedCoordinatorGrpcService())
             .build();
     try {
-      grpcServer.start();
+      final int port = grpcServer.start();
 
       // case1: test the single one connection metric
       double connSize = grpcMetrics.getGaugeMap().get(GRPC_SERVER_CONNECTION_NUMBER_KEY).get();
@@ -78,9 +78,9 @@ public class CoordinatorGrpcServerTest {
 
       // case2: test the multiple connections
       try (CoordinatorGrpcClient coordinatorGrpcClient =
-              new CoordinatorGrpcClient("localhost", 20001);
-          CoordinatorGrpcClient client1 = new CoordinatorGrpcClient("localhost", 20001);
-          CoordinatorGrpcClient client2 = new CoordinatorGrpcClient("localhost", 20001)) {
+              new CoordinatorGrpcClient("localhost", port);
+          CoordinatorGrpcClient client1 = new CoordinatorGrpcClient("localhost", port);
+          CoordinatorGrpcClient client2 = new CoordinatorGrpcClient("localhost", port)) {
         coordinatorGrpcClient.registerApplicationInfo(
             new RssApplicationInfoRequest("testGrpcConnectionSize", 10000, "user"));
 

@@ -17,17 +17,17 @@
 
 package org.apache.uniffle.test;
 
-import java.lang.reflect.Field;
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.uniffle.client.request.RssApplicationInfoRequest;
 import org.apache.uniffle.client.request.RssGetShuffleAssignmentsRequest;
@@ -38,7 +38,6 @@ import org.apache.uniffle.common.PartitionRange;
 import org.apache.uniffle.common.ShuffleRegisterInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.config.RssBaseConf;
-import org.apache.uniffle.common.config.RssConf;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
 import org.apache.uniffle.common.storage.StorageInfo;
@@ -67,20 +66,18 @@ import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables
 public class CoordinatorGrpcTest extends CoordinatorTestBase {
 
   @BeforeAll
-  public static void setupServers() throws Exception {
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
+  public static void setupServers(@TempDir File tmpDir) throws Exception {
+    CoordinatorConf coordinatorConf = coordinatorConfWithoutPort();
     coordinatorConf.set(RssBaseConf.RPC_METRICS_ENABLED, true);
     coordinatorConf.setString(CoordinatorConf.COORDINATOR_ASSIGNMENT_STRATEGY.key(), "BASIC");
     coordinatorConf.setLong("rss.coordinator.app.expired", 2000);
     coordinatorConf.setLong("rss.coordinator.server.heartbeat.timeout", 3000);
-    createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
-    shuffleServerConf.remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
-    createShuffleServer(shuffleServerConf);
-    shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
-    shuffleServerConf.remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
-    createShuffleServer(shuffleServerConf);
-    startServers();
+    storeCoordinatorConf(coordinatorConf);
+
+    storeShuffleServerConf(shuffleServerConfWithoutPort(0, tmpDir, ServerType.GRPC));
+    storeShuffleServerConf(shuffleServerConfWithoutPort(1, tmpDir, ServerType.GRPC));
+
+    startServersWithRandomPorts();
   }
 
   @Test
@@ -141,27 +138,24 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
   }
 
   @Test
-  public void getShuffleAssignmentsTest() throws Exception {
+  public void getShuffleAssignmentsTest(@TempDir File tmpDir) throws Exception {
     final String appId = "getShuffleAssignmentsTest";
     CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
-    // When the shuffleServerHeartbeat Test is completed before the current test,
-    // the server's tags will be [ss_v4, GRPC_NETTY] and [ss_v4, GRPC], respectively.
-    // We need to remove the first machine's tag from GRPC_NETTY to GRPC
-    grpcShuffleServers.get(0).stopServer();
-    RssConf shuffleServerConf = grpcShuffleServers.get(0).getShuffleServerConf();
-    Class<RssConf> clazz = RssConf.class;
-    Field field = clazz.getDeclaredField("settings");
-    field.setAccessible(true);
-    ((ConcurrentHashMap<Object, Object>) field.get(shuffleServerConf))
-        .remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
-    String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
 
+    grpcShuffleServers.get(0).stopServer();
+    List<Integer> ports = reserveJettyPorts(1);
+    ShuffleServerConf shuffleServerConf = shuffleServerConfWithoutPort(0, tempDir, ServerType.GRPC);
+    shuffleServerConf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "RSS_ENV_KEY");
+    String baseDir = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0);
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH.key(), baseDir);
+    String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
     withEnvironmentVariables("RSS_ENV_KEY", storageTypeJsonSource)
         .execute(
             () -> {
-              ShuffleServerConf tempShuffleServerConf = getShuffleServerConf(ServerType.GRPC);
-              tempShuffleServerConf.remove(ShuffleServerConf.NETTY_SERVER_PORT.key());
-              ShuffleServer ss = new ShuffleServer(tempShuffleServerConf);
+              shuffleServerConf.setString("rss.coordinator.quorum", getQuorum());
+              shuffleServerConf.setInteger(RssBaseConf.RPC_SERVER_PORT, 0);
+              shuffleServerConf.setInteger(RssBaseConf.JETTY_HTTP_PORT, ports.get(0));
+              ShuffleServer ss = new ShuffleServer(shuffleServerConf);
               ss.start();
               grpcShuffleServers.set(0, ss);
             });
@@ -287,7 +281,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
   }
 
   @Test
-  public void shuffleServerHeartbeatTest() throws Exception {
+  public void shuffleServerHeartbeatTest(@TempDir File tempDir) throws Exception {
     CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
     grpcShuffleServers.get(0).stopServer();
     Thread.sleep(5000);
@@ -303,20 +297,25 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     assertEquals(StorageStatus.NORMAL, infoHead.getStatus());
     assertTrue(node.getTags().contains(Constants.SHUFFLE_SERVER_VERSION));
     assertTrue(scm.getTagToNodes().get(Constants.SHUFFLE_SERVER_VERSION).contains(node));
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+
+    List<Integer> ports = reserveJettyPorts(1);
+    ShuffleServerConf shuffleServerConf = shuffleServerConfWithoutPort(0, tempDir, ServerType.GRPC);
     shuffleServerConf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "RSS_ENV_KEY");
     String baseDir = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0);
+    shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH.key(), baseDir);
     String storageTypeJsonSource = String.format("{\"%s\": \"ssd\"}", baseDir);
     withEnvironmentVariables("RSS_ENV_KEY", storageTypeJsonSource)
         .execute(
             () -> {
               // set this server's tag to ssd
               shuffleServerConf.set(ShuffleServerConf.TAGS, Lists.newArrayList("SSD"));
+              shuffleServerConf.setString("rss.coordinator.quorum", getQuorum());
+              shuffleServerConf.setInteger(RssBaseConf.RPC_SERVER_PORT, 0);
+              shuffleServerConf.setInteger(RssBaseConf.JETTY_HTTP_PORT, ports.get(0));
               ShuffleServer ss = new ShuffleServer(shuffleServerConf);
               ss.start();
               grpcShuffleServers.set(0, ss);
             });
-    Thread.sleep(3000);
     assertEquals(2, coordinators.get(0).getClusterManager().getNodesNum());
     nodes = scm.getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION, "SSD"));
     assertEquals(1, nodes.size());

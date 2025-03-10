@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,6 @@ import org.apache.uniffle.common.ShuffleAssignmentsInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.Constants;
 import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
@@ -60,6 +60,8 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
 
   // KV: tag -> shuffle server id
   private static Map<String, List<Integer>> tagOfShufflePorts = new HashMap<>();
+  private static final String tag1 = "fixed";
+  private static final String tag2 = "elastic";
 
   private static List<Integer> findAvailablePorts(int num) throws IOException {
     List<ServerSocket> sockets = new ArrayList<>();
@@ -78,64 +80,44 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
     return ports;
   }
 
-  private static void createAndStartShuffleServerWithTags(Set<String> tags, File tmpDir)
-      throws Exception {
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+  private static void prepareShuffleServerConf(int subDirIndex, Set<String> tags, File tmpDir) {
+    ShuffleServerConf shuffleServerConf =
+        shuffleServerConfWithoutPort(subDirIndex, tmpDir, ServerType.GRPC);
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 4000);
-
-    File dataDir1 = new File(tmpDir, "data1");
-    File dataDir2 = new File(tmpDir, "data2");
-    String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-
     shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
-    shuffleServerConf.setString("rss.storage.basePath", basePath);
     shuffleServerConf.setString("rss.server.tags", StringUtils.join(tags, ","));
-
-    List<Integer> ports = findAvailablePorts(2);
-    shuffleServerConf.setInteger("rss.rpc.server.port", ports.get(0));
-    shuffleServerConf.setInteger("rss.jetty.http.port", ports.get(1));
-
-    for (String tag : tags) {
-      tagOfShufflePorts.putIfAbsent(tag, new ArrayList<>());
-      tagOfShufflePorts.get(tag).add(ports.get(0));
-    }
-    tagOfShufflePorts.putIfAbsent(Constants.SHUFFLE_SERVER_VERSION, new ArrayList<>());
-    tagOfShufflePorts.get(Constants.SHUFFLE_SERVER_VERSION).add(ports.get(0));
-
-    LOG.info(
-        "Shuffle server data dir: {}, rpc port: {}, http port: {}",
-        dataDir1 + "," + dataDir2,
-        ports.get(0),
-        ports.get(1));
-
-    ShuffleServer server = new ShuffleServer(shuffleServerConf);
-    grpcShuffleServers.add(server);
-    server.start();
+    storeShuffleServerConf(shuffleServerConf);
   }
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
-    createCoordinatorServer(coordinatorConf);
+    CoordinatorConf coordinatorConf = coordinatorConfWithoutPort();
+    storeCoordinatorConf(coordinatorConf);
 
-    for (CoordinatorServer coordinator : coordinators) {
-      coordinator.start();
-    }
-
-    File dir1 = new File(tmpDir, "server1");
     for (int i = 0; i < 2; i++) {
-      createAndStartShuffleServerWithTags(Sets.newHashSet(), dir1);
+      prepareShuffleServerConf(i, Sets.newHashSet(), tmpDir);
     }
 
-    File dir2 = new File(tmpDir, "server2");
     for (int i = 0; i < 2; i++) {
-      createAndStartShuffleServerWithTags(Sets.newHashSet("fixed"), dir2);
+      prepareShuffleServerConf(2 + i, Sets.newHashSet(tag1), tmpDir);
     }
 
-    File dir3 = new File(tmpDir, "server3");
     for (int i = 0; i < 2; i++) {
-      createAndStartShuffleServerWithTags(Sets.newHashSet("elastic"), dir3);
+      prepareShuffleServerConf(4 + i, Sets.newHashSet(tag2), tmpDir);
     }
+
+    startServersWithRandomPorts();
+    List<Integer> collect =
+        grpcShuffleServers.stream().map(ShuffleServer::getGrpcPort).collect(Collectors.toList());
+    tagOfShufflePorts.put(Constants.SHUFFLE_SERVER_VERSION, collect);
+    tagOfShufflePorts.put(
+        tag1,
+        Arrays.asList(
+            grpcShuffleServers.get(2).getGrpcPort(), grpcShuffleServers.get(3).getGrpcPort()));
+    tagOfShufflePorts.put(
+        tag2,
+        Arrays.asList(
+            grpcShuffleServers.get(4).getGrpcPort(), grpcShuffleServers.get(5).getGrpcPort()));
 
     // Wait all shuffle servers registering to coordinator
     long startTimeMS = System.currentTimeMillis();
@@ -151,7 +133,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
   }
 
   @Test
-  public void testTags() throws Exception {
+  public void testTags() {
     ShuffleWriteClientImpl shuffleWriteClient =
         ShuffleClientFactory.newWriteBuilder()
             .clientType(ClientType.GRPC.name())
@@ -168,7 +150,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
             .unregisterTimeSec(10)
             .unregisterRequestTimeSec(10)
             .build();
-    shuffleWriteClient.registerCoordinators(COORDINATOR_QUORUM);
+    shuffleWriteClient.registerCoordinators(getQuorum());
 
     // Case1 : only set the single default shuffle version tag
     ShuffleAssignmentsInfo assignmentsInfo =
@@ -198,26 +180,26 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
 
     // Case3: Set the single fixed tag
     assignmentsInfo =
-        shuffleWriteClient.getShuffleAssignments("app-3", 1, 1, 1, Sets.newHashSet("fixed"), 1, -1);
+        shuffleWriteClient.getShuffleAssignments("app-3", 1, 1, 1, Sets.newHashSet(tag1), 1, -1);
     assignedServerPorts =
         assignmentsInfo.getPartitionToServers().values().stream()
             .flatMap(x -> x.stream())
             .map(x -> x.getGrpcPort())
             .collect(Collectors.toList());
     assertEquals(1, assignedServerPorts.size());
-    assertTrue(tagOfShufflePorts.get("fixed").contains(assignedServerPorts.get(0)));
+    assertTrue(tagOfShufflePorts.get(tag1).contains(assignedServerPorts.get(0)));
 
     // case4: Set the multiple tags if exists
     assignmentsInfo =
         shuffleWriteClient.getShuffleAssignments(
-            "app-4", 1, 1, 1, Sets.newHashSet("fixed", Constants.SHUFFLE_SERVER_VERSION), 1, -1);
+            "app-4", 1, 1, 1, Sets.newHashSet(tag1, Constants.SHUFFLE_SERVER_VERSION), 1, -1);
     assignedServerPorts =
         assignmentsInfo.getPartitionToServers().values().stream()
             .flatMap(x -> x.stream())
             .map(x -> x.getGrpcPort())
             .collect(Collectors.toList());
     assertEquals(1, assignedServerPorts.size());
-    assertTrue(tagOfShufflePorts.get("fixed").contains(assignedServerPorts.get(0)));
+    assertTrue(tagOfShufflePorts.get(tag1).contains(assignedServerPorts.get(0)));
 
     // case5: Set the multiple tags if non-exist
     try {
@@ -227,7 +209,7 @@ public class AssignmentWithTagsTest extends CoordinatorTestBase {
               1,
               1,
               1,
-              Sets.newHashSet("fixed", "elastic", Constants.SHUFFLE_SERVER_VERSION),
+              Sets.newHashSet(tag1, tag2, Constants.SHUFFLE_SERVER_VERSION),
               1,
               -1);
       fail();

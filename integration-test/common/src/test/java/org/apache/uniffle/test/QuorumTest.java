@@ -18,12 +18,9 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -47,13 +44,12 @@ import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleDataDistributionType;
 import org.apache.uniffle.common.ShuffleServerInfo;
+import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
-import org.apache.uniffle.coordinator.CoordinatorServer;
 import org.apache.uniffle.server.MockedGrpcServer;
 import org.apache.uniffle.server.MockedShuffleServer;
-import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -88,92 +84,35 @@ public class QuorumTest extends ShuffleReadWriteBase {
         .readBufferSize(1000);
   }
 
-  public static MockedShuffleServer createServer(int id, File tmpDir, int coordinatorRpcPort)
-      throws Exception {
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
-    shuffleServerConf.setInteger("rss.rpc.server.port", 0);
+  public static ShuffleServerConf buildServerConf(int id, File tmpDir) {
+    ShuffleServerConf shuffleServerConf = shuffleServerConfWithoutPort(id, tmpDir, ServerType.GRPC);
     // app expires time should be greater than the client send data time which is 180s by default.
     // (rpcTimeout*retryTimes)
     // this can avoid get NO_REGISTER when second data to secondaryServer
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 240 * 1000L);
     shuffleServerConf.setLong("rss.server.heartbeat.interval", 5000L);
-    File dataDir1 = new File(tmpDir, id + "_1");
-    File dataDir2 = new File(tmpDir, id + "_2");
-    String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     shuffleServerConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE.name());
-    shuffleServerConf.setInteger("rss.jetty.http.port", 0);
-    shuffleServerConf.setString("rss.storage.basePath", basePath);
-    shuffleServerConf.setString("rss.coordinator.quorum", LOCALHOST + ":" + coordinatorRpcPort);
-    return new MockedShuffleServer(shuffleServerConf);
-  }
-
-  private List<Integer> generateFakePort(int num) {
-    Set<Integer> portExistsSet =
-        grpcShuffleServers.stream().map(ShuffleServer::getGrpcPort).collect(Collectors.toSet());
-    int i = 0;
-    List<Integer> fakePorts = new ArrayList<>(num);
-    while (i < num) {
-      int port = ThreadLocalRandom.current().nextInt(1, 65535);
-      if (portExistsSet.add(port)) {
-        fakePorts.add(port);
-        i++;
-      }
-    }
-    return fakePorts;
+    return shuffleServerConf;
   }
 
   @BeforeEach
   public void initCluster(@TempDir File tmpDir) throws Exception {
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
-    coordinatorConf.setInteger(CoordinatorConf.RPC_SERVER_PORT, 0);
-    coordinatorConf.setInteger(CoordinatorConf.JETTY_HTTP_PORT, 0);
-    createCoordinatorServer(coordinatorConf);
+    CoordinatorConf coordinatorConf = coordinatorConfWithoutPort();
+    storeCoordinatorConf(coordinatorConf);
 
-    for (CoordinatorServer coordinator : coordinators) {
-      coordinator.start();
+    for (int i = 0; i < 5; i++) {
+      storeMockShuffleServerConf(buildServerConf(i, tmpDir));
     }
+    startServersWithRandomPorts();
 
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC);
-    shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 8000);
-
-    grpcShuffleServers.add(createServer(0, tmpDir, coordinators.get(0).getRpcListenPort()));
-    grpcShuffleServers.add(createServer(1, tmpDir, coordinators.get(0).getRpcListenPort()));
-    grpcShuffleServers.add(createServer(2, tmpDir, coordinators.get(0).getRpcListenPort()));
-    grpcShuffleServers.add(createServer(3, tmpDir, coordinators.get(0).getRpcListenPort()));
-    grpcShuffleServers.add(createServer(4, tmpDir, coordinators.get(0).getRpcListenPort()));
-
-    for (ShuffleServer shuffleServer : grpcShuffleServers) {
-      shuffleServer.start();
-    }
-
-    shuffleServerInfo0 =
-        new ShuffleServerInfo(
-            String.format("127.0.0.1-%s", grpcShuffleServers.get(0).getGrpcPort()),
-            grpcShuffleServers.get(0).getIp(),
-            grpcShuffleServers.get(0).getGrpcPort());
-    shuffleServerInfo1 =
-        new ShuffleServerInfo(
-            String.format("127.0.0.1-%s", grpcShuffleServers.get(1).getGrpcPort()),
-            grpcShuffleServers.get(1).getIp(),
-            grpcShuffleServers.get(1).getGrpcPort());
-    shuffleServerInfo2 =
-        new ShuffleServerInfo(
-            String.format("127.0.0.1-%s", grpcShuffleServers.get(2).getGrpcPort()),
-            grpcShuffleServers.get(2).getIp(),
-            grpcShuffleServers.get(2).getGrpcPort());
-    shuffleServerInfo3 =
-        new ShuffleServerInfo(
-            String.format("127.0.0.1-%s", grpcShuffleServers.get(3).getGrpcPort()),
-            grpcShuffleServers.get(3).getIp(),
-            grpcShuffleServers.get(3).getGrpcPort());
-    shuffleServerInfo4 =
-        new ShuffleServerInfo(
-            String.format("127.0.0.1-%s", grpcShuffleServers.get(4).getGrpcPort()),
-            grpcShuffleServers.get(4).getIp(),
-            grpcShuffleServers.get(4).getGrpcPort());
+    shuffleServerInfo0 = new ShuffleServerInfo(LOCALHOST, grpcShuffleServers.get(0).getGrpcPort());
+    shuffleServerInfo1 = new ShuffleServerInfo(LOCALHOST, grpcShuffleServers.get(1).getGrpcPort());
+    shuffleServerInfo2 = new ShuffleServerInfo(LOCALHOST, grpcShuffleServers.get(2).getGrpcPort());
+    shuffleServerInfo3 = new ShuffleServerInfo(LOCALHOST, grpcShuffleServers.get(3).getGrpcPort());
+    shuffleServerInfo4 = new ShuffleServerInfo(LOCALHOST, grpcShuffleServers.get(4).getGrpcPort());
 
     // simulator of failed servers
-    List<Integer> fakePortList = generateFakePort(5);
+    List<Integer> fakePortList = generateNonExistingPorts(5);
     fakedShuffleServerInfo0 =
         new ShuffleServerInfo(
             "127.0.0.1-20001", grpcShuffleServers.get(0).getIp(), fakePortList.get(0));
@@ -660,9 +599,15 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertEquals(0, result.getFailedBlockIds().size());
     assertEquals(blockIdBitmap, succBlockIdBitmap);
 
+    // tricky to reserve port, it'll be released after test
+    List<Integer> ports = reserveJettyPorts(2);
     // when one server is restarted, getShuffleResult should success
     grpcShuffleServers.get(1).stopServer();
-    grpcShuffleServers.set(1, createServer(1, tmpDir, coordinators.get(0).getRpcListenPort()));
+    ShuffleServerConf shuffleServerConf1 = buildServerConf(5, tmpDir);
+    shuffleServerConf1.setString("rss.coordinator.quorum", getQuorum());
+    shuffleServerConf1.setInteger(RssBaseConf.RPC_SERVER_PORT, 0);
+    shuffleServerConf1.setInteger(RssBaseConf.JETTY_HTTP_PORT, ports.get(0));
+    grpcShuffleServers.set(1, new MockedShuffleServer(shuffleServerConf1));
     grpcShuffleServers.get(1).start();
     report =
         shuffleWriteClientImpl.getShuffleResult(
@@ -675,7 +620,11 @@ public class QuorumTest extends ShuffleReadWriteBase {
 
     // when two servers are restarted, getShuffleResult should fail
     grpcShuffleServers.get(2).stopServer();
-    grpcShuffleServers.set(2, createServer(2, tmpDir, coordinators.get(0).getRpcListenPort()));
+    ShuffleServerConf shuffleServerConf2 = buildServerConf(5, tmpDir);
+    shuffleServerConf2.setString("rss.coordinator.quorum", getQuorum());
+    shuffleServerConf2.setInteger(RssBaseConf.RPC_SERVER_PORT, 0);
+    shuffleServerConf2.setInteger(RssBaseConf.JETTY_HTTP_PORT, ports.get(1));
+    grpcShuffleServers.set(2, new MockedShuffleServer(shuffleServerConf2));
     grpcShuffleServers.get(2).start();
     try {
       report =
