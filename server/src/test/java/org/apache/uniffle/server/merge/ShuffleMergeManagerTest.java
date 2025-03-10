@@ -112,15 +112,15 @@ public class ShuffleMergeManagerTest {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false,true",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false,false",
       })
-  public void testMergerManager(String classes) throws Exception {
+  void testMergerManager(String classes) throws Exception {
     // 1 Construct serializer and comparator
     final String[] classArray = classes.split(",");
     final String keyClassName = classArray[0];
     final String valueClassName = classArray[1];
-    final Class keyClass = SerializerUtils.getClassByName(keyClassName);
-    final Class valueClass = SerializerUtils.getClassByName(valueClassName);
-    boolean raw = classArray.length > 2 ? Boolean.parseBoolean(classArray[2]) : false;
-    boolean direct = classArray.length > 3 ? Boolean.parseBoolean(classArray[3]) : false;
+    final Class<?> keyClass = SerializerUtils.getClassByName(keyClassName);
+    final Class<?> valueClass = SerializerUtils.getClassByName(valueClassName);
+    boolean raw = classArray.length > 2 && Boolean.parseBoolean(classArray[2]);
+    boolean direct = classArray.length > 3 && Boolean.parseBoolean(classArray[3]);
     final Comparator comparator = SerializerUtils.getComparator(keyClass);
     final String comparatorClassName = comparator.getClass().getName();
     final WritableSerializer serializer = new WritableSerializer(new RssConf());
@@ -218,8 +218,8 @@ public class ShuffleMergeManagerTest {
                 mergeManager.getShuffleData(APP_ID, SHUFFLE_ID, PARTITION_ID, blockId);
             SerInputStream inputStream =
                 SerInputStream.newInputStream(shuffleDataResult.getDataBuf());
-            RecordsReader reader =
-                new RecordsReader(serverConf, inputStream, keyClass, valueClass, raw, true);
+            RecordsReader<?, ?> reader =
+                new RecordsReader<>(serverConf, inputStream, keyClass, valueClass, raw, true);
             reader.init();
             while (reader.next()) {
               if (raw) {
@@ -245,11 +245,10 @@ public class ShuffleMergeManagerTest {
             }
             shuffleDataResult.release();
             blockId++;
-            break;
           } else {
             finish = true;
-            break;
           }
+          break;
         default:
           fail("Find invalid merge state!");
       }

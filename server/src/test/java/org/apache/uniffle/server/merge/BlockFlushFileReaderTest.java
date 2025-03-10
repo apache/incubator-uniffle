@@ -68,14 +68,14 @@ public class BlockFlushFileReaderTest {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,8,false,true",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,8,false,false",
       })
-  public void writeTestWithMerge(String classes, @TempDir File tmpDir) throws Exception {
+  void writeTestWithMerge(String classes, @TempDir File tmpDir) throws Exception {
     final String[] classArray = classes.split(",");
-    final Class keyClass = SerializerUtils.getClassByName(classArray[0]);
-    final Class valueClass = SerializerUtils.getClassByName(classArray[1]);
+    final Class<?> keyClass = SerializerUtils.getClassByName(classArray[0]);
+    final Class<?> valueClass = SerializerUtils.getClassByName(classArray[1]);
     final Comparator comparator = SerializerUtils.getComparator(keyClass);
     final int ringBufferSize = Integer.parseInt(classArray[2]);
-    boolean raw = classArray.length > 3 ? Boolean.parseBoolean(classArray[3]) : false;
-    boolean direct = classArray.length > 4 ? Boolean.parseBoolean(classArray[4]) : false;
+    boolean raw = classArray.length > 3 && Boolean.parseBoolean(classArray[3]);
+    boolean direct = classArray.length > 4 && Boolean.parseBoolean(classArray[4]);
 
     final File dataDir = new File(tmpDir, "data");
     final String[] basePaths = new String[] {dataDir.getAbsolutePath()};
@@ -120,8 +120,8 @@ public class BlockFlushFileReaderTest {
 
     int index = 0;
     ByteBuf byteBuf = outputStream.toByteBuf();
-    RecordsReader reader =
-        new RecordsReader(
+    RecordsReader<?, ?> reader =
+        new RecordsReader<>(
             conf, SerInputStream.newInputStream(byteBuf), keyClass, valueClass, false, false);
     reader.init();
     while (reader.next()) {
@@ -167,15 +167,14 @@ public class BlockFlushFileReaderTest {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,2,false,true",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,2,false,false",
       })
-  public void writeTestWithMergeWhenInterrupted(String classes, @TempDir File tmpDir)
-      throws Exception {
+  void writeTestWithMergeWhenInterrupted(String classes, @TempDir File tmpDir) throws Exception {
     String[] classArray = classes.split(",");
-    final Class keyClass = SerializerUtils.getClassByName(classArray[0]);
-    final Class valueClass = SerializerUtils.getClassByName(classArray[1]);
+    final Class<?> keyClass = SerializerUtils.getClassByName(classArray[0]);
+    final Class<?> valueClass = SerializerUtils.getClassByName(classArray[1]);
     final Comparator comparator = SerializerUtils.getComparator(keyClass);
     int ringBufferSize = Integer.parseInt(classArray[2]);
-    boolean raw = classArray.length > 3 ? Boolean.parseBoolean(classArray[3]) : false;
-    boolean direct = classArray.length > 4 ? Boolean.parseBoolean(classArray[4]) : false;
+    boolean raw = classArray.length > 3 && Boolean.parseBoolean(classArray[3]);
+    boolean direct = classArray.length > 4 && Boolean.parseBoolean(classArray[4]);
 
     File dataDir = new File(tmpDir, "data");
     String[] basePaths = new String[] {dataDir.getAbsolutePath()};
@@ -241,8 +240,8 @@ public class BlockFlushFileReaderTest {
         RssConf rssConf,
         SerInputStream inputStream,
         long blockId,
-        Class keyClass,
-        Class valueClass,
+        Class<?> keyClass,
+        Class<?> valueClass,
         long size,
         boolean raw,
         BlockFlushFileReader reader) {

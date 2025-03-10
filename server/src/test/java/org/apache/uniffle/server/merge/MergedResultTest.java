@@ -48,14 +48,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-public class MergedResultTest {
+class MergedResultTest {
 
   private static final int BYTES_LEN = 10240;
   private static final int RECORDS = 1009;
   private static final int SEGMENTS = 4;
 
   @Test
-  public void testMergedResult() throws IOException {
+  void testMergedResult() throws IOException {
     // 1 Construct cache
     List<Pair<Integer, ByteBuf>> blocks = new ArrayList<>();
     MergedResult.CacheMergedBlockFuntion cache =
@@ -105,13 +105,13 @@ public class MergedResultTest {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false,true",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false,false",
       })
-  public void testMergeSegmentToMergeResult(String classes, @TempDir File tmpDir) throws Exception {
+  void testMergeSegmentToMergeResult(String classes, @TempDir File tmpDir) throws Exception {
     // 1 Parse arguments
     String[] classArray = classes.split(",");
-    Class keyClass = SerializerUtils.getClassByName(classArray[0]);
-    Class valueClass = SerializerUtils.getClassByName(classArray[1]);
-    boolean raw = classArray.length > 2 ? Boolean.parseBoolean(classArray[2]) : false;
-    boolean direct = classArray.length > 3 ? Boolean.parseBoolean(classArray[3]) : false;
+    Class<?> keyClass = SerializerUtils.getClassByName(classArray[0]);
+    Class<?> valueClass = SerializerUtils.getClassByName(classArray[1]);
+    boolean raw = classArray.length > 2 && Boolean.parseBoolean(classArray[2]);
+    boolean direct = classArray.length > 3 && Boolean.parseBoolean(classArray[3]);
 
     // 2 Construct cache
     List<Pair<Integer, ByteBuf>> blocks = new ArrayList<>();
@@ -151,8 +151,8 @@ public class MergedResultTest {
     assert factory.getSerializer(valueClass).getClass().equals(serializer.getClass());
     SerializerInstance instance = serializer.newInstance();
     for (int i = 0; i < blocks.size(); i++) {
-      RecordsReader reader =
-          new RecordsReader(
+      RecordsReader<?, ?> reader =
+          new RecordsReader<>(
               rssConf,
               SerInputStream.newInputStream(blocks.get(i).getRight()),
               keyClass,
