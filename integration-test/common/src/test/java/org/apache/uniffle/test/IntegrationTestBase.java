@@ -137,7 +137,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
       server.start();
     }
     for (ShuffleServer server : nettyShuffleServers) {
-      server.getShuffleServerConf().setInteger(RssBaseConf.JETTY_HTTP_PORT, 0);
+      server.getShuffleServerConf().setInteger(ShuffleServerConf.NETTY_SERVER_PORT, 0);
       server.start();
     }
   }
@@ -212,8 +212,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
   }
 
   private static ShuffleServerConf getShuffleServerConf(
-      ServerType serverType, String quorum, int grpcPort, int nettyPort, int jettyPort)
-      throws Exception {
+      ServerType serverType, String quorum, int grpcPort, int nettyPort, int jettyPort) {
     ShuffleServerConf serverConf = new ShuffleServerConf();
     serverConf.setInteger("rss.rpc.server.port", grpcPort);
     serverConf.setString("rss.storage.type", StorageType.MEMORY_LOCALFILE_HDFS.name());
@@ -241,7 +240,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
   }
 
   protected static ShuffleServerConf shuffleServerConfWithoutPort(
-      int subDirIndex, File tmpDir, ServerType serverType) throws Exception {
+      int subDirIndex, File tmpDir, ServerType serverType) {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType, "", 0, 0, 0);
     File dataDir1 = new File(tmpDir, subDirIndex + "_1");
     File dataDir2 = new File(tmpDir, subDirIndex + "_2");
@@ -266,7 +265,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     coordinators.add(new CoordinatorServer(coordinatorConf));
   }
 
-  protected static void storeCoordinatorConf(CoordinatorConf coordinatorConf) throws Exception {
+  protected static void storeCoordinatorConf(CoordinatorConf coordinatorConf) {
     coordinatorConfList.add(coordinatorConf);
   }
 
@@ -284,11 +283,11 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     }
   }
 
-  protected static void storeShuffleServerConf(ShuffleServerConf serverConf) throws Exception {
+  protected static void storeShuffleServerConf(ShuffleServerConf serverConf) {
     shuffleServerConfList.add(serverConf);
   }
 
-  protected static void storeMockShuffleServerConf(ShuffleServerConf serverConf) throws Exception {
+  protected static void storeMockShuffleServerConf(ShuffleServerConf serverConf) {
     mockShuffleServerConfList.add(serverConf);
   }
 
