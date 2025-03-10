@@ -65,8 +65,6 @@ public class CoordinatorReconfigureNodeMaxTest extends CoordinatorTestBase {
     coordinatorConf2.setLong(CoordinatorConf.COORDINATOR_APP_EXPIRED, 2000);
     coordinatorConf2.setInteger(
         CoordinatorConf.COORDINATOR_SHUFFLE_NODES_MAX, DEFAULT_SHUFFLE_NODES_MAX);
-    coordinatorConf2.setInteger(CoordinatorConf.RPC_SERVER_PORT, COORDINATOR_PORT_2);
-    coordinatorConf2.setInteger(CoordinatorConf.JETTY_HTTP_PORT, JETTY_PORT_2);
     coordinatorConf2.setLong(RssBaseConf.RSS_RECONFIGURE_INTERVAL_SEC, 1L);
     storeCoordinatorConf(coordinatorConf2);
 
