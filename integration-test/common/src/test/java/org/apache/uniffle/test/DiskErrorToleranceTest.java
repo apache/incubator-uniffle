@@ -53,7 +53,6 @@ import org.apache.uniffle.common.ShuffleBlockInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.rpc.ServerType;
 import org.apache.uniffle.common.rpc.StatusCode;
-import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
@@ -73,14 +72,10 @@ public class DiskErrorToleranceTest extends ShuffleReadWriteBase {
   public static void setupServers(@TempDir File serverTmpDir) throws Exception {
     data1 = new File(serverTmpDir, "data1");
     data2 = new File(serverTmpDir, "data2");
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
-    createCoordinatorServer(coordinatorConf);
+    storeCoordinatorConf(coordinatorConfWithoutPort());
 
-    ShuffleServerConf grpcShuffleServerConf = buildShuffleServerConf(ServerType.GRPC);
-    storeShuffleServerConf(grpcShuffleServerConf);
-
-    ShuffleServerConf nettyShuffleServerConf = buildShuffleServerConf(ServerType.GRPC_NETTY);
-    storeShuffleServerConf(nettyShuffleServerConf);
+    storeShuffleServerConf(buildShuffleServerConf(ServerType.GRPC));
+    storeShuffleServerConf(buildShuffleServerConf(ServerType.GRPC_NETTY));
 
     startServersWithRandomPorts();
   }
