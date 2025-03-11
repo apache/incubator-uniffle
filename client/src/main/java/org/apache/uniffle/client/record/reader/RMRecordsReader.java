@@ -257,7 +257,7 @@ public class RMRecordsReader<K, V, C> {
       private Record<ComparativeOutputBuffer, ComparativeOutputBuffer> curr = null;
 
       @Override
-      public synchronized boolean hasNext() throws IOException {
+      public boolean hasNext() throws IOException {
         try {
           if (curr != null) {
             return true;
@@ -269,7 +269,7 @@ public class RMRecordsReader<K, V, C> {
         }
       }
 
-      public synchronized Record<ComparativeOutputBuffer, ComparativeOutputBuffer> next()
+      public Record<ComparativeOutputBuffer, ComparativeOutputBuffer> next()
           throws IOException {
         Record<ComparativeOutputBuffer, ComparativeOutputBuffer> next =
             Record.create(curr.getKey(), curr.getValue());
@@ -285,7 +285,7 @@ public class RMRecordsReader<K, V, C> {
       private Record<K, C> curr = null;
 
       @Override
-      public synchronized boolean hasNext() throws IOException {
+      public boolean hasNext() throws IOException {
         try {
           if (curr != null) {
             return true;
@@ -297,7 +297,7 @@ public class RMRecordsReader<K, V, C> {
         }
       }
 
-      public synchronized Record<K, C> next() throws IOException {
+      public Record<K, C> next() throws IOException {
         Record record = Record.create(getCurrentKey(), getCurrentValue());
         curr = null;
         return record;
