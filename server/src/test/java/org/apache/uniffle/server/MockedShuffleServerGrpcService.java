@@ -45,6 +45,7 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 
   private boolean mockSendDataFailed = false;
   private int mockSendDataFailedStageNumber = -1;
+  private AtomicInteger failedSendDataRequest = new AtomicInteger(0);
 
   private boolean mockRequireBufferFailedWithNoBuffer = false;
   private boolean isMockRequireBufferFailedWithNoBufferForHugePartition = false;
@@ -84,6 +85,10 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
 
   public void enableFirstNReadRequestToFail(int n) {
     numOfFailedReadRequest = n;
+  }
+
+  public void enableFirstNSendDataRequestToFail(int n) {
+    failedSendDataRequest.set(n);
   }
 
   public void resetFirstNReadRequestToFail() {
@@ -144,6 +149,10 @@ public class MockedShuffleServerGrpcService extends ShuffleServerGrpcService {
       LOG.info(
           "Add a mocked sendData failed on sendShuffleData with the stage number={}",
           mockSendDataFailedStageNumber);
+      throw new RuntimeException("This write request is failed as mocked failure！");
+    }
+    if (failedSendDataRequest.getAndDecrement() > 0) {
+      LOG.info("This request is failed as mocked failure");
       throw new RuntimeException("This write request is failed as mocked failure！");
     }
     if (mockedTimeout > 0) {
