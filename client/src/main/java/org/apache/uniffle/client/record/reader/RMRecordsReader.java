@@ -257,8 +257,11 @@ public class RMRecordsReader<K, V, C> {
       private Record<ComparativeOutputBuffer, ComparativeOutputBuffer> curr = null;
 
       @Override
-      public boolean next() throws IOException {
+      public synchronized boolean hasNext() throws IOException {
         try {
+          if (curr != null) {
+            return true;
+          }
           curr = results.take();
           return curr != null;
         } catch (InterruptedException e) {
@@ -266,14 +269,12 @@ public class RMRecordsReader<K, V, C> {
         }
       }
 
-      @Override
-      public ComparativeOutputBuffer getCurrentKey() throws IOException {
-        return curr.getKey();
-      }
-
-      @Override
-      public ComparativeOutputBuffer getCurrentValue() throws IOException {
-        return curr.getValue();
+      public synchronized Record<ComparativeOutputBuffer, ComparativeOutputBuffer> next()
+          throws IOException {
+        Record<ComparativeOutputBuffer, ComparativeOutputBuffer> next =
+            Record.create(curr.getKey(), curr.getValue());
+        curr = null;
+        return next;
       }
     };
   }
@@ -284,8 +285,11 @@ public class RMRecordsReader<K, V, C> {
       private Record<K, C> curr = null;
 
       @Override
-      public boolean next() throws IOException {
+      public synchronized boolean hasNext() throws IOException {
         try {
+          if (curr != null) {
+            return true;
+          }
           curr = results.take();
           return curr != null;
         } catch (InterruptedException e) {
@@ -293,7 +297,12 @@ public class RMRecordsReader<K, V, C> {
         }
       }
 
-      @Override
+      public synchronized Record<K, C> next() throws IOException {
+        Record record = Record.create(getCurrentKey(), getCurrentValue());
+        curr = null;
+        return record;
+      }
+
       public K getCurrentKey() throws IOException {
         if (raw) {
           ComparativeOutputBuffer keyBuffer = (ComparativeOutputBuffer) curr.getKey();
@@ -305,7 +314,6 @@ public class RMRecordsReader<K, V, C> {
         }
       }
 
-      @Override
       public C getCurrentValue() throws IOException {
         if (raw) {
           ComparativeOutputBuffer valueBuffer = (ComparativeOutputBuffer) curr.getValue();

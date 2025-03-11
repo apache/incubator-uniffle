@@ -46,6 +46,7 @@ import org.apache.hadoop.util.Progress;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import org.apache.uniffle.client.api.ShuffleWriteClient;
+import org.apache.uniffle.client.record.Record;
 import org.apache.uniffle.client.record.reader.KeyValueReader;
 import org.apache.uniffle.client.record.reader.RMRecordsReader;
 import org.apache.uniffle.client.record.writer.Combiner;
@@ -184,6 +185,7 @@ public class RMRssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, Exceptio
     RMRecordsReader reader;
     KeyValueReader<ComparativeOutputBuffer, ComparativeOutputBuffer> keyValueReader;
     private Progress mergeProgress = new Progress();
+    Record<ComparativeOutputBuffer, ComparativeOutputBuffer> current;
 
     public RecordsRelayer(RMRecordsReader reader, SerializerInstance keySerializer) {
       this.reader = reader;
@@ -192,7 +194,7 @@ public class RMRssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, Exceptio
 
     @Override
     public DataInputBuffer getKey() throws IOException {
-      ComparativeOutputBuffer buffer = keyValueReader.getCurrentKey();
+      ComparativeOutputBuffer buffer = current.getKey();
       DataInputBuffer inputBuffer = new DataInputBuffer();
       inputBuffer.reset(buffer.getData(), 0, buffer.getLength());
       return inputBuffer;
@@ -200,7 +202,7 @@ public class RMRssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, Exceptio
 
     @Override
     public DataInputBuffer getValue() throws IOException {
-      ComparativeOutputBuffer buffer = keyValueReader.getCurrentValue();
+      ComparativeOutputBuffer buffer = current.getValue();
       DataInputBuffer inputBuffer = new DataInputBuffer();
       inputBuffer.reset(buffer.getData(), 0, buffer.getLength());
       return inputBuffer;
@@ -208,7 +210,11 @@ public class RMRssShuffle<K, V> implements ShuffleConsumerPlugin<K, V>, Exceptio
 
     @Override
     public boolean next() throws IOException {
-      return keyValueReader.next();
+      boolean hasNext = keyValueReader.hasNext();
+      if (hasNext) {
+        current = keyValueReader.next();
+      }
+      return hasNext;
     }
 
     @Override

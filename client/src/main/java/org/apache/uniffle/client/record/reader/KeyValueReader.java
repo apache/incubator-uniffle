@@ -19,11 +19,11 @@ package org.apache.uniffle.client.record.reader;
 
 import java.io.IOException;
 
+import org.apache.uniffle.client.record.Record;
+
 public abstract class KeyValueReader<K, V> {
 
-  public abstract boolean next() throws IOException;
+  public abstract boolean hasNext() throws IOException;
 
-  public abstract K getCurrentKey() throws IOException;
-
-  public abstract V getCurrentValue() throws IOException;
+  public abstract Record<K, V> next() throws IOException;
 }
