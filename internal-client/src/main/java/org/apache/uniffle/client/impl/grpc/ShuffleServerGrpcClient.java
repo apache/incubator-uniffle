@@ -23,11 +23,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.StatusRuntimeException;
@@ -540,7 +542,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
 
     boolean isSuccessful = true;
     AtomicReference<StatusCode> failedStatusCode = new AtomicReference<>(StatusCode.INTERNAL_ERROR);
-
+    Set<Integer> needSplitPartitionIds = Sets.newHashSet();
     // prepare rpc request based on shuffleId -> partitionId -> blocks
     for (Map.Entry<Integer, Map<Integer, List<ShuffleBlockInfo>>> stb :
         shuffleIdToBlocks.entrySet()) {
@@ -583,7 +585,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
         RetryUtils.retryWithCondition(
             () -> {
               // TODO(baoloongmao): support partition split follow netty client
-              long requireId =
+              Pair<Long, List<Integer>> allocationResult =
                   requirePreAllocation(
                           appId,
                           shuffleId,
@@ -592,8 +594,9 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
                           allocateSize,
                           request.getRetryMax() / maxRetryAttempts,
                           request.getRetryIntervalMax(),
-                          failedStatusCode)
-                      .getLeft();
+                          failedStatusCode);
+              long requireId = allocationResult.getLeft();
+              needSplitPartitionIds.addAll(allocationResult.getRight());
               if (requireId == FAILED_REQUIRE_ID) {
                 throw new RssException(
                     String.format(
@@ -661,6 +664,7 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
     } else {
       response = new RssSendShuffleDataResponse(failedStatusCode.get());
     }
+    response.setNeedSplitPartitionIds(needSplitPartitionIds);
     return response;
   }
 
