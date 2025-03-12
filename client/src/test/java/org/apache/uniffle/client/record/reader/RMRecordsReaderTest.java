@@ -31,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.uniffle.client.api.ShuffleServerClient;
+import org.apache.uniffle.client.record.Record;
 import org.apache.uniffle.client.record.writer.Combiner;
 import org.apache.uniffle.client.record.writer.SumByKeyCombiner;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -102,9 +103,10 @@ public class RMRecordsReaderTest {
     readerSpy.start();
     int index = 0;
     KeyValueReader keyValueReader = readerSpy.keyValueReader();
-    while (keyValueReader.next()) {
-      assertEquals(SerializerUtils.genData(keyClass, index), keyValueReader.getCurrentKey());
-      assertEquals(SerializerUtils.genData(valueClass, index), keyValueReader.getCurrentValue());
+    while (keyValueReader.hasNext()) {
+      Record record = keyValueReader.next();
+      assertEquals(SerializerUtils.genData(keyClass, index), record.getKey());
+      assertEquals(SerializerUtils.genData(valueClass, index), record.getValue());
       index++;
     }
     assertEquals(RECORDS_NUM, index);
@@ -172,8 +174,9 @@ public class RMRecordsReaderTest {
     readerSpy.start();
     int index = 0;
     KeyValueReader keyValueReader = readerSpy.keyValueReader();
-    while (keyValueReader.next()) {
-      assertEquals(SerializerUtils.genData(keyClass, index), keyValueReader.getCurrentKey());
+    while (keyValueReader.hasNext()) {
+      Record record = keyValueReader.next();
+      assertEquals(SerializerUtils.genData(keyClass, index), record.getKey());
       Object value = SerializerUtils.genData(valueClass, index);
       Object newValue = value;
       if (index % 2 == 0) {
@@ -183,7 +186,7 @@ public class RMRecordsReaderTest {
           newValue = (int) value * 2;
         }
       }
-      assertEquals(newValue, keyValueReader.getCurrentValue());
+      assertEquals(newValue, record.getValue());
       index++;
     }
     assertEquals(RECORDS_NUM * 2, index);
@@ -250,9 +253,10 @@ public class RMRecordsReaderTest {
     readerSpy.start();
     int index = 0;
     KeyValueReader keyValueReader = readerSpy.keyValueReader();
-    while (keyValueReader.next()) {
-      assertEquals(SerializerUtils.genData(keyClass, index), keyValueReader.getCurrentKey());
-      assertEquals(SerializerUtils.genData(valueClass, index), keyValueReader.getCurrentValue());
+    while (keyValueReader.hasNext()) {
+      Record record = keyValueReader.next();
+      assertEquals(SerializerUtils.genData(keyClass, index), record.getKey());
+      assertEquals(SerializerUtils.genData(valueClass, index), record.getValue());
       index++;
     }
     assertEquals(RECORDS_NUM * 6, index);
@@ -322,10 +326,10 @@ public class RMRecordsReaderTest {
     readerSpy.start();
     int index = 0;
     KeyValueReader keyValueReader = readerSpy.keyValueReader();
-    while (keyValueReader.next()) {
-      assertEquals(SerializerUtils.genData(keyClass, index), keyValueReader.getCurrentKey());
-      assertEquals(
-          SerializerUtils.genData(valueClass, index * 2), keyValueReader.getCurrentValue());
+    while (keyValueReader.hasNext()) {
+      Record record = keyValueReader.next();
+      assertEquals(SerializerUtils.genData(keyClass, index), record.getKey());
+      assertEquals(SerializerUtils.genData(valueClass, index * 2), record.getValue());
       index++;
     }
     assertEquals(RECORDS_NUM * 6, index);
