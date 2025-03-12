@@ -67,6 +67,10 @@ public class BlockFlushFileReaderTest {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,8,true,false",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,8,false,true",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,8,false,false",
+        "java.lang.String,java.lang.Integer,2",
+        "java.lang.String,java.lang.Integer,8",
+        "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer,2",
+        "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer,8",
       })
   void writeTestWithMerge(String classes, @TempDir File tmpDir) throws Exception {
     final String[] classArray = classes.split(",");
@@ -166,6 +170,8 @@ public class BlockFlushFileReaderTest {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,2,true,false",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,2,false,true",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,2,false,false",
+        "java.lang.String,java.lang.Integer,2",
+        "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer,2",
       })
   void writeTestWithMergeWhenInterrupted(String classes, @TempDir File tmpDir) throws Exception {
     String[] classArray = classes.split(",");

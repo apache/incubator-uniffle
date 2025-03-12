@@ -53,6 +53,8 @@ class MergerTest {
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,true,false",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false,true",
         "org.apache.hadoop.io.Text,org.apache.hadoop.io.IntWritable,false,false",
+        "java.lang.String,java.lang.Integer",
+        "org.apache.uniffle.common.serializer.SerializerUtils$SomeClass,java.lang.Integer",
       })
   void testMergeSegmentToFile(String classes, @TempDir File tmpDir) throws Exception {
     // 1 Parse arguments

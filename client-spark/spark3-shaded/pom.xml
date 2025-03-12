@@ -216,6 +216,10 @@
                   <pattern>META-INF/license</pattern>
                   <shadedPattern>META-INF/license-tmp</shadedPattern>
                 </relocation>
+                <relocation>
+                  <pattern>com.esotericsoftware</pattern>
+                  <shadedPattern>${rss.shade.packageName}.com.esotericsoftware</shadedPattern>
+                </relocation>
               </relocations>
             </configuration>
           </execution>
