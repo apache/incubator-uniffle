@@ -273,6 +273,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
 
       this.partitionSplitMode = rssConf.get(RssClientConf.RSS_CLIENT_PARTITION_SPLIT_MODE);
       this.partitionSplitLoadBalanceServerNum = rssConf.get(RssClientConf.RSS_CLIENT_PARTITION_SPLIT_LOAD_BALANCE_SERVER_NUMBER);
+      LOG.info("Partition reassign is enabled.");
     }
     this.blockIdSelfManagedEnabled = rssConf.getBoolean(RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
     this.shuffleManagerRpcServiceEnabled =
