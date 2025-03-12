@@ -287,9 +287,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     ShuffleServerInfo ssi =
         isNettyMode
             ? new ShuffleServerInfo(
-                LOCALHOST,
-                nettyShuffleServer.getGrpcPort(),
-                nettyShuffleServer.getNettyPort())
+                LOCALHOST, nettyShuffleServer.getGrpcPort(), nettyShuffleServer.getNettyPort())
             : new ShuffleServerInfo(LOCALHOST, grpcShuffleServer.getGrpcPort());
     ShuffleReadClientImpl readClient =
         baseReadBuilder(isNettyMode)
