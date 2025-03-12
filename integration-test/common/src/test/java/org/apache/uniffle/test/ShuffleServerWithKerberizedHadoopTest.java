@@ -87,11 +87,7 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
   private static CoordinatorServer coordinatorServer;
   private static ShuffleServer grpcShuffleServer;
   private static ShuffleServer nettyShuffleServer;
-  private static ShuffleServerConf grpcShuffleServerConfig;
-  private static ShuffleServerConf nettyShuffleServerConfig;
   protected static List<Integer> jettyPorts = Lists.newArrayList();
-
-  static @TempDir File tempDir;
 
   private static ShuffleServerConf getShuffleServerConf(
       int id, File tmpDir, int coordinatorRpcPort, ServerType serverType) throws Exception {
@@ -148,9 +144,6 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
             1, tempDir, coordinatorServer.getRpcListenPort(), ServerType.GRPC_NETTY);
     nettyShuffleServer = new ShuffleServer(nettyShuffleServerConf);
     nettyShuffleServer.start();
-
-    grpcShuffleServerConfig = grpcShuffleServerConf;
-    nettyShuffleServerConfig = nettyShuffleServerConf;
   }
 
   @AfterAll
@@ -294,11 +287,8 @@ public class ShuffleServerWithKerberizedHadoopTest extends KerberizedHadoopBase 
     ShuffleServerInfo ssi =
         isNettyMode
             ? new ShuffleServerInfo(
-                LOCALHOST,
-                nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
-                nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT))
-            : new ShuffleServerInfo(
-                LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
+                LOCALHOST, nettyShuffleServer.getGrpcPort(), nettyShuffleServer.getNettyPort())
+            : new ShuffleServerInfo(LOCALHOST, grpcShuffleServer.getGrpcPort());
     ShuffleReadClientImpl readClient =
         baseReadBuilder(isNettyMode)
             .appId(appId)

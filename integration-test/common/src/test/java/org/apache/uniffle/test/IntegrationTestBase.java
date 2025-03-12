@@ -21,12 +21,16 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -97,6 +101,32 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     }
   }
 
+  public static String getQuorum() {
+    return coordinators.stream()
+        .map(CoordinatorServer::getRpcListenPort)
+        .map(port -> LOCALHOST + ":" + port)
+        .collect(Collectors.joining(","));
+  }
+
+  public static List<Integer> generateNonExistingPorts(int num) {
+    Set<Integer> portExistsSet = Sets.newHashSet();
+    jettyPorts.forEach(port -> portExistsSet.add(port));
+    coordinators.forEach(server -> portExistsSet.add(server.getRpcListenPort()));
+    grpcShuffleServers.forEach(server -> portExistsSet.add(server.getGrpcPort()));
+    nettyShuffleServers.forEach(server -> portExistsSet.add(server.getGrpcPort()));
+    nettyShuffleServers.forEach(server -> portExistsSet.add(server.getNettyPort()));
+    int i = 0;
+    List<Integer> fakePorts = new ArrayList<>(num);
+    while (i < num) {
+      int port = ThreadLocalRandom.current().nextInt(1024, 65535);
+      if (portExistsSet.add(port)) {
+        fakePorts.add(port);
+        i++;
+      }
+    }
+    return fakePorts;
+  }
+
   public static void startServersWithRandomPorts() throws Exception {
     final int jettyPortSize =
         coordinatorConfList.size()
@@ -113,11 +143,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     for (CoordinatorServer coordinator : coordinators) {
       coordinator.start();
     }
-    String quorum =
-        coordinators.stream()
-            .map(CoordinatorServer::getRpcListenPort)
-            .map(port -> LOCALHOST + ":" + port)
-            .collect(Collectors.joining(","));
+    String quorum = getQuorum();
 
     for (ShuffleServerConf serverConf : shuffleServerConfList) {
       serverConf.setInteger(RssBaseConf.JETTY_HTTP_PORT, jettyPorts.get(index));
@@ -144,10 +170,14 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
 
   protected static List<Integer> jettyPorts = Lists.newArrayList();
 
-  public static void reserveJettyPorts(int numPorts) {
+  public static List<Integer> reserveJettyPorts(int numPorts) {
+    List<Integer> ports = new ArrayList<>(numPorts);
     for (int i = 0; i < numPorts; i++) {
-      jettyPorts.add(PortRegistry.reservePort());
+      int port = PortRegistry.reservePort();
+      jettyPorts.add(port);
+      ports.add(port);
     }
+    return ports;
   }
 
   @AfterAll
@@ -242,10 +272,12 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
   protected static ShuffleServerConf shuffleServerConfWithoutPort(
       int subDirIndex, File tmpDir, ServerType serverType) {
     ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType, "", 0, 0, 0);
-    File dataDir1 = new File(tmpDir, subDirIndex + "_1");
-    File dataDir2 = new File(tmpDir, subDirIndex + "_2");
-    String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
-    shuffleServerConf.setString("rss.storage.basePath", basePath);
+    if (tmpDir != null) {
+      File dataDir1 = new File(tmpDir, subDirIndex + "_1");
+      File dataDir2 = new File(tmpDir, subDirIndex + "_2");
+      String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
+      shuffleServerConf.setString("rss.storage.basePath", basePath);
+    }
     return shuffleServerConf;
   }
 
@@ -303,13 +335,6 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
       default:
         throw new UnsupportedOperationException("Unsupported server type " + serverType);
     }
-  }
-
-  protected static void createAndStartServers(
-      ShuffleServerConf shuffleServerConf, CoordinatorConf coordinatorConf) throws Exception {
-    createCoordinatorServer(coordinatorConf);
-    createShuffleServer(shuffleServerConf);
-    startServers();
   }
 
   protected static File createDynamicConfFile(Map<String, String> dynamicConf) throws Exception {

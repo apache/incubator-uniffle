@@ -19,7 +19,6 @@ package org.apache.uniffle.test;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -66,7 +65,6 @@ import org.apache.uniffle.common.util.BlockIdLayout;
 import org.apache.uniffle.common.util.ChecksumUtils;
 import org.apache.uniffle.coordinator.CoordinatorConf;
 import org.apache.uniffle.proto.RssProtos;
-import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.server.buffer.ShuffleBufferType;
 import org.apache.uniffle.storage.util.StorageType;
@@ -85,49 +83,26 @@ public class RemoteMergeShuffleWithRssClientTest extends ShuffleReadWriteBase {
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
+    CoordinatorConf coordinatorConf = coordinatorConfWithoutPort();
     coordinatorConf.setBoolean(COORDINATOR_DYNAMIC_CLIENT_CONF_ENABLED, false);
-    createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
+    storeCoordinatorConf(coordinatorConf);
+
+    ShuffleServerConf shuffleServerConf =
+        shuffleServerConfWithoutPort(0, tmpDir, ServerType.GRPC_NETTY);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MERGE_ENABLE, true);
     shuffleServerConf.set(ShuffleServerConf.SERVER_MERGE_DEFAULT_MERGED_BLOCK_SIZE, "1k");
     shuffleServerConf.set(
         ShuffleServerConf.SERVER_SHUFFLE_BUFFER_TYPE, ShuffleBufferType.SKIP_LIST);
     shuffleServerConf.setLong("rss.server.app.expired.withoutHeartbeat", 10000000);
-    File dataDir1 = new File(tmpDir, "data1");
-    File dataDir2 = new File(tmpDir, "data2");
-    String basePath = dataDir1.getAbsolutePath() + "," + dataDir2.getAbsolutePath();
     shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
-    shuffleServerConf.setString("rss.storage.basePath", basePath);
-    List<Integer> ports = findAvailablePorts(2);
-    shuffleServerConf.setInteger("rss.rpc.server.port", ports.get(0));
-    shuffleServerConf.setInteger("rss.jetty.http.port", ports.get(1));
-    createShuffleServer(shuffleServerConf);
-    startServers();
-    ShuffleServer shuffleServer = nettyShuffleServers.get(0);
+    storeShuffleServerConf(shuffleServerConf);
+
+    startServersWithRandomPorts();
     shuffleServerInfo =
         new ShuffleServerInfo(
-            "127.0.0.1-20001",
-            shuffleServer.getIp(),
-            shuffleServer.getGrpcPort(),
-            shuffleServer.getNettyPort());
-  }
-
-  private static List<Integer> findAvailablePorts(int num) throws IOException {
-    List<ServerSocket> sockets = new ArrayList<>();
-    List<Integer> ports = new ArrayList<>();
-
-    for (int i = 0; i < num; i++) {
-      ServerSocket socket = new ServerSocket(0);
-      ports.add(socket.getLocalPort());
-      sockets.add(socket);
-    }
-
-    for (ServerSocket socket : sockets) {
-      socket.close();
-    }
-
-    return ports;
+            LOCALHOST,
+            nettyShuffleServers.get(0).getGrpcPort(),
+            nettyShuffleServers.get(0).getNettyPort());
   }
 
   public void createClient(String clientType) {
