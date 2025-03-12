@@ -171,7 +171,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
   protected static List<Integer> jettyPorts = Lists.newArrayList();
 
   public static List<Integer> reserveJettyPorts(int numPorts) {
-    ArrayList<Integer> ports = new ArrayList<>(numPorts);
+    List<Integer> ports = new ArrayList<>(numPorts);
     for (int i = 0; i < numPorts; i++) {
       int port = PortRegistry.reservePort();
       jettyPorts.add(port);

@@ -18,9 +18,6 @@
 package org.apache.uniffle.test;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -33,8 +30,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.factory.ShuffleClientFactory;
 import org.apache.uniffle.client.impl.ShuffleWriteClientImpl;
@@ -56,29 +51,11 @@ import static org.junit.jupiter.api.Assertions.fail;
  * {@code RssClientConfig.RSS_CLIENT_ASSIGNMENT_TAGS}
  */
 public class AssignmentWithTagsTest extends CoordinatorTestBase {
-  private static final Logger LOG = LoggerFactory.getLogger(AssignmentWithTagsTest.class);
 
   // KV: tag -> shuffle server id
   private static Map<String, List<Integer>> tagOfShufflePorts = new HashMap<>();
   private static final String tag1 = "fixed";
   private static final String tag2 = "elastic";
-
-  private static List<Integer> findAvailablePorts(int num) throws IOException {
-    List<ServerSocket> sockets = new ArrayList<>();
-    List<Integer> ports = new ArrayList<>();
-
-    for (int i = 0; i < num; i++) {
-      ServerSocket socket = new ServerSocket(0);
-      ports.add(socket.getLocalPort());
-      sockets.add(socket);
-    }
-
-    for (ServerSocket socket : sockets) {
-      socket.close();
-    }
-
-    return ports;
-  }
 
   private static void prepareShuffleServerConf(int subDirIndex, Set<String> tags, File tmpDir) {
     ShuffleServerConf shuffleServerConf =

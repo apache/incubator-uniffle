@@ -144,7 +144,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
 
     grpcShuffleServers.get(0).stopServer();
     List<Integer> ports = reserveJettyPorts(1);
-    ShuffleServerConf shuffleServerConf = shuffleServerConfWithoutPort(0, tempDir, ServerType.GRPC);
+    ShuffleServerConf shuffleServerConf = shuffleServerConfWithoutPort(0, tmpDir, ServerType.GRPC);
     shuffleServerConf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "RSS_ENV_KEY");
     String baseDir = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0);
     shuffleServerConf.setString(ShuffleServerConf.RSS_STORAGE_BASE_PATH.key(), baseDir);
@@ -316,7 +316,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
               ss.start();
               grpcShuffleServers.set(0, ss);
             });
-    Thread.sleep(2000);
+    Thread.sleep(3000);
     assertEquals(2, coordinators.get(0).getClusterManager().getNodesNum());
     nodes = scm.getServerList(Sets.newHashSet(Constants.SHUFFLE_SERVER_VERSION, "SSD"));
     assertEquals(1, nodes.size());

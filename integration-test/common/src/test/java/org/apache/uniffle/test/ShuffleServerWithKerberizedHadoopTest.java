@@ -64,8 +64,6 @@ import org.apache.uniffle.server.ShuffleServer;
 import org.apache.uniffle.server.ShuffleServerConf;
 import org.apache.uniffle.storage.util.StorageType;
 
-import static org.apache.uniffle.test.IntegrationTestBase.grpcShuffleServers;
-import static org.apache.uniffle.test.IntegrationTestBase.nettyShuffleServers;
 import static org.apache.uniffle.test.ShuffleReadWriteBase.mockSSI;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
