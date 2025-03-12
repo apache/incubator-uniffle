@@ -269,8 +269,7 @@ public class RMRecordsReader<K, V, C> {
         }
       }
 
-      public Record<ComparativeOutputBuffer, ComparativeOutputBuffer> next()
-          throws IOException {
+      public Record<ComparativeOutputBuffer, ComparativeOutputBuffer> next() throws IOException {
         Record<ComparativeOutputBuffer, ComparativeOutputBuffer> next =
             Record.create(curr.getKey(), curr.getValue());
         curr = null;
