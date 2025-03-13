@@ -638,9 +638,29 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
                     .add(
                         new ReceivingFailureServer(
                             partitionStatus.getShuffleServerInfo().getId(), StatusCode.SUCCESS)));
-    if (!failurePartitionToServers.isEmpty()) {
-      doReassignOnBlockSendFailure(failurePartitionToServers, true);
+
+    if (failurePartitionToServers.isEmpty()) {
+      return;
     }
+
+    Map<Integer, List<ReceivingFailureServer>> partitionToServersReassignList = new HashMap<>();
+
+    //
+    // For the [load balance] mode
+    // Once partition has been split, the following split trigger will be ignored.
+    //
+    // For the [pipeline] mode
+    // The split request will be always reacted
+    //
+    for (Map.Entry<Integer, List<ReceivingFailureServer>> entry : failurePartitionToServers.entrySet()) {
+      int partitionId = entry.getKey();
+      boolean isIgnore = taskAttemptAssignment.isIgnorePartitionSplit(partitionId);
+      if (!isIgnore) {
+        partitionToServersReassignList.put(partitionId, entry.getValue());
+      }
+    }
+
+    doReassignOnBlockSendFailure(partitionToServersReassignList, true);
   }
 
   private void doReassignOnBlockSendFailure(

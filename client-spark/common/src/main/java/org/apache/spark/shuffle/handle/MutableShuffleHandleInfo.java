@@ -29,6 +29,9 @@ import java.util.stream.Collectors;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.spark.TaskContext;
+import org.apache.spark.shuffle.handle.split.PartitionSplitInfo;
+import org.apache.uniffle.common.PartitionSplitMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,11 +63,22 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
   private Map<Integer, Map<String, Set<ShuffleServerInfo>>>
       excludedServerForPartitionToReplacements;
 
+  private PartitionSplitMode partitionSplitMode = PartitionSplitMode.PIPELINE;
+
   public MutableShuffleHandleInfo(
       int shuffleId,
       Map<Integer, List<ShuffleServerInfo>> partitionToServers,
       RemoteStorageInfo storageInfo) {
     this(shuffleId, storageInfo, toPartitionReplicaMapping(partitionToServers));
+  }
+
+  public MutableShuffleHandleInfo(
+          int shuffleId,
+          Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+          RemoteStorageInfo storageInfo,
+          PartitionSplitMode partitionSplitMode) {
+    this(shuffleId, storageInfo, toPartitionReplicaMapping(partitionToServers));
+    this.partitionSplitMode = partitionSplitMode;
   }
 
   @VisibleForTesting
@@ -190,12 +204,30 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
         partitionReplicaAssignedServers.entrySet()) {
       int partitionId = entry.getKey();
       Map<Integer, List<ShuffleServerInfo>> replicaServers = entry.getValue();
+      PartitionSplitInfo splitInfo = this.getPartitionSplitInfo(partitionId);
       for (Map.Entry<Integer, List<ShuffleServerInfo>> replicaServerEntry :
           replicaServers.entrySet()) {
         ShuffleServerInfo candidate;
         int candidateSize = replicaServerEntry.getValue().size();
         // Use the last one for each replica writing
         candidate = replicaServerEntry.getValue().get(candidateSize - 1);
+
+        long taskAttemptId = TaskContext.get().taskAttemptId();
+        if (taskAttemptId != -1 && splitInfo.isSplit() && splitInfo.getMode() == PartitionSplitMode.LOAD_BALANCE) {
+          // 1. exclude the problem nodes to pick up
+          List<ShuffleServerInfo> servers = replicaServerEntry.getValue().stream()
+                  .filter(x -> !excludedServerToReplacements.containsKey(x.getId()))
+                  .collect(Collectors.toList());
+
+          // 2. exclude the first partition split triggered node.
+          int serverSize = servers.size();
+          if (serverSize > 1) {
+            // 0, 1, 2
+            int idx = (int) (taskAttemptId % (serverSize - 1)) + 1;
+            candidate = servers.get(idx);
+          }
+        }
+
         assignment.computeIfAbsent(partitionId, x -> new ArrayList<>()).add(candidate);
       }
     }
@@ -224,6 +256,17 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
     PartitionDataReplicaRequirementTracking replicaRequirement =
         new PartitionDataReplicaRequirementTracking(shuffleId, partitionReplicaAssignedServers);
     return replicaRequirement;
+  }
+
+  @Override
+  public PartitionSplitInfo getPartitionSplitInfo(int partitionId) {
+    boolean isSplit = excludedServerForPartitionToReplacements.containsKey(partitionId);
+    return new PartitionSplitInfo(
+            partitionId,
+            isSplit,
+            partitionSplitMode,
+            new ArrayList<>(partitionReplicaAssignedServers.get(partitionId).values())
+    );
   }
 
   public Set<String> listExcludedServers() {
@@ -310,6 +353,9 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
     MutableShuffleHandleInfo handle =
         new MutableShuffleHandleInfo(handleProto.getShuffleId(), remoteStorageInfo);
     handle.partitionReplicaAssignedServers = partitionToServers;
+    // todo: add into the protobuf
+    handle.excludedServerForPartitionToReplacements = new HashMap<>();
+    handle.excludedServerToReplacements = new HashMap<>();
     return handle;
   }
 
