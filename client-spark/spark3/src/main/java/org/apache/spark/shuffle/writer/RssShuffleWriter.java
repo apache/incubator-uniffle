@@ -667,8 +667,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       Map<Integer, List<ReceivingFailureServer>> failurePartitionToServers,
       boolean partitionSplit) {
     LOG.info(
-        "Initiate reassignOnBlockSendFailure. failure partition servers: {}",
-        failurePartitionToServers);
+        "Initiate reassignOnBlockSendFailure. failure partition servers: {}. partition split: {}",
+        failurePartitionToServers, partitionSplit);
     String executorId = SparkEnv.get().executorId();
     long taskAttemptId = taskContext.taskAttemptId();
     int stageId = taskContext.stageId();
