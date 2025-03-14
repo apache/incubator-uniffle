@@ -17,7 +17,9 @@
 
 package org.apache.spark.shuffle.handle;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.spark.shuffle.handle.split.PartitionSplitInfo;
 
