@@ -19,6 +19,9 @@ package org.apache.spark.shuffle;
 
 import java.util.Iterator;
 
+import scala.runtime.AbstractFunction1;
+import scala.runtime.AbstractFunction2;
+
 import org.apache.spark.Aggregator;
 import org.junit.jupiter.api.Test;
 
@@ -42,10 +45,24 @@ public class SparkCombinerTest {
     SparkCombiner<String, Integer, String> combiner =
         new SparkCombiner<>(
             new Aggregator<>(
-                (v) -> v.toString(),
-                (c, v) -> Integer.valueOf(Integer.parseInt(c) + v).toString(),
-                (c1, c2) ->
-                    Integer.valueOf(Integer.parseInt(c1) + Integer.parseInt(c2)).toString()));
+                new AbstractFunction1<Integer, String>() {
+                  @Override
+                  public String apply(Integer v1) {
+                    return v1.toString();
+                  }
+                },
+                new AbstractFunction2<String, Integer, String>() {
+                  @Override
+                  public String apply(String c, Integer v) {
+                    return Integer.valueOf(Integer.parseInt(c) + v).toString();
+                  }
+                },
+                new AbstractFunction2<String, String, String>() {
+                  @Override
+                  public String apply(String c1, String c2) {
+                    return Integer.valueOf(Integer.parseInt(c1) + Integer.parseInt(c2)).toString();
+                  }
+                }));
     RecordBlob recordBlob = new RecordBlob(-1);
     recordBlob.addRecords(recordBuffer);
     recordBlob.combine(combiner, false);

@@ -42,6 +42,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import scala.Tuple2;
+import scala.math.Ordering;
+import scala.runtime.AbstractFunction1;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -106,7 +108,6 @@ import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.proto.RssProtos.MergeContext;
 import org.apache.uniffle.shuffle.BlockIdManager;
-import scala.math.Ordering;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED;
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM;
@@ -1566,7 +1567,17 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                   dependency.mapSideCombine()
                       ? dependency.combinerClassName().get()
                       : dependency.valueClassName())
-              .setComparatorClass(dependency.keyOrdering().map(o -> encode(o)).getOrElse(() -> ""))
+              .setComparatorClass(
+                  dependency
+                      .keyOrdering()
+                      .map(
+                          new AbstractFunction1<Ordering<K>, String>() {
+                            @Override
+                            public String apply(Ordering<K> o) {
+                              return encode(o);
+                            }
+                          })
+                      .get())
               .setMergedBlockSize(sparkConf.get(RssSparkConfig.RSS_MERGED_BLOCK_SZIE))
               .setMergeClassLoader(
                   sparkConf.get(RssSparkConfig.RSS_REMOTE_MERGE_CLASS_LOADER.key(), ""))
