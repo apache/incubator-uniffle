@@ -61,10 +61,9 @@ public class TaskAttemptAssignment {
     this.handle = handle;
   }
 
-  public boolean isIgnorePartitionSplit(int partitionId) {
-    // for the load balance mode partition split, once split,
-    // the following split trigger will be ignored.
+  public boolean isSkipPartitionSplit(int partitionId) {
+    // for those load balance partition split, once split, skip the following split.
     PartitionSplitInfo splitInfo = this.handle.getPartitionSplitInfo(partitionId);
-    return splitInfo.isSplit() && splitInfo.getMode() != PartitionSplitMode.LOAD_BALANCE;
+    return splitInfo.isSplit() && splitInfo.getMode() == PartitionSplitMode.LOAD_BALANCE;
   }
 }
