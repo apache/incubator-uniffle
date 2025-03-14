@@ -271,6 +271,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
         throw new RssException(
             "The feature of task partition reassign is incompatible with multiple replicas mechanism.");
       }
+      LOG.info("Partition reassign is enabled.");
     }
     this.blockIdSelfManagedEnabled = rssConf.getBoolean(RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
     this.shuffleManagerRpcServiceEnabled =
