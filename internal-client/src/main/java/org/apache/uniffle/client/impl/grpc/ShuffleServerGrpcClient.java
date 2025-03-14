@@ -587,14 +587,14 @@ public class ShuffleServerGrpcClient extends GrpcClient implements ShuffleServer
               // TODO(baoloongmao): support partition split follow netty client
               Pair<Long, List<Integer>> allocationResult =
                   requirePreAllocation(
-                          appId,
-                          shuffleId,
-                          partitionIds,
-                          partitionRequireSizes,
-                          allocateSize,
-                          request.getRetryMax() / maxRetryAttempts,
-                          request.getRetryIntervalMax(),
-                          failedStatusCode);
+                      appId,
+                      shuffleId,
+                      partitionIds,
+                      partitionRequireSizes,
+                      allocateSize,
+                      request.getRetryMax() / maxRetryAttempts,
+                      request.getRetryIntervalMax(),
+                      failedStatusCode);
               long requireId = allocationResult.getLeft();
               needSplitPartitionIds.addAll(allocationResult.getRight());
               if (requireId == FAILED_REQUIRE_ID) {
