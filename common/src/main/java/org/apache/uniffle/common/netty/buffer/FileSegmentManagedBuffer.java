@@ -108,7 +108,6 @@ public class FileSegmentManagedBuffer extends ManagedBuffer {
 
   @Override
   public ManagedBuffer release() {
-    cachedBuffer.clear();
     cachedBuffer = null;
     isFilled = false;
     return this;
