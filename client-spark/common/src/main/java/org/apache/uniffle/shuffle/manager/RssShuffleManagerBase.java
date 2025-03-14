@@ -106,6 +106,7 @@ import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
 import org.apache.uniffle.proto.RssProtos.MergeContext;
 import org.apache.uniffle.shuffle.BlockIdManager;
+import scala.math.Ordering;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED;
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM;
@@ -1544,7 +1545,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     return !failedTaskIds.contains(taskId);
   }
 
-  protected String encode(Object obj) {
+  protected <K> String encode(Ordering<K> obj) {
     try {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       ObjectOutputStream oos = new ObjectOutputStream(baos);
