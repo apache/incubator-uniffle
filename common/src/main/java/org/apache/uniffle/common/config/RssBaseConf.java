@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.uniffle.common.ClientType;
 import org.apache.uniffle.common.StorageType;
 import org.apache.uniffle.common.rpc.ServerType;
+import org.apache.uniffle.common.serializer.kryo.KryoSerializer;
 import org.apache.uniffle.common.serializer.writable.WritableSerializer;
 import org.apache.uniffle.common.util.RssUtils;
 
@@ -278,10 +279,35 @@ public class RssBaseConf extends RssConf {
           .withDescription("start server service max retry");
 
   /* Serialization */
+  public static final ConfigOption<Boolean> RSS_KRYO_REGISTRATION_REQUIRED =
+      ConfigOptions.key("rss.kryo.registrationRequired")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription("Whether registration is required.");
+  public static final ConfigOption<Boolean> RSS_KRYO_REFERENCE_TRACKING =
+      ConfigOptions.key("rss.kryo.referenceTracking")
+          .booleanType()
+          .defaultValue(true)
+          .withDescription(
+              "Whether to track references to the same object when serializing data with Kryo.");
+  public static final ConfigOption<Boolean> RSS_KRYO_SCALA_REGISTRATION_REQUIRED =
+      ConfigOptions.key("rss.kryo.scalaRegistrationRequired")
+          .booleanType()
+          .defaultValue(false)
+          .withDescription(
+              "Whether to require registration of some common scala classes, "
+                  + "usually used for spark applications");
+  public static final ConfigOption<String> RSS_KRYO_REGISTRATION_CLASSES =
+      ConfigOptions.key("rss.kryo.registrationClasses")
+          .stringType()
+          .defaultValue("")
+          .withDescription(
+              "The classes to be registered. This configuration must ensure that the"
+                  + "client and server are exactly the same. Dynamic configuration is recommended");
   public static final ConfigOption<String> RSS_IO_SERIALIZATIONS =
       ConfigOptions.key("rss.io.serializations")
           .stringType()
-          .defaultValue(WritableSerializer.class.getName())
+          .defaultValue(WritableSerializer.class.getName() + "," + KryoSerializer.class.getName())
           .withDescription("Serializations are used for creative Serializers and Deserializers");
 
   public static final ConfigOption<String> REST_AUTHORIZATION_CREDENTIALS =
