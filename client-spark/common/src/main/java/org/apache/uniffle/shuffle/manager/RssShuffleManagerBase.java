@@ -1563,17 +1563,9 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
               .setKeyClass(dependency.keyClassName())
               .setValueClass(
                   dependency.mapSideCombine()
-                      ? (String)
-                          dependency
-                              .combinerClassName()
-                              .getOrElse(
-                                  () -> {
-                                    throw new RssException(
-                                        "combine class name should not be null when map side combine is enable");
-                                  })
+                      ? dependency.combinerClassName().get()
                       : dependency.valueClassName())
-              .setComparatorClass(
-                  (String) dependency.keyOrdering().map(o -> encode(o)).getOrElse(() -> ""))
+              .setComparatorClass(dependency.keyOrdering().map(o -> encode(o)).getOrElse(() -> ""))
               .setMergedBlockSize(sparkConf.get(RssSparkConfig.RSS_MERGED_BLOCK_SZIE))
               .setMergeClassLoader(
                   sparkConf.get(RssSparkConfig.RSS_REMOTE_MERGE_CLASS_LOADER.key(), ""))
