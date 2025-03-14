@@ -57,65 +57,40 @@ import org.apache.uniffle.storage.util.StorageType;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class SparkClientWithLocalForMultiPartLocalStorageManagerTest extends ShuffleReadWriteBase {
-
-  private static File GRPC_DATA_DIR1;
-  private static File GRPC_DATA_DIR2;
-  private static File NETTY_DATA_DIR1;
-  private static File NETTY_DATA_DIR2;
   private ShuffleServerGrpcClient grpcShuffleServerClient;
   private ShuffleServerGrpcNettyClient nettyShuffleServerClient;
-  private static ShuffleServerConf grpcShuffleServerConfig;
-  private static ShuffleServerConf nettyShuffleServerConfig;
 
   @BeforeAll
   public static void setupServers(@TempDir File tmpDir) throws Exception {
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
-    createCoordinatorServer(coordinatorConf);
+    CoordinatorConf coordinatorConf = coordinatorConfWithoutPort();
+    storeCoordinatorConf(coordinatorConf);
 
-    GRPC_DATA_DIR1 = new File(tmpDir, "data1");
-    GRPC_DATA_DIR2 = new File(tmpDir, "data2");
-    String grpcBasePath = GRPC_DATA_DIR1.getAbsolutePath() + "," + GRPC_DATA_DIR2.getAbsolutePath();
-    ShuffleServerConf grpcShuffleServerConf = buildShuffleServerConf(grpcBasePath, ServerType.GRPC);
-    grpcShuffleServerConf.set(
-        ShuffleServerConf.SERVER_LOCAL_STORAGE_MANAGER_CLASS,
-        MultiPartLocalStorageManager.class.getName());
-    createShuffleServer(grpcShuffleServerConf);
+    storeShuffleServerConf(buildShuffleServerConf(0, tmpDir, ServerType.GRPC));
+    storeShuffleServerConf(buildShuffleServerConf(1, tmpDir, ServerType.GRPC_NETTY));
 
-    NETTY_DATA_DIR1 = new File(tmpDir, "netty_data1");
-    NETTY_DATA_DIR2 = new File(tmpDir, "netty_data2");
-    String nettyBasePath =
-        NETTY_DATA_DIR1.getAbsolutePath() + "," + NETTY_DATA_DIR2.getAbsolutePath();
-    ShuffleServerConf nettyShuffleServerConf =
-        buildShuffleServerConf(nettyBasePath, ServerType.GRPC_NETTY);
-    nettyShuffleServerConf.set(
-        ShuffleServerConf.SERVER_LOCAL_STORAGE_MANAGER_CLASS,
-        MultiPartLocalStorageManager.class.getName());
-    createShuffleServer(nettyShuffleServerConf);
-
-    startServers();
-
-    grpcShuffleServerConfig = grpcShuffleServerConf;
-    nettyShuffleServerConfig = nettyShuffleServerConf;
+    startServersWithRandomPorts();
   }
 
-  private static ShuffleServerConf buildShuffleServerConf(String basePath, ServerType serverType)
-      throws Exception {
-    ShuffleServerConf shuffleServerConf = getShuffleServerConf(serverType);
+  private static ShuffleServerConf buildShuffleServerConf(
+      int subDirIndex, File tmpDir, ServerType serverType) {
+    ShuffleServerConf shuffleServerConf =
+        shuffleServerConfWithoutPort(subDirIndex, tmpDir, serverType);
     shuffleServerConf.setString("rss.storage.type", StorageType.LOCALFILE.name());
-    shuffleServerConf.setString("rss.storage.basePath", basePath);
+    shuffleServerConf.set(
+        ShuffleServerConf.SERVER_LOCAL_STORAGE_MANAGER_CLASS,
+        MultiPartLocalStorageManager.class.getName());
     return shuffleServerConf;
   }
 
   @BeforeEach
   public void createClient() throws Exception {
     grpcShuffleServerClient =
-        new ShuffleServerGrpcClient(
-            LOCALHOST, grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT));
+        new ShuffleServerGrpcClient(LOCALHOST, grpcShuffleServers.get(0).getGrpcPort());
     nettyShuffleServerClient =
         new ShuffleServerGrpcNettyClient(
             LOCALHOST,
-            nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
-            nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT));
+            nettyShuffleServers.get(0).getGrpcPort(),
+            nettyShuffleServers.get(0).getNettyPort());
   }
 
   @AfterEach
@@ -130,12 +105,11 @@ public class SparkClientWithLocalForMultiPartLocalStorageManagerTest extends Shu
             ? Lists.newArrayList(
                 new ShuffleServerInfo(
                     LOCALHOST,
-                    nettyShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT),
-                    nettyShuffleServerConfig.getInteger(ShuffleServerConf.NETTY_SERVER_PORT)))
+                    nettyShuffleServers.get(0).getGrpcPort(),
+                    nettyShuffleServers.get(0).getNettyPort()))
             : Lists.newArrayList(
                 new ShuffleServerInfo(
-                    LOCALHOST,
-                    grpcShuffleServerConfig.getInteger(ShuffleServerConf.RPC_SERVER_PORT)));
+                    LOCALHOST, LOCALHOST, grpcShuffleServers.get(0).getGrpcPort()));
     return ShuffleClientFactory.newReadBuilder()
         .clientType(isNettyMode ? ClientType.GRPC_NETTY : ClientType.GRPC)
         .storageType(StorageType.LOCALFILE.name())

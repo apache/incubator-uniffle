@@ -586,15 +586,12 @@ public class QuorumTest extends ShuffleReadWriteBase {
     assertEquals(0, result.getFailedBlockIds().size());
     assertEquals(blockIdBitmap, succBlockIdBitmap);
 
-    // tricky to reserve port, it'll be released after test
-    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
-    List<Integer> ports = reserveJettyPorts(2);
     // when one server is restarted, getShuffleResult should success
     grpcShuffleServers.get(1).stopServer();
     ShuffleServerConf shuffleServerConf1 = buildServerConf(5, tmpDir);
     shuffleServerConf1.setString("rss.coordinator.quorum", getQuorum());
     shuffleServerConf1.setInteger(RssBaseConf.RPC_SERVER_PORT, 0);
-    shuffleServerConf1.setInteger(RssBaseConf.JETTY_HTTP_PORT, ports.get(0));
+    shuffleServerConf1.setInteger(RssBaseConf.JETTY_HTTP_PORT, 0);
     grpcShuffleServers.set(1, new MockedShuffleServer(shuffleServerConf1));
     grpcShuffleServers.get(1).start();
     report =
@@ -611,7 +608,7 @@ public class QuorumTest extends ShuffleReadWriteBase {
     ShuffleServerConf shuffleServerConf2 = buildServerConf(5, tmpDir);
     shuffleServerConf2.setString("rss.coordinator.quorum", getQuorum());
     shuffleServerConf2.setInteger(RssBaseConf.RPC_SERVER_PORT, 0);
-    shuffleServerConf2.setInteger(RssBaseConf.JETTY_HTTP_PORT, ports.get(1));
+    shuffleServerConf2.setInteger(RssBaseConf.JETTY_HTTP_PORT, 0);
     grpcShuffleServers.set(2, new MockedShuffleServer(shuffleServerConf2));
     grpcShuffleServers.get(2).start();
     try {

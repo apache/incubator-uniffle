@@ -143,7 +143,6 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     CoordinatorTestUtils.waitForRegister(coordinatorClient, 2);
 
     grpcShuffleServers.get(0).stopServer();
-    List<Integer> ports = reserveJettyPorts(1);
     ShuffleServerConf shuffleServerConf = shuffleServerConfWithoutPort(0, tmpDir, ServerType.GRPC);
     shuffleServerConf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "RSS_ENV_KEY");
     String baseDir = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0);
@@ -154,7 +153,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
             () -> {
               shuffleServerConf.setString("rss.coordinator.quorum", getQuorum());
               shuffleServerConf.setInteger(RssBaseConf.RPC_SERVER_PORT, 0);
-              shuffleServerConf.setInteger(RssBaseConf.JETTY_HTTP_PORT, ports.get(0));
+              shuffleServerConf.setInteger(RssBaseConf.JETTY_HTTP_PORT, 0);
               ShuffleServer ss = new ShuffleServer(shuffleServerConf);
               ss.start();
               grpcShuffleServers.set(0, ss);
@@ -298,7 +297,6 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
     assertTrue(node.getTags().contains(Constants.SHUFFLE_SERVER_VERSION));
     assertTrue(scm.getTagToNodes().get(Constants.SHUFFLE_SERVER_VERSION).contains(node));
 
-    List<Integer> ports = reserveJettyPorts(1);
     ShuffleServerConf shuffleServerConf = shuffleServerConfWithoutPort(0, tempDir, ServerType.GRPC);
     shuffleServerConf.set(ShuffleServerConf.STORAGE_MEDIA_PROVIDER_ENV_KEY, "RSS_ENV_KEY");
     String baseDir = shuffleServerConf.get(ShuffleServerConf.RSS_STORAGE_BASE_PATH).get(0);
@@ -311,7 +309,7 @@ public class CoordinatorGrpcTest extends CoordinatorTestBase {
               shuffleServerConf.set(ShuffleServerConf.TAGS, Lists.newArrayList("SSD"));
               shuffleServerConf.setString("rss.coordinator.quorum", getQuorum());
               shuffleServerConf.setInteger(RssBaseConf.RPC_SERVER_PORT, 0);
-              shuffleServerConf.setInteger(RssBaseConf.JETTY_HTTP_PORT, ports.get(0));
+              shuffleServerConf.setInteger(RssBaseConf.JETTY_HTTP_PORT, 0);
               ShuffleServer ss = new ShuffleServer(shuffleServerConf);
               ss.start();
               grpcShuffleServers.set(0, ss);

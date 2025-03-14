@@ -214,7 +214,7 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
             + localFile.getName()
             + ","
             + MRJobConfig.DEFAULT_MAPREDUCE_APPLICATION_CLASSPATH);
-    jobConf.set(RssMRConfig.RSS_COORDINATOR_QUORUM, COORDINATOR_QUORUM);
+    jobConf.set(RssMRConfig.RSS_COORDINATOR_QUORUM, getQuorum());
     updateRssConfiguration(jobConf, clientType);
     runMRApp(jobConf, getTestTool(), getTestArgs());
     fs.delete(newPath, true);
@@ -230,18 +230,20 @@ public class MRIntegrationTestBase extends IntegrationTestBase {
 
   protected static void setupServers(Map<String, String> dynamicConf, ShuffleServerConf serverConf)
       throws Exception {
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
+    CoordinatorConf coordinatorConf = coordinatorConfWithoutPort();
     addDynamicConf(coordinatorConf, dynamicConf);
-    createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf grpcShuffleServerConf = getShuffleServerConf(ServerType.GRPC);
-    ShuffleServerConf nettyShuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
+    storeCoordinatorConf(coordinatorConf);
+    ShuffleServerConf grpcShuffleServerConf =
+        shuffleServerConfWithoutPort(0, null, ServerType.GRPC);
+    ShuffleServerConf nettyShuffleServerConf =
+        shuffleServerConfWithoutPort(1, null, ServerType.GRPC_NETTY);
     if (serverConf != null) {
       grpcShuffleServerConf.addAll(serverConf);
       nettyShuffleServerConf.addAll(serverConf);
     }
-    createShuffleServer(grpcShuffleServerConf);
-    createShuffleServer(nettyShuffleServerConf);
-    startServers();
+    storeShuffleServerConf(grpcShuffleServerConf);
+    storeShuffleServerConf(nettyShuffleServerConf);
+    startServersWithRandomPorts();
   }
 
   protected static Map<String, String> getDynamicConf() {
