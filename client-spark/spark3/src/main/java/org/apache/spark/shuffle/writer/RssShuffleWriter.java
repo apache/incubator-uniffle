@@ -37,7 +37,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.apache.spark.shuffle.handle.split.PartitionSplitInfo;
 import scala.Function1;
 import scala.Option;
 import scala.Product2;
@@ -635,16 +634,17 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
         .forEach(
             partitionStatus -> {
               List<ReceivingFailureServer> servers =
-                      failurePartitionToServers.computeIfAbsent(
-                              partitionStatus.getPartitionId(), x -> new ArrayList<>()
-                      );
+                  failurePartitionToServers.computeIfAbsent(
+                      partitionStatus.getPartitionId(), x -> new ArrayList<>());
               String serverId = partitionStatus.getShuffleServerInfo().getId();
               // todo: use better data structure to filter
-              if (!servers.stream().map(x -> x.getServerId()).collect(Collectors.toSet()).contains(serverId)) {
+              if (!servers.stream()
+                  .map(x -> x.getServerId())
+                  .collect(Collectors.toSet())
+                  .contains(serverId)) {
                 servers.add(new ReceivingFailureServer(serverId, StatusCode.SUCCESS));
               }
-            }
-        );
+            });
 
     if (failurePartitionToServers.isEmpty()) {
       return;
@@ -658,7 +658,8 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     // The split request will be always response
     //
     Map<Integer, List<ReceivingFailureServer>> partitionToServersReassignList = new HashMap<>();
-    for (Map.Entry<Integer, List<ReceivingFailureServer>> entry : failurePartitionToServers.entrySet()) {
+    for (Map.Entry<Integer, List<ReceivingFailureServer>> entry :
+        failurePartitionToServers.entrySet()) {
       int partitionId = entry.getKey();
       boolean isSkip = taskAttemptAssignment.isSkipPartitionSplit(partitionId);
       if (!isSkip) {
@@ -667,18 +668,22 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
     }
 
     if (partitionToServersReassignList.isEmpty()) {
-      LOG.info("[Partition split] Skip the following partition split request (maybe has been load balanced). partitionIds: {}", failurePartitionToServers.keySet());
+      LOG.info(
+          "[Partition split] Skip the following partition split request (maybe has been load balanced). partitionIds: {}",
+          failurePartitionToServers.keySet());
       return;
     }
 
     doReassignOnBlockSendFailure(partitionToServersReassignList, true);
 
     LOG.info("========================= Partition Split Result =========================");
-    for (Map.Entry<Integer, List<ReceivingFailureServer>> entry : partitionToServersReassignList.entrySet()) {
-      LOG.info("partitionId:{}. {} -> {}",
-              entry.getKey(),
-              entry.getValue().stream().map(x -> x.getServerId()).collect(Collectors.toList()),
-              taskAttemptAssignment.retrieve(entry.getKey()));
+    for (Map.Entry<Integer, List<ReceivingFailureServer>> entry :
+        partitionToServersReassignList.entrySet()) {
+      LOG.info(
+          "partitionId:{}. {} -> {}",
+          entry.getKey(),
+          entry.getValue().stream().map(x -> x.getServerId()).collect(Collectors.toList()),
+          taskAttemptAssignment.retrieve(entry.getKey()));
     }
     LOG.info("==========================================================================");
   }
@@ -688,7 +693,9 @@ public class RssShuffleWriter<K, V, C> extends ShuffleWriter<K, V> {
       boolean partitionSplit) {
     LOG.info(
         "Initiate reassignOnBlockSendFailure of taskId[{}]. partition split: {}. failure partition servers: {}. ",
-            taskAttemptId, partitionSplit, failurePartitionToServers);
+        taskAttemptId,
+        partitionSplit,
+        failurePartitionToServers);
     String executorId = SparkEnv.get().executorId();
     long taskAttemptId = taskContext.taskAttemptId();
     int stageId = taskContext.stageId();

@@ -21,13 +21,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.spark.shuffle.handle.ShuffleHandleInfo;
-
 import org.apache.spark.shuffle.handle.split.PartitionSplitInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.uniffle.common.PartitionSplitMode;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** This class is to get the partition assignment for ShuffleWriter. */
 public class TaskAttemptAssignment {

@@ -38,8 +38,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.apache.spark.shuffle.handle.split.PartitionSplitInfo;
-import org.apache.uniffle.common.*;
 import scala.Tuple2;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -82,6 +80,7 @@ import org.apache.uniffle.client.response.RssFetchClientConfResponse;
 import org.apache.uniffle.client.response.RssReassignOnBlockSendFailureResponse;
 import org.apache.uniffle.client.response.RssReassignOnStageRetryResponse;
 import org.apache.uniffle.client.util.ClientUtils;
+import org.apache.uniffle.common.*;
 import org.apache.uniffle.common.config.ConfigOption;
 import org.apache.uniffle.common.config.RssClientConf;
 import org.apache.uniffle.common.config.RssConf;
@@ -272,7 +271,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
       }
 
       this.partitionSplitMode = rssConf.get(RssClientConf.RSS_CLIENT_PARTITION_SPLIT_MODE);
-      this.partitionSplitLoadBalanceServerNum = rssConf.get(RssClientConf.RSS_CLIENT_PARTITION_SPLIT_LOAD_BALANCE_SERVER_NUMBER);
+      this.partitionSplitLoadBalanceServerNum =
+          rssConf.get(RssClientConf.RSS_CLIENT_PARTITION_SPLIT_LOAD_BALANCE_SERVER_NUMBER);
       LOG.info("Partition reassign is enabled.");
     }
     this.blockIdSelfManagedEnabled = rssConf.getBoolean(RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED);
@@ -970,7 +970,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
             stageAttemptNumber,
             false);
     MutableShuffleHandleInfo shuffleHandleInfo =
-        new MutableShuffleHandleInfo(shuffleId, partitionToServers, getRemoteStorageInfo(), partitionSplitMode);
+        new MutableShuffleHandleInfo(
+            shuffleId, partitionToServers, getRemoteStorageInfo(), partitionSplitMode);
     StageAttemptShuffleHandleInfo stageAttemptShuffleHandleInfo =
         (StageAttemptShuffleHandleInfo) shuffleHandleInfoManager.get(shuffleId);
     stageAttemptShuffleHandleInfo.replaceCurrentShuffleHandleInfo(shuffleHandleInfo);
@@ -1042,7 +1043,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
             updatedReassignServers =
                 internalHandle.updateAssignment(partitionId, serverId, replacements);
           } else {
-            // todo: must ensure in the load_balance mode, the same partition will not trigger multi reassignments.
+            // todo: must ensure in the load_balance mode, the same partition will not trigger multi
+            // reassignments.
             int requireServerNum = 1;
             if (partitionSplitMode == PartitionSplitMode.LOAD_BALANCE) {
               requireServerNum = partitionSplitLoadBalanceServerNum;
@@ -1106,27 +1108,27 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   }
 
   private Set<ShuffleServerInfo> requestReassignServer(
-          int stageId,
-          int stageAttemptNumber,
-          int shuffleId,
-          MutableShuffleHandleInfo internalHandle,
-          int partitionId,
-          String serverId,
-          int requiredServerNum) {
+      int stageId,
+      int stageAttemptNumber,
+      int shuffleId,
+      MutableShuffleHandleInfo internalHandle,
+      int partitionId,
+      String serverId,
+      int requiredServerNum) {
     Set<ShuffleServerInfo> replacements;
     Set<String> excludedServers = new HashSet<>(internalHandle.listExcludedServers());
     // Exclude the servers that has already been replaced for partition split case.
     excludedServers.addAll(internalHandle.listExcludedServersForPartition(partitionId));
     excludedServers.add(serverId);
     replacements =
-            reassignServerForTask(
-                    stageId,
-                    stageAttemptNumber,
-                    shuffleId,
-                    Sets.newHashSet(partitionId),
-                    excludedServers,
-                    requiredServerNum,
-                    true);
+        reassignServerForTask(
+            stageId,
+            stageAttemptNumber,
+            shuffleId,
+            Sets.newHashSet(partitionId),
+            excludedServers,
+            requiredServerNum,
+            true);
     return replacements;
   }
 
@@ -1137,7 +1139,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
       MutableShuffleHandleInfo internalHandle,
       int partitionId,
       String serverId) {
-    return this.requestReassignServer(stageId, stageAttemptNumber, shuffleId, internalHandle, partitionId, serverId, 1);
+    return this.requestReassignServer(
+        stageId, stageAttemptNumber, shuffleId, internalHandle, partitionId, serverId, 1);
   }
 
   @Override

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,11 +32,11 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.TaskContext;
 import org.apache.spark.shuffle.handle.split.PartitionSplitInfo;
-import org.apache.uniffle.common.PartitionSplitMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
+import org.apache.uniffle.common.PartitionSplitMode;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
 import org.apache.uniffle.common.exception.RssException;
@@ -73,10 +74,10 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
   }
 
   public MutableShuffleHandleInfo(
-          int shuffleId,
-          Map<Integer, List<ShuffleServerInfo>> partitionToServers,
-          RemoteStorageInfo storageInfo,
-          PartitionSplitMode partitionSplitMode) {
+      int shuffleId,
+      Map<Integer, List<ShuffleServerInfo>> partitionToServers,
+      RemoteStorageInfo storageInfo,
+      PartitionSplitMode partitionSplitMode) {
     this(shuffleId, storageInfo, toPartitionReplicaMapping(partitionToServers));
     this.partitionSplitMode = partitionSplitMode;
   }
@@ -212,10 +213,14 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
         // Use the last one for each replica writing
         candidate = replicaServerEntry.getValue().get(candidateSize - 1);
 
-        long taskAttemptId = TaskContext.get().taskAttemptId();
-        if (taskAttemptId != -1 && splitInfo.isSplit() && splitInfo.getMode() == PartitionSplitMode.LOAD_BALANCE) {
+        long taskAttemptId =
+            Optional.ofNullable(TaskContext.get()).map(x -> x.taskAttemptId()).orElse(-1L);
+        if (taskAttemptId != -1
+            && splitInfo.isSplit()
+            && splitInfo.getMode() == PartitionSplitMode.LOAD_BALANCE) {
           // 1. exclude the problem nodes to pick up
-          List<ShuffleServerInfo> servers = replicaServerEntry.getValue().stream()
+          List<ShuffleServerInfo> servers =
+              replicaServerEntry.getValue().stream()
                   .filter(x -> !excludedServerToReplacements.containsKey(x.getId()))
                   .collect(Collectors.toList());
 
@@ -262,11 +267,10 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
   public PartitionSplitInfo getPartitionSplitInfo(int partitionId) {
     boolean isSplit = excludedServerForPartitionToReplacements.containsKey(partitionId);
     return new PartitionSplitInfo(
-            partitionId,
-            isSplit,
-            partitionSplitMode,
-            new ArrayList<>(partitionReplicaAssignedServers.get(partitionId).values())
-    );
+        partitionId,
+        isSplit,
+        partitionSplitMode,
+        new ArrayList<>(partitionReplicaAssignedServers.get(partitionId).values()));
   }
 
   public Set<String> listExcludedServers() {
@@ -316,8 +320,10 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
       }
 
       Map<String, RssProtos.ReplacementServers> excludeToReplacements = new HashMap<>();
-      for (Map.Entry<String, Set<ShuffleServerInfo>> entry : handleInfo.excludedServerToReplacements.entrySet()) {
-        RssProtos.ReplacementServers replacementServers = RssProtos.ReplacementServers.newBuilder()
+      for (Map.Entry<String, Set<ShuffleServerInfo>> entry :
+          handleInfo.excludedServerToReplacements.entrySet()) {
+        RssProtos.ReplacementServers replacementServers =
+            RssProtos.ReplacementServers.newBuilder()
                 .addAllServerId(ShuffleServerInfo.toProto(new ArrayList<>(entry.getValue())))
                 .build();
         excludeToReplacements.put(entry.getKey(), replacementServers);
@@ -337,9 +343,9 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
                       .putAllConfItems(handleInfo.remoteStorage.getConfItems())
                       .build())
               .putAllPartitionToServers(partitionToServers)
-                  .putAllExcludedServerToReplacements(excludeToReplacements)
-                  .setPartitionSplitMode(mode)
-                  .addAllSplitPartitionId(handleInfo.excludedServerForPartitionToReplacements.keySet())
+              .putAllExcludedServerToReplacements(excludeToReplacements)
+              .setPartitionSplitMode(mode)
+              .addAllSplitPartitionId(handleInfo.excludedServerForPartitionToReplacements.keySet())
               .build();
       return handleProto;
     }
@@ -365,8 +371,10 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
 
     Map<String, Set<ShuffleServerInfo>> excludeToReplacements = new HashMap<>();
     for (Map.Entry<String, RssProtos.ReplacementServers> entry :
-            handleProto.getExcludedServerToReplacementsMap().entrySet()) {
-      excludeToReplacements.put(entry.getKey(), new HashSet<>(ShuffleServerInfo.fromProto(entry.getValue().getServerIdList())));
+        handleProto.getExcludedServerToReplacementsMap().entrySet()) {
+      excludeToReplacements.put(
+          entry.getKey(),
+          new HashSet<>(ShuffleServerInfo.fromProto(entry.getValue().getServerIdList())));
     }
 
     Map<Integer, Map<String, Set<ShuffleServerInfo>>> partitionSplitToServers = new HashMap<>();
@@ -381,7 +389,10 @@ public class MutableShuffleHandleInfo extends ShuffleHandleInfoBase {
     MutableShuffleHandleInfo handle =
         new MutableShuffleHandleInfo(handleProto.getShuffleId(), remoteStorageInfo);
     handle.partitionReplicaAssignedServers = partitionToServers;
-    handle.partitionSplitMode = handleProto.getPartitionSplitMode() == RssProtos.PartitionSplitMode.LOAD_BALANCE ? PartitionSplitMode.LOAD_BALANCE : PartitionSplitMode.PIPELINE;
+    handle.partitionSplitMode =
+        handleProto.getPartitionSplitMode() == RssProtos.PartitionSplitMode.LOAD_BALANCE
+            ? PartitionSplitMode.LOAD_BALANCE
+            : PartitionSplitMode.PIPELINE;
     handle.excludedServerForPartitionToReplacements = partitionSplitToServers;
     handle.excludedServerToReplacements = excludeToReplacements;
     return handle;

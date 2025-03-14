@@ -20,6 +20,7 @@ package org.apache.spark.shuffle.handle;
 import java.util.*;
 
 import org.apache.spark.shuffle.handle.split.PartitionSplitInfo;
+
 import org.apache.uniffle.client.PartitionDataReplicaRequirementTracking;
 import org.apache.uniffle.common.RemoteStorageInfo;
 import org.apache.uniffle.common.ShuffleServerInfo;
@@ -50,6 +51,3 @@ public interface ShuffleHandleInfo {
 
   PartitionSplitInfo getPartitionSplitInfo(int partitionId);
 }
-
-
-
