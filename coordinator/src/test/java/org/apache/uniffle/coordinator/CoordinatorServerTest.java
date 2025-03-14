@@ -31,11 +31,11 @@ public class CoordinatorServerTest {
   public void test() throws Exception {
     CoordinatorConf coordinatorConf = new CoordinatorConf();
     coordinatorConf.setInteger("rss.rpc.server.port", 9537);
-    coordinatorConf.setInteger("rss.jetty.http.port", 9528);
+    coordinatorConf.setInteger("rss.jetty.http.port", 0);
     coordinatorConf.setInteger("rss.rpc.executor.size", 10);
 
     CoordinatorServer cs1 = new CoordinatorServer(coordinatorConf);
-    CoordinatorServer cs2 = new CoordinatorServer(coordinatorConf);
+    CoordinatorServer cs2 = null;
     CoordinatorServer cs3 = null;
     try {
       cs1.start();
@@ -44,6 +44,8 @@ public class CoordinatorServerTest {
       String expectMessage = "Fail to start jetty http server";
       final int expectStatus = 1;
       try {
+        coordinatorConf.setInteger("rss.jetty.http.port", cs1.getJettyPort());
+        cs2 = new CoordinatorServer(coordinatorConf);
         cs2.start();
       } catch (Exception e) {
         assertTrue(e.getMessage().startsWith(expectMessage));
@@ -53,7 +55,7 @@ public class CoordinatorServerTest {
         cs2.stopServer();
       }
 
-      coordinatorConf.setInteger("rss.jetty.http.port", 9529);
+      coordinatorConf.setInteger("rss.jetty.http.port", 0);
       cs3 = new CoordinatorServer(coordinatorConf);
       expectMessage = "Fail to start grpc server";
       try {
