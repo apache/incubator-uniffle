@@ -17,11 +17,14 @@
 
 package org.apache.uniffle.shuffle.manager;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,6 +42,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import scala.Tuple2;
+import scala.math.Ordering;
+import scala.runtime.AbstractFunction1;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -49,6 +54,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.spark.MapOutputTracker;
 import org.apache.spark.MapOutputTrackerMaster;
+import org.apache.spark.ShuffleDependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkEnv;
 import org.apache.spark.SparkException;
@@ -100,6 +106,7 @@ import org.apache.uniffle.common.util.JavaUtils;
 import org.apache.uniffle.common.util.RetryUtils;
 import org.apache.uniffle.common.util.RssUtils;
 import org.apache.uniffle.common.util.ThreadUtils;
+import org.apache.uniffle.proto.RssProtos.MergeContext;
 import org.apache.uniffle.shuffle.BlockIdManager;
 
 import static org.apache.spark.shuffle.RssSparkConfig.RSS_BLOCK_ID_SELF_MANAGEMENT_ENABLED;
@@ -168,6 +175,9 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
   private ShuffleManagerGrpcService service;
   protected GrpcServer shuffleManagerServer;
   protected DataPusher dataPusher;
+
+  protected boolean remoteMergeEnable;
+  protected Map<Integer, ShuffleDependency> dependencies = new HashMap();
 
   public RssShuffleManagerBase(SparkConf conf, boolean isDriver) {
     LOG.info(
@@ -327,6 +337,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
         rssConf.get(RSS_PARTITION_REASSIGN_MAX_REASSIGNMENT_SERVER_NUM);
     this.shuffleHandleInfoManager = new ShuffleHandleInfoManager();
     this.rssStageResubmitManager = new RssStageResubmitManager();
+    this.remoteMergeEnable = sparkConf.get(RssSparkConfig.RSS_REMOTE_MERGE_ENABLE);
   }
 
   @VisibleForTesting
@@ -965,7 +976,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
             rssStageResubmitManager.getServerIdBlackList(),
             stageAttemptId,
             stageAttemptNumber,
-            false);
+            false,
+            buildMergeContext(dependencies.get(shuffleId)));
     MutableShuffleHandleInfo shuffleHandleInfo =
         new MutableShuffleHandleInfo(shuffleId, partitionToServers, getRemoteStorageInfo());
     StageAttemptShuffleHandleInfo stageAttemptShuffleHandleInfo =
@@ -1082,7 +1094,11 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
             "Register the new partition->servers assignment on reassign. {}",
             newServerToPartitions);
         registerShuffleServers(
-            getAppId(), shuffleId, newServerToPartitions, getRemoteStorageInfo());
+            getAppId(),
+            shuffleId,
+            newServerToPartitions,
+            getRemoteStorageInfo(),
+            buildMergeContext(dependencies.get(shuffleId)));
       }
 
       LOG.info(
@@ -1248,7 +1264,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
         },
         stageId,
         stageAttemptNumber,
-        reassign);
+        reassign,
+        buildMergeContext(dependencies.get(shuffleId)));
     return replacementsRef.get();
   }
 
@@ -1262,7 +1279,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
       Function<ShuffleAssignmentsInfo, ShuffleAssignmentsInfo> reassignmentHandler,
       int stageId,
       int stageAttemptNumber,
-      boolean reassign) {
+      boolean reassign,
+      MergeContext mergeContext) {
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
     ClientUtils.validateClientType(clientType);
     assignmentTags.add(clientType);
@@ -1290,7 +1308,11 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
         response = reassignmentHandler.apply(response);
       }
       registerShuffleServers(
-          getAppId(), shuffleId, response.getServerToPartitionRanges(), getRemoteStorageInfo());
+          getAppId(),
+          shuffleId,
+          response.getServerToPartitionRanges(),
+          getRemoteStorageInfo(),
+          mergeContext);
       return response.getPartitionToServers();
     } catch (Throwable throwable) {
       throw new RssException("registerShuffle failed!", throwable);
@@ -1306,7 +1328,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
       Set<String> faultyServerIds,
       int stageId,
       int stageAttemptNumber,
-      boolean reassign) {
+      boolean reassign,
+      MergeContext mergeContext) {
     Set<String> assignmentTags = RssSparkShuffleUtils.getAssignmentTags(sparkConf);
     ClientUtils.validateClientType(clientType);
     assignmentTags.add(clientType);
@@ -1339,7 +1362,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                 shuffleId,
                 response.getServerToPartitionRanges(),
                 getRemoteStorageInfo(),
-                stageAttemptNumber);
+                stageAttemptNumber,
+                mergeContext);
             return response.getPartitionToServers();
           },
           retryInterval,
@@ -1349,32 +1373,13 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
     }
   }
 
-  protected Map<Integer, List<ShuffleServerInfo>> requestShuffleAssignment(
-      int shuffleId,
-      int partitionNum,
-      int partitionNumPerRange,
-      int assignmentShuffleServerNumber,
-      int estimateTaskConcurrency,
-      Set<String> faultyServerIds,
-      int stageAttemptNumber) {
-    return requestShuffleAssignment(
-        shuffleId,
-        partitionNum,
-        partitionNumPerRange,
-        assignmentShuffleServerNumber,
-        estimateTaskConcurrency,
-        faultyServerIds,
-        -1,
-        stageAttemptNumber,
-        false);
-  }
-
   protected void registerShuffleServers(
       String appId,
       int shuffleId,
       Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges,
       RemoteStorageInfo remoteStorage,
-      int stageAttemptNumber) {
+      int stageAttemptNumber,
+      MergeContext mergeContext) {
     if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
       return;
     }
@@ -1393,7 +1398,7 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                   ShuffleDataDistributionType.NORMAL,
                   maxConcurrencyPerPartitionToWrite,
                   stageAttemptNumber,
-                  null,
+                  mergeContext,
                   sparkConfMap);
             });
     LOG.info(
@@ -1405,7 +1410,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
       String appId,
       int shuffleId,
       Map<ShuffleServerInfo, List<PartitionRange>> serverToPartitionRanges,
-      RemoteStorageInfo remoteStorage) {
+      RemoteStorageInfo remoteStorage,
+      MergeContext mergeContext) {
     if (serverToPartitionRanges == null || serverToPartitionRanges.isEmpty()) {
       return;
     }
@@ -1425,6 +1431,8 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
                   remoteStorage,
                   dataDistributionType,
                   maxConcurrencyPerPartitionToWrite,
+                  0,
+                  mergeContext,
                   sparkConfMap);
             });
     LOG.info(
@@ -1536,6 +1544,48 @@ public abstract class RssShuffleManagerBase implements RssShuffleManagerInterfac
 
   public boolean isValidTask(String taskId) {
     return !failedTaskIds.contains(taskId);
+  }
+
+  protected <K> String encode(Ordering<K> obj) {
+    try {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      ObjectOutputStream oos = new ObjectOutputStream(baos);
+      oos.writeObject(obj);
+      oos.close();
+      return "#" + Base64.getEncoder().encodeToString(baos.toByteArray());
+    } catch (Exception e) {
+      throw new RssException(e);
+    }
+  }
+
+  protected <K, V, C> MergeContext buildMergeContext(ShuffleDependency<K, V, C> dependency) {
+    if (remoteMergeEnable) {
+      MergeContext mergeContext =
+          MergeContext.newBuilder()
+              .setKeyClass(dependency.keyClassName())
+              .setValueClass(
+                  dependency.mapSideCombine()
+                      ? dependency.combinerClassName().get()
+                      : dependency.valueClassName())
+              .setComparatorClass(
+                  dependency
+                      .keyOrdering()
+                      .map(
+                          new AbstractFunction1<Ordering<K>, String>() {
+                            @Override
+                            public String apply(Ordering<K> o) {
+                              return encode(o);
+                            }
+                          })
+                      .get())
+              .setMergedBlockSize(sparkConf.get(RssSparkConfig.RSS_MERGED_BLOCK_SZIE))
+              .setMergeClassLoader(
+                  sparkConf.get(RssSparkConfig.RSS_REMOTE_MERGE_CLASS_LOADER.key(), ""))
+              .build();
+      return mergeContext;
+    } else {
+      return null;
+    }
   }
 
   @VisibleForTesting
