@@ -79,23 +79,25 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
 
   protected static void setupServers(ShuffleServerConf serverConf) throws Exception {
     LOG.info("Starting coordinators and shuffle servers");
-    CoordinatorConf coordinatorConf = getCoordinatorConf();
+    CoordinatorConf coordinatorConf = coordinatorConfWithoutPort();
     Map<String, String> dynamicConf = new HashMap<>();
     dynamicConf.put(CoordinatorConf.COORDINATOR_REMOTE_STORAGE_PATH.key(), HDFS_URI + "rss/test");
     dynamicConf.put(RssTezConfig.RSS_STORAGE_TYPE, StorageType.MEMORY_LOCALFILE_HDFS.name());
     addDynamicConf(coordinatorConf, dynamicConf);
-    createCoordinatorServer(coordinatorConf);
-    ShuffleServerConf grpcShuffleServerConf = getShuffleServerConf(ServerType.GRPC);
+    storeCoordinatorConf(coordinatorConf);
+    ShuffleServerConf grpcShuffleServerConf =
+        shuffleServerConfWithoutPort(0, null, ServerType.GRPC);
     if (serverConf != null) {
       grpcShuffleServerConf.addAll(serverConf);
     }
-    createShuffleServer(grpcShuffleServerConf);
-    ShuffleServerConf nettyShuffleServerConf = getShuffleServerConf(ServerType.GRPC_NETTY);
+    storeShuffleServerConf(grpcShuffleServerConf);
+    ShuffleServerConf nettyShuffleServerConf =
+        shuffleServerConfWithoutPort(0, null, ServerType.GRPC_NETTY);
     if (serverConf != null) {
       nettyShuffleServerConf.addAll(serverConf);
     }
-    createShuffleServer(nettyShuffleServerConf);
-    startServers();
+    storeShuffleServerConf(nettyShuffleServerConf);
+    startServersWithRandomPorts();
   }
 
   @AfterAll
@@ -182,7 +184,7 @@ public class TezIntegrationTestBase extends IntegrationTestBase {
     appConf.set(TezConfiguration.TEZ_AM_LAUNCH_CMD_OPTS, " -Xmx384m");
     appConf.setInt(TezConfiguration.TEZ_TASK_RESOURCE_MEMORY_MB, 512);
     appConf.set(TezConfiguration.TEZ_TASK_LAUNCH_CMD_OPTS, " -Xmx384m");
-    appConf.set(RssTezConfig.RSS_COORDINATOR_QUORUM, COORDINATOR_QUORUM);
+    appConf.set(RssTezConfig.RSS_COORDINATOR_QUORUM, getQuorum());
     appConf.set(RssTezConfig.RSS_CLIENT_TYPE, clientType.name());
     appConf.set(
         TezConfiguration.TEZ_AM_LAUNCH_CMD_OPTS,

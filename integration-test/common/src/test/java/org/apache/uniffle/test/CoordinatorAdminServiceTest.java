@@ -52,7 +52,7 @@ public class CoordinatorAdminServiceTest extends IntegrationTestBase {
 
   @BeforeEach
   public void createClient() {
-    String hostUrl = String.format("http://%s:%d", LOCALHOST, jettyPorts.get(0));
+    String hostUrl = String.format("http://%s:%d", LOCALHOST, coordinators.get(0).getJettyPort());
     adminRestApi = new AdminRestApi(UniffleRestClient.builder(hostUrl).build());
   }
 

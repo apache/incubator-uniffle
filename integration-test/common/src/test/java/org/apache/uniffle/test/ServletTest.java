@@ -101,8 +101,8 @@ public class ServletTest extends IntegrationTestBase {
     prepareShuffleServerConf(3, tmpDir);
 
     startServersWithRandomPorts();
-    coordinatorHttpPort = jettyPorts.get(0);
     coordinatorServer = coordinators.get(0);
+    coordinatorHttpPort = coordinatorServer.getJettyPort();
     Awaitility.await()
         .timeout(30, TimeUnit.SECONDS)
         .until(() -> coordinatorServer.getClusterManager().list().size() == 4);
