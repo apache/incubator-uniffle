@@ -34,6 +34,7 @@ import com.google.common.collect.Sets;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.io.TempDir;
 
+import org.apache.uniffle.client.factory.ShuffleServerClientFactory;
 import org.apache.uniffle.common.config.RssBaseConf;
 import org.apache.uniffle.common.port.PortRegistry;
 import org.apache.uniffle.common.rpc.ServerType;
@@ -203,6 +204,7 @@ public abstract class IntegrationTestBase extends HadoopTestBase {
     jettyPorts.clear();
     ShuffleServerMetrics.clear();
     CoordinatorMetrics.clear();
+    ShuffleServerClientFactory.getInstance().cleanupCache();
   }
 
   protected static CoordinatorConf getCoordinatorConf() {
