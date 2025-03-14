@@ -61,7 +61,7 @@ public class ShuffleServerTest {
       assertEquals(expectStatus, ((ExitException) e).getStatus());
     }
 
-    serverConf.setInteger("rss.jetty.http.port", 9529);
+    serverConf.setInteger("rss.jetty.http.port", 0);
     ss2 = new ShuffleServer(serverConf);
     expectMessage = "Fail to start grpc server";
     try {

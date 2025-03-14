@@ -63,6 +63,7 @@ public class CoordinatorServer {
   private final CoordinatorConf coordinatorConf;
   private final long startTimeMs;
   private JettyServer jettyServer;
+  private int jettyPort;
   private ServerInterface server;
   private ClusterManager clusterManager;
   private AssignmentStrategy assignmentStrategy;
@@ -106,7 +107,7 @@ public class CoordinatorServer {
   public void start() throws Exception {
     LOG.info(
         "{} version: {}", this.getClass().getSimpleName(), Constants.VERSION_AND_REVISION_SHORT);
-    jettyServer.start();
+    jettyPort = jettyServer.start();
     rpcListenPort = server.start();
     if (metricReporter != null) {
       metricReporter.start();
@@ -284,5 +285,9 @@ public class CoordinatorServer {
 
   public int getRpcListenPort() {
     return rpcListenPort;
+  }
+
+  public int getJettyPort() {
+    return jettyPort;
   }
 }

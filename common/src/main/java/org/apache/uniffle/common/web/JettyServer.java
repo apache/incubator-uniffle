@@ -169,13 +169,15 @@ public class JettyServer {
     return this.server;
   }
 
-  public void start() throws Exception {
+  public int start() throws Exception {
     try {
       server.start();
+      httpPort = ((ServerConnector) server.getConnectors()[0]).getLocalPort();
     } catch (BindException e) {
       ExitUtils.terminate(1, "Fail to start jetty http server, port is " + httpPort, e, LOG);
     }
     LOG.info("Jetty http server started, listening on port {}", httpPort);
+    return httpPort;
   }
 
   public void stop() throws Exception {

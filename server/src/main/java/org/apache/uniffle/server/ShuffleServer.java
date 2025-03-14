@@ -98,6 +98,7 @@ public class ShuffleServer {
   private int nettyPort;
   private ShuffleServerConf shuffleServerConf;
   private JettyServer jettyServer;
+  private int jettyPort;
   private ShuffleTaskManager shuffleTaskManager;
   private ServerInterface server;
   private ShuffleFlushManager shuffleFlushManager;
@@ -152,7 +153,7 @@ public class ShuffleServer {
   public void start() throws Exception {
     LOG.info(
         "{} version: {}", this.getClass().getSimpleName(), Constants.VERSION_AND_REVISION_SHORT);
-    jettyServer.start();
+    jettyPort = jettyServer.start();
     grpcPort = server.start();
     if (nettyServerEnabled) {
       nettyPort = streamServer.start();
@@ -578,7 +579,7 @@ public class ShuffleServer {
   }
 
   public int getJettyPort() {
-    return jettyServer.getHttpPort();
+    return jettyPort;
   }
 
   public String getEncodedTags() {
